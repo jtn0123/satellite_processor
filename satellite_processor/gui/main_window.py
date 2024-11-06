@@ -848,6 +848,7 @@ class SatelliteProcessorGUI(QMainWindow):
         
         # Update status label with rendered HTML
         self.status_label.setHtml(self.status_manager.render())
+        self.logger.info(message)  # Log the status message
 
     def _format_bytes(self, bytes):
         """Format bytes to human readable string"""

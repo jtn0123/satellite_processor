@@ -67,8 +67,8 @@ class SatelliteImageProcessor(QObject):
             self.logger.addHandler(ch)
         
         self.cancelled = False
-        self.on_progress = None
-        self.on_status = None
+        self.on_progress = self._default_progress_callback
+        self.on_status = self._default_status_callback
         self.progress = ProgressTracker(self._update_progress)
             
     def __del__(self) -> None:
@@ -651,3 +651,11 @@ class SatelliteImageProcessor(QObject):
             """Handle progress updates"""
             self.on_status(progress_text)
             self.on_status(progress_text)
+
+    def _default_progress_callback(self, operation: str, progress: int):
+        """Default progress callback if none is provided."""
+        self.logger.info(f"{operation}: {progress}%")
+
+    def _default_status_callback(self, status: str):
+        """Default status callback if none is provided."""
+        self.logger.info(status)

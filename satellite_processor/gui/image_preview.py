@@ -1,12 +1,14 @@
 # gui/image_preview.py
+
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
     QDialog, QGraphicsView, QGraphicsScene, QGraphicsRectItem
 )
 from PyQt6.QtCore import Qt, QRectF, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap, QPen, QColor
+from ..core.processor import SatelliteImageProcessor  # Fixed import path
 import cv2
-import numpy as np # type: ignore
+import numpy as np
 from pathlib import Path
 
 class CropSelectionView(QGraphicsView):
@@ -136,6 +138,18 @@ class ImagePreviewDialog(QDialog):
     def get_crop_coordinates(self):
         """Return the selected crop coordinates"""
         return self.crop_coords
+
+    def some_method(self):
+        # ...existing code...
+        options = {
+            'crop_x': self.crop_x,
+            'crop_y': self.crop_y,
+            'crop_width': self.crop_width,
+            'crop_height': self.crop_height,
+            # Add other necessary options here
+        }
+        processor = SatelliteImageProcessor(options=options, parent=self)
+        # ...existing code...
 
 # Usage example in main_window.py:
 def show_crop_preview(self):

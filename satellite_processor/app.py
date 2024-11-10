@@ -5,8 +5,10 @@ from PyQt6.QtCore import Qt # type: ignore
 import argparse
 import logging
 from pathlib import Path
-from gui.main_window import SatelliteProcessorGUI
+from gui.main_window import SatelliteProcessorGUI, MainWindow
 from utils.logging_config import setup_logging
+from .core.settings_manager import SettingsManager
+from .core.processor import SatelliteImageProcessor
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -32,37 +34,49 @@ def initialize_app():
     
     return app
 
+def setup_logging():
+    """Configure logging with console and file output"""
+    # Create logs directory if it doesn't exist
+    log_dir = Path.cwd() / 'logs'
+    log_dir.mkdir(exist_ok=True)
+    
+    # Configure logging format
+    log_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+    formatter = logging.Formatter(log_format)
+    
+    # Console handler with DEBUG level
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(formatter)
+    
+    # File handler
+    file_handler = logging.FileHandler(log_dir / 'satellite_processor.log')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    
+    # Root logger configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+    
+    # Log startup message
+    root_logger.info("Application starting - Logging configured")
+
 def main():
-    """Main application entry point"""
-    try:
-        # Parse arguments
-        args = parse_arguments()
-        
-        # Setup logging
-        setup_logging()
-        logger = logging.getLogger(__name__)
-        
-        # Initialize application
-        app = initialize_app()
-        
-        # Create and show main window
-        window = SatelliteProcessorGUI()
-        
-        # Apply command line arguments if provided
-        if args.input_dir:
-            window.input_path.setText(args.input_dir)
-        if args.output_dir:
-            window.output_path.setText(args.output_dir)
-            
-        window.show()
-        
-        # Start application event loop
-        sys.exit(app.exec())
-        
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.critical(f"Application failed to start: {str(e)}", exc_info=True)
-        sys.exit(1)
+    app = QApplication(sys.argv)
+    
+    # Create settings manager first
+    settings_manager = SettingsManager()
+    
+    # Create processor with settings manager
+    processor = SatelliteImageProcessor(settings_manager=settings_manager)
+    
+    # Create main window with both dependencies
+    window = MainWindow(settings_manager=settings_manager, processor=processor)
+    window.show()
+    
+    return app.exec()
 
 if __name__ == "__main__":
     main()

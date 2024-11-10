@@ -40,48 +40,10 @@ def signal_handler(signum, frame):
     QApplication.quit()
 
 def main():
-    try:
-        # Setup logging
-        log_file = setup_logging(debug=True)
-        print("Starting Satellite Processor test...")
-        
-        # Register signal handlers
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-        
-        # Create application
-        app = QApplication(sys.argv)
-        app.setApplicationName("Satellite Image Processor")
-        app.setApplicationVersion(__version__)
-        app.setOrganizationName("SatelliteProcessor")
-        app.setOrganizationDomain("satelliteprocessor.org")
-        
-        # Create main window
-        window = SatelliteProcessorGUI()
-        window.show()
-        
-        # Handle signals in Qt event loop
-        timer = QTimer()
-        timer.timeout.connect(lambda: None)
-        timer.start(100)
-        
-        return app.exec()
-    
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
-    finally:
-        # Cleanup
-        if 'window' in locals():
-            window.close()
+    app = QApplication(sys.argv)
+    window = SatelliteProcessorGUI()
+    window.show()
+    return app.exec()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Satellite Processor Application")
-    parser.add_argument('-debug', action='store_true', help='Enable debug logging')
-    args = parser.parse_args()
-
-    # Configure logging
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
     sys.exit(main())

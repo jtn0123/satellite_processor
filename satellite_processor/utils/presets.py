@@ -4,6 +4,8 @@ import json
 import logging
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 class PresetManager:
     """Manage processing presets"""
     def __init__(self):
@@ -53,3 +55,29 @@ class PresetManager:
                 self.logger.info(f"Preset '{name}' deleted successfully")
         except Exception as e:
             self.logger.error(f"Error deleting preset '{name}': {str(e)}")
+
+def load_presets(presets_path: Path = None) -> dict:
+    """Load processing presets from JSON file"""
+    if presets_path is None:
+        presets_path = Path.home() / '.satellite_processor' / 'presets.json'
+    try:
+        if presets_path.exists():
+            with open(presets_path, 'r') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading presets: {e}")
+        return {}
+
+def save_presets(presets: dict, presets_path: Path = None) -> bool:
+    """Save processing presets to JSON file"""
+    if presets_path is None:
+        presets_path = Path.home() / '.satellite_processor' / 'presets.json'
+    try:
+        presets_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(presets_path, 'w') as f:
+            json.dump(presets, f, indent=4)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving presets: {e}")
+        return False

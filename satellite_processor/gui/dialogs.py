@@ -1,15 +1,18 @@
 # gui/dialogs.py
-from PyQt6.QtWidgets import ( # type: ignore
+from PyQt6.QtWidgets import ( 
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QFormLayout, QSpinBox, QDoubleSpinBox,
     QTabWidget, QWidget, QDialogButtonBox, QFileDialog,
     QMessageBox, QComboBox
 )
+from PyQt6.QtCore import pyqtSignal
 from pathlib import Path
 from ..utils.settings import SettingsManager
 from ..utils.presets import PresetManager
 
 class SettingsDialog(QDialog):
+    settings_saved = pyqtSignal(dict)  # Example signal
+
     """Advanced settings configuration dialog"""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -85,6 +88,16 @@ class SettingsDialog(QDialog):
         output_layout.addWidget(output_browse)
         layout.addRow("Output Directory:", output_layout)
         
+        # Temp directory path
+        self.temp_input = QLineEdit()
+        browse_temp = QPushButton("Browse")
+        browse_temp.clicked.connect(self.browse_temp)
+        
+        temp_layout = QHBoxLayout()
+        temp_layout.addWidget(self.temp_input)
+        temp_layout.addWidget(browse_temp)
+        layout.addRow("Temporary Directory:", temp_layout)
+        
         return widget
         
     def create_processing_tab(self):
@@ -151,6 +164,12 @@ class SettingsDialog(QDialog):
             self.output_dir_edit.setText(dir_path)
             self.parent().output_entry.setText(dir_path)
             
+    def browse_temp(self):
+        """Browse for temp directory."""
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Temporary Directory")
+        if dir_path:
+            self.temp_input.setText(dir_path)
+            
     def load_current_settings(self):
         """Load current settings into dialog"""
         settings = self.settings_manager.load_settings()
@@ -160,6 +179,7 @@ class SettingsDialog(QDialog):
         self.underlay_path.setText(settings.get('underlay_path', ''))
         self.input_dir_edit.setText(settings.get('input_dir', ''))
         self.output_dir_edit.setText(settings.get('output_dir', ''))
+        self.temp_input.setText(settings.get('temp_directory', ''))
         
         # Processing
         self.default_crop_width.setValue(settings.get('default_crop_width', 1920))
@@ -171,21 +191,28 @@ class SettingsDialog(QDialog):
         self.default_encoder.setCurrentText(settings.get('default_encoder', 'H.264 (Maximum Compatibility)'))
         
     def save_settings(self):
-        """Save settings and close dialog"""
+        """Save settings and emit the settings_saved signal."""
         settings = {
             'sanchez_path': self.sanchez_path.text(),
             'underlay_path': self.underlay_path.text(),
             'input_dir': self.input_dir_edit.text(),
             'output_dir': self.output_dir_edit.text(),
+            'temp_directory': self.temp_input.text(),
             'default_crop_width': self.default_crop_width.value(),
             'default_crop_height': self.default_crop_height.value(),
             'default_scale': self.default_scale.value(),
             'default_fps': self.default_fps.value(),
             'default_encoder': self.default_encoder.currentText()
         }
-        
-        self.settings_manager.save_settings(settings)
+        self.settings_saved.emit(settings)
         self.accept()
+
+    def some_dialog_method(self):
+        # ...existing code...
+        if self.parent() and getattr(self.parent(), '_is_closing', False):
+            # Handle the closing state
+            pass  # Add appropriate handling code here
+        # ...existing code...
 
 class PresetDialog(QDialog):
     """Preset management dialog"""
@@ -242,3 +269,25 @@ class PresetDialog(QDialog):
                 
         self.preset_manager.save_preset(name, self.params)
         self.accept()
+
+class AboutDialog(QDialog):
+    """Custom About Dialog."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("About Satellite Image Processor")
+        layout = QVBoxLayout()
+
+        about_label = QLabel(
+            "Satellite Image Processor\n"
+            "Version 1.0\n\n"
+            "Developed by Your Name.\n"
+            "© 2024 Your Company."
+        )
+        layout.addWidget(about_label)
+
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        layout.addWidget(close_button)
+
+        self.setLayout(layout)

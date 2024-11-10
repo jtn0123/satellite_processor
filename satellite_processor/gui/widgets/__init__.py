@@ -1,13 +1,18 @@
 # satellite_processor/gui/widgets/__init__.py
-from .video_options import VideoOptionsWidget
+from .graphing_widget import GraphingWidget
 from .processing_options import ProcessingOptionsWidget
-try:
-    from .progress import ProgressWidget
-except ImportError:
-    ProgressWidget = None
+from .status_widget import StatusWidget
+from .progress_widget import ProgressWidget
+from .resource_monitor_widget import ResourceMonitorWidget
+from .network_widget import NetworkWidget
+from .log_widget import LogWidget
 
 __all__ = [
-    'VideoOptionsWidget',
+    'GraphingWidget',
     'ProcessingOptionsWidget',
-    'ProgressWidget'
+    'StatusWidget',
+    'ProgressWidget',
+    'ResourceMonitorWidget',
+    'NetworkWidget',
+    'LogWidget'
 ]

@@ -72,3 +72,6 @@ class ProgressWidget(QGroupBox):
         self.status_label.setText("Complete")
         self.overall_progress.setValue(100)
         self.operation_progress.setValue(100)
+
+# Verify if progress handling is already managed in ProgressWidget or another component
+# If redundant, remove this file or integrate its functionality appropriately

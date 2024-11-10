@@ -1,5 +1,6 @@
 # GUI
 PyQt6>=6.0.0
+PyQt6-sip>=13.4.0  # Changed from sip to PyQt6-sip
 
 # System utilities
 pathlib
@@ -13,3 +14,10 @@ numpy>=1.21.0
 scipy>=1.7.0
 pillow>=8.0.0
 opencv-python>=4.5.0
+
+# Graphing
+pyqtgraph>=0.13.0
+matplotlib>=3.7.1
+
+# Video processing
+ffmpeg-python>=0.2.0  # Added for FFmpeg integration

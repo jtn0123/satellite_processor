@@ -5,8 +5,11 @@ from PyQt6.QtWidgets import (
     QProgressBar, QTextEdit, QPushButton, QGridLayout
 )
 from PyQt6.QtCore import Qt
+from satellite_processor.processing import SatelliteImageProcessor  # Adjust the import path as necessary
 
 class ProcessingOptionsWidget(QGroupBox):
+    """Widget for processing options."""
+    
     def __init__(self):
         super().__init__("Processing Options")
         self.init_ui()
@@ -18,10 +21,23 @@ class ProcessingOptionsWidget(QGroupBox):
         # Initialize crop controls
         self.init_crop_controls(layout)
 
-        # Initialize other controls
+        # Initialize other controls (including upscale controls)
         self.init_other_controls(layout)
 
+        # Overall Progress Bar (if not added in main_window.py)
+        self.overall_progress_bar = QProgressBar()
+        self.overall_progress_bar.setRange(0, 100)
+        layout.addWidget(QLabel("Overall Progress"))
+        layout.addWidget(self.overall_progress_bar)
+
         self.setLayout(layout)
+
+        # Ensure all necessary attributes are initialized
+        self.false_color_check = QCheckBox("Enable False Color")
+        self.interpolation = QCheckBox("Enable Frame Interpolation")
+
+        # Initially disable upscale controls
+        self.toggle_upscale_controls(False)
 
     def init_crop_controls(self, parent_layout):
         # Crop Group
@@ -31,82 +47,89 @@ class ProcessingOptionsWidget(QGroupBox):
         # Crop enable checkbox
         self.crop_checkbox = QCheckBox("Enable Cropping")
         self.crop_checkbox.toggled.connect(self.toggle_crop_controls)
+        crop_layout.addWidget(self.crop_checkbox, 0, 0, 1, 2)
 
-        # Create crop controls
+        # Labels and spin boxes for crop parameters
+        crop_layout.addWidget(QLabel("X:"), 1, 0)
         self.crop_x = QSpinBox()
+        self.crop_x.setRange(0, 10000)
+        self.crop_x.setValue(0)
+        crop_layout.addWidget(self.crop_x, 1, 1)
+
+        crop_layout.addWidget(QLabel("Y:"), 2, 0)
         self.crop_y = QSpinBox()
+        self.crop_y.setRange(0, 10000)
+        self.crop_y.setValue(0)
+        crop_layout.addWidget(self.crop_y, 2, 1)
+
+        crop_layout.addWidget(QLabel("Width:"), 3, 0)
         self.crop_width = QSpinBox()
+        self.crop_width.setRange(1, 10000)
+        self.crop_width.setValue(640)
+        crop_layout.addWidget(self.crop_width, 3, 1)
+
+        crop_layout.addWidget(QLabel("Height:"), 4, 0)
         self.crop_height = QSpinBox()
+        self.crop_height.setRange(1, 10000)
+        self.crop_height.setValue(480)
+        crop_layout.addWidget(self.crop_height, 4, 1)
 
-        # Set ranges and default values
-        for spinbox in [self.crop_x, self.crop_y, self.crop_width, self.crop_height]:
-            spinbox.setRange(0, 10000)
-            spinbox.setValue(0)
-            spinbox.setEnabled(False)  # Disabled by default
-
-        # Arrange labels and controls in the grid layout
-        crop_layout.addWidget(QLabel("X:"), 0, 0)
-        crop_layout.addWidget(self.crop_x, 0, 1)
-        crop_layout.addWidget(QLabel("Y:"), 0, 2)
-        crop_layout.addWidget(self.crop_y, 0, 3)
-        crop_layout.addWidget(QLabel("Width:"), 1, 0)
-        crop_layout.addWidget(self.crop_width, 1, 1)
-        crop_layout.addWidget(QLabel("Height:"), 1, 2)
-        crop_layout.addWidget(self.crop_height, 1, 3)
-
-        # Add checkbox and crop controls to the group layout
-        crop_group_layout = QVBoxLayout()
-        crop_group_layout.addWidget(self.crop_checkbox)
-        crop_group_layout.addLayout(crop_layout)
-        crop_group.setLayout(crop_group_layout)
-
-        # Add crop group to the parent layout
+        crop_group.setLayout(crop_layout)
         parent_layout.addWidget(crop_group)
 
+        # Initially disable crop controls
+        self.toggle_crop_controls(False)
+
     def toggle_crop_controls(self, enabled):
-        """Enable or disable crop controls based on the checkbox state."""
         self.crop_x.setEnabled(enabled)
         self.crop_y.setEnabled(enabled)
         self.crop_width.setEnabled(enabled)
         self.crop_height.setEnabled(enabled)
 
     def init_other_controls(self, parent_layout):
-        # False Color Option
-        self.false_color_check = QCheckBox("Apply False Color")
-        parent_layout.addWidget(self.false_color_check)
-
         # Upscale Options
-        self.upscale_check = QCheckBox("Enable Upscaling")
-        parent_layout.addWidget(self.upscale_check)
+        upscale_group = QGroupBox("Upscale Settings")
+        upscale_layout = QGridLayout()
 
-        upscale_layout = QHBoxLayout()
-        upscale_layout.addWidget(QLabel("Upscale Method:"))
+        self.upscale_checkbox = QCheckBox("Enable Upscaling")  # Ensure single definition
+        self.upscale_checkbox.toggled.connect(self.toggle_upscale_controls)
+        upscale_layout.addWidget(self.upscale_checkbox, 0, 0, 1, 2)
+
+        upscale_layout.addWidget(QLabel("Method:"), 1, 0)
         self.upscale_method = QComboBox()
-        self.upscale_method.addItems(["Lanczos", "Bicubic", "Bilinear"])
-        upscale_layout.addWidget(self.upscale_method)
-        parent_layout.addLayout(upscale_layout)
+        self.upscale_method.addItems(["Lanczos", "Bilinear", "Nearest"])
+        upscale_layout.addWidget(self.upscale_method, 1, 1)
 
-        # Scale Factor
-        scale_factor_layout = QHBoxLayout()
-        scale_factor_layout.addWidget(QLabel("Scale Factor:"))
-        self.scale_factor = QSpinBox()
-        self.scale_factor.setRange(1, 4)
-        self.scale_factor.setValue(2)
-        scale_factor_layout.addWidget(self.scale_factor)
-        parent_layout.addLayout(scale_factor_layout)
+        upscale_layout.addWidget(QLabel("Scale Factor:"), 2, 0)
+        self.upscale_scale = QDoubleSpinBox()
+        self.upscale_scale.setRange(1.0, 10.0)
+        self.upscale_scale.setSingleStep(0.5)
+        self.upscale_scale.setValue(2.0)
+        upscale_layout.addWidget(self.upscale_scale, 2, 1)
 
-        # Target Width
-        target_width_layout = QHBoxLayout()
-        target_width_layout.addWidget(QLabel("Target Width:"))
-        self.target_width = QSpinBox()
-        self.target_width.setRange(100, 10000)
-        self.target_width.setValue(1920)
-        target_width_layout.addWidget(self.target_width)
-        parent_layout.addLayout(target_width_layout)
+        upscale_group.setLayout(upscale_layout)
+        parent_layout.addWidget(upscale_group)
 
-        # Interpolation Option
-        self.interpolation = QCheckBox("Enable Interpolation")
-        parent_layout.addWidget(self.interpolation)
+        # Initially disable upscale controls
+        self.toggle_upscale_controls(False)
+
+    def toggle_upscale_controls(self, enabled):
+        self.upscale_method.setEnabled(enabled)
+        self.upscale_scale.setEnabled(enabled)
+
+    def some_widget_method(self):
+        # ...existing code...
+        if self.parent() and getattr(self.parent(), '_is_closing', False):
+            # Handle accordingly
+            pass
+        # ...existing code...
+        options = {
+            'input_dir': self.input_dir,
+            'output_dir': self.output_dir,
+            # Add other necessary options here
+        }
+        processor = SatelliteImageProcessor(options=options, parent=self)
+        # ...existing code...
 
 class VideoOptionsWidget(QGroupBox):
     def __init__(self):
@@ -163,33 +186,17 @@ class VideoOptionsWidget(QGroupBox):
             'quality_preset': self.quality_preset.currentText()
         }
 
-class ProgressWidget(QGroupBox):
-    def __init__(self):
-        super().__init__("Progress")
-        self.init_ui()
-        
-    def init_ui(self):
+class ProgressWidget(QWidget):
+    """Custom Progress Bar Widget"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         layout = QVBoxLayout()
-        
-        # Overall progress
-        self.overall_progress = QProgressBar()
-        layout.addWidget(QLabel("Overall Progress:"))
-        layout.addWidget(self.overall_progress)
-        
-        # Current operation progress
-        self.operation_progress = QProgressBar()
-        layout.addWidget(QLabel("Current Operation:"))
-        layout.addWidget(self.operation_progress)
-        
-        # Network activity indicator
-        self.network_indicator = QLabel("Network Activity: Idle")
-        layout.addWidget(self.network_indicator)
-        
-        # Status log
-        self.status_log = QTextEdit()
-        self.status_log.setReadOnly(True)
-        self.status_log.setMaximumHeight(100)
-        layout.addWidget(QLabel("Status Log:"))
-        layout.addWidget(self.status_log)
-        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        layout.addWidget(QLabel("Processing Progress"))
+        layout.addWidget(self.progress_bar)
         self.setLayout(layout)
+
+    def update_progress(self, value: int):
+        self.progress_bar.setValue(value)

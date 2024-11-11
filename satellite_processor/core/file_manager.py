@@ -1,16 +1,26 @@
 """
-File System Operations
----------------------
-Responsibilities:
-- Input/output file management
+File System Operations Manager
+----------------------------
+Single source of truth for all file operations:
+- File discovery and sorting
 - Directory creation and cleanup
-- File filtering and sorting
-- Temporary storage handling
+- Temporary file management
+- Path resolution and validation
+- File ordering by timestamp
+- Input/output path management
+
+Key Responsibilities:
+- Maintain chronological file ordering
+- Handle all temporary storage
+- Manage file cleanup
+- Ensure path security
+- Track file operations
 
 Does NOT handle:
-- Image processing
+- Image processing/manipulation
+- Video encoding
+- Business logic
 - GUI operations
-- Timestamp parsing (use helpers.py instead)
 """
 
 from pathlib import Path
@@ -33,7 +43,7 @@ class FileManager:
         self._temp_files = set()
         
     def get_input_files(self, input_dir: str) -> List[Path]:
-        """Get sorted list of input image files"""
+        """Get chronologically sorted list of input image files"""
         if not input_dir:
             self.logger.error("Input directory is None or empty")
             return []
@@ -45,9 +55,18 @@ class FileManager:
                 return []
                 
             valid_extensions = ('.jpg', '.jpeg', '.png', '.tif', '.tiff')
-            image_paths = sorted(input_path.glob('*'))
-            return [p for p in image_paths if p.suffix.lower() in valid_extensions]
+            image_paths = [p for p in input_path.glob('*') if p.suffix.lower() in valid_extensions]
             
+            # Sort files chronologically
+            sorted_paths = sorted(image_paths, key=lambda p: parse_satellite_timestamp(p.name))
+            
+            # Log the actual order being used
+            self.logger.info(f"Processing {len(sorted_paths)} files in chronological order:")
+            for path in sorted_paths[:5]:  # Log first 5 files
+                timestamp = parse_satellite_timestamp(path.name)
+                self.logger.info(f"{path.name}: {timestamp}")
+                
+            return sorted_paths
         except Exception as e:
             self.logger.error(f"Error accessing input directory: {e}")
             return []
@@ -154,6 +173,21 @@ class FileManager:
     def track_temp_dir(self, dir_path: Path):
         """Add a directory to be tracked for cleanup"""
         self._temp_dirs.add(Path(dir_path))
+
+    def keep_file_order(self, files: List[Path]) -> List[Path]:
+        """Maintain chronological order of files"""
+        return sorted(files, key=lambda p: parse_satellite_timestamp(p.name))
+
+    def create_frame_filename(self, index: int, timestamp: str = None) -> str:
+        """Create standardized frame filename"""
+        if timestamp is None:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        return f"frame_{index:08d}_{timestamp}.png"
+
+    def get_sequential_path(self, base_dir: Path, prefix: str, ext: str) -> Path:
+        """Get sequential path for output files"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return base_dir / f"{prefix}_{timestamp}{ext}"
 
     def __del__(self):
         """Ensure cleanup on deletion"""

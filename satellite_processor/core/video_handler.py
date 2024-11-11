@@ -9,28 +9,38 @@ import numpy as np
 from datetime import datetime  # Add missing import
 import os
 import re
+from .file_manager import FileManager  # Add this import
 
 """
 Video Processing Module
 ----------------------
-Handles all video-related operations including:
-- Video creation from image sequences
-- Frame interpolation and enhancement
-- Codec management and optimization
+Handles video creation and encoding operations:
 - FFmpeg integration and execution
-- Temporary file management for video operations
+- Video codec management
+- Frame rate handling
+- Video quality settings
+- Frame sequence assembly
+
+Key Responsibilities:
+- Video creation from image sequences
+- Codec selection and optimization
+- Frame rate/duration management
+- Video format handling
 
 Does NOT handle:
-- Image processing/manipulation (handled by ImageOperations)
-- File system operations (handled by FileManager)
-- Business logic (handled by Processor)
+- File management (use FileManager)
+- Image processing
+- Directory operations
+- File ordering
 """
 
 class VideoHandler:
     """Handle video creation and processing operations"""
     
     def __init__(self):
+        """Initialize video handler with file manager"""
         self.logger = logging.getLogger(__name__)
+        self.file_manager = FileManager()  # Initialize file manager
         self.ffmpeg_path = self._find_ffmpeg()
         if not self.ffmpeg_path:
             self.logger.error("FFmpeg not found. Please install FFmpeg and ensure it's in your PATH")
@@ -70,19 +80,17 @@ class VideoHandler:
         """Create a video from processed images"""
         temp_dir = None
         frame_paths = []
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         try:
             if not self.ffmpeg_path:
                 raise RuntimeError("FFmpeg not found in system PATH")
 
-            # Create temp directory
-            temp_dir = Path(tempfile.gettempdir()).resolve() / f"frames_{timestamp}"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-
-            # Save frames in input order - no sorting needed
+            # Use FileManager for temp directory creation
+            temp_dir = self.file_manager.create_temp_dir(prefix="frames")
+            
+            # Save frames sequentially - order is preserved from input
             for idx, img in enumerate(images):
-                frame_path = (temp_dir / f"frame_{idx:08d}.png").resolve()
+                frame_path = temp_dir / f"frame_{idx:08d}.png"
                 if not cv2.imwrite(str(frame_path), img):
                     self.logger.error(f"Failed to write frame {idx}")
                     continue
@@ -91,13 +99,12 @@ class VideoHandler:
             if not frame_paths:
                 raise RuntimeError("No valid frames to process")
 
-            # Use natural sort on frame paths to ensure proper ordering
-            frame_paths.sort(key=lambda x: int(re.search(r'frame_(\d+)', x.name).group(1)))
-            
-            # Log frame order for debugging
-            for frame in frame_paths[:5]:  # Log first 5 frames
-                self.logger.debug(f"Frame order: {frame.name}")
+            # Log frame order for verification
+            self.logger.debug("Frame processing order:")
+            for frame in frame_paths[:5]:
+                self.logger.debug(f"Processing: {frame.name}")
 
+            # Create video maintaining input order
             success = self._create_ffmpeg_video(frame_paths, output_path, options)
             return success
 
@@ -109,7 +116,7 @@ class VideoHandler:
             # Cleanup temp files
             if temp_dir and temp_dir.exists():
                 try:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    shutil.rmtree(temp_dir)
                 except Exception as e:
                     self.logger.error(f"Cleanup error: {e}")
 

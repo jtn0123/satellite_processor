@@ -1,16 +1,25 @@
 """
-Main Satellite Image Processing Orchestrator
------------------------------------------
+Main Processing Orchestrator
+--------------------------
 Coordinates the overall processing workflow:
-- Manages the processing pipeline
-- Coordinates between UI and processing components
-- Handles high-level error management
-- Provides progress and status updates
+- Processing pipeline management
+- Operation sequencing
+- Progress tracking
+- Error handling
+- Resource management
 
-Does NOT directly handle:
-- Video creation (handled by VideoHandler)
-- Image operations (handled by ImageOperations)
-- File operations (handled by FileManager)
+Key Responsibilities:
+- Workflow coordination
+- Process monitoring
+- Resource management
+- Error handling
+- Status updates
+
+Does NOT handle:
+- File operations (use FileManager)
+- Image processing (use ImageOperations)
+- Video creation (use VideoHandler)
+- GUI interactions
 """
 
 import concurrent.futures
@@ -121,7 +130,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         return f"{operation}: [{bar}] {percent}%"
 
     def process(self):
-        """Main processing workflow coordinator with parallel processing"""
+        """Main processing workflow coordinator"""
         try:
             # Clear any previous content
             self.status_update.emit("")
@@ -155,13 +164,13 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             for dir_path in dirs.values():
                 dir_path.mkdir(parents=True, exist_ok=True)
 
-            # Get and sort input files
-            input_files = sorted(self.file_manager.get_input_files(self.input_dir))
+            # Get and sort input files using FileManager
+            input_files = self.file_manager.get_input_files(self.input_dir)
             if not input_files:
                 raise ValueError("No valid images found in input directory")
 
             num_processes = max(1, multiprocessing.cpu_count() - 1)  # Leave one core free
-            current_files = input_files
+            current_files = input_files  # Original sorted order
 
             # Step 1: Parallel Cropping
             if self.options.get('crop_enabled'):
@@ -179,7 +188,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                         self.status_update.emit(f"Cropped image {idx} of {len(current_files)}")
                         QApplication.processEvents()  # Allow UI updates
                     
-                    current_files = sorted(cropped_files)  # Keep files sorted
+                    current_files = self.file_manager.keep_file_order(cropped_files)
 
             # Step 2: Parallel False Color
             if self.options.get('false_color_enabled'):
@@ -202,7 +211,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                         self.progress_update.emit("Applying False Color", int((idx / total_files) * 100))
                     
                     self.status_update.emit("✅ False color complete")
-                    current_files = sorted(fc_files)
+                    current_files = self.file_manager.keep_file_order(fc_files)
 
             # Step 3: Parallel Timestamp Addition
             operation_name = "⏰ Timestamp Processing"
@@ -225,6 +234,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
             # Step 4: Create Video from images
             if final_files:
+                final_files = self.file_manager.keep_file_order(final_files)
                 operation_name = "🎥 Creating Video"
                 self.status_update.emit(f"\n{operation_name}")
                 self.update_progress("Creating Video", 0)
@@ -648,15 +658,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.cleanup()
 
     def get_input_files(self, input_dir: str = None) -> List[Path]:
-        """Retrieve and sort input image files."""
-        # Use provided input_dir or fall back to instance variable
+        """Get ordered input files using FileManager"""
         dir_to_use = input_dir or self.input_dir
-        if not dir_to_use:
-            raise ValueError("No input directory specified")
-            
-        valid_extensions = ('.jpg', '.jpeg', '.png', '.tif', '.tiff')
-        image_paths = sorted(Path(dir_to_use).glob('*'))
-        return [p for p in image_paths if p.suffix.lower() in valid_extensions]
+        return self.file_manager.get_input_files(dir_to_use)
 
     def _get_output_filename(self, prefix="Animation", ext=".mp4"):
         """Generate timestamped output filename"""

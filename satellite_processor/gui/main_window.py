@@ -281,25 +281,12 @@ class SatelliteProcessorGUI(QMainWindow):
             self.log_widget.append_message(message, replace_last=True)
         elif "<click>" in message:  # Clickable link
             path = message.split("file://")[1].split("</click>")[0]
-            self.log_widget.append_clickable_path(message, path)
+            self.log_widget.append_clickable_path(message)  # Remove path parameter
         else:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            formatted_message = f"[{timestamp}] {message}"
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            formatted_message = f"[{timestamp}] {message}"
+            # Add timestamp only once
             timestamp = datetime.now().strftime("%H:%M:%S")
             formatted_message = f"[{timestamp}] {message}"
             self.log_widget.append_message(formatted_message)
-
-    def on_log_received(self, message):
-        """Handle log messages based on severity"""
-        if "error" in message.lower():
-            self.logger.error(message)
-        # Always log status updates
-        self.log_widget.append_message(formatted_message)
-        
-        # Force immediate update
-        QApplication.processEvents()
 
     def on_log_received(self, message):
         """Handle log messages based on severity"""
@@ -313,7 +300,10 @@ class SatelliteProcessorGUI(QMainWindow):
             # Only log info messages in debug mode
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 self.logger.info(message)
-                self.log_widget.append_message(message)
+                # Add timestamp for info messages
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                formatted_message = f"[{timestamp}] {message}"
+                self.log_widget.append_message(formatted_message)
 
     def on_progress_update(self, operation: str, progress: int):
         """Handle progress updates from the processor."""

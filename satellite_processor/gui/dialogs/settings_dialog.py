@@ -1,12 +1,37 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QDialogButtonBox
-from satellite_processor.utils.settings import SettingsManager
+"""
+Settings Dialog Module
+-----------------------
+Responsibilities:
+- Provides GUI for application settings configuration
+- Handles loading/saving settings using utils.py
+- Directory path selection and validation
+
+Does NOT handle:
+- Direct file operations
+- Business logic
+- Image processing
+"""
+
+from PyQt6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QFormLayout, QSpinBox, QDoubleSpinBox,
+    QTabWidget, QWidget, QDialogButtonBox, QFileDialog,
+    QMessageBox, QComboBox
+)
+from PyQt6.QtCore import pyqtSignal
+from pathlib import Path
+from ...utils.utils import load_config, save_config  # Fix import path
 
 class SettingsDialog(QDialog):
-    def __init__(self, parent=None, settings_manager=None):
+    settings_saved = pyqtSignal(dict)
+
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.settings = settings_manager or SettingsManager()
         self.setWindowTitle("Settings")
-        self.setMinimumSize(400, 300)
+        self.setMinimumWidth(500)
+        
+        # Load settings using utils functions
+        self.settings = load_config()
         
         # Create layout
         layout = QVBoxLayout(self)
@@ -87,7 +112,12 @@ class SettingsDialog(QDialog):
             self.output_dir_edit.setText(self.settings.get('output_dir', ''))
         
     def save_settings(self):
-        """Save settings to the settings manager"""
-        self.settings.set('input_dir', self.input_dir_edit.text())
-        self.settings.set('output_dir', self.output_dir_edit.text())
+        """Save settings using utils functions"""
+        settings = {
+            'sanchez_path': self.sanchez_path.text(),
+            'underlay_path': self.underlay_path.text(),
+            # ...existing code...
+        }
+        save_config(settings)  # Use utils.save_config
+        self.settings_saved.emit(settings)
         self.accept()

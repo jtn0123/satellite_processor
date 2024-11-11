@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import pyqtSignal
 from pathlib import Path
-from ..utils.settings import SettingsManager
+from ..utils.utils import load_config, save_config  # Use existing utils instead
 from ..utils.presets import PresetManager
 
 class SettingsDialog(QDialog):
@@ -19,7 +19,8 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Settings")
         self.setMinimumWidth(500)
         
-        self.settings_manager = SettingsManager()
+        # Load settings using existing utils
+        self.settings = load_config()
         
         # Create main layout
         layout = QVBoxLayout(self)
@@ -172,26 +173,26 @@ class SettingsDialog(QDialog):
             
     def load_current_settings(self):
         """Load current settings into dialog"""
-        settings = self.settings_manager.load_settings()
+        self.settings = load_config()
         
         # Paths
-        self.sanchez_path.setText(settings.get('sanchez_path', ''))
-        self.underlay_path.setText(settings.get('underlay_path', ''))
-        self.input_dir_edit.setText(settings.get('input_dir', ''))
-        self.output_dir_edit.setText(settings.get('output_dir', ''))
-        self.temp_input.setText(settings.get('temp_directory', ''))
+        self.sanchez_path.setText(self.settings.get('sanchez_path', ''))
+        self.underlay_path.setText(self.settings.get('underlay_path', ''))
+        self.input_dir_edit.setText(self.settings.get('input_dir', ''))
+        self.output_dir_edit.setText(self.settings.get('output_dir', ''))
+        self.temp_input.setText(self.settings.get('temp_directory', ''))
         
         # Processing
-        self.default_crop_width.setValue(settings.get('default_crop_width', 1920))
-        self.default_crop_height.setValue(settings.get('default_crop_height', 1080))
-        self.default_scale.setValue(settings.get('default_scale', 2.0))
+        self.default_crop_width.setValue(self.settings.get('default_crop_width', 1920))
+        self.default_crop_height.setValue(self.settings.get('default_crop_height', 1080))
+        self.default_scale.setValue(self.settings.get('default_scale', 2.0))
         
         # Video
-        self.default_fps.setValue(settings.get('default_fps', 30))
-        self.default_encoder.setCurrentText(settings.get('default_encoder', 'H.264 (Maximum Compatibility)'))
+        self.default_fps.setValue(self.settings.get('default_fps', 30))
+        self.default_encoder.setCurrentText(self.settings.get('default_encoder', 'H.264 (Maximum Compatibility)'))
         
     def save_settings(self):
-        """Save settings and emit the settings_saved signal."""
+        """Save settings using existing utils"""
         settings = {
             'sanchez_path': self.sanchez_path.text(),
             'underlay_path': self.underlay_path.text(),
@@ -204,6 +205,7 @@ class SettingsDialog(QDialog):
             'default_fps': self.default_fps.value(),
             'default_encoder': self.default_encoder.currentText()
         }
+        save_config(settings)
         self.settings_saved.emit(settings)
         self.accept()
 

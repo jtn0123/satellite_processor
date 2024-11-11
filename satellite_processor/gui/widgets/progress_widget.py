@@ -1,3 +1,9 @@
+"""
+Simple progress tracking widget.
+Displays current operation and progress through a progress bar.
+Used for showing processing status to users.
+"""
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QProgressBar
 
 class ProgressWidget(QWidget):

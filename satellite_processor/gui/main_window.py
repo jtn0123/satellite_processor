@@ -1,3 +1,9 @@
+"""
+Main window for the Satellite Image Processor application.
+Manages the overall GUI layout, processing controls, and coordination between components.
+Handles user interactions, file selection, and processing initialization.
+"""
+
 from typing import Optional
 from pathlib import Path
 import time
@@ -6,24 +12,28 @@ from PyQt6.QtCore import pyqtSignal, Qt, QThread
 from PyQt6.QtGui import QShortcut, QKeySequence
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QMessageBox, QApplication, QPushButton, QSplitter, QSizePolicy, QLabel, QGroupBox, QGridLayout, QCheckBox, QSpinBox, QFileDialog, QDialog
+    QMessageBox, QApplication, QPushButton, QSplitter, QSizePolicy, QLabel, 
+    QGroupBox, QGridLayout, QCheckBox, QSpinBox, QFileDialog, QDialog, 
+    QDoubleSpinBox, QFormLayout
 )
 from .managers.status_manager import StatusManager
 from .widgets.processing_options import ProcessingOptionsWidget
 from .widgets import (
-    GraphingWidget, StatusWidget,
-    ProgressWidget, ResourceMonitorWidget, NetworkWidget, LogWidget
+    GraphingWidget,
+    ProgressWidget, 
+    SystemMonitorWidget,  # Renamed from ResourceMonitorWidget
+    NetworkWidget, 
+    LogWidget
 )
 from ..core.resource_monitor import ResourceMonitor
-from ..utils.settings import SettingsManager
 from ..core.processor import SatelliteImageProcessor as ProcessingWorker  # Single import for ProcessingWorker
 from .managers.processing_manager import ProcessingManager
+from ..utils.helpers import parse_satellite_timestamp
 from ..utils.utils import (
     load_config, save_config,
-    parse_satellite_timestamp, is_closing,
-    calculate_uits, validate_uits
+    is_closing, calculate_uits, validate_uits
 )
-from ..utils.presets import load_presets, save_presets
+from ..utils.presets import PresetManager
 from .dialogs import SettingsDialog  # Add this import
 import time
 from datetime import datetime
@@ -49,10 +59,34 @@ class SatelliteProcessorGUI(QMainWindow):
     progress_update_signal = pyqtSignal(str, int)
     network_update_signal = pyqtSignal(dict)
 
-    def __init__(self, parent=None) -> None:
-        setup_logging()  # Setup logging before anything else
-        super().__init__(parent)
+    def __init__(self, parent=None, debug_mode=False) -> None:
+        super().__init__(parent)  # Make sure to call parent's init first
+        self.debug_mode = debug_mode
+        if debug_mode:
+            self.logger = logging.getLogger(__name__)
+            self.logger.setLevel(logging.DEBUG)
+            self.logger.debug("Debug mode enabled")
+        setup_logging()
         
+        # Initialize settings first
+        self.settings = load_config()
+        if not self.settings:
+            self.settings = {
+                'last_input_dir': '',
+                'last_output_dir': '',
+                'window_size': (1600, 900),
+                'window_pos': (100, 100),
+                'processing_options': {
+                    'fps': 30,
+                    'codec': 'H.264',
+                    'frame_duration': 1.0,
+                    'crop_enabled': False,
+                    'scale_enabled': False,
+                    'add_timestamp': True
+                }
+            }
+            save_config(self.settings)
+            
         # Initialize basic attributes
         self.worker = None
         self._is_closing = False
@@ -61,15 +95,16 @@ class SatelliteProcessorGUI(QMainWindow):
         
         # Initialize managers and components in correct order
         self.logger = logging.getLogger(__name__)
-        self.settings_manager = SettingsManager()
         self.status_manager = StatusManager(self)
         self.processing_manager = ProcessingManager(self)
+        self.preset_manager = PresetManager()
         
         # Initialize resource monitor first
         self._initialize_resource_monitor()
         
         # Initialize UI components
         self.init_ui()
+        self.logger.info("Application initialized")
         
         # Load settings before connecting signals
         self.load_settings()
@@ -193,45 +228,41 @@ class SatelliteProcessorGUI(QMainWindow):
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
         
-        # Create single consolidated log widget
+        # Create log widget with proper initialization
         self.log_widget = LogWidget(self)
         self.log_widget.setMinimumHeight(200)
-        layout.addWidget(self.log_widget)
+        # Add initial text to verify it's working
+        self.log_widget.append_message("Application started")
+        self.log_widget.append_message("Ready for processing...")
         
         # Create progress widget
         self.progress_widget = ProgressWidget(self)
+        
+        # Add widgets to layout
+        layout.addWidget(self.log_widget)
         layout.addWidget(self.progress_widget)
         
-        # Remove redundant widgets
-        # self.status_widget and self.network_widget are removed
-        
-        layout.addStretch()
         return container
 
     def connect_signals(self):
         """Connect all signals to their slots"""
         try:
-            # Update signal connections to use consolidated log widget
-            self.status_update_signal.connect(self.log_widget.append_message)
-            self.progress_update_signal.connect(self.progress_widget.update_progress)
+            # Reduce initial messages
+            self.status_manager.status_update.connect(self.on_status_update)
+            self.status_manager.progress_update.connect(self.on_progress_update)
+            self.status_manager.error_occurred.connect(self.log_widget.append_error)
             
-            # Resource monitor signals
+            # Processing manager connections
+            self.processing_manager.status_update.connect(self.on_status_update)
+            self.processing_manager.finished.connect(lambda: self.log_widget.append_message("Processing completed"))
+
+            # Resource monitor
             if hasattr(self, 'resource_monitor'):
                 self.resource_monitor.resource_update.connect(self.update_resource_display)
-                self.resource_monitor.resource_update.connect(self.graphing_widget.update_resource_graph)
                 self.resource_monitor.start()
-            
-            # Processing manager signals
-            self.processing_manager.progress_update.connect(self.progress_widget.update_progress)
-            self.processing_manager.status_update.connect(self.on_status_update)
-            self.processing_manager.error_occurred.connect(self.display_error)
-            self.processing_manager.finished.connect(self.on_processing_finished)
-            
-            # Network update signal
-            self.network_update_signal.connect(self.graphing_widget.update_network_activity)
-            
+                
         except Exception as e:
-            self.logger.error(f"Error connecting signals: {e}")
+            self.log_widget.append_error(f"Error connecting signals: {str(e)}")
 
     def on_resource_update(self, stats):
         """Handle resource monitoring updates"""
@@ -245,11 +276,30 @@ class SatelliteProcessorGUI(QMainWindow):
         self.network_update_signal.emit(stats)
 
     def on_status_update(self, message):
-        """Route all status updates to consolidated log, avoiding duplicates"""
-        # Only log if message changed to avoid duplicates
-        if not hasattr(self, '_last_status') or self._last_status != message:
-            self._last_status = message
-            self.log_widget.append_message(message)
+        """Handle status updates with timestamps and clickable links"""
+        if message.startswith('\r'):  # Progress bar update
+            self.log_widget.append_message(message, replace_last=True)
+        elif "<click>" in message:  # Clickable link
+            path = message.split("file://")[1].split("</click>")[0]
+            self.log_widget.append_clickable_path(message, path)
+        else:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            self.log_widget.append_message(formatted_message)
+
+    def on_log_received(self, message):
+        """Handle log messages based on severity"""
+        if "error" in message.lower():
+            self.logger.error(message)
+        # Always log status updates
+        self.log_widget.append_message(formatted_message)
+        
+        # Force immediate update
+        QApplication.processEvents()
 
     def on_log_received(self, message):
         """Handle log messages based on severity"""
@@ -356,8 +406,12 @@ class SatelliteProcessorGUI(QMainWindow):
 
     def show_settings(self):
         """Show settings dialog"""
-        # Implement settings dialog display here
-        pass  # Replace with actual implementation
+        try:
+            dialog = SettingsDialog(self)  # Pass self as parent only
+            if dialog.exec():
+                self.load_settings()
+        except Exception as e:
+            self.logger.error(f"Failed to open settings dialog: {e}")
 
     def on_processing_finished(self):
         """Handle actions after processing is finished"""
@@ -371,26 +425,24 @@ class SatelliteProcessorGUI(QMainWindow):
         """Load application settings"""
         try:
             settings = load_config()
-            presets = load_presets()
             
-            if settings:
-                # Apply window settings
-                if 'window_size' in settings:
-                    self.resize(*settings['window_size'])
-                if 'window_pos' in settings:
-                    self.move(*settings['window_pos'])
+            # Apply settings with defaults
+            if 'window_size' in settings:
+                self.resize(*settings['window_size'])
+            else:
+                self.resize(1600, 900)
                 
-                # Load last used directories
-                if 'last_input_dir' in settings:
-                    self.processing_widget.set_input_directory(settings['last_input_dir'])
-                if 'last_output_dir' in settings:
-                    self.processing_widget.set_output_directory(settings['last_output_dir'])
+            if 'window_pos' in settings:
+                self.move(*settings['window_pos'])
+            
+            # Initialize processing options if not present
+            if 'processing_options' not in settings:
+                settings['processing_options'] = {}
+                save_config(settings)
                 
-                # Apply processing options
-                if 'processing_options' in settings:
-                    self.processing_widget.load_options(settings['processing_options'])
-
+            self.processing_widget.load_options(settings.get('processing_options', {}))
             self.logger.info("Settings loaded successfully")
+            
         except Exception as e:
             self.logger.error(f"Error loading settings: {e}")
 
@@ -419,7 +471,7 @@ class SatelliteProcessorGUI(QMainWindow):
             self.show_message("Warning ⚠️", "Processing completed, but some errors occurred.")
 
     def start_processing(self):
-        """Start the processing operation with proper validation"""
+        """Start the processing operation with proper Sanchez setup"""
         try:
             # Create unique temp directory for this session
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -433,17 +485,27 @@ class SatelliteProcessorGUI(QMainWindow):
             # Create timestamped output subdirectory
             session_output_dir = Path(output_dir) / f"processed_{timestamp}"
             
-            # Update options with both temp and output directories
+            # Update options with both standard and advanced settings
             options = self.processing_widget.get_options()
             options.update({
                 'input_dir': input_dir,
-                'output_dir': str(session_output_dir),  # Use timestamped subdirectory
-                'temp_dir': str(session_temp_dir)
+                'output_dir': str(session_output_dir),
+                'temp_dir': str(session_temp_dir),
+                'fps': self.processing_widget.fps_spin.value(),
+                'codec': self.processing_widget.codec_combo.currentText(),
+                'frame_duration': self.processing_widget.frame_duration_spin.value(),
+                'false_color_enabled': self.processing_widget.enable_false_color.isChecked(),
+                'false_color_method': self.processing_widget.sanchez_method.currentText(),
+                'interpolation_enabled': self.processing_widget.enable_interpolation.isChecked(),
+                'interpolation_method': self.processing_widget.interp_method.currentText(),
+                'interpolation_factor': self.processing_widget.interp_factor.value()
             })
 
-            # Save directories to settings
-            self.settings_manager.save_setting('last_input_dir', input_dir)
-            self.settings_manager.save_setting('last_output_dir', output_dir)
+            # Save directories to config
+            settings = load_config()
+            settings['last_input_dir'] = input_dir
+            settings['last_output_dir'] = output_dir
+            save_config(settings)
 
             # Validate directories
             if not input_dir or not output_dir:
@@ -460,6 +522,26 @@ class SatelliteProcessorGUI(QMainWindow):
                 'temp_dir': str(session_temp_dir)
             })
 
+            # Only output these if debug mode is enabled
+            if self.debug_mode:
+                self.log_widget.append_message(f"False color enabled: {options['false_color_enabled']}")
+                self.log_widget.append_message(f"False color method: {options['false_color_method']}")
+            
+            # Ensure false color settings are passed correctly
+            if options['false_color_enabled']:
+                sanchez_path = Path("Y:/Media/SatandHam/sanchez/Sanchez.exe")  # Update with your actual path
+                underlay_path = Path("Y:/Media/SatandHam/sanchez/Resources/world.200411.3x10848x5424.jpg")  # Update with your actual path
+                
+                if not sanchez_path.exists():
+                    raise ValueError(f"Sanchez executable not found at: {sanchez_path}")
+                if not underlay_path.exists():
+                    raise ValueError(f"Underlay file not found at: {underlay_path}")
+                    
+                options.update({
+                    'sanchez_path': str(sanchez_path),
+                    'underlay_path': str(underlay_path)
+                })
+
             # Update UI state
             self.start_button.setEnabled(False)
             self.cancel_button.setEnabled(True)
@@ -470,6 +552,13 @@ class SatelliteProcessorGUI(QMainWindow):
                 self.log_widget.append_error("Failed to start processing.")
                 self.start_button.setEnabled(True)
                 self.cancel_button.setEnabled(False)
+
+            # Add debug info for Sanchez and interpolation
+            if self.debug_mode:
+                self.logger.debug("Processing options:")
+                self.logger.debug(f"False Color: {options.get('false_color_enabled')}")
+                self.logger.debug(f"Interpolation: {options.get('interpolation_enabled')}")
+                self.logger.debug(f"Sanchez Path: {options.get('sanchez_path')}")
 
         except Exception as e:
             if session_temp_dir.exists():
@@ -505,16 +594,8 @@ class SatelliteProcessorGUI(QMainWindow):
     def open_settings_dialog(self):
         """Open settings dialog with proper initialization"""
         try:
-            # Ensure settings_manager is initialized
-            if not hasattr(self, 'settings_manager'):
-                self.settings_manager = SettingsManager()
-                
-            dialog = SettingsDialog(
-                parent=self,
-                settings_manager=self.settings_manager
-            )
-            if (dialog.exec() == QDialog.DialogCode.Accepted):
-                # Handle accepted changes
+            dialog = SettingsDialog(self)  # Simply pass parent
+            if dialog.exec() == QDialog.DialogCode.Accepted:
                 self.load_settings()
         except Exception as e:
             self.logger.error(f"Failed to open settings dialog: {e}")
@@ -545,7 +626,9 @@ class SatelliteProcessorGUI(QMainWindow):
         # ...existing code...
 
     def update_resource_display(self, stats):
-        """Update the resource usage display"""
+        """
+        Update the resource usage display.
+        """
         try:
             cpu = stats.get('cpu', 0)
             memory = stats.get('memory', 0)
@@ -624,3 +707,25 @@ class SatelliteProcessorGUI(QMainWindow):
                 self.input_dir_edit.setText(input_dir)
             if output_dir:
                 self.output_dir_edit.setText(output_dir)
+
+    def setup_video_settings(self):
+        # ...existing video settings code...
+        
+        video_layout = QFormLayout()  # Define video_layout here
+        
+        # Add frame duration setting
+        self.frame_duration_spin = QDoubleSpinBox()
+        self.frame_duration_spin.setRange(0.1, 10.0)
+        self.frame_duration_spin.setValue(1.0)
+        self.frame_duration_spin.setSingleStep(0.1)
+        self.frame_duration_spin.setDecimals(1)
+        self.frame_duration_spin.setSuffix(" sec")
+        
+        video_layout.addRow("Frame Duration:", self.frame_duration_spin)
+        
+    def get_processor_options(self) -> dict:
+        options = {
+            # ...existing options...
+            'frame_duration': self.frame_duration_spin.value()
+        }
+        return options

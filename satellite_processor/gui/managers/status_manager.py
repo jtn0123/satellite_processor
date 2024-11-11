@@ -1,3 +1,9 @@
+"""
+Status management system for tracking and displaying processing progress.
+Provides a rich HTML-based status display with progress tracking, resource monitoring,
+and step-by-step process visualization. Also includes settings management functionality.
+"""
+
 from PyQt6.QtCore import QObject, pyqtSignal
 import logging
 from typing import List  # Add this import
@@ -239,6 +245,16 @@ class StatusManager(QObject):
         """Emit a signal or handle missing preferences."""
         message = f"Missing required preferences: {', '.join(missing)}"
         self.error_occurred.emit(message)
+
+    def update_status(self, message: str) -> None:
+        """Update status with immediate UI refresh"""
+        self.status_update.emit(message)
+        QApplication.processEvents()  # Force UI update
+
+    def update_progress(self, operation: str, progress: int) -> None:
+        """Update progress with immediate UI refresh"""
+        self.progress_update.emit(operation, progress)
+        QApplication.processEvents()  # Force UI update
 
 import json
 from pathlib import Path

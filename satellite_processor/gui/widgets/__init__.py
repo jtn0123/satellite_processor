@@ -1,18 +1,19 @@
-# satellite_processor/gui/widgets/__init__.py
-from .graphing_widget import GraphingWidget
-from .processing_options import ProcessingOptionsWidget
-from .status_widget import StatusWidget
-from .progress_widget import ProgressWidget
-from .resource_monitor_widget import ResourceMonitorWidget
-from .network_widget import NetworkWidget
+"""
+Widget modules for the satellite processor GUI.
+"""
+
 from .log_widget import LogWidget
+from .network_widget import NetworkWidget
+from .progress_widget import ProgressWidget
+from .processing_options import ProcessingOptionsWidget
+from .system_monitor_widget import SystemMonitorWidget
+from .graphing_widget import GraphingWidget  # Add this line if not already present
 
 __all__ = [
-    'GraphingWidget',
-    'ProcessingOptionsWidget',
-    'StatusWidget',
-    'ProgressWidget',
-    'ResourceMonitorWidget',
+    'LogWidget',
     'NetworkWidget',
-    'LogWidget'
+    'ProgressWidget',
+    'ProcessingOptionsWidget',
+    'SystemMonitorWidget',
+    'GraphingWidget'  # Add this line if not already present
 ]

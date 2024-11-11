@@ -1,3 +1,9 @@
+"""
+Widget for monitoring and displaying network activity.
+Tracks upload/download rates and provides visual feedback through progress bars.
+Updates network statistics in real-time.
+"""
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar
 from PyQt6.QtCore import QTimer, pyqtSignal
 import psutil

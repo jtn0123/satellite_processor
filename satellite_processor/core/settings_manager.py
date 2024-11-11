@@ -1,11 +1,23 @@
+"""
+Primary Settings Manager for Satellite Processor
+---------------------------------------------
+Handles persistent application settings and preferences storage using JSON.
+This is the main settings management class that should be used throughout the application.
+
+Responsibilities:
+- Load/save application settings from/to JSON file
+- Provide access to settings with type safety
+- Handle default values
+- Ensure settings directory exists
+- Settings validation
+"""
+
 import json
 from pathlib import Path
 import logging
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional, Tuple
 
 class SettingsManager:
-    """Manages persistent application settings"""
-    
     DEFAULT_SETTINGS = {
         'input_dir': '',
         'output_dir': '',
@@ -22,7 +34,9 @@ class SettingsManager:
         'crop_width': 0,
         'crop_height': 0,
         'interpolation': False,
-        'false_color': False
+        'false_color': False,
+        'add_timestamp': True,
+        'video_quality': 'high'
     }
     
     def __init__(self):
@@ -84,3 +98,28 @@ class SettingsManager:
             self.save_settings()
         except Exception as e:
             self.logger.error(f"Failed to update settings: {e}")
+
+    def validate_preferences(self) -> Tuple[bool, str]:
+        """Validate that all required preferences are set"""
+        try:
+            missing = []
+            if self.get('false_color', False):
+                required = ['sanchez_path', 'underlay_path']
+                missing.extend(key for key in required if not self.get(key))
+                
+            if not self.get('temp_directory'):
+                missing.append('temp_directory')
+                
+            return (not bool(missing), 
+                   f"Missing required preferences: {', '.join(missing)}" if missing else "")
+                   
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+
+    def load_preference(self, key: str, default=None):
+        """Alias for get() for backward compatibility"""
+        return self.get(key, default)
+
+    def save_preference(self, key: str, value: Any):
+        """Alias for set() for backward compatibility"""
+        self.set(key, value)

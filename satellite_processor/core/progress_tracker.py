@@ -1,14 +1,29 @@
+"""
+Progress Tracking Module
+Responsibilities:
+- Track overall processing progress
+- Manage operation-specific progress
+- Emit progress updates to UI
+- Handle progress calculations
+- Manage operation completion states
+Dependencies:
+- None (uses Qt signals)
+Used by:
+- Processor for progress reporting
+- UI for progress bar updates
+"""
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
 class ProgressTracker(QObject):
-    """Handles progress tracking and status updates"""
+    """Enhanced progress tracking with unified interface"""
     
+    # Add combined progress signals
     progress_update = pyqtSignal(str, int)
+    overall_progress = pyqtSignal(int)
     status_update = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
     finished = pyqtSignal()
-    overall_progress = pyqtSignal(int)
     
     def __init__(self, parent=None):
         super().__init__(parent)

@@ -1,10 +1,15 @@
-# satellite_processor/satellite_processor/core/__init__.py
+"""
+Core module initialization
+Exposes key classes and functionality
+"""
+
 from .processor import SatelliteImageProcessor
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
 from .file_manager import FileManager
 from .resource_monitor import ResourceMonitor
-from .base_processor import BaseImageProcessor
+from .settings_manager import SettingsManager
+from .worker import ProcessingWorker
 
 __all__ = [
     'SatelliteImageProcessor',
@@ -12,5 +17,9 @@ __all__ = [
     'VideoHandler',
     'FileManager',
     'ResourceMonitor',
-    'BaseImageProcessor'
+    'SettingsManager',
+    'ProcessingWorker'
 ]
+
+# Version info
+__version__ = '1.0.0'

@@ -1,3 +1,17 @@
+"""
+Utility Functions Module
+Responsibilities:
+- Parse satellite timestamps
+- Provide common utility functions
+- Handle window state checking
+- Provide shared helper methods
+Dependencies:
+- None (uses standard libraries)
+Used throughout application for:
+- Time parsing
+- Window state management
+- Common operations
+"""
 
 from datetime import datetime
 import re

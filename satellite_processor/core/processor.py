@@ -1,3 +1,18 @@
+"""
+Main Satellite Image Processing Orchestrator
+-----------------------------------------
+Coordinates the overall processing workflow:
+- Manages the processing pipeline
+- Coordinates between UI and processing components
+- Handles high-level error management
+- Provides progress and status updates
+
+Does NOT directly handle:
+- Video creation (handled by VideoHandler)
+- Image operations (handled by ImageOperations)
+- File operations (handled by FileManager)
+"""
+
 import concurrent.futures
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Any
@@ -12,12 +27,17 @@ import shutil
 import re
 import codecs
 import sys
-from PyQt6.QtCore import pyqtSignal, QObject, QThread, QTimer  # Added QTimer import
+from PyQt6.QtCore import pyqtSignal, QObject, QThread, QTimer, QMetaObject, Qt  # Added QMetaObject and Qt imports
+from PyQt6.QtWidgets import QApplication  # Added QApplication import
 import argparse
 import psutil  # Add this import at the top
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
+from typing import List, Optional, Tuple, Dict, Any, Iterator
+from typing import List, Optional, Tuple, Dict, Any, Iterator
+from functools import partial
 
-from .base_processor import BaseImageProcessor
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
 from .file_manager import FileManager
@@ -32,52 +52,54 @@ logger = logging.getLogger(__name__)
 # Remove any logging configuration here to prevent duplication
 # Ensure that logging is configured only in the main application or a central module
 
-class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inheritance
+class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QObject
     """Main image processing class for satellite imagery"""
     
-    # Add missing signals
+    # Define all signals here
     status_update = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
     finished = pyqtSignal()
-    progress_update = pyqtSignal(str, int)  # Add missing progress signal
-    overall_progress = pyqtSignal(int)  # Add overall progress signal
+    progress_update = pyqtSignal(str, int)
+    overall_progress = pyqtSignal(int)
+    resource_update = pyqtSignal(dict)
 
     def __init__(self, options: dict = None, parent=None) -> None:
-        super().__init__(parent)  # Initialize base class with parent
-        # Initialize components
+        super().__init__(parent)
+        
+        # Initialize managers (removed duplicate initializations)
+        self.file_manager = FileManager()  # Handles both file and temp operations
         self.video_handler = VideoHandler()
-        self.file_manager = FileManager()
+        self.image_ops = ImageOperations()
         self.resource_monitor = ResourceMonitor(self)
         self.settings_manager = SettingsManager()
         
+        # Connect resource monitoring
+        self.resource_monitor.resource_update.connect(self.handle_resource_update)
+        self.resource_monitor.start()
+        
         # Basic setup
-        self.logger = logging.getLogger(__name__)  # Just get the logger, don't configure it
-        self._load_preferences()
-        self._setup_resource_monitoring()
-        
-        # Load directories from settings first
-        self.input_dir = self.settings_manager.get('input_dir')
-        self.output_dir = self.settings_manager.get('output_dir')
-        self.logger.debug(f"Initialized with dirs - input: {self.input_dir}, output: {self.output_dir}")
-        
-        # Initialize progress tracking
-        self.current_operation = ""
-        self.total_operations = 0
-        
-        # Store options and update directories
-        self.options = options or {}
-        self.update_directories()
-        self.cancelled = False
-
-        # Add timestamp attribute
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.logger = logging.getLogger(__name__)
         self._load_preferences()
         self._setup_resource_monitoring()
-        self.temp_dir = None
-        self.current_video_path = None
-        self.current_output_dir = None  # Add this to track current session output
         
+        # Load directories from settings
+        self.input_dir = self.settings_manager.get('input_dir')
+        self.output_dir = self.settings_manager.get('output_dir')
+        
+        # Initialize other attributes
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.current_operation = ""
+        self.total_operations = 0
+        self.options = options or {}
+        self.cancelled = False
+        self._is_deleted = False
+
+        # Optimize thread count based on CPU cores
+        cpu_count = multiprocessing.cpu_count()
+        self.max_workers = min(cpu_count * 2, 16)
+        self.chunk_size = max(5, min(20, cpu_count))
+        self.batch_size = 1000
+
     def update_directories(self):
         """Update input/output directories from options or settings"""
         if 'input_dir' in self.options:
@@ -90,108 +112,230 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
         self.current_operation = operation
         self.progress_update.emit(operation, progress)
 
-    def process(self):
-        """Process satellite images with safer status updates."""
-        try:
-            self.update_progress("Initialization", 0)
-            self.status_update.emit("Starting processing...")
+    def _create_progress_bar(self, operation: str, current: int, total: int, width: int = 40) -> str:
+        """Create a more visually appealing progress bar with persistent operation name"""
+        progress = float(current) / total
+        filled = int(width * progress)
+        bar = '█' * filled + '░' * (width - filled)
+        percent = int(progress * 100)
+        return f"{operation}: [{bar}] {percent}%"
 
-            # Create timestamped output subdirectory at the start
+    def process(self):
+        """Main processing workflow coordinator with parallel processing"""
+        try:
+            # Clear any previous content
+            self.status_update.emit("")
+            
+            # Initial header
+            self.status_update.emit("🛰️ Satellite Image Processing")
+            self.status_update.emit("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            
+            # Update initial messages
+            self.status_update.emit("🛰️ Starting satellite image processing...")
+            
+            # Clear previous output
+            self.status_update.emit("")
+            self.update_progress("Initialization", 0)
+            
+            if not all([self.input_dir, self.output_dir]):
+                raise ValueError("Input and output directories must be set")
+
+            # Setup directories and get input files
+            base_output = Path(self.output_dir)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.current_output_dir = Path(self.output_dir) / f"processed_{timestamp}"
-            self.current_output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Log directory creation at debug level only
-            self.logger.debug(f"Created output directory: {self.current_output_dir}")
+            # Create step directories
+            dirs = {
+                'crop': base_output / f"01_cropped_{timestamp}",
+                'false_color': base_output / f"02_false_color_{timestamp}",
+                'timestamp': base_output / f"03_timestamp_{timestamp}",
+                'final': base_output / f"04_final_{timestamp}"
+            }
             
-            # Remove redundant calls
-            self.update_timestamp()
-            
-            # Update directories from current options
-            self.update_directories()
-            
-            if not self.input_dir or not self.output_dir:
-                raise ValueError("Input/output directories required")
-            
-            # Initialize processed_images list
-            processed_images = []
-            
-            # Scanning files progress with proper emission
-            self.progress_update.emit("Scanning Files", 20)
-            self.overall_progress.emit(10)
-            input_files = self.get_input_files(self.input_dir)
-            
+            for dir_path in dirs.values():
+                dir_path.mkdir(parents=True, exist_ok=True)
+
+            # Get and sort input files
+            input_files = sorted(self.file_manager.get_input_files(self.input_dir))
             if not input_files:
                 raise ValueError("No valid images found in input directory")
+
+            num_processes = max(1, multiprocessing.cpu_count() - 1)  # Leave one core free
+            current_files = input_files
+
+            # Step 1: Parallel Cropping
+            if self.options.get('crop_enabled'):
+                self.status_update.emit("Starting cropping operation...")
+                with multiprocessing.Pool(processes=num_processes) as pool:
+                    crop_args = [(str(f), dirs['crop'], self.options) for f in current_files]
+                    cropped_files = []
+                    completed = 0
+                    
+                    for idx, result in enumerate(pool.imap_unordered(self._parallel_crop, crop_args), 1):
+                        if result:
+                            cropped_files.append(Path(result))
+                        progress = int((idx / len(current_files)) * 100)
+                        self.progress_update.emit("Cropping Images", progress)
+                        self.status_update.emit(f"Cropped image {idx} of {len(current_files)}")
+                        QApplication.processEvents()  # Allow UI updates
+                    
+                    current_files = sorted(cropped_files)  # Keep files sorted
+
+            # Step 2: Parallel False Color
+            if self.options.get('false_color_enabled'):
+                operation_name = "🎨 False Color Processing"
+                self.status_update.emit(operation_name)
+                self.status_update.emit(f"└─ Using Sanchez: {Path(self.options['sanchez_path']).name}")
                 
-            # Processing images
-            total_images = len(input_files)
-            for idx, img_path in enumerate(input_files, 1):
-                if self.cancelled:
-                    return False
+                with multiprocessing.Pool(processes=num_processes) as pool:
+                    fc_args = [(str(f), dirs['false_color'], self.options) for f in current_files]
+                    fc_files = []
+                    total_files = len(current_files)
+                    
+                    # Show progress less frequently
+                    for idx, result in enumerate(pool.imap_unordered(self._parallel_false_color, fc_args), 1):
+                        if result:
+                            fc_files.append(Path(result))
+                        if idx == 1 or idx % 5 == 0 or idx == total_files:  # Show at start, every 5th step, and end
+                            progress_bar = self._create_progress_bar(operation_name, idx, total_files)
+                            self.status_update.emit(f"\r{progress_bar}")  # Will update in place
+                        self.progress_update.emit("Applying False Color", int((idx / total_files) * 100))
+                    
+                    self.status_update.emit("✅ False color complete")
+                    current_files = sorted(fc_files)
+
+            # Step 3: Parallel Timestamp Addition
+            operation_name = "⏰ Timestamp Processing"
+            self.status_update.emit(f"\n{operation_name}")
+            with multiprocessing.Pool(processes=num_processes) as pool:
+                ts_args = [(str(f), dirs['timestamp'], self.options) for f in current_files]
+                final_files = []
+                total_files = len(current_files)
                 
-                try:
-                    # Process image
-                    result = self._process_single_image_static(
-                        img_path=str(img_path),
-                        output_dir=str(self.output_dir),
-                        options=self.options,
-                        settings=self.preferences
-                    )
+                for idx, result in enumerate(pool.imap_unordered(self._parallel_timestamp, ts_args), 1):
                     if result:
-                        processed_images.append(result)
-                    
-                    # Update both progress indicators
-                    progress = int((idx / total_images) * 100)
-                    self.update_progress("Processing Images", progress)
-                    overall = int((10 + (idx / total_images) * 80))  # 10% scanned, 80% processing
-                    self.overall_progress.emit(overall)
-                    
-                except Exception as e:
-                    self.logger.error(f"Failed to process image {idx}/{total_images}: {e}")
-            
-            # Video creation progress
-            if processed_images:
-                self.progress_update.emit("Creating Video", 0)
-                self.overall_progress.emit(90)
-                video_path = self.current_output_dir / f"animation_{timestamp}.mp4"
-                # Create unique temp directory for this video
-                temp_video_dir = Path(self.options['temp_dir']) / f"video_{timestamp}"
-                temp_video_dir.mkdir(parents=True, exist_ok=True)
+                        final_files.append(Path(result))
+                    if idx == 1 or idx % 5 == 0 or idx == total_files:  # Show at start, every 5th step, and end
+                        progress_bar = self._create_progress_bar(operation_name, idx, total_files)
+                        self.status_update.emit(f"\r{progress_bar}")
+                    self.progress_update.emit("Adding Timestamps", int((idx / total_files) * 100))
+                    QApplication.processEvents()
                 
-                success = self._create_video(
-                    processed_images,
+                self.status_update.emit("✅ Timestamps complete")
+
+            # Step 4: Create Video from images
+            if final_files:
+                operation_name = "🎥 Creating Video"
+                self.status_update.emit(f"\n{operation_name}")
+                self.update_progress("Creating Video", 0)
+                video_path = dirs['final'] / f"animation_{timestamp}.mp4"
+                
+                # Read images in BGR format
+                images = []
+                total_files = len(final_files)
+                
+                for idx, img_path in enumerate(final_files, 1):
+                    img = cv2.imread(str(img_path))
+                    if img is not None:
+                        images.append(img)
+                    if idx == 1 or idx % 5 == 0 or idx == total_files:  # Show at start, every 5th step, and end
+                        progress_bar = self._create_progress_bar(operation_name, idx, total_files)
+                        self.status_update.emit(f"\r{progress_bar}")
+                    self.progress_update.emit("Loading Images", int((idx / total_files) * 100))
+                    QApplication.processEvents()
+                
+                if not images:
+                    raise ValueError("No valid images for video creation")
+                
+                # Create video with proper frame handling
+                success = self.video_handler.create_video(
+                    images,  # Pass numpy arrays directly
                     video_path,
-                    temp_dir=temp_video_dir
+                    {
+                        'fps': self.options.get('fps', 30),
+                        'codec': self.options.get('codec', 'H.264'),
+                        'bitrate': self.options.get('bitrate', '8000k'),
+                        'preset': self.options.get('preset', 'slow')
+                    }
                 )
                 
-                # Cleanup temp directory after video creation
-                if temp_video_dir.exists():
-                    shutil.rmtree(temp_video_dir, ignore_errors=True)
-                    
                 if success:
-                    self.progress_update.emit("Creating Video", 100)
-                    self.overall_progress.emit(100)
-            
-            # Single completion message at the end only
-            if not self.cancelled:
-                self.progress_update.emit("Processing completed", 100)  
-                self.status_update.emit("Processing completed successfully!")  # Single completion message
-                self.finished.emit()
+                    # Add separator and completion message
+                    self.status_update.emit("\n" + "─" * 50)  # Separator line
+                    self.status_update.emit("\n✨ Processing Complete")
+                    
+                    # Format video path for clickable link
+                    clean_path = str(video_path).replace('\\', '/')
+                    filename = video_path.name
+                    self.status_update.emit(
+                        f"\n📁 Output: <a href=\"file:///{clean_path}\" "
+                        f"style=\"color: #3498db; text-decoration: none;\">{filename}</a>"
+                    )
+                    self.status_update.emit("\n" + "─" * 50)  # Bottom separator
+                else:
+                    self.status_update.emit("\n❌ Failed to create video!")
+
+            self.status_update.emit("\n🎉 All processing completed!")
             return True
-            
+
         except Exception as e:
-            self.error_occurred.emit(str(e))
-            self.status_update.emit("Processing failed.")
-            self.logger.error(f"Processing failed: {str(e)}")
-            raise
-        finally:
-            # Cleanup any temporary files
-            if hasattr(self, 'temp_dir') and self.temp_dir and self.temp_dir.exists():
-                try:
-                    shutil.rmtree(self.temp_dir, ignore_errors=True)
-                except Exception as e:
-                    self.logger.error(f"Failed to cleanup temp directory: {e}")
+            self.error_occurred.emit(f"❌ Error: {str(e)}")
+            return False
+
+    @staticmethod
+    def _parallel_crop(args):
+        """Parallel cropping worker"""
+        try:
+            input_path, output_dir, options = args
+            img = cv2.imread(input_path)
+            if img is None:
+                return None
+                
+            cropped = ImageOperations.crop_image(
+                img,
+                options.get('crop_x', 0),
+                options.get('crop_y', 0),
+                options.get('crop_width', img.shape[1]),
+                options.get('crop_height', img.shape[0])
+            )
+            
+            output_path = Path(output_dir) / Path(input_path).name
+            cv2.imwrite(str(output_path), cropped)
+            return str(output_path)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _parallel_false_color(args):
+        """Parallel false color worker with progress updates"""
+        try:
+            input_path, output_dir, options = args
+            result = ImageOperations.apply_false_color(
+                str(input_path),
+                Path(output_dir),
+                Path(input_path).stem,
+                Path(options['sanchez_path']),
+                Path(options['underlay_path'])
+            )
+            return str(result) if result else None
+        except Exception:
+            return None
+
+    @staticmethod
+    def _parallel_timestamp(args):
+        """Parallel timestamp worker"""
+        try:
+            input_path, output_dir, options = args
+            img = cv2.imread(str(input_path))
+            if img is None:
+                return None
+                
+            timestamped = ImageOperations.add_timestamp(img, Path(input_path))
+            output_path = Path(output_dir) / Path(input_path).name
+            cv2.imwrite(str(output_path), timestamped)
+            return str(output_path)
+        except Exception:
+            return None
 
     def update_timestamp(self):
         """Update the timestamp for new operations"""
@@ -222,67 +366,65 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
     def __del__(self):
         """Safe cleanup on deletion"""
         try:
-            # Only attempt cleanup if not already deleted
-            if hasattr(self, '_is_deleted'):
-                return
-            self._is_deleted = True
-            self.cleanup()
-        except Exception:
-            # Ignore errors during deletion
-            pass
+            if not hasattr(self, '_is_deleted'):
+                self.cleanup()
+        except Exception as e:
+            # Just log the error, can't do much else during deletion
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Deletion cleanup error: {e}")
 
     def cleanup(self) -> None:
         """Clean up resources safely"""
         try:
-            # Stop resource monitoring
-            if hasattr(self, 'resource_monitor'):
+            self.file_manager.cleanup()  # This now handles all file cleanup
+            self.resource_monitor.stop()
+            # Stop resource monitor first
+            if hasattr(self, 'resource_monitor') and self.resource_monitor is not None:
                 try:
+                    # Call cleanup directly instead of using invokeMethod
                     self.resource_monitor.stop()
-                except Exception:
-                    pass
+                    if self.resource_monitor.isRunning():
+                        self.resource_monitor.wait()
+                    self.resource_monitor.deleteLater()
+                    self.resource_monitor = None
+                except Exception as e:
+                    self.logger.error(f"Failed to stop resource monitor: {e}")
 
-            # Stop update timer if it exists
-            timer = getattr(self, 'update_timer', None)
-            if timer is not None:
+            # Stop timers from the main thread
+            if hasattr(self, 'update_timer') and self.update_timer is not None:
                 try:
-                    timer.stop()
-                except Exception:
-                    pass
+                    if QThread.currentThread() != QApplication.instance().thread():
+                        # Move timer operations to main thread if needed
+                        QMetaObject.invokeMethod(
+                            self.update_timer,
+                            "stop",
+                            Qt.ConnectionType.BlockingQueuedConnection
+                        )
+                        QMetaObject.invokeMethod(
+                            self.update_timer,
+                            "deleteLater",
+                            Qt.ConnectionType.BlockingQueuedConnection
+                        )
+                    else:
+                        self.update_timer.stop()
+                        self.update_timer.deleteLater()
+                    self.update_timer = None
+                except Exception as e:
+                    self.logger.error(f"Timer cleanup error: {e}")
 
-            # Clean up process
-            proc = getattr(self, '_proc', None)
-            if proc is not None and hasattr(proc, 'poll'):
+            # Clean up temp directory if it exists
+            if hasattr(self, 'temp_dir') and self.temp_dir is not None:
                 try:
-                    if proc.poll() is None:
-                        proc.terminate()
-                        proc.wait(timeout=5)
-                except Exception:
-                    try:
-                        proc.kill()
-                    except Exception:
-                        pass
-
-            # Clean up temp files
-            temp_files = getattr(self, '_temp_files', [])
-            for temp_file in temp_files:
-                try:
-                    if temp_file.exists():
-                        temp_file.unlink()
-                except Exception:
-                    pass
-
-            # Clean up temp directory
-            if hasattr(self, 'temp_dir'):
-                try:
-                    if self.temp_dir.exists():
-                        shutil.rmtree(self.temp_dir, ignore_errors=True)
-                except Exception:
-                    pass
+                    temp_dir = Path(self.temp_dir)
+                    if temp_dir.exists():
+                        shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception as e:
+                    self.logger.error(f"Failed to cleanup temp directory: {e}")
 
         except Exception as e:
-            # Log but don't raise during cleanup
-            if hasattr(self, 'logger'):
-                self.logger.error(f"Error during cleanup: {e}")
+            self.logger.error(f"Cleanup error: {e}")
+        finally:
+            self._is_deleted = True
 
     def cleanup_temp_directory(self, temp_dir: Path):
         """Clean up a specific temporary directory."""
@@ -345,17 +487,6 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
                 self.progress_update.emit("Processing Images", progress)
                 self.overall_progress.emit(progress)
 
-            # Video creation
-            if processed_images:
-                video_output = Path(output_dir) / "output_video.mp4"
-                success = self.create_video(
-                    images=processed_images,
-                    output_path=video_output,
-                    fps=self.options.get('fps', 30),
-                    encoder=self.options.get('encoder', 'H.264'),
-                )
-                self.progress_update.emit("Creating Video", 100)
-
             if not self.cancelled:
                 self.finished.emit()
             return True
@@ -366,93 +497,6 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
                 self.status_update.emit("Processing failed.")
             self.logger.error(f"Processing failed: {str(e)}")
             return False
-
-    def create_video(
-        self,
-        images: List[np.ndarray],
-        output_path: Path,
-        fps: int = 60,  # Increased FPS for smoother video
-        encoder: str = 'H.264',
-        bitrate: str = '8000k',
-        preset: str = 'slow'  # Use slower preset for better quality
-    ) -> bool:
-        """Create a video from processed images with improved smoothness."""
-        try:
-            if not images:
-                raise ValueError("No images provided for video creation")
-
-            # Create temp directory for frames
-            temp_dir = Path(self.preferences['temp_directory']) / "frames"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-
-            # Save numpy arrays as image files
-            frame_paths = []
-            for idx, img in enumerate(images):
-                frame_path = temp_dir / f"frame_{idx:04d}.png"
-                cv2.imwrite(str(frame_path), img)
-                frame_paths.append(frame_path)
-
-            # Create temp file for image list
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-                image_list_path = Path(f.name)
-                for frame_path in frame_paths:
-                    f.write(f"file '{frame_path.absolute()}'\n")
-                    f.write(f"duration {1/fps}\n")
-
-            # Build FFmpeg command
-            cmd = [
-                'ffmpeg', '-y',
-                '-f', 'concat',
-                '-safe', '0',
-                '-i', str(image_list_path),
-                '-c:v', self._get_codec(encoder),
-                '-preset', preset,
-                '-b:v', bitrate,
-                '-r', str(fps),
-                '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart',
-                str(output_path)
-            ]
-
-            # Run FFmpeg
-            process = subprocess.run(cmd, capture_output=True, text=True)
-            if process.returncode != 0:
-                raise RuntimeError(f"FFmpeg error: {process.stderr}")
-
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Video creation failed: {str(e)}")
-            return False
-            
-        finally:
-            # Clean up temp files
-            if 'image_list_path' in locals():
-                try:
-                    image_list_path.unlink(missing_ok=True)
-                except Exception:
-                    pass
-            
-            # Clean up frame files
-            if 'temp_dir' in locals():
-                try:
-                    for frame_path in frame_paths:
-                        frame_path.unlink(missing_ok=True)
-                    temp_dir.rmdir()
-                except Exception:
-                    pass
-
-    def _get_codec(self, encoder: str) -> str:
-        """Get appropriate codec based on encoder selection"""
-        if encoder.startswith("CPU"):
-            if "H.264" in encoder: return "libx264"
-            if "H.265" in encoder or "HEVC" in encoder: return "libx265"
-            if "AV1" in encoder: return "libaom-av1"
-        else:  # GPU encoders
-            if "H.264" in encoder: return "h264_nvenc"
-            if "H.265" in encoder or "HEVC" in encoder: return "hevc_nvenc"
-            if "AV1" in encoder: return "av1_nvenc"
-        return "libx264"  # Default to H.264
 
     def process_images(self, image_paths: List[Path]) -> List[np.ndarray]:
         """Process multiple images with progress tracking and cancellation support"""
@@ -491,13 +535,10 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
         """Process a single image"""
         try:
             # Load image
-            img = self._load_image(image_path)
+            img = cv2.imread(str(image_path))
             if img is None:
                 return None
 
-            # Use timestamp from utils instead of local implementation
-            timestamp = self.parse_satellite_timestamp(image_path.name)
-            
             # Process image with options
             if self.options.get('crop_enabled'):
                 img = ImageOperations.crop_image(
@@ -508,88 +549,14 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
                     self.options.get('crop_height', img.shape[0])
                 )
 
-            # Use timestamp utility
-            if timestamp:
-                img = ImageOperations.add_timestamp(img, image_path)
+            # Let ImageOperations handle the timestamp
+            img = ImageOperations.add_timestamp(img, image_path)
 
             return img
 
         except Exception as e:
             self.logger.error(f"Failed to process {image_path}: {e}")
             return None
-
-    def process(self):
-        """Process satellite images with safer status updates."""
-        try:
-            self.update_progress("Initialization", 0)
-            self.status_update.emit("Starting processing...")
-
-            # Get directories from options first, then fall back to preferences
-            input_dir = self.options.get('input_dir') or self.preferences.get('input_dir')
-            output_dir = self.options.get('output_dir') or self.preferences.get('output_dir')
-            
-            if not input_dir or not output_dir:
-                raise ValueError("Input/output directories required")
-            
-            # Initialize processed_images list
-            processed_images = []
-            
-            # Scanning files progress with proper emission
-            self.progress_update.emit("Scanning Files", 20)
-            self.overall_progress.emit(10)
-            input_files = self.get_input_files(self.input_dir)
-            
-            if not input_files:
-                raise ValueError("No valid images found in input directory")
-                
-            # Processing images
-            total_images = len(input_files)
-            for idx, img_path in enumerate(input_files, 1):
-                if self.cancelled:
-                    return False
-                
-                try:
-                    # Process image
-                    result = self._process_single_image_static(
-                        img_path=str(img_path),
-                        output_dir=str(self.output_dir),
-                        options=self.options,
-                        settings=self.preferences
-                    )
-                    if result:
-                        processed_images.append(result)
-                    
-                    # Update both progress indicators
-                    progress = int((idx / total_images) * 100)
-                    self.update_progress("Processing Images", progress)
-                    overall = int((10 + (idx / total_images) * 80))  # 10% scanned, 80% processing
-                    self.overall_progress.emit(overall)
-                    
-                except Exception as e:
-                    self.logger.error(f"Failed to process image {idx}/{total_images}: {e}")
-            
-            # Video creation progress
-            if processed_images:
-                self.progress_update.emit("Creating Video", 0)
-                self.overall_progress.emit(90)
-                video_path = Path(self.output_dir) / f"Animation_{self.timestamp}.mp4"
-                success = self._create_video(processed_images, video_path)
-                if success:
-                    self.progress_update.emit("Creating Video", 100)
-                    self.overall_progress.emit(100)
-            
-            # Remove duplicate status messages and consolidate into one final message
-            self.progress_update.emit("Processing completed", 100)
-            if not self._is_closing:
-                self.status_update.emit("Processing completed successfully.")
-                self.finished.emit()
-            return True
-            
-        except Exception as e:
-            self.error_occurred.emit(str(e))
-            self.status_update.emit("Processing failed.")
-            self.logger.error(f"Processing failed: {str(e)}")
-            raise
 
     @staticmethod
     def _process_single_image_static(**params):
@@ -667,151 +634,6 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
         except Exception as e:
             print(f"Failed to process {params.get('img_path')}: {e}")
             return None
-
-    def _create_video(self, image_files, output_path):
-        """Create video from processed images with improved cleanup"""
-        temp_video = None
-        video_writer = None
-        temp_dir = None
-        
-        try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Use session-specific temp directory from options or create new one
-            temp_dir = Path(self.options.get('temp_dir', tempfile.gettempdir())) / f"video_{timestamp}"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-            
-            temp_video = temp_dir / "temp_video.mp4"
-            self.current_video_path = temp_video  # Store current path for cleanup
-
-            # First verify all images can be loaded
-            valid_images = []
-            for img_path in image_files:
-                try:
-                    img = cv2.imread(str(img_path))
-                    if img is not None:
-                        valid_images.append((img_path, img))
-                    else:
-                        self.logger.warning(f"Skipping unreadable image: {img_path}")
-                except Exception as e:
-                    self.logger.warning(f"Failed to load image {img_path}: {e}")
-                    continue
-
-            if not valid_images:
-                raise ValueError("No valid images found for video creation")
-
-            # Use first valid image for dimensions
-            height, width = valid_images[0][1].shape[:2]
-            fps = self.options.get('fps', 60)
-            
-            # Initialize video writer
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video_writer = cv2.VideoWriter(str(temp_video), fourcc, fps, (width, height))
-
-            # Write frames
-            for idx, (img_path, img) in enumerate(valid_images):
-                if self.cancelled:
-                    return False
-                video_writer.write(img)
-                # Use progress_update signal instead of on_progress
-                progress = int((idx + 1) * 100 / len(valid_images))
-                self.progress_update.emit("Creating Video", progress)
-
-            # Properly close video writer
-            if video_writer:
-                video_writer.release()
-
-            # Apply interpolation if enabled
-            if self.options.get('interpolation', False):
-                # ...existing interpolation code...
-                pass
-            else:
-                # No interpolation - just copy temp video
-                shutil.copy2(str(temp_video), str(output_path))
-
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Video creation failed: {str(e)}")
-            return False
-            
-        finally:
-            # Cleanup in correct order
-            try:
-                if video_writer:
-                    video_writer.release()
-                
-                if temp_video and Path(temp_video).exists():
-                    try:
-                        # Give time for file handle to be released
-                        time.sleep(1)
-                        Path(temp_video).unlink()
-                    except Exception as e:
-                        self.logger.warning(f"Failed to remove temp video: {e}")
-                
-                if temp_dir and Path(temp_dir).exists():
-                    try:
-                        shutil.rmtree(temp_dir, ignore_errors=True)
-                    except Exception as e:
-                        self.logger.warning(f"Failed to remove temp directory: {e}")
-                        
-            except Exception as e:
-                self.logger.error(f"Cleanup error: {e}")
-
-    def _process_single_image(self, img_path: Path, output_path: Path) -> Path:
-        """Process single image including false color"""
-        try:
-            # Apply false color if enabled
-            if self.options.get('false_color'):
-                sanchez_path = Path(self.preferences['sanchez_path'])
-                underlay_path = Path(self.preferences['underlay_path'])
-                
-                if not sanchez_path.exists():
-                    raise ValueError(f"Sanchez executable not found: {sanchez_path}")
-                    
-                if not underlay_path.exists():
-                    raise ValueError(f"Underlay image not found: {underlay_path}")
-                
-                # Call Sanchez for false color
-                output_file = output_path / f"processed_{img_path.stem}_{self.timestamp}.jpg"
-                cmd = [
-                    str(sanchez_path),
-                    '-s', str(img_path),
-                    '-v',
-                    '-o', str(output_file),
-                    '-u', str(underlay_path)
-                ]
-                
-                process = subprocess.run(cmd, capture_output=True, text=True)
-                if process.returncode != 0:
-                    raise RuntimeError(f"Sanchez processing failed: {process.stderr}")
-                    
-                return output_file
-                
-            # Regular image processing without false color
-            img = cv2.imread(str(img_path))
-            if img is None:
-                raise ValueError(f"Failed to read image: {img_path}")
-
-            # Process image based on options
-            if self.options.get('crop_enabled'):
-                img = ImageOperations.crop_image(
-                    img,
-                    self.options['crop_x'],
-                    self.options['crop_y'],
-                    self.options['crop_width'],
-                    self.options['crop_height']
-                )
-
-            # Generate output filename
-            out_filename = f"processed_{img_path.stem}_{self.timestamp}.png"
-            out_path = output_path / out_filename
-            
-            cv2.imwrite(str(out_path), img)
-            return out_path
-
-        except Exception as e:
-            self.logger.error(f"Failed to process {img_path}: {e}")
-            raise
 
     def cancel(self) -> None:
         """Cancel ongoing processing"""
@@ -898,19 +720,26 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
             self.logger.debug(f"Failed to update resource usage: {e}")
 
     def _setup_resource_monitoring(self):
-        """Setup resource monitoring timer with better error handling"""
+        """Setup resource monitoring timer with improved thread safety"""
         try:
-            self.update_timer = QTimer()  # Don't parent to self to avoid circular reference
-            self.update_timer.timeout.connect(self.update_resource_usage)
-            self.update_timer.start(1000)
-            
-            # Initialize tracking variables
-            self._last_sent = 0
-            self._last_recv = 0
-            self._is_deleted = False  # Add deletion flag
-            
+            # Create timer in the main thread
+            if QThread.currentThread() != QApplication.instance().thread():
+                QMetaObject.invokeMethod(self, 
+                                       "_create_timer",
+                                       Qt.ConnectionType.BlockingQueuedConnection)
+            else:
+                self._create_timer()
         except Exception as e:
             self.logger.error(f"Failed to setup resource monitoring: {e}")
+
+    def _create_timer(self):
+        """Create and setup timer in the main thread"""
+        self.update_timer = QTimer()
+        self.update_timer.timeout.connect(self.update_resource_usage)
+        self.update_timer.start(1000)
+        self._last_sent = 0
+        self._last_recv = 0
+        self._is_deleted = False
 
     def _load_preferences(self) -> None:
         """Load processor preferences"""
@@ -932,14 +761,124 @@ class SatelliteImageProcessor(BaseImageProcessor):  # Removed QObject from inher
 
     def set_input_directory(self, path: str) -> None:
         """Set input directory and save immediately"""
-        if path:
-            self.input_dir = str(path)
-            self.settings_manager.set('input_dir', str(path))
-            self.options['input_dir'] = str(path)
+        if not path:
+            self.logger.error("Attempted to set empty input directory")
+            return
+            
+        try:
+            input_path = Path(path)
+            if not input_path.exists():
+                self.logger.error(f"Input directory does not exist: {path}")
+                return
+                
+            self.input_dir = str(input_path)
+            self.settings_manager.set('input_dir', self.input_dir)
+            self.options['input_dir'] = self.input_dir
+        except Exception as e:
+            self.logger.error(f"Failed to set input directory: {e}")
 
     def set_output_directory(self, path: str) -> None:
         """Set output directory and save immediately"""
-        if path:
-            self.output_dir = str(path)
-            self.settings_manager.set('output_dir', str(path))
-            self.options['output_dir'] = str(path)
+        if not path:
+            self.logger.error("Attempted to set empty output directory")
+            return
+            
+        try:
+            # Convert to Path and resolve
+            output_path = Path(path).resolve()
+            
+            # Ensure directory exists
+            output_path.mkdir(parents=True, exist_ok=True)
+            
+            # Store as string but only after validation
+            self.output_dir = str(output_path)
+            self.settings_manager.set('output_dir', self.output_dir)
+            self.options['output_dir'] = self.output_dir
+            
+            self.logger.debug(f"Set output directory to: {self.output_dir}")
+        except Exception as e:
+            self.logger.error(f"Failed to set output directory: {e}")
+            raise
+
+    def process_images_parallel(self, image_paths: List[Path]) -> List[np.ndarray]:
+        """Process images in parallel with improved batching"""
+        if not image_paths:
+            return []
+        
+        # Use optimized batch processing from ImageOperations
+        return self.image_ops.process_image_batch(
+            image_paths,
+            {
+                **self.options,
+                'max_workers': self.max_workers,
+                'batch_size': self.batch_size
+            }
+        )
+
+    def _find_ffmpeg(self) -> Optional[Path]:
+        """Find FFmpeg executable in system PATH"""
+        try:
+            # Check Windows-specific paths first
+            common_paths = [
+                Path('C:/ffmpeg/bin/ffmpeg.exe'),
+                Path(os.environ.get('PROGRAMFILES', ''), 'ffmpeg/bin/ffmpeg.exe'),
+                Path(os.environ.get('PROGRAMFILES(X86)', ''), 'ffmpeg/bin/ffmpeg.exe'),
+                Path(os.environ.get('LOCALAPPDATA', ''), 'ffmpeg/bin/ffmpeg.exe'),
+            ]
+            
+            for path in common_paths:
+                if path.exists():
+                    self.logger.debug(f"Found FFmpeg at: {path}")
+                    return path
+
+            # Try PATH environment
+            try:
+                result = subprocess.run(['ffmpeg', '-version'], 
+                                     capture_output=True, 
+                                     text=True)
+                if result.returncode == 0:
+                    return Path('ffmpeg')
+            except Exception:
+                pass
+
+            self.logger.error("FFmpeg not found in system")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error finding FFmpeg: {e}")
+            return None
+
+    def save_images_parallel(self, images: List[np.ndarray], output_dir: Path, timestamp: str) -> None:
+        """Save images in parallel using multiprocessing"""
+        num_processes = multiprocessing.cpu_count()
+        tasks = [
+            (idx, img, output_dir, timestamp) 
+            for idx, img in enumerate(images)
+        ]
+        
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            total = len(images)
+            completed = 0
+            
+            results = pool.imap_unordered(self._save_single_image, tasks)
+            for _ in results:
+                completed += 1
+                progress = int((completed / total) * 100)
+                self.progress_update.emit("Saving processed images", progress)
+
+    @staticmethod
+    def _save_single_image(args) -> bool:
+        """Save a single image (called by multiprocessing pool)"""
+        idx, img, output_dir, timestamp = args
+        try:
+            output_filename = f"processed_image_{idx:04d}_{timestamp}.png"
+            output_path = output_dir / output_filename
+            return cv2.imwrite(str(output_path), img)
+        except Exception:
+            return False
+
+    def handle_resource_update(self, stats: dict):
+        """Forward resource updates"""
+        self.resource_update.emit(stats)
+
+    # ...rest of the class implementation...

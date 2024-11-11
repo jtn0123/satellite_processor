@@ -1,8 +1,20 @@
-from datetime import datetime
+"""
+Core Utilities
+-------------
+Responsibilities:
+- Configuration file handling (load/save)
+- Window state management
+- UITS calculations and validation
+
+Does NOT handle:
+- Timestamp parsing (see helpers.py)
+- File operations (see file_manager.py)
+- Image processing
+"""
+
 import json
 from pathlib import Path
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -31,17 +43,6 @@ def save_config(config: dict, config_path: Path = None) -> bool:
     except Exception as e:
         logger.error(f"Error saving config: {e}")
         return False
-
-def parse_satellite_timestamp(filename: str) -> datetime:
-    """Parse timestamp from satellite image filename"""
-    try:
-        match = re.search(r'(\d{8}T\d{6}Z)', filename)
-        if match:
-            return datetime.strptime(match.group(1), '%Y%m%dT%H%M%SZ')
-        return datetime.min
-    except Exception as e:
-        logger.warning(f"Could not parse timestamp from filename: {filename}")
-        return datetime.min
 
 def is_closing(window) -> bool:
     """Check if window is in closing state"""

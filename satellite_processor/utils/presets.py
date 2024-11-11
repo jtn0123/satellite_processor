@@ -1,8 +1,22 @@
-# satellite_processor/satellite_processor/utils/presets.py
+"""
+Preset Management
+----------------
+Responsibilities:
+- Managing processing presets using QSettings
+- Importing/exporting presets to files
+- Preset validation
+
+Does NOT handle:
+- Image processing
+- File operations
+- Configuration (see utils.py)
+"""
+
 from PyQt6.QtCore import QSettings
 import json
 import logging
 from pathlib import Path
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -56,28 +70,24 @@ class PresetManager:
         except Exception as e:
             self.logger.error(f"Error deleting preset '{name}': {str(e)}")
 
-def load_presets(presets_path: Path = None) -> dict:
-    """Load processing presets from JSON file"""
-    if presets_path is None:
-        presets_path = Path.home() / '.satellite_processor' / 'presets.json'
-    try:
-        if presets_path.exists():
-            with open(presets_path, 'r') as f:
-                return json.load(f)
-        return {}
-    except Exception as e:
-        logger.error(f"Error loading presets: {e}")
-        return {}
+    def export_presets(self, file_path: Path) -> bool:
+        """Export presets to file"""
+        try:
+            with open(file_path, 'w') as f:
+                json.dump(self.get_presets(), f, indent=4)
+            return True
+        except Exception as e:
+            self.logger.error(f"Error exporting presets: {e}")
+            return False
 
-def save_presets(presets: dict, presets_path: Path = None) -> bool:
-    """Save processing presets to JSON file"""
-    if presets_path is None:
-        presets_path = Path.home() / '.satellite_processor' / 'presets.json'
-    try:
-        presets_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(presets_path, 'w') as f:
-            json.dump(presets, f, indent=4)
-        return True
-    except Exception as e:
-        logger.error(f"Error saving presets: {e}")
-        return False
+    def import_presets(self, file_path: Path) -> bool:
+        """Import presets from file"""
+        try:
+            with open(file_path, 'r') as f:
+                presets = json.load(f)
+            for name, data in presets.items():
+                self.save_preset(name, data['params'])
+            return True
+        except Exception as e:
+            self.logger.error(f"Error importing presets: {e}")
+            return False

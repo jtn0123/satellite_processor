@@ -1,10 +1,15 @@
+"""
+System resource monitoring widget.
+Displays real-time CPU, memory, and network usage statistics.
+Provides visual feedback through progress bars and updates metrics periodically.
+"""
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar
 from PyQt6.QtCore import QTimer, pyqtSignal
 import psutil
 import time
 
-class ResourceMonitorWidget(QWidget):
+class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonitorWidget
     """Widget for displaying system resource usage"""
     
     resource_update = pyqtSignal(dict)

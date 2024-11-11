@@ -1,5 +1,20 @@
+"""
+Resource Monitoring Module
+Responsibilities:
+- Monitor system CPU usage
+- Track memory consumption
+- Provide real-time resource metrics
+- Emit resource updates to UI
+- Handle monitoring intervals
+Dependencies:
+- None (uses standard psutil library)
+Used by:
+- Processor for resource tracking
+- UI for system monitoring displays
+"""
+
 import psutil
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot  # Add pyqtSlot import
 import time
 import logging
 from datetime import datetime  # Add missing import
@@ -38,6 +53,21 @@ class ResourceMonitor(QThread):
                 self.logger.error(f"Resource monitor error: {e}")
                 time.sleep(1)
 
+    @pyqtSlot()  # Add slot decorator
     def stop(self):
+        """Stop monitoring safely"""
         self._running = False
+        if self.isRunning():
+            self.wait()
+            
+    def cleanup(self):
+        """Clean up resources"""
+        self.stop()
         self.wait()
+        
+    def __del__(self):
+        """Ensure cleanup on deletion"""
+        try:
+            self.cleanup()
+        except Exception:
+            pass

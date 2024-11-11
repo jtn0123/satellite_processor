@@ -5,6 +5,7 @@ and step-by-step process visualization. Also includes settings management functi
 """
 
 from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 import logging
 from typing import List  # Add this import
 

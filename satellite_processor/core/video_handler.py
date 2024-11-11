@@ -41,9 +41,27 @@ class VideoHandler:
         """Initialize video handler with file manager"""
         self.logger = logging.getLogger(__name__)
         self.file_manager = FileManager()  # Initialize file manager
+        
+        # Find FFmpeg executable
         self.ffmpeg_path = self._find_ffmpeg()
         if not self.ffmpeg_path:
-            self.logger.error("FFmpeg not found. Please install FFmpeg and ensure it's in your PATH")
+            # Try common Windows paths
+            common_paths = [
+                'C:/ffmpeg/bin/ffmpeg.exe',
+                'C:/Program Files/ffmpeg/bin/ffmpeg.exe',
+                'C:/Program Files (x86)/ffmpeg/bin/ffmpeg.exe',
+                os.path.expanduser('~/ffmpeg/bin/ffmpeg.exe'),
+            ]
+            
+            for path in common_paths:
+                if os.path.exists(path):
+                    self.ffmpeg_path = Path(path)
+                    break
+                    
+        if not self.ffmpeg_path:
+            raise RuntimeError("FFmpeg not found. Please install FFmpeg and ensure it's in your PATH")
+            
+        self.logger.info(f"Using FFmpeg from: {self.ffmpeg_path}")
 
     def _find_ffmpeg(self) -> Optional[Path]:
         """Find FFmpeg executable"""
@@ -77,48 +95,89 @@ class VideoHandler:
             return None
         
     def create_video(self, images: List[np.ndarray], output_path: Path, options: dict) -> bool:
-        """Create a video from processed images"""
-        temp_dir = None
-        frame_paths = []
-        
-        try:
-            if not self.ffmpeg_path:
-                raise RuntimeError("FFmpeg not found in system PATH")
+        """Create a video from processed images with better error handling"""
+        if not images:
+            self.logger.error("No images provided for video creation")
+            return False
 
-            # Use FileManager for temp directory creation
-            temp_dir = self.file_manager.create_temp_dir(prefix="frames")
+        temp_dir = None
+        try:
+            # Create temp directory with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            temp_dir = Path(tempfile.mkdtemp(prefix=f"frames_{timestamp}_"))
+            self.logger.debug(f"Created temp directory: {temp_dir}")
             
-            # Save frames sequentially - order is preserved from input
+            # Save frames with sequential naming
+            frame_files = []
             for idx, img in enumerate(images):
                 frame_path = temp_dir / f"frame_{idx:08d}.png"
-                if not cv2.imwrite(str(frame_path), img):
+                success = cv2.imwrite(str(frame_path), img)
+                if success:
+                    frame_files.append(frame_path)
+                else:
                     self.logger.error(f"Failed to write frame {idx}")
-                    continue
-                frame_paths.append(frame_path)
 
-            if not frame_paths:
-                raise RuntimeError("No valid frames to process")
+            if not frame_files:
+                raise RuntimeError("No frames were successfully saved")
 
-            # Log frame order for verification
-            self.logger.debug("Frame processing order:")
-            for frame in frame_paths[:5]:
-                self.logger.debug(f"Processing: {frame.name}")
+            # Create frame list file
+            list_file = temp_dir / "frames.txt"
+            with open(list_file, "w", encoding='utf-8') as f:
+                for frame in frame_files:
+                    f.write(f"file '{frame.name}'\n")
+                    f.write(f"duration {1.0/options.get('fps', 30)}\n")
 
-            # Create video maintaining input order
-            success = self._create_ffmpeg_video(frame_paths, output_path, options)
-            return success
+            # Create FFmpeg command with explicit path
+            cmd = [
+                str(self.ffmpeg_path),
+                '-y',  # Overwrite output
+                '-f', 'concat',  # Use concat demuxer
+                '-safe', '0',
+                '-i', str(list_file),
+                '-c:v', 'libx264',  # Use CPU encoder
+                '-preset', options.get('preset', 'medium'),
+                '-crf', options.get('crf', '23'),
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
+                str(output_path)
+            ]
+
+            # Log full command
+            self.logger.debug(f"FFmpeg command: {' '.join(cmd)}")
+            
+            # Run FFmpeg
+            process = subprocess.run(
+                cmd,
+                cwd=str(temp_dir),  # Set working directory
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            # Check result
+            if process.returncode != 0:
+                self.logger.error(f"FFmpeg stderr: {process.stderr}")
+                return False
+
+            # Verify output was created
+            if not output_path.exists():
+                self.logger.error("Output file was not created")
+                return False
+
+            self.logger.info(f"Video created successfully: {output_path}")
+            return True
 
         except Exception as e:
             self.logger.error(f"Video creation failed: {str(e)}")
             return False
-            
+
         finally:
-            # Cleanup temp files
+            # Cleanup
             if temp_dir and temp_dir.exists():
                 try:
-                    shutil.rmtree(temp_dir)
+                    shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:
-                    self.logger.error(f"Cleanup error: {e}")
+                    self.logger.error(f"Failed to cleanup temp directory: {e}")
 
     def _create_ffmpeg_video(self, frame_paths: List[Path], output_path: Path, options: dict) -> bool:
         """Create video using FFmpeg"""

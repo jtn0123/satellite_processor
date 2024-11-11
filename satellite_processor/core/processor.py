@@ -122,12 +122,16 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.progress_update.emit(operation, progress)
 
     def _create_progress_bar(self, operation: str, current: int, total: int, width: int = 40) -> str:
-        """Create a more visually appealing progress bar with persistent operation name"""
+        """Create simple progress bar string"""
         progress = float(current) / total
         filled = int(width * progress)
         bar = '█' * filled + '░' * (width - filled)
         percent = int(progress * 100)
-        return f"{operation}: [{bar}] {percent}%"
+        return f"{operation} [{bar}] {percent}%"
+
+    def _emit_status(self, message: str):
+        """Emit status without formatting"""
+        self.status_update.emit(message)
 
     def process(self):
         """Main processing workflow coordinator"""
@@ -238,7 +242,19 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 operation_name = "🎥 Creating Video"
                 self.status_update.emit(f"\n{operation_name}")
                 self.update_progress("Creating Video", 0)
-                video_path = dirs['final'] / f"animation_{timestamp}.mp4"
+                base_output = Path(self.output_dir)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                dirs = {
+                    'crop': base_output / f"01_cropped_{timestamp}",
+                    'false_color': base_output / f"02_false_color_{timestamp}",
+                    'timestamp': base_output / f"03_timestamp_{timestamp}",
+                    'final': base_output / f"04_final_{timestamp}"
+                }
+                for dir_path in dirs.values():
+                    dir_path.mkdir(parents=True, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                video_path = dirs['final'] / f"animation_{current_timestamp}.mp4"
                 
                 # Read images in BGR format
                 images = []
@@ -884,5 +900,73 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def handle_resource_update(self, stats: dict):
         """Forward resource updates"""
         self.resource_update.emit(stats)
+
+    def _create_video(self, input_files, output_dir):
+        """Create video from processed images with improved formatting"""
+        try:
+            if not input_files:
+                self.logger.error("No input files for video creation")
+                return False
+
+            # Read images with better progress formatting
+            images = []
+            total = len(input_files)
+            operation_name = "🎥 Creating Video"
+            current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            # Create video path
+            video_path = output_dir / f"animation_{current_timestamp}.mp4"
+            
+            self.status_update.emit(f"\n{operation_name}")
+            
+            # Load images with progress tracking
+            for idx, img_path in enumerate(input_files, 1):
+                img = cv2.imread(str(img_path))
+                if img is not None:
+                    images.append(img)
+                progress = int((idx / total * 100))
+                
+                # Update progress bar without wrapping
+                progress_bar = self._create_progress_bar(operation_name, idx, total)
+                self.status_update.emit(f"\r{progress_bar}")
+                
+                self.progress_update.emit("Loading Images", progress)
+                QApplication.processEvents()
+            
+            if not images:
+                raise ValueError("No valid images loaded for video creation")
+            
+            # Create video
+            success = self.video_handler.create_video(
+                images,
+                video_path,
+                {
+                    'fps': self.options.get('fps', 30),
+                    'codec': 'libx264',  # Use reliable codec
+                    'preset': 'medium',
+                    'crf': '23'
+                }
+            )
+            
+            if success:
+                self.status_update.emit("\n" + "─" * 50)  # Separator
+                self.status_update.emit("✨ Processing Complete")
+                
+                # Format video path for clickable link
+                clean_path = str(video_path).replace('\\', '/')
+                filename = video_path.name
+                self.status_update.emit(
+                    f"📁 Output: <a href=\"file:///{clean_path}\" "
+                    f"style=\"color: #3498db; text-decoration: none;\">{filename}</a>"
+                )
+                self.status_update.emit("─" * 50)  # Separator
+                return True
+            else:
+                self.status_update.emit("\n❌ Failed to create video!")
+                return False
+            
+        except Exception as e:
+            self.logger.error(f"Video creation error: {e}")
+            return False
 
     # ...rest of the class implementation...

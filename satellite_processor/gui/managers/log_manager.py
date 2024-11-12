@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path, WindowsPath
 from typing import Optional
 from PyQt6.QtCore import QObject, pyqtSignal
-from ...utils.url_handler import create_file_url
+from ...utils.url_handler import create_file_url, create_link_data  # Add create_link_data to imports
 import os
 
 class LogManager(QObject):
@@ -178,7 +178,7 @@ class LogManager(QObject):
         try:
             if file_path and file_path.exists():
                 # Create the link HTML
-                link_data = create_link_data(file_path)
+                link_data = create_link_data(file_path)  # Now this will work
                 link_html = (
                     '<div class="output-link">'
                     f'📁 Output: <a href="{link_data["url"]}">{link_data["display_name"]}</a>'

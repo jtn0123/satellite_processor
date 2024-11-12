@@ -20,7 +20,6 @@ from .managers.status_manager import StatusManager
 from .widgets.processing_options import ProcessingOptionsWidget
 from .widgets import (
     GraphingWidget,
-    ProgressWidget, 
     SystemMonitorWidget,  # Renamed from ResourceMonitorWidget
     NetworkWidget, 
     LogWidget
@@ -235,21 +234,16 @@ class SatelliteProcessorGUI(QMainWindow):
         self.log_widget.append_message("Application started")
         self.log_widget.append_message("Ready for processing...")
         
-        # Create progress widget
-        self.progress_widget = ProgressWidget(self)
-        
-        # Add widgets to layout
+        # Add log widget to layout
         layout.addWidget(self.log_widget)
-        layout.addWidget(self.progress_widget)
         
         return container
 
     def connect_signals(self):
         """Connect all signals to their slots"""
         try:
-            # Reduce initial messages
+            # Remove progress widget related connections
             self.status_manager.status_update.connect(self.on_status_update)
-            self.status_manager.progress_update.connect(self.on_progress_update)
             self.status_manager.error_occurred.connect(self.log_widget.append_error)
             
             # Processing manager connections

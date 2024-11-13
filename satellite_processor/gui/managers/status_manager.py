@@ -257,6 +257,12 @@ class StatusManager(QObject):
         self.progress_update.emit(operation, progress)
         QApplication.processEvents()  # Force UI update
 
+    def reset(self):
+        """Reset all status information"""
+        self.current_step = None
+        self.steps.clear()
+        self.status_update.emit("Ready")
+
 import json
 from pathlib import Path
 from typing import Dict, Any

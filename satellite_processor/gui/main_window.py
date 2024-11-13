@@ -543,10 +543,27 @@ class SatelliteProcessorGUI(QMainWindow):
         """Cancel the ongoing processing operation"""
         try:
             self.processing_manager.cancel_processing()
-            self.log_widget.append_message("Processing cancelled.")  # Changed from status_widget
+            self.log_widget.append_message("Processing cancelled.")
+            
+            # Reset UI state
             self.start_button.setEnabled(True)
+            self.cancel_button.setEnabled(False)
+            
+            # Clear any ongoing progress - with safety check
+            if hasattr(self.status_manager, 'reset'):
+                self.status_manager.reset()
+            else:
+                # Fallback if reset is not available
+                self.status_manager.status_update.emit("Ready")
+                
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to cancel processing: {str(e)}")
+            error_msg = f"Failed to cancel processing: {str(e)}"
+            self.log_widget.append_error(error_msg)
+            QMessageBox.critical(self, "Error", error_msg)
+        finally:
+            # Ensure buttons are in correct state
+            self.start_button.setEnabled(True)
+            self.cancel_button.setEnabled(False)
 
     def dragEnterEvent(self, event):
         """Handle drag enter events for input files"""

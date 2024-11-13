@@ -109,6 +109,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.chunk_size = max(5, min(20, cpu_count))
         self.batch_size = 1000
 
+        # Add initialization of process attribute
+        self._proc = None
+        self._is_processing = False
+
     def update_directories(self):
         """Update input/output directories from options or settings"""
         if 'input_dir' in self.options:
@@ -136,6 +140,13 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def process(self):
         """Main processing workflow coordinator"""
         try:
+            if self._is_processing:
+                self.logger.warning("Processing already in progress")
+                return False
+                
+            self._is_processing = True
+            self.cancelled = False  # Reset cancelled flag at start
+            
             # Clear any previous content
             self.status_update.emit("")
             
@@ -176,6 +187,11 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             num_processes = max(1, multiprocessing.cpu_count() - 1)  # Leave one core free
             current_files = input_files  # Original sorted order
 
+            # After getting input files, check for cancellation
+            if self.cancelled:
+                self.status_update.emit("Processing cancelled")
+                return False
+
             # Step 1: Parallel Cropping
             if self.options.get('crop_enabled'):
                 self.status_update.emit("Starting cropping operation...")
@@ -185,6 +201,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     completed = 0
                     
                     for idx, result in enumerate(pool.imap_unordered(self._parallel_crop, crop_args), 1):
+                        if self.cancelled:
+                            pool.terminate()  # Terminate all workers
+                            self.status_update.emit("Processing cancelled during cropping")
+                            return False
                         if result:
                             cropped_files.append(Path(result))
                         progress = int((idx / len(current_files)) * 100)
@@ -193,6 +213,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                         QApplication.processEvents()  # Allow UI updates
                     
                     current_files = self.file_manager.keep_file_order(cropped_files)
+
+            if self.cancelled:
+                return False
 
             # Step 2: Parallel False Color
             if self.options.get('false_color_enabled'):
@@ -207,6 +230,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     
                     # Show progress less frequently
                     for idx, result in enumerate(pool.imap_unordered(self._parallel_false_color, fc_args), 1):
+                        if self.cancelled:
+                            pool.terminate()  # Terminate all workers
+                            self.status_update.emit("Processing cancelled during false color")
+                            return False
                         if result:
                             fc_files.append(Path(result))
                         if idx == 1 or idx % 5 == 0 or idx == total_files:  # Show at start, every 5th step, and end
@@ -217,6 +244,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     self.status_update.emit("✅ False color complete")
                     current_files = self.file_manager.keep_file_order(fc_files)
 
+            if self.cancelled:
+                return False
+
             # Step 3: Parallel Timestamp Addition
             operation_name = "⏰ Timestamp Processing"
             self.status_update.emit(f"\n{operation_name}")
@@ -226,6 +256,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 total_files = len(current_files)
                 
                 for idx, result in enumerate(pool.imap_unordered(self._parallel_timestamp, ts_args), 1):
+                    if self.cancelled:
+                        pool.terminate()  # Terminate all workers
+                        self.status_update.emit("Processing cancelled during timestamp addition")
+                        return False
                     if result:
                         final_files.append(Path(result))
                     if idx == 1 or idx % 5 == 0 or idx == total_files:  # Show at start, every 5th step, and end
@@ -235,6 +269,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     QApplication.processEvents()
                 
                 self.status_update.emit("✅ Timestamps complete")
+
+            if self.cancelled:
+                return False
 
             # Step 4: Create Video from images
             if final_files:
@@ -261,6 +298,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 total_files = len(final_files)
                 
                 for idx, img_path in enumerate(final_files, 1):
+                    if self.cancelled:
+                        self.status_update.emit("Processing cancelled during video creation")
+                        return False
+                    
                     img = cv2.imread(str(img_path))
                     if img is not None:
                         images.append(img)
@@ -301,12 +342,16 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 else:
                     self.status_update.emit("\n❌ Failed to create video!")
 
-            self.status_update.emit("\n🎉 All processing completed!")
-            return True
+            if not self.cancelled:
+                self.status_update.emit("\n🎉 All processing completed!")
+                return True
+            return False
 
         except Exception as e:
             self.error_occurred.emit(f"❌ Error: {str(e)}")
             return False
+        finally:
+            self._is_processing = False
 
     @staticmethod
     def _parallel_crop(args):
@@ -663,15 +708,27 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
     def cancel(self) -> None:
         """Cancel ongoing processing"""
-        self.cancelled = True
-        self.logger.info("Processing cancelled by user")
-        if self._proc and self.__proc.poll() is None:
-            self._proc.terminate()
-            try:
-                self._proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self._proc.kill()
-        self.cleanup()
+        try:
+            self.cancelled = True
+            self.logger.info("Processing cancelled by user")
+            self._is_processing = False
+            
+            # Handle subprocess termination if it exists
+            if hasattr(self, '_proc') and self._proc and self._proc.poll() is None:
+                try:
+                    self._proc.terminate()
+                    self._proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self._proc.kill()
+                except Exception as e:
+                    self.logger.error(f"Error terminating process: {e}")
+            
+            self.cleanup()
+            self.status_update.emit("Processing cancelled")
+            
+        except Exception as e:
+            self.logger.error(f"Error during cancellation: {e}")
+            self.error_occurred.emit(f"Failed to cancel processing: {str(e)}")
 
     def get_input_files(self, input_dir: str = None) -> List[Path]:
         """Get ordered input files using FileManager"""

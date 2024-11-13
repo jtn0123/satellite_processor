@@ -27,10 +27,20 @@ class ProcessingManager(QObject):
         self.logger = logging.getLogger(__name__)
         self.processor = None
         self.processing_thread = None
+        self._is_processing = False
+
+    def processing_is_active(self) -> bool:
+        """Check if processing is currently active"""
+        return self._is_processing
 
     def start_processing(self, options: dict) -> bool:
         """Start processing with single status updates"""
         try:
+            if self._is_processing:
+                self.logger.warning("Processing already in progress")
+                return False
+                
+            self._is_processing = True
             # Remove any status updates from here - let processor handle them
             
             # Create new processor instance
@@ -50,20 +60,27 @@ class ProcessingManager(QObject):
             return True
             
         except Exception as e:
+            self._is_processing = False
             self.logger.error(f"Failed to start processing: {e}")
             self.error_occurred.emit(str(e))
             return False
 
     def cancel_processing(self):
         """Cancel the current processing operation"""
-        if self.processor:
-            self.processor.cancel()
-        if self.processing_thread:
-            self.processing_thread.wait()
-            self.processing_thread = None
+        try:
+            if self.processor:
+                self.processor.cancel()
+            if self.processing_thread:
+                self.processing_thread.wait()
+                self.processing_thread = None
+            self._is_processing = False
+        except Exception as e:
+            self.logger.error(f"Error during cancellation: {e}")
+            raise
 
     def _on_thread_finished(self):
         """Clean up after thread completion"""
         if self.processing_thread:
             self.processing_thread.wait()
             self.processing_thread = None
+        self._is_processing = False

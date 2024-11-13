@@ -16,8 +16,10 @@ pillow>=8.0.0
 opencv-python>=4.5.0
 
 # Graphing
-pyqtgraph>=0.13.0
-matplotlib>=3.7.1
+# pyqtgraph>=0.13.0
+# matplotlib>=3.7.1
 
 # Video processing
 ffmpeg-python>=0.2.0  # Added for FFmpeg integration
+
+nvidia-ml-py3>=7.352.0

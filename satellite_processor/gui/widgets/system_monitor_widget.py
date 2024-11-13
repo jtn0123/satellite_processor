@@ -8,6 +8,16 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgress
 from PyQt6.QtCore import QTimer, pyqtSignal
 import psutil
 import time
+import logging
+try:
+    import pynvml  # For NVIDIA GPU
+    pynvml.nvmlInit()
+    NVIDIA_AVAILABLE = True
+except:
+    NVIDIA_AVAILABLE = False
+    
+# Remove Intel GPU imports and checks
+INTEL_AVAILABLE = False  # Just set this to False since we're not using it
 
 class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonitorWidget
     """Widget for displaying system resource usage"""
@@ -20,10 +30,57 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         self.prev_net_io = psutil.net_io_counters()
         self.prev_time = time.time()
         
-        # Start monitoring timer
+        # Update max network rate to be percentage-based
+        self.max_network_rate = 10 * 1024 * 1024  # 10 MB/s as max
+        
+        # Set progress bar maximums
+        self.cpu_bar.setMaximum(100)
+        self.ram_bar.setMaximum(100)
+        self.upload_bar.setMaximum(100)
+        self.download_bar.setMaximum(100)
+        
+        # Initialize decay factors
+        self.decay_factor = 0.8  # Adjusted for longer interval
+        self.last_values = {
+            'cpu': 0,
+            'ram': 0,
+            'upload': 0,
+            'download': 0,
+            'nvidia': 0
+        }
+        
+        # Single update interval
+        self.update_interval = 600  # 600ms update interval
+        
+        # Initialize timer with single interval
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_stats)
-        self.update_timer.start(1000)  # Update every second
+        self.update_timer.start(self.update_interval)
+        
+        # Adjust smoothing factors for 600ms interval
+        self.smoothing_factor = 0.6
+        self.decay_factor = 0.8
+        
+        # Enable smooth progress bar animations
+        self._setup_progress_bars()
+        
+        # Value smoothing
+        self.smoothing_factor = 0.6  # Adjusted for longer interval
+        self.value_history = {
+            'cpu': [],
+            'ram': [],
+            'gpu_nvidia': [],
+            'network_up': [],
+            'network_down': []
+        }
+        self.history_size = 3  # Number of values to average
+
+        # Initialize all bars to 0
+        for bar in [self.cpu_bar, self.ram_bar, self.upload_bar, self.download_bar]:
+            bar.setValue(0)
+            bar.setMaximum(100)
+            bar.setTextVisible(True)
+            bar.setFormat("%p%")
 
     def init_ui(self):
         layout = QGridLayout()
@@ -65,48 +122,237 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         layout.addWidget(self.download_bar, 3, 1)
         layout.addWidget(self.download_value, 3, 2)
         
+        # Add GPU monitoring if available (NVIDIA only)
+        row = 4  # Start after existing widgets
+        
+        if NVIDIA_AVAILABLE:
+            self.nvidia_label = QLabel("NVIDIA GPU:")
+            self.nvidia_bar = QProgressBar()
+            self.nvidia_value = QLabel("0%")
+            layout.addWidget(self.nvidia_label, row, 0)
+            layout.addWidget(self.nvidia_bar, row, 1)
+            layout.addWidget(self.nvidia_value, row, 2)
+        
+        # Remove Intel GPU widget creation
+        
         self.setLayout(layout)
+        
+        # Apply enhanced styling
+        self._setup_progress_bars()
+
+    def _setup_progress_bars(self):
+        """Enhanced progress bar styling"""
+        base_style = """
+            QProgressBar {
+                border: 1px solid #2c3e50;
+                border-radius: 5px;
+                text-align: center;
+                background-color: #34495e;
+                font-weight: bold;
+                height: 20px;
+                margin: 2px;
+                padding: 0px;
+                min-width: 200px;
+            }
+            QProgressBar::chunk {
+                background-color: #27ae60;
+                border-radius: 4px;
+                margin: 0.5px;
+                min-width: 10px;
+            }
+        """
+        
+        # Apply consistent style to all bars
+        all_bars = [self.cpu_bar, self.ram_bar, self.upload_bar, self.download_bar]
+        if hasattr(self, 'nvidia_bar'):
+            all_bars.append(self.nvidia_bar)
+            
+        for bar in all_bars:
+            bar.setStyleSheet(base_style)
+
+    def _get_gradient_color(self, value: float) -> str:
+        """Get gradient color based on value with smoother transitions"""
+        if value < 60:
+            # Green to Yellow gradient (Made greener)
+            ratio = value / 60
+            r = int(46 + (255 - 46) * ratio)
+            g = int(204)  # Keep green stronger
+            b = int(113 + (0 - 113) * ratio)
+        else:
+            # Yellow to Red gradient (More vibrant)
+            ratio = (value - 60) / 40
+            r = 255
+            g = int(204 * (1 - ratio))
+            b = 0
+        
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _apply_bar_style(self, bar, value: float, key: str):
+        """Apply gradient style with decay effect"""
+        # Ensure value is in bounds
+        value = max(0, min(100, value))
+        
+        # Apply smoother decay
+        if key in self.last_values:
+            current = self.last_values[key]
+            decayed_value = current + (value - current) * self.smoothing_factor
+        else:
+            decayed_value = value
+            
+        self.last_values[key] = decayed_value
+        
+        # Get colors for gradient
+        color = self._get_gradient_color(decayed_value)
+        
+        # Apply style with new color
+        bar.setStyleSheet(f"""
+            QProgressBar {{
+                border: 1px solid #2c3e50;
+                border-radius: 5px;
+                text-align: center;
+                background-color: #34495e;
+                font-weight: bold;
+                height: 20px;
+                margin: 2px;
+                padding: 0px;
+                min-width: 200px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {color};
+                border-radius: 4px;
+                margin: 0.5px;
+                min-width: 10px;
+            }}
+        """)
+        
+        # Update value
+        bar.setValue(int(decayed_value))
+        
+        return decayed_value
+
+    def _smooth_value(self, key: str, new_value: float) -> float:
+        """Apply moving average smoothing to values"""
+        history = self.value_history[key]
+        history.append(new_value)
+        if len(history) > self.history_size:
+            history.pop(0)
+        return sum(history) / len(history)
+
+    def _format_value(self, value: float) -> str:
+        """Format numeric values with consistent precision"""
+        if value < 10:
+            return f"{value:.2f}"
+        elif value < 100:
+            return f"{value:.1f}"
+        return f"{int(value)}"
 
     def update_stats(self):
-        """Update resource statistics"""
-        # Get CPU and memory stats
-        cpu = psutil.cpu_percent()
-        memory = psutil.virtual_memory()
+        """Update resource statistics with single interval"""
+        try:
+            # Get CPU and RAM values using non-blocking calls
+            current_cpu = psutil.cpu_percent(interval=None)
+            current_ram = psutil.virtual_memory().percent
+            
+            # Apply smoothing to transitions
+            if hasattr(self, '_last_cpu'):
+                cpu = self._last_cpu + (current_cpu - self._last_cpu) * self.smoothing_factor
+                ram = self._last_ram + (current_ram - self._last_ram) * self.smoothing_factor
+            else:
+                cpu = current_cpu
+                ram = current_ram
+            
+            # Store values for next transition
+            self._last_cpu = cpu
+            self._last_ram = ram
+            
+            # Update CPU and RAM displays
+            self._update_cpu_ram(cpu, ram)
+            
+            # Update GPU if available
+            self._update_gpu()
+            
+            # Update network stats
+            self._update_network()
+            
+            # Emit update signal
+            self._emit_stats()
+            
+        except Exception as e:
+            logging.error(f"Error updating stats: {e}")
+
+    def _update_cpu_ram(self, cpu: float, ram: float):
+        """Update CPU and RAM displays"""
+        # Update CPU
+        self.cpu_bar.setValue(int(cpu))
+        self.cpu_value.setText(f"{self._format_value(cpu)}%")
+        self._apply_bar_style(self.cpu_bar, cpu, 'cpu')
         
-        # Get network stats
+        # Update RAM
+        self.ram_bar.setValue(int(ram))
+        self.ram_value.setText(f"{self._format_value(ram)}%")
+        self._apply_bar_style(self.ram_bar, ram, 'ram')
+
+    def _update_gpu(self):
+        """Update GPU stats if available"""
+        gpu_stats = {}
+        
+        # NVIDIA GPU
+        if NVIDIA_AVAILABLE:
+            try:
+                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                nvidia_usage = self._smooth_value('gpu_nvidia', gpu_util.gpu)
+                gpu_stats['nvidia'] = nvidia_usage
+                self.nvidia_bar.setValue(int(nvidia_usage))
+                self.nvidia_value.setText(f"{self._format_value(nvidia_usage)}%")
+                
+                # Update bar color
+                self._apply_bar_style(self.nvidia_bar, nvidia_usage, 'nvidia')
+            except Exception as e:
+                self.nvidia_value.setText("N/A")
+                gpu_stats['nvidia'] = 0
+
+    def _update_network(self):
+        """Update network stats with higher precision"""
         net_io = psutil.net_io_counters()
         current_time = time.time()
         time_diff = current_time - self.prev_time
         
-        # Calculate network rates
         bytes_sent = net_io.bytes_sent - self.prev_net_io.bytes_sent
         bytes_recv = net_io.bytes_recv - self.prev_net_io.bytes_recv
         
         send_rate = bytes_sent / time_diff
         recv_rate = bytes_recv / time_diff
         
-        # Update UI
-        self.cpu_bar.setValue(int(cpu))
-        self.cpu_value.setText(f"{cpu:.1f}%")
+        # Calculate percentages
+        send_percent = min((send_rate / self.max_network_rate) * 100, 100)
+        recv_percent = min((recv_rate / self.max_network_rate) * 100, 100)
         
-        self.ram_bar.setValue(int(memory.percent))
-        self.ram_value.setText(f"{memory.percent:.1f}%")
+        # Update progress bars with percentages
+        self.upload_bar.setValue(int(send_percent))
+        self.download_bar.setValue(int(recv_percent))
         
-        self.upload_value.setText(self._format_bytes(send_rate) + "/s")
-        self.download_value.setText(self._format_bytes(recv_rate) + "/s")
+        # Apply color styling using percentages
+        self._apply_bar_style(self.upload_bar, send_percent, 'upload')
+        self._apply_bar_style(self.download_bar, recv_percent, 'download')
+        
+        # Update labels with actual rates instead of percentages
+        self.upload_value.setText(f"{self._format_bytes(send_rate)}/s")
+        self.download_value.setText(f"{self._format_bytes(recv_rate)}/s")
         
         # Store values for next update
         self.prev_net_io = net_io
         self.prev_time = current_time
-        
-        # Emit update signal
+
+    def _emit_stats(self):
+        """Emit resource update signal with current stats"""
         self.resource_update.emit({
-            'cpu': cpu,
-            'ram': memory.percent,
-            'network_sent': net_io.bytes_sent,
-            'network_recv': net_io.bytes_recv,
-            'current_sent': send_rate,
-            'current_recv': recv_rate
+            'cpu': self.cpu_bar.value(),
+            'ram': self.ram_bar.value(),
+            'network_sent': self.upload_value.text(),
+            'network_recv': self.download_value.text(),
+            'gpu_nvidia': self.nvidia_bar.value() if NVIDIA_AVAILABLE else 0,
+            'timestamp': time.time()  # Add timestamp for graphing
         })
 
     def _format_bytes(self, bytes_value):

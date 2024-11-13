@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
 from .managers.status_manager import StatusManager
 from .widgets.processing_options import ProcessingOptionsWidget
 from .widgets import (
-    GraphingWidget,
     SystemMonitorWidget,  # Renamed from ResourceMonitorWidget
     NetworkWidget, 
     LogWidget
@@ -98,9 +97,6 @@ class SatelliteProcessorGUI(QMainWindow):
         self.processing_manager = ProcessingManager(self)
         self.preset_manager = PresetManager()
         
-        # Initialize resource monitor first
-        self._initialize_resource_monitor()
-        
         # Initialize UI components
         self.init_ui()
         self.logger.info("Application initialized")
@@ -144,12 +140,9 @@ class SatelliteProcessorGUI(QMainWindow):
         configure_action = settings_menu.addAction("Configure")
         configure_action.triggered.connect(self.open_settings_dialog)
 
-        # Modify the graphing widget to include only the existing graph and network activity
-        self.graphing_widget = GraphingWidget(self)
-        main_layout.addWidget(self.graphing_widget)
-        
-        # Ensure the graph updates dynamically
-        self.graphing_widget.start_graph_update()
+        # Create system monitor widget
+        self.system_monitor = SystemMonitorWidget(self)
+        main_layout.addWidget(self.system_monitor)
 
         # Create status labels
         self._create_status_labels()
@@ -262,7 +255,6 @@ class SatelliteProcessorGUI(QMainWindow):
         """Handle resource monitoring updates"""
         # Format stats for the GUI components
         self.status_widget.update_resource_stats(stats)
-        self.graphing_widget.update_resource_graph(stats)
 
     # Add essential callback methods
     def on_network_update(self, stats):
@@ -443,7 +435,6 @@ class SatelliteProcessorGUI(QMainWindow):
 
         # Update UI
         QApplication.processEvents()
-        self.graphing_widget.update_network_graph()
 
     def processing_finished(self):
         """Handle processing completion with enhanced feedback"""
@@ -609,26 +600,6 @@ class SatelliteProcessorGUI(QMainWindow):
         # ...existing code...
         # ...existing code...
 
-    def update_resource_display(self, stats):
-        """
-        Update the resource usage display.
-        """
-        try:
-            cpu = stats.get('cpu', 0)
-            memory = stats.get('memory', 0)
-            net_sent = stats.get('network_sent', 0)
-            net_recv = stats.get('network_recv', 0)
-            
-            # Update labels if they exist
-            if hasattr(self, 'cpu_label'):
-                self.cpu_label.setText(f"CPU: {cpu:.1f}%")
-            if hasattr(self, 'memory_label'):
-                self.memory_label.setText(f"Memory: {memory:.1f}%")
-            if hasattr(self, 'network_label'):
-                self.network_label.setText(f"Network ↑: {net_sent/1024:.1f}KB/s ↓: {net_recv/1024:.1f}KB/s")
-        except Exception as e:
-            self.logger.error(f"Error updating resource display: {e}")
-
     def _create_status_labels(self):
         """Create status bar labels for resource monitoring"""
         self.cpu_label = QLabel("CPU: 0%")
@@ -638,15 +609,6 @@ class SatelliteProcessorGUI(QMainWindow):
         self.statusBar().addWidget(self.cpu_label)
         self.statusBar().addWidget(self.memory_label)
         self.statusBar().addWidget(self.network_label)
-        
-    def _initialize_resource_monitor(self):
-        """Initialize the resource monitor"""
-        try:
-            self.resource_monitor = ResourceMonitor(self)
-            self.resource_monitor.setInterval(1000)  # Set update interval to 1 second
-            self.logger.debug("Resource monitor initialized")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize resource monitor: {e}")
 
     def closeEvent(self, event):
         """Clean up resources before closing"""

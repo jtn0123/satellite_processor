@@ -40,7 +40,7 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         self.download_bar.setMaximum(100)
         
         # Initialize decay factors
-        self.decay_factor = 0.8  # Adjusted for longer interval
+        self.decay_factor = 0.85  # Increased decay factor for smoother drops (was 0.8)
         self.last_values = {
             'cpu': 0,
             'ram': 0,
@@ -50,22 +50,21 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         }
         
         # Single update interval
-        self.update_interval = 600  # 600ms update interval
+        self.update_interval = 800  # Changed from 600ms to 800ms
         
         # Initialize timer with single interval
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_stats)
         self.update_timer.start(self.update_interval)
         
-        # Adjust smoothing factors for 600ms interval
-        self.smoothing_factor = 0.6
-        self.decay_factor = 0.8
+        # Adjust smoothing factors for 800ms interval
+        self.smoothing_factor = 0.4  # Made transitions even smoother (was 0.6)
         
         # Enable smooth progress bar animations
         self._setup_progress_bars()
         
         # Value smoothing
-        self.smoothing_factor = 0.6  # Adjusted for longer interval
+        self.smoothing_factor = 0.4  # Made transitions even smoother (was 0.6)
         self.value_history = {
             'cpu': [],
             'ram': [],
@@ -73,7 +72,7 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             'network_up': [],
             'network_down': []
         }
-        self.history_size = 3  # Number of values to average
+        self.history_size = 5  # Increased from 3 for smoother transitions
 
         # Initialize all bars to 0
         for bar in [self.cpu_bar, self.ram_bar, self.upload_bar, self.download_bar]:
@@ -172,30 +171,38 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
 
     def _get_gradient_color(self, value: float) -> str:
         """Get gradient color based on value with smoother transitions"""
-        if value < 60:
-            # Green to Yellow gradient (Made greener)
-            ratio = value / 60
-            r = int(46 + (255 - 46) * ratio)
-            g = int(204)  # Keep green stronger
-            b = int(113 + (0 - 113) * ratio)
+        if value < 40:
+            # Stay green up to 40%
+            return "#27ae60"  # Solid green
+        elif value < 75:
+            # Green to Yellow gradient (40-75%)
+            ratio = (value - 40) / 35
+            r = int(39 + (255 - 39) * ratio)
+            g = int(174)  # Keep green component strong
+            b = int(96 * (1 - ratio))
         else:
-            # Yellow to Red gradient (More vibrant)
-            ratio = (value - 60) / 40
+            # Yellow to Red gradient (75-100%)
+            ratio = (value - 75) / 25
             r = 255
-            g = int(204 * (1 - ratio))
+            g = int(174 * (1 - ratio))
             b = 0
         
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def _apply_bar_style(self, bar, value: float, key: str):
-        """Apply gradient style with decay effect"""
-        # Ensure value is in bounds
+        """Apply gradient style with enhanced smoothing"""
         value = max(0, min(100, value))
         
-        # Apply smoother decay
+        # Enhanced smoothing logic
         if key in self.last_values:
             current = self.last_values[key]
-            decayed_value = current + (value - current) * self.smoothing_factor
+            # More sophisticated smoothing calculation
+            if value > current:
+                # Faster response to increases
+                decayed_value = current + (value - current) * self.smoothing_factor
+            else:
+                # Slower decay for decreases
+                decayed_value = current + (value - current) * (self.smoothing_factor * 0.7)
         else:
             decayed_value = value
             
@@ -225,18 +232,26 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             }}
         """)
         
-        # Update value
+        # Update value with smoother animation
         bar.setValue(int(decayed_value))
         
         return decayed_value
 
     def _smooth_value(self, key: str, new_value: float) -> float:
-        """Apply moving average smoothing to values"""
+        """Enhanced moving average smoothing"""
         history = self.value_history[key]
         history.append(new_value)
+        
+        # Keep history size limited
         if len(history) > self.history_size:
             history.pop(0)
-        return sum(history) / len(history)
+            
+        # Weighted average - recent values have more impact
+        weights = [0.5 + (i * 0.5 / len(history)) for i in range(len(history))]
+        weighted_sum = sum(v * w for v, w in zip(history, weights))
+        weight_sum = sum(weights)
+        
+        return weighted_sum / weight_sum
 
     def _format_value(self, value: float) -> str:
         """Format numeric values with consistent precision"""
@@ -247,16 +262,27 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         return f"{int(value)}"
 
     def update_stats(self):
-        """Update resource statistics with single interval"""
+        """Update resource statistics with enhanced smoothing"""
         try:
-            # Get CPU and RAM values using non-blocking calls
+            # Get current values using non-blocking calls
             current_cpu = psutil.cpu_percent(interval=None)
             current_ram = psutil.virtual_memory().percent
             
-            # Apply smoothing to transitions
+            # Enhanced smoothing transitions
             if hasattr(self, '_last_cpu'):
-                cpu = self._last_cpu + (current_cpu - self._last_cpu) * self.smoothing_factor
-                ram = self._last_ram + (current_ram - self._last_ram) * self.smoothing_factor
+                # Asymmetric smoothing - faster response to increases, slower to decreases
+                cpu_diff = current_cpu - self._last_cpu
+                ram_diff = current_ram - self._last_ram
+                
+                if cpu_diff > 0:
+                    cpu = self._last_cpu + cpu_diff * self.smoothing_factor
+                else:
+                    cpu = self._last_cpu + cpu_diff * (self.smoothing_factor * 0.7)
+                    
+                if ram_diff > 0:
+                    ram = self._last_ram + ram_diff * self.smoothing_factor
+                else:
+                    ram = self._last_ram + ram_diff * (self.smoothing_factor * 0.7)
             else:
                 cpu = current_cpu
                 ram = current_ram

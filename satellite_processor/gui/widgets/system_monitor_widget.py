@@ -4,7 +4,7 @@ Displays real-time CPU, memory, and network usage statistics.
 Provides visual feedback through progress bars and updates metrics periodically.
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar, QGroupBox
 from PyQt6.QtCore import QTimer, pyqtSignal, Qt, QThread, QObject
 import psutil
 import time
@@ -171,69 +171,85 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         self.gpu_update_interval = 3  # Update GPU every 3 main updates
 
     def init_ui(self):
-        layout = QGridLayout()
+        layout = QVBoxLayout()
+        
+        # CPU & Memory Group
+        system_group = QGroupBox("System Resources")
+        system_layout = QGridLayout()
         
         # CPU Usage
         self.cpu_label = QLabel("CPU Usage:")
         self.cpu_bar = QProgressBar()
-        self.cpu_value = QLabel("0%")
         
         # RAM Usage
         self.ram_label = QLabel("RAM Usage:")
         self.ram_bar = QProgressBar()
-        self.ram_value = QLabel("0%")
+        
+        system_layout.addWidget(self.cpu_label, 0, 0)
+        system_layout.addWidget(self.cpu_bar, 0, 1)
+        system_layout.addWidget(self.ram_label, 1, 0)
+        system_layout.addWidget(self.ram_bar, 1, 1)
+        system_group.setLayout(system_layout)
+        
+        # Network Group
+        network_group = QGroupBox("Network")
+        network_layout = QGridLayout()
         
         # Network Upload
         self.upload_label = QLabel("Upload:")
         self.upload_bar = QProgressBar()
-        self.upload_value = QLabel("0 B/s")
         
         # Network Download
         self.download_label = QLabel("Download:")
         self.download_bar = QProgressBar()
-        self.download_value = QLabel("0 B/s")
         
-        # Add widgets to layout
-        layout.addWidget(self.cpu_label, 0, 0)
-        layout.addWidget(self.cpu_bar, 0, 1)
-        layout.addWidget(self.cpu_value, 0, 2)
+        network_layout.addWidget(self.upload_label, 0, 0)
+        network_layout.addWidget(self.upload_bar, 0, 1)
+        network_layout.addWidget(self.download_label, 1, 0)
+        network_layout.addWidget(self.download_bar, 1, 1)
+        network_group.setLayout(network_layout)
         
-        layout.addWidget(self.ram_label, 1, 0)
-        layout.addWidget(self.ram_bar, 1, 1)
-        layout.addWidget(self.ram_value, 1, 2)
+        # GPU Group (if available)
+        if NVIDIA_AVAILABLE or INTEL_AVAILABLE:
+            gpu_group = QGroupBox("Graphics")
+            gpu_layout = QGridLayout()
+            row = 0
+            
+            if NVIDIA_AVAILABLE:
+                self.nvidia_label = QLabel("NVIDIA GPU:")
+                self.nvidia_bar = QProgressBar()
+                gpu_layout.addWidget(self.nvidia_label, row, 0)
+                gpu_layout.addWidget(self.nvidia_bar, row, 1)
+                row += 1
+            
+            if INTEL_AVAILABLE:
+                self.intel_label = QLabel("Intel GPU:")
+                self.intel_bar = QProgressBar()
+                gpu_layout.addWidget(self.intel_label, row, 0)
+                gpu_layout.addWidget(self.intel_bar, row, 1)
+            
+            gpu_group.setLayout(gpu_layout)
         
-        layout.addWidget(self.upload_label, 2, 0)
-        layout.addWidget(self.upload_bar, 2, 1)
-        layout.addWidget(self.upload_value, 2, 2)
-        
-        layout.addWidget(self.download_label, 3, 0)
-        layout.addWidget(self.download_bar, 3, 1)
-        layout.addWidget(self.download_value, 3, 2)
-        
-        # Add GPU monitoring if available (NVIDIA only)
-        row = 4  # Start after existing widgets
-        
-        if NVIDIA_AVAILABLE:
-            self.nvidia_label = QLabel("NVIDIA GPU:")
-            self.nvidia_bar = QProgressBar()
-            self.nvidia_value = QLabel("0%")
-            layout.addWidget(self.nvidia_label, row, 0)
-            layout.addWidget(self.nvidia_bar, row, 1)
-            layout.addWidget(self.nvidia_value, row, 2)
-            row += 1
-        
-        if INTEL_AVAILABLE:
-            self.intel_label = QLabel("Intel GPU:")
-            self.intel_bar = QProgressBar()
-            self.intel_value = QLabel("0%")
-            layout.addWidget(self.intel_label, row, 0)
-            layout.addWidget(self.intel_bar, row, 1)
-            layout.addWidget(self.intel_value, row, 2)
+        # Add all groups to main layout
+        layout.addWidget(system_group)
+        layout.addWidget(network_group)
+        if NVIDIA_AVAILABLE or INTEL_AVAILABLE:
+            layout.addWidget(gpu_group)
         
         self.setLayout(layout)
         
-        # Apply enhanced styling
-        self._setup_progress_bars()
+        # Configure progress bars
+        progress_bars = [self.cpu_bar, self.ram_bar, self.upload_bar, self.download_bar]
+        if NVIDIA_AVAILABLE:
+            progress_bars.append(self.nvidia_bar)
+        if INTEL_AVAILABLE:
+            progress_bars.append(self.intel_bar)
+            
+        for bar in progress_bars:
+            bar.setTextVisible(True)
+            bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            bar.setFormat("%v")  # Show actual value in the middle
+            bar.setMinimumWidth(200)
 
     def _setup_progress_bars(self):
         """Enhanced progress bar styling"""
@@ -288,7 +304,7 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def _apply_bar_style(self, bar, value: float, key: str):
-        """Apply gradient style with enhanced smoothing"""
+        """Apply gradient style with centered text"""
         value = max(0, min(100, value))
         
         # Enhanced smoothing logic
@@ -330,8 +346,16 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             }}
         """)
         
-        # Update value with smoother animation
-        bar.setValue(int(decayed_value))
+        # Set the format based on the type of metric
+        if key in ['upload', 'download']:
+            # Network values are already formatted in _update_network
+            pass
+        else:
+            bar.setFormat(f"{int(value)}%")
+        
+        # For network bars, don't modify the value
+        if key not in ['upload', 'download']:
+            bar.setValue(int(value))
         
         return decayed_value
 
@@ -393,32 +417,24 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
 
     def _update_cpu_ram(self, cpu: float, ram: float):
         """Update CPU and RAM displays"""
-        # Update CPU
-        self.cpu_bar.setValue(int(cpu))
-        self.cpu_value.setText(f"{self._format_value(cpu)}%")
+        # Update CPU with smoothed value
         self._apply_bar_style(self.cpu_bar, cpu, 'cpu')
         
-        # Update RAM
-        self.ram_bar.setValue(int(ram))
-        self.ram_value.setText(f"{self._format_value(ram)}%")
+        # Update RAM with smoothed value
         self._apply_bar_style(self.ram_bar, ram, 'ram')
 
     def _update_gpu_displays(self, gpu_stats):
         """Update GPU displays with provided stats"""
         if NVIDIA_AVAILABLE and hasattr(self, 'nvidia_bar'):
             nvidia_usage = self._smooth_value('gpu_nvidia', gpu_stats['nvidia'])
-            self.nvidia_bar.setValue(int(nvidia_usage))
-            self.nvidia_value.setText(f"{self._format_value(nvidia_usage)}%")
             self._apply_bar_style(self.nvidia_bar, nvidia_usage, 'nvidia')
             
         if INTEL_AVAILABLE and hasattr(self, 'intel_bar'):
             intel_usage = self._smooth_value('gpu_intel', gpu_stats['intel'])
-            self.intel_bar.setValue(int(intel_usage))
-            self.intel_value.setText(f"{self._format_value(intel_usage)}%")
             self._apply_bar_style(self.intel_bar, intel_usage, 'intel_gpu')
 
     def _update_network(self):
-        """Update network stats with higher precision"""
+        """Update network stats showing actual rates with working progress bars"""
         net_io = psutil.net_io_counters()
         current_time = time.time()
         time_diff = current_time - self.prev_time
@@ -429,21 +445,19 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         send_rate = bytes_sent / time_diff
         recv_rate = bytes_recv / time_diff
         
-        # Calculate percentages
+        # Calculate percentages for progress bars (based on max_network_rate)
         send_percent = min((send_rate / self.max_network_rate) * 100, 100)
         recv_percent = min((recv_rate / self.max_network_rate) * 100, 100)
         
-        # Update progress bars with percentages
+        # Update progress bars with percentages but show actual rates in text
         self.upload_bar.setValue(int(send_percent))
         self.download_bar.setValue(int(recv_percent))
+        self.upload_bar.setFormat(f"{self._format_bytes(send_rate)}/s")
+        self.download_bar.setFormat(f"{self._format_bytes(recv_rate)}/s")
         
-        # Apply color styling using percentages
+        # Apply styling with percentage for proper gradient coloring
         self._apply_bar_style(self.upload_bar, send_percent, 'upload')
         self._apply_bar_style(self.download_bar, recv_percent, 'download')
-        
-        # Update labels with actual rates instead of percentages
-        self.upload_value.setText(f"{self._format_bytes(send_rate)}/s")
-        self.download_value.setText(f"{self._format_bytes(recv_rate)}/s")
         
         # Store values for next update
         self.prev_net_io = net_io

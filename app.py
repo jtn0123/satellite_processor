@@ -1,4 +1,4 @@
-# test_app.py
+# app.py
 import sys
 import os
 import signal
@@ -6,6 +6,8 @@ import json
 import argparse
 import logging
 from pathlib import Path
+from PyQt6.QtWidgets import QApplication # type: ignore
+from PyQt6.QtCore import QTimer # type: ignore
 
 CONFIG_FILE = 'gui_config.json'
 
@@ -29,8 +31,6 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from satellite_processor.utils.logging_config import setup_logging
-from PyQt6.QtWidgets import QApplication # type: ignore
-from PyQt6.QtCore import QTimer # type: ignore
 from satellite_processor.gui.main_window import SatelliteProcessorGUI
 
 __version__ = "1.0.0"
@@ -39,11 +39,27 @@ def signal_handler(signum, frame):
     """Handle system signals for clean shutdown"""
     QApplication.quit()
 
+def initialize_app():
+    """Initialize application settings"""
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
 def main():
-    app = QApplication(sys.argv)
-    window = SatelliteProcessorGUI()
-    window.show()
-    return app.exec()
+    """Main application entry point"""
+    try:
+        app = QApplication(sys.argv)
+        initialize_app()
+        
+        window = SatelliteProcessorGUI()
+        window.show()
+        
+        return app.exec()
+    except Exception as e:
+        logging.error(f"Fatal error: {str(e)}", exc_info=True)
+        return 1
+    finally:
+        logging.info("Application shutting down")
 
 if __name__ == "__main__":
     sys.exit(main())

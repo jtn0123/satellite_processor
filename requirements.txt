@@ -1,25 +1,23 @@
-# GUI
-PyQt6>=6.0.0
-PyQt6-sip>=13.4.0  # Changed from sip to PyQt6-sip
+# GUI Dependencies
+PyQt6>=6.4.0
+pyqtgraph>=0.13.1
 
-# System utilities
-pathlib
-psutil>=5.9.0  # Added for system monitoring
+# System Monitoring
+psutil>=5.9.0
+nvidia-ml-py>=11.525.112
+WMI>=1.5.1
 
-# Logging
-logging
+# Image Processing
+Pillow>=9.3.0
+numpy>=1.23.0
+opencv-python>=4.6.0
 
-# Image processing
-numpy>=1.21.0
-scipy>=1.7.0
-pillow>=8.0.0
-opencv-python>=4.5.0
+# Utilities
+python-dateutil>=2.8.2
+pyyaml>=6.0
+requests>=2.28.1
 
-# Graphing
-# pyqtgraph>=0.13.0
-# matplotlib>=3.7.1
-
-# Video processing
-ffmpeg-python>=0.2.0  # Added for FFmpeg integration
-
-nvidia-ml-py3>=7.352.0
+# Development Tools
+pytest>=7.2.0
+black>=22.3.0
+pylint>=2.15.0

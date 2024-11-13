@@ -5,19 +5,80 @@ Provides visual feedback through progress bars and updates metrics periodically.
 """
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar
-from PyQt6.QtCore import QTimer, pyqtSignal
+from PyQt6.QtCore import QTimer, pyqtSignal, Qt, QThread, QObject
 import psutil
 import time
 import logging
+import sys
 try:
     import pynvml  # For NVIDIA GPU
     pynvml.nvmlInit()
     NVIDIA_AVAILABLE = True
 except:
     NVIDIA_AVAILABLE = False
-    
-# Remove Intel GPU imports and checks
-INTEL_AVAILABLE = False  # Just set this to False since we're not using it
+
+import wmi  # Add this import (pip install wmi)
+
+try:
+    wmi_interface = wmi.WMI(namespace="root\\OpenHardwareMonitor")
+    INTEL_AVAILABLE = True
+except Exception:
+    try:
+        # Fallback to Windows built-in performance counters
+        wmi_interface = wmi.WMI(namespace="root\\CIMV2")
+        INTEL_AVAILABLE = True
+    except Exception:
+        INTEL_AVAILABLE = False
+
+class GPUMonitor(QObject):
+    """Separate thread for GPU monitoring to prevent UI hangs"""
+    def __init__(self):
+        super().__init__()
+        self.wmi_interface = None
+        self.nvidia_handle = None
+        self._initialize_gpu_interfaces()
+        
+    def _initialize_gpu_interfaces(self):
+        """Initialize GPU interfaces once, not on every update"""
+        if NVIDIA_AVAILABLE:
+            try:
+                self.nvidia_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            except Exception:
+                pass
+                
+        if INTEL_AVAILABLE:
+            try:
+                self.wmi_interface = wmi.WMI(namespace="root\\OpenHardwareMonitor")
+            except Exception:
+                try:
+                    self.wmi_interface = wmi.WMI(namespace="root\\CIMV2")
+                except Exception:
+                    pass
+
+    def get_gpu_stats(self):
+        """Get GPU statistics with timeouts"""
+        stats = {'nvidia': 0, 'intel': 0}
+        
+        # NVIDIA GPU - Quick timeout
+        if NVIDIA_AVAILABLE and self.nvidia_handle:
+            try:
+                gpu_util = pynvml.nvmlDeviceGetUtilizationRates(self.nvidia_handle)
+                stats['nvidia'] = gpu_util.gpu
+            except Exception:
+                pass
+
+        # Intel GPU - Quick timeout
+        if INTEL_AVAILABLE and self.wmi_interface:
+            try:
+                perf_data = self.wmi_interface.Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine([], timeout_ms=100)
+                total = sum(int(gpu.UtilizationPercentage) for gpu in perf_data if hasattr(gpu, 'UtilizationPercentage'))
+                count = sum(1 for gpu in perf_data if hasattr(gpu, 'UtilizationPercentage'))
+                if count > 0:
+                    stats['intel'] = total / count
+            except Exception:
+                pass
+
+        return stats
 
 class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonitorWidget
     """Widget for displaying system resource usage"""
@@ -49,13 +110,25 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             'nvidia': 0
         }
         
+        self.last_values.update({
+            'nvidia_gpu': 0,
+            'intel_gpu': 0
+        })
+        
         # Single update interval
         self.update_interval = 800  # Changed from 600ms to 800ms
         
         # Initialize timer with single interval
         self.update_timer = QTimer()
+        self.update_timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.update_timer.timeout.connect(self.update_stats)
         self.update_timer.start(self.update_interval)
+        
+        # Initialize last update time
+        self._last_update = time.time()
+        
+        # Prevent duplicate updates
+        self._update_pending = False
         
         # Adjust smoothing factors for 800ms interval
         self.smoothing_factor = 0.4  # Made transitions even smoother (was 0.6)
@@ -72,6 +145,12 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             'network_up': [],
             'network_down': []
         }
+        
+        self.value_history.update({
+            'gpu_nvidia': [],
+            'gpu_intel': []
+        })
+        
         self.history_size = 5  # Increased from 3 for smoother transitions
 
         # Initialize all bars to 0
@@ -80,6 +159,16 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             bar.setMaximum(100)
             bar.setTextVisible(True)
             bar.setFormat("%p%")
+
+        # Create GPU monitor in separate thread
+        self.gpu_thread = QThread()
+        self.gpu_monitor = GPUMonitor()
+        self.gpu_monitor.moveToThread(self.gpu_thread)
+        self.gpu_thread.start()
+
+        # Less frequent GPU updates
+        self.gpu_update_counter = 0
+        self.gpu_update_interval = 3  # Update GPU every 3 main updates
 
     def init_ui(self):
         layout = QGridLayout()
@@ -131,8 +220,15 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
             layout.addWidget(self.nvidia_label, row, 0)
             layout.addWidget(self.nvidia_bar, row, 1)
             layout.addWidget(self.nvidia_value, row, 2)
+            row += 1
         
-        # Remove Intel GPU widget creation
+        if INTEL_AVAILABLE:
+            self.intel_label = QLabel("Intel GPU:")
+            self.intel_bar = QProgressBar()
+            self.intel_value = QLabel("0%")
+            layout.addWidget(self.intel_label, row, 0)
+            layout.addWidget(self.intel_bar, row, 1)
+            layout.addWidget(self.intel_value, row, 2)
         
         self.setLayout(layout)
         
@@ -165,6 +261,8 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         all_bars = [self.cpu_bar, self.ram_bar, self.upload_bar, self.download_bar]
         if hasattr(self, 'nvidia_bar'):
             all_bars.append(self.nvidia_bar)
+        if hasattr(self, 'intel_bar'):
+            all_bars.append(self.intel_bar)
             
         for bar in all_bars:
             bar.setStyleSheet(base_style)
@@ -263,48 +361,35 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
 
     def update_stats(self):
         """Update resource statistics with enhanced smoothing"""
+        if self._update_pending:
+            return
+            
+        self._update_pending = True
         try:
-            # Get current values using non-blocking calls
-            current_cpu = psutil.cpu_percent(interval=None)
-            current_ram = psutil.virtual_memory().percent
+            current_time = time.time()
+            if current_time - self._last_update < 0.7:
+                return
+
+            # Update CPU and RAM
+            self._update_cpu_ram(
+                psutil.cpu_percent(interval=None),
+                psutil.virtual_memory().percent
+            )
             
-            # Enhanced smoothing transitions
-            if hasattr(self, '_last_cpu'):
-                # Asymmetric smoothing - faster response to increases, slower to decreases
-                cpu_diff = current_cpu - self._last_cpu
-                ram_diff = current_ram - self._last_ram
-                
-                if cpu_diff > 0:
-                    cpu = self._last_cpu + cpu_diff * self.smoothing_factor
-                else:
-                    cpu = self._last_cpu + cpu_diff * (self.smoothing_factor * 0.7)
-                    
-                if ram_diff > 0:
-                    ram = self._last_ram + ram_diff * self.smoothing_factor
-                else:
-                    ram = self._last_ram + ram_diff * (self.smoothing_factor * 0.7)
-            else:
-                cpu = current_cpu
-                ram = current_ram
-            
-            # Store values for next transition
-            self._last_cpu = cpu
-            self._last_ram = ram
-            
-            # Update CPU and RAM displays
-            self._update_cpu_ram(cpu, ram)
-            
-            # Update GPU if available
-            self._update_gpu()
-            
-            # Update network stats
+            # Update network
             self._update_network()
             
-            # Emit update signal
-            self._emit_stats()
+            # Update GPUs less frequently
+            self.gpu_update_counter += 1
+            if self.gpu_update_counter >= self.gpu_update_interval:
+                self.gpu_update_counter = 0
+                gpu_stats = self.gpu_monitor.get_gpu_stats()
+                self._update_gpu_displays(gpu_stats)
             
-        except Exception as e:
-            logging.error(f"Error updating stats: {e}")
+            self._last_update = current_time
+            
+        finally:
+            self._update_pending = False
 
     def _update_cpu_ram(self, cpu: float, ram: float):
         """Update CPU and RAM displays"""
@@ -318,25 +403,19 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
         self.ram_value.setText(f"{self._format_value(ram)}%")
         self._apply_bar_style(self.ram_bar, ram, 'ram')
 
-    def _update_gpu(self):
-        """Update GPU stats if available"""
-        gpu_stats = {}
-        
-        # NVIDIA GPU
-        if NVIDIA_AVAILABLE:
-            try:
-                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-                gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-                nvidia_usage = self._smooth_value('gpu_nvidia', gpu_util.gpu)
-                gpu_stats['nvidia'] = nvidia_usage
-                self.nvidia_bar.setValue(int(nvidia_usage))
-                self.nvidia_value.setText(f"{self._format_value(nvidia_usage)}%")
-                
-                # Update bar color
-                self._apply_bar_style(self.nvidia_bar, nvidia_usage, 'nvidia')
-            except Exception as e:
-                self.nvidia_value.setText("N/A")
-                gpu_stats['nvidia'] = 0
+    def _update_gpu_displays(self, gpu_stats):
+        """Update GPU displays with provided stats"""
+        if NVIDIA_AVAILABLE and hasattr(self, 'nvidia_bar'):
+            nvidia_usage = self._smooth_value('gpu_nvidia', gpu_stats['nvidia'])
+            self.nvidia_bar.setValue(int(nvidia_usage))
+            self.nvidia_value.setText(f"{self._format_value(nvidia_usage)}%")
+            self._apply_bar_style(self.nvidia_bar, nvidia_usage, 'nvidia')
+            
+        if INTEL_AVAILABLE and hasattr(self, 'intel_bar'):
+            intel_usage = self._smooth_value('gpu_intel', gpu_stats['intel'])
+            self.intel_bar.setValue(int(intel_usage))
+            self.intel_value.setText(f"{self._format_value(intel_usage)}%")
+            self._apply_bar_style(self.intel_bar, intel_usage, 'intel_gpu')
 
     def _update_network(self):
         """Update network stats with higher precision"""
@@ -372,14 +451,21 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
 
     def _emit_stats(self):
         """Emit resource update signal with current stats"""
-        self.resource_update.emit({
+        stats = {
             'cpu': self.cpu_bar.value(),
             'ram': self.ram_bar.value(),
             'network_sent': self.upload_value.text(),
             'network_recv': self.download_value.text(),
-            'gpu_nvidia': self.nvidia_bar.value() if NVIDIA_AVAILABLE else 0,
-            'timestamp': time.time()  # Add timestamp for graphing
-        })
+            'timestamp': time.time()
+        }
+        
+        # Add GPU stats if available
+        if NVIDIA_AVAILABLE:
+            stats['gpu_nvidia'] = self.nvidia_bar.value()
+        if INTEL_AVAILABLE:
+            stats['gpu_intel'] = self.intel_bar.value()
+            
+        self.resource_update.emit(stats)
 
     def _format_bytes(self, bytes_value):
         """Format bytes to human readable string"""
@@ -388,3 +474,9 @@ class SystemMonitorWidget(QWidget):  # Just rename the class from ResourceMonito
                 return f"{bytes_value:.1f} {unit}"
             bytes_value /= 1024
         return f"{bytes_value:.1f} TB"
+
+    def closeEvent(self, event):
+        """Clean up GPU monitor thread"""
+        self.gpu_thread.quit()
+        self.gpu_thread.wait()
+        super().closeEvent(event)

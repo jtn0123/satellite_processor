@@ -144,9 +144,6 @@ class SatelliteProcessorGUI(QMainWindow):
         self.system_monitor = SystemMonitorWidget(self)
         main_layout.addWidget(self.system_monitor)
 
-        # Create status labels
-        self._create_status_labels()
-
     def _create_button_layout(self):
         """Create the bottom button layout"""
         button_layout = QHBoxLayout()
@@ -252,9 +249,7 @@ class SatelliteProcessorGUI(QMainWindow):
             self.log_widget.append_error(f"Error connecting signals: {str(e)}")
 
     def on_resource_update(self, stats):
-        """Handle resource monitoring updates"""
-        # Format stats for the GUI components
-        self.status_widget.update_resource_stats(stats)
+        pass
 
     # Add essential callback methods
     def on_network_update(self, stats):
@@ -596,19 +591,6 @@ class SatelliteProcessorGUI(QMainWindow):
         # ...existing code...
         self.processor.network_update_signal.connect(self.graph_widget.update_data)
         # ...existing code...
-        self.processor.network_update_signal.connect(self.graph_widget.update_data)
-        # ...existing code...
-        # ...existing code...
-
-    def _create_status_labels(self):
-        """Create status bar labels for resource monitoring"""
-        self.cpu_label = QLabel("CPU: 0%")
-        self.memory_label = QLabel("Memory: 0%")
-        self.network_label = QLabel("Network: ↑0 KB/s ↓0 KB/s")
-        
-        self.statusBar().addWidget(self.cpu_label)
-        self.statusBar().addWidget(self.memory_label)
-        self.statusBar().addWidget(self.network_label)
 
     def closeEvent(self, event):
         """Clean up resources before closing"""

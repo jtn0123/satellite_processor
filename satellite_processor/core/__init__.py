@@ -9,7 +9,6 @@ from .video_handler import VideoHandler
 from .file_manager import FileManager
 from .resource_monitor import ResourceMonitor
 from .settings_manager import SettingsManager
-from .worker import ProcessingWorker
 
 __all__ = [
     'SatelliteImageProcessor',

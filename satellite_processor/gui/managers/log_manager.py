@@ -6,6 +6,23 @@ from PyQt6.QtCore import QObject, pyqtSignal
 from ...utils.url_handler import create_file_url, create_link_data  # Add create_link_data to imports
 import os
 
+# Create a logger for Sanchez
+sanchez_logger = logging.getLogger('sanchez')
+sanchez_logger.setLevel(logging.INFO)
+
+# Create handlers
+console_handler = logging.StreamHandler()
+file_handler = logging.FileHandler('sanchez.log')
+
+# Create formatters and add them to handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+file_handler.setFormatter(formatter)
+
+# Add handlers to the logger
+sanchez_logger.addHandler(console_handler)
+sanchez_logger.addHandler(file_handler)
+
 class LogManager(QObject):
     """Centralized manager for all logging and link handling"""
     
@@ -42,37 +59,28 @@ class LogManager(QObject):
             print(f"Failed to setup file logging: {e}")
     
     def log_message(self, message: str, level: str = "info"):
-        """Central logging method with Unicode support"""
+        """Central logging method with enhanced formatting"""
         try:
-            # Clean up message
+            # Clean up message and add timestamp
+            timestamp = datetime.now().strftime("%H:%M:%S")
             clean_msg = self._clean_message(message)
             
-            # Handle duplicate messages
-            if clean_msg == self._last_message:
-                self._message_count += 1
-                return
-            
-            # Reset counter for new message
-            if self._message_count > 1:
-                self.message_received.emit(f"(repeated {self._message_count} times)")
-            self._message_count = 1
-            self._last_message = clean_msg
-
-            # Regular message handling with proper encoding
+            # Format based on message type
             if level == "error":
-                self.error_received.emit(clean_msg)
-            elif level == "warning":
-                self.warning_received.emit(clean_msg)
-            else:
-                self.message_received.emit(clean_msg)
-                
-            # Log to file/console with proper encoding
-            if hasattr(self, 'logger'):
-                if level == "error":
+                formatted_msg = f"[{timestamp}] ❌ Error: {clean_msg}"
+                self.error_received.emit(formatted_msg)
+                if hasattr(self, 'logger'):
                     self.logger.error(clean_msg)
-                elif level == "warning":
+            elif level == "warning":
+                formatted_msg = f"[{timestamp}] ⚠️ Warning: {clean_msg}"
+                self.warning_received.emit(formatted_msg)
+                if hasattr(self, 'logger'):
                     self.logger.warning(clean_msg)
-                else:
+            else:
+                # Only add timestamp to info messages
+                formatted_msg = f"[{timestamp}] {clean_msg}"
+                self.message_received.emit(formatted_msg)
+                if hasattr(self, 'logger'):
                     self.logger.info(clean_msg)
 
         except Exception as e:
@@ -193,3 +201,7 @@ class LogManager(QObject):
                 self._handle_success_message("✨ Processing completed successfully!")
         except Exception as e:
             self.warning_received.emit(f"Error creating completion link: {e}")
+
+    def _format_stage_message(self, stage: str, message: str) -> str:
+        """Format stage messages consistently"""
+        return f"Stage {stage}: {message}"

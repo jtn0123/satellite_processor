@@ -120,6 +120,7 @@ class StatusManager(QObject):
         """Initialize processing steps"""
         self.add_step("🔍 Initialization", "Preparing for processing...")
         self.add_step("📂 File Scanning", "Waiting to scan files...")
+        self.add_step("🎨 False Color", "Preparing false color processing...")  # Add this line
         self.add_step("🖼️ Image Processing", "Ready to process images...")
         self.add_step("🎬 Video Creation", "Video creation pending...")
 

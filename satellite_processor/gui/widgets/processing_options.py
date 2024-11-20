@@ -28,20 +28,6 @@ class ProcessingOptionsWidget(QWidget):
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
         
-        # Input/Output
-        self.input_dir = QLineEdit()
-        self.output_dir = QLineEdit()
-        browse_input = QPushButton("Browse")
-        browse_output = QPushButton("Browse")
-        
-        browse_input.clicked.connect(self.select_input_directory)
-        browse_output.clicked.connect(self.select_output_directory)
-        
-        form_layout.addRow("Input Directory:", self.input_dir)
-        form_layout.addRow("", browse_input)
-        form_layout.addRow("Output Directory:", self.output_dir)
-        form_layout.addRow("", browse_output)
-        
         # Processing Options
         self.crop_enabled = QCheckBox("Enable Cropping")
         self.crop_x = QSpinBox()
@@ -168,10 +154,6 @@ class ProcessingOptionsWidget(QWidget):
         try:
             settings = load_config()
             
-            # Load directories
-            self.input_dir.setText(settings.get('last_input_dir', ''))
-            self.output_dir.setText(settings.get('last_output_dir', ''))
-            
             # Load processing options
             options = settings.get('processing_options', {})
             self.crop_enabled.setChecked(options.get('crop_enabled', False))
@@ -229,7 +211,7 @@ class ProcessingOptionsWidget(QWidget):
 
     def get_options(self) -> dict:
         """Get current processing options"""
-        return {
+        options = {
             'crop_enabled': self.crop_enabled.isChecked(),
             'crop_x': self.crop_x.value(),
             'crop_y': self.crop_y.value(),
@@ -248,28 +230,12 @@ class ProcessingOptionsWidget(QWidget):
             'interpolation_method': self.interp_method.currentText(),
             'interpolation_factor': self.interp_factor.value()
         }
-
-    def get_input_directory(self) -> str:
-        return self.input_dir.text()
-
-    def get_output_directory(self) -> str:
-        return self.output_dir.text()
-
-    def set_input_directory(self, path: str):
-        self.input_dir.setText(path)
-
-    def set_output_directory(self, path: str):
-        self.output_dir.setText(path)
-
-    def select_input_directory(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select Input Directory")
-        if directory:
-            self.set_input_directory(directory)
-
-    def select_output_directory(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory")
-        if directory:
-            self.set_output_directory(directory)
+        
+        # Add debug logging
+        if options['false_color_enabled']:
+            self.logger.info(f"False color is enabled with method: {options['false_color_method']}")
+            
+        return options
 
     def _on_false_color_toggled(self, enabled: bool):
         """Handle false color enable/disable"""

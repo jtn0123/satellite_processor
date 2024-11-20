@@ -5,22 +5,19 @@ from pathlib import Path
 from datetime import datetime
 
 def setup_logging(log_dir: str = None, debug: bool = False) -> None:
-    """Setup application logging configuration
-    
-    Args:
-        log_dir: Directory to store log files
-        debug: Enable debug logging if True
-    """
+    """Setup application logging configuration"""
     # Create logger
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
     
-    # Create formatters
+    # Create formatters with consistent styling
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        '[%(asctime)s] %(levelname)-8s %(name)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
     )
     console_formatter = logging.Formatter(
-        '%(levelname)s: %(message)s'
+        '%(levelname)s: %(message)s' if not debug else
+        '[%(name)s] %(levelname)s: %(message)s'
     )
     
     # Console handler
@@ -29,6 +26,13 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
     console_handler.setLevel(logging.INFO)
     root_logger.addHandler(console_handler)
     
+    # Add debug handler if enabled
+    if debug:
+        debug_handler = logging.StreamHandler(sys.stdout)
+        debug_handler.setFormatter(file_formatter)
+        debug_handler.setLevel(logging.DEBUG)
+        root_logger.addHandler(debug_handler)
+
     # File handler (if log directory provided)
     if log_dir:
         log_dir = Path(log_dir)
@@ -46,6 +50,11 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
         file_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(file_handler)
     
-    # Suppress unnecessary third-party logging
-    logging.getLogger('PIL').setLevel(logging.WARNING)
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    # Set specific levels for different modules
+    logging.getLogger('satellite_processor.core.processor').setLevel(logging.INFO)
+    logging.getLogger('satellite_processor.core.image_operations').setLevel(logging.INFO)
+    logging.getLogger('satellite_processor.gui').setLevel(logging.INFO)
+    
+    # Suppress external library logging
+    for logger_name in ['PIL', 'matplotlib', 'urllib3']:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)

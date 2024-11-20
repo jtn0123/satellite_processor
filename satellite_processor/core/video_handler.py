@@ -9,6 +9,7 @@ import numpy as np
 from datetime import datetime  # Add missing import
 import os
 import re
+import time
 from .file_manager import FileManager  # Add this import
 
 """
@@ -62,6 +63,12 @@ class VideoHandler:
             raise RuntimeError("FFmpeg not found. Please install FFmpeg and ensure it's in your PATH")
             
         self.logger.info(f"Using FFmpeg from: {self.ffmpeg_path}")
+        self._current_process = None
+        self._processor = None  # Reference to main processor
+
+    def set_processor(self, processor):
+        """Set reference to main processor for process tracking"""
+        self._processor = processor
 
     def _find_ffmpeg(self) -> Optional[Path]:
         """Find FFmpeg executable"""
@@ -94,90 +101,292 @@ class VideoHandler:
             self.logger.error(f"Error finding FFmpeg: {e}")
             return None
         
-    def create_video(self, images: List[np.ndarray], output_path: Path, options: dict) -> bool:
-        """Create a video from processed images with better error handling"""
-        if not images:
+    def _check_gpu_support(self) -> bool:
+        """Check if NVIDIA GPU encoding is supported"""
+        try:
+            cmd = [
+                str(self.ffmpeg_path),
+                '-encoders'
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            return 'h264_nvenc' in result.stdout
+        except Exception:
+            return False
+
+    def create_video(self, image_paths: List[Path], output_path: Path, options: dict) -> bool:
+        """Create video from images with proper frame timing and progress tracking"""
+        if not image_paths:
             self.logger.error("No images provided for video creation")
             return False
 
         temp_dir = None
         try:
-            # Create temp directory with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            temp_dir = Path(tempfile.mkdtemp(prefix=f"frames_{timestamp}_"))
-            self.logger.debug(f"Created temp directory: {temp_dir}")
+            # Get encoding settings from options
+            encoder = self._get_codec(options.get('codec', 'libx264'))  # Use _get_codec here
+            frame_duration = options.get('frame_duration', 1.0)
+            target_fps = options.get('target_fps', 30)
+            bitrate = options.get('bitrate', '8M')
+            preset = options.get('preset', 'medium')  # Changed from p7 to medium for CPU codecs
             
-            # Save frames with sequential naming
-            frame_files = []
-            for idx, img in enumerate(images):
-                frame_path = temp_dir / f"frame_{idx:08d}.png"
-                success = cv2.imwrite(str(frame_path), img)
-                if success:
-                    frame_files.append(frame_path)
-                else:
-                    self.logger.error(f"Failed to write frame {idx}")
+            # Create working directory and image list
+            temp_dir = Path(tempfile.mkdtemp())
+            image_list_path = temp_dir / "files.txt"
+            
+            with open(image_list_path, 'w', encoding='utf-8') as f:
+                for image_path in image_paths:
+                    f.write(f"file '{image_path.absolute()}'\n")
+                    f.write(f"duration {frame_duration}\n")
+                f.write(f"file '{image_paths[-1].absolute()}'\n")
 
-            if not frame_files:
-                raise RuntimeError("No frames were successfully saved")
-
-            # Create frame list file
-            list_file = temp_dir / "frames.txt"
-            with open(list_file, "w", encoding='utf-8') as f:
-                for frame in frame_files:
-                    f.write(f"file '{frame.name}'\n")
-                    f.write(f"duration {1.0/options.get('fps', 30)}\n")
-
-            # Create FFmpeg command with explicit path
+            # Build FFmpeg command
             cmd = [
                 str(self.ffmpeg_path),
-                '-y',  # Overwrite output
-                '-f', 'concat',  # Use concat demuxer
+                '-y',
+                '-f', 'concat',
                 '-safe', '0',
-                '-i', str(list_file),
-                '-c:v', 'libx264',  # Use CPU encoder
-                '-preset', options.get('preset', 'medium'),
-                '-crf', options.get('crf', '23'),
+                '-i', str(image_list_path),
+                '-c:v', encoder,
+                '-preset', preset if 'x26' in encoder else 'p7',  # Use p7 only for NVENC
+                '-b:v', bitrate,
+                '-maxrate', str(int(float(bitrate[:-1]) * 1.5)) + 'M',
+                '-bufsize', str(int(float(bitrate[:-1]) * 2)) + 'M',
+                '-r', str(target_fps),
                 '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart',
                 str(output_path)
             ]
 
-            # Log full command
-            self.logger.debug(f"FFmpeg command: {' '.join(cmd)}")
+            self.logger.info(f"Running FFmpeg command: {' '.join(cmd)}")
             
-            # Run FFmpeg
-            process = subprocess.run(
+            result = subprocess.run(
                 cmd,
-                cwd=str(temp_dir),  # Set working directory
                 capture_output=True,
                 text=True,
                 check=False
             )
 
-            # Check result
-            if process.returncode != 0:
-                self.logger.error(f"FFmpeg stderr: {process.stderr}")
+            if result.returncode != 0:
+                self.logger.error(f"FFmpeg error: {result.stderr}")
                 return False
 
-            # Verify output was created
             if not output_path.exists():
                 self.logger.error("Output file was not created")
                 return False
 
-            self.logger.info(f"Video created successfully: {output_path}")
             return True
 
         except Exception as e:
-            self.logger.error(f"Video creation failed: {str(e)}")
+            self.logger.error(f"Video creation error: {str(e)}")
             return False
-
+            
         finally:
-            # Cleanup
             if temp_dir and temp_dir.exists():
                 try:
                     shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:
-                    self.logger.error(f"Failed to cleanup temp directory: {e}")
+                    self.logger.error(f"Error cleaning up temp directory: {e}")
+
+    def _try_encode(self, cmd: List[str], temp_dir: Path, output_path: Path) -> bool:
+        """Try to encode with given FFmpeg command"""
+        try:
+            self.logger.info("Starting FFmpeg encoding process...")
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=str(temp_dir),
+                creationflags=subprocess.HIGH_PRIORITY_CLASS if os.name == 'nt' else 0,
+                universal_newlines=True,
+                bufsize=1
+            )
+
+            # Store process and monitor
+            self._current_process = process
+            if self._processor:
+                self._processor._ffmpeg_processes.add(process)
+
+            # Monitor the process with timeout and progress feedback
+            start_time = time.time()
+            timeout = 300  # 5 minutes timeout
+            
+            while process.poll() is None:
+                # Check for timeout
+                if time.time() - start_time > timeout:
+                    self.logger.error("FFmpeg process timed out")
+                    process.terminate()
+                    return False
+                
+                # Read stderr for progress info
+                if process.stderr:
+                    line = process.stderr.readline()
+                    if line:
+                        self.logger.info(f"FFmpeg: {line.strip()}")
+                
+                # Brief sleep to prevent CPU overuse
+                time.sleep(0.1)
+
+            # Get final output
+            _, stderr = process.communicate()
+            
+            # Remove from tracking
+            if self._processor:
+                self._processor._ffmpeg_processes.discard(process)
+            self._current_process = None
+
+            if process.returncode != 0:
+                self.logger.error(f"FFmpeg error: {stderr}")
+                return False
+
+            # Verify output file
+            if not output_path.exists():
+                self.logger.error("Output file was not created")
+                return False
+
+            file_size = output_path.stat().st_size
+            if file_size == 0:
+                self.logger.error("Output file is empty")
+                return False
+
+            self.logger.info(f"Successfully created video at {output_path} ({file_size/1024/1024:.1f} MB)")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Encoding failed: {str(e)}")
+            return False
+        finally:
+            if process:
+                try:
+                    process.terminate()
+                except:
+                    pass
+
+    def _create_initial_video(self, frame_files: List[Path], output: Path, fps: float, options: dict) -> bool:
+        """Create initial video with proper frame timing"""
+        try:
+            list_file = output.parent / "frames.txt"
+            frame_duration = options.get('frame_duration', 1.0)
+            
+            # Create frame list with proper durations
+            with open(list_file, "w", encoding='utf-8') as f:
+                for frame in frame_files:
+                    f.write(f"file '{frame.name}'\n")
+                    f.write(f"duration {frame_duration}\n")
+                # Add last frame duration
+                f.write(f"file '{frame_files[-1].name}'\n")
+
+            cmd = [
+                str(self.ffmpeg_path),
+                '-y',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', str(list_file),
+                '-c:v', 'h264_nvenc',
+                '-preset', 'p7',
+                '-rc', 'vbr',
+                '-b:v', '35M',
+                '-maxrate', '45M',
+                '-bufsize', '70M',
+                '-profile:v', 'main',
+                '-fps_mode', 'cfr',  # Use CFR mode instead of -vsync
+                '-r', str(fps),      # Set input/output frame rate
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
+                str(output)
+            ]
+
+            self.logger.debug(f"Running initial video creation: {' '.join(cmd)}")
+            
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if process.returncode != 0:
+                self.logger.error(f"Initial video creation failed: {process.stderr}")
+                return False
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error in _create_initial_video: {str(e)}")
+            return False
+
+    def _apply_interpolation(self, input_path: Path, output_path: Path, target_fps: int, options: dict) -> bool:
+        """Apply high-quality interpolation"""
+        try:
+            cmd = [
+                str(self.ffmpeg_path),
+                '-y',
+                '-i', str(input_path),
+                '-filter_complex',
+                f'minterpolate=fps={target_fps}:'
+                'mi_mode=mci:'
+                'mc_mode=aobmc:'
+                'me_mode=bilat:'
+                'me=umh:'        # Use UMH for better quality
+                'mb_size=16:'
+                'search_param=400:'  # Increased search area
+                'vsbmc=1:'
+                'scd=none',     # Disable scene change detection
+                '-c:v', 'h264_nvenc',
+                '-preset', 'p7',
+                '-rc', 'vbr',
+                '-b:v', '35M',
+                '-maxrate', '45M',
+                '-bufsize', '70M',
+                '-profile:v', 'main',
+                '-pix_fmt', 'yuv420p',
+                str(output_path)
+            ]
+
+            self.logger.debug(f"Running interpolation: {' '.join(cmd)}")
+            
+            process = subprocess.run(cmd, capture_output=True, text=True)
+            if process.returncode != 0:
+                self.logger.error(f"Interpolation failed: {process.stderr}")
+                return False
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error in _apply_interpolation: {str(e)}")
+            return False
+
+    def _get_codec_params(self, codec: str) -> List[str]:
+        """Get optimal codec parameters based on selected encoder"""
+        params = {
+            'h264_nvenc': [
+                '-c:v', 'h264_nvenc',
+                '-preset', 'p7',
+                '-rc', 'vbr',
+                '-cq', '16',
+                '-b:v', '35M',
+                '-maxrate', '45M',
+                '-bufsize', '70M',
+                '-profile:v', 'main',  # Changed from high to main
+                '-movflags', '+faststart'
+            ],
+            'hevc_nvenc': [
+                '-c:v', 'hevc_nvenc',
+                '-preset', 'p7',
+                '-rc', 'vbr',
+                '-cq', '20',
+                '-b:v', '35M',
+                '-maxrate', '45M',
+                '-bufsize', '70M',
+                '-profile:v', 'main',
+                '-movflags', '+faststart'
+            ],
+            'libx264': [
+                '-c:v', 'libx264',
+                '-preset', 'slow',
+                '-crf', '18',
+                '-profile:v', 'main',  # Changed from high to main
+                '-movflags', '+faststart'
+            ]
+        }
+        return params.get(codec, params['libx264'])
 
     def _create_ffmpeg_video(self, frame_paths: List[Path], output_path: Path, options: dict) -> bool:
         """Create video using FFmpeg"""
@@ -288,15 +497,18 @@ class VideoHandler:
 
     def _get_codec(self, encoder: str) -> str:
         """Get appropriate codec based on encoder selection"""
-        if encoder.startswith("CPU"):
-            if "H.264" in encoder: return "libx264"
-            if "H.265" in encoder or "HEVC" in encoder: return "libx265"
-            if "AV1" in encoder: return "libaom-av1"
-        else:  # GPU encoders
-            if "H.264" in encoder: return "h264_nvenc"
-            if "H.265" in encoder or "HEVC" in encoder: return "hevc_nvenc"
-            if "AV1" in encoder: return "av1_nvenc"
-        return "libx264"  # Default to H.264
+        codec_map = {
+            'H.264 (Maximum Compatibility)': 'libx264',
+            'H.264': 'libx264',
+            'H.265': 'libx265',
+            'HEVC': 'libx265',
+            'CPU H.264': 'libx264',
+            'CPU H.265': 'libx265',
+            'NVIDIA H.264': 'h264_nvenc',
+            'NVIDIA H.265': 'hevc_nvenc',
+            'AV1': 'libaom-av1'
+        }
+        return codec_map.get(encoder, 'libx264')  # Default to libx264 if unknown
 
     def interpolate_frames(self, input_path: Path, output_path: Path, fps: int) -> bool:
         """Interpolate frames to increase video smoothness"""
@@ -320,6 +532,31 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Frame interpolation failed: {str(e)}")
             return False
+
+    def get_video_info(self, video_path: Path) -> dict:
+        """Get video file information using FFmpeg"""
+        try:
+            cmd = [
+                str(self.ffmpeg_path),
+                '-i', str(video_path)
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            # Parse FFmpeg output for video information
+            info = {}
+            if result.stderr:
+                # Extract duration
+                duration_match = re.search(r'Duration: (\d{2}:\d{2}:\d{2}\.\d{2})', result.stderr)
+                if duration_match:
+                    info['duration'] = duration_match.group(1)
+                # Extract resolution
+                resolution_match = re.search(r'(\d{2,}x\d{2,})', result.stderr)
+                if resolution_match:
+                    info['resolution'] = resolution_match.group(1)
+            return info
+
+        except Exception as e:
+            self.logger.error(f"Failed to get video info: {e}")
+            return {}
 
     def get_video_info(self, video_path: Path) -> dict:
         """Get video file information using FFmpeg"""

@@ -18,6 +18,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def get_default_settings() -> dict:
+    return {
+        'last_input_dir': '',
+        'last_output_dir': '',
+        'sanchez_path': '',
+        'underlay_path': '',
+        'window_size': (1600, 900),
+        'window_pos': (100, 100),
+        'processing_options': {
+            # ...existing options...
+        }
+    }
+
 def load_config(config_path: Path = None) -> dict:
     """Load configuration from JSON file"""
     if config_path is None:
@@ -25,11 +38,13 @@ def load_config(config_path: Path = None) -> dict:
     try:
         if config_path.exists():
             with open(config_path, 'r') as f:
-                return json.load(f)
-        return {}
+                loaded_settings = json.load(f)
+                settings = {**get_default_settings(), **loaded_settings}
+                return settings
+        return get_default_settings()
     except Exception as e:
         logger.error(f"Error loading config: {e}")
-        return {}
+        return get_default_settings()
 
 def save_config(config: dict, config_path: Path = None) -> bool:
     """Save configuration to JSON file"""

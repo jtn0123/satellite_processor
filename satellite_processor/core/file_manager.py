@@ -175,8 +175,25 @@ class FileManager:
         self._temp_dirs.add(Path(dir_path))
 
     def keep_file_order(self, files: List[Path]) -> List[Path]:
-        """Maintain chronological order of files"""
-        return sorted(files, key=lambda p: parse_satellite_timestamp(p.name))
+        """Ensure files stay in chronological order"""
+        self.logger.info(f"Sorting {len(files)} files chronologically")
+        
+        # Verify input files
+        valid_files = []
+        for f in files:
+            if f.exists():
+                valid_files.append(f)
+            else:
+                self.logger.error(f"Missing file during sorting: {f}")
+        
+        if len(valid_files) != len(files):
+            self.logger.warning(f"Found {len(valid_files)}/{len(files)} valid files")
+        
+        # Sort files by timestamp in filename
+        sorted_files = sorted(valid_files, key=lambda x: parse_satellite_timestamp(x.name))
+        
+        self.logger.info(f"Completed sorting {len(sorted_files)} files")
+        return sorted_files
 
     def create_frame_filename(self, index: int, timestamp: str = None) -> str:
         """Create standardized frame filename"""

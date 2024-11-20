@@ -14,6 +14,12 @@ from functools import partial
 import logging
 from .utils import parse_satellite_timestamp
 from ..utils.helpers import parse_satellite_timestamp
+import shutil
+import tempfile
+import os
+
+# Add logger initialization at the top of the file
+logger = logging.getLogger(__name__)
 
 """
 Image Processing Operations
@@ -39,62 +45,92 @@ class ImageOperations:
         return img[y:y+height, x:x+width]
         
     @staticmethod
-    def apply_false_color(img_path: str, temp_dir: Path, image_stem: str, sanchez_path: Path, underlay_path: Path) -> Optional[Path]:
-        """Apply false color to the image using Sanchez."""
+    def apply_false_color(input_path: str, output_path: str, sanchez_path: str, underlay_path: str, method: str = "Standard") -> bool:
+        """Apply false color using Sanchez"""
+        temp_dir = None
         try:
-            output_file = temp_dir / f"false_color_{image_stem}.jpg"
+            # Verify input files
+            sanchez_exe = Path(sanchez_path)
+            sanchez_dir = sanchez_exe.parent
+            resources_dir = sanchez_dir / "Resources"
             
-            # Remove any existing output file
-            if output_file.exists():
-                output_file.unlink()
-
-            # Convert paths to strings without quotes - let subprocess handle escaping
+            if not sanchez_exe.exists():
+                logger.error(f"Sanchez.exe not found at {sanchez_path}")
+                return False
+            if not Path(underlay_path).exists():
+                logger.error(f"Underlay image not found at {underlay_path}")
+                return False
+            if not Path(input_path).exists():
+                logger.error(f"Input image not found at {input_path}")
+                return False
+                
+            # Create output directory
+            output_dir = Path(output_path)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_dir / f"{Path(input_path).stem}_sanchez.jpg"
+            
+            # Run Sanchez from its original directory to maintain resource paths
             cmd = [
-                str(sanchez_path),
-                '-s', str(img_path),
-                '-o', str(output_file),
-                '-u', str(underlay_path),
-                '-F', 'jpg',  # Use -F instead of -format
-                '--force',    # Use long form to avoid duplicate -f
-                '-v'         # Verbose output
+                str(sanchez_exe),
+                "-s", str(Path(input_path).absolute()),
+                "-u", str(Path(underlay_path).absolute()),
+                "-o", str(output_file.absolute()),
+                "-F", "jpg",
+                "-q",
+                "-falsecolor"
             ]
-
-            logging.info(f"Running Sanchez command: {' '.join(cmd)}")
-
-            # Run process with explicit working directory
-            process = subprocess.run(
+            
+            logger.info("Running Sanchez with paths:")
+            logger.info(f"Working dir: {sanchez_dir}")
+            logger.info(f"Command: {' '.join(cmd)}")
+            
+            # Run Sanchez from its directory
+            result = subprocess.run(
                 cmd,
-                cwd=str(temp_dir),
                 capture_output=True,
                 text=True,
-                shell=False
+                shell=False,
+                cwd=str(sanchez_dir)  # Run from Sanchez directory
             )
 
-            # Log full output for debugging
-            if process.stdout:
-                logging.debug(f"Sanchez stdout: {process.stdout}")
-            if process.stderr:
-                logging.error(f"Sanchez stderr: {process.stderr}")
+            if result.returncode != 0:
+                logger.error(f"Sanchez error: {result.stderr}")
+                return False
 
-            if process.returncode != 0:
-                logging.error(f"Sanchez failed with return code: {process.returncode}")
-                return None
+            # Verify output was created
+            if output_file.exists():
+                logger.info(f"Successfully created: {output_file}")
+                return True
 
-            # Verify output file was created
-            if not output_file.exists():
-                logging.error("Sanchez did not create output file")
-                return None
-
-            return output_file
+            logger.error(f"Output file not created: {output_file}")
+            return False
 
         except Exception as e:
-            logging.error(f"Failed to apply false color: {e}")
-            return None
+            logger.error(f"Error in apply_false_color: {str(e)}")
+            return False
+
+        finally:
+            # Clean up temp directory
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception as e:
+                    logger.error(f"Error cleaning up temp directory: {e}")
 
     @staticmethod
     def add_timestamp(img: np.ndarray, source: Union[datetime, Path, str]) -> np.ndarray:
         """Add a timestamp overlay to the image"""
+        logger = logging.getLogger(__name__)
         try:
+            logger.debug(f"Starting timestamp addition for: {source}")
+            
+            # Verify input image
+            if img is None or not isinstance(img, np.ndarray):
+                logger.error("Invalid input image")
+                return img
+
+            logger.info(f"Adding timestamp to image from source: {source}")
+            
             # Get timestamp from various input types
             if isinstance(source, datetime):
                 timestamp = source
@@ -102,14 +138,15 @@ class ImageOperations:
                 filename = source if isinstance(source, str) else source.name
                 timestamp = parse_satellite_timestamp(filename)
                 if timestamp == datetime.min:
-                    logging.debug(f"No valid timestamp found in: {filename}")
+                    logger.error(f"No valid timestamp found in: {filename}")
                     return img
             else:
-                logging.warning(f"Invalid source type for timestamp: {type(source)}")
+                logger.error(f"Invalid source type for timestamp: {type(source)}")
                 return img
 
             # Format timestamp string
             timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+            logger.debug(f"Using timestamp string: {timestamp_str}")
             
             # Create a copy of the image to avoid modifying original
             img_copy = img.copy()
@@ -147,10 +184,11 @@ class ImageOperations:
                 cv2.LINE_AA
             )
             
+            logger.debug(f"Successfully added timestamp to image")
             return img_copy
             
         except Exception as e:
-            logging.error(f"Failed to add timestamp: {e}")
+            logger.error(f"Failed to add timestamp: {e}")
             return img
 
     @staticmethod
@@ -200,33 +238,99 @@ class ImageOperations:
 
     @staticmethod
     def process_image_batch(images: List[Path], options: dict) -> List[np.ndarray]:
-        """Process images using real multiprocessing"""
+        """Process images using real multiprocessing with parallel Sanchez"""
         if not images:
             return []
 
-        print(f"Starting batch processing with {len(images)} images")
-        num_processes = multiprocessing.cpu_count()
+        logger.info(f"Starting batch processing with {len(images)} images")
+        num_processes = max(1, multiprocessing.cpu_count() - 1)  # Leave one core free
         chunk_size = max(1, len(images) // num_processes)
         
-        with multiprocessing.Pool(processes=num_processes) as pool:
+        with multiprocessing.Pool(processes=num_processes, initializer=ImageOperations._init_worker) as pool:
             try:
-                results = pool.imap_unordered(
-                    partial(ImageOperations._process_image_subprocess, options=options),
-                    images,
+                # Process images in parallel
+                results = []
+                total = len(images)
+                
+                # Create processing args
+                process_args = [(img, options) for img in images]
+                
+                # Use imap_unordered for better performance
+                for idx, result in enumerate(pool.imap_unordered(
+                    ImageOperations._parallel_process_image,
+                    process_args,
                     chunksize=chunk_size
-                )
-                
-                processed_images = []
-                for img in results:
-                    if img is not None and isinstance(img, np.ndarray) and len(img.shape) == 3:
-                        processed_images.append(img)
-                
-                print(f"Successfully processed {len(processed_images)} images")
-                return processed_images
-                
+                )):
+                    if result is not None:
+                        results.append(result)
+                    logger.debug(f"Processed {idx + 1}/{total} images")
+
+                logger.info(f"Successfully processed {len(results)}/{total} images")
+                return results
+
             finally:
                 pool.close()
                 pool.join()
+
+    @staticmethod
+    def _parallel_process_image(args) -> Optional[np.ndarray]:
+        """Process a single image with Sanchez in parallel worker"""
+        image_path, options = args
+        try:
+            logger.debug(f"Processing {image_path} in worker process")
+            
+            # Read image
+            img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+            if img is None:
+                logger.error(f"Failed to read image: {image_path}")
+                return None
+
+            # Apply false color if enabled
+            if options.get('false_color_enabled'):
+                logger.debug(f"Applying false color to {image_path}")
+                
+                # Get Sanchez paths from options
+                sanchez_path = options.get('sanchez_path')
+                underlay_path = options.get('underlay_path')
+                output_dir = Path(options.get('temp_dir')) / "sanchez_output"
+                output_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Apply false color
+                success = ImageOperations.apply_false_color(
+                    str(image_path),
+                    str(output_dir),
+                    sanchez_path,
+                    underlay_path
+                )
+                
+                if success:
+                    output_path = output_dir / f"{Path(image_path).stem}_sanchez.jpg"
+                    img = cv2.imread(str(output_path))
+                    if img is None:
+                        logger.error(f"Failed to read Sanchez output: {output_path}")
+                        return None
+                else:
+                    logger.error(f"Sanchez processing failed for: {image_path}")
+                    return None
+
+            # Apply other processing steps
+            if options.get('crop_enabled'):
+                img = ImageOperations.crop_image(
+                    img,
+                    options.get('crop_x', 0),
+                    options.get('crop_y', 0),
+                    options.get('crop_width', img.shape[1]),
+                    options.get('crop_height', img.shape[0])
+                )
+
+            if options.get('add_timestamp', True):
+                img = ImageOperations.add_timestamp(img, Path(image_path))
+
+            return img
+
+        except Exception as e:
+            logger.error(f"Error processing {image_path}: {e}")
+            return None
 
     @staticmethod
     def _init_worker():
@@ -283,7 +387,6 @@ class ImageOperations:
                 false_color_path = ImageOperations.apply_false_color(
                     str(image_path),
                     temp_dir,
-                    Path(image_path).stem,
                     sanchez_path,
                     underlay_path
                 )
@@ -392,3 +495,5 @@ class ImageOperations:
 
         except Exception:
             return None
+
+# ...existing code...

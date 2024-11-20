@@ -78,7 +78,6 @@ class SatelliteProcessorGUI(QMainWindow):
                     'codec': 'H.264',
                     'frame_duration': 1.0,
                     'crop_enabled': False,
-                    'scale_enabled': False,
                     'add_timestamp': True
                 }
             }
@@ -203,14 +202,12 @@ class SatelliteProcessorGUI(QMainWindow):
         layout.setSpacing(20)  # Add more spacing between sections
         layout.setContentsMargins(10, 10, 10, 10)  # Add margins around the panel
         
-        # Remove duplicate ProcessingOptionsWidget initialization
-        # Only create it once and store as instance variable
+        # Only create ProcessingOptionsWidget once
         self.processing_widget = ProcessingOptionsWidget(self)
         
-        # Remove any duplicate crop controls from main window
-        # They should only exist in ProcessingOptionsWidget
-        
         layout.addWidget(self.processing_widget)
+        
+        # Remove any scaling controls
         
         # Set size policies
         container.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
@@ -765,3 +762,19 @@ class SatelliteProcessorGUI(QMainWindow):
             
         except Exception as e:
             self.log_widget.append_error(f"Error handling output: {e}")
+
+    def save_settings(self):
+        """Save current settings"""
+        settings = {
+            'window_size': (self.width(), self.height()),
+            'window_pos': (self.x(), self.y()),
+            'processing_options': {
+                # Remove scaling options from settings
+                'fps': self.processing_widget.fps.value(),
+                'codec': self.processing_widget.codec.currentText(),
+                'frame_duration': 1.0,
+                'crop_enabled': self.processing_widget.crop_checkbox.isChecked(),
+                'add_timestamp': True
+            }
+        }
+        save_config(settings)

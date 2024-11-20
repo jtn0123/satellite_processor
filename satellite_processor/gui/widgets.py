@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QTextEdit, QPushButton, QGridLayout
 )
 from PyQt6.QtCore import Qt
-from satellite_processor.processing import SatelliteImageProcessor  # Adjust the import path as necessary
+from ..core.processor import SatelliteImageProcessor  # Adjust the import path as necessary
 
 class ProcessingOptionsWidget(QGroupBox):
     """Widget for processing options."""
@@ -21,7 +21,7 @@ class ProcessingOptionsWidget(QGroupBox):
         # Initialize crop controls
         self.init_crop_controls(layout)
 
-        # Initialize other controls (including upscale controls)
+        # Initialize other controls (remove upscale controls)
         self.init_other_controls(layout)
 
         # Overall Progress Bar (if not added in main_window.py)
@@ -35,9 +35,6 @@ class ProcessingOptionsWidget(QGroupBox):
         # Ensure all necessary attributes are initialized
         self.false_color_check = QCheckBox("Enable False Color")
         self.interpolation = QCheckBox("Enable Frame Interpolation")
-
-        # Initially disable upscale controls
-        self.toggle_upscale_controls(False)
 
     def init_crop_controls(self, parent_layout):
         # Crop Group
@@ -87,35 +84,8 @@ class ProcessingOptionsWidget(QGroupBox):
         self.crop_height.setEnabled(enabled)
 
     def init_other_controls(self, parent_layout):
-        # Upscale Options
-        upscale_group = QGroupBox("Upscale Settings")
-        upscale_layout = QGridLayout()
-
-        self.upscale_checkbox = QCheckBox("Enable Upscaling")  # Ensure single definition
-        self.upscale_checkbox.toggled.connect(self.toggle_upscale_controls)
-        upscale_layout.addWidget(self.upscale_checkbox, 0, 0, 1, 2)
-
-        upscale_layout.addWidget(QLabel("Method:"), 1, 0)
-        self.upscale_method = QComboBox()
-        self.upscale_method.addItems(["Lanczos", "Bilinear", "Nearest"])
-        upscale_layout.addWidget(self.upscale_method, 1, 1)
-
-        upscale_layout.addWidget(QLabel("Scale Factor:"), 2, 0)
-        self.upscale_scale = QDoubleSpinBox()
-        self.upscale_scale.setRange(1.0, 10.0)
-        self.upscale_scale.setSingleStep(0.5)
-        self.upscale_scale.setValue(2.0)
-        upscale_layout.addWidget(self.upscale_scale, 2, 1)
-
-        upscale_group.setLayout(upscale_layout)
-        parent_layout.addWidget(upscale_group)
-
-        # Initially disable upscale controls
-        self.toggle_upscale_controls(False)
-
-    def toggle_upscale_controls(self, enabled):
-        self.upscale_method.setEnabled(enabled)
-        self.upscale_scale.setEnabled(enabled)
+        # Remove upscale options group completely
+        pass  # Add any other controls you want to keep here
 
     def some_widget_method(self):
         # ...existing code...

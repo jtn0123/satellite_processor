@@ -162,8 +162,8 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             base_output = Path(self.output_dir)
             dirs = {
-                'crop': base_output / f"01_cropped_{timestamp}",
-                'sanchez': base_output / f"02_sanchez_{timestamp}",
+                'sanchez': base_output / f"01_sanchez_{timestamp}",
+                'crop': base_output / f"02_cropped_{timestamp}",
                 'timestamp': base_output / f"03_timestamp_{timestamp}",
                 'final': base_output / f"04_final_{timestamp}"
             }
@@ -180,10 +180,35 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             num_processes = min(len(current_files), max(1, multiprocessing.cpu_count() - 1))
             self.logger.info(f"Using {num_processes} processes for parallel operations")
 
-            # STAGE 1: Cropping with parallel processing
+            # STAGE 1: Sanchez (False Color) with parallel processing
+            if self.options.get('false_color_enabled'):
+                self.logger.info("Starting parallel false color processing stage...")
+                self.status_update.emit("🎨 Stage 1/4: Applying false color...")
+                
+                with multiprocessing.Pool(processes=num_processes) as pool:
+                    sanchez_args = [(str(f), dirs['sanchez'], self.options.get('sanchez_path'), self.options.get('underlay_path')) for f in current_files]
+                    sanchez_files = []
+                    total = len(current_files)
+                    
+                    for idx, result in enumerate(pool.imap_unordered(self._parallel_sanchez, sanchez_args)):
+                        if self.cancelled:
+                            return False
+                            
+                        if result:
+                            sanchez_files.append(Path(result))
+                        
+                        progress = int((idx + 1) / total * 100)
+                        self.progress_update.emit("False Color", progress)
+                    
+                if sanchez_files:
+                    current_files = self.file_manager.keep_file_order(sanchez_files)
+                else:
+                    self.logger.warning("No files were processed with false color")
+
+            # STAGE 2: Cropping with parallel processing
             if self.options.get('crop_enabled'):
                 self.logger.info("Starting parallel image cropping stage...")
-                self.status_update.emit("📐 Stage 1/4: Cropping images...")
+                self.status_update.emit("📐 Stage 2/4: Cropping images...")
                 
                 with multiprocessing.Pool(processes=num_processes) as pool:
                     crop_args = [(str(f), dirs['crop'], self.options) for f in current_files]
@@ -204,34 +229,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     current_files = self.file_manager.keep_file_order(cropped_files)
                 else:
                     self.logger.warning("No files were cropped, using original files")
-
-            # STAGE 2: Sanchez (False Color) with parallel processing
-            if self.options.get('false_color_enabled'):
-                self.logger.info("Starting parallel false color processing stage...")
-                self.status_update.emit("🎨 Stage 2/4: Applying false color...")
-                
-                sanchez_path = self.options.get('sanchez_path')
-                underlay_path = self.options.get('underlay_path')
-                
-                with multiprocessing.Pool(processes=num_processes) as pool:
-                    sanchez_args = [(str(f), dirs['sanchez'], sanchez_path, underlay_path) for f in current_files]
-                    sanchez_files = []
-                    total = len(current_files)
-                    
-                    for idx, result in enumerate(pool.imap_unordered(self._parallel_sanchez, sanchez_args)):
-                        if self.cancelled:
-                            return False
-                            
-                        if result:
-                            sanchez_files.append(Path(result))
-                        
-                        progress = int((idx + 1) / total * 100)
-                        self.progress_update.emit("False Color", progress)
-                    
-                if sanchez_files:
-                    current_files = self.file_manager.keep_file_order(sanchez_files)
-                else:
-                    self.logger.warning("No files were processed with false color")
 
             # STAGE 3: Timestamp with parallel processing
             if self.options.get('add_timestamp', True):

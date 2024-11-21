@@ -21,8 +21,9 @@ class ProcessingOptionsWidget(QGroupBox):
         # Initialize crop controls
         self.init_crop_controls(layout)
 
-        # Initialize other controls (remove upscale controls)
-        self.init_other_controls(layout)
+        # Initialize false color controls
+        self.false_color_check = QCheckBox("Enable False Color")
+        layout.addWidget(self.false_color_check)
 
         # Overall Progress Bar (if not added in main_window.py)
         self.overall_progress_bar = QProgressBar()
@@ -100,6 +101,17 @@ class ProcessingOptionsWidget(QGroupBox):
         }
         processor = SatelliteImageProcessor(options=options, parent=self)
         # ...existing code...
+
+    def get_options(self):
+        """Get current processing options"""
+        return {
+            'crop_enabled': self.crop_checkbox.isChecked(),
+            'crop_x': self.crop_x.value(),
+            'crop_y': self.crop_y.value(),
+            'crop_width': self.crop_width.value(),
+            'crop_height': self.crop_height.value(),
+            'false_color_enabled': self.false_color_check.isChecked(),
+        }
 
 class VideoOptionsWidget(QGroupBox):
     def __init__(self):

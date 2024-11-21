@@ -223,12 +223,7 @@ class ImageOperations:
                     logger.error("Cropping resulted in invalid image")
                     return None
 
-            if options.get('upscale_enabled'):
-                img = ImageOperations.upscale_image(
-                    img,
-                    method=options.get('upscale_type', 'lanczos'),
-                    scale=options.get('scale_factor', 2.0)
-                )
+            # Remove upscale section
                 
             return img
 

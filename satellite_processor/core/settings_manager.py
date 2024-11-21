@@ -37,6 +37,7 @@ class SettingsManager:
         'false_color': False,
         'add_timestamp': True,
         'video_quality': 'high'
+        # Removed scaling-related settings
     }
     
     def __init__(self):

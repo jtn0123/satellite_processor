@@ -40,12 +40,6 @@ class ProcessingOptionsWidget(QWidget):
             spin.setRange(0, 10000)
             spin.setValue(0)
         
-        # Scale options
-        self.scale_enabled = QCheckBox("Enable Scaling")
-        self.scale_factor = QDoubleSpinBox()
-        self.scale_factor.setRange(0.1, 10.0)
-        self.scale_factor.setValue(2.0)
-        
         # Add timestamp option
         self.add_timestamp = QCheckBox("Add Timestamp")
         self.add_timestamp.setChecked(True)
@@ -93,7 +87,6 @@ class ProcessingOptionsWidget(QWidget):
         
         layout.addWidget(self.crop_enabled)
         layout.addLayout(form_layout)
-        layout.addWidget(self.scale_enabled)
         layout.addWidget(self.add_timestamp)
         layout.addWidget(video_group)
         
@@ -161,8 +154,6 @@ class ProcessingOptionsWidget(QWidget):
             self.crop_y.setValue(options.get('crop_y', 0))
             self.crop_width.setValue(options.get('crop_width', 1920))
             self.crop_height.setValue(options.get('crop_height', 1080))
-            self.scale_enabled.setChecked(options.get('scale_enabled', False))
-            self.scale_factor.setValue(options.get('scale_factor', 2.0))
             self.add_timestamp.setChecked(options.get('add_timestamp', True))
             
             # Load video options
@@ -188,7 +179,6 @@ class ProcessingOptionsWidget(QWidget):
         try:
             # Processing options
             self.crop_enabled.setChecked(options.get('crop_enabled', False))
-            self.scale_enabled.setChecked(options.get('scale_enabled', False))
             self.add_timestamp.setChecked(options.get('add_timestamp', True))
             
             # Video options
@@ -217,8 +207,6 @@ class ProcessingOptionsWidget(QWidget):
             'crop_y': self.crop_y.value(),
             'crop_width': self.crop_width.value(),
             'crop_height': self.crop_height.value(),
-            'scale_enabled': self.scale_enabled.isChecked(),
-            'scale_factor': self.scale_factor.value(),
             'add_timestamp': self.add_timestamp.isChecked(),
             'fps': self.fps_spin.value(),
             'codec': self.codec_combo.currentText(),

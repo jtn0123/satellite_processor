@@ -235,29 +235,21 @@ class VideoHandler:
             if self._processor:
                 self._processor._ffmpeg_processes.add(process)
 
-            # Monitor the process with timeout and progress feedback
-            start_time = time.time()
-            timeout = 300  # 5 minutes timeout
-            
             while process.poll() is None:
-                # Check for timeout
-                if time.time() - start_time > timeout:
-                    self.logger.error("FFmpeg process timed out")
-                    process.terminate()
-                    return False
-                
+                # Removed timeout handling code
+
                 # Read stderr for progress info
                 if process.stderr:
                     line = process.stderr.readline()
                     if line:
                         self.logger.info(f"FFmpeg: {line.strip()}")
-                
+
                 # Brief sleep to prevent CPU overuse
                 time.sleep(0.1)
 
             # Get final output
             _, stderr = process.communicate()
-            
+
             # Remove from tracking
             if self._processor:
                 self._processor._ffmpeg_processes.discard(process)

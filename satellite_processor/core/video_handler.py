@@ -341,16 +341,16 @@ class VideoHandler:
             # Enhanced quality parameters
             params_mapping = {
                 'high': {
-                    'search_param': '1000',     # Increased search area
-                    'mb_size': '8',             # Smaller blocks for better precision
-                    'me_mode': 'bilat',         # Bilateral estimation
-                    'mc_mode': 'obmc',          # Overlapped block motion compensation
-                    'vsbmc': '1',               # Variable size block motion compensation
-                    'scd': 'none',              # Disable scene change detection
-                    'crf': '15'                 # Higher quality encoding
+                    'search_param': '800',         # Reduced from '1000' to '800' to ensure it's within a reasonable range
+                    'mb_size': '8',
+                    'me_mode': 'bilat',
+                    'mc_mode': 'obmc',
+                    'vsbmc': '1',
+                    'scd': 'none',
+                    'crf': '15'
                 },
                 'medium': {
-                    'search_param': '500',
+                    'search_param': '400',         # Reduced from '500' to '400' for better stability
                     'mb_size': '16',
                     'me_mode': 'bidir',
                     'mc_mode': 'obmc',
@@ -360,7 +360,7 @@ class VideoHandler:
                 },
                 'low': {
                     'search_param': '200',
-                    'mb_size': '32',
+                    'mb_size': '16',             # Changed from '32' to '16' to fit within [4-16]
                     'me_mode': 'bidir',
                     'mc_mode': 'aobmc',
                     'vsbmc': '0',

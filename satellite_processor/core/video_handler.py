@@ -338,64 +338,78 @@ class VideoHandler:
     def _apply_interpolation(self, input_path: Path, output_path: Path, target_fps: int, options: dict) -> bool:
         """Apply high-quality interpolation with enhanced settings"""
         try:
-            # Enhanced quality parameters
+            # Enhanced quality parameters with device option
             params_mapping = {
                 'high': {
-                    'search_param': '800',         # Reduced from '1000' to '800' to ensure it's within a reasonable range
+                    'search_param': '800',
                     'mb_size': '8',
                     'me_mode': 'bilat',
                     'mc_mode': 'obmc',
                     'vsbmc': '1',
                     'scd': 'none',
-                    'crf': '15'
+                    'crf': '15',
+                    'device': 'gpu'  # Default to GPU
                 },
                 'medium': {
-                    'search_param': '400',         # Reduced from '500' to '400' for better stability
+                    'search_param': '400',
                     'mb_size': '16',
                     'me_mode': 'bidir',
                     'mc_mode': 'obmc',
                     'vsbmc': '1',
                     'scd': 'none',
-                    'crf': '18'
+                    'crf': '18',
+                    'device': 'gpu'
                 },
                 'low': {
                     'search_param': '200',
-                    'mb_size': '16',             # Changed from '32' to '16' to fit within [4-16]
+                    'mb_size': '16',
                     'me_mode': 'bidir',
                     'mc_mode': 'aobmc',
                     'vsbmc': '0',
                     'scd': 'none',
-                    'crf': '20'
+                    'crf': '20',
+                    'device': 'gpu'
                 }
             }
 
             quality = options.get('interpolation_quality', 'high').lower()
+            device = options.get('interpolation_device', 'gpu').lower()
             params = params_mapping.get(quality, params_mapping['high'])
+            params['device'] = device  # Override device if specified
+
+            # Update codec and preset based on device
+            if device == 'cpu':
+                codec = 'libx264'
+                preset = 'veryslow'
+            else:
+                codec = 'h264_nvenc' if self._check_gpu_support() else 'libx264'
+                preset = 'p7' if codec == 'h264_nvenc' else 'veryslow'
 
             filter_complex = (
                 f"minterpolate=fps={target_fps}:"
-                f"mi_mode=mci:"                      # Motion compensated interpolation
-                f"me_mode={params['me_mode']}:"      # Motion estimation mode
-                f"mc_mode={params['mc_mode']}:"      # Motion compensation mode
-                f"mb_size={params['mb_size']}:"      # Macroblock size
-                f"search_param={params['search_param']}:" # Search parameter
-                f"vsbmc={params['vsbmc']}:"          # Variable size block motion compensation
-                "scd=none"                           # Disable scene change detection
+                f"mi_mode=mci:"
+                f"me_mode={params['me_mode']}:"
+                f"mc_mode={params['mc_mode']}:"
+                f"mb_size={params['mb_size']}:"
+                f"search_param={params['search_param']}:"
+                f"vsbmc={params['vsbmc']}:"
+                "scd=none"
             )
 
-            # Build the FFmpeg command
+            # Build the FFmpeg command with device-specific settings
             cmd = [
                 str(self.ffmpeg_path),
                 '-y',
                 '-i', str(input_path),
                 '-filter_complex', filter_complex,
-                '-c:v', 'h264_nvenc' if self._check_gpu_support() else 'libx264',
-                '-preset', 'p7' if self._check_gpu_support() else 'veryslow',
+                '-c:v', codec,
+                '-preset', preset,
                 '-b:v', '50M',
                 '-maxrate', '70M',
                 '-bufsize', '100M',
                 '-profile:v', 'high',
                 '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
                 str(output_path)
             ]
 
@@ -636,3 +650,12 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Failed to get video info: {e}")
             return {}
+
+    def get_options(self) -> dict:
+        """Get current processing options"""
+        options = {
+            # ...existing options...
+            'interpolation_device': self.interp_device_combo.currentText().lower()  # New option
+        }
+        # ...existing code...
+        return options

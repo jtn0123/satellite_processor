@@ -2,6 +2,8 @@
 Core module initialization
 """
 
+# This file makes satellite_processor a Python package
+
 from .core.image_operations import ImageOperations
 from .core.processor import SatelliteImageProcessor
 from .core.video_handler import VideoHandler

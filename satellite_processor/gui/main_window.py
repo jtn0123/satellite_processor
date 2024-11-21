@@ -24,7 +24,6 @@ from .widgets import (
     LogWidget
 )
 from ..core.resource_monitor import ResourceMonitor
-from ..core.processor import SatelliteImageProcessor as ProcessingWorker  # Single import for ProcessingWorker
 from .managers.processing_manager import ProcessingManager
 from ..utils.helpers import parse_satellite_timestamp
 from ..utils.utils import (
@@ -778,3 +777,8 @@ class SatelliteProcessorGUI(QMainWindow):
             }
         }
         save_config(settings)
+
+    def initialize_processor(self):
+        from satellite_processor.core.processor import SatelliteImageProcessor  # Moved import
+        self.processor = SatelliteImageProcessor()
+        # ...existing code...

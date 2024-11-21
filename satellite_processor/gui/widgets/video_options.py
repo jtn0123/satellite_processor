@@ -116,3 +116,7 @@ class VideoOptionsWidget(QGroupBox):
     def fps(self):
         """Property to maintain compatibility with existing code"""
         return self.fps_spinbox
+
+    def some_function(self):
+        from satellite_processor.core.processor import SatelliteImageProcessor  # Moved import if needed
+        # ...use SatelliteImageProcessor here...

@@ -122,11 +122,12 @@ class VideoHandler:
         temp_dir = None
         try:
             # Get encoding settings from options
-            encoder = self._get_codec(options.get('codec', 'libx264'))  # Use _get_codec here
+            hardware = options.get('hardware', 'CPU (Software)').split()[0]  # Get NVIDIA, Intel, AMD or CPU
+            encoder = self._get_codec(options.get('codec', 'libx264'), hardware)  # Pass hardware to codec selection
             frame_duration = options.get('frame_duration', 1.0)
             target_fps = options.get('target_fps', 30)
             bitrate = options.get('bitrate', '8M')
-            preset = options.get('preset', 'medium')  # Changed from p7 to medium for CPU codecs
+            preset = options.get('preset', 'medium')
             
             # Calculate the target FPS based on interpolation factor
             interpolation_factor = options.get('interpolation_factor', 2)
@@ -146,15 +147,12 @@ class VideoHandler:
             # Build FFmpeg command
             cmd = [
                 str(self.ffmpeg_path),
+                *self._get_hardware_params(hardware),
                 '-y',
                 '-f', 'concat',
                 '-safe', '0',
                 '-i', str(image_list_path),
-                '-c:v', encoder,
-                '-preset', preset if 'x26' in encoder else 'p7',  # Use p7 only for NVENC
-                '-b:v', bitrate,
-                '-maxrate', str(int(float(bitrate[:-1]) * 1.5)) + 'M',
-                '-bufsize', str(int(float(bitrate[:-1]) * 2)) + 'M',
+                *self._get_codec_params(encoder, hardware),
                 '-r', str(target_fps),
                 '-pix_fmt', 'yuv420p',
                 str(output_path)
@@ -177,22 +175,18 @@ class VideoHandler:
                 self.logger.error("Output file was not created")
                 return False
 
-            # Set initial_video_path correctly after the initial video is created
-            initial_video_path = output_path
-
             # Check if interpolation is enabled
             if options.get('interpolation_enabled', False):
                 self.logger.info("Interpolation is enabled. Starting interpolation step.")
-
-                # Use a temporary path for the interpolated video
                 interpolated_video_path = output_path.parent / f"interpolated_{output_path.name}"
-
+                
                 interpolation_success = self._apply_interpolation(
-                    input_path=initial_video_path,
+                    input_path=output_path,
                     output_path=interpolated_video_path,
                     target_fps=target_fps,
                     options=options
                 )
+                
                 if not interpolation_success:
                     self.logger.error("Interpolation failed.")
                     return False
@@ -336,125 +330,117 @@ class VideoHandler:
             return False
 
     def _apply_interpolation(self, input_path: Path, output_path: Path, target_fps: int, options: dict) -> bool:
-        """Apply high-quality interpolation with enhanced settings"""
+        """Apply high-quality interpolation with hardware acceleration"""
         try:
-            # Enhanced quality parameters with device option
-            params_mapping = {
-                'high': {
-                    'search_param': '800',
-                    'mb_size': '8',
-                    'me_mode': 'bilat',
-                    'mc_mode': 'obmc',
-                    'vsbmc': '1',
-                    'scd': 'none',
-                    'crf': '15',
-                    'device': 'gpu'  # Default to GPU
+            # Get hardware selection
+            hardware = options.get('hardware', 'CPU (Software)')
+            quality = options.get('interpolation_quality', 'high').lower()
+            
+            # Define hardware-specific parameters
+            hw_params = {
+                'NVIDIA': {
+                    'decode': ['-hwaccel', 'cuda', '-hwaccel_output_format', 'cuda'],
+                    'scale': 'scale_cuda',
+                    'codec': 'h264_nvenc'
                 },
-                'medium': {
-                    'search_param': '400',
-                    'mb_size': '16',
-                    'me_mode': 'bidir',
-                    'mc_mode': 'obmc',
-                    'vsbmc': '1',
-                    'scd': 'none',
-                    'crf': '18',
-                    'device': 'gpu'
+                'Intel': {
+                    'decode': ['-hwaccel', 'qsv', '-hwaccel_output_format', 'qsv'],
+                    'scale': 'scale_qsv',
+                    'codec': 'h264_qsv'
                 },
-                'low': {
-                    'search_param': '200',
-                    'mb_size': '16',
-                    'me_mode': 'bidir',
-                    'mc_mode': 'aobmc',
-                    'vsbmc': '0',
-                    'scd': 'none',
-                    'crf': '20',
-                    'device': 'gpu'
+                'AMD': {
+                    'decode': ['-hwaccel', 'amf', '-hwaccel_output_format', 'amf'],
+                    'scale': 'scale_amf',
+                    'codec': 'h264_amf'
+                },
+                'CPU': {
+                    'decode': [],
+                    'scale': 'scale',
+                    'codec': 'libx264'
                 }
             }
 
-            quality = options.get('interpolation_quality', 'high').lower()
-            device = options.get('interpolation_device', 'gpu').lower()
-            params = params_mapping.get(quality, params_mapping['high'])
-            params['device'] = device  # Override device if specified
-
-            # Update codec and preset based on device
-            if device == 'cpu':
-                codec = 'libx264'
-                preset = 'veryslow'
+            # Select hardware parameters
+            if 'NVIDIA' in hardware:
+                hw = hw_params['NVIDIA']
+            elif 'Intel' in hardware:
+                hw = hw_params['Intel']
+            elif 'AMD' in hardware:
+                hw = hw_params['AMD']
             else:
-                codec = 'h264_nvenc' if self._check_gpu_support() else 'libx264'
-                preset = 'p7' if codec == 'h264_nvenc' else 'veryslow'
+                hw = hw_params['CPU']
 
-            filter_complex = (
-                f"minterpolate=fps={target_fps}:"
-                f"mi_mode=mci:"
-                f"me_mode={params['me_mode']}:"
-                f"mc_mode={params['mc_mode']}:"
-                f"mb_size={params['mb_size']}:"
-                f"search_param={params['search_param']}:"
-                f"vsbmc={params['vsbmc']}:"
-                "scd=none"
-            )
-
-            # Build the FFmpeg command with device-specific settings
+            # Build FFmpeg command
             cmd = [
                 str(self.ffmpeg_path),
+                *hw['decode'],
                 '-y',
                 '-i', str(input_path),
-                '-filter_complex', filter_complex,
-                '-c:v', codec,
-                '-preset', preset,
-                '-b:v', '50M',
-                '-maxrate', '70M',
-                '-bufsize', '100M',
-                '-profile:v', 'high',
-                '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart',
+                '-filter_complex', f'minterpolate=fps={target_fps}:mi_mode=mci',
+                '-c:v', hw['codec'],
+                '-preset', 'p7' if 'nvenc' in hw['codec'] else 'slow',
+                '-b:v', '35M',
+                '-maxrate', '45M',
+                '-bufsize', '70M',
                 str(output_path)
             ]
-
-            self.logger.info(f"Running interpolation command: {' '.join(cmd)}")
 
             return self._try_encode(cmd, input_path.parent, output_path)
 
         except Exception as e:
-            self.logger.error(f"Error in _apply_interpolation: {str(e)}")
+            self.logger.error(f"Error in _apply_interpolation: {e}")
             return False
 
-    def _get_codec_params(self, codec: str) -> List[str]:
-        """Get optimal codec parameters based on selected encoder"""
-        params = {
-            'h264_nvenc': [
-                '-c:v', 'h264_nvenc',
-                '-preset', 'p7',
-                '-rc', 'vbr',
-                '-cq', '16',
-                '-b:v', '35M',
-                '-maxrate', '45M',
-                '-bufsize', '70M',
-                '-profile:v', 'main',  # Changed from high to main
-                '-movflags', '+faststart'
-            ],
-            'hevc_nvenc': [
-                '-c:v', 'hevc_nvenc',
-                '-preset', 'p7',
-                '-rc', 'vbr',
-                '-cq', '20',
-                '-b:v', '35M',
-                '-maxrate', '45M',
-                '-bufsize', '70M',
-                '-profile:v', 'main',
-                '-movflags', '+faststart'
-            ],
-            'libx264': [
-                '-c:v', 'libx264',
-                '-preset', 'slow',
-                '-crf', '18',
-                '-profile:v', 'main',  # Changed from high to main
-                '-movflags', '+faststart'
-            ]
+    def _get_codec_params(self, codec: str, hardware: str = None) -> List[str]:
+        """Get optimal codec parameters based on selected encoder and hardware"""
+        codec_map = {
+            'NVIDIA': {
+                'h264': ['-c:v', 'h264_nvenc', '-preset', 'p7', '-rc', 'vbr', '-cq', '16'],
+                'hevc': ['-c:v', 'hevc_nvenc', '-preset', 'p7', '-rc', 'vbr', '-cq', '20'],
+                'av1': ['-c:v', 'av1_nvenc', '-preset', 'p7', '-rc', 'vbr', '-cq', '24']
+            },
+            'Intel': {
+                'h264': ['-c:v', 'h264_qsv', '-preset', 'slow', '-global_quality', '20'],
+                'hevc': ['-c:v', 'hevc_qsv', '-preset', 'slow', '-global_quality', '24'],
+                'av1': ['-c:v', 'av1_qsv', '-preset', 'slow', '-global_quality', '28']
+            },
+            'AMD': {
+                'h264': ['-c:v', 'h264_amf', '-quality', 'quality', '-rc', 'cqp', '-qp', '18'],
+                'hevc': ['-c:v', 'hevc_amf', '-quality', 'quality', '-rc', 'cqp', '-qp', '22'],
+                'av1': ['-c:v', 'av1_amf', '-quality', 'quality', '-rc', 'cqp', '-qp', '26']
+            },
+            'CPU': {
+                'h264': ['-c:v', 'libx264', '-preset', 'slow', '-crf', '18'],
+                'hevc': ['-c:v', 'libx265', '-preset', 'slow', '-crf', '22'],
+                'av1': ['-c:v', 'libaom-av1', '-cpu-used', '4', '-crf', '26']
+            }
         }
-        return params.get(codec, params['libx264'])
+
+        # Parse hardware and codec type
+        if hardware and "NVIDIA" in hardware:
+            params = codec_map['NVIDIA']
+        elif hardware and "Intel" in hardware:
+            params = codec_map['Intel']
+        elif hardware and "AMD" in hardware:
+            params = codec_map['AMD']
+        else:
+            params = codec_map['CPU']
+
+        # Get base codec type
+        if "H.264" in codec:
+            base_params = params['h264']
+        elif "HEVC" in codec or "H.265" in codec:
+            base_params = params['hevc']
+        else:  # AV1
+            base_params = params['av1']
+
+        # Add common parameters
+        return base_params + [
+            '-b:v', '35M',
+            '-maxrate', '45M',
+            '-bufsize', '70M',
+            '-movflags', '+faststart'
+        ]
 
     def _create_ffmpeg_video(self, frame_paths: List[Path], output_path: Path, options: dict) -> bool:
         """Create video using FFmpeg"""
@@ -563,20 +549,42 @@ class VideoHandler:
             self.logger.error(f"Interpolation failed: {str(e)}")
             return False
 
-    def _get_codec(self, encoder: str) -> str:
-        """Get appropriate codec based on encoder selection"""
+    def _get_codec(self, encoder: str, hardware: str = 'CPU') -> str:
+        """Get appropriate codec based on encoder and hardware selection"""
+        # Map encoders to their hardware-specific implementations
         codec_map = {
-            'H.264 (Maximum Compatibility)': 'libx264',
-            'H.264': 'libx264',
-            'H.265': 'libx265',
-            'HEVC': 'libx265',
-            'CPU H.264': 'libx264',
-            'CPU H.265': 'libx265',
-            'NVIDIA H.264': 'h264_nvenc',
-            'NVIDIA H.265': 'hevc_nvenc',
-            'AV1': 'libaom-av1'
+            'NVIDIA': {
+                'H.264': 'h264_nvenc',
+                'H.265': 'hevc_nvenc',
+                'AV1': 'av1_nvenc'
+            },
+            'Intel': {
+                'H.264': 'h264_qsv',
+                'H.265': 'hevc_qsv',
+                'AV1': 'av1_qsv'
+            },
+            'AMD': {
+                'H.264': 'h264_amf',
+                'H.265': 'hevc_amf',
+                'AV1': 'av1_amf'
+            },
+            'CPU': {
+                'H.264': 'libx264',
+                'H.265': 'libx265',
+                'AV1': 'libaom-av1'
+            }
         }
-        return codec_map.get(encoder, 'libx264')  # Default to libx264 if unknown
+        
+        # Extract base codec name from encoder string
+        base_codec = 'H.264'
+        if 'H.265' in encoder or 'HEVC' in encoder:
+            base_codec = 'H.265'
+        elif 'AV1' in encoder:
+            base_codec = 'AV1'
+            
+        # Get hardware-specific codec or fall back to CPU
+        hw_codecs = codec_map.get(hardware, codec_map['CPU'])
+        return hw_codecs.get(base_codec, 'libx264')  # Default to libx264 if unknown
 
     def interpolate_frames(self, input_path: Path, output_path: Path, fps: int) -> bool:
         """Interpolate frames to increase video smoothness"""
@@ -654,8 +662,38 @@ class VideoHandler:
     def get_options(self) -> dict:
         """Get current processing options"""
         options = {
-            # ...existing options...
-            'interpolation_device': self.interp_device_combo.currentText().lower()  # New option
+            'crop_enabled': self.crop_enabled.isChecked(),
+            'crop_x': self.crop_x.value(),
+            'crop_y': self.crop_y.value(),
+            'crop_width': self.crop_width.value(),
+            'crop_height': self.crop_height.value(),
+            'add_timestamp': self.add_timestamp.isChecked(),
+            'fps': self.fps_spin.value(),
+            'codec': self.codec_combo.currentText(),
+            'hardware': self.hardware_combo.currentText(),  # Existing hardware option
+            'frame_duration': self.frame_duration_spin.value(),
+            'false_color_enabled': self.enable_false_color.isChecked(),
+            'false_color_method': self.sanchez_method.currentText(),
+            'interpolation_enabled': self.enable_interpolation.isChecked(),
+            'interpolation_method': self.interp_method.currentText(),
+            'interpolation_quality': self.interp_quality.currentText().split()[0].lower(),  # Get just "high", "medium", or "low"
+            'interpolation_factor': self.interp_factor.value(),
+            'encoding_device': self.hardware_combo.currentText().split()[0]  # Extract 'CPU' or 'NVIDIA'
         }
-        # ...existing code...
+        
+        # Add debug logging
+        if options['false_color_enabled']:
+            self.logger.info(f"False color is enabled with method: {options['false_color_method']}")
+        self.logger.info(f"Encoding device selected: {options['encoding_device']}")
+            
         return options
+
+    def _get_hardware_params(self, hardware: str) -> List[str]:
+        """Get hardware-specific FFmpeg parameters"""
+        params = {
+            'NVIDIA': ['-hwaccel', 'cuda', '-hwaccel_output_format', 'cuda'],
+            'Intel': ['-hwaccel', 'qsv', '-hwaccel_output_format', 'qsv'],
+            'AMD': ['-hwaccel', 'amf', '-hwaccel_output_format', 'amf'],
+            'CPU': []
+        }
+        return params.get(hardware, [])  # Return empty list for unknown hardware

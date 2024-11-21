@@ -304,6 +304,7 @@ class SettingsManager:
         return self.get_setting(key, default)
     
     def save_preference(self, key: str, value: Any) -> None:
-        """Alias for set_setting."""
+        """Alias for set_se
+        ting."""
         self.set_setting(key, value)
         self.save_settings()

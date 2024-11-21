@@ -128,6 +128,11 @@ class VideoHandler:
             bitrate = options.get('bitrate', '8M')
             preset = options.get('preset', 'medium')  # Changed from p7 to medium for CPU codecs
             
+            # Calculate the target FPS based on interpolation factor
+            interpolation_factor = options.get('interpolation_factor', 2)
+            base_fps = options.get('fps', 30)
+            target_fps = base_fps * interpolation_factor
+            
             # Create working directory and image list
             temp_dir = Path(tempfile.mkdtemp())
             image_list_path = temp_dir / "files.txt"
@@ -171,6 +176,32 @@ class VideoHandler:
             if not output_path.exists():
                 self.logger.error("Output file was not created")
                 return False
+
+            # Set initial_video_path correctly after the initial video is created
+            initial_video_path = output_path
+
+            # Check if interpolation is enabled
+            if options.get('interpolation_enabled', False):
+                self.logger.info("Interpolation is enabled. Starting interpolation step.")
+
+                # Use a temporary path for the interpolated video
+                interpolated_video_path = output_path.parent / f"interpolated_{output_path.name}"
+
+                interpolation_success = self._apply_interpolation(
+                    input_path=initial_video_path,
+                    output_path=interpolated_video_path,
+                    target_fps=target_fps,
+                    options=options
+                )
+                if not interpolation_success:
+                    self.logger.error("Interpolation failed.")
+                    return False
+                
+                # Replace the initial video with the interpolated video
+                shutil.move(str(interpolated_video_path), str(output_path))
+                self.logger.info("Interpolation completed successfully.")
+            else:
+                self.logger.info("Interpolation not enabled, using initial video as output.")
 
             return True
 
@@ -313,41 +344,72 @@ class VideoHandler:
             return False
 
     def _apply_interpolation(self, input_path: Path, output_path: Path, target_fps: int, options: dict) -> bool:
-        """Apply high-quality interpolation"""
+        """Apply high-quality interpolation with enhanced settings"""
         try:
+            # Enhanced quality parameters
+            params_mapping = {
+                'high': {
+                    'search_param': '1000',     # Increased search area
+                    'mb_size': '8',             # Smaller blocks for better precision
+                    'me_mode': 'bilat',         # Bilateral estimation
+                    'mc_mode': 'obmc',          # Overlapped block motion compensation
+                    'vsbmc': '1',               # Variable size block motion compensation
+                    'scd': 'none',              # Disable scene change detection
+                    'crf': '15'                 # Higher quality encoding
+                },
+                'medium': {
+                    'search_param': '500',
+                    'mb_size': '16',
+                    'me_mode': 'bidir',
+                    'mc_mode': 'obmc',
+                    'vsbmc': '1',
+                    'scd': 'none',
+                    'crf': '18'
+                },
+                'low': {
+                    'search_param': '200',
+                    'mb_size': '32',
+                    'me_mode': 'bidir',
+                    'mc_mode': 'aobmc',
+                    'vsbmc': '0',
+                    'scd': 'none',
+                    'crf': '20'
+                }
+            }
+
+            quality = options.get('interpolation_quality', 'high').lower()
+            params = params_mapping.get(quality, params_mapping['high'])
+
+            filter_complex = (
+                f"minterpolate=fps={target_fps}:"
+                f"mi_mode=mci:"                      # Motion compensated interpolation
+                f"me_mode={params['me_mode']}:"      # Motion estimation mode
+                f"mc_mode={params['mc_mode']}:"      # Motion compensation mode
+                f"mb_size={params['mb_size']}:"      # Macroblock size
+                f"search_param={params['search_param']}:" # Search parameter
+                f"vsbmc={params['vsbmc']}:"          # Variable size block motion compensation
+                "scd=none"                           # Disable scene change detection
+            )
+
+            # Build the FFmpeg command
             cmd = [
                 str(self.ffmpeg_path),
                 '-y',
                 '-i', str(input_path),
-                '-filter_complex',
-                f'minterpolate=fps={target_fps}:'
-                'mi_mode=mci:'
-                'mc_mode=aobmc:'
-                'me_mode=bilat:'
-                'me=umh:'        # Use UMH for better quality
-                'mb_size=16:'
-                'search_param=400:'  # Increased search area
-                'vsbmc=1:'
-                'scd=none',     # Disable scene change detection
-                '-c:v', 'h264_nvenc',
-                '-preset', 'p7',
-                '-rc', 'vbr',
-                '-b:v', '35M',
-                '-maxrate', '45M',
-                '-bufsize', '70M',
-                '-profile:v', 'main',
+                '-filter_complex', filter_complex,
+                '-c:v', 'h264_nvenc' if self._check_gpu_support() else 'libx264',
+                '-preset', 'p7' if self._check_gpu_support() else 'veryslow',
+                '-b:v', '50M',
+                '-maxrate', '70M',
+                '-bufsize', '100M',
+                '-profile:v', 'high',
                 '-pix_fmt', 'yuv420p',
                 str(output_path)
             ]
 
-            self.logger.debug(f"Running interpolation: {' '.join(cmd)}")
-            
-            process = subprocess.run(cmd, capture_output=True, text=True)
-            if process.returncode != 0:
-                self.logger.error(f"Interpolation failed: {process.stderr}")
-                return False
+            self.logger.info(f"Running interpolation command: {' '.join(cmd)}")
 
-            return True
+            return self._try_encode(cmd, input_path.parent, output_path)
 
         except Exception as e:
             self.logger.error(f"Error in _apply_interpolation: {str(e)}")

@@ -112,30 +112,41 @@ class ProcessingOptionsWidget(QWidget):
         sanchez_group.setLayout(sanchez_layout)
         layout.addWidget(sanchez_group)
         
-        # Add Interpolation Group
+        # Update Interpolation Group with new options
         interp_group = QGroupBox("Interpolation Settings")
         interp_layout = QFormLayout()
         
         self.enable_interpolation = QCheckBox("Enable Frame Interpolation")
         self.interp_method = QComboBox()
         self.interp_method.addItems([
-            "Linear",
-            "Cubic",
-            "RIFE (AI)",
-            "DAIN (High Quality)"
+            "Motion Compensated (MCI)",
+            "Bidirectional",
+            "Advanced Optical Flow"
         ])
+        
+        self.interp_quality = QComboBox()
+        self.interp_quality.addItems([
+            "High (Best Quality)",
+            "Medium (Balanced)",
+            "Low (Faster)"
+        ])
+        
         self.interp_factor = QSpinBox()
         self.interp_factor.setRange(2, 8)
         self.interp_factor.setValue(2)
         self.interp_factor.setSuffix("x")
         
+        # Disable controls by default
         self.interp_method.setEnabled(False)
+        self.interp_quality.setEnabled(False)
         self.interp_factor.setEnabled(False)
-        self.enable_interpolation.toggled.connect(self.interp_method.setEnabled)
-        self.enable_interpolation.toggled.connect(self.interp_factor.setEnabled)
+        
+        # Connect signals
+        self.enable_interpolation.toggled.connect(self._on_interpolation_toggled)
         
         interp_layout.addRow(self.enable_interpolation)
         interp_layout.addRow("Method:", self.interp_method)
+        interp_layout.addRow("Quality:", self.interp_quality)
         interp_layout.addRow("Factor:", self.interp_factor)
         interp_group.setLayout(interp_layout)
         layout.addWidget(interp_group)
@@ -193,8 +204,19 @@ class ProcessingOptionsWidget(QWidget):
             
             # Interpolation options
             self.enable_interpolation.setChecked(options.get('interpolation_enabled', False))
-            self.interp_method.setCurrentText(options.get('interpolation_method', 'Linear'))
+            self.interp_method.setCurrentText(options.get('interpolation_method', 'Motion Compensated (MCI)'))
+            
+            # Handle quality setting
+            quality = options.get('interpolation_quality', 'medium')
+            quality_map = {'high': 'High (Best Quality)', 
+                         'medium': 'Medium (Balanced)', 
+                         'low': 'Low (Faster)'}
+            self.interp_quality.setCurrentText(quality_map.get(quality, 'Medium (Balanced)'))
+            
             self.interp_factor.setValue(options.get('interpolation_factor', 2))
+            
+            # Update enabled states
+            self._on_interpolation_toggled(options.get('interpolation_enabled', False))
             
         except Exception as e:
             self.logger.error(f"Error loading options: {e}")
@@ -216,6 +238,7 @@ class ProcessingOptionsWidget(QWidget):
             'false_color_method': self.sanchez_method.currentText(),
             'interpolation_enabled': self.enable_interpolation.isChecked(),
             'interpolation_method': self.interp_method.currentText(),
+            'interpolation_quality': self.interp_quality.currentText().split()[0].lower(),  # Get just "high", "medium", or "low"
             'interpolation_factor': self.interp_factor.value()
         }
         
@@ -235,3 +258,14 @@ class ProcessingOptionsWidget(QWidget):
         """Handle false color method changes"""
         if self.enable_false_color.isChecked():
             self.logger.info(f"False color method changed to: {method}")
+
+    def _on_interpolation_toggled(self, enabled: bool):
+        """Handle interpolation enable/disable"""
+        self.interp_method.setEnabled(enabled)
+        self.interp_quality.setEnabled(enabled)
+        self.interp_factor.setEnabled(enabled)
+        if enabled:
+            self.logger.info(
+                f"Interpolation enabled: {self.interp_method.currentText()} "
+                f"at {self.interp_quality.currentText()}"
+            )

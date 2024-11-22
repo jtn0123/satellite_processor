@@ -1,10 +1,9 @@
-
 from setuptools import setup, find_packages
 
 setup(
     name='satellite_processor',
     version='0.1.0',
-    packages=find_packages(),
+    packages=find_packages(include=['satellite_processor', 'satellite_processor.*']),
     install_requires=[
         'PyQt6>=6.4.0',
         'pyqtgraph>=0.13.1',
@@ -22,4 +21,5 @@ setup(
         'pylint>=2.15.0',
         'pytest-qt>=4.0.0',
     ],
+    python_requires='>=3.10, <3.13',
 )

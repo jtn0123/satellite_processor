@@ -1,7 +1,7 @@
 # satellite_processor/satellite_processor/gui/widgets/video_options.py
 from PyQt6.QtWidgets import ( # type: ignore
     QGroupBox, QVBoxLayout, QHBoxLayout,
-    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget
+    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton
 )
 from PyQt6.QtCore import Qt # type: ignore
 
@@ -9,7 +9,7 @@ class VideoOptionsWidget(QGroupBox):
     """Widget for video encoding options"""
     
     def __init__(self, parent: QWidget = None) -> None:
-        super().__init__("Video Options", parent)
+        super().__init__(parent)
         self.init_ui()
 
     def init_ui(self):
@@ -23,90 +23,94 @@ class VideoOptionsWidget(QGroupBox):
         self.fps_spinbox.setValue(30)
         fps_layout.addWidget(self.fps_label)
         fps_layout.addWidget(self.fps_spinbox)
+        layout.addLayout(fps_layout)
         
         # Hardware Selection
         hardware_layout = QHBoxLayout()
         self.hardware_label = QLabel("Processing Hardware:")
         self.hardware_combo = QComboBox()
-        self.hardware_combo.addItems([
-            "NVIDIA GPU (CUDA)",
-            "Intel GPU (QSV)",
-            "AMD GPU (AMF)",
-            "CPU (Software)"
-        ])
+        self.hardware_combo.addItems(["NVIDIA GPU (CUDA)", "Intel GPU", "AMD GPU", "CPU"])
         hardware_layout.addWidget(self.hardware_label)
         hardware_layout.addWidget(self.hardware_combo)
+        layout.addLayout(hardware_layout)
         
-        # Interpolation Options
-        interp_group = QGroupBox("Interpolation")
-        interp_layout = QVBoxLayout()
-        
-        # Enable checkbox
-        self.enable_interpolation = QCheckBox("Enable Frame Interpolation")
-        self.enable_interpolation.setChecked(True)
-        interp_layout.addWidget(self.enable_interpolation)
-        
-        # Quality combo
-        quality_layout = QHBoxLayout()
-        self.quality_label = QLabel("Quality:")
-        self.quality_combo = QComboBox()
-        self.quality_combo.addItems(["High", "Medium", "Low"])
-        quality_layout.addWidget(self.quality_label)
-        quality_layout.addWidget(self.quality_combo)
-        interp_layout.addLayout(quality_layout)
-        
-        # Factor spinbox 
-        factor_layout = QHBoxLayout()
-        self.factor_label = QLabel("Interpolation Factor:")
-        self.factor_spin = QSpinBox()
-        self.factor_spin.setRange(2, 8)
-        self.factor_spin.setValue(2)
-        self.factor_spin.setSuffix("x")
-        factor_layout.addWidget(self.factor_label)
-        factor_layout.addWidget(self.factor_spin)
-        interp_layout.addLayout(factor_layout)
-        
-        interp_group.setLayout(interp_layout)
-        
-        # Encoder Options 
+        # Encoder Selection
         encoder_layout = QHBoxLayout()
         self.encoder_label = QLabel("Encoder:")
         self.encoder_combo = QComboBox()
-        self.encoder_combo.addItems([
-            "H.264 (Maximum Compatibility)", 
-            "HEVC/H.265 (Better Compression)",
-            "AV1 (Best Quality)"
-        ])
+        self.encoder_combo.addItems(["H.264", "HEVC", "AV1"])
         encoder_layout.addWidget(self.encoder_label)
         encoder_layout.addWidget(self.encoder_combo)
-        
-        # Add layouts to main layout
-        layout.addLayout(fps_layout)
-        layout.addLayout(hardware_layout)
-        layout.addWidget(interp_group)
         layout.addLayout(encoder_layout)
         
-        # Connect signals
-        self.enable_interpolation.toggled.connect(self._on_interpolation_toggled)
+        # Interpolation Options
+        interpolation_layout = QHBoxLayout()
+        self.enable_interpolation = QCheckBox("Enable Interpolation")
+        self.enable_interpolation.setChecked(True)
+        interpolation_layout.addWidget(self.enable_interpolation)
+        
+        self.quality_label = QLabel("Quality:")
+        self.quality_combo = QComboBox()
+        self.quality_combo.addItems(["High", "Medium", "Low"])
+        interpolation_layout.addWidget(self.quality_label)
+        interpolation_layout.addWidget(self.quality_combo)
+        
+        self.factor_label = QLabel("Factor:")
+        self.factor_spin = QSpinBox()
+        self.factor_spin.setRange(2, 8)
+        self.factor_spin.setValue(2)
+        interpolation_layout.addWidget(self.factor_label)
+        interpolation_layout.addWidget(self.factor_spin)
+        layout.addLayout(interpolation_layout)
+        
+        # Reset Button
+        self.reset_button = QPushButton("Reset to Defaults")
+        layout.addWidget(self.reset_button)
         
         self.setLayout(layout)
-
-    def _on_interpolation_toggled(self, enabled: bool):
-        """Handle interpolation enable/disable"""
+        
+        # Connect signals
+        self.enable_interpolation.stateChanged.connect(self.on_interpolation_toggled)
+        self.quality_combo.currentTextChanged.connect(self.on_quality_changed)
+        self.reset_button.clicked.connect(self.reset_to_defaults)
+        
+        # Initialize UI state
+        self.on_interpolation_toggled(self.enable_interpolation.isChecked())
+    
+    def on_interpolation_toggled(self, state):
+        enabled = state == Qt.Checked
         self.quality_combo.setEnabled(enabled)
         self.factor_spin.setEnabled(enabled)
-
+    
+    def on_quality_changed(self, text):
+        if text == "High":
+            self.factor_spin.setRange(2, 8)
+        elif text == "Medium":
+            self.factor_spin.setRange(2, 6)
+        elif text == "Low":
+            self.factor_spin.setRange(2, 4)
+        # Adjust current value if it exceeds new maximum
+        if self.factor_spin.value() > self.factor_spin.maximum():
+            self.factor_spin.setValue(self.factor_spin.maximum())
+    
     def get_options(self) -> dict:
-        """Get all video options as a dictionary"""
         return {
             'fps': self.fps_spinbox.value(),
             'hardware': self.hardware_combo.currentText(),
+            'encoder': self.encoder_combo.currentText(),
             'interpolation_enabled': self.enable_interpolation.isChecked(),
-            'interpolation_quality': self.quality_combo.currentText().lower(),
+            'interpolation_quality': self.quality_combo.currentText(),
             'interpolation_factor': self.factor_spin.value(),
-            'encoder': self.encoder_combo.currentText()
         }
-        
+    
+    def reset_to_defaults(self):
+        self.fps_spinbox.setValue(30)
+        self.hardware_combo.setCurrentIndex(0)
+        self.encoder_combo.setCurrentIndex(0)
+        self.enable_interpolation.setChecked(True)
+        self.quality_combo.setCurrentIndex(0)
+        self.factor_spin.setValue(2)
+
     @property
     def encoder(self):
         """Property to maintain compatibility with existing code"""

@@ -383,14 +383,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # Terminate any running FFmpeg processes first
             for process in self._ffmpeg_processes.copy():
                 try:
-                    if process.poll() is None:  # Process is still running
+                    if process.poll() is None:
                         process.terminate()
-                        try:
-                            process.wait(timeout=5)  # Wait up to 5 seconds
-                        except subprocess.TimeoutExpired:
-                            process.kill()  # Force kill if it doesn't terminate
-                            process.wait()  # Ensure process is dead
-                    self._ffmpeg_processes.remove(process)
+                        process.wait(timeout=5)
+                        self._ffmpeg_processes.remove(process)
                 except Exception as e:
                     self.logger.error(f"Error terminating FFmpeg process: {e}")
 
@@ -403,7 +399,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     # Call cleanup directly instead of using invokeMethod
                     self.resource_monitor.stop()
                     if self.resource_monitor.isRunning():
-                        self.resource_monitor.wait()
+                        self.resource_monitor.terminate()
                     self.resource_monitor.deleteLater()
                     self.resource_monitor = None
                 except Exception as e:
@@ -413,20 +409,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             if hasattr(self, 'update_timer') and self.update_timer is not None:
                 try:
                     if QThread.currentThread() != QApplication.instance().thread():
-                        # Move timer operations to main thread if needed
-                        QMetaObject.invokeMethod(
-                            self.update_timer,
-                            "stop",
-                            Qt.ConnectionType.BlockingQueuedConnection
-                        )
-                        QMetaObject.invokeMethod(
-                            self.update_timer,
-                            "deleteLater",
-                            Qt.ConnectionType.BlockingQueuedConnection
-                        )
+                        QMetaObject.invokeMethod(self.update_timer, "stop", Qt.ConnectionType.QueuedConnection)
                     else:
                         self.update_timer.stop()
-                        self.update_timer.deleteLater()
                     self.update_timer = None
                 except Exception as e:
                     self.logger.error(f"Timer cleanup error: {e}")
@@ -855,19 +840,13 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             
             for path in common_paths:
                 if path.exists():
-                    self.logger.debug(f"Found FFmpeg at: {path}")
                     return path
-
+            
             # Try PATH environment
-            try:
-                result = subprocess.run(['ffmpeg', '-version'], 
-                                     capture_output=True, 
-                                     text=True)
-                if result.returncode == 0:
-                    return Path('ffmpeg')
-            except Exception:
-                pass
-
+            ffmpeg_path = shutil.which("ffmpeg")
+            if ffmpeg_path:
+                return Path(ffmpeg_path)
+        
             self.logger.error("FFmpeg not found in system")
             return None
             

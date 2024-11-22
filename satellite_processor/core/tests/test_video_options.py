@@ -1,24 +1,22 @@
-import pytest
-from PyQt6.QtWidgets import QApplication
-from satellite_processor.gui.widgets.video_options import VideoOptionsWidget  # Corrected import
 import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+from pathlib import Path
 
-# Required for Qt widget testing
-@pytest.fixture
-def app():
-    return QApplication([])
+# Add project root to sys.path
+sys.path.append(str(Path(__file__).resolve().parents[3]))
+
+import pytest
+from satellite_processor.gui.widgets.video_options import VideoOptionsWidget
 
 @pytest.fixture
-def video_options(app):
-    return VideoOptionsWidget()
+def video_options(qtbot):
+    widget = VideoOptionsWidget()
+    qtbot.addWidget(widget)
+    return widget
 
 def test_video_processing(video_options):
-    # Test default values
     options = video_options.get_options()
     assert options['fps'] == 30
-    assert options['interpolation_enabled'] == True
+    assert options['interpolation_enabled'] is True
     assert options['interpolation_factor'] == 2
 
 def test_video_format_support(video_options):

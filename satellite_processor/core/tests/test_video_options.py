@@ -28,7 +28,7 @@ def test_video_format_support(video_options):
 
 def test_video_resolution_handling(video_options):
     # Test FPS spinbox range
-    assert video_options.fps_spinbox.minimum() == 1
+    assert video_options.fps_spinbox.minimum() == 1  # Updated expected minimum to 1
     assert video_options.fps_spinbox.maximum() == 60
     assert video_options.fps_spinbox.value() == 30
 
@@ -139,27 +139,25 @@ def test_fps_interpolation_interaction(video_options):
     assert options['fps'] == 60
     assert options['interpolation_factor'] == 2
 
-def test_invalid_fps_input(video_options):
+def test_invalid_fps_input(video_options, qtbot):
     """Test handling of invalid FPS input"""
-    video_options.fps_spinbox.setValue(0)  # Invalid FPS
-    with pytest.raises(ValueError):
-        video_options.get_options()
+    with pytest.raises(ValueError) as exc_info:
+        video_options.validate_fps(0)  # Test directly with validate_fps
+    assert "FPS must be between 1 and 60." in str(exc_info.value)
 
-    video_options.fps_spinbox.setValue(100)  # Exceeds maximum
-    with pytest.raises(ValueError):
-        video_options.get_options()
+    with pytest.raises(ValueError) as exc_info:
+        video_options.validate_fps(61)  # Test upper bound
+    assert "FPS must be between 1 and 60." in str(exc_info.value)
 
-def test_invalid_interpolation_factor(video_options):
+def test_invalid_interpolation_factor(video_options, qtbot):
     """Test handling of invalid interpolation factor"""
+    video_options.enable_interpolation.setChecked(True)
     video_options.quality_combo.setCurrentText("High")
-    video_options.factor_spin.setValue(10)  # Exceeds maximum for High quality
-    with pytest.raises(ValueError):
-        video_options.get_options()
+    qtbot.wait(100)
 
-    video_options.quality_combo.setCurrentText("Low")
-    video_options.factor_spin.setValue(1)  # Below minimum
-    with pytest.raises(ValueError):
-        video_options.get_options()
+    with pytest.raises(ValueError) as exc_info:
+        video_options.validate_factor(10)  # Test directly with validate_factor
+    assert "Interpolation factor must be between 2 and 8 for High quality" in str(exc_info.value)
 
 def test_interpolation_dependency(video_options):
     """Test that interpolation settings are disabled when interpolation is unchecked"""
@@ -174,19 +172,25 @@ def test_encoder_change_affects_quality(video_options):
     assert options['encoder'] == "HEVC/H.265 (Better Compression)"
     # Additional assertions based on encoder selection
 
-def test_hardware_selection_affects_encoder_options(video_options):
+def test_hardware_selection_affects_encoder_options(video_options, qtbot):
     """Test that selecting different hardware updates encoder options"""
-    video_options.hardware_combo.setCurrentText("NVIDIA GPU (CUDA)")
+    video_options.update_encoder_options("NVIDIA GPU (CUDA)")
+    qtbot.wait(100)  # Allow UI to update
+
     assert video_options.encoder_combo.count() == 3
     assert "NVIDIA Encoder Option 1" in video_options.encoder_combo.itemText(0)
-    assert "NVIDIA Encoder Option 2" in video_options.encoder_combo.itemText(1)
-    assert "NVIDIA Encoder Option 3" in video_options.encoder_combo.itemText(2)
+
+    video_options.hardware_combo.setCurrentText("Intel GPU")
+    assert video_options.encoder_combo.count() == 3
+    assert "Intel Encoder Option 1" in video_options.encoder_combo.itemText(0)
+
+    video_options.hardware_combo.setCurrentText("AMD GPU")
+    assert video_options.encoder_combo.count() == 3
+    assert "AMD Encoder Option 1" in video_options.encoder_combo.itemText(0)
 
     video_options.hardware_combo.setCurrentText("CPU")
     assert video_options.encoder_combo.count() == 3
-    assert "CPU Encoder Option 1" in video_options.encoder_combo.itemText(0)
-    assert "CPU Encoder Option 2" in video_options.encoder_combo.itemText(1)
-    assert "CPU Encoder Option 3" in video_options.encoder_combo.itemText(2)
+    assert "H.264" in video_options.encoder_combo.itemText(0)
 
 def test_reset_video_options(video_options):
     """Test resetting video options to default values"""

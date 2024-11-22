@@ -951,4 +951,19 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             print(f"Error processing {image_path}: {e}")
             return None
 
+    def configure_encoder(self, options: dict):
+        """Configure the video encoder with selected options."""
+        encoder = options.get('encoder')
+        bitrate = options.get('bitrate', 5000)  # Default bitrate
+        # Assume VideoHandler has a method to configure encoder
+        self.video_handler.configure_encoder(encoder, bitrate)
+    
+    def encode_video(self, options: dict):
+        """Encode video with the specified options."""
+        fps = options.get('fps', 30)
+        bitrate = options.get('bitrate', 5000)
+        # Configure encoder before encoding
+        self.configure_encoder(options)
+        self.video_handler.encode_video(fps, bitrate)
+
     # ...rest of the class implementation...

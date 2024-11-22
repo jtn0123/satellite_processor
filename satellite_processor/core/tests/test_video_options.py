@@ -297,3 +297,206 @@ def test_interpolation_edge_cases(video_options):
     with pytest.raises(ValueError) as exc_info:
         video_options.validate_factor(5)
     assert "Interpolation factor must be between 2 and 4 for Low quality" in str(exc_info.value)
+
+def test_video_encoding_parameters(video_options):
+    """Test that video encoding parameters are set correctly."""
+    video_options.encoder_combo.setCurrentText("HEVC/H.265 (Better Compression)")
+    options = video_options.get_options()
+    
+    assert options['encoder'] == "HEVC/H.265 (Better Compression)"
+    # Assume VideoHandler has a method to retrieve encoding settings
+    with patch('satellite_processor.core.video_handler.VideoHandler.configure_encoder') as mock_config:
+        processor = SatelliteImageProcessor()
+        processor.configure_encoder(options)
+        mock_config.assert_called_with("HEVC/H.265 (Better Compression)", pytest.ANY)
+
+def test_frame_rate_consistency(video_options):
+    """Test that the frame rate remains consistent throughout the video processing."""
+    video_options.fps_spinbox.setValue(30)
+    options = video_options.get_options()
+    
+    with patch('satellite_processor.core.video_handler.VideoHandler.encode_video') as mock_encode:
+        processor = SatelliteImageProcessor()
+        processor.encode_video(options)
+        mock_encode.assert_called_once()
+        args, kwargs = mock_encode.call_args
+        assert kwargs['fps'] == 30
+
+def test_bit_rate_settings(video_options):
+    """Test that bitrate settings are applied for smooth video."""
+    # Assuming bitrate is part of the options
+    video_options.set_bitrate(5000)  # Set bitrate to 5000 kbps
+    options = video_options.get_options()
+    
+    assert options['bitrate'] == 5000
+    with patch('satellite_processor.core.video_handler.VideoHandler.set_bitrate') as mock_bitrate:
+        processor = SatelliteImageProcessor()
+        processor.set_bitrate(options['bitrate'])
+        mock_bitrate.assert_called_with(5000)
+
+def test_bitrate_validation(video_options, qtbot):
+    """Test bitrate validation and limits"""
+    # Test valid bitrate
+    video_options.bitrate_spin.setValue(5000)
+    assert video_options.bitrate_spin.value() == 5000
+
+    # Test lower limit
+    with pytest.raises(ValueError) as exc_info:
+        video_options.validate_bitrate(50)  # Too low
+    assert "Bitrate must be between 100 and 10000 kbps." in str(exc_info.value)
+    
+    # Test upper limit
+    with pytest.raises(ValueError) as exc_info:
+        video_options.validate_bitrate(12000)  # Too high
+    assert "Bitrate must be between 100 and 10000 kbps." in str(exc_info.value)
+
+def test_encoder_hardware_compatibility(video_options):
+    """Test compatibility between hardware and encoder selections"""
+    # Test NVIDIA options
+    video_options.hardware_combo.setCurrentText("NVIDIA GPU (CUDA)")
+    assert "NVIDIA Encoder Option" in video_options.encoder_combo.itemText(0)
+    
+    # Test Intel options
+    video_options.hardware_combo.setCurrentText("Intel GPU")
+    assert "Intel Encoder Option" in video_options.encoder_combo.itemText(0)
+    
+    # Test AMD options
+    video_options.hardware_combo.setCurrentText("AMD GPU")
+    assert "AMD Encoder Option" in video_options.encoder_combo.itemText(0)
+    
+    # Test CPU fallback
+    video_options.hardware_combo.setCurrentText("CPU")
+    assert "H.264" in video_options.encoder_combo.itemText(0)
+
+def test_encoder_quality_settings(video_options):
+    """Test encoder quality settings and presets"""
+    # Test different quality presets
+    encoders = ["H.264", "HEVC/H.265 (Better Compression)", "AV1 (Best Quality)"]
+    for encoder in encoders:
+        video_options.encoder_combo.setCurrentText(encoder)
+        options = video_options.get_options()
+        assert options['encoder'] == encoder
+
+def test_fps_interpolation_combination(video_options):
+    """Test interaction between FPS and interpolation settings"""
+    # Test base FPS
+    video_options.fps_spinbox.setValue(30)
+    video_options.enable_interpolation.setChecked(True)
+    video_options.factor_spin.setValue(2)
+    
+    options = video_options.get_options()
+    assert options['fps'] == 30
+    assert options['interpolation_enabled'] is True
+    assert options['interpolation_factor'] == 2
+    # Effective FPS would be 60
+
+    # Test high FPS with interpolation
+    video_options.fps_spinbox.setValue(60)
+    options = video_options.get_options()
+    assert options['fps'] == 60
+    assert options['interpolation_factor'] == 2
+    # Effective FPS would be 120
+
+def test_quality_dependent_interpolation(video_options):
+    """Test quality-dependent interpolation limits"""
+    quality_limits = {
+        "High": 8,
+        "Medium": 6,
+        "Low": 4
+    }
+    
+    for quality, max_factor in quality_limits.items():
+        video_options.quality_combo.setCurrentText(quality)
+        assert video_options.factor_spin.maximum() == max_factor
+        
+        # Test setting value above limit
+        with pytest.raises(ValueError):
+            video_options.validate_factor(max_factor + 1)
+
+def test_hardware_specific_encoders(video_options):
+    """Test hardware-specific encoder options"""
+    hardware_encoders = {
+        "NVIDIA GPU (CUDA)": ["NVIDIA Encoder Option 1", "NVIDIA Encoder Option 2", "NVIDIA Encoder Option 3"],
+        "Intel GPU": ["Intel Encoder Option 1", "Intel Encoder Option 2", "Intel Encoder Option 3"],
+        "AMD GPU": ["AMD Encoder Option 1", "AMD Encoder Option 2", "AMD Encoder Option 3"],
+        "CPU": ["H.264", "HEVC/H.265 (Better Compression)", "AV1 (Best Quality)"]
+    }
+    
+    for hardware, expected_encoders in hardware_encoders.items():
+        video_options.hardware_combo.setCurrentText(hardware)
+        qtbot.wait(100)  # Allow UI to update
+        
+        actual_encoders = [video_options.encoder_combo.itemText(i) 
+                          for i in range(video_options.encoder_combo.count())]
+        assert actual_encoders == expected_encoders
+
+def test_reset_functionality(video_options):
+    """Test complete reset functionality"""
+    # Change all settings
+    video_options.fps_spinbox.setValue(60)
+    video_options.bitrate_spin.setValue(8000)
+    video_options.enable_interpolation.setChecked(False)
+    video_options.hardware_combo.setCurrentText("AMD GPU")
+    video_options.quality_combo.setCurrentText("Low")
+    video_options.factor_spin.setValue(4)
+    
+    # Reset
+    video_options.reset_to_defaults()
+    
+    # Verify all defaults
+    options = video_options.get_options()
+    assert options['fps'] == 30
+    assert options['bitrate'] == 5000
+    assert options['interpolation_enabled'] is True
+    assert "NVIDIA" in options['hardware']
+    assert options['interpolation_quality'] == "high"
+    assert options['interpolation_factor'] == 2
+
+def test_validation_combinations(video_options):
+    """Test combined validation scenarios"""
+    # Test FPS and interpolation factor combination
+    video_options.fps_spinbox.setValue(60)
+    video_options.enable_interpolation.setChecked(True)
+    video_options.quality_combo.setCurrentText("High")
+    video_options.factor_spin.setValue(4)
+    
+    options = video_options.get_options_with_validation()
+    assert options['fps'] == 60
+    assert options['interpolation_factor'] == 4
+    
+    # Test invalid combinations
+    video_options.fps_spinbox.setValue(60)
+    video_options.factor_spin.setValue(8)
+    with pytest.raises(ValueError):
+        video_options.validate_inputs()  # Should fail due to potential output FPS being too high
+
+def test_encoder_switching(video_options, qtbot):
+    """Test dynamic encoder switching behavior"""
+    # Test NVIDIA to CPU switching
+    video_options.hardware_combo.setCurrentText("NVIDIA GPU (CUDA)")
+    qtbot.wait(100)
+    assert "NVIDIA" in video_options.encoder_combo.itemText(0)
+    
+    video_options.hardware_combo.setCurrentText("CPU")
+    qtbot.wait(100)
+    assert "H.264" in video_options.encoder_combo.itemText(0)
+    
+    # Verify encoder settings are appropriate for CPU
+    options = video_options.get_options()
+    assert "H.264" in options['encoder']
+
+def test_concurrent_validation(video_options):
+    """Test multiple settings being validated together"""
+    video_options.fps_spinbox.setValue(45)
+    video_options.enable_interpolation.setChecked(True)
+    video_options.quality_combo.setCurrentText("High")
+    video_options.factor_spin.setValue(6)
+    video_options.bitrate_spin.setValue(7000)
+    
+    # All these settings should be valid together
+    options = video_options.get_options_with_validation()
+    assert options['fps'] == 45
+    assert options['interpolation_enabled'] is True
+    assert options['interpolation_quality'] == "high"
+    assert options['interpolation_factor'] == 6
+    assert options['bitrate'] == 7000

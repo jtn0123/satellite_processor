@@ -1,7 +1,7 @@
 # satellite_processor/satellite_processor/gui/widgets/video_options.py
 from PyQt6.QtWidgets import ( # type: ignore
     QGroupBox, QVBoxLayout, QHBoxLayout,
-    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton
+    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit
 )
 from PyQt6.QtCore import Qt # type: ignore
 from PyQt6.QtWidgets import QApplication # type: ignore
@@ -68,6 +68,16 @@ class VideoOptionsWidget(QGroupBox):
         interpolation_layout.addWidget(self.factor_spin)
         layout.addLayout(interpolation_layout)
         
+        # Bitrate Options
+        bitrate_layout = QHBoxLayout()
+        self.bitrate_label = QLabel("Bitrate (kbps):")
+        self.bitrate_spin = QSpinBox()
+        self.bitrate_spin.setRange(100, 10000)  # Bitrate range
+        self.bitrate_spin.setValue(5000)  # Default bitrate
+        bitrate_layout.addWidget(self.bitrate_label)
+        bitrate_layout.addWidget(self.bitrate_spin)
+        layout.addLayout(bitrate_layout)
+        
         # Reset Button
         self.reset_button = QPushButton("Reset to Defaults")
         layout.addWidget(self.reset_button)
@@ -81,6 +91,7 @@ class VideoOptionsWidget(QGroupBox):
         self.hardware_combo.currentTextChanged.connect(self.update_encoder_options)
         self.fps_spinbox.valueChanged.connect(self.validate_fps)
         self.factor_spin.valueChanged.connect(self.validate_factor)
+        self.bitrate_spin.valueChanged.connect(self.validate_bitrate)
         
         # Initialize UI state
         self.on_interpolation_toggled(self.enable_interpolation.isChecked())
@@ -113,6 +124,7 @@ class VideoOptionsWidget(QGroupBox):
             'interpolation_factor': self.factor_spin.value(),
             'encoder': self.encoder_combo.currentText(),
             'hardware': self.hardware_combo.currentText(),
+            'bitrate': self.bitrate_spin.value(),  # Added bitrate
         }
     
     def reset_to_defaults(self):
@@ -122,6 +134,7 @@ class VideoOptionsWidget(QGroupBox):
         self.enable_interpolation.setChecked(True)
         self.quality_combo.setCurrentIndex(0)
         self.factor_spin.setValue(2)
+        self.bitrate_spin.setValue(5000)  # Reset bitrate to default
 
     def validate_fps(self, value: int):
         """Validate FPS value immediately when changed"""
@@ -143,6 +156,13 @@ class VideoOptionsWidget(QGroupBox):
             if not (2 <= value <= max_factor):
                 self.factor_spin.setValue(max_factor)
                 raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality")
+        return value
+
+    def validate_bitrate(self, value: int):
+        """Validate bitrate value."""
+        if value < 100 or value > 10000:
+            self.bitrate_spin.setValue(max(100, min(10000, value)))
+            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
         return value
 
     def update_encoder_options(self, hardware: str):
@@ -195,6 +215,10 @@ class VideoOptionsWidget(QGroupBox):
             }.get(quality, 2)
             if not (2 <= factor <= max_factor):
                 raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality.")
+
+        bitrate = self.bitrate_spin.value()
+        if bitrate < 100 or bitrate > 10000:
+            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
 
     def get_options_with_validation(self) -> dict:
         """Get options after validating inputs."""
@@ -293,3 +317,11 @@ class VideoOptionsWidget(QGroupBox):
                 "H.265",
                 "VP9"
             ])
+
+    def closeEvent(self, event):
+        """Handle the widget close event."""
+        # ...existing code...
+        # Removed references to self.some_thread as it does not exist
+        event.accept()
+    
+    # ...existing code...

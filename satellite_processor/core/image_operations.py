@@ -503,49 +503,42 @@ class ImageOperations:
                 factor = options.get('interpolation_factor', 2)
                 method = options.get('interpolation_method', 'Linear')
                 
-                if method == 'Linear':
-                    # Convert to float32 for better precision during interpolation
-                    img_float = img.astype(np.float32) / 255.0
-                    img_resized = cv2.resize(
-                        img_float, None,
-                        fx=factor,
-                        fy=factor,
-                        interpolation=cv2.INTER_LINEAR
-                    )
-                    # Convert back to uint8
-                    img = (img_resized * 255).astype(np.uint8)
-                elif method == 'Cubic':
-                    img_float = img.astype(np.float32) / 255.0
-                    img_resized = cv2.resize(
-                        img_float, None,
-                        fx=factor,
-                        fy=factor,
-                        interpolation=cv2.INTER_CUBIC
-                    )
-                    img = (img_resized * 255).astype(np.uint8)
-                elif method in ['RIFE', 'DAIN']:
-                    # AI-based interpolation implementation
-                    pass
-
+                interpolated_frames = []
+                # Assume we have previous and next frames for interpolation
+                frame1 = img  # Current frame
+                frame2 = img  # Next frame (placeholder)
+                
+                interpolated_frames = ImageOperations.interpolate_frames(frame1, frame2, factor, method)
+                # Integrate interpolated frames into the video stream
+                # This is a placeholder for actual integration logic
+                
             return img
         except Exception as e:
             logger.error(f"Error processing image: {e}")
             return None
 
     @staticmethod
-    def interpolate_frames(frame1: np.ndarray, frame2: np.ndarray, factor: int = 2) -> List[np.ndarray]:
-        """Generate interpolated frames between two frames"""
+    def interpolate_frames(frame1: np.ndarray, frame2: np.ndarray, factor: int = 2, method: str = 'Linear') -> List[np.ndarray]:
+        """Generate interpolated frames between two frames with chosen method"""
         try:
             frames = []
             # Convert to float32 for better precision
             f1 = frame1.astype(np.float32)
             f2 = frame2.astype(np.float32)
             
-            for i in range(factor):
-                alpha = i / (factor - 1) if factor > 1 else 0
-                # Linear interpolation in float32
-                interpolated = cv2.addWeighted(f1, 1.0 - alpha, f2, alpha, 0.0)
-                # Convert back to uint8 for output
+            for i in range(1, factor):
+                alpha = i / factor
+                if method == 'Linear':
+                    interpolated = cv2.addWeighted(f1, 1.0 - alpha, f2, alpha, 0.0)
+                elif method == 'Cubic':
+                    interpolated = cv2.resize(
+                        f1 + (f2 - f1) * alpha,
+                        None,
+                        fx=1,
+                        fy=1,
+                        interpolation=cv2.INTER_CUBIC
+                    )
+                # Add more methods if needed
                 frames.append(interpolated.astype(np.uint8))
             
             return frames

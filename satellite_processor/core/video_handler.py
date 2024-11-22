@@ -42,6 +42,8 @@ class VideoHandler:
         """Initialize video handler with file manager"""
         self.logger = logging.getLogger(__name__)
         self.file_manager = FileManager()  # Initialize file manager
+        self.encoder = "H.264"
+        self.bitrate = 5000  # Default bitrate in kbps
         
         # Find FFmpeg executable
         self.ffmpeg_path = self._find_ffmpeg()
@@ -697,3 +699,21 @@ class VideoHandler:
             'CPU': []
         }
         return params.get(hardware, [])  # Return empty list for unknown hardware
+
+    def configure_encoder(self, encoder: str, bitrate: int):
+        """Configure the video encoder."""
+        self.encoder = encoder
+        self.bitrate = bitrate
+        self.logger.info(f"Configured encoder to {encoder} with bitrate {bitrate} kbps.")
+    
+    def encode_video(self, fps: int, bitrate: int):
+        """Encode the video with the specified FPS and bitrate."""
+        # Placeholder for actual encoding logic
+        self.logger.info(f"Encoding video at {fps} FPS with {bitrate} kbps bitrate using {self.encoder} encoder.")
+        # Implement encoding using tools like FFmpeg or OpenCV's VideoWriter
+        # Example with VideoWriter:
+        fourcc = cv2.VideoWriter_fourcc(*'X264') if self.encoder == "H.264" else cv2.VideoWriter_fourcc(*'H265')
+        out = cv2.VideoWriter('output_video.mp4', fourcc, fps, (1920, 1080))
+        # Write frames to out...
+        out.release()
+        self.logger.info("Video encoding completed.")

@@ -141,8 +141,8 @@ class VideoOptionsWidget(QGroupBox):
             }.get(quality, 2)
             
             if not (2 <= value <= max_factor):
-                self.factor_spin.setValue(min(max_factor, max(2, value)))
-                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality.")
+                self.factor_spin.setValue(max_factor)
+                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality")
         return value
 
     def update_encoder_options(self, hardware: str):

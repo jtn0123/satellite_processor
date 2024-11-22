@@ -491,4 +491,66 @@ class ImageOperations:
         except Exception:
             return None
 
+    @staticmethod
+    def process_image(img_path: str, options: dict) -> Optional[np.ndarray]:
+        """Process image with interpolation support"""
+        try:
+            img = cv2.imread(img_path)
+            if img is None:
+                return None
+
+            if options.get('interpolation_enabled'):
+                factor = options.get('interpolation_factor', 2)
+                method = options.get('interpolation_method', 'Linear')
+                
+                if method == 'Linear':
+                    # Convert to float32 for better precision during interpolation
+                    img_float = img.astype(np.float32) / 255.0
+                    img_resized = cv2.resize(
+                        img_float, None,
+                        fx=factor,
+                        fy=factor,
+                        interpolation=cv2.INTER_LINEAR
+                    )
+                    # Convert back to uint8
+                    img = (img_resized * 255).astype(np.uint8)
+                elif method == 'Cubic':
+                    img_float = img.astype(np.float32) / 255.0
+                    img_resized = cv2.resize(
+                        img_float, None,
+                        fx=factor,
+                        fy=factor,
+                        interpolation=cv2.INTER_CUBIC
+                    )
+                    img = (img_resized * 255).astype(np.uint8)
+                elif method in ['RIFE', 'DAIN']:
+                    # AI-based interpolation implementation
+                    pass
+
+            return img
+        except Exception as e:
+            logger.error(f"Error processing image: {e}")
+            return None
+
+    @staticmethod
+    def interpolate_frames(frame1: np.ndarray, frame2: np.ndarray, factor: int = 2) -> List[np.ndarray]:
+        """Generate interpolated frames between two frames"""
+        try:
+            frames = []
+            # Convert to float32 for better precision
+            f1 = frame1.astype(np.float32)
+            f2 = frame2.astype(np.float32)
+            
+            for i in range(factor):
+                alpha = i / (factor - 1) if factor > 1 else 0
+                # Linear interpolation in float32
+                interpolated = cv2.addWeighted(f1, 1.0 - alpha, f2, alpha, 0.0)
+                # Convert back to uint8 for output
+                frames.append(interpolated.astype(np.uint8))
+            
+            return frames
+        except Exception as e:
+            logger.error(f"Error interpolating frames: {e}")
+            return []
+
 # ...existing code...

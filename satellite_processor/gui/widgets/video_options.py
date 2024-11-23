@@ -13,9 +13,9 @@ class VideoOptionsWidget(QGroupBox):
         super().__init__(parent)
         self.init_ui()
 
+
     def init_ui(self):
         layout = QVBoxLayout()
-        
         # FPS Options
         fps_layout = QHBoxLayout()
         self.fps_label = QLabel("FPS:")
@@ -317,11 +317,14 @@ class VideoOptionsWidget(QGroupBox):
                 "H.265",
                 "VP9"
             ])
-
+    
     def closeEvent(self, event):
         """Handle the widget close event."""
         # ...existing code...
-        # Removed references to self.some_thread as it does not exist
         event.accept()
+    
+    def set_bitrate(self, bitrate: int):
+        """Set the bitrate value in the UI."""
+        self.bitrate_spin.setValue(bitrate)
     
     # ...existing code...

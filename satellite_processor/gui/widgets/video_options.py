@@ -322,9 +322,24 @@ class VideoOptionsWidget(QGroupBox):
         """Handle the widget close event."""
         # ...existing code...
         event.accept()
+    # ...existing code...
     
     def set_bitrate(self, bitrate: int):
         """Set the bitrate value in the UI."""
         self.bitrate_spin.setValue(bitrate)
     
+    def apply_options(self):
+        """Apply the current video encoding options."""
+        options = self.get_options()
+        try:
+            self.validate_inputs()
+            self.processor.configure_encoder(options)
+            # Emit a signal or perform actions as needed
+        except ValueError as ve:
+            # Handle validation errors
+            self.status_label.setText(str(ve))
+        except Exception as e:
+            # Handle other exceptions
+            self.status_label.setText(f"Error: {str(e)}")
+
     # ...existing code...

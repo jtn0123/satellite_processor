@@ -706,14 +706,31 @@ class VideoHandler:
         self.bitrate = bitrate
         self.logger.info(f"Configured encoder to {encoder} with bitrate {bitrate} kbps.")
     
-    def encode_video(self, fps: int, bitrate: int):
-        """Encode the video with the specified FPS and bitrate."""
-        # Placeholder for actual encoding logic
-        self.logger.info(f"Encoding video at {fps} FPS with {bitrate} kbps bitrate using {self.encoder} encoder.")
-        # Implement encoding using tools like FFmpeg or OpenCV's VideoWriter
-        # Example with VideoWriter:
-        fourcc = cv2.VideoWriter_fourcc(*'X264') if self.encoder == "H.264" else cv2.VideoWriter_fourcc(*'H265')
-        out = cv2.VideoWriter('output_video.mp4', fourcc, fps, (1920, 1080))
-        # Write frames to out...
-        out.release()
-        self.logger.info("Video encoding completed.")
+    def encode_video(self, fps: int, bitrate: int) -> bool:
+        """Encode video with the specified FPS and bitrate."""
+        try:
+            command = [
+                'ffmpeg',
+                '-y',
+                '-r', str(fps),
+                '-i', 'input_%04d.png',  # Example input pattern
+                '-c:v', 'libx265' if 'HEVC' in self.encoder else 'libx264',
+                '-b:v', f'{bitrate}k',
+                'output.mp4'
+            ]
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._ffmpeg_processes.add(process)
+            stdout, stderr = process.communicate(timeout=300)  # Timeout after 5 minutes
+            self._ffmpeg_processes.remove(process)
+            if process.returncode != 0:
+                self.logger.error(f"FFmpeg error: {stderr.decode()}")
+                return False
+            return True
+        except subprocess.TimeoutExpired:
+            process.kill()
+            self._ffmpeg_processes.discard(process)
+            self.logger.error("FFmpeg encoding timed out.")
+            return False
+        except Exception as e:
+            self.logger.error(f"Error during video encoding: {e}")
+            return False

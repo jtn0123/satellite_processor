@@ -8,7 +8,6 @@ def qapp():
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
-    yield app
-    # Do not quit the app here to prevent interfering with other tests
+    return app
 
-# Removed the custom qtbot fixture.
+# Remove the custom qtbot fixture

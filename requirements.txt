@@ -24,3 +24,4 @@ pylint>=2.15.0
 
 # Test Dependencies
 pytest-qt>=4.0.0
+pytest-qt

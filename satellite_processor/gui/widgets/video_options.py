@@ -39,11 +39,8 @@ class VideoOptionsWidget(QGroupBox):
         encoder_layout = QHBoxLayout()
         self.encoder_label = QLabel("Encoder:")
         self.encoder_combo = QComboBox()
-        self.encoder_combo.addItems([
-            "H.264",
-            "HEVC/H.265 (Better Compression)",
-            "AV1 (Best Quality)"
-        ])
+        self.hardware_combo.currentTextChanged.connect(self.update_encoder_options)
+        self.update_encoder_options(self.hardware_combo.currentText())
         encoder_layout.addWidget(self.encoder_label)
         encoder_layout.addWidget(self.encoder_combo)
         layout.addLayout(encoder_layout)
@@ -114,18 +111,36 @@ class VideoOptionsWidget(QGroupBox):
         if self.factor_spin.value() > self.factor_spin.maximum():
             self.factor_spin.setValue(self.factor_spin.maximum())
     
-    def get_options(self) -> dict:
-        """Retrieve current configuration options."""
-        self.validate_inputs()
-        return {
+    def get_options(self):
+        """Collect and validate video options from the UI."""
+        options = {
             'fps': self.fps_spinbox.value(),
-            'interpolation_enabled': self.enable_interpolation.isChecked(),
-            'interpolation_quality': self.quality_combo.currentText().lower(),
-            'interpolation_factor': self.factor_spin.value(),
             'encoder': self.encoder_combo.currentText(),
             'hardware': self.hardware_combo.currentText(),
+            'interpolation_enabled': self.enable_interpolation.isChecked(),
             'bitrate': self.bitrate_spin.value(),  # Added bitrate
         }
+
+        # Validate FPS
+        if not (self.fps_spinbox.minimum() <= options['fps'] <= self.fps_spinbox.maximum()):
+            raise ValueError(f"FPS must be between {self.fps_spinbox.minimum()} and {self.fps_spinbox.maximum()}.")
+
+        # Validate interpolation factor
+        if options['interpolation_enabled']:
+            factor = self.factor_spin.value()
+            min_factor = self.factor_spin.minimum()
+            max_factor = self.factor_spin.maximum()
+            if not (min_factor <= factor <= max_factor):
+                raise ValueError(f"Interpolation factor must be between {min_factor} and {max_factor}.")
+
+            options['interpolation_quality'] = self.quality_combo.currentText().lower()
+            options['interpolation_factor'] = factor
+
+        # Validate bitrate
+        if not (self.bitrate_spin.minimum() <= options['bitrate'] <= self.bitrate_spin.maximum()):
+            raise ValueError(f"Bitrate must be between {self.bitrate_spin.minimum()} and {self.bitrate_spin.maximum()}.")
+
+        return options
     
     def reset_to_defaults(self):
         self.fps_spinbox.setValue(30)
@@ -170,31 +185,34 @@ class VideoOptionsWidget(QGroupBox):
         self.encoder_combo.blockSignals(True)
         self.encoder_combo.clear()
         
+        standard_encoders = [
+            "H.264",
+            "HEVC/H.265 (Better Compression)",
+            "AV1 (Best Quality)"
+        ]
+
         if "NVIDIA" in hardware:
-            self.encoder_combo.addItems([
-                "NVIDIA Encoder Option 1",
-                "NVIDIA Encoder Option 2",
-                "NVIDIA Encoder Option 3"
-            ])
+            encoder_options = standard_encoders + [
+                "NVIDIA NVENC H.264",
+                "NVIDIA NVENC HEVC"
+                # ...other NVIDIA-specific encoders...
+            ]
         elif "Intel" in hardware:
-            self.encoder_combo.addItems([
-                "Intel Encoder Option 1",
-                "Intel Encoder Option 2",
-                "Intel Encoder Option 3"
-            ])
+            encoder_options = standard_encoders + [
+                "Intel QSV H.264",
+                "Intel QSV HEVC"
+                # ...other Intel-specific encoders...
+            ]
         elif "AMD" in hardware:
-            self.encoder_combo.addItems([
-                "AMD Encoder Option 1",
-                "AMD Encoder Option 2",
-                "AMD Encoder Option 3"
-            ])
-        else:  # CPU or others
-            self.encoder_combo.addItems([
-                "H.264",
-                "HEVC/H.265 (Better Compression)",
-                "AV1 (Best Quality)"
-            ])
-        
+            encoder_options = standard_encoders + [
+                "AMD VCE H.264",
+                "AMD VCE HEVC"
+                # ...other AMD-specific encoders...
+            ]
+        else:  # CPU
+            encoder_options = standard_encoders
+
+        self.encoder_combo.addItems(encoder_options)
         self.encoder_combo.blockSignals(False)
         self.encoder_combo.setCurrentIndex(0)
         QApplication.processEvents()  # Force UI update
@@ -322,24 +340,9 @@ class VideoOptionsWidget(QGroupBox):
         """Handle the widget close event."""
         # ...existing code...
         event.accept()
-    # ...existing code...
     
     def set_bitrate(self, bitrate: int):
         """Set the bitrate value in the UI."""
         self.bitrate_spin.setValue(bitrate)
     
-    def apply_options(self):
-        """Apply the current video encoding options."""
-        options = self.get_options()
-        try:
-            self.validate_inputs()
-            self.processor.configure_encoder(options)
-            # Emit a signal or perform actions as needed
-        except ValueError as ve:
-            # Handle validation errors
-            self.status_label.setText(str(ve))
-        except Exception as e:
-            # Handle other exceptions
-            self.status_label.setText(f"Error: {str(e)}")
-
     # ...existing code...

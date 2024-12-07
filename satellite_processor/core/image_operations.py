@@ -557,17 +557,26 @@ class ImageOperations:
 
     def interpolate_frames(self, frame_paths, options):
         """Interpolate frames based on options."""
-        frames = []
-        for path in frame_paths:
-            frames.append(self.process_image(path, options))
-        return frames
+        if options.get('interpolation_enabled'):
+            quality = options.get('interpolation_quality', 'medium')
+            interpolator = Interpolator(
+                model_path=f'model_{quality}.pth',
+                processing_speed='fast'
+            )
+            frames = []
+            for path in frame_paths:
+                frames.append(self.process_image(path, options))
+            return frames
+        return [self.process_image(path, options) for path in frame_paths]
 
 class Interpolator:
     """Handle frame interpolation."""
     def __init__(self, model_path, processing_speed):
         self.model_path = model_path
         self.processing_speed = processing_speed
-
-    # ...rest of implementation...
+        
+    def interpolate(self, frame1, frame2, factor=2):
+        # Interpolation implementation
+        pass
 
 # ...existing code...

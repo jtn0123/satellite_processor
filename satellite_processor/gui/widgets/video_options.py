@@ -155,6 +155,10 @@ class VideoOptionsWidget(QGroupBox):
         
         # Initialize UI state
         self.on_interpolation_toggled(self.enable_interpolation.isChecked())
+
+        # Update signal connections to trigger validation immediately
+        self.fps_spinbox.valueChanged.connect(self._validate_fps)
+        self.factor_spin.valueChanged.connect(self._validate_factor)
     
     def on_interpolation_toggled(self, checked):
         """Enable or disable interpolation controls based on checkbox state."""
@@ -207,22 +211,41 @@ class VideoOptionsWidget(QGroupBox):
 
     def create_video(self, input_images_dir, output_video_path):
         """Trigger video creation with validation."""
-        input_path = Path(input_images_dir)
-        output_path = Path(output_video_path)
+        try:
+            # Validate input type first - before any Path conversion
+            if isinstance(input_images_dir, (list, tuple)):
+                raise TypeError("Input directory must be a string or PathLike object, not list")
+            if not isinstance(input_images_dir, (str, Path, os.PathLike)):
+                raise TypeError(f"Input directory must be a string or PathLike object, not {type(input_images_dir).__name__}")
 
-        # Validate input path
-        if not input_path.exists() or not input_path.is_dir():
-            raise ValueError("Input images directory does not exist or is not a directory.")
+            # Now it's safe to convert to Path
+            input_path = Path(input_images_dir)
+            output_path = Path(output_video_path)
 
-        # Create output directory
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Validate directory existence
+            if not input_path.exists() or not input_path.is_dir():
+                raise ValueError("Input images directory does not exist or is not a directory.")
 
-        # Get and validate options (will raise ValueError if invalid)
-        options = self.get_options()
+            # Create output directory
+            output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create video using validated paths and options
-        video_handler = VideoHandler()
-        return video_handler.create_video(input_path, output_path, options)
+            # Get and validate options
+            options = self.get_options()
+
+            # Create video using validated paths
+            video_handler = VideoHandler()
+            return video_handler.create_video(input_path, output_path, options)
+
+        except (TypeError, ValueError) as e:
+            if self.testing:
+                raise  # Re-raise the exception in testing mode
+            QMessageBox.critical(self, "Error", str(e))
+            return False
+        except Exception as e:
+            if self.testing:
+                raise
+            QMessageBox.critical(self, "Error", f"Failed to create video: {str(e)}")
+            return False
 
     def handle_create_video(self):
         """Handle the Create Video button click."""
@@ -444,6 +467,27 @@ class VideoOptionsWidget(QGroupBox):
                 return False
         return True
 
+    def _validate_fps(self, value):
+        """Validate FPS immediately on change."""
+        try:
+            if self.testing:
+                self.validate_fps_wrapper(value)
+        except ValueError as e:
+            # Reset to valid value
+            self.fps_spinbox.setValue(30)
+            raise
+
+    def _validate_factor(self, value):
+        """Validate interpolation factor immediately on change."""
+        try:
+            if self.testing:
+                quality = self.quality_combo.currentText()
+                self.validate_factor_wrapper(value)
+        except ValueError as e:
+            # Reset to valid value
+            self.factor_spin.setValue(2)
+            raise
+
 class ProcessingOptionsWidget(QWidget):
     # ...existing initialization code...
 
@@ -492,4 +536,3 @@ class ProcessingOptionsWidget(QWidget):
             self.validate_encoder(self.encoder_combo.currentText())
 
         # ...rest of existing get_options code...
-

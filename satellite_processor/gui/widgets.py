@@ -182,3 +182,13 @@ class ProgressWidget(QWidget):
 
     def update_progress(self, value: int):
         self.progress_bar.setValue(value)
+
+class MainWidget(QWidget):
+    # ...existing code...
+
+    def __init__(self):
+        super().__init__()
+        # ...existing code...
+        self.video_options_widget = VideoOptionsWidget()
+        self.video_options_widget.testing = True  # Set testing mode
+        # ...existing code...

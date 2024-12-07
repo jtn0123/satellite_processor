@@ -546,4 +546,28 @@ class ImageOperations:
             logger.error(f"Error interpolating frames: {e}")
             return []
 
+    def process_images(self, image_paths, options):
+        """Process multiple images with the given options."""
+        processed = []
+        for path in image_paths:
+            result = self.process_image(path, options)
+            if result is not None:
+                processed.append(result)
+        return processed
+
+    def interpolate_frames(self, frame_paths, options):
+        """Interpolate frames based on options."""
+        frames = []
+        for path in frame_paths:
+            frames.append(self.process_image(path, options))
+        return frames
+
+class Interpolator:
+    """Handle frame interpolation."""
+    def __init__(self, model_path, processing_speed):
+        self.model_path = model_path
+        self.processing_speed = processing_speed
+
+    # ...rest of implementation...
+
 # ...existing code...

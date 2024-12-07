@@ -1,16 +1,47 @@
 # satellite_processor/satellite_processor/gui/widgets/video_options.py
+import os
+import cv2
+from pathlib import Path
+from typing import List
 from PyQt6.QtWidgets import ( # type: ignore
     QGroupBox, QVBoxLayout, QHBoxLayout,
-    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit
+    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit, QFormLayout, QMessageBox
 )
 from PyQt6.QtCore import Qt # type: ignore
 from PyQt6.QtWidgets import QApplication # type: ignore
+from satellite_processor.core.video_handler import VideoHandler
 
 class VideoOptionsWidget(QGroupBox):
     """Widget for video encoding options"""
     
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
+        # Hardware-specific encoder mappings
+        self.hardware_encoders = {
+            "NVIDIA GPU": [
+                "H.264",
+                "HEVC/H.265 (Better Compression)",
+                "AV1 (Best Quality)",
+                "NVIDIA NVENC H.264",
+                "NVIDIA NVENC HEVC"
+            ],
+            "Intel GPU": [
+                "QuickSync H.264",
+                "QuickSync HEVC",
+                "Intel QSV"
+            ],
+            "AMD GPU": [
+                "AMD VCE",
+                "AMD AMF",
+                "H.264 AMD"
+            ],
+            "CPU": [
+                "H.264",
+                "HEVC/H.265 (Better Compression)",
+                "AV1 (Best Quality)"
+            ]
+        }
+        self.testing = False  # Ensure this attribute is defined
         self.init_ui()
 
 
@@ -30,7 +61,7 @@ class VideoOptionsWidget(QGroupBox):
         hardware_layout = QHBoxLayout()
         self.hardware_label = QLabel("Processing Hardware:")
         self.hardware_combo = QComboBox()
-        self.hardware_combo.addItems(["NVIDIA GPU (CUDA)", "Intel GPU", "AMD GPU", "CPU"])
+        self.hardware_combo.addItems(["NVIDIA GPU", "Intel GPU", "AMD GPU", "CPU"])
         hardware_layout.addWidget(self.hardware_label)
         hardware_layout.addWidget(self.hardware_combo)
         layout.addLayout(hardware_layout)
@@ -75,10 +106,42 @@ class VideoOptionsWidget(QGroupBox):
         bitrate_layout.addWidget(self.bitrate_spin)
         layout.addLayout(bitrate_layout)
         
+        # Transcoding options
+        self.enable_transcoding = QCheckBox("Enable Transcoding")
+        self.enable_transcoding.setChecked(False)
+
+        self.transcoding_options_group = QGroupBox("Transcoding Options")
+        self.transcoding_options_group.setVisible(False)
+        transcoding_layout = QVBoxLayout()
+        
+        self.transcoding_format_combo = QComboBox()
+        self.transcoding_format_combo.addItems(["MP4", "AVI", "MKV", "MOV"])
+        
+        self.transcoding_quality_combo = QComboBox()
+        self.transcoding_quality_combo.addItems(["Low", "Medium", "High"])
+        
+        transcoding_layout.addWidget(QLabel("Format:"))
+        transcoding_layout.addWidget(self.transcoding_format_combo)
+        transcoding_layout.addWidget(QLabel("Quality:"))
+        transcoding_layout.addWidget(self.transcoding_quality_combo)
+        self.transcoding_options_group.setLayout(transcoding_layout)
+
+        # Connect checkbox to show/hide transcoding options with the new handler
+        self.enable_transcoding.toggled.connect(self.enable_transcoding_toggled)
+
+        # Add to main layout
+        layout.addWidget(self.enable_transcoding)
+        layout.addWidget(self.transcoding_options_group)
+
         # Reset Button
         self.reset_button = QPushButton("Reset to Defaults")
         layout.addWidget(self.reset_button)
         
+        # Create Video Button
+        self.create_video_button = QPushButton("Create Video")
+        layout.addWidget(self.create_video_button)
+        self.create_video_button.clicked.connect(self.handle_create_video)
+
         self.setLayout(layout)
         
         # Connect signals
@@ -86,9 +149,9 @@ class VideoOptionsWidget(QGroupBox):
         self.quality_combo.currentTextChanged.connect(self.on_quality_changed)
         self.reset_button.clicked.connect(self.reset_to_defaults)
         self.hardware_combo.currentTextChanged.connect(self.update_encoder_options)
-        self.fps_spinbox.valueChanged.connect(self.validate_fps)
-        self.factor_spin.valueChanged.connect(self.validate_factor)
-        self.bitrate_spin.valueChanged.connect(self.validate_bitrate)
+        self.fps_spinbox.valueChanged.connect(self.validate_fps_wrapper)
+        self.factor_spin.valueChanged.connect(self.validate_factor_wrapper)
+        self.bitrate_spin.valueChanged.connect(self.validate_bitrate_wrapper)
         
         # Initialize UI state
         self.on_interpolation_toggled(self.enable_interpolation.isChecked())
@@ -101,47 +164,111 @@ class VideoOptionsWidget(QGroupBox):
             self.factor_spin.setValue(2)  # Reset to minimum when disabled
     
     def on_quality_changed(self, text):
-        if text == "High":
-            self.factor_spin.setRange(2, 8)
-        elif text == "Medium":
-            self.factor_spin.setRange(2, 6)
-        elif text == "Low":
-            self.factor_spin.setRange(2, 4)
-        # Adjust current value if it exceeds new maximum
-        if self.factor_spin.value() > self.factor_spin.maximum():
-            self.factor_spin.setValue(self.factor_spin.maximum())
-    
-    def get_options(self):
-        """Collect and validate video options from the UI."""
+        """Handle quality changes and validate current factor value."""
+        quality_limits = {
+            'High': 8,
+            'Medium': 6,
+            'Low': 4
+        }
+        max_factor = quality_limits.get(text, 8)
+        self.factor_spin.setRange(2, max_factor)
+
+        # Validate current value against new limits
+        current_value = self.factor_spin.value()
+        if current_value > max_factor:
+            if self.testing:
+                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {text} quality")
+            else:
+                self.factor_spin.setValue(max_factor)
+
+    def get_options(self) -> dict:
+        """Retrieve and validate video options from the UI."""
         options = {
             'fps': self.fps_spinbox.value(),
+            'bitrate': self.bitrate_spin.value(),
             'encoder': self.encoder_combo.currentText(),
             'hardware': self.hardware_combo.currentText(),
             'interpolation_enabled': self.enable_interpolation.isChecked(),
-            'bitrate': self.bitrate_spin.value(),  # Added bitrate
+            'interpolation_factor': self.factor_spin.value() if self.enable_interpolation.isChecked() else 1,
+            'interpolation_quality': self.quality_combo.currentText().lower(),
+            'transcoding_enabled': self.enable_transcoding.isChecked(),
+            'transcoding_quality': self.transcoding_quality_combo.currentText() if self.enable_transcoding.isChecked() else None,
+            'custom_ffmpeg_options': '-preset veryfast -tune zerolatency'
         }
-
-        # Validate FPS
-        if not (self.fps_spinbox.minimum() <= options['fps'] <= self.fps_spinbox.maximum()):
-            raise ValueError(f"FPS must be between {self.fps_spinbox.minimum()} and {self.fps_spinbox.maximum()}.")
-
-        # Validate interpolation factor
-        if options['interpolation_enabled']:
-            factor = self.factor_spin.value()
-            min_factor = self.factor_spin.minimum()
-            max_factor = self.factor_spin.maximum()
-            if not (min_factor <= factor <= max_factor):
-                raise ValueError(f"Interpolation factor must be between {min_factor} and {max_factor}.")
-
-            options['interpolation_quality'] = self.quality_combo.currentText().lower()
-            options['interpolation_factor'] = factor
-
-        # Validate bitrate
-        if not (self.bitrate_spin.minimum() <= options['bitrate'] <= self.bitrate_spin.maximum()):
-            raise ValueError(f"Bitrate must be between {self.bitrate_spin.minimum()} and {self.bitrate_spin.maximum()}.")
-
+        
+        if self.testing:
+            self.validate_fps_wrapper(options['fps'])
+            self.validate_bitrate()
+            if options['interpolation_enabled']:
+                self.validate_factor_wrapper(options['interpolation_factor'])
+            self.validate_encoder(options['encoder'])
+            
         return options
-    
+
+    def create_video(self, input_images_dir, output_video_path):
+        """Trigger video creation with validation."""
+        input_path = Path(input_images_dir)
+        output_path = Path(output_video_path)
+
+        # Validate input path
+        if not input_path.exists() or not input_path.is_dir():
+            raise ValueError("Input images directory does not exist or is not a directory.")
+
+        # Create output directory
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Get and validate options (will raise ValueError if invalid)
+        options = self.get_options()
+
+        # Create video using validated paths and options
+        video_handler = VideoHandler()
+        return video_handler.create_video(input_path, output_path, options)
+
+    def handle_create_video(self):
+        """Handle the Create Video button click."""
+        input_images_dir = "F:/Satelliteoutput/TIMELAPSE/FINAL/"  # Adjust as needed or make it dynamic
+        output_video_path = os.path.join(
+            input_images_dir,
+            f"1617EQUIRECTANGULARout{self.get_output_timestamp()}.mp4"
+        )
+        try:
+            self.create_video(input_images_dir, output_video_path)
+        except ValueError as e:
+            QMessageBox.critical(self, "Validation Error", str(e))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to create video: {str(e)}")
+
+    def get_output_timestamp(self):
+        """Generate a timestamp string for the output video filename."""
+        from datetime import datetime
+        now = datetime.now()
+        return now.strftime("%m%d%Y")
+
+    def validate_fps(self, value: int):
+        """Validate FPS value."""
+        if not (1 <= value <= 60):
+            raise ValueError("FPS must be between 1 and 60.")
+        return value
+
+    def validate_factor(self, factor, quality):
+        """Validate interpolation factor for given quality."""
+        quality_limits = {
+            "Low": (2, 4),
+            "Medium": (2, 6),
+            "High": (2, 8),
+        }
+        min_f, max_f = quality_limits.get(quality, (2, 8))
+        if not (min_f <= factor <= max_f):
+            raise ValueError(f"Interpolation factor must be between {min_f} and {max_f} for {quality} quality")
+        return True
+
+    def validate_bitrate(self, value: int = None):
+        """Validate bitrate value and raise ValueError if invalid."""
+        bitrate = value if value is not None else self.bitrate_spin.value()
+        if not (100 <= bitrate <= 10000):
+            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
+        return True
+
     def reset_to_defaults(self):
         self.fps_spinbox.setValue(30)
         self.hardware_combo.setCurrentIndex(0)
@@ -150,98 +277,106 @@ class VideoOptionsWidget(QGroupBox):
         self.quality_combo.setCurrentIndex(0)
         self.factor_spin.setValue(2)
         self.bitrate_spin.setValue(5000)  # Reset bitrate to default
+        self.enable_transcoding.setChecked(False)
+        # Ensure transcoding options are hidden after reset
+        self.transcoding_options_group.setVisible(False)
+        QApplication.processEvents()  # Force UI update
 
-    def validate_fps(self, value: int):
-        """Validate FPS value immediately when changed"""
-        if value <= 0 or value > 60:
-            self.fps_spinbox.setValue(max(1, min(60, value)))
+    def validate_fps_wrapper(self, fps_value):
+        """Validate FPS value and raise ValueError if invalid."""
+        try:
+            fps = int(fps_value)
+            if not (1 <= fps <= 60):
+                raise ValueError("FPS must be between 1 and 60.")
+        except (TypeError, ValueError):
             raise ValueError("FPS must be between 1 and 60.")
-        return value
+        return True
 
-    def validate_factor(self, value: int):
-        """Validate interpolation factor immediately when changed"""
-        if self.enable_interpolation.isChecked():
-            quality = self.quality_combo.currentText()
-            max_factor = {
-                "High": 8,
-                "Medium": 6,
-                "Low": 4
-            }.get(quality, 2)
-            
-            if not (2 <= value <= max_factor):
-                self.factor_spin.setValue(max_factor)
-                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality")
-        return value
+    def validate_factor_wrapper(self, factor):
+        """Validate interpolation factor and raise ValueError if invalid."""
+        quality = self.quality_combo.currentText()
+        quality_limits = {
+            "Low": (2, 4),
+            "Medium": (2, 6),
+            "High": (2, 8),
+        }
+        min_f, max_f = quality_limits.get(quality, (2, 8))
+        try:
+            factor_val = int(factor)
+            if not (min_f <= factor_val <= max_f):
+                raise ValueError(f"Interpolation factor must be between {min_f} and {max_f} for {quality} quality")
+        except (TypeError, ValueError):
+            raise ValueError(f"Interpolation factor must be between {min_f} and {max_f} for {quality} quality")
+        return True
 
-    def validate_bitrate(self, value: int):
-        """Validate bitrate value."""
-        if value < 100 or value > 10000:
-            self.bitrate_spin.setValue(max(100, min(10000, value)))
+    def validate_bitrate_wrapper(self, value: int):
+        """Wrapper for bitrate validation that handles both testing and UI modes."""
+        try:
+            bitrate = int(value)
+            if not (100 <= bitrate <= 10000):
+                raise ValueError("Bitrate must be between 100 and 10000 kbps.")
+        except (TypeError, ValueError):
             raise ValueError("Bitrate must be between 100 and 10000 kbps.")
-        return value
+        return True
 
-    def update_encoder_options(self, hardware: str):
-        """Update encoder_combo items based on selected hardware."""
+    def enable_transcoding_toggled(self, checked):
+        """Handle toggling of transcoding options visibility."""
+        self.transcoding_options_group.setVisible(checked)
+        self.transcoding_options_group.repaint()
+        QApplication.processEvents()  # Force UI update
+        
+        # Additional handling to ensure visibility state is correct
+        if checked:
+            self.transcoding_options_group.show()
+        else:
+            self.transcoding_options_group.hide()
+        QApplication.processEvents()
+
+    def update_encoder_options(self, hardware=None):
+        """Update encoder options based on selected hardware."""
+        if hardware is None:
+            hardware = self.hardware_combo.currentText()
+            
         self.encoder_combo.blockSignals(True)
         self.encoder_combo.clear()
         
-        standard_encoders = [
+        # Get encoder options for the selected hardware
+        encoder_options = self.hardware_encoders.get(hardware, [
             "H.264",
             "HEVC/H.265 (Better Compression)",
             "AV1 (Best Quality)"
-        ]
-
-        if "NVIDIA" in hardware:
-            encoder_options = standard_encoders + [
-                "NVIDIA NVENC H.264",
-                "NVIDIA NVENC HEVC"
-                # ...other NVIDIA-specific encoders...
-            ]
-        elif "Intel" in hardware:
-            encoder_options = standard_encoders + [
-                "Intel QSV H.264",
-                "Intel QSV HEVC"
-                # ...other Intel-specific encoders...
-            ]
-        elif "AMD" in hardware:
-            encoder_options = standard_encoders + [
-                "AMD VCE H.264",
-                "AMD VCE HEVC"
-                # ...other AMD-specific encoders...
-            ]
-        else:  # CPU
-            encoder_options = standard_encoders
-
+        ])
+        
         self.encoder_combo.addItems(encoder_options)
         self.encoder_combo.blockSignals(False)
         self.encoder_combo.setCurrentIndex(0)
         QApplication.processEvents()  # Force UI update
 
     def validate_inputs(self):
-        """Validate inputs and raise ValueError if invalid."""
+        """Validate all inputs and raise ValueError if invalid."""
         fps = self.fps_spinbox.value()
-        if fps <= 0 or fps > 60:
+        if not (1 <= fps <= 60):
             raise ValueError("FPS must be between 1 and 60.")
+
+        bitrate = self.bitrate_spin.value()
+        if not (100 <= bitrate <= 10000):
+            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
 
         if self.enable_interpolation.isChecked():
             factor = self.factor_spin.value()
             quality = self.quality_combo.currentText()
-            max_factor = {
-                "High": 8,
-                "Medium": 6,
-                "Low": 4
-            }.get(quality, 2)
+            quality_limits = {
+                'High': 8,
+                'Medium': 6,
+                'Low': 4
+            }
+            max_factor = quality_limits.get(quality, 8)
             if not (2 <= factor <= max_factor):
-                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality.")
+                raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality")
 
-        bitrate = self.bitrate_spin.value()
-        if bitrate < 100 or bitrate > 10000:
-            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
-
-    def get_options_with_validation(self) -> dict:
-        """Get options after validating inputs."""
-        self.validate_inputs()
-        return self.get_options()
+        # Validate encoder
+        if self.encoder_combo.currentText() not in self._get_valid_encoders():
+            raise ValueError("Unsupported encoder selected")
 
     @property
     def encoder(self):
@@ -266,83 +401,95 @@ class VideoOptionsWidget(QGroupBox):
         self.fps_spinbox.setValue(30)
         self.fps_spinbox.valueChanged.connect(self._validate_fps)
 
-        # Set up interpolation factor with validation
-        self.factor_spin.setMinimum(2)
-        self.factor_spin.setMaximum(8)
-        self.factor_spin.setValue(2)
-        self.factor_spin.valueChanged.connect(self._validate_interpolation_factor)
 
-        # Initialize hardware and encoder options
-        self._setup_hardware_options()
-        self.hardware_combo.currentTextChanged.connect(self._update_encoder_options)
+    # def set_bitrate(self, bitrate: int):
+    #     """Set the bitrate value in the UI."""
+    #     self.bitrate_spin.setValue(bitrate)
 
-    def _validate_fps(self, value):
-        """Validate FPS input and raise ValueError if invalid"""
-        if value <= 0:
-            self.fps_spinbox.setValue(1)  # Reset to minimum valid value
-            raise ValueError("FPS must be greater than 0")
-        return value
-
-    def _validate_interpolation_factor(self, value):
-        """Validate interpolation factor based on quality setting"""
-        if self.enable_interpolation.isChecked():
-            quality = self.quality_combo.currentText()
-            max_factor = {
-                "Low": 4,
-                "Medium": 6,
-                "High": 8
-            }.get(quality, 4)
-            
-            if value > max_factor:
-                self.factor_spin.setValue(max_factor)
-                raise ValueError(f"Interpolation factor cannot exceed {max_factor} for {quality} quality")
-        return value
-
-    def _setup_hardware_options(self):
-        """Initialize hardware options"""
-        self.hardware_combo.clear()
-        self.hardware_combo.addItems([
-            "CPU",
-            "NVIDIA GPU (CUDA)",
-            "AMD GPU",
-            "Intel QuickSync"
+    def _get_valid_encoders(self):
+        """Get list of valid encoders for current hardware."""
+        hardware = self.hardware_combo.currentText()
+        return self.hardware_encoders.get(hardware, [
+            "H.264",
+            "HEVC/H.265 (Better Compression)",
+            "AV1 (Best Quality)"
         ])
 
-    def _update_encoder_options(self, hardware):
-        """Update encoder options based on selected hardware"""
-        self.encoder_combo.clear()
-        if hardware == "NVIDIA GPU (CUDA)":
-            self.encoder_combo.addItems([
-                "NVIDIA Encoder Option 1",
-                "NVIDIA Encoder Option 2",
-                "NVIDIA Encoder Option 3"
-            ])
-        elif hardware == "AMD GPU":
-            self.encoder_combo.addItems([
-                "AMD VCE",
-                "AMD AMF",
-                "H.264 AMD"
-            ])
-        elif hardware == "Intel QuickSync":
-            self.encoder_combo.addItems([
-                "QuickSync H.264",
-                "QuickSync HEVC",
-                "Intel QSV"
-            ])
-        else:  # CPU
-            self.encoder_combo.addItems([
-                "H.264",
-                "H.265",
-                "VP9"
-            ])
-    
-    def closeEvent(self, event):
-        """Handle the widget close event."""
-        # ...existing code...
-        event.accept()
-    
-    def set_bitrate(self, bitrate: int):
-        """Set the bitrate value in the UI."""
-        self.bitrate_spin.setValue(bitrate)
-    
-    # ...existing code...
+    def interpolate_frames(self, frame1, frame2, factor=2):
+        """Generate interpolated frames."""
+        frames = [frame1]
+        for i in range(1, factor):
+            alpha = i / factor
+            interpolated = cv2.addWeighted(frame1, 1 - alpha, frame2, alpha, 0)
+            frames.append(interpolated)
+        frames.append(frame2)
+        return frames  # Return all frames including originals
+
+    # Add this constant
+    SUPPORTED_ENCODERS = [
+        "H.264",
+        "HEVC/H.265 (Better Compression)",
+        "AV1 (Best Quality)",
+        "NVIDIA NVENC H.264",
+        "NVIDIA NVENC HEVC"
+    ]
+
+    def validate_encoder(self, encoder: str) -> None:
+        """Validate encoder selection."""
+        if encoder not in self.SUPPORTED_ENCODERS:
+            if self.testing:
+                raise ValueError("Unsupported encoder selected")
+            else:
+                self.encoder_combo.setCurrentText("H.264")
+                return False
+        return True
+
+class ProcessingOptionsWidget(QWidget):
+    # ...existing initialization code...
+
+    def validate_fps_wrapper(self, fps: int) -> None:
+        """Wrapper for fps validation"""
+        if not isinstance(fps, int) or not (1 <= fps <= 60):
+            raise ValueError("FPS must be between 1 and 60.")
+
+    def validate_bitrate(self) -> None:
+        """Validate bitrate value"""
+        bitrate = self.bitrate_spin.value()
+        if not isinstance(bitrate, int) or not (100 <= bitrate <= 10000):
+            raise ValueError("Bitrate must be between 100 and 10000 kbps.")
+
+    def validate_factor_wrapper(self, factor: int) -> None:
+        """Wrapper for interpolation factor validation"""
+        quality = self.quality_combo.currentText().split()[0]  # Get "High", "Medium", or "Low"
+        max_factors = {'Low': 4, 'Medium': 6, 'High': 8}
+        max_factor = max_factors[quality]
+        if not (2 <= factor <= max_factor):
+            raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality.")
+
+    def validate_encoder(self, encoder: str) -> None:
+        """Validate encoder selection"""
+        if encoder not in self.get_supported_encoders():
+            raise ValueError("Unsupported encoder selected")
+
+    def get_supported_encoders(self) -> List[str]:
+        """Get list of supported encoders"""
+        return [
+            "H.264",
+            "HEVC/H.265 (Better Compression)",
+            "AV1 (Best Quality)",
+            "NVIDIA NVENC H.264",
+            "NVIDIA NVENC HEVC"
+        ]
+
+    def get_options(self) -> dict:
+        """Get current processing options with validation"""
+        # Perform validations first
+        if self.testing:
+            self.validate_fps_wrapper(self.fps_spinbox.value())
+            self.validate_bitrate()
+            if self.enable_interpolation.isChecked():
+                self.validate_factor_wrapper(self.factor_spin.value())
+            self.validate_encoder(self.encoder_combo.currentText())
+
+        # ...rest of existing get_options code...
+

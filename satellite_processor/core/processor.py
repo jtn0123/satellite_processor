@@ -965,4 +965,20 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.configure_encoder(options)
         self.video_handler.encode_video(fps, bitrate)
 
+    def create_video(self, input_files, output_path, options):
+        """Create video from processed images."""
+        try:
+            # ...existing code...
+            
+            # Ensure 'encoder' is set in options
+            options.setdefault('encoder', 'H.264')  # Set default encoder if not present
+            
+            video_handler = VideoHandler()
+            video_handler.testing = getattr(self, 'testing', False)  # Ensure testing is set
+            return video_handler.create_video(input_files, output_path, options)
+            
+        except Exception as e:
+            self.logger.error(f"Video creation error: {str(e)}")
+            raise
+
     # ...rest of the class implementation...

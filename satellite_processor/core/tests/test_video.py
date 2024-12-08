@@ -841,12 +841,14 @@ class TestVideoCreation:
 
         options = self.video_options.get_options()
 
+        # Create a memory info mock that will be accessed
         memory_info_mock = MagicMock()
         memory_info_mock.rss = 1024 * 1024 * 100  # 100 MB
 
         process_mock = MagicMock()
         process_mock.memory_info.return_value = memory_info_mock
 
+        # Patch Process in the correct namespace
         with patch('psutil.Process', return_value=process_mock) as proc_mock, \
              patch('subprocess.run', return_value=MagicMock(returncode=0)), \
              patch('pathlib.Path.exists', return_value=True), \
@@ -859,6 +861,7 @@ class TestVideoCreation:
             success = video_handler.create_video(input_dir, Path(output_dir) / "output.mp4", options)
             assert success is True
 
+            # Verify that memory monitoring occurred
             assert process_mock.memory_info.called, "Memory monitoring was not performed"
 
     def test_video_processing_memory_management(self, video_options, mock_directories):
@@ -1169,6 +1172,133 @@ class TestVideoCreation:
             
             for key, value in metadata.items():
                 assert f'-metadata {key}="{value}"' in cmd_str
+
+    def test_ffmpeg_process_termination(self, video_options, mock_directories):
+        """Test proper FFmpeg process termination on cancellation"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None  # Process is running
+        
+        with patch('subprocess.Popen', return_value=mock_process) as mock_popen:
+            video_handler = VideoHandler()
+            video_handler._current_process = mock_process
+            video_handler.cancel()
+            
+            mock_process.terminate.assert_called_once()
+            assert video_handler._current_process is None
+
+    def test_concurrent_video_creation(self, video_options, mock_directories):
+        """Test handling of concurrent video creation attempts"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        video_handler = VideoHandler()
+        
+        # Start first video creation
+        with patch('subprocess.run', return_value=MagicMock(returncode=0)):
+            first_creation = video_handler.create_video(input_dir, output_dir / "first.mp4", options)
+            assert first_creation is True
+            
+            # Attempt second video creation while first is running
+            video_handler._is_processing = True
+            second_creation = video_handler.create_video(input_dir, output_dir / "second.mp4", options)
+            assert second_creation is False
+            
+            video_handler._is_processing = False
+
+    def test_output_file_collision(self, video_options, mock_directories):
+        """Test handling of existing output file"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        # Create a dummy output file
+        output_path = output_dir / "output.mp4"
+        output_path.touch()
+        
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+            video_handler = VideoHandler()
+            success = video_handler.create_video(input_dir, output_path, options)
+            
+            # Verify FFmpeg was called with -y flag for overwrite
+            cmd_args = mock_run.call_args[0][0]
+            assert '-y' in cmd_args
+
+    def test_resource_monitoring(self, video_options, mock_directories):
+        """Test resource monitoring during video creation"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+
+        # Create mock for psutil.Process
+        process_mock = MagicMock()
+        process_mock.cpu_percent.return_value = 20.0
+        memory_info = MagicMock()
+        memory_info.rss = 1024 * 1024 * 100  # 100 MB
+        process_mock.memory_info.return_value = memory_info
+
+        with patch('psutil.Process', return_value=process_mock) as proc_mock, \
+             patch('subprocess.run', return_value=MagicMock(returncode=0)) as ffmpeg_mock, \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_dir', return_value=True), \
+             patch('pathlib.Path.glob', return_value=[Path(input_dir) / "frame0000.png"]):
+            
+            video_handler = VideoHandler()
+            video_handler.testing = False  # Enable actual monitoring
+            video_handler.process = process_mock  # Set mocked process directly
+            video_handler._monitor_resources = True  # Enable resource monitoring
+
+            # Create video
+            success = video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            
+            # Verify success and monitoring
+            assert success is True
+            assert ffmpeg_mock.called, "FFmpeg command was not called"
+            assert process_mock.cpu_percent.call_count > 0, "CPU monitoring was not called"
+            assert process_mock.memory_info.call_count > 0, "Memory monitoring was not called"
+
+    def test_video_creation_resume(self, video_options, mock_directories):
+        """Test video creation can resume after failure"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        video_handler = VideoHandler()
+        
+        # Mock FFmpeg failing once then succeeding
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = [
+                subprocess.CalledProcessError(1, ['ffmpeg'], stderr=b"Temporary failure"),
+                MagicMock(returncode=0)
+            ]
+            
+            success = video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            assert success is True
+            assert mock_run.call_count == 2
+            assert not video_handler._is_processing
+
+    def test_temporary_file_cleanup(self, video_options, mock_directories):
+        """Test cleanup of temporary files after video creation"""
+        input_dir, output_dir = mock_directories
+        temp_dir = output_dir / "temp"
+        temp_dir.mkdir()
+        temp_files = []
+        
+        # Create some temporary files
+        for i in range(3):
+            temp_file = temp_dir / f"temp_{i}.tmp"
+            temp_file.touch()
+            temp_files.append(temp_file)
+        
+        options = video_options.get_options()
+        options['temp_dir'] = str(temp_dir)
+        
+        with patch('subprocess.run', return_value=MagicMock(returncode=0)):
+            video_handler = VideoHandler()
+            video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            
+            # Check that temp files were cleaned up
+            assert not any(f.exists() for f in temp_files)
+            assert not temp_dir.exists()
 
 class TestErrorHandling:
     """Tests for error handling and edge cases"""

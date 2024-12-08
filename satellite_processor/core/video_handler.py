@@ -74,6 +74,7 @@ class VideoHandler:
         self._current_process = None
         self._processor = None  # Reference to main processor
         self.process = psutil.Process()  # Add this line to track current process
+        self._is_processing = False  # Add this line to track processing state
 
     def set_processor(self, processor):
         """Set reference to main processor for process tracking"""
@@ -154,8 +155,15 @@ class VideoHandler:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
     def create_video(self, input_dir, output_path, options):
-        """Create video with improved validation."""
+        """Create video with improved resource monitoring"""
         try:
+            # Check if already processing
+            if self._is_processing and not self.testing:
+                self.logger.warning("Video creation already in progress")
+                return False
+            
+            self._is_processing = True
+            
             # Validate output path first
             if not output_path:
                 raise ValueError("Empty output path")
@@ -203,6 +211,11 @@ class VideoHandler:
             bitrate = int(options.get('bitrate', 5000))
             encoder = options.get('encoder', self.encoder)
 
+            # Initialize resource monitoring
+            if not self.testing:
+                initial_usage = self.get_resource_usage()
+                self.logger.debug(f"Initial resource usage: {initial_usage}")
+
             # Add memory monitoring
             if not self.testing:
                 # Monitor memory usage during video creation
@@ -228,6 +241,11 @@ class VideoHandler:
                     memory_info = self.process.memory_info()
                     self.logger.debug(f"Memory usage after encoding: {memory_info.rss / 1024 / 1024:.2f} MB")
 
+                # Monitor resources after encoding
+                if not self.testing:
+                    final_usage = self.get_resource_usage()
+                    self.logger.debug(f"Final resource usage: {final_usage}")
+
                 self.logger.info(f"Successfully created video at {output_path}")
                 return True
 
@@ -236,6 +254,12 @@ class VideoHandler:
                     # Retry with CPU encoding
                     self.logger.warning("NVENC failed, falling back to CPU encoding")
                     options['encoder'] = 'H.264'
+                    self._is_processing = False  # Reset processing state before retry
+                    return self.create_video(input_dir, output_path, options)
+                elif "Temporary failure" in str(e.stderr):
+                    # For temporary failures, retry once
+                    self.logger.warning("Temporary failure, retrying...")
+                    self._is_processing = False  # Reset processing state before retry
                     return self.create_video(input_dir, output_path, options)
                 self.logger.error(f"FFmpeg error: {e.stderr}")
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
@@ -243,6 +267,9 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Video creation error: {str(e)}")
             raise
+        finally:
+            self._is_processing = False
+            self._cleanup_temp_files(options)
 
     def build_ffmpeg_command(self, input_path, output_path, options):
         """Build FFmpeg command with hardware filters and metadata."""
@@ -855,3 +882,49 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Unexpected error during transcoding: {str(e)}")
             return False
+
+    def cancel(self) -> None:
+        """Cancel an ongoing FFmpeg process"""
+        try:
+            if self._current_process and self._current_process.poll() is None:
+                self._current_process.terminate()
+                try:
+                    self._current_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self._current_process.kill()
+                self._current_process = None
+                self.logger.info("FFmpeg process terminated")
+        except Exception as e:
+            self.logger.error(f"Error cancelling process: {e}")
+
+    def _cleanup_temp_files(self, options: dict) -> None:
+        """Clean up temporary files after video creation"""
+        try:
+            if temp_dir := options.get('temp_dir'):
+                temp_path = Path(temp_dir)
+                if temp_path.exists():
+                    shutil.rmtree(temp_path, ignore_errors=True)
+                    self.logger.debug(f"Cleaned up temp directory: {temp_dir}")
+        except Exception as e:
+            self.logger.error(f"Error cleaning up temp files: {e}")
+
+    def get_resource_usage(self):
+        """Get current CPU and memory usage with tracking"""
+        try:
+            cpu_usage = self.process.cpu_percent()  # This will trigger CPU monitoring
+            memory = self.process.memory_info()
+            memory_usage = memory.rss / (1024 * 1024)  # Convert to MB
+            
+            # Store metrics for tracking
+            if not hasattr(self, '_resource_metrics'):
+                self._resource_metrics = []
+            self._resource_metrics.append({'cpu': cpu_usage, 'memory': memory_usage})
+            
+            self.logger.debug(f"Resource usage - CPU: {cpu_usage}%, Memory: {memory_usage:.1f}MB")
+            return {
+                'cpu': cpu_usage,
+                'memory': memory_usage
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting resource usage: {e}")
+            return {'cpu': 0, 'memory': 0}

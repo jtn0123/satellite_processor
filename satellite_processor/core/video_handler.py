@@ -154,8 +154,19 @@ class VideoHandler:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
     def create_video(self, input_dir, output_path, options):
-        """Create video with improved network path handling."""
+        """Create video with improved validation."""
         try:
+            # Validate output path first
+            if not output_path:
+                raise ValueError("Empty output path")
+
+            output_path = Path(output_path)
+            if not output_path.parent.exists():
+                raise ValueError("Directory does not exist")
+                
+            if output_path.suffix.lower() not in ['.mp4', '.mkv', '.avi', '.mov']:
+                raise ValueError("Invalid file extension")
+
             # Ensure proper path objects
             input_dir = Path(input_dir).resolve()
             output_path = Path(output_path).resolve()
@@ -234,7 +245,7 @@ class VideoHandler:
             raise
 
     def build_ffmpeg_command(self, input_path, output_path, options):
-        """Build FFmpeg command with improved network path handling."""
+        """Build FFmpeg command with hardware filters and metadata."""
         try:
             # Convert paths to absolute and normalize for network compatibility
             input_dir = Path(input_path).resolve()
@@ -267,6 +278,20 @@ class VideoHandler:
                 '-pix_fmt', 'yuv420p',
                 '-movflags', '+faststart'
             ]
+
+            # Hardware-specific parameters
+            hardware = options.get('hardware', 'CPU')
+            if 'NVIDIA' in hardware:
+                cmd.extend(['-vf', 'scale_cuda'])
+            elif 'Intel' in hardware:
+                cmd.extend(['-vf', 'scale_qsv'])
+            elif 'AMD' in hardware:
+                cmd.extend(['-vf', 'scale_amf'])
+
+            # Add metadata if present
+            if 'metadata' in options:
+                for key, value in options['metadata'].items():
+                    cmd.extend(['-metadata', f'{key}="{value}"'])
 
             # Add custom FFmpeg options
             if 'custom_ffmpeg_options' in options:

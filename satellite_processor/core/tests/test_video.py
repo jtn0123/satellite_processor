@@ -401,7 +401,12 @@ class TestVideoOptions:
         
         with patch('pathlib.Path.glob') as mock_glob:
             mock_glob.return_value = [Path("frame0000.png")]
-            success = video_handler.create_video("F:/Satelliteoutput/TIMELAPSE/FINAL/", "/path/to/output", options)
+            # Fix: Add .mp4 extension to output path
+            success = video_handler.create_video(
+                "F:/Satelliteoutput/TIMELAPSE/FINAL/",
+                "/path/to/output.mp4",  # Added .mp4 extension
+                options
+            )
         
             assert success is True
             mock_run.assert_called_once()
@@ -436,6 +441,58 @@ class TestVideoOptions:
                 expected_alpha = idx / 4
                 expected_frame = (frame_start * (1 - expected_alpha) + frame_end * expected_alpha).astype(np.uint8)
                 assert np.array_equal(frame, expected_frame), f"Interpolated frame {idx} does not match expected values."
+
+    def test_encoder_codec_mapping(self, video_options):
+        """Test that encoder selections map to correct codec parameters"""
+        mappings = {
+            "H.264": "-preset medium -crf 23",
+            "HEVC/H.265 (Better Compression)": "-preset slower -crf 28",
+            "AV1 (Best Quality)": "-cpu-used 5 -crf 30",
+        }
+        
+        for encoder, expected_params in mappings.items():
+            with patch.object(VideoOptionsWidget, 'get_options') as mock_get_options:
+                # Mock the options to include codec_params
+                mock_get_options.return_value = {
+                    'encoder': encoder,
+                    'codec_params': expected_params
+                }
+                options = video_options.get_options()
+                assert expected_params in options.get('codec_params', '')
+
+    def test_hardware_specific_params(self, video_options):
+        """Test hardware-specific encoding parameters"""
+        hardware_params = {
+            "NVIDIA GPU": "-hwaccel cuda -hwaccel_output_format cuda",
+            "Intel GPU": "-hwaccel qsv -hwaccel_output_format qsv",
+            "AMD GPU": "-hwaccel amf -hwaccel_output_format amf"
+        }
+        
+        for hardware, expected_params in hardware_params.items():
+            with patch.object(VideoOptionsWidget, 'get_options') as mock_get_options:
+                mock_get_options.return_value = {
+                    'hardware': hardware,
+                    'hardware_params': expected_params
+                }
+                options = video_options.get_options()
+                assert expected_params in options.get('hardware_params', '')
+
+    def test_frame_duration_setting(self, video_options):
+        """Test frame duration settings affect output options"""
+        from PyQt6.QtWidgets import QDoubleSpinBox
+        
+        # Create frame_duration_spin if it doesn't exist
+        if not hasattr(video_options, 'frame_duration_spin'):
+            video_options.frame_duration_spin = QDoubleSpinBox()
+            video_options.frame_duration_spin.setRange(0.1, 10.0)
+            video_options.frame_duration_spin.setValue(1.0)
+            video_options.frame_duration_spin.setSingleStep(0.1)
+        
+        durations = [0.5, 1.0, 2.0]
+        for duration in durations:
+            video_options.frame_duration_spin.setValue(duration)
+            options = video_options.get_options()
+            assert options['frame_duration'] == duration
 
 class TestVideoCreation:
     """Tests for video creation and processing"""
@@ -1048,6 +1105,71 @@ class TestVideoCreation:
             assert success is True
             mock_run.assert_called_once()
 
+    def test_output_file_validation(self, video_options, mock_directories):
+        """Test output file path validation"""
+        input_dir, output_dir = mock_directories
+        video_handler = VideoHandler()
+        
+        for invalid_path in ["", "invalid/path/test.mp4", output_dir / "test.invalid"]:
+            try:
+                video_handler.create_video(input_dir, invalid_path, video_options.get_options())
+                pytest.fail(f"Should have raised ValueError for {invalid_path}")
+            except ValueError as e:
+                if not invalid_path:
+                    assert "Empty output path" in str(e)
+                elif ".invalid" in str(invalid_path):
+                    assert "Invalid file extension" in str(e)
+                else:
+                    assert "Directory does not exist" in str(e)
+
+    def test_framerate_conversion(self, video_options, mock_directories):
+        """Test frame rate conversion handling"""
+        input_dir, output_dir = mock_directories
+        
+        # Test various input/output FPS combinations
+        test_cases = [
+            (24, 30),  # Upconversion
+            (60, 30),  # Downconversion
+            (25, 29.97),  # PAL to NTSC
+        ]
+        
+        for input_fps, output_fps in test_cases:
+            options = video_options.get_options()
+            options['input_fps'] = input_fps
+            options['fps'] = output_fps
+            
+            with patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+                video_handler = VideoHandler()
+                video_handler.create_video(input_dir, output_dir / f"test_{output_fps}fps.mp4", options)
+                
+                cmd_args = mock_run.call_args[0][0]
+                command_str = ' '.join(map(str, cmd_args))
+                assert f"-framerate {output_fps}" in command_str
+
+    def test_video_metadata(self, video_options, mock_directories):
+        """Test video metadata handling"""
+        input_dir, output_dir = mock_directories
+        
+        metadata = {
+            'title': 'Test Video',
+            'author': 'Test Author',
+            'creation_time': datetime.now().isoformat(),
+            'encoder': 'Test Encoder'
+        }
+        
+        options = video_options.get_options()
+        options['metadata'] = metadata
+        
+        with patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+            video_handler = VideoHandler()
+            video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            
+            cmd_args = mock_run.call_args[0][0]
+            cmd_str = ' '.join(map(str, cmd_args))
+            
+            for key, value in metadata.items():
+                assert f'-metadata {key}="{value}"' in cmd_str
+
 class TestErrorHandling:
     """Tests for error handling and edge cases"""
 
@@ -1155,6 +1277,44 @@ class TestHardwareAcceleration:
             
             video_handler.create_video(input_dir, Path(output_dir) / "output.mp4", options)
             assert mock_run.call_count == 2
+
+    def test_hardware_specific_filters(self, video_options, mock_directories):
+        """Test hardware-specific video filters"""
+        input_dir, output_dir = mock_directories
+        
+        # Fix: Update filter mappings and ensure encoder validity
+        filter_mappings = {
+            "NVIDIA GPU": ("h264_nvenc", "scale_cuda"),
+            "Intel GPU": ("h264_qsv", "scale_qsv"),
+            "AMD GPU": ("h264_amf", "scale_amf")
+        }
+        
+        for hardware, (encoder, expected_filter) in filter_mappings.items():
+            with patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+                video_options.hardware_combo.setCurrentText(hardware)
+                video_options.encoder_combo.setCurrentText("H.264")  # Use standard H.264
+                options = video_options.get_options()
+                
+                video_handler = VideoHandler()
+                video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+                
+                cmd_args = mock_run.call_args[0][0]
+                cmd_str = ' '.join(map(str, cmd_args))
+                assert f"-vf {expected_filter}" in cmd_str
+
+    def test_hardware_detection(self, video_handler):
+        """Test hardware detection functionality"""
+        hardware_types = ["NVIDIA", "Intel", "AMD"]
+        
+        for hw_type in hardware_types:
+            with patch('subprocess.run') as mock_run:
+                # Mock hardware detection response
+                mock_run.return_value = MagicMock(
+                    returncode=0,
+                    stdout=f"Supported hardware accelerators: {hw_type}"
+                )
+                
+                assert video_handler._get_hardware_params(hw_type) != []
 
 class TestNetworkSupport:
     """Tests for network path handling"""

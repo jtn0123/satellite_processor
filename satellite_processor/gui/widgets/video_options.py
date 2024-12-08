@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from PyQt6.QtWidgets import ( # type: ignore
     QGroupBox, QVBoxLayout, QHBoxLayout,
-    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit, QFormLayout, QMessageBox
+    QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit, QFormLayout, QMessageBox, QDoubleSpinBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal # type: ignore
 from PyQt6.QtWidgets import QApplication # type: ignore
@@ -137,6 +137,17 @@ class VideoOptionsWidget(QGroupBox):
         layout.addWidget(self.enable_transcoding)
         layout.addWidget(self.transcoding_options_group)
 
+        # Add frame duration control
+        frame_duration_layout = QHBoxLayout()
+        frame_duration_label = QLabel("Frame Duration (s):")
+        self.frame_duration_spin = QDoubleSpinBox()
+        self.frame_duration_spin.setRange(0.1, 10.0)
+        self.frame_duration_spin.setValue(1.0)
+        self.frame_duration_spin.setSingleStep(0.1)
+        frame_duration_layout.addWidget(frame_duration_label)
+        frame_duration_layout.addWidget(self.frame_duration_spin)
+        layout.addLayout(frame_duration_layout)
+
         # Reset Button
         self.reset_button = QPushButton("Reset to Defaults")
         layout.addWidget(self.reset_button)
@@ -183,7 +194,7 @@ class VideoOptionsWidget(QGroupBox):
 
         # Validate current value against new limits
         current_value = self.factor_spin.value()
-        if current_value > max_factor:
+        if (current_value > max_factor):
             if self.testing:
                 raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {text} quality")
             else:
@@ -201,6 +212,7 @@ class VideoOptionsWidget(QGroupBox):
             'interpolation_quality': self.quality_combo.currentText().lower(),
             'transcoding_enabled': self.enable_transcoding.isChecked(),
             'transcoding_quality': self.transcoding_quality_combo.currentText() if self.enable_transcoding.isChecked() else None,
+            'frame_duration': self.frame_duration_spin.value(),  # Add this line
             'custom_ffmpeg_options': '-preset veryfast -tune zerolatency'
         }
         
@@ -452,18 +464,28 @@ class VideoOptionsWidget(QGroupBox):
         frames.append(frame2)
         return frames  # Return all frames including originals
 
-    # Add this constant
+    # Update the SUPPORTED_ENCODERS list to include hardware-specific encoders
     SUPPORTED_ENCODERS = [
         "H.264",
-        "HEVC/H.265 (Better Compression)",
+        "HEVC/H.265 (Better Compression)", 
         "AV1 (Best Quality)",
         "NVIDIA NVENC H.264",
-        "NVIDIA NVENC HEVC"
+        "NVIDIA NVENC HEVC",
+        "QuickSync H.264",
+        "QuickSync HEVC",
+        "Intel QSV",
+        "AMD VCE",
+        "AMD AMF",
+        "H.264 AMD"
     ]
 
     def validate_encoder(self, encoder: str) -> None:
         """Validate encoder selection."""
-        if encoder not in self.SUPPORTED_ENCODERS:
+        # Get valid encoders for current hardware
+        hardware = self.hardware_combo.currentText()
+        valid_encoders = self.hardware_encoders.get(hardware, self.SUPPORTED_ENCODERS)
+        
+        if encoder not in valid_encoders and encoder not in self.SUPPORTED_ENCODERS:
             if self.testing:
                 raise ValueError("Unsupported encoder selected")
             else:

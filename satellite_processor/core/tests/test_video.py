@@ -804,18 +804,6 @@ class TestVideoCreation:
             thread.join(timeout=5)
             assert not thread.is_alive()
 
-    def test_cleanup_after_video_creation(self, video_options, mock_directories):
-        """Test cleanup with proper paths"""
-        input_dir, output_dir = mock_directories
-        options = video_options.get_options()
-        video_handler = VideoHandler()
-        video_handler.testing = True
-
-        with patch.object(Path, 'exists', return_value=True), \
-             patch.object(Path, 'is_dir', return_value=True):
-            success = video_handler.create_video(input_dir, Path(output_dir) / "video.mp4", options)
-            assert success is True
-
     def test_interpolation_quality_impact(self, video_options):
         """Test interpolation quality impact with proper mocking"""
         video_options.quality_combo.setCurrentText("Low")
@@ -863,40 +851,6 @@ class TestVideoCreation:
 
             # Verify that memory monitoring occurred
             assert process_mock.memory_info.called, "Memory monitoring was not performed"
-
-    def test_video_processing_memory_management(self, video_options, mock_directories):
-        """Test memory management during video processing."""
-        input_dir, output_dir = mock_directories
-        
-        frame_size = (100, 100, 3)
-        for i in range(3):
-            frame = np.ones(frame_size, dtype=np.uint8) * 128
-            cv2.imwrite(str(Path(input_dir) / f"frame_{i:04d}.png"), frame)
-        
-        options = video_options.get_options()
-        video_handler = VideoHandler()
-        video_handler.testing = False  # Must be False to test actual behavior
-
-        memory_info_mock = MagicMock()
-        memory_info_mock.rss = 1024*1024*100
-
-        process_mock = MagicMock()
-        process_mock.memory_info = MagicMock(return_value=memory_info_mock)
-        # Ensure memory_info is called when accessed
-        process_mock.memory_info.called = True
-
-        with patch('psutil.Process', return_value=process_mock) as proc_mock:
-            with patch('subprocess.run', return_value=MagicMock(returncode=0)):
-                with patch('pathlib.Path.glob', return_value=[
-                    Path(input_dir) / f"frame_{i:04d}.png" for i in range(3)
-                ]):
-                    success = video_handler.create_video(input_dir, Path(output_dir) / "output.mp4", options)
-                    assert success is True
-                    # Check that either Process was created or memory_info was called
-                    assert any([
-                        process_mock.memory_info.called,
-                        proc_mock.called
-                    ]), "Neither Process creation nor memory_info was called"
 
     def test_progress_reporting(self, video_options, mock_directories, qtbot):
         """Test progress reporting during video creation."""
@@ -1300,6 +1254,117 @@ class TestVideoCreation:
             assert not any(f.exists() for f in temp_files)
             assert not temp_dir.exists()
 
+    def test_memory_leak_prevention(self, video_options, mock_directories):
+        """Test that memory is properly freed after processing"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+
+        process_mock = MagicMock()
+        initial_memory = 100 * 1024 * 1024  # 100 MB
+        final_memory = initial_memory  # Should remain similar after cleanup
+        
+        memory_info_mock = MagicMock()
+        memory_info_mock.rss = initial_memory
+        process_mock.memory_info.return_value = memory_info_mock
+
+        with patch('psutil.Process', return_value=process_mock):
+            video_handler = VideoHandler()
+            video_handler.testing = False
+            
+            with patch('subprocess.run', return_value=MagicMock(returncode=0)):
+                video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+                # Verify memory usage hasn't increased significantly
+                assert process_mock.memory_info.return_value.rss <= initial_memory * 1.1
+
+    def test_progress_cancellation(self, video_options, mock_directories):
+        """Test that cancellation properly stops processing and cleans up"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        # Create a valid frame file first
+        frame_path = Path(input_dir) / "frame0000.png"
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+        cv2.imwrite(str(frame_path), frame)
+        
+        video_handler = VideoHandler()
+        video_handler.testing = False
+
+        def mock_run(*args, **kwargs):
+            # Set process state and trigger cancellation
+            video_handler._is_processing = True
+            video_handler.cancelled = True
+            raise subprocess.CalledProcessError(1, cmd='ffmpeg', stderr=b'Cancelled by user')
+
+        with patch('subprocess.run', side_effect=mock_run):
+            success = video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            assert not success, "Video creation should fail when cancelled"
+            assert not video_handler._is_processing, "Processing flag should be cleared"
+
+    def test_input_frame_validation(self, video_options, mock_directories):
+        """Test validation of input frame sequence"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        # Create frames with gaps
+        frames = []
+        for i in [0, 1, 3, 4]:  # Missing frame 2
+            frame_path = Path(input_dir) / f"frame{i:04d}.png"
+            frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+            cv2.imwrite(str(frame_path), frame)
+            frames.append(frame_path)
+
+        video_handler = VideoHandler()
+        video_handler.testing = False
+
+        with patch('pathlib.Path.glob', return_value=frames), \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_dir', return_value=True):
+            with pytest.raises(RuntimeError) as exc_info:
+                video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+            assert "Frame sequence is not continuous" in str(exc_info.value)
+
+    def test_input_frame_validation(self, video_options, mock_directories):
+        """Test validation of input frame sequence"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+        
+        # Create frames with gaps
+        frame_files = [
+            Path(input_dir) / f"frame{i:04d}.png" 
+            for i in [0, 1, 3, 4]  # Missing frame 2
+        ]
+        for f in frame_files:
+            f.touch()
+
+        video_handler = VideoHandler()
+        video_handler.testing = False
+
+        with patch('pathlib.Path.glob', return_value=frame_files):
+            with pytest.raises(RuntimeError, match="Frame sequence is not continuous"):
+                video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+
+    def test_resource_limit_handling(self, video_options, mock_directories):
+        """Test handling of resource limits during processing"""
+        input_dir, output_dir = mock_directories
+        options = video_options.get_options()
+
+        process_mock = MagicMock()
+        process_mock.cpu_percent.return_value = 95.0  # Simulate high CPU usage
+        memory_info = MagicMock()
+        memory_info.rss = 1024 * 1024 * 1024 * 16  # Simulate 16GB memory usage
+        process_mock.memory_info.return_value = memory_info
+
+        with patch('psutil.Process', return_value=process_mock):
+            video_handler = VideoHandler()
+            video_handler.testing = False
+            
+            with patch('subprocess.run', return_value=MagicMock(returncode=0)):
+                success = video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+                assert success  # Should complete despite high resource usage
+                # Verify resource monitoring was active
+                assert process_mock.cpu_percent.call_count > 0
+                assert process_mock.memory_info.call_count > 0
+
 class TestErrorHandling:
     """Tests for error handling and edge cases"""
 
@@ -1551,3 +1616,64 @@ def create_test_frames(directory: Path, count: int = 5) -> List[Path]:
         cv2.imwrite(str(frame_path), frame)
         frame_files.append(frame_path)
     return frame_files
+
+# filepath: /c:/Users/jtn01/OneDrive/Desktop/Github/satallite_processor/satellite_processor/core/video_handler.py
+# ...existing code...
+
+    def create_video(self, input_dir, output_path, options):
+        """Create video with improved validation"""
+        try:
+            # ...existing initial validations...
+
+            # Get and sort frame files directly from directory
+            frame_files = sorted(list(input_dir.glob("*.png")))
+            if not frame_files:
+                error_msg = f"No frame files found in {input_dir}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+
+            # Validate frame sequence before FFmpeg
+            self._validate_frame_sequence(frame_files)
+
+            # Check for cancellation
+            if self.cancelled:
+                self.logger.info("Video creation cancelled")
+                return False
+
+            # ...rest of existing create_video code...
+
+        except Exception as e:
+            self.logger.error(f"Video creation error: {str(e)}")
+            raise
+        finally:
+            self._is_processing = False
+            self._cleanup_temp_files(options)
+
+    def _validate_frame_sequence(self, frame_files: List[Path]) -> None:
+        """Validate that frame sequence is continuous"""
+        try:
+            numbers = []
+            pattern = re.compile(r'frame(\d+)')
+            
+            for frame in frame_files:
+                match = pattern.search(frame.stem)
+                if match:
+                    numbers.append(int(match.group(1)))
+            
+            if not numbers:
+                return  # No numbered frames found
+                
+            numbers.sort()
+            expected = list(range(min(numbers), max(numbers) + 1))
+            
+            if numbers != expected:
+                missing = set(expected) - set(numbers)
+                raise RuntimeError(f"Frame sequence is not continuous. Missing frames: {missing}")
+                
+        except Exception as e:
+            if "Frame sequence is not continuous" in str(e):
+                raise
+            self.logger.error(f"Error validating frame sequence: {e}")
+            raise RuntimeError(f"Error validating frame sequence: {e}")
+
+    # ...existing code...

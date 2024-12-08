@@ -155,15 +155,16 @@ class VideoHandler:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
     def create_video(self, input_dir, output_path, options):
-        """Create video with improved resource monitoring"""
+        """Create video with improved error handling"""
         try:
-            # Check if already processing
+            # Initial validation
             if self._is_processing and not self.testing:
                 self.logger.warning("Video creation already in progress")
                 return False
-            
+                
             self._is_processing = True
-            
+            self.cancelled = False  # Reset cancelled state
+
             # Validate output path first
             if not output_path:
                 raise ValueError("Empty output path")
@@ -200,6 +201,21 @@ class VideoHandler:
                 error_msg = f"No frame files found in {input_dir}"
                 self.logger.error(error_msg)
                 raise RuntimeError(error_msg)
+
+            # Validate frame sequence before any FFmpeg operations
+            try:
+                self._validate_frame_sequence(frame_files)
+            except RuntimeError as e:
+                if "Frame sequence is not continuous" in str(e):
+                    self.logger.error(str(e))
+                    raise  # Re-raise frame sequence errors
+                self.logger.error(f"Frame validation error: {e}")
+                raise
+
+            # Check for cancellation before proceeding
+            if self.cancelled:
+                self.logger.info("Video creation cancelled")
+                return False
 
             # Log found frames
             self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
@@ -250,7 +266,10 @@ class VideoHandler:
                 return True
 
             except subprocess.CalledProcessError as e:
-                if "Cannot use NVENC" in str(e.stderr):
+                if self.cancelled:
+                    self.logger.info("Video creation cancelled")
+                    return False
+                elif "Cannot use NVENC" in str(e.stderr):
                     # Retry with CPU encoding
                     self.logger.warning("NVENC failed, falling back to CPU encoding")
                     options['encoder'] = 'H.264'
@@ -265,6 +284,9 @@ class VideoHandler:
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
 
         except Exception as e:
+            if self.cancelled:
+                self.logger.info("Video creation cancelled")
+                return False
             self.logger.error(f"Video creation error: {str(e)}")
             raise
         finally:
@@ -928,3 +950,30 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Error getting resource usage: {e}")
             return {'cpu': 0, 'memory': 0}
+
+    def _validate_frame_sequence(self, frame_files: List[Path]) -> None:
+        """Validate that frame sequence is continuous"""
+        try:
+            numbers = []
+            pattern = re.compile(r'frame(\d+)')
+            
+            for frame in frame_files:
+                match = pattern.search(frame.stem)
+                if match:
+                    numbers.append(int(match.group(1)))
+            
+            if not numbers:
+                return  # No numbered frames found
+                
+            numbers.sort()
+            expected = list(range(min(numbers), max(numbers) + 1))
+            
+            if numbers != expected:
+                missing = set(expected) - set(numbers)
+                raise RuntimeError(f"Frame sequence is not continuous. Missing frames: {missing}")
+                
+        except Exception as e:
+            if "Frame sequence is not continuous" in str(e):
+                raise
+            self.logger.error(f"Error validating frame sequence: {e}")
+            raise RuntimeError(f"Error validating frame sequence: {e}")

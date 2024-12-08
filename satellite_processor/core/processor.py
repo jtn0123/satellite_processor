@@ -845,7 +845,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             
             # Try PATH environment
             ffmpeg_path = shutil.which("ffmpeg")
-            if ffmpeg_path:
+            if (ffmpeg_path):
                 return Path(ffmpeg_path)
         
             self.logger.error("FFmpeg not found in system")
@@ -897,11 +897,22 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # Create video path
             video_path = output_dir / f"animation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
             
-            # Create video with just three arguments
+            # Create input directory path
+            if isinstance(input_files, list):
+                if not input_files[0]:
+                    return False
+                input_dir = Path(input_files[0]).parent
+            else:
+                input_dir = Path(input_files)
+            
+            # Create video with proper input directory
             success = self.video_handler.create_video(
-                input_files,  # List[Path]
-                video_path,   # Path
-                self.options  # dict
+                input_dir,    # Path object of input directory
+                video_path,   # Path object for output
+                {
+                    **self.options,
+                    'input_files': [str(f) for f in input_files]  # Add list of files to options
+                }
             )
             
             if success:

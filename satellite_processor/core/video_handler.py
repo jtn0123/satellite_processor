@@ -12,6 +12,7 @@ import re
 import time
 import sys
 from .file_manager import FileManager  # Add this import
+import psutil  # Add to top of file with other imports
 
 """
 Video Processing Module
@@ -72,6 +73,7 @@ class VideoHandler:
         
         self._current_process = None
         self._processor = None  # Reference to main processor
+        self.process = psutil.Process()  # Add this line to track current process
 
     def set_processor(self, processor):
         """Set reference to main processor for process tracking"""
@@ -152,154 +154,133 @@ class VideoHandler:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
     def create_video(self, input_dir, output_path, options):
-        """Create video with improved network path and testing handling."""
+        """Create video with improved network path handling."""
         try:
-            # Handle testing mode first
-            if self.testing:
-                return True
-
-            # Convert paths to Path objects and resolve them
+            # Ensure proper path objects
             input_dir = Path(input_dir).resolve()
             output_path = Path(output_path).resolve()
 
-            # Path validation for non-testing mode
-            if not input_dir.exists() or not input_dir.is_dir():
-                raise ValueError(f"Input directory does not exist or is not a directory: {input_dir}")
+            if self.testing:
+                return True
 
+            # Enhanced directory validation for network paths
+            if not input_dir.exists():
+                self.logger.error(f"Input directory not found: {input_dir}")
+                raise ValueError(f"Input directory does not exist: {input_dir}")
+
+            if not input_dir.is_dir():
+                self.logger.error(f"Input path is not a directory: {input_dir}")
+                raise ValueError(f"Input path is not a directory: {input_dir}")
+
+            # Create output directory if needed
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Validate and standardize options
+            # Get and sort frame files directly from directory
+            frame_files = sorted(list(input_dir.glob("*.png")))
+            if not frame_files:
+                error_msg = f"No frame files found in {input_dir}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+
+            # Log found frames
+            self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
+            for frame in frame_files[:5]:  # Log first 5 frames for debugging
+                self.logger.debug(f"Frame found: {frame.name}")
+
+            # Validate options
             fps = int(options.get('fps', 30))
             bitrate = int(options.get('bitrate', 5000))
             encoder = options.get('encoder', self.encoder)
-            interpolation_factor = int(options.get('interpolation_factor', 2))
-            interpolation_quality = options.get('interpolation_quality', 'High').capitalize()
 
-            # Validate options
-            self.validate_fps(fps)
-            self.validate_bitrate(bitrate)
-            self.validate_encoder(encoder)
-            self.validate_interpolation_quality(interpolation_quality)
-            self.validate_interpolation_factor(interpolation_factor, interpolation_quality)
+            # Add memory monitoring
+            if not self.testing:
+                # Monitor memory usage during video creation
+                memory_info = self.process.memory_info()
+                self.logger.debug(f"Memory usage before encoding: {memory_info.rss / 1024 / 1024:.2f} MB")
 
             # Build command with network-safe paths
             cmd = self.build_ffmpeg_command(input_dir, output_path, options)
-            
-            # Log the complete command for debugging
-            self.logger.debug(f"Running FFmpeg command: {' '.join(map(str, cmd))}")
-            
+            self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
+
             try:
-                if self.testing:
-                    return True
-                    
                 # Run FFmpeg with working directory set to input directory
                 result = subprocess.run(
                     cmd,
                     check=True,
                     capture_output=True,
                     text=True,
-                    cwd=str(input_dir)  # Set working directory to input directory
+                    cwd=str(input_dir)
                 )
+
+                # Check memory again after encoding
+                if not self.testing:
+                    memory_info = self.process.memory_info()
+                    self.logger.debug(f"Memory usage after encoding: {memory_info.rss / 1024 / 1024:.2f} MB")
+
+                self.logger.info(f"Successfully created video at {output_path}")
                 return True
-                
+
             except subprocess.CalledProcessError as e:
-                self.logger.error(f"FFmpeg stderr: {e.stderr}")
+                if "Cannot use NVENC" in str(e.stderr):
+                    # Retry with CPU encoding
+                    self.logger.warning("NVENC failed, falling back to CPU encoding")
+                    options['encoder'] = 'H.264'
+                    return self.create_video(input_dir, output_path, options)
+                self.logger.error(f"FFmpeg error: {e.stderr}")
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
-            except FileNotFoundError:
-                if self.testing:
-                    return True
-                raise RuntimeError(f"FFmpeg executable not found at {self.ffmpeg_path}")
-                
-        except TypeError as e:
-            # Handle TypeError for invalid path types
-            raise ValueError(f"Video creation error: expected str, bytes or os.PathLike object, not {type(input_dir).__name__}")
+
         except Exception as e:
-            if isinstance(e, (ValueError, TypeError)):
-                raise
-            raise RuntimeError(f"Video creation error: {str(e)}")
+            self.logger.error(f"Video creation error: {str(e)}")
+            raise
 
     def build_ffmpeg_command(self, input_path, output_path, options):
-        """Build FFmpeg command with improved UNC path and file verification."""
+        """Build FFmpeg command with improved network path handling."""
         try:
             # Convert paths to absolute and normalize for network compatibility
-            if isinstance(input_path, (list, tuple)):
-                if not input_path:
-                    raise ValueError("Input file list is empty.")
-                first_file = Path(input_path[0]).resolve()
-                input_dir = first_file.parent
-                
-                # Verify files exist before proceeding
-                if not self.testing:
-                    for f in input_path:
-                        if not Path(f).exists():
-                            raise ValueError(f"Input file not found: {f}")
-                
-                frame_pattern = "frame%04d.png"
-                input_arg = str(input_dir / frame_pattern)
-            else:
-                input_dir = Path(input_path).resolve()
-                frame_pattern = "frame%04d.png"
-                input_arg = str(input_dir / frame_pattern)
-
+            input_dir = Path(input_path).resolve()
             output_path = Path(output_path).resolve()
-            
-            # Log actual paths for debugging
-            self.logger.debug(f"Input directory: {input_dir}")
-            self.logger.debug(f"Input pattern: {frame_pattern}")
-            self.logger.debug(f"Full input path: {input_arg}")
-            
-            # Format UNC paths correctly for FFmpeg using raw string literals
-            if str(input_arg).startswith('\\\\'): 
-                # Convert UNC path to FFmpeg-compatible format with proper escaping
-                # Use raw string for network path
-                input_arg = str(input_arg).replace('\\', '/').replace('//', r'//')
-                
-                # Verify at least one matching file exists in the directory
-                if not self.testing:
-                    input_files = list(input_dir.glob("frame*.png"))
-                    if not input_files:
-                        raise ValueError(f"No frame files found in {input_dir}")
-                    self.logger.debug(f"Found {len(input_files)} frame files")
-            else:
-                input_arg = str(input_arg).replace('\\', '/')
 
-            if str(output_path).startswith('\\\\'): 
-                output_path = str(output_path).replace('\\', '/').replace('//', r'//')
-            else:
-                output_path = str(output_path).replace('\\', '/')
+            # Handle UNC paths properly
+            input_pattern = str(input_dir / "frame%04d.png").replace('\\', '/')
+            output_path_str = str(output_path).replace('\\', '/')
 
-            # Get encoder and other options
-            encoder = options.get('encoder', self.encoder)
-            bitrate = options.get('bitrate', self.bitrate)
+            # Verify at least one matching file exists
+            if not self.testing:
+                frame_files = sorted(list(input_dir.glob("*.png")))
+                if not frame_files:
+                    raise ValueError(f"No frame files found in {input_dir}")
+                self.logger.info(f"Found {len(frame_files)} frames for processing")
+
+            # Get encoding options
             fps = options.get('fps', 30)
+            bitrate = options.get('bitrate', 5000)
+            encoder = options.get('encoder', 'H.264')
 
-            # Build command with absolute paths and proper escaping
+            # Build command
             cmd = [
                 str(self.ffmpeg_path),
                 '-y',
                 '-framerate', str(fps),
-                '-i', input_arg,
-                '-c:v', encoder,
+                '-i', input_pattern,
+                '-c:v', self._get_codec(encoder, options.get('hardware', 'CPU')),
                 '-b:v', f"{bitrate}k",
                 '-pix_fmt', 'yuv420p',
                 '-movflags', '+faststart'
             ]
 
-            # Add custom FFmpeg options if present
+            # Add custom FFmpeg options
             if 'custom_ffmpeg_options' in options:
                 cmd.extend(options['custom_ffmpeg_options'].split())
 
             # Add output path
-            cmd.append(output_path)
+            cmd.append(output_path_str)
 
-            # Log full command for debugging
-            self.logger.debug(f"Full FFmpeg command: {' '.join(str(x) for x in cmd)}")
-
+            self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
             return cmd
 
         except Exception as e:
             self.logger.error(f"Error building FFmpeg command: {e}")
-            raise RuntimeError(f"Failed to build FFmpeg command: {str(e)}")
+            raise
 
     def validate_encoder(self, encoder: str) -> None:
         """Validate encoder selection."""

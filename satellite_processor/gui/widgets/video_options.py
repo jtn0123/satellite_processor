@@ -7,13 +7,16 @@ from PyQt6.QtWidgets import ( # type: ignore
     QGroupBox, QVBoxLayout, QHBoxLayout,
     QLabel, QSpinBox, QComboBox, QCheckBox, QWidget, QPushButton, QLineEdit, QFormLayout, QMessageBox
 )
-from PyQt6.QtCore import Qt # type: ignore
+from PyQt6.QtCore import Qt, pyqtSignal # type: ignore
 from PyQt6.QtWidgets import QApplication # type: ignore
 from satellite_processor.core.video_handler import VideoHandler
 
 class VideoOptionsWidget(QGroupBox):
     """Widget for video encoding options"""
     
+    # Add progress signal
+    progress_update = pyqtSignal(str, int)  # operation, value
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
         # Hardware-specific encoder mappings
@@ -42,6 +45,7 @@ class VideoOptionsWidget(QGroupBox):
             ]
         }
         self.testing = False  # Ensure this attribute is defined
+        self._is_processing = False  # Add processing state attribute
         self.init_ui()
 
 
@@ -487,6 +491,24 @@ class VideoOptionsWidget(QGroupBox):
             # Reset to valid value
             self.factor_spin.setValue(2)
             raise
+
+    def is_processing(self):
+        """Return processing state"""
+        return self._is_processing
+
+    def set_processing(self, state: bool):
+        """Set processing state"""
+        self._is_processing = state
+
+    def cancel_processing(self):
+        """Cancel current processing"""
+        self._is_processing = False
+        # Emit signal with 100 to indicate completion
+        self.progress_update.emit("Cancelled", 100)
+
+    def update_progress(self, operation: str, value: int):
+        """Update progress signal"""
+        self.progress_update.emit(operation, value)
 
 class ProcessingOptionsWidget(QWidget):
     # ...existing initialization code...

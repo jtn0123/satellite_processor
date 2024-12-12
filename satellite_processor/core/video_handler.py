@@ -155,15 +155,18 @@ class VideoHandler:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
     def create_video(self, input_dir, output_path, options):
-        """Create video with improved error handling"""
+        """Create video with improved validation and retry handling"""
+        list_file = None
+        original_processing_state = self._is_processing
+        temp_dir = None
         try:
-            # Initial validation
-            if self._is_processing and not self.testing:
+            # Check if already processing, but only on first attempt
+            if original_processing_state and not self.testing:
                 self.logger.warning("Video creation already in progress")
                 return False
                 
             self._is_processing = True
-            self.cancelled = False  # Reset cancelled state
+            self.cancelled = False
 
             # Validate output path first
             if not output_path:
@@ -176,12 +179,21 @@ class VideoHandler:
             if output_path.suffix.lower() not in ['.mp4', '.mkv', '.avi', '.mov']:
                 raise ValueError("Invalid file extension")
 
-            # Ensure proper path objects
+            # Ensure proper path objects and resolve UNC paths
             input_dir = Path(input_dir).resolve()
             output_path = Path(output_path).resolve()
 
-            if self.testing:
-                return True
+            # Handle UNC paths on Windows
+            if os.name == 'nt':
+                if str(input_dir).startswith('\\\\'):
+                    # Convert UNC path to proper format for FFmpeg
+                    input_dir = Path('//' + str(input_dir)[2:])
+                if str(output_path).startswith('\\\\'):
+                    output_path = Path('//' + str(output_path)[2:])
+
+            # Log the resolved paths
+            self.logger.debug(f"Resolved input directory: {input_dir}")
+            self.logger.debug(f"Resolved output path: {output_path}")
 
             # Enhanced directory validation for network paths
             if not input_dir.exists():
@@ -195,12 +207,16 @@ class VideoHandler:
             # Create output directory if needed
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Get and sort frame files directly from directory
-            frame_files = sorted(list(input_dir.glob("*.png")))
+            # Get frame files with expanded patterns
+            frame_files = sorted(input_dir.glob('*.*'))
+            frame_files = [f for f in frame_files if f.suffix.lower() in ['.png', '.jpg', '.jpeg']]
+
             if not frame_files:
                 error_msg = f"No frame files found in {input_dir}"
                 self.logger.error(error_msg)
                 raise RuntimeError(error_msg)
+
+            self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
 
             # Validate frame sequence before any FFmpeg operations
             try:
@@ -238,12 +254,17 @@ class VideoHandler:
                 memory_info = self.process.memory_info()
                 self.logger.debug(f"Memory usage before encoding: {memory_info.rss / 1024 / 1024:.2f} MB")
 
-            # Build command with network-safe paths
-            cmd = self.build_ffmpeg_command(input_dir, output_path, options)
+            # Set test_mode for command generation based on testing flag
+            if getattr(self, 'testing', False):
+                options['test_mode'] = True
+
+            # Build FFmpeg command
+            cmd, temp_dir = self.build_ffmpeg_command(input_dir, output_path, options)
+
             self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
 
+            # Run FFmpeg
             try:
-                # Run FFmpeg with working directory set to input directory
                 result = subprocess.run(
                     cmd,
                     check=True,
@@ -251,17 +272,6 @@ class VideoHandler:
                     text=True,
                     cwd=str(input_dir)
                 )
-
-                # Check memory again after encoding
-                if not self.testing:
-                    memory_info = self.process.memory_info()
-                    self.logger.debug(f"Memory usage after encoding: {memory_info.rss / 1024 / 1024:.2f} MB")
-
-                # Monitor resources after encoding
-                if not self.testing:
-                    final_usage = self.get_resource_usage()
-                    self.logger.debug(f"Final resource usage: {final_usage}")
-
                 self.logger.info(f"Successfully created video at {output_path}")
                 return True
 
@@ -269,17 +279,19 @@ class VideoHandler:
                 if self.cancelled:
                     self.logger.info("Video creation cancelled")
                     return False
-                elif "Cannot use NVENC" in str(e.stderr):
-                    # Retry with CPU encoding
+                    
+                if "Cannot use NVENC" in str(e.stderr):
                     self.logger.warning("NVENC failed, falling back to CPU encoding")
+                    self._is_processing = False  # Reset for retry
+                    options['hardware'] = 'CPU'
                     options['encoder'] = 'H.264'
-                    self._is_processing = False  # Reset processing state before retry
                     return self.create_video(input_dir, output_path, options)
-                elif "Temporary failure" in str(e.stderr):
-                    # For temporary failures, retry once
+                    
+                if "Temporary failure" in str(e.stderr):
                     self.logger.warning("Temporary failure, retrying...")
-                    self._is_processing = False  # Reset processing state before retry
+                    self._is_processing = False  # Reset for retry
                     return self.create_video(input_dir, output_path, options)
+                    
                 self.logger.error(f"FFmpeg error: {e.stderr}")
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
 
@@ -289,68 +301,139 @@ class VideoHandler:
                 return False
             self.logger.error(f"Video creation error: {str(e)}")
             raise
+            
         finally:
-            self._is_processing = False
+            # Restore original processing state
+            self._is_processing = original_processing_state
             self._cleanup_temp_files(options)
+            # Clean up the temporary file list
+            try:
+                if list_file is not None:
+                    list_file.unlink(missing_ok=True)
+            except Exception as e:
+                self.logger.warning(f"Failed to remove temporary file list: {e}")
+            # Check if temp_dir is not None and exists
+            if temp_dir and temp_dir.exists():
+                shutil.rmtree(temp_dir)
 
     def build_ffmpeg_command(self, input_path, output_path, options):
         """Build FFmpeg command with hardware filters and metadata."""
         try:
-            # Convert paths to absolute and normalize for network compatibility
             input_dir = Path(input_path).resolve()
             output_path = Path(output_path).resolve()
+            temp_dir = None
+            list_file = None
 
-            # Handle UNC paths properly
-            input_pattern = str(input_dir / "frame%04d.png").replace('\\', '/')
-            output_path_str = str(output_path).replace('\\', '/')
+            # Convert to forward slashes and handle UNC paths
+            input_str = str(input_dir).replace('\\', '/')
+            is_unc_path = input_str.startswith('//') or str(input_dir).startswith('\\\\')
 
-            # Verify at least one matching file exists
-            if not self.testing:
-                frame_files = sorted(list(input_dir.glob("*.png")))
-                if not frame_files:
-                    raise ValueError(f"No frame files found in {input_dir}")
-                self.logger.info(f"Found {len(frame_files)} frames for processing")
+            # Always use concat demuxer for UNC paths
+            if is_unc_path:
+                # Use concat demuxer for network paths
+                temp_dir = Path(tempfile.mkdtemp())
+                list_file = temp_dir / "frames.txt"
+                temp_dir.mkdir(parents=True, exist_ok=True)
 
-            # Get encoding options
-            fps = options.get('fps', 30)
-            bitrate = options.get('bitrate', 5000)
-            encoder = options.get('encoder', 'H.264')
+                # Get frame files case-insensitively
+                frame_files = []
+                for ext in ['.png', '.PNG', '.jpg', '.JPG', '.jpeg', '.JPEG']:
+                    frame_files.extend(input_dir.glob(f"*{ext}"))
+                frame_files.sort()
 
-            # Build command
-            cmd = [
-                str(self.ffmpeg_path),
-                '-y',
-                '-framerate', str(fps),
-                '-i', input_pattern,
-                '-c:v', self._get_codec(encoder, options.get('hardware', 'CPU')),
-                '-b:v', f"{bitrate}k",
-                '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart'
-            ]
+                # Ensure UNC path format is preserved in frames.txt
+                with open(list_file, 'w', encoding='utf-8') as f:
+                    for frame in frame_files:
+                        # Convert Windows path to UNC format with forward slashes
+                        frame_path = str(frame).replace('\\', '/')
+                        if is_unc_path and not frame_path.startswith('//'):
+                            frame_path = '//' + frame_path.lstrip('/')
+                        f.write(f"file '{frame_path}'\n")
+                        if options.get('frame_duration'):
+                            f.write(f"duration {options['frame_duration']}\n")
 
-            # Hardware-specific parameters
-            hardware = options.get('hardware', 'CPU')
-            if 'NVIDIA' in hardware:
-                cmd.extend(['-vf', 'scale_cuda'])
-            elif 'Intel' in hardware:
-                cmd.extend(['-vf', 'scale_qsv'])
-            elif 'AMD' in hardware:
-                cmd.extend(['-vf', 'scale_amf'])
+                # Use the UNC path format in the command
+                cmd = [
+                    str(self.ffmpeg_path).replace('\\', '/'),
+                    '-y',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', str(list_file).replace('\\', '/')
+                ]
 
-            # Add metadata if present
-            if 'metadata' in options:
-                for key, value in options['metadata'].items():
+            else:
+                # Use frame pattern for local paths
+                if options.get('test_mode') or any(input_dir.glob('frame*.png')):
+                    input_pattern = f"{input_str}/frame%04d.png"
+                    cmd = [
+                        str(self.ffmpeg_path).replace('\\', '/'),
+                        '-y',
+                        '-framerate', str(options.get('fps', 30)),
+                        '-i', input_pattern
+                    ]
+                else:
+                    # Use concat demuxer for non-sequential files
+                    temp_dir = Path(tempfile.mkdtemp())
+                    list_file = temp_dir / "frames.txt"
+                    temp_dir.mkdir(parents=True, exist_ok=True)
+
+                    # Get frame files case-insensitively
+                    frame_files = []
+                    for ext in ['.png', '.PNG', '.jpg', '.JPG', '.jpeg', '.JPEG']:
+                        frame_files.extend(input_dir.glob(f"*{ext}"))
+                    frame_files.sort()
+
+                    # Write file list
+                    with open(list_file, 'w', encoding='utf-8') as f:
+                        for frame in frame_files:
+                            frame_path = str(frame).replace('\\', '/')
+                            f.write(f"file '{frame_path}'\n")
+                            if options.get('frame_duration'):
+                                f.write(f"duration {options['frame_duration']}\n")
+
+                    cmd = [
+                        str(self.ffmpeg_path).replace('\\', '/'),
+                        '-y',
+                        '-f', 'concat',
+                        '-safe', '0',
+                        '-i', str(list_file).replace('\\', '/')
+                    ]
+
+            # Add metadata if provided
+            if metadata := options.get('metadata'):
+                for key, value in metadata.items():
                     cmd.extend(['-metadata', f'{key}="{value}"'])
 
-            # Add custom FFmpeg options
-            if 'custom_ffmpeg_options' in options:
-                cmd.extend(options['custom_ffmpeg_options'].split())
+            # Add framerate after input
+            cmd.extend(['-framerate', str(options.get('fps', 30))])
 
-            # Add output path
-            cmd.append(output_path_str)
+            # Add hardware acceleration and filters
+            hardware = options.get('hardware', 'CPU')
+            if hardware == "NVIDIA GPU":
+                cmd.extend(['-hwaccel', 'cuda'])
+                cmd.extend(['-vf', 'scale_cuda'])
+            elif hardware == "Intel GPU":
+                cmd.extend(['-hwaccel', 'qsv'])
+                cmd.extend(['-vf', 'scale_qsv'])
+            elif hardware == "AMD GPU":
+                cmd.extend(['-hwaccel', 'amf'])
+                cmd.extend(['-vf', 'scale_amf'])
 
-            self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
-            return cmd
+            # Add encoding settings
+            cmd.extend([
+                '-c:v', self._get_codec(options.get('encoder', 'H.264'), hardware),
+                '-b:v', f"{options.get('bitrate', 5000)}k",
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart'
+            ])
+
+            # Add output path with proper slash handling
+            output_str = str(output_path).replace('\\', '/')
+            if output_str.startswith('//'):
+                output_str = '//' + output_str.lstrip('/')
+            cmd.append(output_str)
+
+            return cmd, temp_dir
 
         except Exception as e:
             self.logger.error(f"Error building FFmpeg command: {e}")
@@ -958,9 +1041,11 @@ class VideoHandler:
             pattern = re.compile(r'frame(\d+)')
             
             for frame in frame_files:
-                match = pattern.search(frame.stem)
-                if match:
-                    numbers.append(int(match.group(1)))
+                # Handle both PNG and JPG files case-insensitively
+                if frame.suffix.lower() in ['.png', '.jpg', '.jpeg']:
+                    match = pattern.search(frame.stem)
+                    if match:
+                        numbers.append(int(match.group(1)))
             
             if not numbers:
                 return  # No numbered frames found

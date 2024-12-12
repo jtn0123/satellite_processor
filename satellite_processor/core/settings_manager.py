@@ -51,13 +51,11 @@ class SettingsManager:
         try:
             self.settings_file.parent.mkdir(parents=True, exist_ok=True)
             if self.settings_file.exists():
-                with open(self.settings_file, 'r') as f:
+                with open(self.settings_file, 'r', encoding='utf-8') as f:
                     self.settings = json.load(f)
-                self.logger.debug(f"Loaded settings: {self.settings}")
             else:
                 self.settings = self.DEFAULT_SETTINGS.copy()
                 self.save_settings()
-                self.logger.debug("Created new settings file with defaults")
         except Exception as e:
             self.logger.error(f"Failed to load settings: {e}", exc_info=True)
             self.settings = self.DEFAULT_SETTINGS.copy()
@@ -65,8 +63,7 @@ class SettingsManager:
     def save_settings(self) -> None:
         """Save settings to file"""
         try:
-            self.settings_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.settings_file, 'w') as f:
+            with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4)
             self.logger.info(f"Settings saved to {self.settings_file}")
             self.logger.debug(f"Current settings: {self.settings}")
@@ -82,13 +79,14 @@ class SettingsManager:
         try:
             self.logger.info(f"Setting {key}={value}")
             old_value = self.settings.get(key)
-            if value is not None:
-                self.settings[key] = str(value)  # Ensure string storage for paths
-                self.save_settings()
-                self.logger.info(f"Successfully updated setting {key} from '{old_value}' to '{value}'")
-                # Verify the save
-                saved_value = self.get(key)
-                self.logger.info(f"Verified saved value for {key}: {saved_value}")
+            if 'path' in key.lower():
+                value = str(Path(value).resolve())  # Store absolute paths
+            self.settings[key] = value
+            self.save_settings()
+            self.logger.info(f"Successfully updated setting {key} from '{old_value}' to '{value}'")
+            # Verify the save
+            saved_value = self.get(key)
+            self.logger.info(f"Verified saved value for {key}: {saved_value}")
         except Exception as e:
             self.logger.error(f"Failed to set setting {key}: {e}", exc_info=True)
             

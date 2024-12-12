@@ -146,18 +146,22 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         """Main processing workflow with sequential stages but parallel processing within each stage"""
         try:
             if self._is_processing:
-                self.logger.warning("Processing already in progress")
-                return False
-                
+                self.logger.warning("Processing is already underway.")
+                return
+
             self._is_processing = True
             self.cancelled = False
-            
+
             # Initial setup
             self.logger.info("Starting satellite image processing workflow")
             self.status_update.emit("🛰️ Starting satellite image processing...")
-            
+
             if not all([self.input_dir, self.output_dir]):
-                raise ValueError("Input and output directories must be set")
+                self.logger.error("Input or output directory not set.")
+                return
+
+            # Ensure output directories exist
+            Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
             # Setup stage directories
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

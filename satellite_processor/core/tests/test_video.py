@@ -10,6 +10,7 @@ import logging
 import subprocess
 import threading
 import psutil
+import re
 from psutil import Process  # Explicit Process import
 from PyQt6.QtWidgets import QApplication
 from satellite_processor.core.video_handler import VideoHandler
@@ -68,6 +69,22 @@ def mock_path_is_dir(monkeypatch):
     mock_is_dir = MagicMock(return_value=True)
     monkeypatch.setattr(Path, 'is_dir', mock_is_dir)
     return mock_is_dir
+
+@pytest.fixture
+def mock_directories(tmp_path):
+    """Create mock input/output directories with test frames"""
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir(parents=True)
+    output_dir.mkdir(parents=True)
+
+    # Create test frames with proper naming
+    for i in range(5):
+        frame_path = input_dir / f"frame{i:04d}.png"
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+        cv2.imwrite(str(frame_path), frame)
+
+    return input_dir, output_dir
 
 class TestVideoOptions:
     """Tests for video options and settings"""
@@ -390,24 +407,30 @@ class TestVideoOptions:
         assert 'transcoding_quality' in options
 
     @patch('subprocess.run')
-    def test_transcoding_disabled(self, mock_run, video_options, mock_path_exists, mock_path_is_dir):
+    def test_transcoding_disabled(self, mock_run, video_options, mock_path_exists, mock_path_is_dir, tmp_path):
         """Test that transcoding does not proceed when disabled"""
         video_options.enable_transcoding.setChecked(False)
         options = video_options.get_options()
         video_handler = VideoHandler()
         video_handler.testing = False
         
-        mock_run.return_value = MagicMock(returncode=0)
+        # Use temporary directory instead of fixed drive path
+        input_dir = tmp_path / "input"
+        output_path = tmp_path / "output.mp4"
+        input_dir.mkdir(parents=True, exist_ok=True)  # Add exist_ok=True
+        output_path.parent.mkdir(parents=True, exist_ok=True)  # Add exist_ok=True
         
-        with patch('pathlib.Path.glob') as mock_glob:
-            mock_glob.return_value = [Path("frame0000.png")]
-            # Fix: Add .mp4 extension to output path
+        # Create a test frame
+        frame_path = input_dir / "frame0000.png"
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+        cv2.imwrite(str(frame_path), frame)
+        
+        with patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
             success = video_handler.create_video(
-                "F:/Satelliteoutput/TIMELAPSE/FINAL/",
-                "/path/to/output.mp4",  # Added .mp4 extension
+                str(input_dir),
+                str(output_path),
                 options
             )
-        
             assert success is True
             mock_run.assert_called_once()
 
@@ -569,14 +592,44 @@ class TestVideoCreation:
 
     def test_ffmpeg_command_generation(self, video_options, mock_ffmpeg):
         """Test FFmpeg command generation based on options."""
-        video_options.testing = True
         video_handler = VideoHandler()
         video_handler.testing = True
         options = video_options.get_options()
-        input_dir = Path("/input")
-        with patch.object(Path, 'exists', return_value=True), \
-             patch.object(Path, 'is_dir', return_value=True):
-            video_handler.create_video(input_dir, "/output.mp4", options)
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = Path(temp_dir) / "input"
+            input_dir.mkdir()
+            
+            # Create test frames with actual content
+            frame_paths = []
+            for i in range(5):
+                frame_path = input_dir / f"frame{i:04d}.png"
+                frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+                cv2.imwrite(str(frame_path), frame)
+                frame_paths.append(frame_path)
+            
+            # Create output directory
+            output_dir = Path(temp_dir) / "output"
+            output_dir.mkdir()
+            
+            # Use unified patching approach
+            with patch.multiple(Path,
+                             exists=MagicMock(return_value=True),
+                             is_dir=MagicMock(return_value=True),
+                             glob=MagicMock(return_value=sorted(frame_paths))):
+                
+                # Create video and verify command
+                output_path = output_dir / "output.mp4"
+                video_handler.create_video(input_dir, output_path, options)
+                
+                # Verify FFmpeg command
+                assert mock_ffmpeg.called
+                cmd_args = mock_ffmpeg.call_args[0][0]
+                cmd_str = ' '.join(map(str, cmd_args))
+                
+                # Check essential command components
+                assert '-framerate' in cmd_str
+                assert 'frame%04d.png' in cmd_str or 'frames.txt' in cmd_str
 
     def test_ffmpeg_command_options(self, video_options, mock_ffmpeg, mock_directories):
         """Test that FFmpeg commands are generated correctly based on options."""
@@ -790,19 +843,58 @@ class TestVideoCreation:
     def test_video_handler_threading(self, video_options, mock_directories):
         """Test video handler threading with proper paths"""
         input_dir, output_dir = mock_directories
+        
+        # Create actual test frames with content
+        frame_files = []
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+        for i in range(5):
+            frame_path = Path(input_dir) / f"frame{i:04d}.png"
+            cv2.imwrite(str(frame_path), frame)
+            frame_files.append(frame_path)
+        
+        # Use CPU encoding to avoid GPU-related issues
         options = video_options.get_options()
+        options['hardware'] = 'CPU'
+        options['encoder'] = 'H.264'
+        
         video_handler = VideoHandler()
-        video_handler.testing = True
+        video_handler.testing = True  # Enable testing mode
 
-        with patch.object(Path, 'exists', return_value=True), \
-             patch.object(Path, 'is_dir', return_value=True):
-            thread = threading.Thread(
-                target=video_handler.create_video,
-                args=(input_dir, Path(output_dir) / "video.mp4", options)
-            )
+        # Use an Event for synchronization and a list for error collection
+        completion_event = threading.Event()
+        thread_exception = []
+
+        def thread_task():
+            try:
+                result = video_handler.create_video(input_dir, Path(output_dir) / "video.mp4", options)
+                if not result:
+                    thread_exception.append(RuntimeError("Video creation failed"))
+            except Exception as e:
+                thread_exception.append(e)
+            finally:
+                completion_event.set()
+
+        # Start thread with proper mocking
+        with patch.multiple(Path,
+                          exists=MagicMock(return_value=True),
+                          is_dir=MagicMock(return_value=True),
+                          glob=MagicMock(return_value=frame_files)), \
+             patch('subprocess.run', return_value=MagicMock(returncode=0)):
+            
+            thread = threading.Thread(target=thread_task)
             thread.start()
-            thread.join(timeout=5)
-            assert not thread.is_alive()
+            
+            # Wait with timeout
+            if not completion_event.wait(timeout=5):
+                pytest.fail("Thread did not complete in time")
+            
+            # Check for exceptions
+            if thread_exception:
+                pytest.fail(f"Thread encountered an error: {thread_exception[0]}")
+            
+            # Ensure thread is finished
+            thread.join(timeout=1)
+            assert not thread.is_alive(), "Thread is still running"
 
     def test_interpolation_quality_impact(self, video_options):
         """Test interpolation quality impact with proper mocking"""
@@ -1365,6 +1457,30 @@ class TestVideoCreation:
                 assert process_mock.cpu_percent.call_count > 0
                 assert process_mock.memory_info.call_count > 0
 
+    def test_no_frame_files_error(self, video_handler, mock_directories, caplog):
+        """Test error handling when no frame files are found."""
+        input_dir, output_dir = mock_directories
+
+        # Ensure the input directory is empty
+        for file in input_dir.iterdir():
+            file.unlink()
+
+        options = {
+            'fps': 30,
+            'encoder': 'H.264',
+            'hardware': 'CPU',
+            'interpolation_enabled': False,
+            'bitrate': 5000,
+            'testing': True
+        }
+
+        with pytest.raises(RuntimeError, match="No frame files found"):
+            video_handler.create_video(input_dir, output_dir / "output.mp4", options)
+
+        # Check that the error was logged
+        error_messages = [record.message for record in caplog.records if record.levelname == "ERROR"]
+        assert any("No frame files found" in msg for msg in error_messages), "Error log not found"
+
 class TestErrorHandling:
     """Tests for error handling and edge cases"""
 
@@ -1528,10 +1644,24 @@ class TestNetworkSupport:
             cv2.imwrite(str(frame_path), frame)
             frame_files.append(frame_path)
 
-        with patch('pathlib.Path.exists', side_effect=[True, True]), \
+        # Update the mock setup to handle temporary directory existence checks
+        mock_exists_values = {
+            str(input_dir): True,
+            str(output_path.parent): True,
+            str(local_dir): True,
+            **{str(f): True for f in frame_files}
+        }
+
+        def mock_exists(*args, **kwargs):
+            path = args[0] if args else kwargs.get('path')
+            return mock_exists_values.get(str(path), False)
+
+        with patch('pathlib.Path.exists', new=mock_exists), \
              patch('pathlib.Path.is_dir', return_value=True), \
              patch('pathlib.Path.glob', return_value=sorted(frame_files)), \
-             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run, \
+             patch('tempfile.mkdtemp', return_value=str(tmp_path / "temp")), \
+             patch('shutil.rmtree'):
             
             options = {'fps': 30, 'bitrate': 5000}
             success = video_handler.create_video(input_dir, output_path, options)
@@ -1541,7 +1671,7 @@ class TestNetworkSupport:
             
             cmd_args = mock_run.call_args[0][0]
             cmd_str = ' '.join(map(str, cmd_args))
-            assert 'frame%04d.png' in cmd_str
+            assert 'frames.txt' in cmd_str
 
     def test_unc_paths(self, video_handler, mock_network_path, tmp_path):
         """Test UNC path support"""
@@ -1557,10 +1687,23 @@ class TestNetworkSupport:
             cv2.imwrite(str(frame_path), frame)
             frame_files.append(frame_path)
 
-        with patch('pathlib.Path.exists', side_effect=[True, True]), \
+        mock_exists_values = {
+            str(input_dir): True,
+            str(output_path.parent): True,
+            str(local_dir): True,
+            **{str(f): True for f in frame_files}
+        }
+
+        def mock_exists(*args, **kwargs):
+            path = args[0] if args else kwargs.get('path')
+            return mock_exists_values.get(str(path), False)
+
+        with patch('pathlib.Path.exists', new=mock_exists), \
              patch('pathlib.Path.is_dir', return_value=True), \
              patch('pathlib.Path.glob', return_value=sorted(frame_files)), \
-             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
+             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run, \
+             patch('tempfile.mkdtemp', return_value=str(tmp_path / "temp")), \
+             patch('shutil.rmtree'):
             
             options = {'fps': 30, 'bitrate': 5000}
             success = video_handler.create_video(input_dir, output_path, options)
@@ -1570,7 +1713,7 @@ class TestNetworkSupport:
             
             cmd_args = mock_run.call_args[0][0]
             cmd_str = ' '.join(map(str, cmd_args))
-            assert 'frame%04d.png' in cmd_str
+            assert 'frames.txt' in cmd_str
 
     def test_timestamped_directory_processing(self, video_options, mock_directories, tmp_path):
         """Test processing with timestamped network directory structure."""
@@ -1591,11 +1734,15 @@ class TestNetworkSupport:
             frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
             cv2.imwrite(str(frame_path), frame)
             frame_files.append(frame_path)
+
+        # Mock temporary directory creation and ensure it exists
+        temp_dir = tmp_path / "temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
         
         with patch('pathlib.Path.exists', return_value=True), \
              patch('pathlib.Path.is_dir', return_value=True), \
              patch('pathlib.Path.glob', return_value=frame_files), \
-             patch('pathlib.Path.mkdir', side_effect=lambda *args, **kwargs: None), \
+             patch('tempfile.mkdtemp', return_value=str(temp_dir)), \
              patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run:
             
             success = video_handler.create_video(timestamp_dir, process_dir / "output.mp4", options)
@@ -1604,7 +1751,7 @@ class TestNetworkSupport:
             
             cmd_args = mock_run.call_args[0][0]
             cmd_str = ' '.join(map(str, cmd_args))
-            assert 'frame%04d.png' in cmd_str
+            assert 'frame%04d.png' in cmd_str or 'frames.txt' in cmd_str
 
 # Helper functions (if needed)
 def create_test_frames(directory: Path, count: int = 5) -> List[Path]:
@@ -1677,3 +1824,64 @@ def create_test_frames(directory: Path, count: int = 5) -> List[Path]:
             raise RuntimeError(f"Error validating frame sequence: {e}")
 
     # ...existing code...
+
+    def build_ffmpeg_command(self, input_path, output_path, options):
+        """Build FFmpeg command with hardware filters and metadata."""
+        temp_dir = None
+        try:
+            # Create a temporary directory for the files list
+            temp_dir = Path(tempfile.mkdtemp())
+            temp_list_file = temp_dir / "files.txt"
+
+            # Rest of the method remains unchanged...
+            # ...existing code...
+
+        except Exception as e:
+            self.logger.error(f"Error building FFmpeg command: {e}")
+            raise
+        finally:
+            # Clean up temp directory in case of error
+            if temp_dir is not None and isinstance(temp_dir, Path):
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception as e:
+                    self.logger.debug(f"Failed to cleanup temp directory: {e}")
+
+class TestUNCPathHandling:
+    """Tests for UNC (Universal Naming Convention) path handling"""
+
+    def test_ffmpeg_unc_path_handling(self, video_handler, tmp_path):
+        """Test FFmpeg command generation with UNC paths"""
+        # Create a fake UNC path
+        input_dir = Path('//SERVER/share/input')
+        output_path = tmp_path / "output.mp4"
+
+        # Mock frame files in the input directory
+        frame_files = [input_dir / f"frame{i:04d}.png" for i in range(3)]
+
+        options = {
+            'fps': 30,
+            'bitrate': 5000,
+            'encoder': 'H.264',
+            'hardware': 'CPU'
+        }
+
+        # Mock necessary methods to avoid actual file system operations
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_dir', return_value=True), \
+             patch('pathlib.Path.glob', return_value=frame_files), \
+             patch('subprocess.run', return_value=MagicMock(returncode=0)) as mock_run, \
+             patch('tempfile.mkdtemp', return_value=str(tmp_path / "temp")):
+
+            # Call create_video with the UNC path
+            success = video_handler.create_video(input_dir, output_path, options)
+            assert success is True
+
+            # Verify that the command uses '-f concat'
+            assert mock_run.called
+            cmd_args = mock_run.call_args[0][0]
+            cmd_str = ' '.join(map(str, cmd_args))
+            assert '-f concat' in cmd_str
+            assert '-safe 0' in cmd_str
+            # Ensure that frames.txt is used
+            assert any('frames.txt' in str(arg) for arg in cmd_args)

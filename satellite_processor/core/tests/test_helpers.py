@@ -3,13 +3,21 @@ import tempfile
 from pathlib import Path
 import shutil
 from typing import Generator, Tuple
+from datetime import datetime
 import pytest
 from unittest.mock import MagicMock, patch
+import numpy as np
+import cv2
 
 def create_mock_image_files(directory: Path, count: int = 5) -> None:
     """Create mock image files in the given directory."""
+    directory.mkdir(parents=True, exist_ok=True)
+    
+    # Create actual PNG files with valid dimensions
+    img = np.zeros((100, 100, 3), dtype=np.uint8)
     for i in range(count):
-        (directory / f"frame{i:04d}.png").touch()
+        filepath = directory / f"frame{i:04d}.png"
+        cv2.imwrite(str(filepath), img)
 
 @pytest.fixture
 def mock_directories(tmp_path) -> Tuple[Path, Path]:
@@ -54,6 +62,27 @@ def mock_filesystem():
          patch('pathlib.Path.is_dir', return_value=True), \
          patch('pathlib.Path.mkdir'):
         yield
+
+@pytest.fixture
+def mock_network_path(tmp_path):
+    """Create mock network path structure with improved handling"""
+    # Create local structure that mirrors network path
+    local_base = tmp_path / "network_mock"
+    local_base.mkdir(parents=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    process_dir = local_base / f"processed_{timestamp}"
+    timestamp_dir = process_dir / f"03_timestamp_{timestamp}"
+    timestamp_dir.mkdir(parents=True)
+
+    # Create test frames
+    for i in range(5):
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
+        frame_path = timestamp_dir / f"frame{i:04d}.png"
+        cv2.imwrite(str(frame_path), frame)
+
+    # Return UNC-style path but use local path internally
+    return str(timestamp_dir).replace(str(tmp_path), "\\\\TRUENAS")
 
 def mock_ffmpeg_command():
     """Create a mock FFmpeg command that always succeeds"""

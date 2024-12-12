@@ -31,6 +31,7 @@ from datetime import datetime
 from ..utils.helpers import parse_satellite_timestamp
 import os
 import tempfile
+import re  # Add this import
 
 logger = logging.getLogger(__name__)
 
@@ -42,33 +43,44 @@ class FileManager:
         self._temp_dirs = set()
         self._temp_files = set()
         
-    def get_input_files(self, input_dir: str) -> List[Path]:
-        """Get chronologically sorted list of input image files"""
-        if not input_dir:
-            self.logger.error("Input directory is None or empty")
-            return []
-
+    def get_input_files(self, input_dir: str = None) -> List[Path]:
+        """Get ordered input files with improved UNC and case handling"""
         try:
-            input_path = Path(input_dir)
-            if not input_path.exists():
-                self.logger.error(f"Input directory does not exist: {input_dir}")
+            dir_to_use = Path(input_dir) if input_dir else Path(self.default_input_dir)
+            dir_to_use = dir_to_use.resolve()
+            self.logger.info(f"Searching for frame files in {dir_to_use}")
+
+            # Handle UNC paths
+            str_path = str(dir_to_use)
+            if str_path.startswith('\\\\'):
+                str_path = '//' + str_path[2:]
+                dir_to_use = Path(str_path)
+
+            # Case-insensitive glob patterns
+            patterns = ['*.png', '*.PNG', '*.jpg', '*.JPG', '*.jpeg', '*.JPEG']
+            frame_files = set()  # Use set to avoid duplicates
+            
+            for pattern in patterns:
+                frame_files.update(dir_to_use.glob(pattern))
+
+            if not frame_files:
+                self.logger.error(f"No frame files found in {dir_to_use}")
                 return []
-                
-            valid_extensions = ('.jpg', '.jpeg', '.png', '.tif', '.tiff')
-            image_paths = [p for p in input_path.glob('*') if p.suffix.lower() in valid_extensions]
+
+            frame_list = list(frame_files)  # Convert set back to list
+
+            # Sort numerically by frame number
+            def get_frame_number(path):
+                match = re.search(r'frame(\d+)', path.stem.lower())  # Case-insensitive match
+                return int(match.group(1)) if match else float('inf')
+
+            frame_list.sort(key=get_frame_number)
             
-            # Sort files chronologically
-            sorted_paths = sorted(image_paths, key=lambda p: parse_satellite_timestamp(p.name))
-            
-            # Log the actual order being used
-            self.logger.info(f"Processing {len(sorted_paths)} files in chronological order:")
-            for path in sorted_paths[:5]:  # Log first 5 files
-                timestamp = parse_satellite_timestamp(path.name)
-                self.logger.info(f"{path.name}: {timestamp}")
-                
-            return sorted_paths
+            self.logger.info(f"Found {len(frame_list)} frame files")
+            return frame_list
+
         except Exception as e:
-            self.logger.error(f"Error accessing input directory: {e}")
+            self.logger.error(f"Error getting input files: {e}")
             return []
         
     def create_temp_directory(self, base_dir: Path, prefix: str = "temp") -> Path:

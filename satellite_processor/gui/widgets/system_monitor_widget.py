@@ -17,18 +17,24 @@ try:
 except:
     NVIDIA_AVAILABLE = False
 
-import wmi  # Add this import (pip install wmi)
-
 try:
-    wmi_interface = wmi.WMI(namespace="root\\OpenHardwareMonitor")
-    INTEL_AVAILABLE = True
-except Exception:
+    import wmi
+    WMI_AVAILABLE = True
+except ImportError:
+    WMI_AVAILABLE = False
+
+INTEL_AVAILABLE = False
+wmi_interface = None
+if WMI_AVAILABLE:
     try:
-        # Fallback to Windows built-in performance counters
-        wmi_interface = wmi.WMI(namespace="root\\CIMV2")
+        wmi_interface = wmi.WMI(namespace="root\\OpenHardwareMonitor")
         INTEL_AVAILABLE = True
     except Exception:
-        INTEL_AVAILABLE = False
+        try:
+            wmi_interface = wmi.WMI(namespace="root\\CIMV2")
+            INTEL_AVAILABLE = True
+        except Exception:
+            INTEL_AVAILABLE = False
 
 class GPUMonitor(QObject):
     """Separate thread for GPU monitoring to prevent UI hangs"""

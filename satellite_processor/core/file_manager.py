@@ -26,12 +26,12 @@ Does NOT handle:
 from pathlib import Path
 import logging
 import shutil
-from typing import List
+from typing import List, Optional, Set
 from datetime import datetime
 from ..utils.helpers import parse_satellite_timestamp
 import os
 import tempfile
-import re  # Add this import
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +39,12 @@ logger = logging.getLogger(__name__)
 class FileManager:
     """Handle file and directory operations including temporary storage"""
 
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self._temp_dirs = set()
-        self._temp_files = set()
+    def __init__(self) -> None:
+        self.logger: logging.Logger = logging.getLogger(__name__)
+        self._temp_dirs: Set[Path] = set()
+        self._temp_files: Set[Path] = set()
 
-    def get_input_files(self, input_dir: str = None) -> List[Path]:
+    def get_input_files(self, input_dir: Optional[str] = None) -> List[Path]:
         """Get ordered input files with improved UNC and case handling"""
         try:
             dir_to_use = Path(input_dir) if input_dir else Path(self.default_input_dir)
@@ -112,7 +112,7 @@ class FileManager:
         """Parse timestamp from satellite image filename"""
         return parse_satellite_timestamp(filename)  # Use helper function instead
 
-    def get_output_path(self, output_dir) -> Path:
+    def get_output_path(self, output_dir: Optional[str]) -> Path:
         """Generate output video path"""
         if not output_dir:
             raise ValueError("Output directory cannot be None")
@@ -142,7 +142,9 @@ class FileManager:
         """Generate processed image filename"""
         return f"processed_{original_path.stem}_{timestamp}{original_path.suffix}"
 
-    def create_temp_dir(self, base_dir: Path = None, prefix: str = "temp") -> Path:
+    def create_temp_dir(
+        self, base_dir: Optional[Path] = None, prefix: str = "temp"
+    ) -> Path:
         """Create a secure temporary directory"""
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

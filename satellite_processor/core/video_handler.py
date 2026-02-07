@@ -154,7 +154,12 @@ class VideoHandler:
         if quality not in valid_qualities:
             raise ValueError(f"Interpolation quality must be one of {valid_qualities}.")
 
-    def create_video(self, input_dir, output_path, options):
+    def create_video(
+        self,
+        input_dir: Union[str, Path],
+        output_path: Union[str, Path],
+        options: Dict[str, Any],
+    ) -> bool:
         """Create video with improved validation and retry handling"""
         list_file = None
         original_processing_state = self._is_processing
@@ -316,7 +321,12 @@ class VideoHandler:
             if temp_dir and temp_dir.exists():
                 shutil.rmtree(temp_dir)
 
-    def build_ffmpeg_command(self, input_path, output_path, options):
+    def build_ffmpeg_command(
+        self,
+        input_path: Union[str, Path],
+        output_path: Union[str, Path],
+        options: Dict[str, Any],
+    ) -> tuple:
         """Build FFmpeg command with hardware filters and metadata."""
         try:
             input_dir = Path(input_path).resolve()
@@ -1051,7 +1061,7 @@ class VideoHandler:
         self.logger.info(f"Bitrate set to: {self.bitrate} kbps")
 
     def transcode_video(
-        self, input_video: str, output_video: str, options: dict
+        self, input_video: str, output_video: str, options: Dict[str, Any]
     ) -> bool:
         """Transcode video to specified format and quality."""
         format_map = {

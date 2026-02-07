@@ -28,7 +28,7 @@ jobs:
         run: black --check .
 
       - name: Run Pylint
-        run: pylint satellite_processor --fail-under=5.0 --disable=C0114,C0115,C0116,C0301,E0401,E1101 || true
+        run: pylint satellite_processor --fail-under=6.0 --disable=C0114,C0115,C0116,C0301,E0401,E1101
 
   test:
     name: Test (Python ${{ matrix.python-version }})
@@ -63,7 +63,10 @@ jobs:
           pip install -r requirements.txt
           pip install .
 
-      - name: Run tests
+      - name: Verify package installs correctly
+        run: python -c "import satellite_processor; print('Package imported successfully')"
+
+      - name: Run tests with coverage
         env:
           QT_QPA_PLATFORM: offscreen
-        run: xvfb-run pytest
+        run: xvfb-run pytest --cov=satellite_processor --cov-report=term-missing --cov-fail-under=35

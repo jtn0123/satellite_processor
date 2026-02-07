@@ -1,26 +1,27 @@
 # GUI Dependencies
-PyQt6>=6.4.0
-pyqtgraph>=0.13.1
+PyQt6==6.10.2
+pyqtgraph==0.14.0
 
 # System Monitoring
-psutil>=5.9.0
-nvidia-ml-py>=11.525.112; platform_system=="Linux"
+psutil==7.2.2
+nvidia-ml-py==13.590.48; platform_system=="Linux"
 WMI>=1.5.1; platform_system=="Windows"
 
 # Image Processing
-Pillow>=9.3.0
-numpy>=1.23.0
-opencv-python>=4.6.0
+Pillow==12.1.0
+numpy==2.4.2
+opencv-python==4.13.0.92
 
 # Utilities
-python-dateutil>=2.8.2
-pyyaml>=6.0
-requests>=2.28.1
+python-dateutil==2.9.0.post0
+pyyaml==6.0.1
+requests==2.32.5
 
 # Development Tools
-pytest>=7.2.0
-black>=22.3.0
-pylint>=2.15.0
+pytest==9.0.2
+pytest-cov==6.1.1
+black==26.1.0
+pylint==4.0.4
 
 # Test Dependencies
-pytest-qt>=4.0.0
+pytest-qt==4.5.0

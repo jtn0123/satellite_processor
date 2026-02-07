@@ -39,7 +39,9 @@ class ImageOperations:
     """Static methods for image processing"""
 
     @staticmethod
-    def crop_image(img, x, y, width, height):
+    def crop_image(
+        img: np.ndarray, x: int, y: int, width: int, height: int
+    ) -> np.ndarray:
         """Crop the image to the specified rectangle."""
         return img[y : y + height, x : x + width]
 
@@ -203,12 +205,40 @@ class ImageOperations:
             return img
 
     @staticmethod
+    def apply_false_color_and_read(
+        image_path: str, output_dir: str, sanchez_path: str, underlay_path: str
+    ) -> Optional[np.ndarray]:
+        """Apply false color to an image and return the result as a numpy array.
+
+        Shared helper that eliminates duplicated false-color-then-read logic
+        across processor.py and image_operations.py.
+        """
+        output_dir_path = Path(output_dir)
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+
+        success = ImageOperations.apply_false_color(
+            image_path, str(output_dir_path), sanchez_path, underlay_path
+        )
+        if not success:
+            logger.error(f"Failed to apply false color to: {image_path}")
+            return None
+
+        output_file = output_dir_path / f"{Path(image_path).stem}_sanchez.jpg"
+        img = cv2.imread(str(output_file))
+        if img is None:
+            logger.error(f"Failed to read false color output: {output_file}")
+            return None
+
+        logger.info(f"Successfully applied false color to: {image_path}")
+        return img
+
+    @staticmethod
     def _extract_timestamp(filename: str) -> Optional[datetime]:
         """Extract timestamp from filename"""
         return parse_satellite_timestamp(filename)  # Use helper function instead
 
     @staticmethod
-    def process_image(img, options):
+    def process_image(img: Optional[np.ndarray], options: dict) -> Optional[np.ndarray]:
         """Process image with validation"""
         logger = logging.getLogger(__name__)
 
@@ -387,28 +417,15 @@ class ImageOperations:
 
             # Apply Sanchez false color if enabled
             if options.get("false_color_enabled"):
-                logging.info(f"Processing false color for: {image_path}")
-
-                sanchez_path = Path(options.get("sanchez_path"))
-                underlay_path = Path(options.get("underlay_path"))
-                temp_dir = Path(options.get("temp_dir"))
-
-                # Ensure directories exist
-                temp_dir.mkdir(parents=True, exist_ok=True)
-
-                false_color_path = ImageOperations.apply_false_color(
-                    str(image_path), temp_dir, sanchez_path, underlay_path
+                result = ImageOperations.apply_false_color_and_read(
+                    str(image_path),
+                    str(Path(options.get("temp_dir"))),
+                    str(options.get("sanchez_path")),
+                    str(options.get("underlay_path")),
                 )
-
-                if false_color_path is None:
+                if result is None:
                     raise ValueError("Failed to apply false color")
-
-                # Read the false color result
-                img = cv2.imread(str(false_color_path))
-                if img is None:
-                    raise ValueError("Failed to read false color output")
-
-                logging.info(f"Successfully applied false color to: {image_path}")
+                img = result
 
             # Final dimension check
             if img is None or len(img.shape) != 3 or img.shape[2] != 3:
@@ -578,7 +595,9 @@ class ImageOperations:
             logger.error(f"Error interpolating frames: {e}")
             return []
 
-    def process_images(self, image_paths, options):
+    def process_images(
+        self, image_paths: List[Union[str, Path]], options: dict
+    ) -> List[np.ndarray]:
         """Process multiple images with the given options."""
         processed = []
         for path in image_paths:
@@ -587,7 +606,9 @@ class ImageOperations:
                 processed.append(result)
         return processed
 
-    def interpolate_frames_with_options(self, frame_paths, options):
+    def interpolate_frames_with_options(
+        self, frame_paths: List[Union[str, Path]], options: dict
+    ) -> List[Optional[np.ndarray]]:
         """Interpolate frames based on options."""
         if options.get("interpolation_enabled"):
             quality = options.get("interpolation_quality", "medium")

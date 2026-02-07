@@ -79,7 +79,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     resource_update = pyqtSignal(dict)
     output_ready = pyqtSignal(Path)  # Add this with other signals
 
-    def __init__(self, options: dict = None, parent=None) -> None:
+    def __init__(
+        self, options: Optional[dict] = None, parent: Optional[Any] = None
+    ) -> None:
         super().__init__(parent)
 
         # Initialize managers (removed duplicate initializations)
@@ -149,7 +151,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         """Emit status without formatting"""
         self.status_update.emit(message)
 
-    def process(self):
+    def process(self) -> bool:
         """Main processing workflow with sequential stages but parallel processing within each stage"""
         try:
             if self._is_processing:
@@ -713,7 +715,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             self.logger.error(f"Error during cancellation: {e}")
             self.error_occurred.emit(f"Failed to cancel processing: {str(e)}")
 
-    def get_input_files(self, input_dir: str = None) -> List[Path]:
+    def get_input_files(self, input_dir: Optional[str] = None) -> List[Path]:
         """Get ordered input files using FileManager"""
         dir_to_use = input_dir or self.input_dir
         return self.file_manager.get_input_files(dir_to_use)
@@ -762,13 +764,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         # ...existing code...
 
     def some_method(self):
-        from satellite_processor.gui.widgets.video_options import (
-            VideoOptionsWidget,
-        )  # Moved import
-
-        # ...use VideoOptionsWidget here...
-        # ...existing code...
-        if self.parent()._is_closing:
+        # Check if parent is closing and cancel if so
+        parent = self.parent()
+        if parent and getattr(parent, "_is_closing", False):
             self.cancel()
             return
         # ...existing code...
@@ -987,35 +985,13 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     ) -> Optional[np.ndarray]:
         """Process a single image with proper dimension handling"""
         try:
-            # ...existing code...
-
-            # Define output directory and file
-            output_dir = Path(options["temp_dir"]) / "sanchez_outputs"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = output_dir / f"{Path(image_path).stem}_sanchez.jpg"
-
-            # Define underlay path
-            underlay_path = options.get("underlay_path", "")
-
-            false_color_path = ImageOperations.apply_false_color(
+            output_dir = str(Path(options["temp_dir"]) / "sanchez_outputs")
+            img = ImageOperations.apply_false_color_and_read(
                 str(image_path),
-                str(output_path),  # Pass the full output file path
-                options.get("sanchez_path"),
-                str(underlay_path),
+                output_dir,
+                options.get("sanchez_path", ""),
+                options.get("underlay_path", ""),
             )
-
-            if not false_color_path:
-                raise ValueError("Failed to apply false color")
-
-            # Read the false color result
-            img = cv2.imread(str(false_color_path))
-            if img is None:
-                raise ValueError("Failed to read false color output")
-
-            logging.info(f"Successfully applied false color to: {image_path}")
-
-            # ...existing code...
-
             return img
 
         except Exception as e:

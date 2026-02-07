@@ -1867,15 +1867,11 @@ class TestHardwareAcceleration:
                 assert video_handler._get_hardware_params(hw_type) != []
 
 
-@pytest.mark.skipif(
-    sys.platform != "win32", reason="UNC/network paths are Windows-only"
-)
 class TestNetworkSupport:
-    """Tests for network path handling"""
+    """Tests for network path handling (uses local dirs to simulate behavior)"""
 
     def test_network_paths(self, video_handler, tmp_path):
-        """Test handling of network paths"""
-        # Use local temp dirs to simulate network path behavior
+        """Test handling of network-like paths using local temp dirs"""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
         output_path = tmp_path / "output.mp4"
@@ -1895,7 +1891,7 @@ class TestNetworkSupport:
             mock_run.assert_called_once()
 
     def test_unc_paths(self, tmp_path):
-        """Test UNC path support - validates concat demuxer is used for non-sequential files"""
+        """Test concat demuxer is used for non-sequential filenames"""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
         output_path = tmp_path / "output.mp4"
@@ -2060,9 +2056,8 @@ def create_test_frames(directory: Path, count: int = 5) -> List[Path]:
                     self.logger.debug(f"Failed to cleanup temp directory: {e}")
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="UNC paths are Windows-only")
 class TestUNCPathHandling:
-    """Tests for UNC (Universal Naming Convention) path handling"""
+    """Tests for concat demuxer with non-sequential filenames"""
 
     def test_ffmpeg_unc_path_handling(self, tmp_path):
         """Test FFmpeg command generation with non-sequential filenames uses concat demuxer"""

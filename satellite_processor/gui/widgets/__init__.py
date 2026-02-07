@@ -8,8 +8,8 @@ from .system_monitor_widget import SystemMonitorWidget
 from .processing_options import ProcessingOptionsWidget
 
 __all__ = [
-    'SystemMonitorWidget',
-    'NetworkWidget',
-    'LogWidget',
-    'ProcessingOptionsWidget'
+    "SystemMonitorWidget",
+    "NetworkWidget",
+    "LogWidget",
+    "ProcessingOptionsWidget",
 ]

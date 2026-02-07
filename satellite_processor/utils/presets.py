@@ -20,36 +20,35 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
 class PresetManager:
     """Manage processing presets"""
+
     def __init__(self):
         self.settings = QSettings("SatelliteProcessor", "ImageProcessor")
         self.logger = logging.getLogger(__name__)
-        
+
     def save_preset(self, name: str, params: dict):
         """Save a new preset"""
         try:
             presets = self.get_presets()
-            presets[name] = {
-                'params': params,
-                'created': str(Path.ctime(Path.cwd()))
-            }
+            presets[name] = {"params": params, "created": str(Path.ctime(Path.cwd()))}
             self.settings.setValue("presets", json.dumps(presets))
             self.logger.info(f"Preset '{name}' saved successfully")
         except Exception as e:
             self.logger.error(f"Error saving preset '{name}': {str(e)}")
             raise
-            
+
     def load_preset(self, name: str) -> dict:
         """Load a preset by name"""
         try:
             presets = self.get_presets()
             preset_data = presets.get(name, {})
-            return preset_data.get('params', {})
+            return preset_data.get("params", {})
         except Exception as e:
             self.logger.error(f"Error loading preset '{name}': {str(e)}")
             return {}
-            
+
     def get_presets(self) -> dict:
         """Get all available presets"""
         try:
@@ -58,7 +57,7 @@ class PresetManager:
         except Exception as e:
             self.logger.error(f"Error getting presets: {str(e)}")
             return {}
-            
+
     def delete_preset(self, name: str):
         """Delete a preset"""
         try:
@@ -73,7 +72,7 @@ class PresetManager:
     def export_presets(self, file_path: Path) -> bool:
         """Export presets to file"""
         try:
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 json.dump(self.get_presets(), f, indent=4)
             return True
         except Exception as e:
@@ -83,10 +82,10 @@ class PresetManager:
     def import_presets(self, file_path: Path) -> bool:
         """Import presets from file"""
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 presets = json.load(f)
             for name, data in presets.items():
-                self.save_preset(name, data['params'])
+                self.save_preset(name, data["params"])
             return True
         except Exception as e:
             self.logger.error(f"Error importing presets: {e}")

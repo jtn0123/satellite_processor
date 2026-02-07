@@ -4,8 +4,8 @@ pyqtgraph>=0.13.1
 
 # System Monitoring
 psutil>=5.9.0
-nvidia-ml-py>=11.525.112
-WMI>=1.5.1
+nvidia-ml-py>=11.525.112; platform_system=="Linux"
+WMI>=1.5.1; platform_system=="Windows"
 
 # Image Processing
 Pillow>=9.3.0
@@ -24,4 +24,3 @@ pylint>=2.15.0
 
 # Test Dependencies
 pytest-qt>=4.0.0
-pytest-qt

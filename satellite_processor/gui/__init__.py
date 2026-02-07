@@ -3,7 +3,7 @@ from .image_preview import ImagePreviewDialog
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QMainWindow
 
-__all__ = ['SatelliteProcessorGUI', 'ImagePreviewDialog']
+__all__ = ["SatelliteProcessorGUI", "ImagePreviewDialog"]
 
 # Remove the following redundant class definition
 # class SatelliteProcessorGUI(QMainWindow):

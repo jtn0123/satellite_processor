@@ -10,3 +10,11 @@ testpaths = ["satellite_processor/core/tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 qt_api = "pyqt6"
+
+[tool.coverage.run]
+source = ["satellite_processor"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 35

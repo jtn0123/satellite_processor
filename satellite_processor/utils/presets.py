@@ -32,7 +32,7 @@ class PresetManager:
         """Save a new preset"""
         try:
             presets = self.get_presets()
-            presets[name] = {"params": params, "created": str(Path.ctime(Path.cwd()))}
+            presets[name] = {"params": params, "created": str(datetime.now())}
             self.settings.setValue("presets", json.dumps(presets))
             self.logger.info(f"Preset '{name}' saved successfully")
         except Exception as e:

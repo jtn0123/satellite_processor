@@ -441,11 +441,9 @@ class VideoOptionsWidget(QGroupBox):
         return self.fps_spinbox
 
     def some_function(self):
-        from satellite_processor.core.processor import (
-            SatelliteImageProcessor,
-        )  # Moved import if needed
-
-        # ...use SatelliteImageProcessor here...
+        # Processor reference should be passed in, not imported here
+        # to avoid circular dependency between core and GUI
+        pass
 
     def _setup_ui(self):
         # ...existing code...

@@ -24,7 +24,7 @@ Does NOT handle:
 
 import concurrent.futures
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Iterator
 import numpy as np  # type: ignore
 import logging
 import cv2  # type: ignore
@@ -34,7 +34,6 @@ import os
 from datetime import datetime
 import shutil
 import re
-import codecs
 import sys
 from PyQt6.QtCore import (
     pyqtSignal,
@@ -43,17 +42,14 @@ from PyQt6.QtCore import (
     QTimer,
     QMetaObject,
     Qt,
-)  # Added QMetaObject and Qt imports
-from PyQt6.QtWidgets import QApplication  # Added QApplication import
+)
+from PyQt6.QtWidgets import QApplication
 import argparse
-import psutil  # Add this import at the top
+import psutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
-from typing import List, Optional, Tuple, Dict, Any, Iterator
-from typing import List, Optional, Tuple, Dict, Any, Iterator
 from functools import partial
-from unittest.mock import patch  # Add this import
 
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
@@ -83,7 +79,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     resource_update = pyqtSignal(dict)
     output_ready = pyqtSignal(Path)  # Add this with other signals
 
-    def __init__(self, options: dict = None, parent=None) -> None:
+    def __init__(
+        self, options: Optional[dict] = None, parent: Optional[Any] = None
+    ) -> None:
         super().__init__(parent)
 
         # Initialize managers (removed duplicate initializations)
@@ -153,7 +151,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         """Emit status without formatting"""
         self.status_update.emit(message)
 
-    def process(self):
+    def process(self) -> bool:
         """Main processing workflow with sequential stages but parallel processing within each stage"""
         try:
             if self._is_processing:
@@ -395,7 +393,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     processed.append(result)
 
                 progress = int((idx + 1) / total * 100)
-                self.progress.update_progress("Processing Images", progress)
+                self.progress_update.emit("Processing Images", progress)
 
             except Exception as e:
                 self.logger.error(f"Error processing {path}: {e}")
@@ -717,7 +715,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             self.logger.error(f"Error during cancellation: {e}")
             self.error_occurred.emit(f"Failed to cancel processing: {str(e)}")
 
-    def get_input_files(self, input_dir: str = None) -> List[Path]:
+    def get_input_files(self, input_dir: Optional[str] = None) -> List[Path]:
         """Get ordered input files using FileManager"""
         dir_to_use = input_dir or self.input_dir
         return self.file_manager.get_input_files(dir_to_use)
@@ -766,13 +764,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         # ...existing code...
 
     def some_method(self):
-        from satellite_processor.gui.widgets.video_options import (
-            VideoOptionsWidget,
-        )  # Moved import
-
-        # ...use VideoOptionsWidget here...
-        # ...existing code...
-        if self.parent()._is_closing:
+        # Check if parent is closing and cancel if so
+        parent = self.parent()
+        if parent and getattr(parent, "_is_closing", False):
             self.cancel()
             return
         # ...existing code...
@@ -991,48 +985,23 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     ) -> Optional[np.ndarray]:
         """Process a single image with proper dimension handling"""
         try:
-            # ...existing code...
-
-            # Define output directory and file
-            output_dir = Path(options["temp_dir"]) / "sanchez_outputs"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = output_dir / f"{Path(image_path).stem}_sanchez.jpg"
-
-            # Define underlay path
-            underlay_path = options.get("underlay_path", "")
-
-            false_color_path = ImageOperations.apply_false_color(
+            output_dir = str(Path(options["temp_dir"]) / "sanchez_outputs")
+            img = ImageOperations.apply_false_color_and_read(
                 str(image_path),
-                str(output_path),  # Pass the full output file path
-                options.get("sanchez_path"),
-                str(underlay_path),
+                output_dir,
+                options.get("sanchez_path", ""),
+                options.get("underlay_path", ""),
             )
-
-            if not false_color_path:
-                raise ValueError("Failed to apply false color")
-
-            # Read the false color result
-            img = cv2.imread(str(false_color_path))
-            if img is None:
-                raise ValueError("Failed to read false color output")
-
-            logging.info(f"Successfully applied false color to: {image_path}")
-
-            # ...existing code...
-
             return img
 
         except Exception as e:
             print(f"Error processing {image_path}: {e}")
             return None
 
-    @patch(
-        "satellite_processor.core.video_handler.VideoHandler.configure_encoder",
-        return_value=None,
-    )
-    def configure_encoder(self, options, mock_config):
-        self.video_handler.configure_encoder(options["encoder"], options)
-        mock_config.assert_called_with(options["encoder"], options)
+    def configure_encoder(self, options):
+        """Configure encoder with the specified options."""
+        encoder = options.get("encoder", "H.264")
+        self.video_handler.configure_encoder(encoder, options)
 
     def encode_video(self, options: dict):
         """Encode video with the specified options."""

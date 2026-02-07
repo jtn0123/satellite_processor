@@ -1887,9 +1887,7 @@ class TestNetworkSupport:
             cv2.imwrite(str(frame_path), frame)
             frame_files.append(frame_path)
 
-        with patch(
-            "subprocess.run", return_value=MagicMock(returncode=0)
-        ) as mock_run:
+        with patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_run:
             options = {"fps": 30, "bitrate": 5000}
             success = video_handler.create_video(input_dir, output_path, options)
 
@@ -1908,9 +1906,7 @@ class TestNetworkSupport:
             frame = np.ones((100, 100, 3), dtype=np.uint8) * 128
             cv2.imwrite(str(frame_path), frame)
 
-        with patch(
-            "subprocess.run", return_value=MagicMock(returncode=0)
-        ) as mock_run:
+        with patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_run:
             video_handler = VideoHandler()
             video_handler.testing = False  # Must be False to avoid test_mode
             options = {"fps": 30, "bitrate": 5000}
@@ -2082,9 +2078,7 @@ class TestUNCPathHandling:
 
         options = {"fps": 30, "bitrate": 5000, "encoder": "H.264", "hardware": "CPU"}
 
-        with patch(
-            "subprocess.run", return_value=MagicMock(returncode=0)
-        ) as mock_run:
+        with patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_run:
             video_handler = VideoHandler()
             video_handler.testing = False  # Must be False to avoid test_mode
             success = video_handler.create_video(input_dir, output_path, options)

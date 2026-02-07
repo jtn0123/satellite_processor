@@ -45,7 +45,7 @@ class TestCropImage:
         x, y, w, h = 10, 20, 30, 40
         cropped = ImageOperations.crop_image(img, x=x, y=y, width=w, height=h)
 
-        assert np.array_equal(cropped, img[y:y+h, x:x+w])
+        assert np.array_equal(cropped, img[y : y + h, x : x + w])
 
 
 class TestAddTimestamp:
@@ -124,11 +124,11 @@ class TestProcessImage:
         cv2.imwrite(str(img_path), img)
 
         options = {
-            'crop_enabled': True,
-            'crop_x': 10,
-            'crop_y': 10,
-            'crop_width': 50,
-            'crop_height': 50
+            "crop_enabled": True,
+            "crop_x": 10,
+            "crop_y": 10,
+            "crop_width": 50,
+            "crop_height": 50,
         }
 
         result = ImageOperations.process_image(str(img_path), options)
@@ -158,9 +158,9 @@ class TestProcessImage:
         cv2.imwrite(str(img_path), img)
 
         options = {
-            'interpolation_enabled': True,
-            'interpolation_factor': 2,
-            'interpolation_method': 'Linear'
+            "interpolation_enabled": True,
+            "interpolation_factor": 2,
+            "interpolation_method": "Linear",
         }
 
         result = ImageOperations.process_image(str(img_path), options)
@@ -189,7 +189,9 @@ class TestInterpolateFrames:
         frame1 = np.zeros((50, 50, 3), dtype=np.uint8)
         frame2 = np.ones((50, 50, 3), dtype=np.uint8) * 255
 
-        frames = ImageOperations.interpolate_frames(frame1, frame2, factor=2, method='Linear')
+        frames = ImageOperations.interpolate_frames(
+            frame1, frame2, factor=2, method="Linear"
+        )
 
         assert len(frames) == 1  # factor=2 produces 1 intermediate frame
         # The intermediate frame should have values near 127-128
@@ -200,7 +202,9 @@ class TestInterpolateFrames:
         frame1 = np.zeros((50, 50, 3), dtype=np.uint8)
         frame2 = np.ones((50, 50, 3), dtype=np.uint8) * 200
 
-        frames = ImageOperations.interpolate_frames(frame1, frame2, factor=3, method='Cubic')
+        frames = ImageOperations.interpolate_frames(
+            frame1, frame2, factor=3, method="Cubic"
+        )
 
         assert len(frames) == 2  # factor=3 produces 2 intermediate frames
 

@@ -53,7 +53,7 @@ class TestGetInputFiles:
 
         assert len(files) == 3
         # txt file should not be included
-        assert not any(f.suffix == '.txt' for f in files)
+        assert not any(f.suffix == ".txt" for f in files)
 
     def test_get_input_files_nonexistent_directory(self):
         """Test returns empty list for nonexistent directory."""
@@ -75,7 +75,7 @@ class TestGetInputFiles:
         files = fm.get_input_files(str(input_dir))
 
         assert len(files) == 5
-        numbers = [int(f.stem.replace('frame', '')) for f in files]
+        numbers = [int(f.stem.replace("frame", "")) for f in files]
         assert numbers == sorted(numbers)
 
 

@@ -17,7 +17,7 @@ from satellite_processor.core.processor import SatelliteImageProcessor
 @pytest.fixture
 def processor(qtbot):
     """Create a SatelliteImageProcessor instance for testing."""
-    with patch('satellite_processor.core.processor.ResourceMonitor') as mock_rm_cls:
+    with patch("satellite_processor.core.processor.ResourceMonitor") as mock_rm_cls:
         mock_rm = MagicMock()
         mock_rm.resource_update = MagicMock()
         mock_rm.resource_update.connect = MagicMock()
@@ -26,7 +26,7 @@ def processor(qtbot):
         mock_rm.isRunning = MagicMock(return_value=False)
         mock_rm.deleteLater = MagicMock()
         mock_rm_cls.return_value = mock_rm
-        with patch.object(SatelliteImageProcessor, '_setup_resource_monitoring'):
+        with patch.object(SatelliteImageProcessor, "_setup_resource_monitoring"):
             proc = SatelliteImageProcessor(options={})
             yield proc
             proc._is_deleted = True
@@ -46,19 +46,19 @@ class TestProcessorInit:
     def test_init_with_options(self, processor):
         """Test initialization with custom options."""
         # Modify options on existing processor to test the attribute
-        processor.options = {'fps': 60, 'encoder': 'H.265'}
-        assert processor.options['fps'] == 60
-        assert processor.options['encoder'] == 'H.265'
+        processor.options = {"fps": 60, "encoder": "H.265"}
+        assert processor.options["fps"] == 60
+        assert processor.options["encoder"] == "H.265"
 
     def test_signals_defined(self, processor):
         """Test that all expected signals are defined."""
-        assert hasattr(processor, 'status_update')
-        assert hasattr(processor, 'error_occurred')
-        assert hasattr(processor, 'finished')
-        assert hasattr(processor, 'progress_update')
-        assert hasattr(processor, 'overall_progress')
-        assert hasattr(processor, 'resource_update')
-        assert hasattr(processor, 'output_ready')
+        assert hasattr(processor, "status_update")
+        assert hasattr(processor, "error_occurred")
+        assert hasattr(processor, "finished")
+        assert hasattr(processor, "progress_update")
+        assert hasattr(processor, "overall_progress")
+        assert hasattr(processor, "resource_update")
+        assert hasattr(processor, "output_ready")
 
 
 class TestProcessSingleImage:
@@ -87,11 +87,11 @@ class TestProcessSingleImage:
         cv2.imwrite(str(img_path), img)
 
         processor.options = {
-            'crop_enabled': True,
-            'crop_x': 10,
-            'crop_y': 10,
-            'crop_width': 100,
-            'crop_height': 100
+            "crop_enabled": True,
+            "crop_x": 10,
+            "crop_y": 10,
+            "crop_width": 100,
+            "crop_height": 100,
         }
 
         result = processor.process_single_image(img_path)
@@ -250,7 +250,7 @@ class TestValidatePreferences:
 
     def test_valid_preferences(self, processor):
         """Test validation with valid preferences."""
-        processor.preferences = {'temp_directory': '/tmp'}
+        processor.preferences = {"temp_directory": "/tmp"}
         processor.options = {}
 
         valid, msg = processor.validate_preferences()
@@ -265,17 +265,17 @@ class TestValidatePreferences:
         valid, msg = processor.validate_preferences()
 
         assert valid is False
-        assert 'temp_directory' in msg
+        assert "temp_directory" in msg
 
     def test_false_color_requires_paths(self, processor):
         """Test validation when false_color enabled requires sanchez/underlay paths."""
-        processor.preferences = {'temp_directory': '/tmp'}
-        processor.options = {'false_color': True}
+        processor.preferences = {"temp_directory": "/tmp"}
+        processor.options = {"false_color": True}
 
         valid, msg = processor.validate_preferences()
 
         assert valid is False
-        assert 'sanchez_path' in msg or 'underlay_path' in msg
+        assert "sanchez_path" in msg or "underlay_path" in msg
 
 
 class TestParallelWorkers:
@@ -291,10 +291,10 @@ class TestParallelWorkers:
         output_dir.mkdir()
 
         options = {
-            'crop_x': 0,
-            'crop_y': 0,
-            'crop_width': 100,
-            'crop_height': 50,
+            "crop_x": 0,
+            "crop_y": 0,
+            "crop_width": 100,
+            "crop_height": 50,
         }
 
         result = SatelliteImageProcessor._parallel_crop(

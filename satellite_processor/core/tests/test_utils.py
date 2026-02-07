@@ -42,7 +42,10 @@ class TestParseSatelliteTimestamp:
     def test_various_satellite_formats(self):
         """Test various satellite naming conventions."""
         test_cases = [
-            ("GOES16_ABI_L2_CMIPF_20240115T120000Z.nc", datetime(2024, 1, 15, 12, 0, 0)),
+            (
+                "GOES16_ABI_L2_CMIPF_20240115T120000Z.nc",
+                datetime(2024, 1, 15, 12, 0, 0),
+            ),
             ("GOES18_20230701T235959Z_ch02.png", datetime(2023, 7, 1, 23, 59, 59)),
             ("sanchez_20240315T060000Z_falsecolor.jpg", datetime(2024, 3, 15, 6, 0, 0)),
         ]
@@ -56,6 +59,7 @@ class TestIsClosing:
 
     def test_closing_window(self):
         """Test detection of closing window."""
+
         class FakeWindow:
             _is_closing = True
 
@@ -63,6 +67,7 @@ class TestIsClosing:
 
     def test_open_window(self):
         """Test detection of non-closing window."""
+
         class FakeWindow:
             _is_closing = False
 
@@ -70,6 +75,7 @@ class TestIsClosing:
 
     def test_no_attribute_returns_false(self):
         """Test that missing _is_closing attribute returns False."""
+
         class FakeWindow:
             pass
 

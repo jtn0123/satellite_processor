@@ -24,7 +24,7 @@ Does NOT handle:
 
 import concurrent.futures
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Iterator
 import numpy as np  # type: ignore
 import logging
 import cv2  # type: ignore
@@ -34,7 +34,6 @@ import os
 from datetime import datetime
 import shutil
 import re
-import codecs
 import sys
 from PyQt6.QtCore import (
     pyqtSignal,
@@ -43,17 +42,14 @@ from PyQt6.QtCore import (
     QTimer,
     QMetaObject,
     Qt,
-)  # Added QMetaObject and Qt imports
-from PyQt6.QtWidgets import QApplication  # Added QApplication import
+)
+from PyQt6.QtWidgets import QApplication
 import argparse
-import psutil  # Add this import at the top
+import psutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
-from typing import List, Optional, Tuple, Dict, Any, Iterator
-from typing import List, Optional, Tuple, Dict, Any, Iterator
 from functools import partial
-from unittest.mock import patch  # Add this import
 
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
@@ -395,7 +391,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     processed.append(result)
 
                 progress = int((idx + 1) / total * 100)
-                self.progress.update_progress("Processing Images", progress)
+                self.progress_update.emit("Processing Images", progress)
 
             except Exception as e:
                 self.logger.error(f"Error processing {path}: {e}")
@@ -1026,13 +1022,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             print(f"Error processing {image_path}: {e}")
             return None
 
-    @patch(
-        "satellite_processor.core.video_handler.VideoHandler.configure_encoder",
-        return_value=None,
-    )
-    def configure_encoder(self, options, mock_config):
-        self.video_handler.configure_encoder(options["encoder"], options)
-        mock_config.assert_called_with(options["encoder"], options)
+    def configure_encoder(self, options):
+        """Configure encoder with the specified options."""
+        encoder = options.get("encoder", "H.264")
+        self.video_handler.configure_encoder(encoder, options)
 
     def encode_video(self, options: dict):
         """Encode video with the specified options."""

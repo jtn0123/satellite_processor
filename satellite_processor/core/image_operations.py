@@ -7,13 +7,11 @@ import re
 import subprocess
 from typing import Optional, List, Union
 import concurrent.futures
-from concurrent.futures import ProcessPoolExecutor  # Change this import
 import multiprocessing
 from multiprocessing import shared_memory
 from functools import partial
 import logging
 from .utils import parse_satellite_timestamp
-from ..utils.helpers import parse_satellite_timestamp
 import shutil
 import tempfile
 import os
@@ -350,7 +348,7 @@ class ImageOperations:
 
             process = psutil.Process()
             process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
-        except:
+        except Exception:
             pass
 
     @staticmethod
@@ -589,7 +587,7 @@ class ImageOperations:
                 processed.append(result)
         return processed
 
-    def interpolate_frames(self, frame_paths, options):
+    def interpolate_frames_with_options(self, frame_paths, options):
         """Interpolate frames based on options."""
         if options.get("interpolation_enabled"):
             quality = options.get("interpolation_quality", "medium")

@@ -29,6 +29,14 @@ except:
 try:
     import wmi
 
+    WMI_AVAILABLE = True
+except ImportError:
+    wmi = None
+    WMI_AVAILABLE = False
+
+INTEL_AVAILABLE = False
+wmi_interface = None
+if WMI_AVAILABLE:
     try:
         wmi_interface = wmi.WMI(namespace="root\\OpenHardwareMonitor")
         INTEL_AVAILABLE = True
@@ -38,9 +46,6 @@ try:
             INTEL_AVAILABLE = True
         except Exception:
             INTEL_AVAILABLE = False
-except ImportError:
-    wmi = None
-    INTEL_AVAILABLE = False
 
 
 class GPUMonitor(QObject):

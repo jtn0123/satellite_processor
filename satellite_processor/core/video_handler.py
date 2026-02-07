@@ -1011,41 +1011,6 @@ class VideoHandler:
             self.logger.error(f"Failed to get video info: {e}")
             return {}
 
-    def get_options(self) -> dict:
-        """Get current processing options"""
-        options = {
-            "crop_enabled": self.crop_enabled.isChecked(),
-            "crop_x": self.crop_x.value(),
-            "crop_y": self.crop_y.value(),
-            "crop_width": self.crop_width.value(),
-            "crop_height": self.crop_height.value(),
-            "add_timestamp": self.add_timestamp.isChecked(),
-            "fps": self.fps_spin.value(),
-            "codec": self.codec_combo.currentText(),
-            "hardware": self.hardware_combo.currentText(),  # Existing hardware option
-            "frame_duration": self.frame_duration_spin.value(),
-            "false_color_enabled": self.enable_false_color.isChecked(),
-            "false_color_method": self.sanchez_method.currentText(),
-            "interpolation_enabled": self.enable_interpolation.isChecked(),
-            "interpolation_method": self.interp_method.currentText(),
-            "interpolation_quality": self.interp_quality.currentText()
-            .split()[0]
-            .lower(),  # Get just "high", "medium", or "low"
-            "interpolation_factor": self.interp_factor.value(),
-            "encoding_device": self.hardware_combo.currentText().split()[
-                0
-            ],  # Extract 'CPU' or 'NVIDIA'
-        }
-
-        # Add debug logging
-        if options["false_color_enabled"]:
-            self.logger.info(
-                f"False color is enabled with method: {options['false_color_method']}"
-            )
-        self.logger.info(f"Encoding device selected: {options['encoding_device']}")
-
-        return options
-
     def _get_hardware_params(self, hardware: str) -> List[str]:
         """Get hardware-specific FFmpeg parameters"""
         params = {

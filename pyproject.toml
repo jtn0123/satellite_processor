@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["satellite_processor/core/tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+qt_api = "pyqt6"

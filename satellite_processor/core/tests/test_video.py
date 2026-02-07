@@ -1,4 +1,5 @@
 import pytest
+import sys
 import numpy as np
 import cv2
 from pathlib import Path
@@ -917,6 +918,7 @@ class TestVideoCreation:
             (Path(input_dir) / f"frame{i:04d}.png").touch()
 
         video_handler = VideoHandler()
+        mock_ffmpeg.reset_mock()
 
         fps_values = [15, 30, 60]
         for fps in fps_values:
@@ -938,6 +940,7 @@ class TestVideoCreation:
             (Path(input_dir) / f"frame{i:04d}.png").touch()
 
         video_handler = VideoHandler()
+        mock_ffmpeg.reset_mock()
 
         bitrate_values = [1000, 5000, 10000]
         for bitrate in bitrate_values:
@@ -1399,16 +1402,16 @@ class TestVideoCreation:
         input_dir, output_dir = mock_directories
         options = video_options.get_options()
 
+        video_handler = VideoHandler()
+
         mock_process = MagicMock()
         mock_process.poll.return_value = None  # Process is running
 
-        with patch("subprocess.Popen", return_value=mock_process) as mock_popen:
-            video_handler = VideoHandler()
-            video_handler._current_process = mock_process
-            video_handler.cancel()
+        video_handler._current_process = mock_process
+        video_handler.cancel()
 
-            mock_process.terminate.assert_called_once()
-            assert video_handler._current_process is None
+        mock_process.terminate.assert_called_once()
+        assert video_handler._current_process is None
 
     def test_concurrent_video_creation(self, video_options, mock_directories):
         """Test handling of concurrent video creation attempts"""
@@ -1858,6 +1861,9 @@ class TestHardwareAcceleration:
                 assert video_handler._get_hardware_params(hw_type) != []
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="UNC/network paths are Windows-only"
+)
 class TestNetworkSupport:
     """Tests for network path handling"""
 
@@ -2094,6 +2100,7 @@ def create_test_frames(directory: Path, count: int = 5) -> List[Path]:
                     self.logger.debug(f"Failed to cleanup temp directory: {e}")
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="UNC paths are Windows-only")
 class TestUNCPathHandling:
     """Tests for UNC (Universal Naming Convention) path handling"""
 

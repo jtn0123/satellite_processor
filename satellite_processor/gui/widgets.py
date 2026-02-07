@@ -1,15 +1,28 @@
 import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QLabel, QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox,
-    QProgressBar, QTextEdit, QPushButton, QGridLayout
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGroupBox,
+    QLabel,
+    QCheckBox,
+    QSpinBox,
+    QDoubleSpinBox,
+    QComboBox,
+    QProgressBar,
+    QTextEdit,
+    QPushButton,
+    QGridLayout,
 )
 from PyQt6.QtCore import Qt
-from ..core.processor import SatelliteImageProcessor  # Adjust the import path as necessary
+from ..core.processor import (
+    SatelliteImageProcessor,
+)  # Adjust the import path as necessary
+
 
 class ProcessingOptionsWidget(QGroupBox):
     """Widget for processing options."""
-    
+
     def __init__(self):
         super().__init__("Processing Options")
         self.init_ui()
@@ -90,13 +103,13 @@ class ProcessingOptionsWidget(QGroupBox):
 
     def some_widget_method(self):
         # ...existing code...
-        if self.parent() and getattr(self.parent(), '_is_closing', False):
+        if self.parent() and getattr(self.parent(), "_is_closing", False):
             # Handle accordingly
             pass
         # ...existing code...
         options = {
-            'input_dir': self.input_dir,
-            'output_dir': self.output_dir,
+            "input_dir": self.input_dir,
+            "output_dir": self.output_dir,
             # Add other necessary options here
         }
         processor = SatelliteImageProcessor(options=options, parent=self)
@@ -105,49 +118,52 @@ class ProcessingOptionsWidget(QGroupBox):
     def get_options(self):
         """Get current processing options"""
         return {
-            'crop_enabled': self.crop_checkbox.isChecked(),
-            'crop_x': self.crop_x.value(),
-            'crop_y': self.crop_y.value(),
-            'crop_width': self.crop_width.value(),
-            'crop_height': self.crop_height.value(),
-            'false_color_enabled': self.false_color_check.isChecked(),
+            "crop_enabled": self.crop_checkbox.isChecked(),
+            "crop_x": self.crop_x.value(),
+            "crop_y": self.crop_y.value(),
+            "crop_width": self.crop_width.value(),
+            "crop_height": self.crop_height.value(),
+            "false_color_enabled": self.false_color_check.isChecked(),
         }
+
 
 class VideoOptionsWidget(QGroupBox):
     def __init__(self):
         super().__init__("Video Options")
         self.init_ui()
-        
+
     def init_ui(self):
         layout = QVBoxLayout()
-        
+
         # Encoder selection
         encoder_layout = QHBoxLayout()
         encoder_label = QLabel("Encoder:")
         self.encoder = QComboBox()
-        self.encoder.addItems([
-            "H.264 (Maximum Compatibility)",
-            "HEVC/H.265 (Better Compression)",
-            "AV1 (Best Quality)"
-        ])
+        self.encoder.addItems(
+            [
+                "H.264 (Maximum Compatibility)",
+                "HEVC/H.265 (Better Compression)",
+                "AV1 (Best Quality)",
+            ]
+        )
         encoder_layout.addWidget(encoder_label)
         encoder_layout.addWidget(self.encoder)
         layout.addLayout(encoder_layout)
-        
+
         # FPS and interpolation
         fps_layout = QHBoxLayout()
         fps_label = QLabel("FPS:")
         self.fps = QSpinBox()
         self.fps.setRange(1, 60)
         self.fps.setValue(30)
-        
+
         self.interpolation = QCheckBox("Enable Frame Interpolation")
-        
+
         fps_layout.addWidget(fps_label)
         fps_layout.addWidget(self.fps)
         fps_layout.addWidget(self.interpolation)
         layout.addLayout(fps_layout)
-        
+
         # Quality settings
         quality_layout = QHBoxLayout()
         quality_label = QLabel("Quality Preset:")
@@ -156,17 +172,18 @@ class VideoOptionsWidget(QGroupBox):
         quality_layout.addWidget(quality_label)
         quality_layout.addWidget(self.quality_preset)
         layout.addLayout(quality_layout)
-        
+
         self.setLayout(layout)
 
     def get_options(self):
         """Get current video options"""
         return {
-            'encoder': self.encoder.currentText(),
-            'fps': self.fps.value(),
-            'interpolation': self.interpolation.isChecked(),
-            'quality_preset': self.quality_preset.currentText()
+            "encoder": self.encoder.currentText(),
+            "fps": self.fps.value(),
+            "interpolation": self.interpolation.isChecked(),
+            "quality_preset": self.quality_preset.currentText(),
         }
+
 
 class ProgressWidget(QWidget):
     """Custom Progress Bar Widget"""
@@ -182,6 +199,7 @@ class ProgressWidget(QWidget):
 
     def update_progress(self, value: int):
         self.progress_bar.setValue(value)
+
 
 class MainWidget(QWidget):
     # ...existing code...

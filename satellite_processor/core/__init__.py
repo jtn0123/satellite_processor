@@ -11,14 +11,14 @@ from .resource_monitor import ResourceMonitor
 from .settings_manager import SettingsManager
 
 __all__ = [
-    'SatelliteImageProcessor',
-    'ImageOperations',
-    'VideoHandler',
-    'FileManager',
-    'ResourceMonitor',
-    'SettingsManager',
-    'ProcessingWorker'
+    "SatelliteImageProcessor",
+    "ImageOperations",
+    "VideoHandler",
+    "FileManager",
+    "ResourceMonitor",
+    "SettingsManager",
+    "ProcessingWorker",
 ]
 
 # Version info
-__version__ = '1.0.0'
+__version__ = "1.0.0"

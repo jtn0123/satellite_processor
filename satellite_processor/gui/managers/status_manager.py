@@ -9,19 +9,20 @@ from PyQt6.QtWidgets import QApplication
 import logging
 from typing import List  # Add this import
 
+
 class StatusManager(QObject):
     """Manage and render the processing status display"""
-    
+
     status_update = pyqtSignal(str)
     progress_update = pyqtSignal(str, int)
     error_occurred = pyqtSignal(str)
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.logger = logging.getLogger(__name__)
         self._initialize_attributes()
         self._initialize_steps()
-        self.css = '''
+        self.css = """
             <style>
                 body {
                     font-family: 'Segoe UI', Arial, sans-serif;
@@ -103,7 +104,7 @@ class StatusManager(QObject):
                     animation: pulse 1.5s infinite;
                 }
             </style>
-        '''
+        """
 
     def _initialize_attributes(self):
         """Initialize tracking attributes"""
@@ -120,27 +121,26 @@ class StatusManager(QObject):
         """Initialize processing steps"""
         self.add_step("🔍 Initialization", "Preparing for processing...")
         self.add_step("📂 File Scanning", "Waiting to scan files...")
-        self.add_step("🎨 False Color", "Preparing false color processing...")  # Add this line
+        self.add_step(
+            "🎨 False Color", "Preparing false color processing..."
+        )  # Add this line
         self.add_step("🖼️ Image Processing", "Ready to process images...")
         self.add_step("🎬 Video Creation", "Video creation pending...")
 
-    def add_step(self, name, message=''):
+    def add_step(self, name, message=""):
         """Add a new processing step"""
-        self.steps.append({
-            'name': name,
-            'status': 'pending',
-            'progress': 0,
-            'message': message
-        })
+        self.steps.append(
+            {"name": name, "status": "pending", "progress": 0, "message": message}
+        )
 
-    def update_step(self, name, progress, message='', status=None):
+    def update_step(self, name, progress, message="", status=None):
         """Update a step's progress and status"""
         for step in self.steps:
-            if step['name'] == name:
-                step['progress'] = progress
-                step['message'] = message
+            if step["name"] == name:
+                step["progress"] = progress
+                step["message"] = message
                 if status:
-                    step['status'] = status
+                    step["status"] = status
                 break
 
     def render(self):
@@ -149,28 +149,30 @@ class StatusManager(QObject):
         html.append('<div class="header">Satellite Image Processing Status</div>')
 
         for step in self.steps:
-            status_class = ''
-            if step['status'] == 'completed':
-                status_class = 'completed'
-            elif step['status'] == 'active':
-                status_class = 'active'
+            status_class = ""
+            if step["status"] == "completed":
+                status_class = "completed"
+            elif step["status"] == "active":
+                status_class = "active"
 
             html.append(f'<div class="step {status_class}">')
             html.append('<div class="step-header">')
             html.append(f'<span class="step-name">{step["name"]}</span>')
             html.append(f'<span class="step-status">{step["status"].title()}</span>')
-            html.append('</div>')
+            html.append("</div>")
 
-            if step['message']:
+            if step["message"]:
                 html.append(f'<div class="step-message">{step["message"]}</div>')
 
             html.append('<div class="progress-bar">')
-            html.append(f'<div class="progress-fill" style="width: {step["progress"]}%"></div>')
-            html.append('</div>')
-            html.append('</div>')
+            html.append(
+                f'<div class="progress-fill" style="width: {step["progress"]}%"></div>'
+            )
+            html.append("</div>")
+            html.append("</div>")
 
         # Updated Resource monitoring section with proper text alignment
-        html.append('''
+        html.append("""
             <style>
                 .resource-info {
                     display: grid;
@@ -202,11 +204,12 @@ class StatusManager(QObject):
                     color: #4caf50;
                 }
             </style>
-        ''')
+        """)
 
         html.append('<div class="resource-info">')
         # Existing resource items with proper alignment
-        html.append('''
+        html.append(
+            """
             <div class="resource-item">
                 <div class="resource-label">CPU Usage</div>
                 <div class="resource-value">{cpu_usage}%</div>
@@ -223,21 +226,22 @@ class StatusManager(QObject):
                 <div class="resource-label">Network Download</div>
                 <div class="resource-value">{current_recv}/s<br>Total: {network_recv}</div>
             </div>
-        '''.format(
-            cpu_usage=self.cpu_usage,
-            memory_usage=self.memory_usage,
-            current_sent=self._format_bytes(self.current_sent),
-            network_sent=self._format_bytes(self.network_sent),
-            current_recv=self._format_bytes(self.current_recv),
-            network_recv=self._format_bytes(self.network_recv)
-        ))
-        html.append('</div>')
+        """.format(
+                cpu_usage=self.cpu_usage,
+                memory_usage=self.memory_usage,
+                current_sent=self._format_bytes(self.current_sent),
+                network_sent=self._format_bytes(self.network_sent),
+                current_recv=self._format_bytes(self.current_recv),
+                network_recv=self._format_bytes(self.network_recv),
+            )
+        )
+        html.append("</div>")
 
-        return ''.join(html)
+        return "".join(html)
 
     def _format_bytes(self, bytes):
         """Format bytes to human readable string"""
-        for unit in ['B', 'KB', 'MB', 'GB']:
+        for unit in ["B", "KB", "MB", "GB"]:
             if bytes < 1024:
                 return f"{bytes:.1f} {unit}"
             bytes /= 1024
@@ -264,45 +268,47 @@ class StatusManager(QObject):
         self.steps.clear()
         self.status_update.emit("Ready")
 
+
 import json
 from pathlib import Path
 from typing import Dict, Any
 
+
 class SettingsManager:
     """Manage application settings."""
-    
+
     def __init__(self, settings_file: Path = Path("settings.json")):
         self.settings_file = settings_file
         self.settings: Dict[str, Any] = {}
         self.load_settings()
-    
+
     def load_settings(self) -> Dict[str, Any]:
         """Load settings from a JSON file."""
         if self.settings_file.exists():
-            with open(self.settings_file, 'r') as f:
+            with open(self.settings_file, "r") as f:
                 self.settings = json.load(f)
         else:
             self.settings = {}
         return self.settings
-    
+
     def save_settings(self) -> None:
         """Save settings to a JSON file."""
-        with open(self.settings_file, 'w') as f:
+        with open(self.settings_file, "w") as f:
             json.dump(self.settings, f, indent=4)
-    
+
     def get_setting(self, key: str, default=None):
         """Retrieve a setting value."""
         return self.settings.get(key, default)
-    
+
     def set_setting(self, key: str, value: Any) -> None:
         """Set a setting value."""
         self.settings[key] = value
         self.save_settings()
-    
+
     def load_preference(self, key: str, default=None):
         """Alias for get_setting."""
         return self.get_setting(key, default)
-    
+
     def save_preference(self, key: str, value: Any) -> None:
         """Alias for set_se
         ting."""

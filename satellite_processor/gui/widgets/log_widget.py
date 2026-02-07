@@ -5,31 +5,40 @@ and includes timestamp display. Implements a custom logging handler for Qt.
 """
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextBrowser, QTextEdit
-from PyQt6.QtGui import QTextCursor, QColor, QTextCharFormat, QDesktopServices  # Move QDesktopServices here
+from PyQt6.QtGui import (
+    QTextCursor,
+    QColor,
+    QTextCharFormat,
+    QDesktopServices,
+)  # Move QDesktopServices here
 from PyQt6.QtCore import Qt, pyqtSignal, QUrl, QMetaObject  # Add QMetaObject
 from pathlib import Path
 import logging
 import time
 import os
 
+
 class QTextBrowserHandler(logging.Handler):
     """Custom logging handler that emits logs to a QTextBrowser"""
-    
+
     def __init__(self, widget):
         super().__init__()
         self.widget = widget
         self.widget.document().setMaximumBlockCount(1000)  # Limit number of lines
-        
+
     def emit(self, record):
         msg = self.format(record)
         self.widget.append(msg)
+
 
 class LogWidget(QTextBrowser):  # Change to inherit from QTextBrowser
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setReadOnly(True)
         self.setOpenLinks(False)  # Disable default link handling
-        self.anchorClicked.connect(self.handle_link_click)  # This signal exists in QTextBrowser
+        self.anchorClicked.connect(
+            self.handle_link_click
+        )  # This signal exists in QTextBrowser
         self.setStyleSheet("""
             QTextBrowser {
                 background-color: #2c3e50;
@@ -61,11 +70,11 @@ class LogWidget(QTextBrowser):  # Change to inherit from QTextBrowser
         # Insert HTML at the end
         self.moveCursor(QTextCursor.MoveOperation.End)
         self.textCursor().insertHtml(html)
-        
+
         # Scroll to bottom using direct method call
         scrollbar = self.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
-        
+
         # Ensure cursor is visible
         self.ensureCursorVisible()
 

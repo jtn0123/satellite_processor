@@ -3,8 +3,10 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 import psutil
 import time
 
+
 class ResourceMonitor(QObject):
     """Monitor system resources in a separate thread"""
+
     resource_update = pyqtSignal(dict)
 
     def __init__(self):
@@ -32,29 +34,30 @@ class ResourceMonitor(QObject):
 
         # Get current network stats
         net_io = psutil.net_io_counters()
-        
+
         # Calculate network rates
         if self._prev_net_io:
             bytes_sent = net_io.bytes_sent - self._prev_net_io.bytes_sent
             bytes_recv = net_io.bytes_recv - self._prev_net_io.bytes_recv
         else:
             bytes_sent = bytes_recv = 0
-            
+
         self._prev_net_io = net_io
 
         stats = {
-            'cpu': psutil.cpu_percent(),
-            'memory': psutil.virtual_memory().percent,
-            'bytes_sent': bytes_sent,
-            'bytes_recv': bytes_recv,
-            'timestamp': time.time()
+            "cpu": psutil.cpu_percent(),
+            "memory": psutil.virtual_memory().percent,
+            "bytes_sent": bytes_sent,
+            "bytes_recv": bytes_recv,
+            "timestamp": time.time(),
         }
-        
+
         self.resource_update.emit(stats)
+
 
 class ResourceMonitorWidget(QWidget):
     """Widget to display resource monitoring information"""
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_ui()
@@ -66,7 +69,7 @@ class ResourceMonitorWidget(QWidget):
         self.cpu_label = QLabel("CPU: 0%")
         self.memory_label = QLabel("Memory: 0%")
         self.network_label = QLabel("Network: ↑0 B/s ↓0 B/s")
-        
+
         self.layout.addWidget(self.cpu_label)
         self.layout.addWidget(self.memory_label)
         self.layout.addWidget(self.network_label)
@@ -76,11 +79,11 @@ class ResourceMonitorWidget(QWidget):
         self.monitor = ResourceMonitor()
         self.monitor_thread = QThread(self)
         self.monitor.moveToThread(self.monitor_thread)
-        
+
         # Connect signals
         self.monitor_thread.started.connect(self.monitor.start)
         self.monitor.resource_update.connect(self.update_stats)
-        
+
         # Start monitoring
         self.monitor_thread.start()
 
@@ -92,14 +95,14 @@ class ResourceMonitorWidget(QWidget):
             f"Network: ↑{self._format_bytes(stats['bytes_sent'])}/s "
             f"↓{self._format_bytes(stats['bytes_recv'])}/s"
         )
-        
+
         # Forward stats to any parent widgets that might need them
-        if hasattr(self.parent(), 'on_resource_update'):
+        if hasattr(self.parent(), "on_resource_update"):
             self.parent().on_resource_update(stats)
 
     def _format_bytes(self, bytes_val):
         """Format bytes to human readable string"""
-        for unit in ['B', 'KB', 'MB', 'GB']:
+        for unit in ["B", "KB", "MB", "GB"]:
             if bytes_val < 1024:
                 return f"{bytes_val:.1f} {unit}"
             bytes_val /= 1024

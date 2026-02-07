@@ -1,12 +1,16 @@
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from ...core.processor import SatelliteImageProcessor  # Fix the import path with correct number of dots
+from ...core.processor import (
+    SatelliteImageProcessor,
+)  # Fix the import path with correct number of dots
 import logging
 from pathlib import Path
 from satellite_processor.core.image_operations import ImageOperations
 from satellite_processor.gui.managers.log_manager import sanchez_logger
 
+
 class ProcessingThread(QThread):
     """Thread for running the processor"""
+
     def __init__(self, processor, parent=None):
         super().__init__(parent)
         self.processor = processor
@@ -18,8 +22,10 @@ class ProcessingThread(QThread):
         except Exception as e:
             self.processor.error_occurred.emit(str(e))
 
+
 class ProcessingManager(QObject):
     """Manages processing operations"""
+
     progress_update = pyqtSignal(str, int)
     status_update = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
@@ -28,7 +34,9 @@ class ProcessingManager(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.processor = SatelliteImageProcessor(parent=self)  # Initialize processor immediately
+        self.processor = SatelliteImageProcessor(
+            parent=self
+        )  # Initialize processor immediately
         self.worker = None
         self.logger = logging.getLogger(__name__)
         self.processing_thread = None
@@ -36,7 +44,9 @@ class ProcessingManager(QObject):
 
         # Connect processor signals
         self.processor.status_update.connect(self.status_update.emit)
-        self.processor.output_ready.connect(self.output_ready.emit)  # Forward the signal
+        self.processor.output_ready.connect(
+            self.output_ready.emit
+        )  # Forward the signal
 
     def processing_is_active(self) -> bool:
         """Check if processing is currently active"""
@@ -50,11 +60,15 @@ class ProcessingManager(QObject):
                 return False
 
             # Update processor options before starting
-            self.processor.options = options.copy()  # Add this line to ensure options are set
-            
+            self.processor.options = (
+                options.copy()
+            )  # Add this line to ensure options are set
+
             # Initialize and start the processing thread
             self.processing_thread = ProcessingThread(self.processor)
-            self.processing_thread.finished.connect(self._on_thread_finished)  # Add this connection
+            self.processing_thread.finished.connect(
+                self._on_thread_finished
+            )  # Add this connection
             self.processing_thread.start()
             self._is_processing = True
             self.logger.info("Processing started.")
@@ -86,10 +100,14 @@ class ProcessingManager(QObject):
             self.processing_thread = None
         self._is_processing = False
 
-    def apply_sanchez_false_color(self, input_path: str, output_path: str, sanchez_path: str, underlay_path: str) -> bool:
+    def apply_sanchez_false_color(
+        self, input_path: str, output_path: str, sanchez_path: str, underlay_path: str
+    ) -> bool:
         """Apply false color using Sanchez and log the process."""
         sanchez_logger.info(f"Applying false color to {input_path}")
-        success = ImageOperations.apply_false_color(input_path, output_path, sanchez_path, underlay_path)
+        success = ImageOperations.apply_false_color(
+            input_path, output_path, sanchez_path, underlay_path
+        )
         if success:
             sanchez_logger.info(f"Successfully applied false color to {input_path}")
         else:

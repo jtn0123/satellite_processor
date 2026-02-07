@@ -50,7 +50,6 @@ from ..utils.utils import (
 )
 from ..utils.presets import PresetManager
 from .dialogs import SettingsDialog  # Add this import
-import time
 import tempfile
 import shutil
 from datetime import datetime
@@ -698,12 +697,13 @@ class SatelliteProcessorGUI(QMainWindow):
 
     def validate_preferences(self) -> bool:
         """Validate required preferences."""
+        settings = load_config()
         missing = []
-        if not self.sanchez_path:
+        if not settings.get("sanchez_path"):
             missing.append("sanchez_path")
-        if not self.underlay_path:
+        if not settings.get("underlay_path"):
             missing.append("underlay_path")
-            missing.append("underlay_path")
+        if not settings.get("temp_directory"):
             missing.append("temp_directory")
 
         if missing:
@@ -711,21 +711,11 @@ class SatelliteProcessorGUI(QMainWindow):
             self.logger.error(msg)
             return False
         return True
-        return True
 
     def setup_processor(self):
         # ...existing code...
         self.processor.network_update_signal.connect(self.graph_widget.update_data)
         # ...existing code...
-
-    def closeEvent(self, event):
-        """Clean up resources before closing"""
-        try:
-            if hasattr(self, "resource_monitor"):
-                self.resource_monitor.stop()
-        except Exception as e:
-            self.logger.error(f"Error during cleanup: {e}")
-        super().closeEvent(event)
 
     def some_other_method(self):
         """Example method using UITS utilities"""
@@ -781,21 +771,6 @@ class SatelliteProcessorGUI(QMainWindow):
             "gpu_acceleration": True,  # Enable by default
         }
 
-    def setup_video_settings(self):
-        # ...existing video settings code...
-
-        video_layout = QFormLayout()  # Define video_layout here
-
-        # Add frame duration setting
-        self.frame_duration_spin = QDoubleSpinBox()
-        self.frame_duration_spin.setRange(0.1, 10.0)
-        self.frame_duration_spin.setValue(1.0)
-        self.frame_duration_spin.setSingleStep(0.1)
-        self.frame_duration_spin.setDecimals(1)
-        self.frame_duration_spin.setSuffix(" sec")
-
-        video_layout.addRow("Frame Duration:", self.frame_duration_spin)
-
     def get_processor_options(self) -> dict:
         options = {
             # ...existing options...
@@ -835,10 +810,10 @@ class SatelliteProcessorGUI(QMainWindow):
             "window_pos": (self.x(), self.y()),
             "processing_options": {
                 # Remove scaling options from settings
-                "fps": self.processing_widget.fps.value(),
-                "codec": self.processing_widget.codec.currentText(),
+                "fps": self.processing_widget.fps_spin.value(),
+                "codec": self.processing_widget.codec_combo.currentText(),
                 "frame_duration": 1.0,
-                "crop_enabled": self.processing_widget.crop_checkbox.isChecked(),
+                "crop_enabled": self.processing_widget.crop_enabled.isChecked(),
                 "add_timestamp": True,
             },
         }

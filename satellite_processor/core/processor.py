@@ -51,9 +51,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 from typing import List, Optional, Tuple, Dict, Any, Iterator
-from typing import List, Optional, Tuple, Dict, Any, Iterator
 from functools import partial
-from unittest.mock import patch  # Add this import
 
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
@@ -143,7 +141,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self, operation: str, current: int, total: int, width: int = 40
     ) -> str:
         """Create simple progress bar string"""
-        progress = float(current) / total
+        progress = float(current) / total if total > 0 else 0.0
         filled = int(width * progress)
         bar = "█" * filled + "░" * (width - filled)
         percent = int(progress * 100)
@@ -169,7 +167,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
             if not all([self.input_dir, self.output_dir]):
                 self.logger.error("Input or output directory not set.")
-                return
+                return False
 
             # Ensure output directories exist
             Path(self.output_dir).mkdir(parents=True, exist_ok=True)
@@ -295,7 +293,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 self.status_update.emit("🎥 Stage 4/4: Creating video...")
                 success = self._create_video(current_files, dirs["final"])
                 if success:
-                    video_path = next(dirs["final"].glob("*.mp4"))
+                    video_path = next(dirs["final"].glob("*.mp4"), None)
+                    if video_path is None:
+                        self.logger.error("No video file found after creation")
+                        return False
                     self.output_ready.emit(video_path)
                     self.status_update.emit("✨ Processing completed successfully!")
                     return True
@@ -395,7 +396,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     processed.append(result)
 
                 progress = int((idx + 1) / total * 100)
-                self.progress.update_progress("Processing Images", progress)
+                self.progress_update.emit("Processing Images", progress)
 
             except Exception as e:
                 self.logger.error(f"Error processing {path}: {e}")
@@ -405,7 +406,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def __del__(self):
         """Safe cleanup on deletion"""
         try:
-            if not hasattr(self, "_is_deleted"):
+            if not getattr(self, "_is_deleted", False):
                 self.cleanup()
         except Exception as e:
             # Just log the error, can't do much else during deletion
@@ -427,7 +428,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
             # Continue with existing cleanup
             self.file_manager.cleanup()  # This now handles all file cleanup
-            self.resource_monitor.stop()
             # Stop resource monitor first
             if hasattr(self, "resource_monitor") and self.resource_monitor is not None:
                 try:
@@ -644,26 +644,24 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     )
                     output_file = str(output_file)
 
-                    # Build command with proper path escaping
+                    # Build command as a list (no shell=True needed)
                     cmd = [
-                        f'"{sanchez_path}"',
+                        sanchez_path,
                         "-s",
-                        f'"{img_path}"',
+                        img_path,
                         "-u",
-                        f'"{underlay_path}"',
+                        underlay_path,
                         "-o",
-                        f'"{output_file}"',
+                        output_file,
                         "-nogui",
                         "-falsecolor",
                         "-format",
                         "jpg",
                     ]
 
-                    # Join command with spaces and run as a single string
-                    cmd_str = " ".join(cmd)
-                    print(f"Running command: {cmd_str}")
-                    # Execute the command
-                    subprocess.run(cmd_str, shell=True, check=True)
+                    logger.info(f"Running command: {' '.join(str(c) for c in cmd)}")
+                    # Execute the command safely without shell=True
+                    subprocess.run(cmd, shell=False, check=True)
 
                     # Optionally, load the processed image
                     img = cv2.imread(output_file)
@@ -690,7 +688,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             return str(out_path)  # Return string path for compatibility
 
         except Exception as e:
-            print(f"Failed to process {params.get('img_path')}: {e}")
+            logger.error(f"Failed to process {params.get('img_path')}: {e}")
             return None
 
     def cancel(self) -> None:
@@ -772,7 +770,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
         # ...use VideoOptionsWidget here...
         # ...existing code...
-        if self.parent()._is_closing:
+        if is_closing(self.parent()):
             self.cancel()
             return
         # ...existing code...
@@ -808,7 +806,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.update_timer.start(1000)
         self._last_sent = 0
         self._last_recv = 0
-        self._is_deleted = False
 
     def _load_preferences(self) -> None:
         """Load processor preferences"""
@@ -1023,16 +1020,12 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             return img
 
         except Exception as e:
-            print(f"Error processing {image_path}: {e}")
+            logging.error(f"Error processing {image_path}: {e}")
             return None
 
-    @patch(
-        "satellite_processor.core.video_handler.VideoHandler.configure_encoder",
-        return_value=None,
-    )
-    def configure_encoder(self, options, mock_config):
-        self.video_handler.configure_encoder(options["encoder"], options)
-        mock_config.assert_called_with(options["encoder"], options)
+    def configure_encoder(self, options):
+        """Configure encoder on the video handler"""
+        self.video_handler.configure_encoder(options.get("encoder", "H.264"), options)
 
     def encode_video(self, options: dict):
         """Encode video with the specified options."""
@@ -1045,16 +1038,13 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def create_video(self, input_files, output_path, options):
         """Create video from processed images."""
         try:
-            # ...existing code...
-
             # Ensure 'encoder' is set in options
             options.setdefault("encoder", "H.264")  # Set default encoder if not present
 
-            video_handler = VideoHandler()
-            video_handler.testing = getattr(
+            self.video_handler.testing = getattr(
                 self, "testing", False
             )  # Ensure testing is set
-            return video_handler.create_video(input_files, output_path, options)
+            return self.video_handler.create_video(input_files, output_path, options)
 
         except Exception as e:
             self.logger.error(f"Video creation error: {str(e)}")

@@ -30,8 +30,8 @@ class ResourceMonitor(QThread):
         self.logger = logging.getLogger(__name__)
         self._running = True
         self._interval = 1.0  # Default to 1 second
-        self._last_net_io = psutil.net_io_counters()
-        self._last_check = time.time()
+        # Prime cpu_percent so the first real call returns meaningful data
+        psutil.cpu_percent()
 
     def setInterval(self, msec: int):
         """Set the update interval in milliseconds"""
@@ -64,11 +64,10 @@ class ResourceMonitor(QThread):
     def cleanup(self):
         """Clean up resources"""
         self.stop()
-        self.wait()
 
     def __del__(self):
         """Ensure cleanup on deletion"""
         try:
-            self.cleanup()
+            self._running = False
         except Exception:
             pass

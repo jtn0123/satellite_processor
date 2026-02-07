@@ -33,7 +33,7 @@ if str(project_root) not in sys.path:
 from satellite_processor.utils.logging_config import setup_logging
 from satellite_processor.gui.main_window import SatelliteProcessorGUI
 
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 
 
 def signal_handler(signum, frame):
@@ -51,6 +51,7 @@ def initialize_app():
 def main():
     """Main application entry point"""
     try:
+        setup_logging()
         app = QApplication(sys.argv)
         initialize_app()
 

@@ -12,7 +12,6 @@ import multiprocessing
 from multiprocessing import shared_memory
 from functools import partial
 import logging
-from .utils import parse_satellite_timestamp
 from ..utils.helpers import parse_satellite_timestamp
 import shutil
 import tempfile
@@ -347,10 +346,15 @@ class ImageOperations:
         # Set process priority higher
         try:
             import psutil
+            import os as _os
 
             process = psutil.Process()
-            process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
-        except:
+            if _os.name == "nt":
+                process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            else:
+                # On Unix, lower nice value = higher priority (use -5 for slightly higher)
+                process.nice(-5)
+        except Exception:
             pass
 
     @staticmethod
@@ -359,22 +363,51 @@ class ImageOperations:
     ) -> Optional[np.ndarray]:
         """Process a single image with proper dimension handling"""
         try:
-            print(
+            logger.debug(
                 f"Processing {image_path} on process {multiprocessing.current_process().name}"
             )
 
             # Read image in color mode explicitly
             img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
             if img is None:
-                print(f"Failed to read image: {image_path}")
+                logger.error(f"Failed to read image: {image_path}")
                 return None
 
             # Ensure image is in BGR format with 3 channels
             if len(img.shape) != 3 or img.shape[2] != 3:
-                print(f"Converting image format for {image_path}")
+                logger.debug(f"Converting image format for {image_path}")
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-            # Process image
+            # Apply Sanchez false color FIRST (before crop/timestamp)
+            if options.get("false_color_enabled"):
+                logger.info(f"Processing false color for: {image_path}")
+
+                sanchez_path_str = options.get("sanchez_path")
+                underlay_path_str = options.get("underlay_path")
+                temp_dir_str = options.get("temp_dir")
+
+                if not all([sanchez_path_str, underlay_path_str, temp_dir_str]):
+                    raise ValueError("Missing required false color paths")
+
+                temp_dir = Path(temp_dir_str)
+                temp_dir.mkdir(parents=True, exist_ok=True)
+
+                success = ImageOperations.apply_false_color(
+                    str(image_path), str(temp_dir), str(sanchez_path_str), str(underlay_path_str)
+                )
+
+                if not success:
+                    raise ValueError("Failed to apply false color")
+
+                # Read the false color result
+                output_path = temp_dir / f"{Path(image_path).stem}_sanchez.jpg"
+                img = cv2.imread(str(output_path))
+                if img is None:
+                    raise ValueError("Failed to read false color output")
+
+                logger.info(f"Successfully applied false color to: {image_path}")
+
+            # Apply crop after false color
             if options.get("crop_enabled"):
                 img = ImageOperations.crop_image(
                     img,
@@ -384,43 +417,19 @@ class ImageOperations:
                     options.get("crop_height", img.shape[0]),
                 )
 
+            # Apply timestamp last
             if options.get("add_timestamp", True):
                 img = ImageOperations.add_timestamp(img, Path(image_path))
 
-            # Apply Sanchez false color if enabled
-            if options.get("false_color_enabled"):
-                logging.info(f"Processing false color for: {image_path}")
-
-                sanchez_path = Path(options.get("sanchez_path"))
-                underlay_path = Path(options.get("underlay_path"))
-                temp_dir = Path(options.get("temp_dir"))
-
-                # Ensure directories exist
-                temp_dir.mkdir(parents=True, exist_ok=True)
-
-                false_color_path = ImageOperations.apply_false_color(
-                    str(image_path), temp_dir, sanchez_path, underlay_path
-                )
-
-                if false_color_path is None:
-                    raise ValueError("Failed to apply false color")
-
-                # Read the false color result
-                img = cv2.imread(str(false_color_path))
-                if img is None:
-                    raise ValueError("Failed to read false color output")
-
-                logging.info(f"Successfully applied false color to: {image_path}")
-
             # Final dimension check
             if img is None or len(img.shape) != 3 or img.shape[2] != 3:
-                print(f"Invalid image dimensions after processing: {image_path}")
+                logger.error(f"Invalid image dimensions after processing: {image_path}")
                 return None
 
             return img
 
         except Exception as e:
-            print(f"Error processing {image_path}: {e}")
+            logger.error(f"Error processing {image_path}: {e}")
             return None
 
     @staticmethod
@@ -441,15 +450,23 @@ class ImageOperations:
                 logger.debug("Applying false color with Sanchez")
                 logger.debug(f"Sanchez path: {options.get('sanchez_path')}")
                 logger.debug(f"Underlay path: {options.get('underlay_path')}")
-                img = ImageOperations.apply_false_color(
-                    img,
-                    options["temp_dir"],
-                    Path(image_path).stem,
-                    options["sanchez_path"],
-                    options["underlay_path"],
+                success = ImageOperations.apply_false_color(
+                    str(image_path),
+                    str(options["temp_dir"]),
+                    str(options["sanchez_path"]),
+                    str(options["underlay_path"]),
                 )
-                if img is None:
+                if not success:
                     logger.error("False color application failed")
+                    return None
+                # Read back the false color result
+                output_path = (
+                    Path(options["temp_dir"])
+                    / f"{Path(image_path).stem}_sanchez.jpg"
+                )
+                img = cv2.imread(str(output_path))
+                if img is None:
+                    logger.error(f"Failed to read false color output: {output_path}")
                     return None
 
             # Apply interpolation if enabled
@@ -522,7 +539,9 @@ class ImageOperations:
             return None
 
     @staticmethod
-    def process_image(img_path: str, options: dict) -> Optional[np.ndarray]:
+    def process_image_with_interpolation(
+        img_path: str, options: dict
+    ) -> Optional[np.ndarray]:
         """Process image with interpolation support"""
         try:
             img = cv2.imread(img_path)
@@ -533,7 +552,6 @@ class ImageOperations:
                 factor = options.get("interpolation_factor", 2)
                 method = options.get("interpolation_method", "Linear")
 
-                interpolated_frames = []
                 # Assume we have previous and next frames for interpolation
                 frame1 = img  # Current frame
                 frame2 = img  # Next frame (placeholder)
@@ -541,8 +559,7 @@ class ImageOperations:
                 interpolated_frames = ImageOperations.interpolate_frames(
                     frame1, frame2, factor, method
                 )
-                # Integrate interpolated frames into the video stream
-                # This is a placeholder for actual integration logic
+                # TODO: Integrate interpolated frames into the video stream
 
             return img
         except Exception as e:
@@ -572,8 +589,13 @@ class ImageOperations:
                         fy=1,
                         interpolation=cv2.INTER_CUBIC,
                     )
-                # Add more methods if needed
-                frames.append(interpolated.astype(np.uint8))
+                else:
+                    # Default to linear for unsupported methods
+                    logger.warning(
+                        f"Unknown interpolation method '{method}', falling back to Linear"
+                    )
+                    interpolated = cv2.addWeighted(f1, 1.0 - alpha, f2, alpha, 0.0)
+                frames.append(np.clip(interpolated, 0, 255).astype(np.uint8))
 
             return frames
         except Exception as e:
@@ -589,16 +611,26 @@ class ImageOperations:
                 processed.append(result)
         return processed
 
-    def interpolate_frames(self, frame_paths, options):
-        """Interpolate frames based on options."""
+    def interpolate_frame_paths(self, frame_paths, options):
+        """Interpolate frames from file paths based on options."""
         if options.get("interpolation_enabled"):
             quality = options.get("interpolation_quality", "medium")
             interpolator = Interpolator(
                 model_path=f"model_{quality}.pth", processing_speed="fast"
             )
             frames = []
-            for path in frame_paths:
-                frames.append(self.process_image(path, options))
+            for i, path in enumerate(frame_paths):
+                frame = self.process_image(path, options)
+                if frame is not None:
+                    frames.append(frame)
+                    # Interpolate between consecutive frames
+                    if i + 1 < len(frame_paths):
+                        next_frame = self.process_image(frame_paths[i + 1], options)
+                        if next_frame is not None:
+                            factor = options.get("interpolation_factor", 2)
+                            interp = interpolator.interpolate(frame, next_frame, factor)
+                            if interp is not None:
+                                frames.extend(interp if isinstance(interp, list) else [interp])
             return frames
         return [self.process_image(path, options) for path in frame_paths]
 

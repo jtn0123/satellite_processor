@@ -32,7 +32,7 @@ class PresetManager:
         """Save a new preset"""
         try:
             presets = self.get_presets()
-            presets[name] = {"params": params, "created": str(Path.ctime(Path.cwd()))}
+            presets[name] = {"params": params, "created": datetime.now().isoformat()}
             self.settings.setValue("presets", json.dumps(presets))
             self.logger.info(f"Preset '{name}' saved successfully")
         except Exception as e:
@@ -52,7 +52,7 @@ class PresetManager:
     def get_presets(self) -> dict:
         """Get all available presets"""
         try:
-            presets_str = self.settings.value("presets", "{}")
+            presets_str = self.settings.value("presets", "{}", type=str)
             return json.loads(presets_str)
         except Exception as e:
             self.logger.error(f"Error getting presets: {str(e)}")
@@ -84,6 +84,12 @@ class PresetManager:
         try:
             with open(file_path, "r") as f:
                 presets = json.load(f)
+            # Validate structure before importing
+            for name, data in presets.items():
+                if not isinstance(data, dict) or "params" not in data:
+                    self.logger.error(f"Invalid preset format for '{name}': missing 'params' key")
+                    return False
+            # All validated, now import
             for name, data in presets.items():
                 self.save_preset(name, data["params"])
             return True

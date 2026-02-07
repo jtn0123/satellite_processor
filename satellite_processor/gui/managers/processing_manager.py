@@ -88,7 +88,7 @@ class ProcessingManager(QObject):
                 self.processing_thread.wait()
                 self.logger.info("Processing cancelled.")
                 self._is_processing = False
-                self.cancelled.emit()
+                self.status_update.emit("Processing cancelled")
         except Exception as e:
             self.error_occurred.emit(f"Failed to cancel processing: {e}")
             self.logger.error(f"Failed to cancel processing: {e}")
@@ -99,6 +99,7 @@ class ProcessingManager(QObject):
             self.processing_thread.wait()
             self.processing_thread = None
         self._is_processing = False
+        self.finished.emit()
 
     def apply_sanchez_false_color(
         self, input_path: str, output_path: str, sanchez_path: str, underlay_path: str

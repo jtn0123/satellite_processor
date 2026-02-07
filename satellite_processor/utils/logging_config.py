@@ -11,6 +11,9 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
+    # Clear existing handlers to prevent duplicate log messages on repeated calls
+    root_logger.handlers.clear()
+
     # Create formatters with consistent styling
     file_formatter = logging.Formatter(
         "[%(asctime)s] %(levelname)-8s %(name)s: %(message)s",
@@ -22,18 +25,11 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
         else "[%(name)s] %(levelname)s: %(message)s"
     )
 
-    # Console handler
+    # Console handler - set level based on debug flag
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(console_formatter)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter if not debug else file_formatter)
+    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
     root_logger.addHandler(console_handler)
-
-    # Add debug handler if enabled
-    if debug:
-        debug_handler = logging.StreamHandler(sys.stdout)
-        debug_handler.setFormatter(file_formatter)
-        debug_handler.setLevel(logging.DEBUG)
-        root_logger.addHandler(debug_handler)
 
     # File handler (if log directory provided)
     if log_dir:
@@ -50,12 +46,13 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
         file_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(file_handler)
 
-    # Set specific levels for different modules
-    logging.getLogger("satellite_processor.core.processor").setLevel(logging.INFO)
-    logging.getLogger("satellite_processor.core.image_operations").setLevel(
-        logging.INFO
-    )
-    logging.getLogger("satellite_processor.gui").setLevel(logging.INFO)
+    # Set specific levels for different modules (respect debug flag)
+    if not debug:
+        logging.getLogger("satellite_processor.core.processor").setLevel(logging.INFO)
+        logging.getLogger("satellite_processor.core.image_operations").setLevel(
+            logging.INFO
+        )
+        logging.getLogger("satellite_processor.gui").setLevel(logging.INFO)
 
     # Suppress external library logging
     for logger_name in ["PIL", "matplotlib", "urllib3"]:

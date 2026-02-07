@@ -80,6 +80,7 @@ class VideoHandler:
         self._processor = None  # Reference to main processor
         self.process = psutil.Process()  # Add this line to track current process
         self._is_processing = False  # Add this line to track processing state
+        self.cancelled = False  # Initialize cancelled flag
 
     def set_processor(self, processor):
         """Set reference to main processor for process tracking"""
@@ -235,9 +236,8 @@ class VideoHandler:
                 self.logger.info("Video creation cancelled")
                 return False
 
-            # Log found frames
-            self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
-            for frame in frame_files[:5]:  # Log first 5 frames for debugging
+            # Log first 5 frames for debugging
+            for frame in frame_files[:5]:
                 self.logger.debug(f"Frame found: {frame.name}")
 
             # Validate options
@@ -282,15 +282,26 @@ class VideoHandler:
 
                 if "Cannot use NVENC" in str(e.stderr):
                     self.logger.warning("NVENC failed, falling back to CPU encoding")
-                    self._is_processing = False  # Reset for retry
                     options["hardware"] = "CPU"
                     options["encoder"] = "H.264"
-                    return self.create_video(input_dir, output_path, options)
+                    # Rebuild and retry without recursion
+                    cmd, temp_dir = self.build_ffmpeg_command(input_dir, output_path, options)
+                    retry_result = subprocess.run(
+                        cmd, check=True, capture_output=True, text=True, cwd=str(input_dir)
+                    )
+                    if retry_result.returncode == 0:
+                        self.logger.info(f"Successfully created video at {output_path} (CPU fallback)")
+                        return True
 
                 if "Temporary failure" in str(e.stderr):
-                    self.logger.warning("Temporary failure, retrying...")
-                    self._is_processing = False  # Reset for retry
-                    return self.create_video(input_dir, output_path, options)
+                    self.logger.warning("Temporary failure, retrying once...")
+                    time.sleep(2)
+                    retry_result = subprocess.run(
+                        cmd, check=False, capture_output=True, text=True, cwd=str(input_dir)
+                    )
+                    if retry_result.returncode == 0:
+                        self.logger.info(f"Successfully created video at {output_path} (retry)")
+                        return True
 
                 self.logger.error(f"FFmpeg error: {e.stderr}")
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
@@ -412,7 +423,7 @@ class VideoHandler:
             # Add metadata if provided
             if metadata := options.get("metadata"):
                 for key, value in metadata.items():
-                    cmd.extend(["-metadata", f'{key}="{value}"'])
+                    cmd.extend(["-metadata", f"{key}={value}"])
 
             # Add framerate after input
             cmd.extend(["-framerate", str(options.get("fps", 30))])
@@ -483,6 +494,7 @@ class VideoHandler:
 
     def _try_encode(self, cmd: List[str], temp_dir: Path, output_path: Path) -> bool:
         """Try to encode with given FFmpeg command"""
+        process = None
         try:
             self.logger.info("Starting FFmpeg encoding process...")
             process = subprocess.Popen(
@@ -543,10 +555,10 @@ class VideoHandler:
             self.logger.error(f"Encoding failed: {str(e)}")
             return False
         finally:
-            if process:
+            if process is not None and process.poll() is None:
                 try:
                     process.terminate()
-                except:
+                except Exception:
                     pass
 
     def _create_initial_video(
@@ -879,23 +891,10 @@ class VideoHandler:
             return False
 
         finally:
-            # Improved cleanup
+            # Clean up only temporary files, NOT the original input frames
             try:
                 if "image_list_path" in locals() and isinstance(image_list_path, Path):
                     image_list_path.unlink(missing_ok=True)
-
-                if frame_paths:
-                    for frame_path in frame_paths:
-                        try:
-                            frame_path.unlink(missing_ok=True)
-                        except Exception as e:
-                            self.logger.debug(f"Failed to remove frame: {e}")
-
-                if temp_dir and temp_dir.exists():
-                    try:
-                        shutil.rmtree(temp_dir, ignore_errors=True)
-                    except Exception as e:
-                        self.logger.debug(f"Failed to remove temp directory: {e}")
             except Exception as e:
                 self.logger.error(f"Cleanup error: {e}")
 
@@ -955,8 +954,17 @@ class VideoHandler:
         elif "AV1" in encoder:
             base_codec = "AV1"
 
+        # Match hardware string (e.g., "NVIDIA GPU" -> "NVIDIA")
+        hw_key = "CPU"
+        if "NVIDIA" in hardware:
+            hw_key = "NVIDIA"
+        elif "Intel" in hardware:
+            hw_key = "Intel"
+        elif "AMD" in hardware:
+            hw_key = "AMD"
+
         # Get hardware-specific codec or fall back to CPU
-        hw_codecs = codec_map.get(hardware, codec_map["CPU"])
+        hw_codecs = codec_map.get(hw_key, codec_map["CPU"])
         return hw_codecs.get(base_codec, "libx264")  # Default to libx264 if unknown
 
     def interpolate_frames(self, input_path: Path, output_path: Path, fps: int) -> bool:
@@ -1011,40 +1019,15 @@ class VideoHandler:
             self.logger.error(f"Failed to get video info: {e}")
             return {}
 
-    def get_options(self) -> dict:
-        """Get current processing options"""
-        options = {
-            "crop_enabled": self.crop_enabled.isChecked(),
-            "crop_x": self.crop_x.value(),
-            "crop_y": self.crop_y.value(),
-            "crop_width": self.crop_width.value(),
-            "crop_height": self.crop_height.value(),
-            "add_timestamp": self.add_timestamp.isChecked(),
-            "fps": self.fps_spin.value(),
-            "codec": self.codec_combo.currentText(),
-            "hardware": self.hardware_combo.currentText(),  # Existing hardware option
-            "frame_duration": self.frame_duration_spin.value(),
-            "false_color_enabled": self.enable_false_color.isChecked(),
-            "false_color_method": self.sanchez_method.currentText(),
-            "interpolation_enabled": self.enable_interpolation.isChecked(),
-            "interpolation_method": self.interp_method.currentText(),
-            "interpolation_quality": self.interp_quality.currentText()
-            .split()[0]
-            .lower(),  # Get just "high", "medium", or "low"
-            "interpolation_factor": self.interp_factor.value(),
-            "encoding_device": self.hardware_combo.currentText().split()[
-                0
-            ],  # Extract 'CPU' or 'NVIDIA'
+    def get_default_options(self) -> dict:
+        """Get default video processing options"""
+        return {
+            "fps": 30,
+            "encoder": self.encoder,
+            "bitrate": self.bitrate,
+            "hardware": "CPU",
+            "frame_duration": 1.0,
         }
-
-        # Add debug logging
-        if options["false_color_enabled"]:
-            self.logger.info(
-                f"False color is enabled with method: {options['false_color_method']}"
-            )
-        self.logger.info(f"Encoding device selected: {options['encoding_device']}")
-
-        return options
 
     def _get_hardware_params(self, hardware: str) -> List[str]:
         """Get hardware-specific FFmpeg parameters"""
@@ -1105,7 +1088,7 @@ class VideoHandler:
         quality = quality_presets.get(options.get("transcoding_quality"), "23")
 
         ffmpeg_cmd = [
-            "ffmpeg",
+            str(self.ffmpeg_path),
             "-i",
             input_video,
             "-vcodec",
@@ -1132,6 +1115,7 @@ class VideoHandler:
 
     def cancel(self) -> None:
         """Cancel an ongoing FFmpeg process"""
+        self.cancelled = True
         try:
             if self._current_process and self._current_process.poll() is None:
                 self._current_process.terminate()

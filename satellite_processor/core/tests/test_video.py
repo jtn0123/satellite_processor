@@ -1029,7 +1029,7 @@ class TestVideoCreation:
             thread.join(timeout=1)
             assert not thread.is_alive(), "Thread is still running"
 
-    def test_interpolation_quality_impact(self, video_options):
+    def test_interpolation_quality_impact_extended(self, video_options):
         """Test interpolation quality impact with proper mocking"""
         video_options.quality_combo.setCurrentText("Low")
         options = video_options.get_options()
@@ -1618,7 +1618,7 @@ class TestVideoCreation:
                 )
             assert "Frame sequence is not continuous" in str(exc_info.value)
 
-    def test_input_frame_validation(self, video_options, mock_directories):
+    def test_input_frame_validation_edge_cases(self, video_options, mock_directories):
         """Test validation of input frame sequence"""
         input_dir, output_dir = mock_directories
         options = video_options.get_options()

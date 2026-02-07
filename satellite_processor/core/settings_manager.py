@@ -53,7 +53,9 @@ class SettingsManager:
             self.settings_file.parent.mkdir(parents=True, exist_ok=True)
             if self.settings_file.exists():
                 with open(self.settings_file, "r", encoding="utf-8") as f:
-                    self.settings = json.load(f)
+                    loaded = json.load(f)
+                # Merge with defaults so new keys are always present
+                self.settings = {**self.DEFAULT_SETTINGS.copy(), **loaded}
             else:
                 self.settings = self.DEFAULT_SETTINGS.copy()
                 self.save_settings()
@@ -80,7 +82,7 @@ class SettingsManager:
         try:
             self.logger.info(f"Setting {key}={value}")
             old_value = self.settings.get(key)
-            if "path" in key.lower():
+            if "path" in key.lower() and value:
                 value = str(Path(value).resolve())  # Store absolute paths
             self.settings[key] = value
             self.save_settings()
@@ -96,7 +98,10 @@ class SettingsManager:
     def update(self, settings: Dict[str, Any]) -> None:
         """Update multiple settings at once"""
         try:
-            self.settings.update(settings)
+            for key, value in settings.items():
+                if "path" in key.lower() and value:
+                    value = str(Path(value).resolve())
+                self.settings[key] = value
             self.save_settings()
         except Exception as e:
             self.logger.error(f"Failed to update settings: {e}")

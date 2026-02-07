@@ -28,8 +28,8 @@ class VideoTestBase:
         def mock_is_dir(path):
             return True if str(path).startswith(str(self.temp_dir)) else False
 
-        monkeypatch.setattr(Path, "exists", mock_exists)
-        monkeypatch.setattr(Path, "is_dir", mock_is_dir)
+        monkeypatch.setattr("satellite_processor.core.file_manager.Path.exists", mock_exists)
+        monkeypatch.setattr("satellite_processor.core.file_manager.Path.is_dir", mock_is_dir)
 
         # Mock FFmpeg
         self.ffmpeg_mock = MagicMock(return_value=MagicMock(returncode=0))

@@ -65,6 +65,10 @@ class LogWidget(QTextBrowser):  # Change to inherit from QTextBrowser
         self.append(f'<span style="color: #e74c3c;">❌ Error: {message}</span>')
         self.ensureCursorVisible()
 
+    def append_warning(self, message: str):
+        self.append(f'<span style="color: #f39c12;">⚠ Warning: {message}</span>')
+        self.ensureCursorVisible()
+
     def append_html(self, html: str):
         """Append HTML content with proper handling"""
         # Insert HTML at the end

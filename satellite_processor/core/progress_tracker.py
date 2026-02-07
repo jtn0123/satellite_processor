@@ -48,5 +48,5 @@ class ProgressTracker(QObject):
 
     def complete_operation(self):
         """Mark current operation as complete"""
+        self.update_progress("Completing", 100)
         self.current_operation += 1
-        self.update_progress("", 100)

@@ -47,7 +47,10 @@ class FileManager:
     def get_input_files(self, input_dir: str = None) -> List[Path]:
         """Get ordered input files with improved UNC and case handling"""
         try:
-            dir_to_use = Path(input_dir) if input_dir else Path(self.default_input_dir)
+            if not input_dir:
+                self.logger.error("No input directory specified")
+                return []
+            dir_to_use = Path(input_dir)
             dir_to_use = dir_to_use.resolve()
             self.logger.info(f"Searching for frame files in {dir_to_use}")
 
@@ -91,6 +94,7 @@ class FileManager:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         temp_dir = base_dir / f"{prefix}_{timestamp}"
         temp_dir.mkdir(parents=True, exist_ok=True)
+        self._temp_dirs.add(temp_dir)
         self.logger.info(f"Created temporary directory: {temp_dir}")
         return temp_dir
 
@@ -98,12 +102,7 @@ class FileManager:
         """Clean up temporary directory"""
         if temp_dir and temp_dir.exists():
             try:
-                for file in temp_dir.glob("*"):
-                    try:
-                        file.unlink(missing_ok=True)
-                    except Exception as e:
-                        self.logger.error(f"Error removing temp file {file}: {e}")
-                temp_dir.rmdir()
+                shutil.rmtree(temp_dir, ignore_errors=True)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")
             except Exception as e:
                 self.logger.error(f"Error cleaning up temp directory: {str(e)}")
@@ -227,5 +226,5 @@ class FileManager:
         """Ensure cleanup on deletion"""
         try:
             self.cleanup()
-        except Exception as e:
-            self.logger.error(f"Error during cleanup in destructor: {e}")
+        except Exception:
+            pass

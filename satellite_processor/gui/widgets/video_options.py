@@ -162,7 +162,6 @@ class VideoOptionsWidget(QGroupBox):
         self.enable_interpolation.toggled.connect(self.on_interpolation_toggled)
         self.quality_combo.currentTextChanged.connect(self.on_quality_changed)
         self.reset_button.clicked.connect(self.reset_to_defaults)
-        self.hardware_combo.currentTextChanged.connect(self.update_encoder_options)
         self.fps_spinbox.valueChanged.connect(self.validate_fps_wrapper)
         self.factor_spin.valueChanged.connect(self.validate_factor_wrapper)
         self.bitrate_spin.valueChanged.connect(self.validate_bitrate_wrapper)
@@ -170,9 +169,7 @@ class VideoOptionsWidget(QGroupBox):
         # Initialize UI state
         self.on_interpolation_toggled(self.enable_interpolation.isChecked())
 
-        # Update signal connections to trigger validation immediately
-        self.fps_spinbox.valueChanged.connect(self._validate_fps)
-        self.factor_spin.valueChanged.connect(self._validate_factor)
+        # Validation is already connected above via validate_fps_wrapper and validate_factor_wrapper
 
     def on_interpolation_toggled(self, checked):
         """Enable or disable interpolation controls based on checkbox state."""

@@ -7,6 +7,7 @@ Updates network statistics in real-time.
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QProgressBar
 from PyQt6.QtCore import QTimer, pyqtSignal
 import psutil
+import time
 
 
 class NetworkWidget(QWidget):
@@ -16,9 +17,10 @@ class NetworkWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.prev_sent = 0
-        self.prev_recv = 0
-        self.prev_time = 0
+        net_io = psutil.net_io_counters()
+        self.prev_sent = net_io.bytes_sent
+        self.prev_recv = net_io.bytes_recv
+        self.prev_time = time.time()
         self.init_ui()
 
         # Start monitoring
@@ -54,7 +56,7 @@ class NetworkWidget(QWidget):
         """Update network statistics"""
         try:
             net_io = psutil.net_io_counters()
-            now = psutil.time.time()
+            now = time.time()
 
             # Calculate rates and update UI
             time_delta = now - self.prev_time if self.prev_time else 1

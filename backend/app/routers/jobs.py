@@ -159,7 +159,6 @@ async def bulk_delete_jobs(
 
     deleted_ids = []
     for job in jobs:
-        # Revoke celery task if running
         if job.status_message and job.status_message.startswith("celery_task_id:"):
             celery_task_id = job.status_message.split(":", 1)[1]
             try:

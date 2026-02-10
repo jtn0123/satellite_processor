@@ -3,7 +3,7 @@
 import json
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..celery_app import celery_app
@@ -55,9 +55,21 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
     _get_redis().publish(f"job:{job_id}", payload)
 
 
+_last_progress_update: dict[str, int] = {}
+
+
 def _update_job_db(job_id: str, **kwargs):
-    """Update job record in the database (sync)"""
+    """Update job record in the database (sync). Throttles progress-only updates to every 5%."""
     from ..db.models import Job
+
+    # Throttle: if only progress changed, skip unless 5% delta or 100%
+    if set(kwargs.keys()) <= {"progress", "status_message"} and "progress" in kwargs:
+        new_progress = kwargs["progress"]
+        last = _last_progress_update.get(job_id, 0)
+        if new_progress < 100 and (new_progress - last) < 5:
+            return
+        _last_progress_update[job_id] = new_progress
+
     session = _get_sync_db()
     try:
         job = session.query(Job).filter(Job.id == job_id).first()
@@ -77,7 +89,7 @@ def process_images_task(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         status_message="Initializing processor...",
     )
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
@@ -130,7 +142,7 @@ def process_images_task(self, job_id: str, params: dict):
                 status="completed",
                 progress=100,
                 output_path=output_path,
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
                 status_message="Processing complete",
             )
             _publish_progress(job_id, 100, "Processing complete", "completed")
@@ -139,7 +151,7 @@ def process_images_task(self, job_id: str, params: dict):
                 job_id,
                 status="failed",
                 error="Processing returned False",
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
                 status_message="Processing failed",
             )
             _publish_progress(job_id, 0, "Processing failed", "failed")
@@ -150,7 +162,7 @@ def process_images_task(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -165,7 +177,7 @@ def create_video_task(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         status_message="Initializing video creation...",
     )
     _publish_progress(job_id, 0, "Initializing video creation...", "processing")
@@ -209,7 +221,7 @@ def create_video_task(self, job_id: str, params: dict):
                 status="completed",
                 progress=100,
                 output_path=output_path,
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
                 status_message="Video creation complete",
             )
             _publish_progress(job_id, 100, "Video creation complete", "completed")
@@ -218,7 +230,7 @@ def create_video_task(self, job_id: str, params: dict):
                 job_id,
                 status="failed",
                 error="Video creation returned False",
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
@@ -228,7 +240,7 @@ def create_video_task(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")

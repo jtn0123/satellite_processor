@@ -16,6 +16,7 @@ async def system_status():
 
     # #29: Call virtual_memory() once and reuse
     mem = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
 
     return {
         "cpu_percent": cpu,
@@ -25,8 +26,8 @@ async def system_status():
             "percent": mem.percent,
         },
         "disk": {
-            "total": psutil.disk_usage("/").total,
-            "free": psutil.disk_usage("/").free,
-            "percent": psutil.disk_usage("/").percent,
+            "total": disk.total,
+            "free": disk.free,
+            "percent": disk.percent,
         },
     }

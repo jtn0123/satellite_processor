@@ -49,7 +49,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
-    # Sanitize filename
     safe_basename = os.path.basename(file.filename)
     if len(safe_basename) > 200:
         name, ext = os.path.splitext(safe_basename)
@@ -64,7 +63,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     dest_name = f"{file_id}_{safe_basename}"
     dest = Path(storage_service.upload_dir) / dest_name
 
-    # Stream chunks to disk, enforce size limit
     file_size = 0
     with open(dest, "wb") as f:
         while True:
@@ -78,7 +76,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
                 raise APIError(413, "file_too_large", "File exceeds 500MB limit")
             f.write(chunk)
 
-    # Get dimensions from the saved file (reads only header, not full load)
     width = height = None
     try:
         with PILImage.open(dest) as img:
@@ -86,7 +83,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     except Exception:
         pass
 
-    # Parse satellite metadata from filename
     satellite = None
     captured_at = None
     match = re.search(r"(\d{8}T\d{6}Z)", file.filename)

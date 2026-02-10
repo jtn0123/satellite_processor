@@ -20,8 +20,8 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    status = Column(String(20), default="pending", index=True)  # pending, processing, completed, failed, cancelled
-    job_type = Column(String(20), default="image_process")  # image_process, video_create
+    status = Column(String(20), default="pending", index=True)
+    job_type = Column(String(20), default="image_process")
     params = Column(JSON, default=dict)
     progress = Column(Integer, default=0)
     status_message = Column(Text, default="")

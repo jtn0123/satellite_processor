@@ -5,16 +5,18 @@ import re
 import uuid
 from datetime import datetime as dt
 from pathlib import Path
+from typing import List
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
+from ..models.image import ImageResponse, PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
 
@@ -32,7 +34,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
-    # Sanitize filename
     safe_basename = os.path.basename(file.filename)
     if len(safe_basename) > 200:
         name, ext = os.path.splitext(safe_basename)
@@ -47,7 +48,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     dest_name = f"{file_id}_{safe_basename}"
     dest = Path(storage_service.upload_dir) / dest_name
 
-    # Stream chunks to disk, enforce size limit
     file_size = 0
     with open(dest, "wb") as f:
         while True:
@@ -61,7 +61,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
                 raise APIError(413, "file_too_large", "File exceeds 500MB limit")
             f.write(chunk)
 
-    # Get dimensions from the saved file (reads only header, not full load)
     width = height = None
     try:
         with PILImage.open(dest) as img:
@@ -69,7 +68,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     except Exception:
         pass
 
-    # Parse satellite metadata from filename
     satellite = None
     captured_at = None
     match = re.search(r"(\d{8}T\d{6}Z)", file.filename)
@@ -98,22 +96,36 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     return {"id": db_image.id, "filename": db_image.original_name, "size": db_image.file_size}
 
 
-@router.get("")
-async def list_images(db: AsyncSession = Depends(get_db)):
-    """List all uploaded images"""
-    result = await db.execute(select(Image).order_by(Image.uploaded_at.desc()))
+@router.get("", response_model=PaginatedResponse[ImageResponse])
+async def list_images(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """List uploaded images with pagination"""
+    total_result = await db.execute(select(func.count(Image.id)))
+    total = total_result.scalar()
+
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)
+    )
     images = result.scalars().all()
-    return [
-        {
-            "id": img.id, "filename": img.original_name, "original_name": img.original_name,
-            "size": img.file_size, "file_size": img.file_size,
-            "width": img.width, "height": img.height,
-            "satellite": img.satellite,
-            "captured_at": str(img.captured_at) if img.captured_at else None,
-            "uploaded_at": str(img.uploaded_at),
-        }
-        for img in images
-    ]
+    return PaginatedResponse(items=images, total=total, page=page, limit=limit)
+
+
+@router.delete("/bulk")
+async def bulk_delete_images(image_ids: List[str], db: AsyncSession = Depends(get_db)):
+    """Bulk delete images by IDs"""
+    result = await db.execute(select(Image).where(Image.id.in_(image_ids)))
+    images = result.scalars().all()
+    deleted = []
+    for image in images:
+        storage_service.delete_file(image.file_path)
+        await db.delete(image)
+        deleted.append(image.id)
+    await db.commit()
+    return {"deleted": deleted, "count": len(deleted)}
 
 
 @router.delete("/{image_id}")

@@ -1,5 +1,7 @@
 """System status endpoint"""
 
+import asyncio
+
 import psutil
 from fastapi import APIRouter
 
@@ -9,16 +11,19 @@ router = APIRouter(prefix="/api/system", tags=["system"])
 @router.get("/status")
 async def system_status():
     """Get system resource usage"""
+    cpu = await asyncio.to_thread(psutil.cpu_percent, interval=0.1)
+    mem = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
     return {
-        "cpu_percent": psutil.cpu_percent(interval=0.1),
+        "cpu_percent": cpu,
         "memory": {
-            "total": psutil.virtual_memory().total,
-            "available": psutil.virtual_memory().available,
-            "percent": psutil.virtual_memory().percent,
+            "total": mem.total,
+            "available": mem.available,
+            "percent": mem.percent,
         },
         "disk": {
-            "total": psutil.disk_usage("/").total,
-            "free": psutil.disk_usage("/").free,
-            "percent": psutil.disk_usage("/").percent,
+            "total": disk.total,
+            "free": disk.free,
+            "percent": disk.percent,
         },
     }

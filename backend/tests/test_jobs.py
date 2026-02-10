@@ -9,7 +9,10 @@ import pytest
 async def test_list_jobs_empty(client):
     resp = await client.get("/api/jobs")
     assert resp.status_code == 200
-    assert resp.json() == []
+    data = resp.json()
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
 
 
 @pytest.mark.asyncio

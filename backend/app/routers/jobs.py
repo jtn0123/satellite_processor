@@ -1,12 +1,13 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import List
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..celery_app import celery_app
@@ -14,7 +15,8 @@ from ..config import settings
 from ..db.database import get_db
 from ..db.models import Image, Job
 from ..errors import APIError
-from ..models.job import JobCreate, JobResponse
+from ..models.image import PaginatedResponse
+from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..rate_limit import limiter
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -34,7 +36,7 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
         missing = [iid for iid in image_ids if iid not in found]
         raise APIError(404, "images_not_found", f"Images not found: {missing}")
 
-    staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
+    staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}"
     staging_dir.mkdir(parents=True, exist_ok=True)
 
     image_paths = []
@@ -91,11 +93,22 @@ async def create_job(request: Request, job_in: JobCreate, db: AsyncSession = Dep
     return db_job
 
 
-@router.get("", response_model=list[JobResponse])
-async def list_jobs(db: AsyncSession = Depends(get_db)):
-    """List all jobs"""
-    result = await db.execute(select(Job).order_by(Job.created_at.desc()))
-    return result.scalars().all()
+@router.get("", response_model=PaginatedResponse[JobResponse])
+async def list_jobs(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all jobs with pagination"""
+    total_result = await db.execute(select(func.count(Job.id)))
+    total = total_result.scalar()
+
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit)
+    )
+    jobs = result.scalars().all()
+    return PaginatedResponse(items=jobs, total=total, page=page, limit=limit)
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -106,6 +119,40 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job:
         raise APIError(404, "not_found", "Job not found")
     return job
+
+
+@router.patch("/{job_id}", response_model=JobResponse)
+async def update_job(job_id: str, job_update: JobUpdate, db: AsyncSession = Depends(get_db)):
+    """Update a job's mutable fields"""
+    result = await db.execute(select(Job).where(Job.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise APIError(404, "not_found", "Job not found")
+    update_data = job_update.model_dump(exclude_unset=True)
+    for k, v in update_data.items():
+        setattr(job, k, v)
+    await db.commit()
+    await db.refresh(job)
+    return job
+
+
+@router.delete("/bulk")
+async def bulk_delete_jobs(job_ids: List[str], db: AsyncSession = Depends(get_db)):
+    """Bulk delete/cancel jobs by IDs"""
+    result = await db.execute(select(Job).where(Job.id.in_(job_ids)))
+    jobs = result.scalars().all()
+    deleted = []
+    for job in jobs:
+        if job.status_message and job.status_message.startswith("celery_task_id:"):
+            celery_task_id = job.status_message.split(":", 1)[1]
+            try:
+                celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+            except Exception:
+                pass
+        await db.delete(job)
+        deleted.append(job.id)
+    await db.commit()
+    return {"deleted": deleted, "count": len(deleted)}
 
 
 @router.delete("/{job_id}")
@@ -121,7 +168,7 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
         celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
 
     job.status = "cancelled"
-    job.completed_at = datetime.utcnow()
+    job.completed_at = datetime.now(timezone.utc)
     await db.commit()
 
     import json

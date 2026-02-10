@@ -1,0 +1,87 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e12]: SatTracker
+    - navigation [ref=e13]:
+      - link "Dashboard" [ref=e14] [cursor=pointer]:
+        - /url: /
+        - img [ref=e15]
+        - text: Dashboard
+      - link "Upload" [ref=e20] [cursor=pointer]:
+        - /url: /upload
+        - img [ref=e21]
+        - text: Upload
+      - link "Process" [ref=e24] [cursor=pointer]:
+        - /url: /process
+        - img [ref=e25]
+        - text: Process
+      - link "Jobs" [ref=e27] [cursor=pointer]:
+        - /url: /jobs
+        - img [ref=e28]
+        - text: Jobs
+      - link "Settings" [ref=e31] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e32]
+        - text: Settings
+    - generic [ref=e43]:
+      - img [ref=e44]
+      - text: Satellite Processor v2.0
+  - main [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - heading "Dashboard" [level=1] [ref=e51]
+        - paragraph [ref=e52]: Satellite image processing overview
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img [ref=e56]
+          - paragraph [ref=e60]: "0"
+          - paragraph [ref=e61]: Total Images
+        - generic [ref=e62]:
+          - img [ref=e64]
+          - paragraph [ref=e67]: "0"
+          - paragraph [ref=e68]: Total Jobs
+        - generic [ref=e69]:
+          - img [ref=e71]
+          - paragraph [ref=e73]: "0"
+          - paragraph [ref=e74]: Active Jobs
+        - generic [ref=e75]:
+          - img [ref=e77]
+          - paragraph [ref=e80]: 15%
+          - paragraph [ref=e81]: CPU Usage
+      - generic [ref=e82]:
+        - button "Upload Images" [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+          - text: Upload Images
+        - button "New Job" [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+          - text: New Job
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - heading "Recent Jobs" [level=2] [ref=e92]
+          - paragraph [ref=e93]: No jobs yet
+        - generic [ref=e94]:
+          - heading "System" [level=2] [ref=e95]
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - img [ref=e98]:
+                - generic [ref=e101]: 15%
+              - generic [ref=e102]:
+                - img [ref=e103]
+                - text: CPU
+            - generic [ref=e106]:
+              - img [ref=e107]:
+                - generic [ref=e110]: 25%
+              - generic [ref=e111]:
+                - img [ref=e112]
+                - text: RAM
+            - generic [ref=e114]:
+              - img [ref=e115]:
+                - generic [ref=e118]: 20%
+              - generic [ref=e119]:
+                - img [ref=e120]
+                - text: Disk
+```

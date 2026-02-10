@@ -4,14 +4,22 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from .config import settings as app_settings
 from .db.database import init_db
+from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
-from .routers import images, jobs, presets, system
+from .routers import health, images, jobs, presets, system
 from .routers import settings as settings_router
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 
 @asynccontextmanager
@@ -26,6 +34,14 @@ app = FastAPI(
     title=app_settings.app_name,
     lifespan=lifespan,
 )
+
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# Custom error handler
+app.add_exception_handler(APIError, api_error_handler)
 
 # Middleware
 app.add_middleware(RequestLoggingMiddleware)
@@ -43,11 +59,7 @@ app.include_router(images.router)
 app.include_router(presets.router)
 app.include_router(system.router)
 app.include_router(settings_router.router)
-
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok"}
+app.include_router(health.router)
 
 
 @app.websocket("/ws/jobs/{job_id}")

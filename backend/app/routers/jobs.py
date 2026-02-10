@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from ..celery_app import celery_app
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import Image, Job
+from ..errors import APIError
 from ..models.job import JobCreate, JobResponse
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -30,7 +31,7 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
     if len(images) != len(image_ids):
         found = {img.id for img in images}
         missing = [iid for iid in image_ids if iid not in found]
-        raise HTTPException(404, f"Images not found: {missing}")
+        raise APIError(404, "images_not_found", f"Images not found: {missing}")
 
     # Create a staging directory with symlinks
     staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
@@ -108,7 +109,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise HTTPException(404, "Job not found")
+        raise APIError(404, "not_found", "Job not found")
     return job
 
 
@@ -118,7 +119,7 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise HTTPException(404, "Job not found")
+        raise APIError(404, "not_found", "Job not found")
 
     # Revoke Celery task if we stored the task id
     if job.status_message and job.status_message.startswith("celery_task_id:"):
@@ -148,13 +149,13 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise HTTPException(404, "Job not found")
+        raise APIError(404, "not_found", "Job not found")
     if job.status != "completed":
-        raise HTTPException(400, f"Job is not completed (status: {job.status})")
+        raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
     if not os.path.exists(output_path):
-        raise HTTPException(404, "Output not found")
+        raise APIError(404, "not_found", "Output not found")
 
     # If it's a file, return it directly
     if os.path.isfile(output_path):
@@ -163,7 +164,7 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     # If it's a directory, list files or return first video/zip
     files = sorted(os.listdir(output_path))
     if not files:
-        raise HTTPException(404, "No output files found")
+        raise APIError(404, "not_found", "No output files found")
 
     # Prefer video files, then images
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:

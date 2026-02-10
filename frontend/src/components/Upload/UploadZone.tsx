@@ -16,6 +16,9 @@ export default function UploadZone() {
       const fileArray = Array.from(files).filter((f) =>
         /\.(png|tiff?|jpg|jpeg)$/i.test(f.name)
       );
+      // Reset index when starting a new batch to stay in sync with uploads array
+      idxRef.current = 0;
+      setUploads([]);
       for (const file of fileArray) {
         const idx = idxRef.current++;
         setUploads((prev) => [...prev, { name: file.name, progress: 0, status: 'uploading' }]);
@@ -35,7 +38,8 @@ export default function UploadZone() {
             prev.map((u, i) => (i === idx ? { ...u, progress: 100, status: 'done' } : u))
           );
           qc.invalidateQueries({ queryKey: ['images'] });
-        } catch {
+        } catch (err) {
+          console.error(`Upload failed for ${file.name}:`, err);
           setUploads((prev) =>
             prev.map((u, i) => (i === idx ? { ...u, status: 'error' } : u))
           );

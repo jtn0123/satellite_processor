@@ -94,7 +94,9 @@ export default function JobList({ onSelect, limit }: Props) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteJob.mutate(job.id);
+                  if (window.confirm('Delete this job? This cannot be undone.')) {
+                    deleteJob.mutate(job.id);
+                  }
                 }}
                 className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-red-400"
               >

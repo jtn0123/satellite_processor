@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..services.processor import configure_processor
 
 # Add parent project to path for core imports
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
@@ -16,7 +17,6 @@ from satellite_processor.core.processor import SatelliteImageProcessor
 
 logger = logging.getLogger(__name__)
 
-# --- Bug 7: Lazy Redis initialization ---
 _redis = None
 
 
@@ -28,7 +28,6 @@ def _get_redis():
     return _redis
 
 
-# --- Bug 2: Shared DB engine (lazy singleton) ---
 _sync_engine = None
 
 
@@ -70,41 +69,6 @@ def _update_job_db(job_id: str, **kwargs):
         session.close()
 
 
-def _configure_processor(processor: SatelliteImageProcessor, params: dict):
-    """Configure processor settings from API params — single source of truth.
-    
-    Does NOT let SettingsManager load from ~/.satellite_processor/.
-    All configuration comes from the API params passed to the task.
-    """
-    sm = processor.settings_manager
-
-    # Prevent loading from disk — override with API params only
-    sm._settings = {}
-
-    if params.get("crop"):
-        crop = params["crop"]
-        sm.set("crop_enabled", True)
-        sm.set("crop_x", crop.get("x", 0))
-        sm.set("crop_y", crop.get("y", 0))
-        sm.set("crop_width", crop.get("w", 1920))
-        sm.set("crop_height", crop.get("h", 1080))
-
-    if params.get("false_color"):
-        fc = params["false_color"]
-        sm.set("false_color_enabled", True)
-        sm.set("false_color_method", fc.get("method", "vegetation"))
-
-    if params.get("timestamp"):
-        ts = params["timestamp"]
-        sm.set("timestamp_enabled", True)
-        sm.set("timestamp_position", ts.get("position", "bottom-left"))
-
-    if params.get("scale"):
-        sc = params["scale"]
-        sm.set("scale_enabled", True)
-        sm.set("scale_factor", sc.get("factor", 1.0))
-
-
 @celery_app.task(bind=True, name="process_images")
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
@@ -120,7 +84,7 @@ def process_images_task(self, job_id: str, params: dict):
 
     try:
         processor = SatelliteImageProcessor(options=params)
-        _configure_processor(processor, params)
+        configure_processor(processor, params)
 
         input_path = params.get("input_path", "")
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
@@ -208,7 +172,7 @@ def create_video_task(self, job_id: str, params: dict):
 
     try:
         processor = SatelliteImageProcessor(options=params)
-        _configure_processor(processor, params)
+        configure_processor(processor, params)
 
         input_path = params.get("input_path", "")
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
@@ -228,7 +192,7 @@ def create_video_task(self, job_id: str, params: dict):
         processor.set_input_directory(input_path)
         processor.set_output_directory(output_path)
 
-        # Bug 1: Gather input files and call create_video with correct signature
+        # Gather input files and call create_video
         input_files = sorted(Path(input_path).glob("*"))
         input_files = [str(f) for f in input_files if f.is_file() and f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.tif', '.tiff')]
         video_options = {

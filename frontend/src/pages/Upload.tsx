@@ -1,7 +1,9 @@
 import UploadZone from '../components/Upload/UploadZone';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function UploadPage() {
+  usePageTitle('Upload');
   return (
     <div className="space-y-8 max-w-6xl">
       <div>

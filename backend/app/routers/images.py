@@ -5,16 +5,19 @@ import re
 import uuid
 from datetime import datetime as dt
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
+from ..models.image import ImageResponse
+from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
 
@@ -33,6 +36,10 @@ def _validate_file_path(file_path: str) -> Path:
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
+
+# TODO (#31): Pre-generate thumbnails in background after upload to avoid
+# on-demand thumbnail generation latency. Could use a Celery task or
+# asyncio.create_task to generate thumbnails immediately after upload completes.
 
 
 @router.post("/upload")
@@ -108,22 +115,53 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     return {"id": db_image.id, "filename": db_image.original_name, "size": db_image.file_size}
 
 
-@router.get("")
-async def list_images(db: AsyncSession = Depends(get_db)):
-    """List all uploaded images"""
-    result = await db.execute(select(Image).order_by(Image.uploaded_at.desc()))
+@router.get("", response_model=PaginatedResponse[ImageResponse])
+async def list_images(
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    """List uploaded images with pagination"""
+    # Total count
+    count_result = await db.execute(select(func.count()).select_from(Image))
+    total = count_result.scalar_one()
+
+    # Paginated query
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)
+    )
     images = result.scalars().all()
-    return [
-        {
-            "id": img.id, "filename": img.original_name, "original_name": img.original_name,
-            "size": img.file_size, "file_size": img.file_size,
-            "width": img.width, "height": img.height,
-            "satellite": img.satellite,
-            "captured_at": str(img.captured_at) if img.captured_at else None,
-            "uploaded_at": str(img.uploaded_at),
-        }
-        for img in images
-    ]
+
+    return PaginatedResponse[ImageResponse](
+        items=[ImageResponse.model_validate(img) for img in images],
+        total=total,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.delete("/bulk")
+async def bulk_delete_images(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk delete images by IDs. Accepts {"ids": [...]}"""
+    ids = payload.get("ids", [])
+    if not ids or not isinstance(ids, list):
+        raise APIError(400, "invalid_payload", "Must provide a non-empty 'ids' list")
+
+    result = await db.execute(select(Image).where(Image.id.in_(ids)))
+    images = result.scalars().all()
+
+    deleted_ids = []
+    for image in images:
+        storage_service.delete_file(image.file_path)
+        await db.delete(image)
+        deleted_ids.append(image.id)
+
+    await db.commit()
+    return {"deleted": deleted_ids, "count": len(deleted_ids)}
 
 
 @router.delete("/{image_id}")

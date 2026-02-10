@@ -77,6 +77,8 @@ export default function Layout() {
                 key={l.to}
                 to={l.to}
                 end={l.to === '/'}
+                aria-label={l.label}
+                title={l.label}
                 className={({ isActive }) =>
                   `p-2 rounded-lg ${isActive ? 'text-primary bg-primary/10' : 'text-slate-400'}`
                 }

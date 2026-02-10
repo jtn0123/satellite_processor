@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useImages, useJobs, useSystemStatus } from '../hooks/useApi';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { Upload, FlaskConical, Image, ListTodo, Cpu, Activity } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import SystemMonitor from '../components/System/SystemMonitor';
 
 export default function Dashboard() {
+  usePageTitle('Dashboard');
   const navigate = useNavigate();
   const { data: images = [] } = useImages();
   const { data: jobs = [] } = useJobs();

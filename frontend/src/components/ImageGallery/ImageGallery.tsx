@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useImages, useDeleteImage } from '../../hooks/useApi';
-import { X, Image as ImageIcon, Calendar, Satellite, Trash2 } from 'lucide-react';
+import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff } from 'lucide-react';
 
 interface SatImage {
   id: string;
@@ -25,6 +25,41 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
   const { data: images = [], isLoading } = useImages();
   const deleteImage = useDeleteImage();
   const [preview, setPreview] = useState<SatImage | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const closePreview = useCallback(() => {
+    setPreview(null);
+    previousFocusRef.current?.focus();
+  }, []);
+
+  // Focus trap and escape key
+  useEffect(() => {
+    if (!preview) return;
+    previousFocusRef.current = document.activeElement as HTMLElement;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { closePreview(); return; }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    // Auto-focus close button
+    setTimeout(() => {
+      const btn = modalRef.current?.querySelector<HTMLElement>('button');
+      btn?.focus();
+    }, 0);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [preview, closePreview]);
 
   if (isLoading) {
     return (
@@ -56,16 +91,22 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
             }`}
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
           >
-            <div className="aspect-square bg-slate-700 flex items-center justify-center">
+            <div className="aspect-square bg-slate-700 flex items-center justify-center relative">
               <img
                 src={`/api/images/${img.id}/thumbnail`}
                 alt={img.original_name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover relative z-10"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
+                  const el = e.target as HTMLImageElement;
+                  el.style.display = 'none';
+                  const fallback = el.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
                 }}
               />
-              <ImageIcon className="absolute w-8 h-8 text-slate-600" />
+              <div className="absolute inset-0 flex-col items-center justify-center gap-1 hidden">
+                <ImageOff className="w-8 h-8 text-slate-500" />
+                <span className="text-xs text-slate-500">Image unavailable</span>
+              </div>
             </div>
             {selectable && selected?.has(img.id) && (
               <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
@@ -93,7 +134,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteImage.mutate(img.id);
+                  if (window.confirm(`Delete "${img.original_name}"? This cannot be undone.`)) {
+                    deleteImage.mutate(img.id);
+                  }
                 }}
                 className="absolute top-2 right-2 p-1.5 bg-slate-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400"
               >
@@ -108,7 +151,11 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
       {preview && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setPreview(null)}
+          onClick={closePreview}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Image preview: ${preview.original_name}`}
+          ref={modalRef}
         >
           <div
             className="bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
@@ -116,7 +163,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
-              <button onClick={() => setPreview(null)}>
+              <button onClick={closePreview} aria-label="Close preview">
                 <X className="w-5 h-5 text-slate-400 hover:text-white" />
               </button>
             </div>

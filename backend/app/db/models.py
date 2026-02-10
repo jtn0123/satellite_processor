@@ -1,7 +1,7 @@
 """ORM models for jobs, images, and presets"""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, BigInteger, Column, DateTime, Index, Integer, String, Text
 
@@ -10,6 +10,10 @@ from .database import Base
 
 def gen_uuid():
     return str(uuid.uuid4())
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
 
 
 class Job(Base):
@@ -24,7 +28,7 @@ class Job(Base):
     input_path = Column(Text, default="")
     output_path = Column(Text, default="")
     error = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
@@ -46,7 +50,7 @@ class Image(Base):
     satellite = Column(String(20), nullable=True, index=True)
     channel = Column(String(10), nullable=True)
     captured_at = Column(DateTime, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, index=True)
+    uploaded_at = Column(DateTime, default=_utcnow, index=True)
 
 
 class Preset(Base):
@@ -55,4 +59,4 @@ class Preset(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     name = Column(String(100), unique=True, nullable=False, index=True)
     params = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)

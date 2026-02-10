@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
+import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function SettingsPage() {
+  usePageTitle('Settings');
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const [form, setForm] = useState<Record<string, unknown>>({});
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (settings) setForm(settings);
   }, [settings]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   const handleSave = () => {
-    updateSettings.mutate(form);
+    updateSettings.mutate(form, {
+      onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
+      onError: () => setToast({ type: 'error', message: 'Failed to save settings.' }),
+    });
   };
 
   return (
@@ -73,6 +85,17 @@ export default function SettingsPage() {
               )}
               Save Settings
             </button>
+            {toast && (
+              <div
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${
+                  toast.type === 'success' ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
+                }`}
+                role="status"
+              >
+                {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                {toast.message}
+              </div>
+            )}
           </div>
         )}
       </div>

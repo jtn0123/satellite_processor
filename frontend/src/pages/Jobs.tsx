@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import JobList from '../components/Jobs/JobList';
 import JobMonitor from '../components/Jobs/JobMonitor';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function JobsPage() {
+  usePageTitle('Jobs');
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('id'));
 

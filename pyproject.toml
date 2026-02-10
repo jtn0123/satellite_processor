@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 line-length = 120
 
 [tool.pytest.ini_options]
-testpaths = ["satellite_processor/core/tests"]
+testpaths = ["satellite_processor/core/tests", "backend/tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 qt_api = "pyqt6"

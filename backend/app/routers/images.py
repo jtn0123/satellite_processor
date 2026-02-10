@@ -1,9 +1,12 @@
 """Image upload and listing endpoints"""
 
+import os
+import re
+import uuid
+from datetime import datetime as dt
 from pathlib import Path
 
-import cv2
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
 from sqlalchemy import select
@@ -11,42 +14,81 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
+from ..errors import APIError
+from ..rate_limit import limiter
 from ..services.storage import storage_service
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
+UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
+
 
 @router.post("/upload")
-async def upload_image(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    """Upload a satellite image"""
+@limiter.limit("10/minute")
+async def upload_image(request: Request, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    """Upload a satellite image."""
     if not file.filename:
-        raise HTTPException(400, "No filename provided")
+        raise APIError(400, "invalid_filename", "No filename provided")
 
-    content = await file.read()
-    meta = storage_service.save_upload(file.filename, content)
+    # Sanitize filename
+    safe_basename = os.path.basename(file.filename)
+    if len(safe_basename) > 200:
+        name, ext = os.path.splitext(safe_basename)
+        safe_basename = name[:200 - len(ext)] + ext
+    ext = os.path.splitext(safe_basename)[1].lower()
 
-    # Try to get image dimensions
-    import numpy as np
-    nparr = np.frombuffer(content, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    width = img.shape[1] if img is not None else None
-    height = img.shape[0] if img is not None else None
+    if ext not in ALLOWED_EXTENSIONS:
+        raise APIError(400, "invalid_file_type",
+            f"File type .{ext}. not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
+
+    file_id = str(uuid.uuid4())
+    dest_name = f"{file_id}_{safe_basename}"
+    dest = Path(storage_service.upload_dir) / dest_name
+
+    # Stream chunks to disk, enforce size limit
+    file_size = 0
+    with open(dest, "wb") as f:
+        while True:
+            chunk = await file.read(UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            file_size += len(chunk)
+            if file_size > MAX_FILE_SIZE:
+                f.close()
+                dest.unlink(missing_ok=True)
+                raise APIError(413, "file_too_large", "File exceeds 500MB limit")
+            f.write(chunk)
+
+    # Get dimensions
+    width = height = None
+    try:
+        with PILImage.open(dest) as img:
+            width, height = img.size
+    except Exception:
+        pass
+
+    # Parse satellite metadata from filename
+    satellite = None
+    captured_at = None
+    match = re.search(r"(\d{8}T\d{6}Z)", file.filename)
+    if match:
+        captured_at = dt.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
+    upper = file.filename.upper()
+    if "GOES-16" in upper:
+        satellite = "GOES-16"
+    elif "GOES-18" in upper:
+        satellite = "GOES-18"
 
     db_image = Image(
-        id=meta["id"],
-        filename=meta["filename"],
-        original_name=meta["original_name"],
-        file_path=meta["file_path"],
-        file_size=meta["file_size"],
-        width=width,
-        height=height,
-        satellite=meta.get("satellite"),
-        captured_at=meta.get("captured_at"),
+        id=file_id, filename=dest_name, original_name=safe_basename,
+        file_path=str(dest), file_size=file_size, width=width, height=height,
+        satellite=satellite, captured_at=captured_at,
     )
     db.add(db_image)
     await db.commit()
     await db.refresh(db_image)
-
     return {"id": db_image.id, "filename": db_image.original_name, "size": db_image.file_size}
 
 
@@ -57,13 +99,9 @@ async def list_images(db: AsyncSession = Depends(get_db)):
     images = result.scalars().all()
     return [
         {
-            "id": img.id,
-            "filename": img.original_name,
-            "original_name": img.original_name,
-            "size": img.file_size,
-            "file_size": img.file_size,
-            "width": img.width,
-            "height": img.height,
+            "id": img.id, "filename": img.original_name, "original_name": img.original_name,
+            "size": img.file_size, "file_size": img.file_size,
+            "width": img.width, "height": img.height,
             "satellite": img.satellite,
             "captured_at": str(img.captured_at) if img.captured_at else None,
             "uploaded_at": str(img.uploaded_at),
@@ -78,8 +116,7 @@ async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise HTTPException(404, "Image not found")
-
+        raise APIError(404, "not_found", "Image not found")
     storage_service.delete_file(image.file_path)
     await db.delete(image)
     await db.commit()
@@ -88,40 +125,29 @@ async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
-    """Return a ~200px thumbnail of the image as JPEG, with disk caching"""
+    """Return a ~200px thumbnail"""
     from ..config import settings as app_settings
-
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise HTTPException(404, "Image not found")
+        raise APIError(404, "not_found", "Image not found")
     fp = Path(image.file_path)
     if not fp.exists():
-        raise HTTPException(404, "File not found on disk")
-
-    # Check thumbnail cache
+        raise APIError(404, "not_found", "File not found on disk")
     cache_dir = Path(app_settings.storage_path) / "thumbnails"
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path = cache_dir / f"{image_id}.jpg"
-
     if cache_path.exists():
-        return FileResponse(
-            str(cache_path),
-            media_type="image/jpeg",
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
-
+        return FileResponse(str(cache_path), media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"})
     try:
         img = PILImage.open(fp)
         img.thumbnail((200, 200))
         img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
-        return FileResponse(
-            str(cache_path),
-            media_type="image/jpeg",
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
+        return FileResponse(str(cache_path), media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"})
     except Exception:
-        raise HTTPException(500, "Could not generate thumbnail")
+        raise APIError(500, "thumbnail_error", "Could not generate thumbnail")
 
 
 @router.get("/{image_id}/full")
@@ -130,8 +156,8 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise HTTPException(404, "Image not found")
+        raise APIError(404, "not_found", "Image not found")
     fp = Path(image.file_path)
     if not fp.exists():
-        raise HTTPException(404, "File not found on disk")
+        raise APIError(404, "not_found", "File not found on disk")
     return FileResponse(str(fp), filename=image.original_name)

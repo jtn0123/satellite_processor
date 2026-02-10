@@ -14,6 +14,9 @@ alembic==1.13.2
 # Settings
 pydantic-settings==2.5.2
 
+# Rate Limiting
+slowapi==0.1.9
+
 # Core processor dependencies
 psutil==7.2.2
 numpy==2.4.2

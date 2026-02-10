@@ -1,4 +1,4 @@
-.PHONY: dev prod test clean
+.PHONY: dev prod test clean benchmark
 
 dev:
 	docker compose -f docker-compose.dev.yml up --build
@@ -9,6 +9,9 @@ prod:
 test:
 	cd backend && pip install -r requirements.txt -q && pytest -v --tb=short
 	cd frontend && npm ci --silent && npm run build
+
+benchmark:
+	cd backend && python -m benchmarks.profile_processor
 
 clean:
 	docker compose down -v

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ProcessingForm from '../components/Processing/ProcessingForm';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ProcessPage() {
+  usePageTitle('Process');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 

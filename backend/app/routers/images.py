@@ -5,24 +5,41 @@ import re
 import uuid
 from datetime import datetime as dt
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
+from ..models.image import ImageResponse
+from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
+
+def _validate_file_path(file_path: str) -> Path:
+    """#23: Validate that a file path is within the configured storage directory."""
+    from ..config import settings as app_settings
+    storage_root = Path(app_settings.storage_path).resolve()
+    resolved = Path(file_path).resolve()
+    if not str(resolved).startswith(str(storage_root)):
+        raise APIError(403, "forbidden", "File path outside storage directory")
+    return resolved
+
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
+
+# TODO (#31): Pre-generate thumbnails in background after upload to avoid
+# on-demand thumbnail generation latency. Could use a Celery task or
+# asyncio.create_task to generate thumbnails immediately after upload completes.
 
 
 @router.post("/upload")
@@ -32,7 +49,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
-    # Sanitize filename
     safe_basename = os.path.basename(file.filename)
     if len(safe_basename) > 200:
         name, ext = os.path.splitext(safe_basename)
@@ -47,7 +63,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     dest_name = f"{file_id}_{safe_basename}"
     dest = Path(storage_service.upload_dir) / dest_name
 
-    # Stream chunks to disk, enforce size limit
     file_size = 0
     with open(dest, "wb") as f:
         while True:
@@ -61,7 +76,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
                 raise APIError(413, "file_too_large", "File exceeds 500MB limit")
             f.write(chunk)
 
-    # Get dimensions from the saved file (reads only header, not full load)
     width = height = None
     try:
         with PILImage.open(dest) as img:
@@ -69,7 +83,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     except Exception:
         pass
 
-    # Parse satellite metadata from filename
     satellite = None
     captured_at = None
     match = re.search(r"(\d{8}T\d{6}Z)", file.filename)
@@ -98,26 +111,56 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     return {"id": db_image.id, "filename": db_image.original_name, "size": db_image.file_size}
 
 
-@router.get("")
-async def list_images(db: AsyncSession = Depends(get_db)):
-    """List all uploaded images"""
-    result = await db.execute(select(Image).order_by(Image.uploaded_at.desc()))
+@router.get("", response_model=PaginatedResponse[ImageResponse])
+async def list_images(
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    """List uploaded images with pagination"""
+    count_result = await db.execute(select(func.count()).select_from(Image))
+    total = count_result.scalar_one()
+
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)
+    )
     images = result.scalars().all()
-    return [
-        {
-            "id": img.id, "filename": img.original_name, "original_name": img.original_name,
-            "size": img.file_size, "file_size": img.file_size,
-            "width": img.width, "height": img.height,
-            "satellite": img.satellite,
-            "captured_at": str(img.captured_at) if img.captured_at else None,
-            "uploaded_at": str(img.uploaded_at),
-        }
-        for img in images
-    ]
+
+    return PaginatedResponse[ImageResponse](
+        items=[ImageResponse.model_validate(img) for img in images],
+        total=total,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.delete("/bulk")
+async def bulk_delete_images(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk delete images by IDs. Accepts {"ids": [...]}"""
+    ids = payload.get("ids", [])
+    if not ids or not isinstance(ids, list):
+        raise APIError(400, "invalid_payload", "Must provide a non-empty 'ids' list")
+
+    result = await db.execute(select(Image).where(Image.id.in_(ids)))
+    images = result.scalars().all()
+
+    deleted_ids = []
+    for image in images:
+        storage_service.delete_file(image.file_path)
+        await db.delete(image)
+        deleted_ids.append(image.id)
+
+    await db.commit()
+    return {"deleted": deleted_ids, "count": len(deleted_ids)}
 
 
 @router.delete("/{image_id}")
-async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def delete_image(request: Request, image_id: str, db: AsyncSession = Depends(get_db)):
     """Delete an uploaded image"""
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -137,7 +180,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", "Image not found")
-    fp = Path(image.file_path)
+    fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     cache_dir = Path(app_settings.storage_path) / "thumbnails"
@@ -163,7 +206,7 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", "Image not found")
-    fp = Path(image.file_path)
+    fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     return FileResponse(str(fp), filename=image.original_name)

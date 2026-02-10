@@ -69,7 +69,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
         if (parsed.status && TERMINAL_STATES.includes(parsed.status)) {
           terminalRef.current = true;
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.error('Failed to parse WebSocket message:', err); }
     };
   }, [jobId, maxRetries]);
 

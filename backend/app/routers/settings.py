@@ -2,8 +2,10 @@
 
 import json
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from ..config import settings
 
@@ -19,6 +21,24 @@ _DEFAULTS = {
     "video_codec": "h264",
     "video_quality": 23,
 }
+
+
+# #20 / #54: Pydantic model for valid settings keys
+class CropSettings(BaseModel):
+    x: int = 0
+    y: int = 0
+    w: int = 1920
+    h: int = 1080
+
+
+class SettingsUpdate(BaseModel):
+    default_crop: CropSettings | None = None
+    default_false_color: Literal["vegetation", "fire", "natural", "urban", "water"] | None = None
+    timestamp_enabled: bool | None = None
+    timestamp_position: Literal["top-left", "top-right", "bottom-left", "bottom-right"] | None = None
+    video_fps: int | None = Field(default=None, ge=1, le=120)
+    video_codec: Literal["h264", "h265", "vp9"] | None = None
+    video_quality: int | None = Field(default=None, ge=0, le=51)
 
 
 def _load() -> dict:
@@ -37,8 +57,13 @@ async def get_settings():
 
 
 @router.put("")
-async def update_settings(body: dict):
+async def update_settings(body: SettingsUpdate):
     current = _load()
-    current.update(body)
+    update_data = body.model_dump(exclude_none=True)
+    # Convert nested models to dicts for JSON serialization
+    for key, val in update_data.items():
+        if isinstance(val, BaseModel):
+            update_data[key] = val.model_dump()
+    current.update(update_data)
     _save(current)
     return current

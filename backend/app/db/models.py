@@ -1,7 +1,7 @@
 """ORM models for jobs, images, and presets"""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, BigInteger, Column, DateTime, Index, Integer, String, Text
 
@@ -12,19 +12,23 @@ def gen_uuid():
     return str(uuid.uuid4())
 
 
+def _utcnow():
+    return datetime.now(UTC)
+
+
 class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    status = Column(String(20), default="pending", index=True)  # pending, processing, completed, failed, cancelled
-    job_type = Column(String(20), default="image_process")  # image_process, video_create
+    status = Column(String(20), default="pending", index=True)
+    job_type = Column(String(20), default="image_process")
     params = Column(JSON, default=dict)
     progress = Column(Integer, default=0)
     status_message = Column(Text, default="")
     input_path = Column(Text, default="")
     output_path = Column(Text, default="")
     error = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
@@ -46,7 +50,7 @@ class Image(Base):
     satellite = Column(String(20), nullable=True, index=True)
     channel = Column(String(10), nullable=True)
     captured_at = Column(DateTime, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, index=True)
+    uploaded_at = Column(DateTime, default=_utcnow, index=True)
 
 
 class Preset(Base):
@@ -55,4 +59,4 @@ class Preset(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     name = Column(String(100), unique=True, nullable=False, index=True)
     params = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)

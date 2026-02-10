@@ -29,7 +29,10 @@ async def test_upload_image(client):
 async def test_list_images_empty(client):
     resp = await client.get("/api/images")
     assert resp.status_code == 200
-    assert resp.json() == []
+    data = resp.json()
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
 
 
 @pytest.mark.asyncio
@@ -41,7 +44,9 @@ async def test_list_images_after_upload(client):
     )
     resp = await client.get("/api/images")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    data = resp.json()
+    assert len(data["items"]) == 1
+    assert data["total"] == 1
 
 
 @pytest.mark.asyncio

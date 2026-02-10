@@ -1,3 +1,4 @@
+.env
 __pycache__/
 *.py[cod]
 *.pyc
@@ -11,3 +12,4 @@ build/
 .eggs/
 .coverage
 htmlcov/
+data/

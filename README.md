@@ -71,6 +71,29 @@ cd frontend && npm install && npm run dev
 | `POST` | `/api/presets` | Save preset |
 | `GET` | `/api/system/status` | System resource usage |
 
+## Development Setup
+
+### Pre-commit Hooks
+
+This project uses [pre-commit](https://pre-commit.com/) for automated linting and formatting:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Hooks will run automatically on `git commit`. To run manually:
+
+```bash
+pre-commit run --all-files
+```
+
+### Dev Dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ## Desktop GUI
 
 The original PyQt6 desktop application is still available on the `main` branch:

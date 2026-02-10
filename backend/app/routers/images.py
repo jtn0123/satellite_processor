@@ -20,6 +20,16 @@ from ..services.storage import storage_service
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
+
+def _validate_file_path(file_path: str) -> Path:
+    """#23: Validate that a file path is within the configured storage directory."""
+    from ..config import settings as app_settings
+    storage_root = Path(app_settings.storage_path).resolve()
+    resolved = Path(file_path).resolve()
+    if not str(resolved).startswith(str(storage_root)):
+        raise APIError(403, "forbidden", "File path outside storage directory")
+    return resolved
+
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
@@ -117,7 +127,8 @@ async def list_images(db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/{image_id}")
-async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def delete_image(request: Request, image_id: str, db: AsyncSession = Depends(get_db)):
     """Delete an uploaded image"""
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -137,7 +148,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", "Image not found")
-    fp = Path(image.file_path)
+    fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     cache_dir = Path(app_settings.storage_path) / "thumbnails"
@@ -163,7 +174,7 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", "Image not found")
-    fp = Path(image.file_path)
+    fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     return FileResponse(str(fp), filename=image.original_name)

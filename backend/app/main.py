@@ -4,8 +4,9 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -17,6 +18,9 @@ from .logging_config import RequestLoggingMiddleware, setup_logging
 from .rate_limit import limiter
 from .routers import health, images, jobs, presets, system
 from .routers import settings as settings_router
+
+# Paths that skip API key auth
+AUTH_SKIP_PATHS = {"/api/health", "/docs", "/redoc", "/openapi.json"}
 
 
 @asynccontextmanager
@@ -40,14 +44,27 @@ app.add_middleware(SlowAPIMiddleware)
 # Custom error handler
 app.add_exception_handler(APIError, api_error_handler)
 
+
+# #21: API key auth middleware (optional — disabled when API_KEY env var is empty)
+@app.middleware("http")
+async def api_key_auth(request: Request, call_next):
+    if app_settings.api_key:
+        path = request.url.path
+        if path not in AUTH_SKIP_PATHS and not path.startswith("/ws/"):
+            key = request.headers.get("X-API-Key", "")
+            if key != app_settings.api_key:
+                return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+    return await call_next(request)
+
+
 # Middleware
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=app_settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 # Register routers

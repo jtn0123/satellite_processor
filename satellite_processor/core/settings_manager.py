@@ -43,7 +43,13 @@ class SettingsManager:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.settings_file = Path.home() / ".satellite_processor" / "settings.json"
+        # #25: Use container-relative path; override with SETTINGS_DIR env var
+        import os
+        settings_dir = os.environ.get("SETTINGS_DIR", "")
+        if settings_dir:
+            self.settings_file = Path(settings_dir) / "settings.json"
+        else:
+            self.settings_file = Path.home() / ".satellite_processor" / "settings.json"
         self.settings: Dict[str, Any] = {}
         self.load_settings()
 

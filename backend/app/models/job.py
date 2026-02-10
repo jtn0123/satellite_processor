@@ -28,8 +28,13 @@ class JobCreate(BaseModel):
             raise ValueError(f"Unknown parameter keys: {unknown}")
         for key, val in v.items():
             if isinstance(val, str) and (".." in val or val.startswith("/")):
-                if key not in ("input_path", "output_path", "image_paths"):
+                if key not in ("input_path", "output_path"):
                     raise ValueError(f"Suspicious value for '{key}'")
+            # #22: Validate image_paths against path traversal
+            if key == "image_paths" and isinstance(val, list):
+                for p in val:
+                    if isinstance(p, str) and ".." in p:
+                        raise ValueError("Path traversal not allowed in image_paths")
         return v
 
     @field_validator("input_path")

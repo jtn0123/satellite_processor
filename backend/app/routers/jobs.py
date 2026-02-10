@@ -109,7 +109,8 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/{job_id}")
-async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(get_db)):
     """Cancel/delete a job - revokes the Celery task"""
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()

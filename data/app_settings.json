@@ -1,0 +1,14 @@
+{
+  "default_crop": {
+    "x": 0,
+    "y": 0,
+    "w": 1920,
+    "h": 1080
+  },
+  "default_false_color": "vegetation",
+  "timestamp_enabled": true,
+  "timestamp_position": "bottom-left",
+  "video_fps": 60,
+  "video_codec": "h264",
+  "video_quality": 23
+}

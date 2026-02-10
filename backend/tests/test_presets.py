@@ -23,14 +23,14 @@ async def test_create_preset(client):
 
 @pytest.mark.asyncio
 async def test_create_duplicate_preset(client):
-    await client.post("/api/presets", json={"name": "dup", "params": {}})
-    resp = await client.post("/api/presets", json={"name": "dup", "params": {}})
+    await client.post("/api/presets", json={"name": "dup", "params": {"default": "true"}})
+    resp = await client.post("/api/presets", json={"name": "dup", "params": {"default": "true"}})
     assert resp.status_code == 409
 
 
 @pytest.mark.asyncio
 async def test_delete_preset(client):
-    await client.post("/api/presets", json={"name": "todel", "params": {}})
+    await client.post("/api/presets", json={"name": "todel", "params": {"default": "true"}})
     resp = await client.delete("/api/presets/todel")
     assert resp.status_code == 200
     assert resp.json()["deleted"] is True

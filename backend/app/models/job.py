@@ -1,14 +1,47 @@
 """Pydantic schemas for jobs"""
 
+import os
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+ALLOWED_PARAM_KEYS = {
+    "image_ids", "image_paths", "input_path", "output_path",
+    "crop_x", "crop_y", "crop_width", "crop_height",
+    "false_color", "false_color_enabled", "add_timestamp",
+    "fps", "encoder", "bitrate", "video_quality",
+    "format", "resolution", "scale", "interpolation",
+}
 
 
 class JobCreate(BaseModel):
-    job_type: str = "image_process"
+    job_type: Literal["image_process", "video_create"] = "image_process"
     params: dict = Field(default_factory=dict)
-    input_path: str = ""
+    input_path: str = Field(default="", max_length=500)
+
+    @field_validator("params")
+    @classmethod
+    def validate_params(cls, v: dict) -> dict:
+        unknown = set(v.keys()) - ALLOWED_PARAM_KEYS
+        if unknown:
+            raise ValueError(f"Unknown parameter keys: {unknown}")
+        for key, val in v.items():
+            if isinstance(val, str) and (".." in val or val.startswith("/")):
+                if key not in ("input_path", "output_path", "image_paths"):
+                    raise ValueError(f"Suspicious value for '{key}'")
+        return v
+
+    @field_validator("input_path")
+    @classmethod
+    def validate_input_path(cls, v: str) -> str:
+        if not v:
+            return v
+        if ".." in v:
+            raise ValueError("Path traversal not allowed in input_path")
+        if os.path.isabs(v) and not v.startswith(("/data", "/tmp")):
+            raise ValueError("Absolute path outside allowed directories")
+        return v
 
 
 class JobResponse(BaseModel):

@@ -30,11 +30,16 @@ jobs:
       - name: Lint with ruff
         run: ruff check backend/
 
-      - name: Run tests
+      - name: Run backend tests
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short
+        run: pytest -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Run core processor tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov=satellite_processor.core
 
   frontend:
     name: Frontend Build & Test

@@ -1,0 +1,68 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Jobs page - empty state', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/**', async (route) => {
+      const url = route.request().url();
+      if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
+      if (url.includes('/api/images')) return route.fulfill({ json: [] });
+      if (url.includes('/api/jobs')) return route.fulfill({ json: [] });
+      if (url.includes('/api/system/status')) {
+        return route.fulfill({
+          json: { cpu_percent: 15, memory: { total: 16e9, available: 12e9, percent: 25 }, disk: { total: 500e9, free: 400e9, percent: 20 } },
+        });
+      }
+      if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
+      if (url.includes('/api/presets')) return route.fulfill({ json: [] });
+      return route.continue();
+    });
+  });
+
+  test('shows empty state message', async ({ page }) => {
+    await page.goto('/jobs');
+    await expect(page.locator('text=/no jobs/i')).toBeVisible();
+  });
+});
+
+test.describe('Jobs page - with data', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/**', async (route) => {
+      const url = route.request().url();
+      if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
+      if (url.includes('/api/images')) return route.fulfill({ json: [] });
+      if (url.includes('/api/jobs')) {
+        return route.fulfill({
+          json: [
+            {
+              id: 'job-001',
+              status: 'completed',
+              job_type: 'image_process',
+              progress: 100,
+              status_message: 'Done',
+              input_path: '/tmp/test',
+              output_path: '/output/job-001',
+              error: '',
+              params: {},
+              created_at: '2026-01-01T00:00:00Z',
+              started_at: '2026-01-01T00:00:01Z',
+              completed_at: '2026-01-01T00:01:00Z',
+            },
+          ],
+        });
+      }
+      if (url.includes('/api/system/status')) {
+        return route.fulfill({
+          json: { cpu_percent: 15, memory: { total: 16e9, available: 12e9, percent: 25 }, disk: { total: 500e9, free: 400e9, percent: 20 } },
+        });
+      }
+      if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
+      if (url.includes('/api/presets')) return route.fulfill({ json: [] });
+      return route.continue();
+    });
+  });
+
+  test('job list renders with mocked data', async ({ page }) => {
+    await page.goto('/jobs');
+    await expect(page.locator('text=image_process').first()).toBeVisible();
+  });
+});

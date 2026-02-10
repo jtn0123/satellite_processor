@@ -4,3 +4,21 @@ testpaths = ["tests"]
 
 [tool.pytest-asyncio]
 mode = "auto"
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/celery_app.py",
+    "app/worker/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__",
+    "if TYPE_CHECKING",
+]

@@ -88,7 +88,9 @@ async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
-    """Return a ~200px thumbnail of the image as JPEG"""
+    """Return a ~200px thumbnail of the image as JPEG, with disk caching"""
+    from ..config import settings as app_settings
+
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
@@ -96,13 +98,28 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     fp = Path(image.file_path)
     if not fp.exists():
         raise HTTPException(404, "File not found on disk")
+
+    # Check thumbnail cache
+    cache_dir = Path(app_settings.storage_path) / "thumbnails"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / f"{image_id}.jpg"
+
+    if cache_path.exists():
+        return FileResponse(
+            str(cache_path),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
     try:
         img = PILImage.open(fp)
         img.thumbnail((200, 200))
-        buf = io.BytesIO()
-        img.convert("RGB").save(buf, format="JPEG", quality=80)
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="image/jpeg")
+        img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
+        return FileResponse(
+            str(cache_path),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
     except Exception:
         raise HTTPException(500, "Could not generate thumbnail")
 

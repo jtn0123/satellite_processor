@@ -35,7 +35,6 @@ export default function ProcessingForm({ selectedImages, onJobCreated }: Props) 
     createJob.mutate(
       {
         job_type: 'image_process',
-        input_path: '',
         params: {
           image_ids: selectedImages,
           crop: crop.enabled ? crop : null,

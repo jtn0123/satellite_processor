@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Suspense, lazy } from 'react';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import UploadPage from './pages/Upload';
-import ProcessPage from './pages/Process';
-import JobsPage from './pages/Jobs';
-import SettingsPage from './pages/Settings';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UploadPage = lazy(() => import('./pages/Upload'));
+const ProcessPage = lazy(() => import('./pages/Process'));
+const JobsPage = lazy(() => import('./pages/Jobs'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,19 +19,30 @@ const queryClient = new QueryClient({
   },
 });
 
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="upload" element={<UploadPage />} />
-            <Route path="process" element={<ProcessPage />} />
-            <Route path="jobs" element={<JobsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="upload" element={<UploadPage />} />
+              <Route path="process" element={<ProcessPage />} />
+              <Route path="jobs" element={<JobsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </QueryClientProvider>
   );

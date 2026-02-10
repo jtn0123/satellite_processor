@@ -1,27 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch
-from PyQt6.QtWidgets import QApplication
 from .test_helpers import mock_directories, mock_ffmpeg  # Import fixtures
-from satellite_processor.gui.widgets.video_options import VideoOptionsWidget
-
-
-@pytest.fixture(scope="session")
-def qapp():
-    """Create a Qt Application instance for the test session."""
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication([])
-    return app
-
-
-@pytest.fixture
-def video_options(qapp, qtbot):
-    """Create a VideoOptionsWidget instance for testing."""
-    widget = VideoOptionsWidget()
-    widget.testing = True
-    qtbot.addWidget(widget)
-    return widget
 
 
 @pytest.fixture

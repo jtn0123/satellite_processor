@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Index, Integer, String, Text
 
 from .database import Base
 
@@ -16,7 +16,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    status = Column(String(20), default="pending")  # pending, processing, completed, failed, cancelled
+    status = Column(String(20), default="pending", index=True)  # pending, processing, completed, failed, cancelled
     job_type = Column(String(20), default="image_process")  # image_process, video_create
     params = Column(JSON, default=dict)
     progress = Column(Integer, default=0)
@@ -24,9 +24,13 @@ class Job(Base):
     input_path = Column(Text, default="")
     output_path = Column(Text, default="")
     error = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_jobs_status_created_at", "status", "created_at"),
+    )
 
 
 class Image(Base):
@@ -39,16 +43,16 @@ class Image(Base):
     file_size = Column(BigInteger, default=0)
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
-    satellite = Column(String(20), nullable=True)
+    satellite = Column(String(20), nullable=True, index=True)
     channel = Column(String(10), nullable=True)
     captured_at = Column(DateTime, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class Preset(Base):
     __tablename__ = "presets"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    name = Column(String(100), unique=True, nullable=False)
+    name = Column(String(100), unique=True, nullable=False, index=True)
     params = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)

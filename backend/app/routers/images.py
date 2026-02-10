@@ -1,8 +1,10 @@
 """Image upload and listing endpoints"""
 
+import re
+import uuid
+from datetime import datetime
 from pathlib import Path
 
-import cv2
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
@@ -15,33 +17,59 @@ from ..services.storage import storage_service
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
+UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
+
 
 @router.post("/upload")
 async def upload_image(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    """Upload a satellite image"""
+    """Upload a satellite image using chunked streaming to avoid OOM on large files."""
     if not file.filename:
         raise HTTPException(400, "No filename provided")
 
-    content = await file.read()
-    meta = storage_service.save_upload(file.filename, content)
+    file_id = str(uuid.uuid4())
+    safe_name = f"{file_id}_{file.filename}"
+    dest = Path(storage_service.upload_dir) / safe_name
 
-    # Try to get image dimensions
-    import numpy as np
-    nparr = np.frombuffer(content, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    width = img.shape[1] if img is not None else None
-    height = img.shape[0] if img is not None else None
+    # Stream chunks to disk instead of loading entire file into memory
+    file_size = 0
+    with open(dest, "wb") as f:
+        while True:
+            chunk = await file.read(UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            f.write(chunk)
+            file_size += len(chunk)
+
+    # Get dimensions from the saved file (PIL reads only the header)
+    width = height = None
+    try:
+        with PILImage.open(dest) as img:
+            width, height = img.size
+    except Exception:
+        pass
+
+    # Parse satellite metadata from filename
+    satellite = None
+    captured_at = None
+    match = re.search(r"(\d{8}T\d{6}Z)", file.filename)
+    if match:
+        captured_at = datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
+    upper = file.filename.upper()
+    if "GOES-16" in upper:
+        satellite = "GOES-16"
+    elif "GOES-18" in upper:
+        satellite = "GOES-18"
 
     db_image = Image(
-        id=meta["id"],
-        filename=meta["filename"],
-        original_name=meta["original_name"],
-        file_path=meta["file_path"],
-        file_size=meta["file_size"],
+        id=file_id,
+        filename=safe_name,
+        original_name=file.filename,
+        file_path=str(dest),
+        file_size=file_size,
         width=width,
         height=height,
-        satellite=meta.get("satellite"),
-        captured_at=meta.get("captured_at"),
+        satellite=satellite,
+        captured_at=captured_at,
     )
     db.add(db_image)
     await db.commit()

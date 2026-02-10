@@ -122,11 +122,9 @@ async def list_images(
     db: AsyncSession = Depends(get_db),
 ):
     """List uploaded images with pagination"""
-    # Total count
     count_result = await db.execute(select(func.count()).select_from(Image))
     total = count_result.scalar_one()
 
-    # Paginated query
     offset = (page - 1) * limit
     result = await db.execute(
         select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)

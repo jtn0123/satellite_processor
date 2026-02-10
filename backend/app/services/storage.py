@@ -1,11 +1,10 @@
 """File storage management"""
 
-import re
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from ..config import settings
+from ..utils.metadata import parse_satellite_metadata
 
 
 class StorageService:
@@ -24,16 +23,7 @@ class StorageService:
         file_path.write_bytes(content)
 
         # Parse satellite metadata from filename
-        satellite = None
-        captured_at = None
-        match = re.search(r"(\d{8}T\d{6}Z)", filename)
-        if match:
-            captured_at = datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
-
-        if "GOES-16" in filename.upper():
-            satellite = "GOES-16"
-        elif "GOES-18" in filename.upper():
-            satellite = "GOES-18"
+        meta = parse_satellite_metadata(filename)
 
         return {
             "id": file_id,
@@ -41,8 +31,7 @@ class StorageService:
             "original_name": filename,
             "file_path": str(file_path),
             "file_size": len(content),
-            "satellite": satellite,
-            "captured_at": captured_at,
+            **meta,
         }
 
     def get_upload_path(self, filename: str) -> Path:

@@ -1,7 +1,7 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -36,7 +36,7 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
         missing = [iid for iid in image_ids if iid not in found]
         raise APIError(404, "images_not_found", f"Images not found: {missing}")
 
-    staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}"
+    staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}"
     staging_dir.mkdir(parents=True, exist_ok=True)
 
     image_paths = []
@@ -186,7 +186,7 @@ async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(g
         celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
 
     job.status = "cancelled"
-    job.completed_at = datetime.now(timezone.utc)
+    job.completed_at = datetime.now(UTC)
     await db.commit()
 
     import json

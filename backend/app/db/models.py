@@ -1,7 +1,7 @@
 """ORM models for jobs, images, and presets"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, BigInteger, Column, DateTime, Index, Integer, String, Text
 
@@ -13,7 +13,7 @@ def gen_uuid():
 
 
 def _utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Job(Base):

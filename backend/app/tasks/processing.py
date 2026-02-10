@@ -3,7 +3,7 @@
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ..celery_app import celery_app
@@ -89,7 +89,7 @@ def process_images_task(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         status_message="Initializing processor...",
     )
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
@@ -142,7 +142,7 @@ def process_images_task(self, job_id: str, params: dict):
                 status="completed",
                 progress=100,
                 output_path=output_path,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 status_message="Processing complete",
             )
             _publish_progress(job_id, 100, "Processing complete", "completed")
@@ -151,7 +151,7 @@ def process_images_task(self, job_id: str, params: dict):
                 job_id,
                 status="failed",
                 error="Processing returned False",
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 status_message="Processing failed",
             )
             _publish_progress(job_id, 0, "Processing failed", "failed")
@@ -162,7 +162,7 @@ def process_images_task(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(timezone.utc),
+            completed_at=datetime.now(UTC),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -177,7 +177,7 @@ def create_video_task(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         status_message="Initializing video creation...",
     )
     _publish_progress(job_id, 0, "Initializing video creation...", "processing")
@@ -221,7 +221,7 @@ def create_video_task(self, job_id: str, params: dict):
                 status="completed",
                 progress=100,
                 output_path=output_path,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 status_message="Video creation complete",
             )
             _publish_progress(job_id, 100, "Video creation complete", "completed")
@@ -230,7 +230,7 @@ def create_video_task(self, job_id: str, params: dict):
                 job_id,
                 status="failed",
                 error="Video creation returned False",
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
@@ -240,7 +240,7 @@ def create_video_task(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(timezone.utc),
+            completed_at=datetime.now(UTC),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")

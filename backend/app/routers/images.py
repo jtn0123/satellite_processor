@@ -28,7 +28,7 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 @router.post("/upload")
 @limiter.limit("10/minute")
 async def upload_image(request: Request, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    """Upload a satellite image."""
+    """Upload a satellite image using chunked streaming to avoid OOM on large files."""
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
@@ -41,7 +41,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
 
     if ext not in ALLOWED_EXTENSIONS:
         raise APIError(400, "invalid_file_type",
-            f"File type .{ext}. not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
+            f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
 
     file_id = str(uuid.uuid4())
     dest_name = f"{file_id}_{safe_basename}"
@@ -61,7 +61,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
                 raise APIError(413, "file_too_large", "File exceeds 500MB limit")
             f.write(chunk)
 
-    # Get dimensions
+    # Get dimensions from the saved file (reads only header, not full load)
     width = height = None
     try:
         with PILImage.open(dest) as img:
@@ -82,9 +82,15 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
         satellite = "GOES-18"
 
     db_image = Image(
-        id=file_id, filename=dest_name, original_name=safe_basename,
-        file_path=str(dest), file_size=file_size, width=width, height=height,
-        satellite=satellite, captured_at=captured_at,
+        id=file_id,
+        filename=dest_name,
+        original_name=safe_basename,
+        file_path=str(dest),
+        file_size=file_size,
+        width=width,
+        height=height,
+        satellite=satellite,
+        captured_at=captured_at,
     )
     db.add(db_image)
     await db.commit()

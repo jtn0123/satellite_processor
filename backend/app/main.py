@@ -4,8 +4,9 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -15,7 +16,7 @@ from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
 from .rate_limit import limiter
-from .routers import images, jobs, presets, system
+from .routers import health, images, jobs, presets, system
 from .routers import settings as settings_router
 
 
@@ -50,20 +51,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register error handler
-app.add_exception_handler(APIError, api_error_handler)
-
 # Register routers
 app.include_router(jobs.router)
 app.include_router(images.router)
 app.include_router(presets.router)
 app.include_router(system.router)
 app.include_router(settings_router.router)
-
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok"}
+app.include_router(health.router)
 
 
 @app.websocket("/ws/jobs/{job_id}")

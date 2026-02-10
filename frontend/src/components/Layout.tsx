@@ -7,6 +7,7 @@ import {
   Cpu,
   Satellite,
   FlaskConical,
+  FileText,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 
@@ -46,6 +47,17 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="px-3 pb-2">
+          <a
+            href="/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <FileText className="w-5 h-5" />
+            API Docs
+          </a>
+        </div>
         <div className="px-6 py-4 border-t border-slate-800 text-xs text-slate-500 flex items-center gap-2">
           <Cpu className="w-4 h-4" />
           Satellite Processor v2.0

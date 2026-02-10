@@ -39,7 +39,7 @@ jobs:
       - name: Run core processor tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov=satellite_processor.core
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml
 
   frontend:
     name: Frontend Build & Test

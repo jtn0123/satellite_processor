@@ -99,6 +99,15 @@ class TestSettingsManager:
 # ---------------------------------------------------------------------------
 
 
+_has_qt = pytest.importorskip is not None  # placeholder
+try:
+    import pytestqt  # noqa: F401
+    _has_qt = True
+except ImportError:
+    _has_qt = False
+
+
+@pytest.mark.skipif(not _has_qt, reason="pytest-qt not installed")
 class TestProgressTracker:
     """Tests for ProgressTracker signals and state management."""
 
@@ -151,6 +160,7 @@ class TestProgressTracker:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(not _has_qt, reason="pytest-qt not installed")
 class TestResourceMonitor:
     """Tests for ResourceMonitor initialisation, interval, stop, and signal."""
 

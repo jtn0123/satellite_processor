@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./satellite_processor:/app/satellite_processor
+      - sat-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - STORAGE_PATH=/app/data
+      - DEBUG=true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  sat-data:

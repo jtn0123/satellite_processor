@@ -3,33 +3,32 @@ Progress Tracking Module
 Responsibilities:
 - Track overall processing progress
 - Manage operation-specific progress
-- Emit progress updates to UI
+- Emit progress updates via callbacks
 - Handle progress calculations
 - Manage operation completion states
 Dependencies:
-- None (uses Qt signals)
+- None (plain Python)
 Used by:
 - Processor for progress reporting
 - UI for progress bar updates
 """
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from typing import Optional, Callable
 
 
-class ProgressTracker(QObject):
+class ProgressTracker:
     """Enhanced progress tracking with unified interface"""
 
-    # Add combined progress signals
-    progress_update = pyqtSignal(str, int)
-    overall_progress = pyqtSignal(int)
-    status_update = pyqtSignal(str)
-    error_occurred = pyqtSignal(str)
-    finished = pyqtSignal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
         self.current_operation = 0
         self.total_operations = 0
+
+        # Callback-based signals (replace pyqtSignal)
+        self.on_progress: Optional[Callable[[str, int], None]] = None
+        self.on_overall_progress: Optional[Callable[[int], None]] = None
+        self.on_status: Optional[Callable[[str], None]] = None
+        self.on_error: Optional[Callable[[str], None]] = None
+        self.on_finished: Optional[Callable[[], None]] = None
 
     def start_operation(self, total_operations: int):
         """Initialize progress tracking for multiple operations"""
@@ -38,13 +37,14 @@ class ProgressTracker(QObject):
 
     def update_progress(self, operation: str, progress: int):
         """Update progress for current operation"""
-        self.progress_update.emit(operation, progress)
-        if self.total_operations > 0:
+        if self.on_progress:
+            self.on_progress(operation, progress)
+        if self.total_operations > 0 and self.on_overall_progress:
             overall = int(
                 ((self.current_operation + progress / 100) / self.total_operations)
                 * 100
             )
-            self.overall_progress.emit(overall)
+            self.on_overall_progress(overall)
 
     def complete_operation(self):
         """Mark current operation as complete"""

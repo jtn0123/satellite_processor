@@ -2,7 +2,7 @@
 Preset Management
 ----------------
 Responsibilities:
-- Managing processing presets using QSettings
+- Managing processing presets using JSON file storage
 - Importing/exporting presets to files
 - Preset validation
 
@@ -12,7 +12,6 @@ Does NOT handle:
 - Configuration (see utils.py)
 """
 
-from PyQt6.QtCore import QSettings
 import json
 import logging
 from pathlib import Path
@@ -22,18 +21,38 @@ logger = logging.getLogger(__name__)
 
 
 class PresetManager:
-    """Manage processing presets"""
+    """Manage processing presets using JSON file storage"""
 
     def __init__(self):
-        self.settings = QSettings("SatelliteProcessor", "ImageProcessor")
         self.logger = logging.getLogger(__name__)
+        self._presets_file = Path.home() / ".satellite_processor" / "presets.json"
+        self._presets_file.parent.mkdir(parents=True, exist_ok=True)
+
+    def _load_presets_from_file(self) -> dict:
+        """Load presets from JSON file"""
+        try:
+            if self._presets_file.exists():
+                with open(self._presets_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            return {}
+        except Exception as e:
+            self.logger.error(f"Error loading presets file: {e}")
+            return {}
+
+    def _save_presets_to_file(self, presets: dict):
+        """Save presets to JSON file"""
+        try:
+            with open(self._presets_file, "w", encoding="utf-8") as f:
+                json.dump(presets, f, indent=4)
+        except Exception as e:
+            self.logger.error(f"Error saving presets file: {e}")
 
     def save_preset(self, name: str, params: dict):
         """Save a new preset"""
         try:
             presets = self.get_presets()
             presets[name] = {"params": params, "created": str(datetime.now())}
-            self.settings.setValue("presets", json.dumps(presets))
+            self._save_presets_to_file(presets)
             self.logger.info(f"Preset '{name}' saved successfully")
         except Exception as e:
             self.logger.error(f"Error saving preset '{name}': {str(e)}")
@@ -51,12 +70,7 @@ class PresetManager:
 
     def get_presets(self) -> dict:
         """Get all available presets"""
-        try:
-            presets_str = self.settings.value("presets", "{}")
-            return json.loads(presets_str)
-        except Exception as e:
-            self.logger.error(f"Error getting presets: {str(e)}")
-            return {}
+        return self._load_presets_from_file()
 
     def delete_preset(self, name: str):
         """Delete a preset"""
@@ -64,7 +78,7 @@ class PresetManager:
             presets = self.get_presets()
             if name in presets:
                 del presets[name]
-                self.settings.setValue("presets", json.dumps(presets))
+                self._save_presets_to_file(presets)
                 self.logger.info(f"Preset '{name}' deleted successfully")
         except Exception as e:
             self.logger.error(f"Error deleting preset '{name}': {str(e)}")

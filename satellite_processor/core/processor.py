@@ -24,7 +24,7 @@ Does NOT handle:
 
 import concurrent.futures
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Any, Iterator
+from typing import List, Optional, Tuple, Dict, Any, Callable
 import numpy as np  # type: ignore
 import logging
 import cv2  # type: ignore
@@ -35,64 +35,48 @@ from datetime import datetime
 import shutil
 import re
 import sys
-from PyQt6.QtCore import (
-    pyqtSignal,
-    QObject,
-    QThread,
-    QTimer,
-    QMetaObject,
-    Qt,
-)
-from PyQt6.QtWidgets import QApplication
-import argparse
 import psutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 from functools import partial
+import threading
 
 from .image_operations import ImageOperations
 from .video_handler import VideoHandler
 from .file_manager import FileManager
 from .resource_monitor import ResourceMonitor
-from .progress_tracker import ProgressTracker  # Changed from ..utils.progress_tracker
+from .progress_tracker import ProgressTracker
 from .utils import parse_satellite_timestamp, is_closing
 from .settings_manager import SettingsManager
 
-# Additional imports as needed
-
 logger = logging.getLogger(__name__)
 
-# Remove any logging configuration here to prevent duplication
-# Ensure that logging is configured only in the main application or a central module
 
-
-class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QObject
+class SatelliteImageProcessor:
     """Main image processing class for satellite imagery"""
-
-    # Define all signals here
-    status_update = pyqtSignal(str)
-    error_occurred = pyqtSignal(str)
-    finished = pyqtSignal()
-    progress_update = pyqtSignal(str, int)
-    overall_progress = pyqtSignal(int)
-    resource_update = pyqtSignal(dict)
-    output_ready = pyqtSignal(Path)  # Add this with other signals
 
     def __init__(
         self, options: Optional[dict] = None, parent: Optional[Any] = None
     ) -> None:
-        super().__init__(parent)
+        # Callback-based signals (replace pyqtSignal)
+        self.on_status_update: Optional[Callable[[str], None]] = None
+        self.on_error: Optional[Callable[[str], None]] = None
+        self.on_finished: Optional[Callable[[], None]] = None
+        self.on_progress: Optional[Callable[[str, int], None]] = None
+        self.on_overall_progress: Optional[Callable[[int], None]] = None
+        self.on_resource_update: Optional[Callable[[dict], None]] = None
+        self.on_output_ready: Optional[Callable[[Path], None]] = None
 
-        # Initialize managers (removed duplicate initializations)
-        self.file_manager = FileManager()  # Handles both file and temp operations
+        # Initialize managers
+        self.file_manager = FileManager()
         self.video_handler = VideoHandler()
         self.image_ops = ImageOperations()
-        self.resource_monitor = ResourceMonitor(self)
+        self.resource_monitor = ResourceMonitor()
         self.settings_manager = SettingsManager()
 
         # Connect resource monitoring
-        self.resource_monitor.resource_update.connect(self.handle_resource_update)
+        self.resource_monitor.on_resource_update = self.handle_resource_update
         self.resource_monitor.start()
 
         # Basic setup
@@ -125,6 +109,36 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         # Add FFmpeg process tracking
         self._ffmpeg_processes = set()
 
+    def _emit_status(self, message: str):
+        """Emit status update via callback"""
+        if self.on_status_update:
+            self.on_status_update(message)
+
+    def _emit_error(self, message: str):
+        """Emit error via callback"""
+        if self.on_error:
+            self.on_error(message)
+
+    def _emit_progress(self, operation: str, progress: int):
+        """Emit progress via callback"""
+        if self.on_progress:
+            self.on_progress(operation, progress)
+
+    def _emit_overall_progress(self, progress: int):
+        """Emit overall progress via callback"""
+        if self.on_overall_progress:
+            self.on_overall_progress(progress)
+
+    def _emit_finished(self):
+        """Emit finished via callback"""
+        if self.on_finished:
+            self.on_finished()
+
+    def _emit_output_ready(self, path: Path):
+        """Emit output ready via callback"""
+        if self.on_output_ready:
+            self.on_output_ready(path)
+
     def update_directories(self):
         """Update input/output directories from options or settings"""
         if "input_dir" in self.options:
@@ -133,9 +147,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             self.set_output_directory(self.options["output_dir"])
 
     def update_progress(self, operation: str, progress: int):
-        """Update progress with proper signal emission"""
+        """Update progress with proper callback emission"""
         self.current_operation = operation
-        self.progress_update.emit(operation, progress)
+        self._emit_progress(operation, progress)
 
     def _create_progress_bar(
         self, operation: str, current: int, total: int, width: int = 40
@@ -147,27 +161,23 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         percent = int(progress * 100)
         return f"{operation} [{bar}] {percent}%"
 
-    def _emit_status(self, message: str):
-        """Emit status without formatting"""
-        self.status_update.emit(message)
-
     def process(self) -> bool:
         """Main processing workflow with sequential stages but parallel processing within each stage"""
         try:
             if self._is_processing:
                 self.logger.warning("Processing is already underway.")
-                return
+                return False
 
             self._is_processing = True
             self.cancelled = False
 
             # Initial setup
             self.logger.info("Starting satellite image processing workflow")
-            self.status_update.emit("🛰️ Starting satellite image processing...")
+            self._emit_status("🛰️ Starting satellite image processing...")
 
             if not all([self.input_dir, self.output_dir]):
                 self.logger.error("Input or output directory not set.")
-                return
+                return False
 
             # Ensure output directories exist
             Path(self.output_dir).mkdir(parents=True, exist_ok=True)
@@ -199,7 +209,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # STAGE 1: Sanchez (False Color) with parallel processing
             if self.options.get("false_color_enabled"):
                 self.logger.info("Starting parallel false color processing stage...")
-                self.status_update.emit("🎨 Stage 1/4: Applying false color...")
+                self._emit_status("🎨 Stage 1/4: Applying false color...")
 
                 with multiprocessing.Pool(processes=num_processes) as pool:
                     sanchez_args = [
@@ -224,7 +234,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                             sanchez_files.append(Path(result))
 
                         progress = int((idx + 1) / total * 100)
-                        self.progress_update.emit("False Color", progress)
+                        self._emit_progress("False Color", progress)
 
                 if sanchez_files:
                     current_files = self.file_manager.keep_file_order(sanchez_files)
@@ -234,7 +244,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # STAGE 2: Cropping with parallel processing
             if self.options.get("crop_enabled"):
                 self.logger.info("Starting parallel image cropping stage...")
-                self.status_update.emit("📐 Stage 2/4: Cropping images...")
+                self._emit_status("📐 Stage 2/4: Cropping images...")
 
                 with multiprocessing.Pool(processes=num_processes) as pool:
                     crop_args = [
@@ -253,7 +263,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                             cropped_files.append(Path(result))
 
                         progress = int((idx + 1) / total * 100)
-                        self.progress_update.emit("Cropping", progress)
+                        self._emit_progress("Cropping", progress)
 
                 if cropped_files:
                     current_files = self.file_manager.keep_file_order(cropped_files)
@@ -263,7 +273,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # STAGE 3: Timestamp with parallel processing
             if self.options.get("add_timestamp", True):
                 self.logger.info("Starting parallel timestamp processing stage...")
-                self.status_update.emit("⏰ Stage 3/4: Adding timestamps...")
+                self._emit_status("⏰ Stage 3/4: Adding timestamps...")
 
                 with multiprocessing.Pool(processes=num_processes) as pool:
                     timestamp_args = [
@@ -282,7 +292,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                             timestamped_files.append(Path(result))
 
                         progress = int((idx + 1) / total * 100)
-                        self.progress_update.emit("Adding Timestamps", progress)
+                        self._emit_progress("Adding Timestamps", progress)
 
                 if timestamped_files:
                     current_files = self.file_manager.keep_file_order(timestamped_files)
@@ -290,19 +300,19 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             # STAGE 4: Video Creation (single process)
             if current_files:
                 self.logger.info("Starting video creation stage...")
-                self.status_update.emit("🎥 Stage 4/4: Creating video...")
+                self._emit_status("🎥 Stage 4/4: Creating video...")
                 success = self._create_video(current_files, dirs["final"])
                 if success:
                     video_path = next(dirs["final"].glob("*.mp4"))
-                    self.output_ready.emit(video_path)
-                    self.status_update.emit("✨ Processing completed successfully!")
+                    self._emit_output_ready(video_path)
+                    self._emit_status("✨ Processing completed successfully!")
                     return True
 
             return False
 
         except Exception as e:
             self.logger.error(f"Processing error: {str(e)}")
-            self.error_occurred.emit(f"Error: {str(e)}")
+            self._emit_error(f"Error: {str(e)}")
             return False
         finally:
             self._is_processing = False
@@ -349,7 +359,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         """Parallel timestamp worker with enhanced logging"""
         logger = logging.getLogger(__name__)
         try:
-            # Fix argument unpacking - only need input_path and output_dir
             input_path, output_dir = args
             logger.debug(f"Processing timestamp for: {Path(input_path).name}")
 
@@ -393,7 +402,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     processed.append(result)
 
                 progress = int((idx + 1) / total * 100)
-                self.progress_update.emit("Processing Images", progress)
+                self._emit_progress("Processing Images", progress)
 
             except Exception as e:
                 self.logger.error(f"Error processing {path}: {e}")
@@ -406,7 +415,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             if not hasattr(self, "_is_deleted"):
                 self.cleanup()
         except Exception as e:
-            # Just log the error, can't do much else during deletion
             if hasattr(self, "logger"):
                 self.logger.error(f"Deletion cleanup error: {e}")
 
@@ -423,32 +431,21 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 except Exception as e:
                     self.logger.error(f"Error terminating FFmpeg process: {e}")
 
-            # Continue with existing cleanup
-            self.file_manager.cleanup()  # This now handles all file cleanup
-            self.resource_monitor.stop()
-            # Stop resource monitor first
+            # Clean up file manager
+            self.file_manager.cleanup()
+            
+            # Stop resource monitor
             if hasattr(self, "resource_monitor") and self.resource_monitor is not None:
                 try:
-                    # Call cleanup directly instead of using invokeMethod
                     self.resource_monitor.stop()
-                    if self.resource_monitor.isRunning():
-                        self.resource_monitor.terminate()
-                    self.resource_monitor.deleteLater()
                     self.resource_monitor = None
                 except Exception as e:
                     self.logger.error(f"Failed to stop resource monitor: {e}")
 
-            # Stop timers from the main thread
+            # Stop update timer if exists
             if hasattr(self, "update_timer") and self.update_timer is not None:
                 try:
-                    if QThread.currentThread() != QApplication.instance().thread():
-                        QMetaObject.invokeMethod(
-                            self.update_timer,
-                            "stop",
-                            Qt.ConnectionType.QueuedConnection,
-                        )
-                    else:
-                        self.update_timer.stop()
+                    self.update_timer.cancel()
                     self.update_timer = None
                 except Exception as e:
                     self.logger.error(f"Timer cleanup error: {e}")
@@ -483,7 +480,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 missing = [
                     key for key in required_keys if not self.preferences.get(key)
                 ]
-            # Always require temp_directory
             if not self.preferences.get("temp_directory"):
                 missing.append("temp_directory")
 
@@ -502,12 +498,8 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             if not output_dir:
                 raise ValueError("Output directory not specified.")
 
-            # Initialize progress tracking
             progress = 0
-            self.progress_update.emit("Initializing", progress)
-
-            # Create output directory and setup
-            # ...existing code...
+            self._emit_progress("Initializing", progress)
 
             image_paths = self.get_input_files(input_dir)
             if not image_paths:
@@ -516,10 +508,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             processed_images = []
             total_images = len(image_paths)
 
-            # Process images with proper progress tracking
             for idx, image_path in enumerate(image_paths, start=1):
                 if self.cancelled:
-                    self.status_update.emit("Processing cancelled.")
+                    self._emit_status("Processing cancelled.")
                     return False
 
                 img = self.process_single_image(image_path)
@@ -527,17 +518,17 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     processed_images.append(img)
 
                 progress = int((idx / total_images) * 100)
-                self.progress_update.emit("Processing Images", progress)
-                self.overall_progress.emit(progress)
+                self._emit_progress("Processing Images", progress)
+                self._emit_overall_progress(progress)
 
             if not self.cancelled:
-                self.finished.emit()
+                self._emit_finished()
             return True
 
         except Exception as e:
             if not self.cancelled:
-                self.error_occurred.emit(str(e))
-                self.status_update.emit("Processing failed.")
+                self._emit_error(str(e))
+                self._emit_status("Processing failed.")
             self.logger.error(f"Processing failed: {str(e)}")
             return False
 
@@ -555,7 +546,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             completed = 0
             for future in concurrent.futures.as_completed(futures):
                 if self.cancelled:
-                    # Cancel remaining futures
                     for f in futures:
                         f.cancel()
                     break
@@ -566,9 +556,8 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     if result is not None:
                         processed_images.append(result)
                     completed += 1
-                    # Replace on_progress with signal emission
                     progress = int((completed / total_steps) * 100)
-                    self.progress_update.emit("Processing Images", progress)
+                    self._emit_progress("Processing Images", progress)
                 except Exception as e:
                     self.logger.error(f"Error processing {path}: {str(e)}")
 
@@ -577,12 +566,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def process_single_image(self, image_path: Path) -> Optional[np.ndarray]:
         """Process a single image"""
         try:
-            # Load image
             img = cv2.imread(str(image_path))
             if img is None:
                 return None
 
-            # Process image with options
             if self.options.get("crop_enabled"):
                 img = ImageOperations.crop_image(
                     img,
@@ -592,9 +579,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     self.options.get("crop_height", img.shape[0]),
                 )
 
-            # Let ImageOperations handle the timestamp
             img = ImageOperations.add_timestamp(img, image_path)
-
             return img
 
         except Exception as e:
@@ -610,12 +595,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             options = params.get("options", {})
             settings = params.get("settings", {})
 
-            # Read image
             img = cv2.imread(img_path)
             if img is None:
                 raise ValueError(f"Failed to read image: {img_path}")
 
-            # Process image based on options
             if options.get("crop_enabled"):
                 img = ImageOperations.crop_image(
                     img,
@@ -625,12 +608,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     options.get("crop_height", img.shape[0]),
                 )
 
-            # Handle false color if enabled
             if options.get("false_color"):
                 sanchez_path = settings.get("sanchez_path")
                 underlay_path = settings.get("underlay_path")
                 if sanchez_path and underlay_path:
-                    # Convert paths to raw strings to handle UNC paths
                     sanchez_path = str(Path(sanchez_path))
                     underlay_path = str(Path(underlay_path))
                     img_path = str(Path(img_path))
@@ -642,7 +623,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     )
                     output_file = str(output_file)
 
-                    # Build command with proper path escaping
                     cmd = [
                         f'"{sanchez_path}"',
                         "-s",
@@ -657,35 +637,29 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                         "jpg",
                     ]
 
-                    # Join command with spaces and run as a single string
                     cmd_str = " ".join(cmd)
                     print(f"Running command: {cmd_str}")
-                    # Execute the command
                     subprocess.run(cmd_str, shell=True, check=True)
 
-                    # Optionally, load the processed image
                     img = cv2.imread(output_file)
                     if img is None:
                         raise ValueError(
                             f"Failed to load processed image: {output_file}"
                         )
 
-            # Normal image processing (if false color not enabled or failed)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             out_filename = f"processed_{Path(img_path).stem}_{timestamp}.png"
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
             out_path = output_path / out_filename
 
-            # Save with error checking
             if not cv2.imwrite(str(out_path), img):
                 raise IOError(f"Failed to save image to {out_path}")
 
-            # Verify the file was written
             if not out_path.exists():
                 raise IOError(f"Output file was not created: {out_path}")
 
-            return str(out_path)  # Return string path for compatibility
+            return str(out_path)
 
         except Exception as e:
             print(f"Failed to process {params.get('img_path')}: {e}")
@@ -698,7 +672,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             self.logger.info("Processing cancelled by user")
             self._is_processing = False
 
-            # Handle subprocess termination if it exists
             if hasattr(self, "_proc") and self._proc and self._proc.poll() is None:
                 try:
                     self._proc.terminate()
@@ -709,11 +682,11 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                     self.logger.error(f"Error terminating process: {e}")
 
             self.cleanup()
-            self.status_update.emit("Processing cancelled")
+            self._emit_status("Processing cancelled")
 
         except Exception as e:
             self.logger.error(f"Error during cancellation: {e}")
-            self.error_occurred.emit(f"Failed to cancel processing: {str(e)}")
+            self._emit_error(f"Failed to cancel processing: {str(e)}")
 
     def get_input_files(self, input_dir: Optional[str] = None) -> List[Path]:
         """Get ordered input files using FileManager"""
@@ -729,9 +702,9 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         return f"{prefix}_{original_path.stem}_{self.timestamp}{original_path.suffix}"
 
     def _update_progress(self, operation: str, progress: int) -> None:
-        """Update progress using signals"""
-        self.progress_update.emit(operation, progress)
-        self.overall_progress.emit(progress)
+        """Update progress using callbacks"""
+        self._emit_progress(operation, progress)
+        self._emit_overall_progress(progress)
 
     def _default_progress_callback(self, operation: str, progress: int):
         """Default progress callback if none is provided."""
@@ -742,34 +715,25 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         self.logger.info(status)
 
     def some_other_method(self):
-        """Example method where signals are emitted."""
+        """Example method where callbacks are invoked."""
         try:
-            # ... some processing ...
-            self.status_update.emit("Processing started.")
-            self.progress_update.emit("Loading images", 10)
-            # ... more processing ...
-            self.progress_update.emit("Processing images", 50)
-            # ... more processing ...
-            self.progress_update.emit("Finalizing", 90)
-            self.status_update.emit("Processing finished.")
-            self.finished.emit()
+            self._emit_status("Processing started.")
+            self._emit_progress("Loading images", 10)
+            self._emit_progress("Processing images", 50)
+            self._emit_progress("Finalizing", 90)
+            self._emit_status("Processing finished.")
+            self._emit_finished()
         except Exception as e:
-            self.error_occurred.emit(str(e))
+            self._emit_error(str(e))
 
     def run_processing(self):
         """Run processing with closing check"""
-        if is_closing(self.parent()):
+        if is_closing(None):
             self.cancel()
             return
-        # ...existing code...
 
     def some_method(self):
-        # Check if parent is closing and cancel if so
-        parent = self.parent()
-        if parent and getattr(parent, "_is_closing", False):
-            self.cancel()
-            return
-        # ...existing code...
+        pass
 
     def update_resource_usage(self):
         """Update resource usage metrics."""
@@ -778,49 +742,46 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 "cpu": psutil.cpu_percent(),
                 "memory": psutil.virtual_memory().percent,
             }
-            self.resource_monitor.resource_update.emit(data)
+            if self.on_resource_update:
+                self.on_resource_update(data)
         except Exception as e:
             self.logger.debug(f"Failed to update resource usage: {e}")
 
     def _setup_resource_monitoring(self):
-        """Setup resource monitoring timer with improved thread safety"""
+        """Setup resource monitoring timer using threading"""
         try:
-            # Create timer in the main thread
-            if QThread.currentThread() != QApplication.instance().thread():
-                QMetaObject.invokeMethod(
-                    self, "_create_timer", Qt.ConnectionType.BlockingQueuedConnection
-                )
-            else:
-                self._create_timer()
+            self._resource_timer_running = True
+            self._resource_timer = threading.Timer(1.0, self._resource_timer_tick)
+            self._resource_timer.daemon = True
+            self._resource_timer.start()
         except Exception as e:
             self.logger.error(f"Failed to setup resource monitoring: {e}")
 
-    def _create_timer(self):
-        """Create and setup timer in the main thread"""
-        self.update_timer = QTimer()
-        self.update_timer.timeout.connect(self.update_resource_usage)
-        self.update_timer.start(1000)
-        self._last_sent = 0
-        self._last_recv = 0
-        self._is_deleted = False
+    def _resource_timer_tick(self):
+        """Periodic resource monitoring tick"""
+        if not self._resource_timer_running:
+            return
+        self.update_resource_usage()
+        if self._resource_timer_running:
+            self._resource_timer = threading.Timer(1.0, self._resource_timer_tick)
+            self._resource_timer.daemon = True
+            self._resource_timer.start()
 
     def _load_preferences(self) -> None:
         """Load processor preferences"""
         if not hasattr(self, "preferences"):
             self.preferences = {}
 
-        # Ensure temp_directory is always set
         temp_dir = self.settings_manager.get("temp_directory")
         if not temp_dir:
             temp_dir = tempfile.gettempdir()
             self.settings_manager.set("temp_directory", str(temp_dir))
 
-        # Update preferences
         self.preferences.update(
             {
                 "input_dir": self.settings_manager.get("input_dir"),
                 "output_dir": self.settings_manager.get("output_dir"),
-                "temp_directory": temp_dir,  # Always include temp directory
+                "temp_directory": temp_dir,
             }
         )
 
@@ -849,17 +810,11 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             return
 
         try:
-            # Convert to Path and resolve
             output_path = Path(path).resolve()
-
-            # Ensure directory exists
             output_path.mkdir(parents=True, exist_ok=True)
-
-            # Store as string but only after validation
             self.output_dir = str(output_path)
             self.settings_manager.set("output_dir", self.output_dir)
             self.options["output_dir"] = self.output_dir
-
             self.logger.debug(f"Set output directory to: {self.output_dir}")
         except Exception as e:
             self.logger.error(f"Failed to set output directory: {e}")
@@ -870,7 +825,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         if not image_paths:
             return []
 
-        # Use optimized batch processing from ImageOperations
         return self.image_ops.process_image_batch(
             image_paths,
             {
@@ -883,7 +837,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
     def _find_ffmpeg(self) -> Optional[Path]:
         """Find FFmpeg executable in system PATH"""
         try:
-            # Check Windows-specific paths first
             common_paths = [
                 Path("C:/ffmpeg/bin/ffmpeg.exe"),
                 Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
@@ -895,7 +848,6 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
                 if path.exists():
                     return path
 
-            # Try PATH environment
             ffmpeg_path = shutil.which("ffmpeg")
             if ffmpeg_path:
                 return Path(ffmpeg_path)
@@ -922,7 +874,7 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             for _ in results:
                 completed += 1
                 progress = int((completed / total) * 100)
-                self.progress_update.emit("Saving processed images", progress)
+                self._emit_progress("Saving processed images", progress)
 
     @staticmethod
     def _save_single_image(args) -> bool:
@@ -937,7 +889,8 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
 
     def handle_resource_update(self, stats: dict):
         """Forward resource updates"""
-        self.resource_update.emit(stats)
+        if self.on_resource_update:
+            self.on_resource_update(stats)
 
     def _create_video(self, input_files, output_dir):
         """Create video from processed images with enhanced settings"""
@@ -945,12 +898,10 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             if not input_files:
                 return False
 
-            # Create video path
             video_path = (
                 output_dir / f"animation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
             )
 
-            # Create input directory path
             if isinstance(input_files, list):
                 if not input_files[0]:
                     return False
@@ -958,21 +909,18 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
             else:
                 input_dir = Path(input_files)
 
-            # Create video with proper input directory
             success = self.video_handler.create_video(
-                input_dir,  # Path object of input directory
-                video_path,  # Path object for output
+                input_dir,
+                video_path,
                 {
                     **self.options,
-                    "input_files": [
-                        str(f) for f in input_files
-                    ],  # Add list of files to options
+                    "input_files": [str(f) for f in input_files],
                 },
             )
 
             if success:
-                self.output_ready.emit(video_path)
-                self.status_update.emit("Video creation completed successfully!")
+                self._emit_output_ready(video_path)
+                self._emit_status("Video creation completed successfully!")
 
             return success
 
@@ -1007,26 +955,17 @@ class SatelliteImageProcessor(QObject):  # Change from BaseImageProcessor to QOb
         """Encode video with the specified options."""
         fps = options.get("fps", 30)
         bitrate = options.get("bitrate", 5000)
-        # Configure encoder before encoding
         self.configure_encoder(options)
         self.video_handler.encode_video(fps, bitrate)
 
     def create_video(self, input_files, output_path, options):
         """Create video from processed images."""
         try:
-            # ...existing code...
-
-            # Ensure 'encoder' is set in options
-            options.setdefault("encoder", "H.264")  # Set default encoder if not present
-
+            options.setdefault("encoder", "H.264")
             video_handler = VideoHandler()
-            video_handler.testing = getattr(
-                self, "testing", False
-            )  # Ensure testing is set
+            video_handler.testing = getattr(self, "testing", False)
             return video_handler.create_video(input_files, output_path, options)
 
         except Exception as e:
             self.logger.error(f"Video creation error: {str(e)}")
             raise
-
-    # ...rest of the class implementation...

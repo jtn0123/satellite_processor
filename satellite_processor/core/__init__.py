@@ -17,7 +17,6 @@ __all__ = [
     "FileManager",
     "ResourceMonitor",
     "SettingsManager",
-    "ProcessingWorker",
 ]
 
 # Version info

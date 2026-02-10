@@ -13,9 +13,41 @@ services:
       - sat-data:/app/data
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - STORAGE_PATH=/app/data
       - DEBUG=true
+    depends_on:
+      - redis
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend/app:/app/app
+      - ./satellite_processor:/app/satellite_processor
+      - sat-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - STORAGE_PATH=/app/data
+      - DEBUG=false
+    depends_on:
+      - redis
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
 
 volumes:
   sat-data:
+  redis-data:

@@ -44,14 +44,36 @@ async def health():
 
 @app.websocket("/ws/jobs/{job_id}")
 async def job_websocket(websocket: WebSocket, job_id: str):
-    """WebSocket endpoint stub for real-time job progress (Phase 2)"""
+    """WebSocket endpoint for real-time job progress via Redis pub/sub"""
+    import asyncio
+    import json
+    import redis.asyncio as aioredis
+    from .config import settings
+
     await websocket.accept()
+    r = aioredis.from_url(settings.redis_url)
+    pubsub = r.pubsub()
+    await pubsub.subscribe(f"job:{job_id}")
+
     try:
         await websocket.send_json({"type": "connected", "job_id": job_id})
-        # In Phase 2, this will subscribe to Redis pub/sub for job updates
         while True:
-            data = await websocket.receive_text()
-            # Echo for now — will be replaced with real progress streaming
-            await websocket.send_json({"type": "ack", "data": data})
+            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
+            if msg and msg["type"] == "message":
+                data = json.loads(msg["data"])
+                await websocket.send_json({"type": "progress", **data})
+                # Close after terminal states
+                if data.get("status") in ("completed", "failed", "cancelled"):
+                    await websocket.send_json({"type": "done", "status": data["status"]})
+                    break
+            # Check if client disconnected by trying to receive with short timeout
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+            except asyncio.TimeoutError:
+                pass
     except WebSocketDisconnect:
         pass
+    finally:
+        await pubsub.unsubscribe(f"job:{job_id}")
+        await pubsub.close()
+        await r.close()

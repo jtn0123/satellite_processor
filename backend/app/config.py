@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     output_dir: str = "./data/output"
     temp_dir: str = "./data/temp"
     
+    # Redis / Celery
+    redis_url: str = "redis://localhost:6379/0"
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/0"
+    
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
     

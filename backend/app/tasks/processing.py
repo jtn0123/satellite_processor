@@ -1,10 +1,10 @@
 """Celery tasks wrapping the core satellite processor"""
 
 import json
-import sys
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
@@ -71,8 +71,15 @@ def _update_job_db(job_id: str, **kwargs):
 
 
 def _configure_processor(processor: SatelliteImageProcessor, params: dict):
-    """Bug 4: Configure processor settings from params dict"""
+    """Configure processor settings from API params — single source of truth.
+    
+    Does NOT let SettingsManager load from ~/.satellite_processor/.
+    All configuration comes from the API params passed to the task.
+    """
     sm = processor.settings_manager
+
+    # Prevent loading from disk — override with API params only
+    sm._settings = {}
 
     if params.get("crop"):
         crop = params["crop"]
@@ -130,6 +137,24 @@ def process_images_task(self, job_id: str, params: dict):
 
         processor.on_progress = on_progress
         processor.on_status_update = on_status
+        # If image_paths were resolved from image_ids, use them
+        image_paths = params.get("image_paths")
+        if image_paths:
+            # Create staging dir with just these images if not already done
+            staging = Path(input_path)
+            if not staging.exists():
+                staging.mkdir(parents=True, exist_ok=True)
+                for p in image_paths:
+                    src = Path(p)
+                    if src.exists():
+                        dst = staging / src.name
+                        if not dst.exists():
+                            try:
+                                dst.symlink_to(src)
+                            except OSError:
+                                import shutil
+                                shutil.copy2(str(src), str(dst))
+
         processor.set_input_directory(input_path)
         processor.set_output_directory(output_path)
 

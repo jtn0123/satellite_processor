@@ -1,10 +1,9 @@
 """File storage management"""
 
-import uuid
 import re
-from pathlib import Path
+import uuid
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
 
 from ..config import settings
 

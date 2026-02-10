@@ -8,6 +8,7 @@ import {
   Satellite,
   FlaskConical,
 } from 'lucide-react';
+import ErrorBoundary from './ErrorBoundary';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -75,7 +76,9 @@ export default function Layout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

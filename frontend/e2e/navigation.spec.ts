@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
 
 test('navigates to dashboard', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('text=SatTracker')).toBeVisible();
+  await expect(page.locator('text=Dashboard').first()).toBeVisible();
 });
 
 test('navigates to upload page', async ({ page }) => {

@@ -1,7 +1,7 @@
 """Application configuration using pydantic-settings"""
 
 from pathlib import Path
-from typing import Optional
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     
     # Storage paths
     storage_path: str = "./data"
-    upload_dir: Optional[str] = None
-    output_dir: Optional[str] = None
-    temp_dir: Optional[str] = None
+    upload_dir: str | None = None
+    output_dir: str | None = None
+    temp_dir: str | None = None
     
     # Redis / Celery
     redis_url: str = "redis://localhost:6379/0"

@@ -1,9 +1,9 @@
 """Image endpoint tests."""
 
-import pytest
-import io
-import numpy as np
+
 import cv2
+import numpy as np
+import pytest
 
 
 def _make_png(width=100, height=100) -> bytes:

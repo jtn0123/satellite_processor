@@ -3,13 +3,14 @@
 import asyncio
 import json
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings as app_settings
 from .db.database import init_db
-from .logging_config import setup_logging, RequestLoggingMiddleware
-from .routers import jobs, images, presets, system
+from .logging_config import RequestLoggingMiddleware, setup_logging
+from .routers import images, jobs, presets, system
 from .routers import settings as settings_router
 
 

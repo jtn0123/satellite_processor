@@ -1,19 +1,19 @@
 """Job CRUD and processing endpoints — dispatches to Celery workers"""
 
 import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
-from ..db.models import Job, Image
-from ..models.job import JobCreate, JobResponse
-from ..services.storage import storage_service
 from ..celery_app import celery_app
 from ..config import settings
+from ..db.database import get_db
+from ..db.models import Image, Job
+from ..models.job import JobCreate, JobResponse
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -131,6 +131,7 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
     # Publish cancellation to WebSocket listeners
     import json
+
     import redis.asyncio as aioredis
     r = aioredis.from_url(settings.redis_url)
     await r.publish(f"job:{job_id}", json.dumps({

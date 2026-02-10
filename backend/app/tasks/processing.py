@@ -1,10 +1,10 @@
 """Celery tasks wrapping the core satellite processor"""
 
 import json
-import sys
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings

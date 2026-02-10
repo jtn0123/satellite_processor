@@ -1,10 +1,8 @@
 """Structured logging configuration"""
 
 import logging
-import os
 import sys
 import time
-from typing import Optional
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request

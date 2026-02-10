@@ -1,11 +1,10 @@
 """Wraps the core SatelliteImageProcessor for API use"""
 
+import logging
 import sys
 import threading
-import logging
+from collections.abc import Callable
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, Callable
 
 # Add parent project to path so we can import the core module
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
@@ -27,10 +26,10 @@ class ProcessorService:
         input_path: str,
         output_path: str,
         params: dict,
-        on_progress: Optional[Callable] = None,
-        on_status: Optional[Callable] = None,
-        on_complete: Optional[Callable] = None,
-        on_error: Optional[Callable] = None,
+        on_progress: Callable | None = None,
+        on_status: Callable | None = None,
+        on_complete: Callable | None = None,
+        on_error: Callable | None = None,
     ):
         """Run a processing job in a background thread"""
 

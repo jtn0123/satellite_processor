@@ -2,8 +2,8 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, BigInteger, Text, DateTime, JSON
-from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
+
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, String, Text
 
 from .database import Base
 

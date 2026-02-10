@@ -2,7 +2,9 @@
 
 import json
 from pathlib import Path
+
 from fastapi import APIRouter
+
 from ..config import settings
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])

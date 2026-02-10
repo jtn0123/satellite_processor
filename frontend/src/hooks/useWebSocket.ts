@@ -33,7 +33,7 @@ export function useWebSocket(jobId: string | null) {
 
   useEffect(() => {
     const cleanup = connect();
-    return cleanup;
+    return () => cleanup?.();
   }, [connect]);
 
   return { data, connected };

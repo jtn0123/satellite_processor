@@ -38,6 +38,28 @@ class ProcessorService:
             try:
                 processor = SatelliteImageProcessor(options=params)
 
+                # Configure processor settings from params
+                sm = processor.settings_manager
+                if params.get("crop"):
+                    crop = params["crop"]
+                    sm.set("crop_enabled", True)
+                    sm.set("crop_x", crop.get("x", 0))
+                    sm.set("crop_y", crop.get("y", 0))
+                    sm.set("crop_width", crop.get("w", 1920))
+                    sm.set("crop_height", crop.get("h", 1080))
+                if params.get("false_color"):
+                    fc = params["false_color"]
+                    sm.set("false_color_enabled", True)
+                    sm.set("false_color_method", fc.get("method", "vegetation"))
+                if params.get("timestamp"):
+                    ts = params["timestamp"]
+                    sm.set("timestamp_enabled", True)
+                    sm.set("timestamp_position", ts.get("position", "bottom-left"))
+                if params.get("scale"):
+                    sc = params["scale"]
+                    sm.set("scale_enabled", True)
+                    sm.set("scale_factor", sc.get("factor", 1.0))
+
                 # Wire up callbacks
                 if on_progress:
                     processor.on_progress = lambda op, pct: on_progress(job_id, op, pct)

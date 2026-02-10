@@ -6,8 +6,6 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-import redis
-
 from ..celery_app import celery_app
 from ..config import settings
 
@@ -18,19 +16,33 @@ from satellite_processor.core.processor import SatelliteImageProcessor
 
 logger = logging.getLogger(__name__)
 
-# Synchronous Redis client for use inside Celery workers
-_redis = redis.Redis.from_url(settings.redis_url)
+# --- Bug 7: Lazy Redis initialization ---
+_redis = None
+
+
+def _get_redis():
+    global _redis
+    if _redis is None:
+        import redis
+        _redis = redis.Redis.from_url(settings.redis_url)
+    return _redis
+
+
+# --- Bug 2: Shared DB engine (lazy singleton) ---
+_sync_engine = None
 
 
 def _get_sync_db():
     """Get a synchronous DB session for use in Celery tasks"""
+    global _sync_engine
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session
 
-    # Convert async URL to sync
-    sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
-    engine = create_engine(sync_url)
-    return Session(engine)
+    if _sync_engine is None:
+        # Convert async URL to sync
+        sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
+        _sync_engine = create_engine(sync_url)
+    return Session(_sync_engine)
 
 
 def _publish_progress(job_id: str, progress: int, message: str, status: str = "processing"):
@@ -41,7 +53,7 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
         "message": message,
         "status": status,
     })
-    _redis.publish(f"job:{job_id}", payload)
+    _get_redis().publish(f"job:{job_id}", payload)
 
 
 def _update_job_db(job_id: str, **kwargs):
@@ -56,6 +68,34 @@ def _update_job_db(job_id: str, **kwargs):
             session.commit()
     finally:
         session.close()
+
+
+def _configure_processor(processor: SatelliteImageProcessor, params: dict):
+    """Bug 4: Configure processor settings from params dict"""
+    sm = processor.settings_manager
+
+    if params.get("crop"):
+        crop = params["crop"]
+        sm.set("crop_enabled", True)
+        sm.set("crop_x", crop.get("x", 0))
+        sm.set("crop_y", crop.get("y", 0))
+        sm.set("crop_width", crop.get("w", 1920))
+        sm.set("crop_height", crop.get("h", 1080))
+
+    if params.get("false_color"):
+        fc = params["false_color"]
+        sm.set("false_color_enabled", True)
+        sm.set("false_color_method", fc.get("method", "vegetation"))
+
+    if params.get("timestamp"):
+        ts = params["timestamp"]
+        sm.set("timestamp_enabled", True)
+        sm.set("timestamp_position", ts.get("position", "bottom-left"))
+
+    if params.get("scale"):
+        sc = params["scale"]
+        sm.set("scale_enabled", True)
+        sm.set("scale_factor", sc.get("factor", 1.0))
 
 
 @celery_app.task(bind=True, name="process_images")
@@ -73,6 +113,7 @@ def process_images_task(self, job_id: str, params: dict):
 
     try:
         processor = SatelliteImageProcessor(options=params)
+        _configure_processor(processor, params)
 
         input_path = params.get("input_path", "")
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
@@ -142,6 +183,7 @@ def create_video_task(self, job_id: str, params: dict):
 
     try:
         processor = SatelliteImageProcessor(options=params)
+        _configure_processor(processor, params)
 
         input_path = params.get("input_path", "")
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
@@ -161,7 +203,16 @@ def create_video_task(self, job_id: str, params: dict):
         processor.set_input_directory(input_path)
         processor.set_output_directory(output_path)
 
-        success = processor.create_video()
+        # Bug 1: Gather input files and call create_video with correct signature
+        input_files = sorted(Path(input_path).glob("*"))
+        input_files = [str(f) for f in input_files if f.is_file() and f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.tif', '.tiff')]
+        video_options = {
+            "fps": params.get("video", {}).get("fps", 24),
+            "codec": params.get("video", {}).get("codec", "h264"),
+            "quality": params.get("video", {}).get("quality", 23),
+            "encoder": params.get("video", {}).get("codec", "H.264"),
+        }
+        success = processor.create_video(input_files, output_path, video_options)
 
         if success:
             _update_job_db(

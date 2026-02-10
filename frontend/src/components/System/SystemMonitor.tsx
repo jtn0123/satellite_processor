@@ -14,13 +14,13 @@ export default function SystemMonitor() {
     },
     {
       label: 'RAM',
-      value: status?.ram_percent ?? 0,
+      value: status?.memory?.percent ?? 0,
       icon: MemoryStick,
       color: '#8b5cf6',
     },
     {
       label: 'Disk',
-      value: status?.disk_percent ?? 0,
+      value: status?.disk?.percent ?? 0,
       icon: HardDrive,
       color: '#f59e0b',
     },

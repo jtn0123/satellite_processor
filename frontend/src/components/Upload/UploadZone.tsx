@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ export default function UploadZone() {
     { name: string; progress: number; status: 'uploading' | 'done' | 'error' }[]
   >([]);
   const qc = useQueryClient();
+  const idxRef = useRef(0);
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
@@ -16,7 +17,7 @@ export default function UploadZone() {
         /\.(png|tiff?|jpg|jpeg)$/i.test(f.name)
       );
       for (const file of fileArray) {
-        const idx = uploads.length;
+        const idx = idxRef.current++;
         setUploads((prev) => [...prev, { name: file.name, progress: 0, status: 'uploading' }]);
         const fd = new FormData();
         fd.append('file', file);
@@ -41,7 +42,7 @@ export default function UploadZone() {
         }
       }
     },
-    [uploads.length, qc]
+    [qc]
   );
 
   return (

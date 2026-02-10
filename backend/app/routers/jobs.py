@@ -89,12 +89,12 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
     # Publish cancellation to WebSocket listeners
     import json
-    import redis as sync_redis
-    r = sync_redis.Redis.from_url(settings.redis_url)
-    r.publish(f"job:{job_id}", json.dumps({
+    import redis.asyncio as aioredis
+    r = aioredis.from_url(settings.redis_url)
+    await r.publish(f"job:{job_id}", json.dumps({
         "job_id": job_id, "progress": 0, "message": "Job cancelled", "status": "cancelled"
     }))
-    r.close()
+    await r.close()
 
     return {"deleted": True}
 

@@ -1,9 +1,13 @@
 """Image upload and listing endpoints"""
 
+import io
+from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import cv2
+from PIL import Image as PILImage
 
 from ..db.database import get_db
 from ..db.models import Image
@@ -55,7 +59,9 @@ async def list_images(db: AsyncSession = Depends(get_db)):
         {
             "id": img.id,
             "filename": img.original_name,
+            "original_name": img.original_name,
             "size": img.file_size,
+            "file_size": img.file_size,
             "width": img.width,
             "height": img.height,
             "satellite": img.satellite,
@@ -78,3 +84,37 @@ async def delete_image(image_id: str, db: AsyncSession = Depends(get_db)):
     await db.delete(image)
     await db.commit()
     return {"deleted": True}
+
+
+@router.get("/{image_id}/thumbnail")
+async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
+    """Return a ~200px thumbnail of the image as JPEG"""
+    result = await db.execute(select(Image).where(Image.id == image_id))
+    image = result.scalar_one_or_none()
+    if not image:
+        raise HTTPException(404, "Image not found")
+    fp = Path(image.file_path)
+    if not fp.exists():
+        raise HTTPException(404, "File not found on disk")
+    try:
+        img = PILImage.open(fp)
+        img.thumbnail((200, 200))
+        buf = io.BytesIO()
+        img.convert("RGB").save(buf, format="JPEG", quality=80)
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="image/jpeg")
+    except Exception:
+        raise HTTPException(500, "Could not generate thumbnail")
+
+
+@router.get("/{image_id}/full")
+async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
+    """Return the original image file"""
+    result = await db.execute(select(Image).where(Image.id == image_id))
+    image = result.scalar_one_or_none()
+    if not image:
+        raise HTTPException(404, "Image not found")
+    fp = Path(image.file_path)
+    if not fp.exists():
+        raise HTTPException(404, "File not found on disk")
+    return FileResponse(str(fp), filename=image.original_name)

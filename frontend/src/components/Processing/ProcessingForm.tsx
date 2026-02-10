@@ -34,12 +34,16 @@ export default function ProcessingForm({ selectedImages, onJobCreated }: Props) 
   const handleLaunch = () => {
     createJob.mutate(
       {
-        image_ids: selectedImages,
-        crop: crop.enabled ? crop : null,
-        false_color: falseColor.enabled ? falseColor : null,
-        timestamp: timestamp.enabled ? timestamp : null,
-        scale: scale.enabled ? scale : null,
-        video,
+        job_type: 'image_process',
+        input_path: '',
+        params: {
+          image_ids: selectedImages,
+          crop: crop.enabled ? crop : null,
+          false_color: falseColor.enabled ? falseColor : null,
+          timestamp: timestamp.enabled ? timestamp : null,
+          scale: scale.enabled ? scale : null,
+          video,
+        },
       },
       { onSuccess: () => onJobCreated?.() }
     );

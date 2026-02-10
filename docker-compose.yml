@@ -32,7 +32,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=4
     environment:
       - DATABASE_URL=postgresql+asyncpg://sat:sat@db/satellite_processor
       - REDIS_URL=redis://redis:6379/0

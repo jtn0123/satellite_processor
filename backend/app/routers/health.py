@@ -70,7 +70,6 @@ async def health_detailed():
 
     # Storage directories check
     try:
-        storage = Path(settings.storage_path)
         dirs_ok = True
         for sub in [settings.upload_dir, settings.output_dir, settings.temp_dir]:
             if sub is None:

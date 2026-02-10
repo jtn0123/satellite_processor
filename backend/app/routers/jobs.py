@@ -125,6 +125,7 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     import json
+
     import redis.asyncio as aioredis
     r = aioredis.from_url(settings.redis_url)
     await r.publish(f"job:{job_id}", json.dumps({

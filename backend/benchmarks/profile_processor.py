@@ -9,10 +9,8 @@ Run standalone:
 
 import cProfile
 import io
-import os
 import pstats
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path

@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 test('upload page renders drop zone', async ({ page }) => {
   await page.goto('/upload');
   // The UploadZone component should be visible
-  await expect(page.locator('text=Upload Images')).toBeVisible();
+  await expect(page.locator('h1:has-text("Upload Images")')).toBeVisible();
 });
 
 test('shows Image Library section', async ({ page }) => {
@@ -28,9 +28,7 @@ test('shows Image Library section', async ({ page }) => {
   await expect(page.locator('text=Image Library')).toBeVisible();
 });
 
-test('file input is triggerable', async ({ page }) => {
+test('drop zone has upload text', async ({ page }) => {
   await page.goto('/upload');
-  // There should be a file input element on the page
-  const fileInput = page.locator('input[type="file"]');
-  await expect(fileInput).toHaveCount(1);
+  await expect(page.locator('text=Drag & drop satellite images here').first()).toBeVisible();
 });

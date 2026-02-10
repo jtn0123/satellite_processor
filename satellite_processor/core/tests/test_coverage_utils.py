@@ -195,6 +195,14 @@ class TestCreateLinkData:
         assert result["display_name"] == "image.png"
 
 
+try:
+    import pytestqt  # noqa: F401
+    _has_qt = True
+except ImportError:
+    _has_qt = False
+
+
+@pytest.mark.skipif(not _has_qt, reason="pytest-qt not installed")
 class TestPresetManager:
     def test_save_and_load_preset(self, qapp):
         pm = PresetManager()

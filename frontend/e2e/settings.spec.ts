@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
 
 test('form fields render', async ({ page }) => {
   await page.goto('/settings');
-  await expect(page.locator('text=Settings')).toBeVisible();
+  await expect(page.locator('h1:has-text("Settings")')).toBeVisible();
   await expect(page.locator('text=Default Output Directory')).toBeVisible();
   await expect(page.locator('text=Default Video Codec')).toBeVisible();
 });

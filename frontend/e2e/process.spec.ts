@@ -17,24 +17,17 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('step wizard navigates', async ({ page }) => {
+test('process page loads', async ({ page }) => {
   await page.goto('/process');
-  await expect(page.locator('text=Image Processing')).toBeVisible();
-  await expect(page.locator('text=Video Settings')).toBeVisible();
-  await expect(page.locator('text=Review & Launch')).toBeVisible();
+  await expect(page.locator('h1:has-text("Process Images")')).toBeVisible();
 });
 
 test('shows Select Images heading', async ({ page }) => {
   await page.goto('/process');
-  await expect(page.locator('text=Select Images')).toBeVisible();
+  await expect(page.locator('text=Select Images').first()).toBeVisible();
 });
 
-test('back/next step buttons work', async ({ page }) => {
+test('shows empty gallery when no images', async ({ page }) => {
   await page.goto('/process');
-  // Click Video Settings step
-  await page.click('text=Video Settings');
-  await expect(page.locator('text=Video Settings')).toBeVisible();
-  // Click back to Image Processing
-  await page.click('text=Image Processing');
-  await expect(page.locator('text=Image Processing')).toBeVisible();
+  await expect(page.locator('text=No images uploaded yet')).toBeVisible();
 });

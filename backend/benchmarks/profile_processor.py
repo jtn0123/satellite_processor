@@ -27,15 +27,24 @@ TEST_SIZES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Synthetic test-image generation
+# ---------------------------------------------------------------------------
+
 def generate_test_image(width: int, height: int, tmp_dir: Path) -> Path:
     """Create a synthetic GOES-like PNG with gradient + noise."""
     arr = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
+    # Add a gradient to mimic Earth-disk imagery
     grad = np.linspace(0, 255, width, dtype=np.uint8)
     arr[:, :, 1] = (arr[:, :, 1].astype(np.uint16) + grad) // 2
     path = tmp_dir / f"synthetic_{width}x{height}.png"
     cv2.imwrite(str(path), arr)
     return path
 
+
+# ---------------------------------------------------------------------------
+# Individual operation benchmarks
+# ---------------------------------------------------------------------------
 
 def bench_crop(img: np.ndarray) -> np.ndarray:
     """Crop center 50%."""
@@ -45,7 +54,7 @@ def bench_crop(img: np.ndarray) -> np.ndarray:
 
 
 def bench_false_color(img: np.ndarray) -> np.ndarray:
-    """Simple false-color remap (colormap on luma)."""
+    """Simple false-color remap (swap channels + apply colormap on luma)."""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return cv2.applyColorMap(gray, cv2.COLORMAP_INFERNO)
 
@@ -69,8 +78,12 @@ def bench_file_discovery(directory: Path) -> list:
     return sorted(directory.rglob("*.png"))
 
 
+# ---------------------------------------------------------------------------
+# Runner
+# ---------------------------------------------------------------------------
+
 def _time_op(name: str, fn, *args):
-    """Run fn with perf_counter timing, return (name, duration_s, result)."""
+    """Run *fn* with perf_counter timing, return (name, duration_s, result)."""
     start = time.perf_counter()
     result = fn(*args)
     elapsed = time.perf_counter() - start
@@ -83,6 +96,7 @@ def run_benchmarks():
 
     results: list[tuple[str, str, float]] = []
 
+    # Generate images
     for w, h in TEST_SIZES:
         label = f"{w}x{h}"
         print(f"Generating {label} test image ...")
@@ -97,10 +111,13 @@ def run_benchmarks():
             _, elapsed, _ = _time_op(op_name, fn, img)
             results.append((label, op_name, elapsed))
 
+    # File discovery benchmark (across all generated files)
     _, elapsed, _ = _time_op("file_discovery", bench_file_discovery, tmp_dir)
     results.append(("all", "file_discovery", elapsed))
 
-    # cProfile on largest image
+    # -----------------------------------------------------------------------
+    # cProfile for the full pipeline on the largest image
+    # -----------------------------------------------------------------------
     largest = cv2.imread(str(tmp_dir / f"synthetic_{TEST_SIZES[-1][0]}x{TEST_SIZES[-1][1]}.png"))
     prof = cProfile.Profile()
     prof.enable()
@@ -109,6 +126,9 @@ def run_benchmarks():
     bench_timestamp_overlay(largest)
     prof.disable()
 
+    # -----------------------------------------------------------------------
+    # Output summary table
+    # -----------------------------------------------------------------------
     print("\n" + "=" * 60)
     print(f"{'Size':<14} {'Operation':<22} {'Time (ms)':>10}")
     print("-" * 60)
@@ -122,6 +142,7 @@ def run_benchmarks():
     ps.print_stats(20)
     print(stream.getvalue())
 
+    # Cleanup
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
 

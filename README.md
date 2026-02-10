@@ -1,140 +1,90 @@
-# Satellite Image Processor
+# Satellite Processor
 
-A powerful Qt-based application specifically designed for processing NOAA GOES satellite imagery and creating animations from the processed images.
+Web application for processing GOES satellite imagery — upload images, apply false color, crop regions, add timestamps, and generate timelapse videos, all from your browser.
 
-## NOAA GOES Satellite Support
+## Architecture
 
-This application is specifically designed to process images from NOAA's Geostationary Operational Environmental Satellites (GOES), including:
-- GOES-16 (GOES-East)
-- GOES-18 (GOES-West replacement)
-
-### Supported Image Formats
-
-#### Input Requirements
-- **File Format:** PNG images exported from GOES satellite data
-- **Naming Convention:** Must follow GOES naming format (e.g., `G16_13_YYYYMMDDTHHMMSSZ.png`)
-- **Resolution:** Full resolution GOES images (typically 5424×5424 or 10848×10848 pixels)
-- **Bit Depth:** 8-bit or 16-bit grayscale images
-- **Channels Supported:**
-  - Channel 13 (Clean Infrared)
-  - Channel 02 (Red Visible)
-  - Channel 07 (Shortwave IR)
-  - Multi-channel composites
-
-#### Output Formats
-- **Video:** MP4 files with configurable codecs
-  - H.264 (default, maximum compatibility)
-  - HEVC/H.265 (better compression)
-  - AV1 (best quality)
-- **Images:** 
-  - PNG (lossless)
-  - JPEG (configurable quality)
-  - TIFF (for further processing)
-
-### GOES Image Processing Features
-- **False Color Generation:**
-  - Uses Sanchez algorithm for atmospheric penetration
-  - Multiple color schemes available
-  - Custom underlay map support
-- **Image Enhancement:**
-  - Automatic contrast enhancement
-  - Temperature-based colorization
-  - Cloud top enhancement
-- **Timestamp Overlay:**
-  - Automatic extraction from GOES filename
-  - Configurable format and position
-  - UTC/Local time display
-
-## Features
-
-- **Image Processing**
-  - Batch processing of satellite images
-  - Cropping and scaling options
-  - Timestamp overlay support
-  - False color processing using Sanchez
-  - Multi-threaded processing for improved performance
-  - Progress tracking and error handling
-
-- **Video Creation**
-  - Create animations from processed images
-  - Configurable FPS and duration
-  - Multiple codec support (H.264, HEVC, AV1)
-  - Hardware acceleration options (NVIDIA NVENC, Intel QSV, AMD AMF)
-  - Custom frame interpolation options
-
-- **Advanced Features**
-  - Frame interpolation (Linear, Cubic, AI-based)
-  - Multiple false color methods
-  - Real-time system resource monitoring (CPU, RAM, GPU)
-  - Progress tracking and detailed status updates
-  - Drag and drop file support
-  - Settings persistence
-  - Error handling and logging
-
-## Requirements
-
-### Software Requirements
-- Python 3.9 or higher
-- FFmpeg (must be installed and in system PATH)
-- Sanchez (optional, for false color processing)
-- NVIDIA GPU drivers (optional, for NVENC hardware acceleration)
-
-### Python Package Requirements
-```bash
-# Install all required packages
-pip install -r requirements.txt
-
-# Or install individually:
-pip install PyQt6>=6.4.0
-pip install opencv-python>=4.6.0
-pip install numpy>=1.23.0
-pip install pillow>=9.3.0
-pip install psutil>=5.9.0
-pip install wmi>=1.5.1        # For Windows system monitoring
-pip install pynvml>=11.4.1    # For NVIDIA GPU monitoring
-pip install ffmpeg-python>=0.2.0
-pip install typing-extensions>=4.4.0
-pip install requests>=2.28.0
-pip install pathlib>=1.0.1
+```
+Browser ──► Nginx (React SPA) ──► FastAPI (REST + WebSocket) ──► Celery Worker
+                                         │                            │
+                                    PostgreSQL                     Redis
+                                    (jobs, images)              (task queue)
+                                         │
+                                    Shared Volume (/data)
 ```
 
-## Installation
+**Services:**
+- **Frontend** — React 18 + TypeScript + Vite + TailwindCSS (served via Nginx)
+- **API** — FastAPI with async SQLAlchemy, WebSocket for live job progress
+- **Worker** — Celery worker running the core `satellite_processor` engine
+- **PostgreSQL** — Job history, image metadata, presets
+- **Redis** — Celery broker + result backend
 
-// ...existing installation section...
+## Quick Start
 
-## Usage for GOES Imagery
+```bash
+# Production (all 5 services, detached)
+docker compose up --build -d
 
-1. **Obtain GOES Images:**
-   - Download from NOAA's data servers or pull from sat
-   - Use GOES tools like GeoNetcast
-   - Support for direct GRB data feed (with additional tools)
+# Open in browser
+open http://localhost:3000
+```
 
-2. **Prepare Images:**
-   - Ensure files follow naming convention
-   - Place in a single directory
-   - Images should be in chronological order by text nameing
+## Development
 
-3. **Process Images:**
-   - Select input directory containing GOES images
-   - Choose desired false color method
-   - Configure timestamp and enhancement options
-   - Select output format and location
+```bash
+# Dev mode (hot-reload for backend, SQLite instead of Postgres)
+make dev
 
-4. **Create Animation:**
-   - Set desired frame rate (typical 10-30 fps)
-   - Choose interpolation method if desired
-   - Select video codec and quality settings
-   - Generate final animation
+# Or manually:
+docker compose -f docker-compose.dev.yml up --build
+```
 
-### Recommended Settings for GOES
+Frontend dev server (outside Docker):
+```bash
+cd frontend && npm install && npm run dev
+```
 
-#### False Color Processing
-- **Standard Method:** Best for general viewing
-- **Enhanced Method:** Better for storm structure
-- **Natural:** Best for daytime imagery
-- **Fire Detection:** Optimized for hot spot detection
+## Makefile Commands
 
-#### Frame Settings
-- **Frame Rate:** 10-15 fps for smooth motion
-- **Duration:** 0.5-1.0 seconds per frame
-- **Interpolation:** Recommended for >30 minute intervals
+| Command | Description |
+|---------|-------------|
+| `make dev` | Start dev environment with hot-reload |
+| `make prod` | Start production stack (detached) |
+| `make test` | Run backend + frontend tests |
+| `make clean` | Stop all containers and remove volumes |
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/images/upload` | Upload satellite images (multipart) |
+| `GET` | `/api/images` | List uploaded images with metadata |
+| `DELETE` | `/api/images/{id}` | Delete an image |
+| `POST` | `/api/jobs` | Create processing job |
+| `GET` | `/api/jobs` | List all jobs |
+| `GET` | `/api/jobs/{id}` | Job detail + progress |
+| `DELETE` | `/api/jobs/{id}` | Cancel/delete job |
+| `GET` | `/api/jobs/{id}/output` | Download processed output |
+| `WS` | `/ws/jobs/{id}` | Real-time progress stream |
+| `GET` | `/api/presets` | List processing presets |
+| `POST` | `/api/presets` | Save preset |
+| `GET` | `/api/system/status` | System resource usage |
+
+## Desktop GUI
+
+The original PyQt6 desktop application is still available on the `main` branch:
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## CI/CD
+
+- **PRs** → runs Python tests, frontend build check, linting (`.github/workflows/test.yml`)
+- **Push to `release`** → builds and pushes Docker images to GHCR (`.github/workflows/docker.yml`)
+
+## License
+
+MIT

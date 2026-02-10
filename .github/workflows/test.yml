@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main, release]
+
+jobs:
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libgl1 libglib2.0-0
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ruff
+
+      - name: Lint with ruff
+        run: ruff check backend/ satellite_processor/
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -v --tb=short
+
+  frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint || true
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

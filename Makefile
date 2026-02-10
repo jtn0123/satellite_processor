@@ -1,23 +1,15 @@
-.PHONY: lint format test coverage install clean
+.PHONY: dev prod test clean
 
-lint:
-	black --check .
-	pylint satellite_processor --fail-under=6.0 --disable=C0114,C0115,C0116,C0301,E0401,E1101
+dev:
+	docker compose -f docker-compose.dev.yml up --build
 
-format:
-	black .
+prod:
+	docker compose up --build -d
 
 test:
-	QT_QPA_PLATFORM=offscreen xvfb-run pytest -v --tb=short
-
-coverage:
-	QT_QPA_PLATFORM=offscreen xvfb-run pytest --cov=satellite_processor --cov-report=term-missing --cov-report=html
-
-install:
-	pip install -r requirements.txt
-	pip install -e .
+	cd backend && pip install -r requirements.txt -q && pytest -v --tb=short
+	cd frontend && npm ci --silent && npm run build
 
 clean:
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
-	rm -rf .coverage htmlcov/ *.egg-info/ dist/ build/
+	docker compose down -v
+	docker compose -f docker-compose.dev.yml down -v 2>/dev/null || true

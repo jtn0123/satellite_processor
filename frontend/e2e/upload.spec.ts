@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 test('upload page renders drop zone', async ({ page }) => {
   await page.goto('/upload');
   // The UploadZone component should be visible
-  await expect(page.locator('text=Upload Images')).toBeVisible();
+  await expect(page.locator('h1:has-text("Upload Images")')).toBeVisible();
 });
 
 test('shows Image Library section', async ({ page }) => {

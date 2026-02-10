@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
 
 test('stats cards render', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('text=Dashboard')).toBeVisible();
+  await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible();
   // System stats should be visible
   await expect(page.locator('text=/cpu/i').first()).toBeVisible();
 });

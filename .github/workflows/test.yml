@@ -79,6 +79,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
       - name: Install Playwright Browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium
@@ -86,6 +90,8 @@ jobs:
       - name: Run E2E tests
         working-directory: frontend
         run: npx playwright test
+        env:
+          CI: true
 
       - name: Upload test results
         if: always()

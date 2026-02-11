@@ -72,6 +72,25 @@ cd frontend && npm install && npm run dev
 | `GET` | `/api/system/status` | System resource usage |
 | `GET` | `/api/health` | Basic health check |
 | `GET` | `/api/health/detailed` | Detailed health (DB, Redis, disk) |
+| `GET` | `/api/goes/products` | List available GOES satellites/bands |
+| `POST` | `/api/goes/fetch` | Fetch GOES frames for a time range (max 24h) |
+| `GET` | `/api/goes/gaps` | Analyze coverage gaps |
+| `POST` | `/api/goes/backfill` | Auto-fill detected gaps |
+| `GET` | `/api/jobs/{id}/download` | Download job output (single file or zip) |
+| `POST` | `/api/jobs/bulk-download` | Download outputs from multiple jobs |
+
+## GOES Satellite Data
+
+The GOES Data page lets you fetch imagery directly from NOAA's public S3 buckets:
+
+- **Satellites:** GOES-16, GOES-18, GOES-19
+- **Sectors:** FullDisk, CONUS, Mesoscale1, Mesoscale2
+- **Bands:** C01–C16 (all 16 ABI bands)
+- **Time Range:** Max 24 hours per fetch request
+- **Gap Detection:** Automatically finds missing frames in your collection
+- **Backfill:** One-click gap filling fetches missing frames
+
+Fetched frames are converted from NetCDF to PNG and added to your image library.
 
 ## Development Setup
 

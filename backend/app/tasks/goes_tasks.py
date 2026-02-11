@@ -34,7 +34,7 @@ def _get_sync_db():
 
     if _sync_engine is None:
         sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
-        _sync_engine = create_engine(sync_url)
+        _sync_engine = create_engine(sync_url, pool_size=5, max_overflow=10, pool_recycle=3600)
     return Session(_sync_engine)
 
 
@@ -159,27 +159,41 @@ def backfill_gaps(self, job_id: str, params: dict):
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
 
     try:
-        # Run gap detection synchronously
-        import asyncio
-
-        from ..db.database import async_session
-        from ..services.gap_detector import find_gaps
+        # #206: Use sync DB for gap detection instead of asyncio.run() which is fragile
+        from ..db.models import Image
 
         satellite = params.get("satellite")
         band = params.get("band")
         sector = params.get("sector", "FullDisk")
         expected_interval = params.get("expected_interval", 10.0)
 
-        async def _find():
-            async with async_session() as session:
-                return await find_gaps(
-                    session,
-                    satellite=satellite,
-                    band=band,
-                    expected_interval=expected_interval,
-                )
+        session = _get_sync_db()
+        try:
+            from sqlalchemy import select as sa_select
+            query = sa_select(Image.captured_at).where(
+                Image.captured_at.isnot(None)
+            ).order_by(Image.captured_at.asc())
+            if satellite:
+                query = query.where(Image.satellite == satellite)
+            if band:
+                query = query.where(Image.channel == band)
+            timestamps = [r[0] for r in session.execute(query).all()]
+        finally:
+            session.close()
 
-        gaps = asyncio.run(_find())
+        # Find gaps
+        threshold = expected_interval * 1.5
+        gaps = []
+        for i in range(1, len(timestamps)):
+            delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
+            if delta_minutes > threshold:
+                expected_frames = max(int(delta_minutes / expected_interval) - 1, 1)
+                gaps.append({
+                    "start": timestamps[i - 1].isoformat(),
+                    "end": timestamps[i].isoformat(),
+                    "duration_minutes": round(delta_minutes, 1),
+                    "expected_frames": expected_frames,
+                })
 
         if not gaps:
             _update_job_db(

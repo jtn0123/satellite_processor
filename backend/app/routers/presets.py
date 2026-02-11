@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,9 +20,15 @@ router = APIRouter(prefix="/api/presets", tags=["presets"])
 
 
 @router.get("")
-async def list_presets(db: AsyncSession = Depends(get_db)):
-    """List all presets"""
-    result = await db.execute(select(Preset).order_by(Preset.name))
+async def list_presets(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    """List presets with pagination (#160)."""
+    result = await db.execute(
+        select(Preset).order_by(Preset.name).offset(offset).limit(limit)
+    )
     presets = result.scalars().all()
     return [
         {"id": p.id, "name": p.name, "params": p.params, "created_at": str(p.created_at)}

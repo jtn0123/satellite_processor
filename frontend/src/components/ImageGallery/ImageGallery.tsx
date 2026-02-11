@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useImages, useDeleteImage } from '../../hooks/useApi';
+import { formatBytes } from '../../utils/format';
 import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 
 interface SatImage {
@@ -285,10 +286,4 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatBytes(bytes: number) {
-  if (!bytes) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
+// #169: formatBytes moved to shared utils/format.ts

@@ -1,6 +1,8 @@
 """Pydantic schemas for GOES endpoints."""
 
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -42,6 +44,9 @@ class GoesFetchRequest(BaseModel):
         start = info.data.get("start_time")
         if start and v <= start:
             raise ValueError("end_time must be after start_time")
+        # #207: Cap time range at 24 hours
+        if start and (v - start) > timedelta(hours=24):
+            raise ValueError("Time range must not exceed 24 hours")
         return v
 
 

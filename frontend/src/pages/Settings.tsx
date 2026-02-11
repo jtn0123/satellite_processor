@@ -10,13 +10,11 @@ export default function SettingsPage() {
   const updateSettings = useUpdateSettings();
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [synced, setSynced] = useState(false);
 
-  // Sync form with fetched settings (only on initial load)
-  if (settings && !synced) {
-    setForm(settings);
-    setSynced(true);
-  }
+  // #173: Use useEffect instead of anti-pattern state update during render
+  useEffect(() => {
+    if (settings) setForm(settings);
+  }, [settings]);
 
   useEffect(() => {
     if (!toast) return;
@@ -51,11 +49,11 @@ export default function SettingsPage() {
                 onChange={(e) => setForm({ ...form, default_false_color: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="vegetation">Vegetation</option>
-                <option value="fire">Fire</option>
-                <option value="natural">Natural</option>
-                <option value="urban">Urban</option>
-                <option value="water">Water</option>
+                <option value="vegetation">Vegetation (NDVI)</option>
+                <option value="fire">Fire Detection</option>
+                <option value="water_vapor">Water Vapor</option>
+                <option value="dust">Dust RGB</option>
+                <option value="airmass">Air Mass</option>
               </select>
             </div>
             <div className="flex items-center gap-3">
@@ -99,8 +97,8 @@ export default function SettingsPage() {
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="h264">H.264</option>
-                <option value="h265">H.265</option>
-                <option value="vp9">VP9</option>
+                <option value="hevc">HEVC (H.265)</option>
+                <option value="av1">AV1</option>
               </select>
             </div>
             <div>

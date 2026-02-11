@@ -33,11 +33,11 @@ class CropSettings(BaseModel):
 
 class SettingsUpdate(BaseModel):
     default_crop: CropSettings | None = None
-    default_false_color: Literal["vegetation", "fire", "natural", "urban", "water"] | None = None
+    default_false_color: Literal["vegetation", "fire", "water_vapor", "dust", "airmass"] | None = None
     timestamp_enabled: bool | None = None
     timestamp_position: Literal["top-left", "top-right", "bottom-left", "bottom-right"] | None = None
     video_fps: int | None = Field(default=None, ge=1, le=120)
-    video_codec: Literal["h264", "h265", "vp9"] | None = None
+    video_codec: Literal["h264", "hevc", "av1"] | None = None
     video_quality: int | None = Field(default=None, ge=0, le=51)
 
 

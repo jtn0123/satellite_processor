@@ -27,7 +27,7 @@ export default function DonutChart({ value, color, size = 96 }: DonutChartProps)
         textAnchor="middle"
         dominantBaseline="central"
         fill="white"
-        fontSize="18"
+        fontSize={size < 64 ? 14 : 18}
         fontWeight="bold"
       >
         {Math.round(value)}%

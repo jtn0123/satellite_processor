@@ -84,8 +84,18 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     """WebSocket endpoint for real-time job progress via Redis pub/sub"""
     import redis.asyncio as aioredis
 
+    # #193: Validate API key on WebSocket handshake
+    if app_settings.api_key:
+        key = websocket.query_params.get("api_key", "") or (
+            websocket.headers.get("x-api-key", "")
+        )
+        if key != app_settings.api_key:
+            await websocket.close(code=4401, reason="Invalid or missing API key")
+            return
+
     await websocket.accept()
-    r = aioredis.from_url(app_settings.redis_url)
+    # #197: Use connection pool instead of creating a new connection per WebSocket
+    r = aioredis.from_url(app_settings.redis_url, decode_responses=True, max_connections=20)
     pubsub = r.pubsub()
     await pubsub.subscribe(f"job:{job_id}")
 

@@ -14,10 +14,10 @@ const defaultTimestamp = { enabled: true, position: 'bottom-left' };
 const defaultScale = { enabled: false, factor: 1.0 };
 const defaultVideo = { fps: 24, codec: 'h264', quality: 23, interpolation: 'none' };
 
-function initFromParams(defaults: Record<string, unknown>, params: Record<string, unknown> | undefined, key: string, enableOnMatch = true) {
+function initFromParams<T extends Record<string, unknown>>(defaults: T, params: Record<string, unknown> | undefined, key: string, enableOnMatch = true): T {
   if (!params || !(key in params)) return defaults;
   const p = params[key] as Record<string, unknown>;
-  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p };
+  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p } as T;
 }
 
 export default function ProcessingForm({ selectedImages, onJobCreated, initialParams }: Props) {

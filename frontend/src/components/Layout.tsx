@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Upload,
@@ -9,8 +9,11 @@ import {
   Satellite,
   FlaskConical,
   FileText,
+  Menu,
+  X,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
+import KeyboardShortcuts from './KeyboardShortcuts';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -23,6 +26,9 @@ const links = [
 
 export default function Layout() {
   const [versionInfo, setVersionInfo] = useState('v2.1.0');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   useEffect(() => {
     fetch('/api/health/version')
@@ -34,11 +40,31 @@ export default function Layout() {
       .catch(() => {});
   }, []);
 
+  // Close drawer on navigation
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  // Close drawer on outside click
+  const handleOverlayClick = useCallback(() => setDrawerOpen(false), []);
+
+  // Close drawer on Escape
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [drawerOpen]);
+
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-slate-950 border-r border-slate-800">
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-800">
+      <KeyboardShortcuts />
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-space-900 border-r border-subtle">
+        <div className="flex items-center gap-2 px-6 py-5 border-b border-subtle">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>
         </div>
@@ -49,10 +75,10 @@ export default function Layout() {
               to={l.to}
               end={l.to === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-ring ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-slate-400 hover:text-white hover:bg-space-800 border border-transparent'
                 }`
               }
             >
@@ -66,41 +92,82 @@ export default function Layout() {
             href="/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-space-800 transition-colors focus-ring"
           >
             <FileText className="w-5 h-5" />
             API Docs
           </a>
         </div>
-        <div className="px-6 py-4 border-t border-slate-800 text-xs text-slate-500 flex items-center gap-2">
+        <div className="px-6 py-4 border-t border-subtle text-xs text-slate-500 flex items-center gap-2">
           <Cpu className="w-4 h-4" />
           Satellite Processor {versionInfo}
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800">
+      {/* Mobile drawer overlay */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={handleOverlayClick}
+        />
+      )}
+
+      {/* Mobile slide-out drawer */}
+      <div
+        ref={drawerRef}
+        className={`fixed inset-y-0 left-0 w-72 bg-space-900 border-r border-subtle z-50 transform transition-transform duration-200 ease-out md:hidden ${
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-subtle">
           <div className="flex items-center gap-2">
             <Satellite className="w-5 h-5 text-primary" />
             <span className="font-bold">SatTracker</span>
           </div>
-          <nav className="flex gap-1">
-            {links.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end={l.to === '/'}
-                aria-label={l.label}
-                title={l.label}
-                className={({ isActive }) =>
-                  `p-2 rounded-lg ${isActive ? 'text-primary bg-primary/10' : 'text-slate-400'}`
-                }
-              >
-                <l.icon className="w-5 h-5" />
-              </NavLink>
-            ))}
-          </nav>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-space-800 text-slate-400 focus-ring"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <nav className="px-3 py-4 space-y-1">
+          {links.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.to === '/'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-400 hover:text-white hover:bg-space-800'
+                }`
+              }
+            >
+              <l.icon className="w-5 h-5" />
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+
+      {/* Main content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-space-900 border-b border-subtle">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="p-2 rounded-lg hover:bg-space-800 text-slate-400 focus-ring"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Satellite className="w-5 h-5 text-primary" />
+            <span className="font-bold">SatTracker</span>
+          </div>
+          <div className="w-9" /> {/* Spacer for centering */}
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">

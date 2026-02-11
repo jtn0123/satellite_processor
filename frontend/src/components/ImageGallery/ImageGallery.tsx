@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useImages, useDeleteImage } from '../../hooks/useApi';
-import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff } from 'lucide-react';
+import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 
 interface SatImage {
   id: string;
@@ -15,6 +15,9 @@ interface SatImage {
   uploaded_at: string;
 }
 
+type SortField = 'uploaded_at' | 'original_name' | 'satellite';
+type SortDir = 'asc' | 'desc';
+
 interface Props {
   selectable?: boolean;
   selected?: Set<string>;
@@ -28,16 +31,46 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // Sort & filter state
+  const [sortField, setSortField] = useState<SortField>('uploaded_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [filterSatellite, setFilterSatellite] = useState('');
+  const [filterChannel, setFilterChannel] = useState('');
+
+  const allImages = images as SatImage[];
+
+  // Derive unique satellites and channels
+  const satellites = useMemo(
+    () => [...new Set(allImages.map((i) => i.satellite).filter(Boolean))].sort(),
+    [allImages]
+  );
+  const channels = useMemo(
+    () => [...new Set(allImages.map((i) => i.channel).filter(Boolean))].sort(),
+    [allImages]
+  );
+
+  // Filter and sort
+  const displayed = useMemo(() => {
+    let result = [...allImages];
+    if (filterSatellite) result = result.filter((i) => i.satellite === filterSatellite);
+    if (filterChannel) result = result.filter((i) => i.channel === filterChannel);
+    result.sort((a, b) => {
+      const aVal = a[sortField] ?? '';
+      const bVal = b[sortField] ?? '';
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return result;
+  }, [allImages, filterSatellite, filterChannel, sortField, sortDir]);
+
   const closePreview = useCallback(() => {
     setPreview(null);
     previousFocusRef.current?.focus();
   }, []);
 
-  // Focus trap and escape key
   useEffect(() => {
     if (!preview) return;
     previousFocusRef.current = document.activeElement as HTMLElement;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { closePreview(); return; }
       if (e.key === 'Tab' && modalRef.current) {
@@ -51,27 +84,27 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
-    // Auto-focus close button
-    setTimeout(() => {
-      const btn = modalRef.current?.querySelector<HTMLElement>('button');
-      btn?.focus();
-    }, 0);
+    setTimeout(() => modalRef.current?.querySelector<HTMLElement>('button')?.focus(), 0);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [preview, closePreview]);
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortField(field); setSortDir('desc'); }
+  };
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-square bg-slate-800 rounded-xl animate-pulse" />
+          <div key={i} className="aspect-square bg-card rounded-xl animate-pulse" />
         ))}
       </div>
     );
   }
 
-  if ((images as SatImage[]).length === 0) {
+  if (allImages.length === 0) {
     return (
       <div className="text-center py-16 text-slate-500">
         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -82,16 +115,70 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
 
   return (
     <>
+      {/* Sort & Filter bar */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex items-center gap-1.5">
+          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          {([
+            ['uploaded_at', 'Date'],
+            ['original_name', 'Name'],
+            ['satellite', 'Satellite'],
+          ] as [SortField, string][]).map(([field, label]) => (
+            <button
+              key={field}
+              onClick={() => toggleSort(field)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                sortField === field
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-slate-400 hover:text-white hover:bg-space-800'
+              }`}
+            >
+              {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+            </button>
+          ))}
+        </div>
+
+        {(satellites.length > 0 || channels.length > 0) && (
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+            {satellites.length > 0 && (
+              <select
+                value={filterSatellite}
+                onChange={(e) => setFilterSatellite(e.target.value)}
+                className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+              >
+                <option value="">All Satellites</option>
+                {satellites.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
+            {channels.length > 0 && (
+              <select
+                value={filterChannel}
+                onChange={(e) => setFilterChannel(e.target.value)}
+                className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+              >
+                <option value="">All Channels</option>
+                {channels.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {(images as SatImage[]).map((img) => (
+        {displayed.map((img) => (
           <div
             key={img.id}
-            className={`group relative bg-slate-800 rounded-xl overflow-hidden cursor-pointer border-2 transition-colors ${
-              selectable && selected?.has(img.id) ? 'border-primary' : 'border-transparent hover:border-slate-600'
+            className={`group relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-colors ${
+              selectable && selected?.has(img.id) ? 'border-primary' : 'border-subtle hover:border-space-600'
             }`}
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
           >
-            <div className="aspect-square bg-slate-700 flex items-center justify-center relative">
+            <div className="aspect-square bg-space-800 flex items-center justify-center relative">
               <img
                 src={`/api/images/${img.id}/thumbnail`}
                 alt={img.original_name}
@@ -109,7 +196,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               </div>
             </div>
             {selectable && selected?.has(img.id) && (
-              <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+              <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-20">
                 <span className="text-white text-xs font-bold">✓</span>
               </div>
             )}
@@ -138,7 +225,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
                     deleteImage.mutate(img.id);
                   }
                 }}
-                className="absolute top-2 right-2 p-1.5 bg-slate-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400"
+                className="absolute top-2 right-2 p-1.5 bg-space-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -147,7 +234,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
         ))}
       </div>
 
-      {/* Preview Modal */}
+      {/* Lightbox Preview Modal */}
       {preview && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
@@ -158,12 +245,12 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
           ref={modalRef}
         >
           <div
-            className="bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
+            className="bg-space-850 border border-subtle rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+            <div className="flex items-center justify-between p-4 border-b border-subtle">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
-              <button onClick={closePreview} aria-label="Close preview">
+              <button onClick={closePreview} aria-label="Close preview" className="focus-ring rounded-lg p-1">
                 <X className="w-5 h-5 text-slate-400 hover:text-white" />
               </button>
             </div>
@@ -171,7 +258,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               <img
                 src={`/api/images/${preview.id}/full`}
                 alt={preview.original_name}
-                className="w-full rounded-lg bg-slate-900"
+                className="w-full rounded-lg bg-space-900"
               />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
                 <Stat label="Resolution" value={`${preview.width}×${preview.height}`} />
@@ -191,7 +278,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-slate-700/50 rounded-lg px-3 py-2">
+    <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
       <p className="text-[10px] text-slate-400 uppercase tracking-wider">{label}</p>
       <p className="font-medium text-sm mt-0.5">{value}</p>
     </div>

@@ -94,3 +94,47 @@ export function usePresets() {
     queryFn: () => api.get('/presets').then((r) => r.data),
   });
 }
+
+export function useCreatePreset() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; params: Record<string, unknown> }) =>
+      api.post('/presets', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
+  });
+}
+
+export function useDeletePreset() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => api.delete(`/presets/${name}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
+  });
+}
+
+export function useRenamePreset() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+      api.patch(`/presets/${oldName}`, { name: newName }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
+  });
+}
+
+// Stats
+export function useStats() {
+  return useQuery({
+    queryKey: ['stats'],
+    queryFn: () => api.get('/stats').then((r) => r.data),
+    refetchInterval: 10_000,
+  });
+}
+
+// Health detailed
+export function useHealthDetailed() {
+  return useQuery({
+    queryKey: ['health-detailed'],
+    queryFn: () => api.get('/health/detailed').then((r) => r.data),
+    refetchInterval: 15_000,
+  });
+}

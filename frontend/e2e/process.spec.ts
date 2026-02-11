@@ -29,5 +29,5 @@ test('shows Select Images heading', async ({ page }) => {
 
 test('shows empty gallery when no images', async ({ page }) => {
   await page.goto('/process');
-  await expect(page.locator('text=No images uploaded yet')).toBeVisible();
+  await expect(page.locator('text=No images yet')).toBeVisible();
 });

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStats, useHealthDetailed } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  Rocket,
+  Download,
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import { formatBytes } from '../utils/format';
@@ -29,7 +31,7 @@ const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
 export default function Dashboard() {
   usePageTitle('Dashboard');
   const navigate = useNavigate();
-  const { data: stats } = useStats();
+  const { data: stats, isLoading: statsLoading } = useStats();
   const { data: health } = useHealthDetailed();
 
   const statCards = [
@@ -52,7 +54,14 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {statsLoading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-card border border-subtle rounded-xl p-4 h-24 animate-pulse" />
+          ))}
+        </div>
+      )}
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
         {statCards.map((s) => (
           <div
             key={s.label}
@@ -85,6 +94,45 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Getting Started - shown when no images */}
+      {stats && stats.total_images === 0 && (
+        <div className="bg-card border border-primary/20 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Rocket className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold">Getting Started</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link to="/upload" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                <Upload className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">1. Upload satellite images</p>
+                <p className="text-xs text-slate-400 mt-1">Upload PNG, TIFF, or JPEG satellite imagery</p>
+              </div>
+            </Link>
+            <Link to="/process" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+              <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
+                <FlaskConical className="w-5 h-5 text-violet-400" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">2. Create a processing job</p>
+                <p className="text-xs text-slate-400 mt-1">Select images and configure processing parameters</p>
+              </div>
+            </Link>
+            <Link to="/jobs" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+              <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
+                <Download className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">3. Download results</p>
+                <p className="text-xs text-slate-400 mt-1">Monitor jobs and download processed outputs</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div className="flex gap-3">

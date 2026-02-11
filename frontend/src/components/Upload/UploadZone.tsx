@@ -80,7 +80,7 @@ export default function UploadZone() {
         <p className="text-sm text-slate-300">
           Drag & drop satellite images here, or click to browse
         </p>
-        <p className="text-xs text-slate-500 mt-1">PNG, TIFF, JPEG supported</p>
+        <p className="text-xs text-slate-500 mt-1">PNG, TIFF, JPEG supported · Max file size: 500 MB</p>
       </div>
 
       {uploads.length > 0 && (

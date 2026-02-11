@@ -1,15 +1,18 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ProcessingForm from '../components/Processing/ProcessingForm';
 import PresetManager from '../components/Processing/PresetManager';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useImages } from '../hooks/useApi';
+import { Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function ProcessPage() {
   usePageTitle('Process');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [presetParams, setPresetParams] = useState<Record<string, unknown> | null>(null);
   const navigate = useNavigate();
+  const { data: images = [] } = useImages();
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -33,8 +36,23 @@ export default function ProcessPage() {
         </p>
       </div>
 
+      {/* Empty state when no images */}
+      {(images as unknown[]).length === 0 && (
+        <div className="bg-card border border-subtle rounded-xl p-8 text-center">
+          <ImageIcon className="w-12 h-12 mx-auto mb-3 text-slate-500" />
+          <p className="text-slate-300 font-medium">No images yet</p>
+          <p className="text-sm text-slate-400 mt-1">Upload some satellite images to get started.</p>
+          <Link
+            to="/upload"
+            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-medium transition-colors"
+          >
+            <Upload className="w-4 h-4" /> Upload Images
+          </Link>
+        </div>
+      )}
+
       {/* Image selection */}
-      <div>
+      {(images as unknown[]).length > 0 && <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">
             Select Images{' '}
@@ -52,7 +70,7 @@ export default function ProcessPage() {
           )}
         </div>
         <ImageGallery selectable selected={selected} onToggle={toggle} />
-      </div>
+      </div>}
 
       {/* Presets + Processing config */}
       {selected.size > 0 && (

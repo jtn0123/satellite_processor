@@ -173,7 +173,7 @@ async def delete_image(request: Request, image_id: str, db: AsyncSession = Depen
 
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
-    """Return a ~200px thumbnail"""
+    """Return a ~256px thumbnail"""
     from ..config import settings as app_settings
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -193,7 +193,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
 
     def _generate_thumbnail():
         with PILImage.open(fp) as img:
-            img.thumbnail((200, 200))
+            img.thumbnail((256, 256))
             img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
 
     try:

@@ -43,6 +43,14 @@ import psutil
 
 from .file_manager import FileManager
 from .image_operations import ImageOperations
+from .pipeline import (
+    CropStage,
+    FalseColorStage,
+    Pipeline,
+    ScaleStage,
+    TimestampStage,
+    validate_image,
+)
 from .resource_monitor import ResourceMonitor
 from .settings_manager import SettingsManager
 from .utils import is_closing
@@ -326,6 +334,11 @@ class SatelliteImageProcessor:
             if not current_files:
                 raise ValueError("No valid images found in input directory")
 
+            # Validate images before processing (#15)
+            current_files = [f for f in current_files if validate_image(f)]
+            if not current_files:
+                raise ValueError("No valid/readable images found after validation")
+
             num_processes = min(
                 len(current_files), max(1, multiprocessing.cpu_count() - 1)
             )
@@ -333,19 +346,16 @@ class SatelliteImageProcessor:
 
             pool = multiprocessing.Pool(processes=num_processes)
 
-            # STAGE 1: False Color
-            current_files = self._stage_false_color(current_files, dirs, pool)
-            if self.cancelled:
-                return False
+            # Build and run the processing pipeline (#13)
+            order_fn = self.file_manager.keep_file_order
+            pipeline = Pipeline(resource_monitor=self.resource_monitor)
+            pipeline.add_stage(FalseColorStage(self.options, dirs, self._parallel_sanchez, order_fn))
+            pipeline.add_stage(CropStage(self.options, dirs, self._parallel_crop, order_fn))
+            pipeline.add_stage(TimestampStage(self.options, dirs, self._parallel_timestamp, order_fn))
+            pipeline.add_stage(ScaleStage())
 
-            # STAGE 2: Cropping
-            current_files = self._stage_crop(current_files, dirs, pool)
-            if self.cancelled:
-                return False
-
-            # STAGE 3: Timestamps
-            current_files = self._stage_timestamp(current_files, dirs, pool)
-            if self.cancelled:
+            current_files = pipeline.run(current_files, pool, self._emit_progress)
+            if self.cancelled or not current_files:
                 return False
 
             # STAGE 4: Video Creation (single process)
@@ -740,9 +750,9 @@ class SatelliteImageProcessor:
             self.logger.error(f"Error during cancellation: {e}", exc_info=True)
             self._emit_error(f"Failed to cancel processing: {e}")
 
-    def get_input_files(self, input_dir: str | None = None) -> list[Path]:
+    def get_input_files(self, input_dir: str | Path | None = None) -> list[Path]:
         """Get ordered input files using FileManager"""
-        dir_to_use = input_dir or self.input_dir
+        dir_to_use = str(input_dir) if input_dir else self.input_dir
         return self.file_manager.get_input_files(dir_to_use)
 
     def _get_output_filename(self, prefix="Animation", ext=".mp4"):
@@ -841,7 +851,7 @@ class SatelliteImageProcessor:
             }
         )
 
-    def set_input_directory(self, path: str) -> None:
+    def set_input_directory(self, path: str | Path) -> None:
         """Set input directory and save immediately"""
         if not path:
             self.logger.error("Attempted to set empty input directory")
@@ -859,7 +869,7 @@ class SatelliteImageProcessor:
         except Exception as e:
             self.logger.error(f"Failed to set input directory: {e}", exc_info=True)
 
-    def set_output_directory(self, path: str) -> None:
+    def set_output_directory(self, path: str | Path) -> None:
         """Set output directory and save immediately"""
         if not path:
             self.logger.error("Attempted to set empty output directory")
@@ -916,6 +926,7 @@ class SatelliteImageProcessor:
     @staticmethod
     def _save_single_image(args) -> bool:
         """Save a single image (called by multiprocessing pool)"""
+        # TODO (#18): Preserve EXIF metadata from source image using PIL/Pillow
         idx, img, output_dir, timestamp = args
         try:
             output_filename = f"processed_image_{idx:04d}_{timestamp}.png"

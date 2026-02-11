@@ -20,6 +20,23 @@ vi.mock('../hooks/useApi', () => ({
     isLoading: false,
   }),
   useDeleteJob: () => ({ mutate: vi.fn() }),
+  useStats: () => ({
+    data: { total_images: 10, total_jobs: 5, active_jobs: 1, storage_used_mb: 256 },
+    isLoading: false,
+  }),
+  useHealthDetailed: () => ({
+    data: {
+      status: 'healthy',
+      checks: {
+        database: { status: 'ok', latency_ms: 1 },
+        redis: { status: 'ok', latency_ms: 1 },
+        disk: { status: 'ok', free_gb: 100 },
+        storage: { status: 'ok' },
+      },
+      version: '2.1.0',
+    },
+    isLoading: false,
+  }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ProcessingForm from '../components/Processing/ProcessingForm';
+import PresetManager from '../components/Processing/PresetManager';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ProcessPage() {
   usePageTitle('Process');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [presetParams, setPresetParams] = useState<Record<string, unknown> | null>(null);
   const navigate = useNavigate();
 
   const toggle = (id: string) => {
@@ -17,6 +19,10 @@ export default function ProcessPage() {
       return next;
     });
   };
+
+  const handleLoadPreset = useCallback((params: Record<string, unknown>) => {
+    setPresetParams(params);
+  }, []);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -48,14 +54,24 @@ export default function ProcessPage() {
         <ImageGallery selectable selected={selected} onToggle={toggle} />
       </div>
 
-      {/* Processing config */}
+      {/* Presets + Processing config */}
       {selected.size > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Configure Processing</h2>
-          <ProcessingForm
-            selectedImages={Array.from(selected)}
-            onJobCreated={() => navigate('/jobs')}
-          />
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <h2 className="text-lg font-semibold mb-4">Configure Processing</h2>
+            <ProcessingForm
+              selectedImages={Array.from(selected)}
+              onJobCreated={() => navigate('/jobs')}
+              initialParams={presetParams}
+            />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Presets</h2>
+            <PresetManager
+              currentParams={{ images: selected.size }}
+              onLoadPreset={handleLoadPreset}
+            />
+          </div>
         </div>
       )}
     </div>

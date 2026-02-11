@@ -5,6 +5,7 @@ import { Crop, Palette, Clock, Film, Rocket, ChevronRight, ChevronLeft } from 'l
 interface Props {
   selectedImages: string[];
   onJobCreated?: () => void;
+  initialParams?: Record<string, unknown> | null;
 }
 
 export default function ProcessingForm({ selectedImages, onJobCreated }: Props) {

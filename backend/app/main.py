@@ -16,7 +16,7 @@ from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
 from .rate_limit import limiter
-from .routers import goes, health, images, jobs, presets, system
+from .routers import download, goes, health, images, jobs, presets, stats, system
 from .routers import settings as settings_router
 
 # Paths that skip API key auth
@@ -75,6 +75,8 @@ app.include_router(system.router)
 app.include_router(settings_router.router)
 app.include_router(goes.router)
 app.include_router(health.router)
+app.include_router(stats.router)
+app.include_router(download.router)
 
 
 @app.websocket("/ws/jobs/{job_id}")

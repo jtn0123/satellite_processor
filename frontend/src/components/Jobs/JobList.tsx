@@ -1,5 +1,5 @@
 import { useJobs, useDeleteJob } from '../../hooks/useApi';
-import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Download } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -33,7 +33,7 @@ export default function JobList({ onSelect, limit }: Props) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-14 bg-slate-800 rounded-lg animate-pulse" />
+          <div key={i} className="h-14 bg-card rounded-lg animate-pulse" />
         ))}
       </div>
     );
@@ -51,7 +51,7 @@ export default function JobList({ onSelect, limit }: Props) {
         return (
           <div
             key={job.id}
-            className="flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-3 hover:bg-slate-750 cursor-pointer group"
+            className="flex items-center gap-3 bg-card border border-subtle rounded-lg px-4 py-3 hover:bg-card-hover cursor-pointer group transition-colors"
             onClick={() => onSelect?.(job.id)}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
@@ -71,23 +71,34 @@ export default function JobList({ onSelect, limit }: Props) {
               </p>
             </div>
             {job.status === 'processing' && (
-              <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-space-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
                   style={{ width: `${job.progress}%` }}
                 />
               </div>
             )}
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 hidden sm:block">
               {new Date(job.created_at).toLocaleString()}
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {job.status === 'completed' && (
+                <a
+                  href={`/api/jobs/${job.id}/download`}
+                  download
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-primary"
+                  title="Download"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect?.(job.id);
                 }}
-                className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white"
+                className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-white"
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -98,7 +109,7 @@ export default function JobList({ onSelect, limit }: Props) {
                     deleteJob.mutate(job.id);
                   }
                 }}
-                className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-red-400"
+                className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-red-400"
               >
                 <Trash2 className="w-4 h-4" />
               </button>

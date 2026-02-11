@@ -14,12 +14,12 @@ from satellite_processor.core.settings_schema import to_core_settings
 
 
 def configure_processor(processor: SatelliteImageProcessor, params: dict):
-    # Unify API-style settings to core format (#14)
-    params = to_core_settings(params)
     """Configure processor settings from API params — single source of truth.
 
     Used by both the Celery tasks and any direct processor invocations.
     """
+    # Unify API-style settings to core format (#14)
+    params = to_core_settings(params)
     sm = processor.settings_manager
 
     if params.get("crop"):

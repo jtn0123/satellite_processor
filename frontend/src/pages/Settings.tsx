@@ -4,19 +4,10 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
 import { Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export default function SettingsPage() {
-  usePageTitle('Settings');
-  const { data: settings, isLoading } = useSettings();
+function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
   const updateSettings = useUpdateSettings();
-  const [form, setForm] = useState<Record<string, unknown>>({});
+  const [form, setForm] = useState<Record<string, unknown>>(settings);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [synced, setSynced] = useState(false);
-
-  // Sync form with fetched settings (only on initial load)
-  if (settings && !synced) {
-    setForm(settings);
-    setSynced(true);
-  }
 
   useEffect(() => {
     if (!toast) return;
@@ -40,10 +31,7 @@ export default function SettingsPage() {
 
       <div className="bg-slate-800 rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold">Processing Defaults</h2>
-        {isLoading ? (
-          <div className="h-32 animate-pulse bg-slate-700 rounded-lg" />
-        ) : (
-          <div className="grid gap-4">
+        <div className="grid gap-4">
             <div>
               <label className="text-sm text-slate-400">Default False Color</label>
               <select
@@ -51,11 +39,11 @@ export default function SettingsPage() {
                 onChange={(e) => setForm({ ...form, default_false_color: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="vegetation">Vegetation</option>
-                <option value="fire">Fire</option>
-                <option value="natural">Natural</option>
-                <option value="urban">Urban</option>
-                <option value="water">Water</option>
+                <option value="vegetation">Vegetation (NDVI)</option>
+                <option value="fire">Fire Detection</option>
+                <option value="water_vapor">Water Vapor</option>
+                <option value="dust">Dust RGB</option>
+                <option value="airmass">Air Mass</option>
               </select>
             </div>
             <div className="flex items-center gap-3">
@@ -99,8 +87,8 @@ export default function SettingsPage() {
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="h264">H.264</option>
-                <option value="h265">H.265</option>
-                <option value="vp9">VP9</option>
+                <option value="hevc">HEVC (H.265)</option>
+                <option value="av1">AV1</option>
               </select>
             </div>
             <div>
@@ -138,7 +126,6 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        )}
       </div>
 
       <div>
@@ -147,4 +134,20 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  usePageTitle('Settings');
+  const { data: settings, isLoading } = useSettings();
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-slate-400">Loading settings...</div>;
+  }
+
+  if (!settings) {
+    return <div className="text-center py-12 text-slate-400">Failed to load settings</div>;
+  }
+
+  // key={JSON.stringify(settings)} remounts the form when settings change from server
+  return <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />;
 }

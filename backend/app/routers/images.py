@@ -188,10 +188,16 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     if cache_path.exists():
         return FileResponse(str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
-    try:
+    # #204: Run PIL thumbnail generation in a thread to avoid blocking the event loop
+    import asyncio
+
+    def _generate_thumbnail():
         with PILImage.open(fp) as img:
             img.thumbnail((200, 200))
             img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
+
+    try:
+        await asyncio.to_thread(_generate_thumbnail)
         return FileResponse(str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
     except Exception:

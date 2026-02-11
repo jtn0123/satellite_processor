@@ -1,7 +1,6 @@
 """GOES satellite data fetcher using public NOAA S3 buckets."""
 from __future__ import annotations
 
-import io
 import logging
 import tempfile
 from datetime import datetime, timedelta
@@ -247,16 +246,17 @@ def fetch_single_preview(
 
     # Find closest
     closest = min(available, key=lambda x: abs((x["scan_time"] - time).total_seconds()))
-    SATELLITE_BUCKETS[closest["key"].split("/")[0]] if "/" in closest["key"] else SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     try:
         response = s3.get_object(Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"])
         nc_bytes = response["Body"].read()
-        io.BytesIO()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-            _netcdf_to_png(nc_bytes, Path(tmp.name))
-            with open(tmp.name, "rb") as f:
-                return f.read()
+            tmp_path = Path(tmp.name)
+        try:
+            _netcdf_to_png(nc_bytes, tmp_path)
+            return tmp_path.read_bytes()
+        finally:
+            tmp_path.unlink(missing_ok=True)
     except Exception:
         logger.exception("Failed to fetch preview")
         return None

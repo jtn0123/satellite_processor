@@ -8,7 +8,7 @@ celery_app = Celery(
     "satellite_processor",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.processing"],
+    include=["app.tasks.processing", "app.tasks.goes_tasks"],
 )
 
 celery_app.conf.update(

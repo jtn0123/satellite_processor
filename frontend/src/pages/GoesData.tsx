@@ -34,7 +34,7 @@ export default function GoesData() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
 
-  const { data: products } = useQuery<Product>({
+  const { data: products, isLoading: productsLoading, isError: productsError } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
@@ -80,6 +80,8 @@ export default function GoesData() {
       </div>
 
       {/* Selectors */}
+      {productsLoading && <div className="text-sm text-slate-400">Loading products...</div>}
+      {productsError && <div className="text-sm text-red-400">Failed to load satellite products</div>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
         <div>
           <label className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
@@ -161,6 +163,7 @@ export default function GoesData() {
         {fetchMutation.isError && (
           <div className="text-sm text-red-400">
             Failed to create fetch job
+            {fetchMutation.error instanceof Error && `: ${fetchMutation.error.message}`}
           </div>
         )}
       </div>
@@ -226,7 +229,9 @@ export default function GoesData() {
                       );
                     });
                   })()}
-                  <div className="absolute inset-0 bg-emerald-500/20" />
+                  {gaps.coverage_percent > 0 && (
+                    <div className="absolute inset-0 bg-emerald-500/20" />
+                  )}
                 </div>
 
                 <div className="max-h-48 overflow-y-auto space-y-1">

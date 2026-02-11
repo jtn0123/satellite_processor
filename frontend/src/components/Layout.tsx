@@ -45,13 +45,25 @@ export default function Layout() {
   // Close drawer on outside click
   const handleOverlayClick = useCallback(() => setDrawerOpen(false), []);
 
-  // Close drawer on Escape
+  // Close drawer on Escape + trap focus (#211)
   useEffect(() => {
     if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setDrawerOpen(false);
+      if (e.key === 'Escape') { setDrawerOpen(false); return; }
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     document.addEventListener('keydown', handler);
+    // Focus first element in drawer
+    setTimeout(() => drawerRef.current?.querySelector<HTMLElement>('a, button')?.focus(), 0);
     return () => document.removeEventListener('keydown', handler);
   }, [drawerOpen]);
 

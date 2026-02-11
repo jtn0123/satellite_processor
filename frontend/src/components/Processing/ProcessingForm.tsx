@@ -8,23 +8,31 @@ interface Props {
   initialParams?: Record<string, unknown> | null;
 }
 
-export default function ProcessingForm({ selectedImages, onJobCreated }: Props) {
+const defaultCrop = { enabled: false, x: 0, y: 0, w: 1920, h: 1080 };
+const defaultFalseColor = { enabled: false, method: 'vegetation' };
+const defaultTimestamp = { enabled: true, position: 'bottom-left' };
+const defaultScale = { enabled: false, factor: 1.0 };
+const defaultVideo = { fps: 24, codec: 'h264', quality: 23, interpolation: 'none' };
+
+function initFromParams<T extends Record<string, unknown>>(defaults: T, params: Record<string, unknown> | undefined, key: string, enableOnMatch = true): T {
+  if (!params || !(key in params)) return defaults;
+  const p = params[key] as Record<string, unknown>;
+  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p } as T;
+}
+
+export default function ProcessingForm({ selectedImages, onJobCreated, initialParams }: Props) {
+  const p = initialParams as Record<string, Record<string, unknown>> | undefined;
   const [step, setStep] = useState(0);
   const createJob = useCreateJob();
 
-  // Processing params
-  const [crop, setCrop] = useState({ enabled: false, x: 0, y: 0, w: 1920, h: 1080 });
-  const [falseColor, setFalseColor] = useState({ enabled: false, method: 'vegetation' });
-  const [timestamp, setTimestamp] = useState({ enabled: true, position: 'bottom-left' });
-  const [scale, setScale] = useState({ enabled: false, factor: 1.0 });
+  // Processing params — initialized from preset if provided
+  const [crop, setCrop] = useState(() => initFromParams(defaultCrop, p, 'crop'));
+  const [falseColor, setFalseColor] = useState(() => initFromParams(defaultFalseColor, p, 'false_color'));
+  const [timestamp, setTimestamp] = useState(() => initFromParams(defaultTimestamp, p, 'timestamp'));
+  const [scale, setScale] = useState(() => initFromParams(defaultScale, p, 'scale'));
 
   // Video params
-  const [video, setVideo] = useState({
-    fps: 24,
-    codec: 'h264',
-    quality: 23,
-    interpolation: 'none',
-  });
+  const [video, setVideo] = useState(() => initFromParams(defaultVideo, p, 'video', false));
 
   const steps = [
     { icon: Crop, label: 'Image Processing' },

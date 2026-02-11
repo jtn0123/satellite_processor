@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import io
 import os
 import zipfile
+from collections.abc import Generator
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
@@ -16,9 +16,50 @@ from ..config import settings
 from ..db.database import get_db
 from ..db.models import Job
 from ..errors import APIError
+from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+
+def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
+    """#202: Stream zip creation to avoid loading entire archive into memory.
+
+    Each tuple is (absolute_path, archive_name).
+    """
+    import io
+
+    # We use ZIP_STORED (no compression) so we can stream without buffering.
+    # For large satellite outputs this is much safer than in-memory ZIP_DEFLATED.
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for abs_path, arc_name in files:
+            zf.write(abs_path, arc_name)
+            # Flush what we have so far
+            yield buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+    # Final central directory bytes
+    remaining = buf.getvalue()
+    if remaining:
+        yield remaining
+
+
+def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
+    """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
+    output_path = job.output_path or str(Path(settings.output_dir) / job.id)
+    if not os.path.exists(output_path):
+        return []
+    if os.path.isfile(output_path):
+        arc = f"{prefix}/{os.path.basename(output_path)}" if prefix else os.path.basename(output_path)
+        return [(output_path, arc)]
+    result = []
+    for fname in sorted(os.listdir(output_path)):
+        fpath = os.path.join(output_path, fname)
+        if os.path.isfile(fpath):
+            arc = f"{prefix}/{fname}" if prefix else fname
+            result.append((fpath, arc))
+    return result
 
 
 @router.get("/{job_id}/download")
@@ -49,14 +90,10 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
     if len(files) == 1:
         return FileResponse(os.path.join(output_path, files[0]), filename=files[0])
 
-    # Multiple files — zip on the fly
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for fname in files:
-            zf.write(os.path.join(output_path, fname), fname)
-    buf.seek(0)
+    # Multiple files — stream zip
+    file_pairs = [(os.path.join(output_path, f), f) for f in files]
     return StreamingResponse(
-        buf,
+        _zip_stream(file_pairs),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="job_{job_id[:8]}_output.zip"'},
     )
@@ -64,9 +101,13 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
 
 @router.post("/bulk-download")
 @limiter.limit("5/minute")
-async def bulk_download(request: Request, payload: dict, db: AsyncSession = Depends(get_db)):
-    """Download outputs from multiple jobs as a single zip."""
-    job_ids = payload.get("job_ids", [])
+async def bulk_download(request: Request, payload: BulkDeleteRequest, db: AsyncSession = Depends(get_db)):
+    """Download outputs from multiple jobs as a single zip.
+
+    #155: Uses BulkDeleteRequest (renamed concept — reuses ids list Pydantic model)
+    for proper validation instead of raw dict.
+    """
+    job_ids = payload.ids
     if not job_ids:
         raise APIError(400, "no_jobs", "No job IDs provided")
 
@@ -75,23 +116,16 @@ async def bulk_download(request: Request, payload: dict, db: AsyncSession = Depe
     if not jobs:
         raise APIError(404, "not_found", "No completed jobs found")
 
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for job in jobs:
-            output_path = job.output_path or str(Path(settings.output_dir) / job.id)
-            if not os.path.exists(output_path):
-                continue
-            prefix = f"job_{job.id[:8]}"
-            if os.path.isfile(output_path):
-                zf.write(output_path, f"{prefix}/{os.path.basename(output_path)}")
-            elif os.path.isdir(output_path):
-                for fname in os.listdir(output_path):
-                    fpath = os.path.join(output_path, fname)
-                    if os.path.isfile(fpath):
-                        zf.write(fpath, f"{prefix}/{fname}")
-    buf.seek(0)
+    file_pairs: list[tuple[str, str]] = []
+    for job in jobs:
+        prefix = f"job_{job.id[:8]}"
+        file_pairs.extend(_collect_job_files(job, prefix))
+
+    if not file_pairs:
+        raise APIError(404, "not_found", "No output files found")
+
     return StreamingResponse(
-        buf,
+        _zip_stream(file_pairs),
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="bulk_output.zip"'},
     )

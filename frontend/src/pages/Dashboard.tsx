@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
+import { formatBytes } from '../utils/format';
 
 const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
   ok: { icon: CheckCircle2, color: 'text-green-400' },
@@ -24,14 +25,6 @@ const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
   warning: { icon: AlertTriangle, color: 'text-yellow-400' },
   degraded: { icon: AlertTriangle, color: 'text-yellow-400' },
 };
-
-function formatBytes(bytes: number) {
-  if (!bytes) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
 
 export default function Dashboard() {
   usePageTitle('Dashboard');

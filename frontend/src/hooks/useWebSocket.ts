@@ -18,6 +18,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
   const retriesRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const terminalRef = useRef(false);
+  const connectRef = useRef<() => void>(() => {});
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -56,7 +57,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        connect();
+        connectRef.current();
       }, delay);
     };
 
@@ -72,6 +73,9 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
       } catch (err) { console.error('Failed to parse WebSocket message:', err); }
     };
   }, [jobId, maxRetries]);
+
+  // Keep ref in sync with latest connect
+  connectRef.current = connect;
 
   useEffect(() => {
     terminalRef.current = false;

@@ -9,7 +9,7 @@ type ShortcutMap = Record<string, KeyHandler>;
  */
 export function useHotkeys(shortcuts: ShortcutMap) {
   const pendingRef = useRef<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -23,7 +23,7 @@ export function useHotkeys(shortcuts: ShortcutMap) {
       if (pendingRef.current) {
         const combo = `${pendingRef.current} ${key}`;
         pendingRef.current = null;
-        clearTimeout(timerRef.current);
+        if (timerRef.current) clearTimeout(timerRef.current);
         if (shortcuts[combo]) {
           e.preventDefault();
           shortcuts[combo]();
@@ -51,7 +51,7 @@ export function useHotkeys(shortcuts: ShortcutMap) {
     document.addEventListener('keydown', handler);
     return () => {
       document.removeEventListener('keydown', handler);
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [shortcuts]);
 }

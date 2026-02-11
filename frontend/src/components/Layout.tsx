@@ -11,9 +11,12 @@ import {
   FileText,
   Menu,
   X,
+  BookOpen,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import KeyboardShortcuts from './KeyboardShortcuts';
+import ConnectionStatus from './ConnectionStatus';
+import { useJobToasts } from '../hooks/useJobToasts';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -21,6 +24,7 @@ const links = [
   { to: '/process', icon: FlaskConical, label: 'Process' },
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },
   { to: '/goes', icon: Satellite, label: 'GOES Data' },
+  { to: '/presets', icon: BookOpen, label: 'Presets' },
   { to: '/settings', icon: Cog, label: 'Settings' },
 ];
 
@@ -28,6 +32,8 @@ export default function Layout() {
   const [versionInfo, setVersionInfo] = useState('v2.1.0');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  useJobToasts();
 
   useEffect(() => {
     fetch('/api/health/version')
@@ -107,9 +113,12 @@ export default function Layout() {
             API Docs
           </a>
         </div>
-        <div className="px-6 py-4 border-t border-subtle text-xs text-slate-500 flex items-center gap-2">
-          <Cpu className="w-4 h-4" />
-          Satellite Processor {versionInfo}
+        <div className="px-6 py-4 border-t border-subtle space-y-2">
+          <ConnectionStatus />
+          <div className="text-xs text-slate-500 flex items-center gap-2">
+            <Cpu className="w-4 h-4" />
+            Satellite Processor {versionInfo}
+          </div>
         </div>
       </aside>
 

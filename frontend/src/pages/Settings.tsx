@@ -45,15 +45,19 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
                 <option value="dust">Dust RGB</option>
                 <option value="airmass">Air Mass</option>
               </select>
+              <p className="text-xs text-slate-500 mt-1">Color composite applied to satellite imagery. Each mode highlights different atmospheric or surface features.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={(form.timestamp_enabled as boolean) ?? true}
-                onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
-                className="w-4 h-4"
-              />
-              <label className="text-sm text-slate-400">Timestamp Enabled</label>
+            <div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={(form.timestamp_enabled as boolean) ?? true}
+                  onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label className="text-sm text-slate-400">Timestamp Enabled</label>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Burn a date/time overlay onto each frame of the output video.</p>
             </div>
             <div>
               <label className="text-sm text-slate-400">Timestamp Position</label>
@@ -67,6 +71,7 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
                 <option value="bottom-left">Bottom Left</option>
                 <option value="bottom-right">Bottom Right</option>
               </select>
+              <p className="text-xs text-slate-500 mt-1">Corner where the timestamp text appears on video frames.</p>
             </div>
             <div>
               <label className="text-sm text-slate-400">Video FPS</label>
@@ -78,6 +83,7 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
                 onChange={(e) => setForm({ ...form, video_fps: Number(e.target.value) })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               />
+              <p className="text-xs text-slate-500 mt-1">Frames per second for output video. Higher = smoother but larger file. Range: 1–120, default 24.</p>
             </div>
             <div>
               <label className="text-sm text-slate-400">Video Codec</label>
@@ -90,9 +96,10 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
                 <option value="hevc">HEVC (H.265)</option>
                 <option value="av1">AV1</option>
               </select>
+              <p className="text-xs text-slate-500 mt-1">H.264 is most compatible. HEVC/AV1 offer better compression but slower encoding and limited browser support.</p>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Video Quality (0-51, lower is better)</label>
+              <label className="text-sm text-slate-400">Video Quality (CRF)</label>
               <input
                 type="number"
                 min={0}
@@ -101,6 +108,7 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
                 onChange={(e) => setForm({ ...form, video_quality: Number(e.target.value) })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               />
+              <p className="text-xs text-slate-500 mt-1">CRF quality: Lower = better quality, higher file size. Range: 0–51, default 23.</p>
             </div>
             <button
               onClick={handleSave}

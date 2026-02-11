@@ -5,7 +5,7 @@ import api from '../api/client';
 export function useImages() {
   return useQuery({
     queryKey: ['images'],
-    queryFn: () => api.get('/images').then((r) => r.data),
+    queryFn: () => api.get('/images').then((r) => r.data.items ?? r.data),
   });
 }
 
@@ -32,7 +32,7 @@ export function useDeleteImage() {
 export function useJobs() {
   return useQuery({
     queryKey: ['jobs'],
-    queryFn: () => api.get('/jobs').then((r) => r.data),
+    queryFn: () => api.get('/jobs').then((r) => r.data.items ?? r.data),
     refetchInterval: 5000,
   });
 }

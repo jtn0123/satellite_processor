@@ -15,6 +15,7 @@ from ..config import settings
 from ..db.database import get_db
 from ..db.models import Image, Job
 from ..errors import APIError
+from ..models.bulk import BulkDeleteRequest
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -146,13 +147,11 @@ async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(
 
 @router.delete("/bulk")
 async def bulk_delete_jobs(
-    payload: dict,
+    payload: BulkDeleteRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Bulk delete/cancel jobs by IDs. Accepts {"ids": [...]}"""
-    ids = payload.get("ids", [])
-    if not ids or not isinstance(ids, list):
-        raise APIError(400, "invalid_payload", "Must provide a non-empty 'ids' list")
+    """Bulk delete/cancel jobs by IDs."""
+    ids = payload.ids
 
     result = await db.execute(select(Job).where(Job.id.in_(ids)))
     jobs = result.scalars().all()
@@ -183,20 +182,13 @@ async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(g
 
     if job.status_message and job.status_message.startswith("celery_task_id:"):
         celery_task_id = job.status_message.split(":", 1)[1]
-        celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+        try:
+            celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+        except Exception:
+            pass
 
-    job.status = "cancelled"
-    job.completed_at = datetime.now(UTC)
+    await db.delete(job)
     await db.commit()
-
-    import json
-
-    import redis.asyncio as aioredis
-    r = aioredis.from_url(settings.redis_url)
-    await r.publish(f"job:{job_id}", json.dumps({
-        "job_id": job_id, "progress": 0, "message": "Job cancelled", "status": "cancelled"
-    }))
-    await r.close()
 
     return {"deleted": True}
 

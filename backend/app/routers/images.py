@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
+from ..models.bulk import BulkDeleteRequest
 from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -137,13 +138,11 @@ async def list_images(
 
 @router.delete("/bulk")
 async def bulk_delete_images(
-    payload: dict,
+    payload: BulkDeleteRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Bulk delete images by IDs. Accepts {"ids": [...]}"""
-    ids = payload.get("ids", [])
-    if not ids or not isinstance(ids, list):
-        raise APIError(400, "invalid_payload", "Must provide a non-empty 'ids' list")
+    """Bulk delete images by IDs."""
+    ids = payload.ids
 
     result = await db.execute(select(Image).where(Image.id.in_(ids)))
     images = result.scalars().all()
@@ -190,9 +189,9 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
         return FileResponse(str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
     try:
-        img = PILImage.open(fp)
-        img.thumbnail((200, 200))
-        img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
+        with PILImage.open(fp) as img:
+            img.thumbnail((200, 200))
+            img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
         return FileResponse(str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
     except Exception:

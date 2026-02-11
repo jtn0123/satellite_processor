@@ -1,4 +1,9 @@
-"""SQLAlchemy async database setup"""
+"""SQLAlchemy async database setup
+
+# TODO: Set up Alembic migrations for production schema changes.
+# Using create_all() is fine for development but production deployments
+# should use Alembic to manage schema migrations safely.
+"""
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase

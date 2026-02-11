@@ -65,16 +65,11 @@ async def test_delete_already_cancelled_job(client):
 
     assert resp1.status_code == 200
 
-    # Cancel again — should still work since the job row exists (status=cancelled)
-    with patch("app.routers.jobs.celery_app") as mock_celery, \
-         patch("redis.asyncio.Redis.from_url") as mock_redis_cls:
-        mock_r = MagicMock()
-        mock_r.publish = _mock_publish
-        mock_r.close = _mock_close
-        mock_redis_cls.return_value = mock_r
+    # Delete again — should return 404 since the job was actually deleted
+    with patch("app.routers.jobs.celery_app") as mock_celery:
         resp2 = await client.delete(f"/api/jobs/{job_id}")
 
-    assert resp2.status_code == 200
+    assert resp2.status_code == 404
 
 
 @pytest.mark.asyncio

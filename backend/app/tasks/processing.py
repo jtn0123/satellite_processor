@@ -167,6 +167,12 @@ def process_images_task(self, job_id: str, params: dict):
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
+    finally:
+        # Clean up staging directory
+        input_path = params.get("input_path", "")
+        if input_path and "job_staging_" in input_path:
+            import shutil
+            shutil.rmtree(input_path, ignore_errors=True)
 
 
 @celery_app.task(bind=True, name="create_video")
@@ -245,3 +251,9 @@ def create_video_task(self, job_id: str, params: dict):
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
+    finally:
+        # Clean up staging directory
+        input_path = params.get("input_path", "")
+        if input_path and "job_staging_" in input_path:
+            import shutil
+            shutil.rmtree(input_path, ignore_errors=True)

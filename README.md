@@ -70,6 +70,8 @@ cd frontend && npm install && npm run dev
 | `GET` | `/api/presets` | List processing presets |
 | `POST` | `/api/presets` | Save preset |
 | `GET` | `/api/system/status` | System resource usage |
+| `GET` | `/api/health` | Basic health check |
+| `GET` | `/api/health/detailed` | Detailed health (DB, Redis, disk) |
 
 ## Development Setup
 
@@ -92,15 +94,6 @@ pre-commit run --all-files
 
 ```bash
 pip install -r requirements-dev.txt
-```
-
-## Desktop GUI
-
-The original PyQt6 desktop application is still available on the `main` branch:
-
-```bash
-pip install -r requirements.txt
-python app.py
 ```
 
 ## CI/CD

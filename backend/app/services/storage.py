@@ -38,7 +38,7 @@ class StorageService:
         return self.upload_dir / filename
 
     def list_uploads(self) -> list:
-        """List all uploaded files"""
+        """List all uploaded files. NOTE: Dead code — listing is done via DB query in the images router."""
         return [
             {"name": f.name, "size": f.stat().st_size, "path": str(f)}
             for f in self.upload_dir.iterdir()

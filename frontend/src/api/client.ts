@@ -5,4 +5,10 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach API key from env if configured
+const apiKey = import.meta.env.VITE_API_KEY;
+if (apiKey) {
+  api.defaults.headers.common['X-API-Key'] = apiKey;
+}
+
 export default api;

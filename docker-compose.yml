@@ -21,6 +21,7 @@ services:
       - STORAGE_PATH=/app/data
       - API_KEY=${API_KEY:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - PYTHONPATH=/app
     volumes:
       - sat-data:/app/data
     depends_on:
@@ -28,6 +29,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
   worker:
@@ -74,6 +80,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 volumes:
   sat-data:

@@ -18,6 +18,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
   const retriesRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const terminalRef = useRef(false);
+  const connectRef = useRef<() => void>(() => {});
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -56,7 +57,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        connect();
+        connectRef.current();
       }, delay);
     };
 
@@ -73,10 +74,14 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
     };
   }, [jobId, maxRetries]);
 
+  // Keep ref in sync with latest connect
+  useEffect(() => {
+    connectRef.current = connect;
+  });
+
   useEffect(() => {
     terminalRef.current = false;
     retriesRef.current = 0;
-    setReconnecting(false);
     connect();
 
     return () => {

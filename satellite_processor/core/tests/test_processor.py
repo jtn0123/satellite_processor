@@ -1,13 +1,11 @@
 """Tests for processor.py - SatelliteImageProcessor class."""
 
-import pytest
-import numpy as np
-import cv2
 from pathlib import Path
-from datetime import datetime
-from unittest.mock import patch, MagicMock, PropertyMock
-import tempfile
-import logging
+from unittest.mock import MagicMock, patch
+
+import cv2
+import numpy as np
+import pytest
 
 from satellite_processor.core.processor import SatelliteImageProcessor
 

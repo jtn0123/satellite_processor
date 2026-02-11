@@ -13,9 +13,11 @@ Used throughout application for:
 - Common operations
 """
 
-from datetime import datetime
-import re
+from __future__ import annotations
+
 import logging
+import re
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ def parse_satellite_timestamp(filename: str) -> datetime:
             return datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
         return datetime.min
     except Exception as e:
-        logger.warning(f"Could not parse timestamp from filename: {filename}")
+        logger.warning(f"Could not parse timestamp from filename: {filename}: {e}")
         return datetime.min
 
 

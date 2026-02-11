@@ -1,37 +1,20 @@
 """
 File System Operations Manager
 ----------------------------
-Single source of truth for all file operations:
-- File discovery and sorting
-- Directory creation and cleanup
-- Temporary file management
-- Path resolution and validation
-- File ordering by timestamp
-- Input/output path management
-
-Key Responsibilities:
-- Maintain chronological file ordering
-- Handle all temporary storage
-- Manage file cleanup
-- Ensure path security
-- Track file operations
-
-Does NOT handle:
-- Image processing/manipulation
-- Video encoding
-- Business logic
-- GUI operations
+Single source of truth for all file operations.
 """
 
-from pathlib import Path
+from __future__ import annotations
+
 import logging
-import shutil
-from typing import List, Optional, Set
-from datetime import datetime
-from ..utils.helpers import parse_satellite_timestamp
 import os
-import tempfile
 import re
+import shutil
+import tempfile
+from datetime import datetime
+from pathlib import Path
+
+from ..utils.helpers import parse_satellite_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +24,10 @@ class FileManager:
 
     def __init__(self) -> None:
         self.logger: logging.Logger = logging.getLogger(__name__)
-        self._temp_dirs: Set[Path] = set()
-        self._temp_files: Set[Path] = set()
+        self._temp_dirs: set[Path] = set()
+        self._temp_files: set[Path] = set()
 
-    def get_input_files(self, input_dir: Optional[str] = None) -> List[Path]:
+    def get_input_files(self, input_dir: str | None = None) -> list[Path]:
         """Get ordered input files with improved UNC and case handling"""
         try:
             dir_to_use = Path(input_dir) if input_dir else Path(self.default_input_dir)
@@ -59,7 +42,7 @@ class FileManager:
 
             # Case-insensitive glob patterns
             patterns = ["*.png", "*.PNG", "*.jpg", "*.JPG", "*.jpeg", "*.JPEG"]
-            frame_files = set()  # Use set to avoid duplicates
+            frame_files: set[Path] = set()
 
             for pattern in patterns:
                 frame_files.update(dir_to_use.glob(pattern))
@@ -68,13 +51,10 @@ class FileManager:
                 self.logger.error(f"No frame files found in {dir_to_use}")
                 return []
 
-            frame_list = list(frame_files)  # Convert set back to list
+            frame_list = list(frame_files)
 
-            # Sort numerically by frame number
             def get_frame_number(path):
-                match = re.search(
-                    r"frame(\d+)", path.stem.lower()
-                )  # Case-insensitive match
+                match = re.search(r"frame(\d+)", path.stem.lower())
                 return int(match.group(1)) if match else float("inf")
 
             frame_list.sort(key=get_frame_number)
@@ -83,7 +63,7 @@ class FileManager:
             return frame_list
 
         except Exception as e:
-            self.logger.error(f"Error getting input files: {e}")
+            self.logger.error(f"Error getting input files: {e}", exc_info=True)
             return []
 
     def create_temp_directory(self, base_dir: Path, prefix: str = "temp") -> Path:
@@ -102,17 +82,17 @@ class FileManager:
                     try:
                         file.unlink(missing_ok=True)
                     except Exception as e:
-                        self.logger.error(f"Error removing temp file {file}: {e}")
+                        self.logger.error(f"Error removing temp file {file}: {e}", exc_info=True)
                 temp_dir.rmdir()
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")
             except Exception as e:
-                self.logger.error(f"Error cleaning up temp directory: {str(e)}")
+                self.logger.error(f"Error cleaning up temp directory: {e}", exc_info=True)
 
     def parse_satellite_timestamp(self, filename: str) -> datetime:
         """Parse timestamp from satellite image filename"""
-        return parse_satellite_timestamp(filename)  # Use helper function instead
+        return parse_satellite_timestamp(filename)
 
-    def get_output_path(self, output_dir: Optional[str]) -> Path:
+    def get_output_path(self, output_dir: str | None) -> Path:
         """Generate output video path"""
         if not output_dir:
             raise ValueError("Output directory cannot be None")
@@ -122,7 +102,7 @@ class FileManager:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             return output_path / f"Animation_{timestamp}.mp4"
         except Exception as e:
-            self.logger.error(f"Failed to create output path: {e}")
+            self.logger.error(f"Failed to create output path: {e}", exc_info=True)
             raise
 
     def ensure_directory(self, path: str) -> Path:
@@ -135,7 +115,7 @@ class FileManager:
             dir_path.mkdir(parents=True, exist_ok=True)
             return dir_path
         except Exception as e:
-            self.logger.error(f"Failed to ensure directory exists: {e}")
+            self.logger.error(f"Failed to ensure directory exists: {e}", exc_info=True)
             raise
 
     def get_processed_filename(self, original_path: Path, timestamp: str) -> str:
@@ -143,7 +123,7 @@ class FileManager:
         return f"processed_{original_path.stem}_{timestamp}{original_path.suffix}"
 
     def create_temp_dir(
-        self, base_dir: Optional[Path] = None, prefix: str = "temp"
+        self, base_dir: Path | None = None, prefix: str = "temp"
     ) -> Path:
         """Create a secure temporary directory"""
         try:
@@ -154,14 +134,14 @@ class FileManager:
                 temp_dir = Path(tempfile.mkdtemp(prefix=f"{prefix}_{timestamp}_"))
 
             temp_dir.mkdir(parents=True, exist_ok=True)
-            os.chmod(temp_dir, 0o700)  # Secure permissions
+            os.chmod(temp_dir, 0o700)
 
             self._temp_dirs.add(temp_dir)
             self.logger.debug(f"Created temporary directory: {temp_dir}")
             return temp_dir
 
         except Exception as e:
-            self.logger.error(f"Failed to create temp directory: {e}")
+            self.logger.error(f"Failed to create temp directory: {e}", exc_info=True)
             raise
 
     def cleanup(self):
@@ -171,14 +151,14 @@ class FileManager:
                 path.unlink(missing_ok=True)
                 self.logger.debug(f"Removed temporary file: {path}")
             except Exception as e:
-                self.logger.error(f"Error removing temp file {path}: {e}")
+                self.logger.error(f"Error removing temp file {path}: {e}", exc_info=True)
 
         for path in self._temp_dirs:
             try:
                 shutil.rmtree(path, ignore_errors=True)
                 self.logger.debug(f"Removed temporary directory: {path}")
             except Exception as e:
-                self.logger.error(f"Error removing temp directory {path}: {e}")
+                self.logger.error(f"Error removing temp directory {path}: {e}", exc_info=True)
 
         self._temp_files.clear()
         self._temp_dirs.clear()
@@ -191,11 +171,10 @@ class FileManager:
         """Add a directory to be tracked for cleanup"""
         self._temp_dirs.add(Path(dir_path))
 
-    def keep_file_order(self, files: List[Path]) -> List[Path]:
+    def keep_file_order(self, files: list[Path]) -> list[Path]:
         """Ensure files stay in chronological order"""
         self.logger.info(f"Sorting {len(files)} files chronologically")
 
-        # Verify input files
         valid_files = []
         for f in files:
             if f.exists():
@@ -206,7 +185,6 @@ class FileManager:
         if len(valid_files) != len(files):
             self.logger.warning(f"Found {len(valid_files)}/{len(files)} valid files")
 
-        # Sort files by timestamp in filename
         sorted_files = sorted(
             valid_files, key=lambda x: parse_satellite_timestamp(x.name)
         )
@@ -214,7 +192,7 @@ class FileManager:
         self.logger.info(f"Completed sorting {len(sorted_files)} files")
         return sorted_files
 
-    def create_frame_filename(self, index: int, timestamp: str = None) -> str:
+    def create_frame_filename(self, index: int, timestamp: str | None = None) -> str:
         """Create standardized frame filename"""
         if timestamp is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -230,4 +208,4 @@ class FileManager:
         try:
             self.cleanup()
         except Exception as e:
-            self.logger.error(f"Error during cleanup in destructor: {e}")
+            self.logger.error(f"Error during cleanup in destructor: {e}", exc_info=True)

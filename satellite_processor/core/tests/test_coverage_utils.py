@@ -2,26 +2,27 @@
 
 import json
 import logging
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
-from satellite_processor.utils.utils import (
-    get_default_settings,
-    load_config,
-    save_config,
-    is_closing,
-    calculate_uits,
-    validate_uits,
-)
+import pytest
+
 from satellite_processor.utils.helpers import parse_satellite_timestamp
 from satellite_processor.utils.logging_config import setup_logging
+from satellite_processor.utils.presets import PresetManager
 from satellite_processor.utils.url_handler import (
-    normalize_path,
     create_file_url,
     create_link_data,
+    normalize_path,
 )
-from satellite_processor.utils.presets import PresetManager
+from satellite_processor.utils.utils import (
+    calculate_uits,
+    get_default_settings,
+    is_closing,
+    load_config,
+    save_config,
+    validate_uits,
+)
 
 
 class TestGetDefaultSettings:

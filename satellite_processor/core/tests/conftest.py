@@ -1,6 +1,7 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
 from .test_helpers import mock_directories, mock_ffmpeg  # Import fixtures
 
 

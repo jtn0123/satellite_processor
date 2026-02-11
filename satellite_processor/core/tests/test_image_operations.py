@@ -1,12 +1,10 @@
 """Tests for image_operations.py - ImageOperations and Interpolator classes."""
 
-import pytest
-import numpy as np
-import cv2
-from pathlib import Path
 from datetime import datetime
-from unittest.mock import patch, MagicMock
-import logging
+from pathlib import Path
+
+import cv2
+import numpy as np
 
 from satellite_processor.core.image_operations import ImageOperations, Interpolator
 

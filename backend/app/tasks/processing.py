@@ -10,8 +10,12 @@ from ..celery_app import celery_app
 from ..config import settings
 from ..services.processor import configure_processor
 
-# Add parent project to path for core imports
-sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+# Add parent project to path for core imports (handles both local dev and Docker)
+try:
+    _project_root = str(Path(__file__).resolve().parents[4])
+except IndexError:
+    _project_root = str(Path(__file__).resolve().parents[-1])
+sys.path.insert(0, _project_root)
 
 from satellite_processor.core.processor import SatelliteImageProcessor
 

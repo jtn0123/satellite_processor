@@ -1,0 +1,95 @@
+version: "3.8"
+services:
+  frontend:
+    image: ghcr.io/jtn0123/satellite-processor-frontend:latest
+    container_name: sat-tracker-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/jtn0123/satellite-processor-api:latest
+    container_name: sat-tracker-api
+    user: "0:0"
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sat:${POSTGRES_PASSWORD}@db/satellite_processor
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      STORAGE_PATH: /app/data
+      API_KEY: ${API_KEY}
+      CORS_ORIGINS: '["https://sat.neuhard.dev","http://localhost:3001"]'
+      PYTHONPATH: /app
+    volumes:
+      - sat-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/jtn0123/satellite-processor-api:latest
+    container_name: sat-tracker-worker
+    user: "0:0"
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sat:${POSTGRES_PASSWORD}@db/satellite_processor
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      STORAGE_PATH: /app/data
+      PYTHONPATH: /app
+    volumes:
+      - sat-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: sat-tracker-db
+    environment:
+      POSTGRES_DB: satellite_processor
+      POSTGRES_USER: sat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - sat-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sat -d satellite_processor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sat-tracker-redis
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - sat-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  sat-data:
+  sat-pgdata:
+  sat-redis:

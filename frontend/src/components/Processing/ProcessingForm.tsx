@@ -8,7 +8,7 @@ interface Props {
   initialParams?: Record<string, unknown> | null;
 }
 
-export default function ProcessingForm({ selectedImages, onJobCreated, initialParams: _initialParams }: Props) {
+export default function ProcessingForm({ selectedImages, onJobCreated }: Props) {
   const [step, setStep] = useState(0);
   const createJob = useCreateJob();
 

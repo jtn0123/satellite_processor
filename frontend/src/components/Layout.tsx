@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
   Upload,
@@ -28,7 +28,6 @@ export default function Layout() {
   const [versionInfo, setVersionInfo] = useState('v2.1.0');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const location = useLocation();
 
   useEffect(() => {
     fetch('/api/health/version')
@@ -41,9 +40,7 @@ export default function Layout() {
   }, []);
 
   // Close drawer on navigation
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [location.pathname]);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   // Close drawer on outside click
   const handleOverlayClick = useCallback(() => setDrawerOpen(false), []);
@@ -138,6 +135,7 @@ export default function Layout() {
               key={l.to}
               to={l.to}
               end={l.to === '/'}
+              onClick={closeDrawer}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive

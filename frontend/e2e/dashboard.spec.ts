@@ -3,7 +3,27 @@ import { test, expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
+    if (url.includes('/api/health/version')) return route.fulfill({ json: { version: '2.1.0', build: 'test123' } });
+    if (url.includes('/api/health/detailed')) {
+      return route.fulfill({
+        json: {
+          status: 'healthy',
+          checks: {
+            database: { status: 'ok', latency_ms: 1 },
+            redis: { status: 'ok', latency_ms: 1 },
+            disk: { status: 'ok', free_gb: 100 },
+            storage: { status: 'ok' },
+          },
+          version: '2.1.0',
+        },
+      });
+    }
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
+    if (url.includes('/api/stats')) {
+      return route.fulfill({
+        json: { total_images: 10, total_jobs: 5, active_jobs: 1, storage_used_mb: 256 },
+      });
+    }
     if (url.includes('/api/images')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     if (url.includes('/api/jobs')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     if (url.includes('/api/system/status')) {
@@ -20,8 +40,8 @@ test.beforeEach(async ({ page }) => {
 test('stats cards render', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible();
-  // System stats should be visible
-  await expect(page.locator('text=/cpu/i').first()).toBeVisible();
+  // Stats widgets should be visible
+  await expect(page.locator('text=/images/i').first()).toBeVisible();
 });
 
 test('quick action buttons navigate correctly', async ({ page }) => {

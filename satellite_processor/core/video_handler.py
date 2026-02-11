@@ -159,6 +159,7 @@ class VideoHandler:
         input_dir: Union[str, Path],
         output_path: Union[str, Path],
         options: Dict[str, Any],
+        _retry_count: int = 0,
     ) -> bool:
         """Create video with improved validation and retry handling"""
         list_file = None
@@ -286,16 +287,22 @@ class VideoHandler:
                     return False
 
                 if "Cannot use NVENC" in str(e.stderr):
+                    if _retry_count >= 3:
+                        self.logger.error("Max retries exceeded for NVENC fallback")
+                        return False
                     self.logger.warning("NVENC failed, falling back to CPU encoding")
                     self._is_processing = False  # Reset for retry
                     options["hardware"] = "CPU"
                     options["encoder"] = "H.264"
-                    return self.create_video(input_dir, output_path, options)
+                    return self.create_video(input_dir, output_path, options, _retry_count=_retry_count + 1)
 
                 if "Temporary failure" in str(e.stderr):
+                    if _retry_count >= 3:
+                        self.logger.error("Max retries exceeded for temporary failure")
+                        return False
                     self.logger.warning("Temporary failure, retrying...")
                     self._is_processing = False  # Reset for retry
-                    return self.create_video(input_dir, output_path, options)
+                    return self.create_video(input_dir, output_path, options, _retry_count=_retry_count + 1)
 
                 self.logger.error(f"FFmpeg error: {e.stderr}")
                 raise RuntimeError(f"FFmpeg error: {e.stderr}")
@@ -495,15 +502,16 @@ class VideoHandler:
         """Try to encode with given FFmpeg command"""
         try:
             self.logger.info("Starting FFmpeg encoding process...")
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=str(temp_dir),
-                creationflags=subprocess.HIGH_PRIORITY_CLASS if os.name == "nt" else 0,
-                universal_newlines=True,
-                bufsize=1,
-            )
+            popen_kwargs = {
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "cwd": str(temp_dir),
+                "universal_newlines": True,
+                "bufsize": 1,
+            }
+            if os.name == "nt":
+                popen_kwargs["creationflags"] = subprocess.HIGH_PRIORITY_CLASS
+            process = subprocess.Popen(cmd, **popen_kwargs)
 
             # Store process and monitor
             self._current_process = process

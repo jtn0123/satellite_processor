@@ -39,6 +39,7 @@ import psutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
+import multiprocessing.pool
 from functools import partial
 import threading
 
@@ -161,8 +162,113 @@ class SatelliteImageProcessor:
         percent = int(progress * 100)
         return f"{operation} [{bar}] {percent}%"
 
+    def _stage_false_color(self, current_files: List[Path], dirs: Dict[str, Path], pool: multiprocessing.pool.Pool) -> List[Path]:
+        """Stage 1: Apply false color processing in parallel"""
+        if not self.options.get("false_color_enabled"):
+            return current_files
+
+        self.logger.info("Starting parallel false color processing stage...")
+        self._emit_status("🎨 Stage 1/4: Applying false color...")
+
+        sanchez_args = [
+            (
+                str(f),
+                dirs["sanchez"],
+                self.options.get("sanchez_path"),
+                self.options.get("underlay_path"),
+            )
+            for f in current_files
+        ]
+        sanchez_files = []
+        total = len(current_files)
+
+        for idx, result in enumerate(
+            pool.imap_unordered(self._parallel_sanchez, sanchez_args)
+        ):
+            if self.cancelled:
+                return []
+
+            if result:
+                sanchez_files.append(Path(result))
+
+            progress = int((idx + 1) / total * 100)
+            self._emit_progress("False Color", progress)
+
+        if sanchez_files:
+            return self.file_manager.keep_file_order(sanchez_files)
+        else:
+            self.logger.warning("No files were processed with false color")
+            return current_files
+
+    def _stage_crop(self, current_files: List[Path], dirs: Dict[str, Path], pool: multiprocessing.pool.Pool) -> List[Path]:
+        """Stage 2: Crop images in parallel"""
+        if not self.options.get("crop_enabled"):
+            return current_files
+
+        self.logger.info("Starting parallel image cropping stage...")
+        self._emit_status("📐 Stage 2/4: Cropping images...")
+
+        crop_args = [
+            (str(f), dirs["crop"], self.options) for f in current_files
+        ]
+        cropped_files = []
+        total = len(current_files)
+
+        for idx, result in enumerate(
+            pool.imap_unordered(self._parallel_crop, crop_args)
+        ):
+            if self.cancelled:
+                return []
+
+            if result:
+                cropped_files.append(Path(result))
+
+            progress = int((idx + 1) / total * 100)
+            self._emit_progress("Cropping", progress)
+
+        if cropped_files:
+            return self.file_manager.keep_file_order(cropped_files)
+        else:
+            self.logger.warning("No files were cropped, using original files")
+            return current_files
+
+    def _stage_timestamp(self, current_files: List[Path], dirs: Dict[str, Path], pool: multiprocessing.pool.Pool) -> List[Path]:
+        """Stage 3: Add timestamps in parallel"""
+        if not self.options.get("add_timestamp", True):
+            return current_files
+
+        self.logger.info("Starting parallel timestamp processing stage...")
+        self._emit_status("⏰ Stage 3/4: Adding timestamps...")
+
+        timestamp_args = [
+            (str(f), dirs["timestamp"]) for f in current_files
+        ]
+        timestamped_files = []
+        total = len(current_files)
+
+        for idx, result in enumerate(
+            pool.imap_unordered(self._parallel_timestamp, timestamp_args)
+        ):
+            if self.cancelled:
+                return []
+
+            if result:
+                timestamped_files.append(Path(result))
+
+            progress = int((idx + 1) / total * 100)
+            self._emit_progress("Adding Timestamps", progress)
+
+        if timestamped_files:
+            return self.file_manager.keep_file_order(timestamped_files)
+        return current_files
+
+    def _stage_scale(self, current_files: List[Path], dirs: Dict[str, Path], pool: multiprocessing.pool.Pool) -> List[Path]:
+        """Stage: Scale images (placeholder for future scaling stage)"""
+        return current_files
+
     def process(self) -> bool:
         """Main processing workflow with sequential stages but parallel processing within each stage"""
+        pool = None
         try:
             if self._is_processing:
                 self.logger.warning("Processing is already underway.")
@@ -206,98 +312,28 @@ class SatelliteImageProcessor:
             )
             self.logger.info(f"Using {num_processes} processes for parallel operations")
 
-            # STAGE 1: Sanchez (False Color) with parallel processing
-            if self.options.get("false_color_enabled"):
-                self.logger.info("Starting parallel false color processing stage...")
-                self._emit_status("🎨 Stage 1/4: Applying false color...")
+            # Create a single pool for all stages
+            pool = multiprocessing.Pool(processes=num_processes)
 
-                with multiprocessing.Pool(processes=num_processes) as pool:
-                    sanchez_args = [
-                        (
-                            str(f),
-                            dirs["sanchez"],
-                            self.options.get("sanchez_path"),
-                            self.options.get("underlay_path"),
-                        )
-                        for f in current_files
-                    ]
-                    sanchez_files = []
-                    total = len(current_files)
+            # STAGE 1: False Color
+            current_files = self._stage_false_color(current_files, dirs, pool)
+            if self.cancelled:
+                return False
 
-                    for idx, result in enumerate(
-                        pool.imap_unordered(self._parallel_sanchez, sanchez_args)
-                    ):
-                        if self.cancelled:
-                            return False
+            # STAGE 2: Cropping
+            current_files = self._stage_crop(current_files, dirs, pool)
+            if self.cancelled:
+                return False
 
-                        if result:
-                            sanchez_files.append(Path(result))
-
-                        progress = int((idx + 1) / total * 100)
-                        self._emit_progress("False Color", progress)
-
-                if sanchez_files:
-                    current_files = self.file_manager.keep_file_order(sanchez_files)
-                else:
-                    self.logger.warning("No files were processed with false color")
-
-            # STAGE 2: Cropping with parallel processing
-            if self.options.get("crop_enabled"):
-                self.logger.info("Starting parallel image cropping stage...")
-                self._emit_status("📐 Stage 2/4: Cropping images...")
-
-                with multiprocessing.Pool(processes=num_processes) as pool:
-                    crop_args = [
-                        (str(f), dirs["crop"], self.options) for f in current_files
-                    ]
-                    cropped_files = []
-                    total = len(current_files)
-
-                    for idx, result in enumerate(
-                        pool.imap_unordered(self._parallel_crop, crop_args)
-                    ):
-                        if self.cancelled:
-                            return False
-
-                        if result:
-                            cropped_files.append(Path(result))
-
-                        progress = int((idx + 1) / total * 100)
-                        self._emit_progress("Cropping", progress)
-
-                if cropped_files:
-                    current_files = self.file_manager.keep_file_order(cropped_files)
-                else:
-                    self.logger.warning("No files were cropped, using original files")
-
-            # STAGE 3: Timestamp with parallel processing
-            if self.options.get("add_timestamp", True):
-                self.logger.info("Starting parallel timestamp processing stage...")
-                self._emit_status("⏰ Stage 3/4: Adding timestamps...")
-
-                with multiprocessing.Pool(processes=num_processes) as pool:
-                    timestamp_args = [
-                        (str(f), dirs["timestamp"]) for f in current_files
-                    ]
-                    timestamped_files = []
-                    total = len(current_files)
-
-                    for idx, result in enumerate(
-                        pool.imap_unordered(self._parallel_timestamp, timestamp_args)
-                    ):
-                        if self.cancelled:
-                            return False
-
-                        if result:
-                            timestamped_files.append(Path(result))
-
-                        progress = int((idx + 1) / total * 100)
-                        self._emit_progress("Adding Timestamps", progress)
-
-                if timestamped_files:
-                    current_files = self.file_manager.keep_file_order(timestamped_files)
+            # STAGE 3: Timestamps
+            current_files = self._stage_timestamp(current_files, dirs, pool)
+            if self.cancelled:
+                return False
 
             # STAGE 4: Video Creation (single process)
+            if self.cancelled:
+                return False
+
             if current_files:
                 self.logger.info("Starting video creation stage...")
                 self._emit_status("🎥 Stage 4/4: Creating video...")
@@ -315,6 +351,9 @@ class SatelliteImageProcessor:
             self._emit_error(f"Error: {str(e)}")
             return False
         finally:
+            if pool is not None:
+                pool.close()
+                pool.join()
             self._is_processing = False
 
     @staticmethod

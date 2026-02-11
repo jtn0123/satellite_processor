@@ -10,10 +10,13 @@ export default function SettingsPage() {
   const updateSettings = useUpdateSettings();
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [synced, setSynced] = useState(false);
 
-  useEffect(() => {
-    if (settings) setForm(settings);
-  }, [settings]);
+  // Sync form with fetched settings (only on initial load)
+  if (settings && !synced) {
+    setForm(settings);
+    setSynced(true);
+  }
 
   useEffect(() => {
     if (!toast) return;

@@ -247,12 +247,12 @@ def fetch_single_preview(
 
     # Find closest
     closest = min(available, key=lambda x: abs((x["scan_time"] - time).total_seconds()))
-    bucket = SATELLITE_BUCKETS[closest["key"].split("/")[0]] if "/" in closest["key"] else SATELLITE_BUCKETS[satellite]
+    SATELLITE_BUCKETS[closest["key"].split("/")[0]] if "/" in closest["key"] else SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     try:
         response = s3.get_object(Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"])
         nc_bytes = response["Body"].read()
-        buf = io.BytesIO()
+        io.BytesIO()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             _netcdf_to_png(nc_bytes, Path(tmp.name))
             with open(tmp.name, "rb") as f:

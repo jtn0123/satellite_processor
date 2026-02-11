@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
-
 from app.db.models import Image
 from app.services.gap_detector import detect_capture_pattern, find_gaps, get_coverage_stats
 

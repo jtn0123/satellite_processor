@@ -161,6 +161,7 @@ def backfill_gaps(self, job_id: str, params: dict):
     try:
         # Run gap detection synchronously
         import asyncio
+
         from ..db.database import async_session
         from ..services.gap_detector import find_gaps
 

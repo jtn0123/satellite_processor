@@ -5,7 +5,6 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.services.goes_fetcher import (
     SATELLITE_BUCKETS,
     SECTOR_PRODUCTS,

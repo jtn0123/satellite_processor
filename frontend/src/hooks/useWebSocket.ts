@@ -82,7 +82,6 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
   useEffect(() => {
     terminalRef.current = false;
     retriesRef.current = 0;
-    setReconnecting(false);
     connect();
 
     return () => {

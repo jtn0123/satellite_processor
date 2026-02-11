@@ -8,10 +8,10 @@ test.beforeEach(async ({ page }) => {
       return route.fulfill({ json: { status: 'ok' } });
     }
     if (url.includes('/api/images')) {
-      return route.fulfill({ json: [] });
+      return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     }
     if (url.includes('/api/jobs')) {
-      return route.fulfill({ json: [] });
+      return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     }
     if (url.includes('/api/system/status')) {
       return route.fulfill({

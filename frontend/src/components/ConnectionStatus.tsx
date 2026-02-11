@@ -27,6 +27,10 @@ function setStatus(s: Status) {
 }
 
 function connect() {
+  if (typeof WebSocket === 'undefined' || !window.location?.host) {
+    setStatus('disconnected');
+    return;
+  }
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   try {
     ws = new WebSocket(`${protocol}//${window.location.host}/ws/status`);

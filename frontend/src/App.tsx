@@ -8,6 +8,7 @@ const UploadPage = lazy(() => import('./pages/Upload'));
 const ProcessPage = lazy(() => import('./pages/Process'));
 const JobsPage = lazy(() => import('./pages/Jobs'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
+const GoesData = lazy(() => import('./pages/GoesData'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="upload" element={<UploadPage />} />
               <Route path="process" element={<ProcessPage />} />
               <Route path="jobs" element={<JobsPage />} />
+              <Route path="goes" element={<GoesData />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>

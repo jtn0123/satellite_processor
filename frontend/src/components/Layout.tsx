@@ -16,6 +16,7 @@ const links = [
   { to: '/upload', icon: Upload, label: 'Upload' },
   { to: '/process', icon: FlaskConical, label: 'Process' },
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },
+  { to: '/goes', icon: Satellite, label: 'GOES Data' },
   { to: '/settings', icon: Cog, label: 'Settings' },
 ];
 

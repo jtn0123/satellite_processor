@@ -69,6 +69,16 @@ class ResourceMonitor:
                 self.logger.error(f"Resource monitor error: {e}", exc_info=True)
                 time.sleep(ERROR_RETRY_DELAY_SECONDS)
 
+    def should_throttle(self) -> bool:
+        """Return True if system resources are under pressure (#17).
+
+        Thresholds: CPU > 90 % or memory > 85 %.
+        """
+        try:
+            return psutil.cpu_percent(interval=None) > 90 or psutil.virtual_memory().percent > 85
+        except Exception:
+            return False
+
     def stop(self):
         """Stop monitoring safely"""
         self._running = False

@@ -27,7 +27,7 @@ class FileManager:
         self._temp_dirs: set[Path] = set()
         self._temp_files: set[Path] = set()
 
-    def get_input_files(self, input_dir: str | None = None) -> list[Path]:
+    def get_input_files(self, input_dir: str | Path | None = None) -> list[Path]:
         """Get ordered input files with improved UNC and case handling"""
         try:
             dir_to_use = Path(input_dir) if input_dir else Path(self.default_input_dir)
@@ -92,7 +92,7 @@ class FileManager:
         """Parse timestamp from satellite image filename"""
         return parse_satellite_timestamp(filename)
 
-    def get_output_path(self, output_dir: str | None) -> Path:
+    def get_output_path(self, output_dir: str | Path | None) -> Path:
         """Generate output video path"""
         if not output_dir:
             raise ValueError("Output directory cannot be None")
@@ -105,7 +105,7 @@ class FileManager:
             self.logger.error(f"Failed to create output path: {e}", exc_info=True)
             raise
 
-    def ensure_directory(self, path: str) -> Path:
+    def ensure_directory(self, path: str | Path) -> Path:
         """Ensure directory exists and return Path object"""
         if not path:
             raise ValueError("Directory path cannot be None or empty")

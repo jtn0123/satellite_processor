@@ -1,8 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import Layout from '../components/Layout';
+
+const fetchSpy = vi.fn(() =>
+  Promise.resolve(new Response(JSON.stringify({ version: '2.1.0', sha: 'abc1234' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })),
+);
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchSpy);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

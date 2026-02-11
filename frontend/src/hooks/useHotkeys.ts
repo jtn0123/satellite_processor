@@ -9,7 +9,7 @@ type ShortcutMap = Record<string, KeyHandler>;
  */
 export function useHotkeys(shortcuts: ShortcutMap) {
   const pendingRef = useRef<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

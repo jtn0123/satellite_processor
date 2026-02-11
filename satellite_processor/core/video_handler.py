@@ -32,6 +32,9 @@ import psutil
 from .ffmpeg import (
     DEFAULT_FPS,
     FORMAT_MAP,
+    HIGH_BITRATE,
+    HIGH_BUFSIZE,
+    HIGH_MAXRATE,
     TRANSCODE_QUALITY_PRESETS,
     VALID_VIDEO_EXTENSIONS,
     build_ffmpeg_command,
@@ -53,7 +56,7 @@ from .interpolation import (
 
 logger = logging.getLogger(__name__)
 
-# --- Constants ---
+# --- Constants (#129: bitrate/maxrate/bufsize imported from ffmpeg.py) ---
 MAX_RETRY_COUNT = 3
 PROCESS_POLL_INTERVAL_SECONDS = 0.1
 PROCESS_TERMINATE_TIMEOUT_SECONDS = 5
@@ -62,9 +65,6 @@ MAX_FPS = 60
 MIN_BITRATE = 100
 MAX_BITRATE = 10000
 DEFAULT_FRAME_DURATION = 1.0
-HIGH_BITRATE = "35M"
-HIGH_MAXRATE = "45M"
-HIGH_BUFSIZE = "70M"
 
 
 class VideoHandler:
@@ -79,19 +79,6 @@ class VideoHandler:
         self.testing = False
 
         self.ffmpeg_path = find_ffmpeg(testing=getattr(self, "testing", False))
-        if not self.ffmpeg_path:
-            # Try common Windows paths
-            common_paths = [
-                Path("C:/ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("LOCALAPPDATA", ""), "ffmpeg/bin/ffmpeg.exe"),
-                Path(os.path.expanduser("~/ffmpeg/bin/ffmpeg.exe")),
-            ]
-            for path in common_paths:
-                if path.exists():
-                    self.ffmpeg_path = str(path)
-                    break
 
         if not self.ffmpeg_path and not getattr(self, "testing", False):
             raise RuntimeError(
@@ -390,16 +377,18 @@ class VideoHandler:
                     f.write(f"duration {frame_duration}\n")
                 f.write(f"file '{frame_files[-1].name}'\n")
 
+            encoder = options.get("encoder", "H.264")
+            hardware = options.get("hardware", "CPU")
+            codec = get_codec(encoder, hardware)
+
             cmd = [
                 str(self.ffmpeg_path),
                 "-y", "-f", "concat", "-safe", "0",
                 "-i", str(list_file),
-                "-c:v", "h264_nvenc",
-                "-preset", "p7", "-rc", "vbr",
+                "-c:v", codec,
                 "-b:v", HIGH_BITRATE,
                 "-maxrate", HIGH_MAXRATE,
                 "-bufsize", HIGH_BUFSIZE,
-                "-profile:v", "main",
                 "-fps_mode", "cfr",
                 "-r", str(fps),
                 "-pix_fmt", "yuv420p",

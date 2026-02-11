@@ -373,152 +373,21 @@ class ImageOperations:
 
     @staticmethod
     def _init_worker():
-        """Initialize worker process"""
+        """Initialize worker process with platform-appropriate priority (#125)"""
         try:
             import psutil
 
             process = psutil.Process()
-            process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            if os.name == "nt":
+                process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            else:
+                # On Unix, lower nice value = higher priority; -5 is moderate boost
+                try:
+                    process.nice(-5)
+                except OSError:
+                    pass  # Requires elevated privileges on Unix
         except Exception:
             pass
-
-    @staticmethod
-    def _process_image_subprocess(
-        image_path: str, options: dict
-    ) -> np.ndarray | None:
-        """Process a single image with proper dimension handling"""
-        try:
-            logger.debug(
-                f"Processing {image_path} on process {multiprocessing.current_process().name}"
-            )
-
-            img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
-            if img is None:
-                logger.error(f"Failed to read image: {image_path}")
-                return None
-
-            if len(img.shape) != 3 or img.shape[2] != 3:
-                logger.debug(f"Converting image format for {image_path}")
-                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
-            if options.get("crop_enabled"):
-                img = ImageOperations.crop_image(
-                    img,
-                    options.get("crop_x", 0),
-                    options.get("crop_y", 0),
-                    options.get("crop_width", img.shape[1]),
-                    options.get("crop_height", img.shape[0]),
-                )
-
-            if options.get("add_timestamp", True):
-                img = ImageOperations.add_timestamp(img, Path(image_path))
-
-            if options.get("false_color_enabled"):
-                result = ImageOperations.apply_false_color_and_read(
-                    str(image_path),
-                    str(Path(options.get("temp_dir"))),
-                    str(options.get("sanchez_path")),
-                    str(options.get("underlay_path")),
-                )
-                if result is None:
-                    raise ValueError("Failed to apply false color")
-                img = result
-
-            if img is None or len(img.shape) != 3 or img.shape[2] != 3:
-                logger.error(f"Invalid image dimensions after processing: {image_path}")
-                return None
-
-            return img
-
-        except Exception as e:
-            logger.error(f"Error processing {image_path}: {e}", exc_info=True)
-            return None
-
-    @staticmethod
-    def process_image_subprocess(
-        image_path: str, options: dict
-    ) -> np.ndarray | None:
-        """Process image in subprocess with interpolation support"""
-        try:
-            logger.debug(f"Processing {image_path} with options: {options}")
-
-            img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
-            if img is None:
-                logger.error(f"Failed to read image: {image_path}")
-                return None
-
-            if options.get("false_color_enabled"):
-                logger.debug("Applying false color with Sanchez")
-                img = ImageOperations.apply_false_color(
-                    img,
-                    options["temp_dir"],
-                    Path(image_path).stem,
-                    options["sanchez_path"],
-                    options["underlay_path"],
-                )
-                if img is None:
-                    logger.error("False color application failed")
-                    return None
-
-            if options.get("interpolation_enabled"):
-                logger.debug(
-                    f"Applying interpolation: {options.get('interpolation_method')}"
-                )
-                try:
-                    if options["interpolation_method"] == "Linear":
-                        img = cv2.resize(
-                            img,
-                            None,
-                            fx=options["interpolation_factor"],
-                            fy=options["interpolation_factor"],
-                            interpolation=cv2.INTER_LINEAR,
-                        )
-                    elif options["interpolation_method"] == "Cubic":
-                        img = cv2.resize(
-                            img,
-                            None,
-                            fx=options["interpolation_factor"],
-                            fy=options["interpolation_factor"],
-                            interpolation=cv2.INTER_CUBIC,
-                        )
-                    elif options["interpolation_method"] in ["RIFE", "DAIN"]:
-                        logger.debug(
-                            f"Using AI interpolation: {options['interpolation_method']}"
-                        )
-                except Exception as e:
-                    logger.error(f"Interpolation failed: {e}", exc_info=True)
-                    return None
-
-            return img
-
-        except Exception as e:
-            logger.error(f"Error processing {image_path}: {e}", exc_info=True)
-            return None
-
-    @staticmethod
-    def process_single(image_path: Path, options: dict) -> np.ndarray | None:
-        """Process a single image - simplified"""
-        try:
-            img = cv2.imread(str(image_path))
-            if img is None:
-                return None
-
-            img = img.copy()
-
-            if options.get("crop_enabled"):
-                img = ImageOperations.crop_image(
-                    img,
-                    options.get("crop_x", 0),
-                    options.get("crop_y", 0),
-                    options.get("crop_width", img.shape[1]),
-                    options.get("crop_height", img.shape[0]),
-                )
-
-            return img
-
-        except Exception as e:
-            logger.error(f"Error in process_single: {e}", exc_info=True)
-            return None
 
     @staticmethod
     def interpolate_frames(
@@ -566,25 +435,4 @@ class ImageOperations:
         self, frame_paths: list[str | Path], options: dict
     ) -> list[np.ndarray | None]:
         """Interpolate frames based on options."""
-        if options.get("interpolation_enabled"):
-            quality = options.get("interpolation_quality", "medium")
-            Interpolator(
-                model_path=f"model_{quality}.pth", processing_speed="fast"
-            )
-            frames = []
-            for path in frame_paths:
-                frames.append(self.process_image(path, options))
-            return frames
         return [self.process_image(path, options) for path in frame_paths]
-
-
-class Interpolator:
-    """Handle frame interpolation."""
-
-    def __init__(self, model_path, processing_speed):
-        self.model_path = model_path
-        self.processing_speed = processing_speed
-
-    def interpolate(self, frame1, frame2, factor=2):
-        # Interpolation implementation
-        pass

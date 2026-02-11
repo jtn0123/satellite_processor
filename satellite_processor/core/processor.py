@@ -31,7 +31,6 @@ import multiprocessing.pool
 import shutil
 import subprocess
 import tempfile
-import threading
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -39,7 +38,6 @@ from typing import Any
 
 import cv2  # type: ignore
 import numpy as np  # type: ignore
-import psutil
 
 from .file_manager import FileManager
 from .image_operations import ImageOperations
@@ -53,7 +51,6 @@ from .pipeline import (
 )
 from .resource_monitor import ResourceMonitor
 from .settings_manager import SettingsManager
-from .utils import is_closing
 from .video_handler import VideoHandler
 
 logger = logging.getLogger(__name__)
@@ -64,7 +61,6 @@ MAX_WORKERS_CAP = 16
 MIN_CHUNK_SIZE = 5
 MAX_CHUNK_SIZE = 20
 DEFAULT_BATCH_SIZE = 1000
-RESOURCE_MONITOR_INTERVAL_SECONDS = 1.0
 PROCESS_TERMINATE_TIMEOUT_SECONDS = 5
 
 
@@ -100,14 +96,13 @@ class SatelliteImageProcessor:
         self.resource_monitor = ResourceMonitor()
         self.settings_manager = SettingsManager()
 
-        # Connect resource monitoring
+        # Connect resource monitoring (single ResourceMonitor instance — #152)
         self.resource_monitor.on_resource_update = self.handle_resource_update
         self.resource_monitor.start()
 
         # Basic setup
         self.logger = logging.getLogger(__name__)
         self._load_preferences()
-        self._setup_resource_monitoring()
 
         # Load directories from settings
         self.input_dir = self.settings_manager.get("input_dir")
@@ -185,118 +180,6 @@ class SatelliteImageProcessor:
         bar = "█" * filled + "░" * (width - filled)
         percent = int(progress * 100)
         return f"{operation} [{bar}] {percent}%"
-
-    def _stage_false_color(
-        self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
-    ) -> list[Path]:
-        """Stage 1: Apply false color processing in parallel"""
-        if not self.options.get("false_color_enabled"):
-            return current_files
-
-        self.logger.info("Starting parallel false color processing stage...")
-        self._emit_status("🎨 Stage 1/4: Applying false color...")
-
-        sanchez_args = [
-            (
-                str(f),
-                dirs["sanchez"],
-                self.options.get("sanchez_path"),
-                self.options.get("underlay_path"),
-            )
-            for f in current_files
-        ]
-        sanchez_files = []
-        total = len(current_files)
-
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_sanchez, sanchez_args)
-        ):
-            if self.cancelled:
-                return []
-
-            if result:
-                sanchez_files.append(Path(result))
-
-            progress = int((idx + 1) / total * 100)
-            self._emit_progress("False Color", progress)
-
-        if sanchez_files:
-            return self.file_manager.keep_file_order(sanchez_files)
-        else:
-            self.logger.warning("No files were processed with false color")
-            return current_files
-
-    def _stage_crop(
-        self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
-    ) -> list[Path]:
-        """Stage 2: Crop images in parallel"""
-        if not self.options.get("crop_enabled"):
-            return current_files
-
-        self.logger.info("Starting parallel image cropping stage...")
-        self._emit_status("📐 Stage 2/4: Cropping images...")
-
-        crop_args = [
-            (str(f), dirs["crop"], self.options) for f in current_files
-        ]
-        cropped_files = []
-        total = len(current_files)
-
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_crop, crop_args)
-        ):
-            if self.cancelled:
-                return []
-
-            if result:
-                cropped_files.append(Path(result))
-
-            progress = int((idx + 1) / total * 100)
-            self._emit_progress("Cropping", progress)
-
-        if cropped_files:
-            return self.file_manager.keep_file_order(cropped_files)
-        else:
-            self.logger.warning("No files were cropped, using original files")
-            return current_files
-
-    def _stage_timestamp(
-        self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
-    ) -> list[Path]:
-        """Stage 3: Add timestamps in parallel"""
-        if not self.options.get("add_timestamp", True):
-            return current_files
-
-        self.logger.info("Starting parallel timestamp processing stage...")
-        self._emit_status("⏰ Stage 3/4: Adding timestamps...")
-
-        timestamp_args = [
-            (str(f), dirs["timestamp"]) for f in current_files
-        ]
-        timestamped_files = []
-        total = len(current_files)
-
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_timestamp, timestamp_args)
-        ):
-            if self.cancelled:
-                return []
-
-            if result:
-                timestamped_files.append(Path(result))
-
-            progress = int((idx + 1) / total * 100)
-            self._emit_progress("Adding Timestamps", progress)
-
-        if timestamped_files:
-            return self.file_manager.keep_file_order(timestamped_files)
-        return current_files
-
-    def _stage_scale(
-        self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
-    ) -> list[Path]:
-        """Stage: Scale images (placeholder for future scaling stage)"""
-        return current_files
 
     def process(self) -> bool:
         """Main processing workflow with sequential stages but parallel processing within each stage"""
@@ -477,15 +360,6 @@ class SatelliteImageProcessor:
 
         return processed
 
-    def __del__(self):
-        """Safe cleanup on deletion"""
-        try:
-            if not hasattr(self, "_is_deleted"):
-                self.cleanup()
-        except Exception as e:
-            if hasattr(self, "logger"):
-                self.logger.error(f"Deletion cleanup error: {e}", exc_info=True)
-
     def cleanup(self) -> None:
         """Clean up resources safely"""
         try:
@@ -509,14 +383,6 @@ class SatelliteImageProcessor:
                     self.resource_monitor = None
                 except Exception as e:
                     self.logger.error(f"Failed to stop resource monitor: {e}", exc_info=True)
-
-            # Stop update timer if exists
-            if hasattr(self, "update_timer") and self.update_timer is not None:
-                try:
-                    self.update_timer.cancel()
-                    self.update_timer = None
-                except Exception as e:
-                    self.logger.error(f"Timer cleanup error: {e}", exc_info=True)
 
             # Clean up temp directory if it exists
             if hasattr(self, "temp_dir") and self.temp_dir is not None:
@@ -556,46 +422,6 @@ class SatelliteImageProcessor:
 
         except Exception as e:
             return False, f"Validation error: {e}"
-
-    def run(self, input_dir: str, output_dir: str) -> bool:
-        """Run the processing workflow."""
-        try:
-            if not output_dir:
-                raise ValueError("Output directory not specified.")
-
-            progress = 0
-            self._emit_progress("Initializing", progress)
-
-            image_paths = self.get_input_files(input_dir)
-            if not image_paths:
-                raise ValueError("No valid images found in the input directory.")
-
-            processed_images = []
-            total_images = len(image_paths)
-
-            for idx, image_path in enumerate(image_paths, start=1):
-                if self.cancelled:
-                    self._emit_status("Processing cancelled.")
-                    return False
-
-                img = self.process_single_image(image_path)
-                if img is not None:
-                    processed_images.append(img)
-
-                progress = int((idx / total_images) * 100)
-                self._emit_progress("Processing Images", progress)
-                self._emit_overall_progress(progress)
-
-            if not self.cancelled:
-                self._emit_finished()
-            return True
-
-        except Exception as e:
-            if not self.cancelled:
-                self._emit_error(str(e))
-                self._emit_status("Processing failed.")
-            self.logger.error(f"Processing failed: {e}", exc_info=True)
-            return False
 
     def process_images(self, image_paths: list[Path]) -> list[np.ndarray]:
         """Process multiple images with progress tracking and cancellation support"""
@@ -689,17 +515,16 @@ class SatelliteImageProcessor:
                     output_file = str(output_file)
 
                     cmd = [
-                        f'"{sanchez_path}"',
-                        "-s", f'"{img_path}"',
-                        "-u", f'"{underlay_path}"',
-                        "-o", f'"{output_file}"',
+                        sanchez_path,
+                        "-s", img_path,
+                        "-u", underlay_path,
+                        "-o", output_file,
                         "-nogui", "-falsecolor",
                         "-format", "jpg",
                     ]
 
-                    cmd_str = " ".join(cmd)
-                    logger.debug(f"Running command: {cmd_str}")
-                    subprocess.run(cmd_str, shell=True, check=True)
+                    logger.debug(f"Running command: {cmd}")
+                    subprocess.run(cmd, shell=False, check=True)
 
                     img = cv2.imread(output_file)
                     if img is None:
@@ -775,63 +600,6 @@ class SatelliteImageProcessor:
     def _default_status_callback(self, status: str):
         """Default status callback if none is provided."""
         self.logger.info(status)
-
-    def some_other_method(self):
-        """Example method where callbacks are invoked."""
-        try:
-            self._emit_status("Processing started.")
-            self._emit_progress("Loading images", 10)
-            self._emit_progress("Processing images", 50)
-            self._emit_progress("Finalizing", 90)
-            self._emit_status("Processing finished.")
-            self._emit_finished()
-        except Exception as e:
-            self._emit_error(str(e))
-
-    def run_processing(self):
-        """Run processing with closing check"""
-        if is_closing(None):
-            self.cancel()
-            return
-
-    def some_method(self):
-        pass
-
-    def update_resource_usage(self):
-        """Update resource usage metrics."""
-        try:
-            data = {
-                "cpu": psutil.cpu_percent(),
-                "memory": psutil.virtual_memory().percent,
-            }
-            if self.on_resource_update:
-                self.on_resource_update(data)
-        except Exception as e:
-            self.logger.debug(f"Failed to update resource usage: {e}")
-
-    def _setup_resource_monitoring(self):
-        """Setup resource monitoring timer using threading"""
-        try:
-            self._resource_timer_running = True
-            self._resource_timer = threading.Timer(
-                RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick
-            )
-            self._resource_timer.daemon = True
-            self._resource_timer.start()
-        except Exception as e:
-            self.logger.error(f"Failed to setup resource monitoring: {e}", exc_info=True)
-
-    def _resource_timer_tick(self):
-        """Periodic resource monitoring tick"""
-        if not self._resource_timer_running:
-            return
-        self.update_resource_usage()
-        if self._resource_timer_running:
-            self._resource_timer = threading.Timer(
-                RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick
-            )
-            self._resource_timer.daemon = True
-            self._resource_timer.start()
 
     def _load_preferences(self) -> None:
         """Load processor preferences"""

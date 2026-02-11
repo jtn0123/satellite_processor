@@ -3,6 +3,10 @@ Settings Schema Unification (#14)
 ---------------------------------
 Maps between core SettingsManager keys (string-based video_quality)
 and API SettingsUpdate keys (integer CRF video_quality 0-51).
+
+TODO (#150): The project has two settings systems — core SettingsManager (JSON file)
+and API SettingsUpdate (Pydantic models). These should be unified into a single
+source of truth to avoid drift and the need for this translation layer.
 """
 
 from __future__ import annotations

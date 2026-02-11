@@ -13,13 +13,6 @@ def mock_video_handler():
 
 
 @pytest.fixture
-def mock_interpolator():
-    """Create a mock interpolator."""
-    with patch("satellite_processor.core.image_operations.Interpolator") as mock:
-        yield mock
-
-
-@pytest.fixture
 def mock_filesystem():
     with patch("pathlib.Path.exists", return_value=True), patch(
         "pathlib.Path.is_dir", return_value=True

@@ -51,14 +51,6 @@ def mock_ffmpeg(monkeypatch):
     return mock
 
 
-@pytest.fixture
-def mock_interpolator(monkeypatch):
-    """Create a mock interpolator."""
-    mock = MagicMock()
-    monkeypatch.setattr("satellite_processor.core.image_operations.Interpolator", mock)
-    return mock
-
-
 # Add this fixture to mock filesystem checks
 @pytest.fixture
 def mock_filesystem():

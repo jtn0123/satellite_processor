@@ -22,10 +22,9 @@ def processor():
         mock_rm.isRunning = MagicMock(return_value=False)
         mock_rm.deleteLater = MagicMock()
         mock_rm_cls.return_value = mock_rm
-        with patch.object(SatelliteImageProcessor, "_setup_resource_monitoring"):
-            proc = SatelliteImageProcessor(options={})
-            yield proc
-            proc._is_deleted = True
+        proc = SatelliteImageProcessor(options={})
+        yield proc
+        proc._is_deleted = True
 
 
 class TestProcessorInit:

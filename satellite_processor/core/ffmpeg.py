@@ -42,7 +42,7 @@ SUPPORTED_ENCODERS = [
 ]
 
 VALID_VIDEO_EXTENSIONS = [".mp4", ".mkv", ".avi", ".mov"]
-VALID_IMAGE_EXTENSIONS = [".png", ".PNG", ".jpg", ".JPG", ".jpeg", ".JPEG"]
+VALID_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg"]
 
 TRANSCODE_QUALITY_PRESETS = {
     "Low": "28",
@@ -63,18 +63,20 @@ def find_ffmpeg(testing: bool = False) -> Path | None:
     if testing:
         return Path("ffmpeg")
     try:
-        common_paths = [
-            Path("C:/ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("LOCALAPPDATA", ""), "ffmpeg/bin/ffmpeg.exe"),
-            Path(os.path.expanduser("~/ffmpeg/bin/ffmpeg.exe")),
-        ]
+        # Check Windows-specific common paths only on Windows (#127)
+        if os.name == "nt":
+            common_paths = [
+                Path("C:/ffmpeg/bin/ffmpeg.exe"),
+                Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
+                Path(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg/bin/ffmpeg.exe"),
+                Path(os.environ.get("LOCALAPPDATA", ""), "ffmpeg/bin/ffmpeg.exe"),
+                Path(os.path.expanduser("~/ffmpeg/bin/ffmpeg.exe")),
+            ]
 
-        for path in common_paths:
-            if path.exists():
-                logger.debug(f"Found FFmpeg at: {path}")
-                return path
+            for path in common_paths:
+                if path.exists():
+                    logger.debug(f"Found FFmpeg at: {path}")
+                    return path
 
         try:
             result = subprocess.run(
@@ -294,9 +296,10 @@ def build_ffmpeg_command(
 
 
 def _collect_frame_files(input_dir: Path) -> list[Path]:
-    """Collect and sort frame files from directory"""
-    frame_files = []
-    for ext in VALID_IMAGE_EXTENSIONS:
-        frame_files.extend(input_dir.glob(f"*{ext}"))
+    """Collect and sort frame files from directory (case-insensitive extensions, #128)"""
+    frame_files = [
+        f for f in input_dir.iterdir()
+        if f.suffix.lower() in VALID_IMAGE_EXTENSIONS
+    ]
     frame_files.sort()
     return frame_files

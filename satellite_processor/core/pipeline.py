@@ -15,7 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import cv2  # type: ignore
+from PIL import Image  # type: ignore
 
 from .resource_monitor import ResourceMonitor
 
@@ -215,10 +215,9 @@ def validate_image(path: Path) -> bool:
         logger.warning(f"Unsupported image extension: {path}")
         return False
     try:
-        img = cv2.imread(str(path))
-        if img is None:
-            logger.warning(f"cv2.imread returned None for: {path}")
-            return False
+        # PIL Image.open is lazy — it reads the header without loading pixel data (#153)
+        with Image.open(path) as img:
+            img.verify()
     except Exception as e:
         logger.warning(f"Failed to read image {path}: {e}")
         return False

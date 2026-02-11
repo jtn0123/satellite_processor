@@ -1,4 +1,4 @@
-"""Tests for image_operations.py - ImageOperations and Interpolator classes."""
+"""Tests for image_operations.py - ImageOperations class."""
 
 from datetime import datetime
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from satellite_processor.core.image_operations import ImageOperations, Interpolator
+from satellite_processor.core.image_operations import ImageOperations
 
 
 class TestCropImage:
@@ -246,24 +246,3 @@ class TestProcessImageBatch:
         result = ImageOperations.process_image_batch(paths, {})
 
         assert len(result) == 3
-
-
-class TestInterpolator:
-    """Tests for the Interpolator class."""
-
-    def test_interpolator_init(self):
-        """Test Interpolator initialization."""
-        interp = Interpolator(model_path="model_high.pth", processing_speed="fast")
-
-        assert interp.model_path == "model_high.pth"
-        assert interp.processing_speed == "fast"
-
-    def test_interpolator_interpolate_returns_none(self):
-        """Test that the stub implementation returns None."""
-        interp = Interpolator(model_path="model.pth", processing_speed="fast")
-        frame1 = np.zeros((10, 10, 3), dtype=np.uint8)
-        frame2 = np.ones((10, 10, 3), dtype=np.uint8) * 255
-
-        result = interp.interpolate(frame1, frame2, factor=2)
-
-        assert result is None  # Stub implementation

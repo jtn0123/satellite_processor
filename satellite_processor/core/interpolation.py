@@ -113,42 +113,59 @@ def apply_interpolation(
         return False
 
 
+def _run_minterpolate(
+    ffmpeg_path: str | Path,
+    input_path: Path,
+    output_path: Path,
+    fps: int,
+    *,
+    pix_fmt: bool = False,
+    faststart: bool = False,
+    mb_size: int | None = None,
+) -> bool:
+    """Consolidated minterpolate helper (#131).
+
+    Parameters:
+        pix_fmt: add -pix_fmt yuv420p
+        faststart: add -movflags +faststart
+        mb_size: if set, add mb_size=N to the minterpolate filter
+    """
+    try:
+        mi_filter = f"minterpolate=fps={fps}:mi_mode=mci:me_mode=bidir:mc_mode=obmc:vsbmc=1"
+        if mb_size is not None:
+            mi_filter += f":mb_size={mb_size}"
+
+        cmd = [
+            str(ffmpeg_path), "-y", "-i", str(input_path),
+            "-filter:v", mi_filter,
+            "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+        ]
+        if pix_fmt:
+            cmd += ["-pix_fmt", "yuv420p"]
+        if faststart:
+            cmd += ["-movflags", "+faststart"]
+        cmd.append(str(output_path))
+
+        process = subprocess.run(cmd, capture_output=True, text=True)
+        if process.returncode != 0:
+            raise RuntimeError(f"FFmpeg interpolation failed: {process.stderr}")
+        return True
+    except Exception as e:
+        logger.error(f"Interpolation failed: {e}", exc_info=True)
+        return False
+
+
 def apply_frame_interpolation(
     ffmpeg_path: str | Path,
     video_path: Path,
     output_path: Path,
     fps: int,
 ) -> bool:
-    """Apply frame interpolation to video"""
-    try:
-        ffmpeg_cmd = [
-            str(ffmpeg_path),
-            "-y",
-            "-i",
-            str(video_path),
-            "-filter:v",
-            f"minterpolate=fps={fps}:mi_mode=mci:me_mode=bidir:mc_mode=obmc:vsbmc=1:mb_size=16",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "slow",
-            "-crf",
-            "18",
-            "-pix_fmt",
-            "yuv420p",
-            "-movflags",
-            "+faststart",
-            str(output_path),
-        ]
-
-        process = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        if process.returncode != 0:
-            raise RuntimeError(f"FFmpeg interpolation failed: {process.stderr}")
-        return True
-
-    except Exception as e:
-        logger.error(f"Interpolation failed: {e}", exc_info=True)
-        return False
+    """Apply frame interpolation to video (high quality with faststart)."""
+    return _run_minterpolate(
+        ffmpeg_path, video_path, output_path, fps,
+        pix_fmt=True, faststart=True, mb_size=16,
+    )
 
 
 def interpolate_frames(
@@ -157,29 +174,5 @@ def interpolate_frames(
     output_path: Path,
     fps: int,
 ) -> bool:
-    """Interpolate frames to increase video smoothness"""
-    try:
-        ffmpeg_cmd = [
-            str(ffmpeg_path),
-            "-y",
-            "-i",
-            str(input_path),
-            "-filter:v",
-            f"minterpolate=fps={fps}:mi_mode=mci:me_mode=bidir:mc_mode=obmc:vsbmc=1",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "slow",
-            "-crf",
-            "18",
-            str(output_path),
-        ]
-
-        process = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        if process.returncode != 0:
-            raise RuntimeError(f"FFmpeg interpolation failed: {process.stderr}")
-        return True
-
-    except Exception as e:
-        logger.error(f"Frame interpolation failed: {e}", exc_info=True)
-        return False
+    """Interpolate frames to increase video smoothness."""
+    return _run_minterpolate(ffmpeg_path, input_path, output_path, fps)

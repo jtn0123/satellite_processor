@@ -6,14 +6,11 @@ Responsibilities:
 - Emit progress updates via callbacks
 - Handle progress calculations
 - Manage operation completion states
-Dependencies:
-- None (plain Python)
-Used by:
-- Processor for progress reporting
-- UI for progress bar updates
 """
 
-from typing import Optional, Callable
+from __future__ import annotations
+
+from collections.abc import Callable
 
 
 class ProgressTracker:
@@ -24,11 +21,11 @@ class ProgressTracker:
         self.total_operations = 0
 
         # Callback-based signals (replace pyqtSignal)
-        self.on_progress: Optional[Callable[[str, int], None]] = None
-        self.on_overall_progress: Optional[Callable[[int], None]] = None
-        self.on_status: Optional[Callable[[str], None]] = None
-        self.on_error: Optional[Callable[[str], None]] = None
-        self.on_finished: Optional[Callable[[], None]] = None
+        self.on_progress: Callable[[str, int], None] | None = None
+        self.on_overall_progress: Callable[[int], None] | None = None
+        self.on_status: Callable[[str], None] | None = None
+        self.on_error: Callable[[str], None] | None = None
+        self.on_finished: Callable[[], None] | None = None
 
     def start_operation(self, total_operations: int):
         """Initialize progress tracking for multiple operations"""

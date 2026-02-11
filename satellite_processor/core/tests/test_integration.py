@@ -5,15 +5,14 @@ VideoHandler to verify that multi-step workflows produce correct
 results when components are composed together.
 """
 
-import numpy as np
-import cv2
-import pytest
-from pathlib import Path
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from satellite_processor.core.image_operations import ImageOperations
+import cv2
+import numpy as np
+
 from satellite_processor.core.file_manager import FileManager
+from satellite_processor.core.image_operations import ImageOperations
 from satellite_processor.core.video_handler import VideoHandler
 
 
@@ -92,18 +91,15 @@ class TestImageProcessingPipeline:
             "crop_height": crop_h,
         }
 
-        # process_image reads the file from disk successfully
+        # process_image reads the file from disk and applies crop
         result = ImageOperations.process_image(str(img_path), options)
         assert result is not None
         assert isinstance(result, np.ndarray)
         assert len(result.shape) == 3
         assert result.shape[2] == 3
 
-        # Verify the crop pipeline produces correct dimensions
-        # when applied to the loaded image
-        cropped = ImageOperations.crop_image(result, crop_x, crop_y, crop_w, crop_h)
-        assert cropped.shape == (crop_h, crop_w, 3)
-        assert isinstance(cropped, np.ndarray)
+        # Verify process_image applied the crop correctly
+        assert result.shape == (crop_h, crop_w, 3)
 
 
 class TestFileManagerWorkflow:

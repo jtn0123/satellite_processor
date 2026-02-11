@@ -1,9 +1,8 @@
 """Tests for core/utils.py - utility functions."""
 
-import pytest
 from datetime import datetime
 
-from satellite_processor.core.utils import parse_satellite_timestamp, is_closing
+from satellite_processor.core.utils import is_closing, parse_satellite_timestamp
 
 
 class TestParseSatelliteTimestamp:

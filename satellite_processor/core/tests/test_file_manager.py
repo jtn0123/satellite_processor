@@ -1,10 +1,9 @@
 """Tests for file_manager.py - FileManager class."""
 
-import pytest
-import numpy as np
-import cv2
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import pytest
 
 from satellite_processor.core.file_manager import FileManager
 

@@ -5,13 +5,14 @@ Tests to boost code coverage for core modules:
 - ResourceMonitor
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from satellite_processor.core.settings_manager import SettingsManager
+import pytest
+
 from satellite_processor.core.progress_tracker import ProgressTracker
 from satellite_processor.core.resource_monitor import ResourceMonitor
+from satellite_processor.core.settings_manager import SettingsManager
 
 # ---------------------------------------------------------------------------
 # SettingsManager

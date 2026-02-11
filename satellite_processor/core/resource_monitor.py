@@ -6,19 +6,23 @@ Responsibilities:
 - Provide real-time resource metrics
 - Emit resource updates via callbacks
 - Handle monitoring intervals
-Dependencies:
-- None (uses standard psutil library)
-Used by:
-- Processor for resource tracking
-- UI for system monitoring displays
 """
 
-import psutil
+from __future__ import annotations
+
+import logging
 import threading
 import time
-import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Optional, Callable
+
+import psutil
+
+logger = logging.getLogger(__name__)
+
+# --- Constants ---
+DEFAULT_MONITOR_INTERVAL_SECONDS = 1.0
+ERROR_RETRY_DELAY_SECONDS = 1.0
 
 
 class ResourceMonitor:
@@ -27,13 +31,13 @@ class ResourceMonitor:
     def __init__(self, parent=None):
         self.logger = logging.getLogger(__name__)
         self._running = False
-        self._interval = 1.0  # Default to 1 second
+        self._interval = DEFAULT_MONITOR_INTERVAL_SECONDS
         self._last_net_io = psutil.net_io_counters()
         self._last_check = time.time()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
         # Callback-based signal replacement
-        self.on_resource_update: Optional[Callable[[dict], None]] = None
+        self.on_resource_update: Callable[[dict], None] | None = None
 
     def setInterval(self, msec: int):
         """Set the update interval in milliseconds"""
@@ -62,8 +66,18 @@ class ResourceMonitor:
                 time.sleep(self._interval)
 
             except Exception as e:
-                self.logger.error(f"Resource monitor error: {e}")
-                time.sleep(1)
+                self.logger.error(f"Resource monitor error: {e}", exc_info=True)
+                time.sleep(ERROR_RETRY_DELAY_SECONDS)
+
+    def should_throttle(self) -> bool:
+        """Return True if system resources are under pressure (#17).
+
+        Thresholds: CPU > 90 % or memory > 85 %.
+        """
+        try:
+            return psutil.cpu_percent(interval=None) > 90 or psutil.virtual_memory().percent > 85
+        except Exception:
+            return False
 
     def stop(self):
         """Stop monitoring safely"""

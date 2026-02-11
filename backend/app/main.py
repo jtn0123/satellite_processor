@@ -100,7 +100,10 @@ async def job_websocket(websocket: WebSocket, job_id: str):
             while True:
                 msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
                 if msg and msg["type"] == "message":
-                    data = json.loads(msg["data"])
+                    try:
+                        data = json.loads(msg["data"])
+                    except (json.JSONDecodeError, TypeError):
+                        continue
                     await websocket.send_json({"type": "progress", **data})
                     if data.get("status") in ("completed", "failed", "cancelled"):
                         break

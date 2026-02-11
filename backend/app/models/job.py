@@ -9,9 +9,9 @@ from pydantic import BaseModel, Field, field_validator
 ALLOWED_PARAM_KEYS = {
     "image_ids", "image_paths", "input_path", "output_path",
     "crop_x", "crop_y", "crop_width", "crop_height",
-    "false_color", "false_color_enabled", "add_timestamp",
-    "fps", "encoder", "bitrate", "video_quality",
-    "format", "resolution", "scale", "interpolation",
+    "crop", "false_color", "false_color_enabled", "add_timestamp",
+    "timestamp", "fps", "encoder", "bitrate", "video_quality",
+    "video", "scale", "format", "resolution", "interpolation",
 }
 
 
@@ -23,6 +23,8 @@ class JobCreate(BaseModel):
     @field_validator("params")
     @classmethod
     def validate_params(cls, v: dict) -> dict:
+        # Strip keys with None values
+        v = {k: val for k, val in v.items() if val is not None}
         unknown = set(v.keys()) - ALLOWED_PARAM_KEYS
         if unknown:
             raise ValueError(f"Unknown parameter keys: {unknown}")

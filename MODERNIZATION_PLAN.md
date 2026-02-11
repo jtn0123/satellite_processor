@@ -1,5 +1,7 @@
 # Satellite Processor — Web Modernization Plan
 
+> **STATUS: COMPLETED** — This modernization is done. The document is kept for historical reference.
+
 ## Overview
 
 Transform the PyQt6 desktop app into a Docker-deployed web application with a React frontend and FastAPI backend, accessible from any browser. Same VoltTracker-style proxy pattern for external access.

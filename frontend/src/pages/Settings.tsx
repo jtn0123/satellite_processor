@@ -42,36 +42,74 @@ export default function SettingsPage() {
         ) : (
           <div className="grid gap-4">
             <div>
-              <label className="text-sm text-slate-400">Default Output Directory</label>
-              <input
-                type="text"
-                value={(form.output_dir as string) ?? '/data/output'}
-                onChange={(e) => setForm({ ...form, output_dir: e.target.value })}
+              <label className="text-sm text-slate-400">Default False Color</label>
+              <select
+                value={(form.default_false_color as string) ?? 'vegetation'}
+                onChange={(e) => setForm({ ...form, default_false_color: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="vegetation">Vegetation</option>
+                <option value="fire">Fire</option>
+                <option value="natural">Natural</option>
+                <option value="urban">Urban</option>
+                <option value="water">Water</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={(form.timestamp_enabled as boolean) ?? true}
+                onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
+                className="w-4 h-4"
               />
+              <label className="text-sm text-slate-400">Timestamp Enabled</label>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Max Concurrent Workers</label>
+              <label className="text-sm text-slate-400">Timestamp Position</label>
+              <select
+                value={(form.timestamp_position as string) ?? 'bottom-left'}
+                onChange={(e) => setForm({ ...form, timestamp_position: e.target.value })}
+                className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="top-left">Top Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="bottom-right">Bottom Right</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-slate-400">Video FPS</label>
               <input
                 type="number"
                 min={1}
-                max={16}
-                value={(form.max_workers as number) ?? 4}
-                onChange={(e) => setForm({ ...form, max_workers: Number(e.target.value) })}
+                max={120}
+                value={(form.video_fps as number) ?? 24}
+                onChange={(e) => setForm({ ...form, video_fps: Number(e.target.value) })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm text-slate-400">Default Video Codec</label>
+              <label className="text-sm text-slate-400">Video Codec</label>
               <select
-                value={(form.default_codec as string) ?? 'h264'}
-                onChange={(e) => setForm({ ...form, default_codec: e.target.value })}
+                value={(form.video_codec as string) ?? 'h264'}
+                onChange={(e) => setForm({ ...form, video_codec: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="h264">H.264</option>
-                <option value="hevc">HEVC</option>
-                <option value="av1">AV1</option>
+                <option value="h265">H.265</option>
+                <option value="vp9">VP9</option>
               </select>
+            </div>
+            <div>
+              <label className="text-sm text-slate-400">Video Quality (0-51, lower is better)</label>
+              <input
+                type="number"
+                min={0}
+                max={51}
+                value={(form.video_quality as number) ?? 23}
+                onChange={(e) => setForm({ ...form, video_quality: Number(e.target.value) })}
+                className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
+              />
             </div>
             <button
               onClick={handleSave}

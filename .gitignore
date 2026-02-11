@@ -13,3 +13,4 @@ build/
 .coverage
 htmlcov/
 data/
+frontend/test-results/

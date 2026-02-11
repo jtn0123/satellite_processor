@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,6 +22,18 @@ const links = [
 ];
 
 export default function Layout() {
+  const [versionInfo, setVersionInfo] = useState('v2.1.0');
+
+  useEffect(() => {
+    fetch('/api/health/version')
+      .then((r) => r.json())
+      .then((d) => {
+        const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
+        setVersionInfo(`v${d.version}${sha}`);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
@@ -61,7 +74,7 @@ export default function Layout() {
         </div>
         <div className="px-6 py-4 border-t border-slate-800 text-xs text-slate-500 flex items-center gap-2">
           <Cpu className="w-4 h-4" />
-          Satellite Processor v2.0
+          Satellite Processor {versionInfo}
         </div>
       </aside>
 

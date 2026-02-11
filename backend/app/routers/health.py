@@ -13,13 +13,20 @@ from ..db.database import async_session
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
+BUILD_SHA = __import__("os").environ.get("BUILD_SHA", "dev")
 
 
 @router.get("")
 async def health_basic():
     """Basic liveness check."""
     return {"status": "ok"}
+
+
+@router.get("/version")
+async def version_info():
+    """Return app version and build info."""
+    return {"version": VERSION, "build": BUILD_SHA}
 
 
 @router.get("/detailed")

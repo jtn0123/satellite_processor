@@ -1,4 +1,6 @@
 FROM python:3.11-slim
+ARG BUILD_SHA=dev
+ENV BUILD_SHA=${BUILD_SHA}
 
 WORKDIR /app
 

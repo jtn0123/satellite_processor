@@ -2,20 +2,17 @@
 Primary Settings Manager for Satellite Processor
 ---------------------------------------------
 Handles persistent application settings and preferences storage using JSON.
-This is the main settings management class that should be used throughout the application.
-
-Responsibilities:
-- Load/save application settings from/to JSON file
-- Provide access to settings with type safety
-- Handle default values
-- Ensure settings directory exists
-- Settings validation
 """
 
+from __future__ import annotations
+
 import json
-from pathlib import Path
 import logging
-from typing import Dict, Any, Optional, Tuple
+import os
+from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsManager:
@@ -38,19 +35,17 @@ class SettingsManager:
         "false_color": False,
         "add_timestamp": True,
         "video_quality": "high",
-        # Removed scaling-related settings
     }
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         # #25: Use container-relative path; override with SETTINGS_DIR env var
-        import os
         settings_dir = os.environ.get("SETTINGS_DIR", "")
         if settings_dir:
             self.settings_file = Path(settings_dir) / "settings.json"
         else:
             self.settings_file = Path.home() / ".satellite_processor" / "settings.json"
-        self.settings: Dict[str, Any] = {}
+        self.settings: dict[str, Any] = {}
         self.load_settings()
 
     def load_settings(self) -> None:
@@ -58,7 +53,7 @@ class SettingsManager:
         try:
             self.settings_file.parent.mkdir(parents=True, exist_ok=True)
             if self.settings_file.exists():
-                with open(self.settings_file, "r", encoding="utf-8") as f:
+                with open(self.settings_file, encoding="utf-8") as f:
                     self.settings = json.load(f)
             else:
                 self.settings = self.DEFAULT_SETTINGS.copy()
@@ -87,27 +82,26 @@ class SettingsManager:
             self.logger.info(f"Setting {key}={value}")
             old_value = self.settings.get(key)
             if "path" in key.lower():
-                value = str(Path(value).resolve())  # Store absolute paths
+                value = str(Path(value).resolve())
             self.settings[key] = value
             self.save_settings()
             self.logger.info(
                 f"Successfully updated setting {key} from '{old_value}' to '{value}'"
             )
-            # Verify the save
             saved_value = self.get(key)
             self.logger.info(f"Verified saved value for {key}: {saved_value}")
         except Exception as e:
             self.logger.error(f"Failed to set setting {key}: {e}", exc_info=True)
 
-    def update(self, settings: Dict[str, Any]) -> None:
+    def update(self, settings: dict[str, Any]) -> None:
         """Update multiple settings at once"""
         try:
             self.settings.update(settings)
             self.save_settings()
         except Exception as e:
-            self.logger.error(f"Failed to update settings: {e}")
+            self.logger.error(f"Failed to update settings: {e}", exc_info=True)
 
-    def validate_preferences(self) -> Tuple[bool, str]:
+    def validate_preferences(self) -> tuple[bool, str]:
         """Validate that all required preferences are set"""
         try:
             missing = []
@@ -128,7 +122,7 @@ class SettingsManager:
             )
 
         except Exception as e:
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e}"
 
     def load_preference(self, key: str, default=None):
         """Alias for get() for backward compatibility"""

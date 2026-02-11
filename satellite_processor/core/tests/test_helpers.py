@@ -1,13 +1,12 @@
-import os
-import tempfile
-from pathlib import Path
 import shutil
-from typing import Generator, Tuple
+import tempfile
 from datetime import datetime
-import pytest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
-import numpy as np
+
 import cv2
+import numpy as np
+import pytest
 
 
 def create_mock_image_files(directory: Path, count: int = 5) -> None:
@@ -22,7 +21,7 @@ def create_mock_image_files(directory: Path, count: int = 5) -> None:
 
 
 @pytest.fixture
-def mock_directories(tmp_path) -> Tuple[Path, Path]:
+def mock_directories(tmp_path) -> tuple[Path, Path]:
     """Create temporary input and output directories for testing."""
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
@@ -147,7 +146,7 @@ def create_test_video_options(testing: bool = True, **kwargs) -> dict:
     return options
 
 
-def setup_test_environment(base_dir: Path) -> Tuple[Path, Path, Path]:
+def setup_test_environment(base_dir: Path) -> tuple[Path, Path, Path]:
     """Set up a test environment with input, output, and temp directories."""
     input_dir = base_dir / "input"
     output_dir = base_dir / "output"

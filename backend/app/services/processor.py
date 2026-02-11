@@ -10,9 +10,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from satellite_processor.core.processor import SatelliteImageProcessor
+from satellite_processor.core.settings_schema import to_core_settings
 
 
 def configure_processor(processor: SatelliteImageProcessor, params: dict):
+    # Unify API-style settings to core format (#14)
+    params = to_core_settings(params)
     """Configure processor settings from API params — single source of truth.
 
     Used by both the Celery tasks and any direct processor invocations.

@@ -50,6 +50,7 @@ class Image(Base):
     satellite = Column(String(20), nullable=True, index=True)
     channel = Column(String(10), nullable=True)
     captured_at = Column(DateTime, nullable=True)
+    source = Column(String(20), default="local")
     uploaded_at = Column(DateTime, default=_utcnow, index=True)
 
 

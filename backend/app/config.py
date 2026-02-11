@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # Authentication (optional — if unset, auth is disabled)
     api_key: str = ""
 
+    # GOES settings
+    goes_auto_backfill: bool = False
+    goes_default_satellite: str = "GOES-16"
+    goes_default_sector: str = "FullDisk"
+    goes_default_band: str = "C02"
+
     @model_validator(mode="after")
     def derive_paths(self):
         base = self.storage_path

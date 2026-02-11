@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCreateJob } from '../../hooks/useApi';
 import { Crop, Palette, Clock, Film, Rocket, ChevronRight, ChevronLeft } from 'lucide-react';
 
@@ -14,29 +14,25 @@ const defaultTimestamp = { enabled: true, position: 'bottom-left' };
 const defaultScale = { enabled: false, factor: 1.0 };
 const defaultVideo = { fps: 24, codec: 'h264', quality: 23, interpolation: 'none' };
 
+function initFromParams(defaults: Record<string, unknown>, params: Record<string, unknown> | undefined, key: string, enableOnMatch = true) {
+  if (!params || !(key in params)) return defaults;
+  const p = params[key] as Record<string, unknown>;
+  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p };
+}
+
 export default function ProcessingForm({ selectedImages, onJobCreated, initialParams }: Props) {
+  const p = initialParams as Record<string, Record<string, unknown>> | undefined;
   const [step, setStep] = useState(0);
   const createJob = useCreateJob();
 
-  // Processing params
-  const [crop, setCrop] = useState(defaultCrop);
-  const [falseColor, setFalseColor] = useState(defaultFalseColor);
-  const [timestamp, setTimestamp] = useState(defaultTimestamp);
-  const [scale, setScale] = useState(defaultScale);
+  // Processing params — initialized from preset if provided
+  const [crop, setCrop] = useState(() => initFromParams(defaultCrop, p, 'crop'));
+  const [falseColor, setFalseColor] = useState(() => initFromParams(defaultFalseColor, p, 'false_color'));
+  const [timestamp, setTimestamp] = useState(() => initFromParams(defaultTimestamp, p, 'timestamp'));
+  const [scale, setScale] = useState(() => initFromParams(defaultScale, p, 'scale'));
 
   // Video params
-  const [video, setVideo] = useState(defaultVideo);
-
-  // #168: Wire up initialParams prop to populate form state
-  useEffect(() => {
-    if (!initialParams) return;
-    const p = initialParams as Record<string, Record<string, unknown>>;
-    if (p.crop) setCrop({ ...defaultCrop, enabled: true, ...p.crop });
-    if (p.false_color) setFalseColor({ ...defaultFalseColor, enabled: true, ...p.false_color });
-    if (p.timestamp) setTimestamp({ ...defaultTimestamp, enabled: true, ...p.timestamp });
-    if (p.scale) setScale({ ...defaultScale, enabled: true, ...p.scale });
-    if (p.video) setVideo({ ...defaultVideo, ...p.video });
-  }, [initialParams]);
+  const [video, setVideo] = useState(() => initFromParams(defaultVideo, p, 'video', false));
 
   const steps = [
     { icon: Crop, label: 'Image Processing' },

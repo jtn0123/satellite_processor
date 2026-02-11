@@ -4,17 +4,10 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
 import { Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export default function SettingsPage() {
-  usePageTitle('Settings');
-  const { data: settings, isLoading } = useSettings();
+function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
   const updateSettings = useUpdateSettings();
-  const [form, setForm] = useState<Record<string, unknown>>({});
+  const [form, setForm] = useState<Record<string, unknown>>(settings);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // #173: Use useEffect instead of anti-pattern state update during render
-  useEffect(() => {
-    if (settings) setForm(settings);
-  }, [settings]);
 
   useEffect(() => {
     if (!toast) return;
@@ -38,10 +31,7 @@ export default function SettingsPage() {
 
       <div className="bg-slate-800 rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold">Processing Defaults</h2>
-        {isLoading ? (
-          <div className="h-32 animate-pulse bg-slate-700 rounded-lg" />
-        ) : (
-          <div className="grid gap-4">
+        <div className="grid gap-4">
             <div>
               <label className="text-sm text-slate-400">Default False Color</label>
               <select
@@ -136,7 +126,6 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        )}
       </div>
 
       <div>
@@ -145,4 +134,20 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  usePageTitle('Settings');
+  const { data: settings, isLoading } = useSettings();
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-slate-400">Loading settings...</div>;
+  }
+
+  if (!settings) {
+    return <div className="text-center py-12 text-slate-400">Failed to load settings</div>;
+  }
+
+  // key={JSON.stringify(settings)} remounts the form when settings change from server
+  return <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />;
 }

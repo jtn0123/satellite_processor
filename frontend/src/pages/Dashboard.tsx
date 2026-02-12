@@ -62,8 +62,8 @@ export default function Dashboard() {
       {/* Stats cards */}
       {statsLoading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="bg-card border border-subtle rounded-xl p-4 h-24 animate-pulse" />
+          {["a","b","c","d"].map((k) => (
+            <div key={k} className="bg-card border border-subtle rounded-xl p-4 h-24 animate-pulse" />
           ))}
         </div>
       )}

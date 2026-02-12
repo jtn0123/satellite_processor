@@ -98,8 +98,8 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-square bg-card rounded-xl animate-pulse" />
+        {["a","b","c","d","e","f","g","h"].map((k) => (
+          <div key={k} className="aspect-square bg-card rounded-xl animate-pulse" />
         ))}
       </div>
     );

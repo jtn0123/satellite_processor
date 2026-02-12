@@ -98,8 +98,8 @@ export default function UploadZone() {
 
       {uploads.length > 0 && (
         <div className="space-y-2">
-          {uploads.map((u, i) => (
-            <div key={i} className="flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-2">
+          {uploads.map((u) => (
+            <div key={u.name} className="flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-2">
               {u.status === 'done' && <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />}
               {u.status === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
               {u.status !== 'done' && u.status !== 'error' && (

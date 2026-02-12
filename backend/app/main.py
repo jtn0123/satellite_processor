@@ -79,50 +79,57 @@ app.include_router(stats.router)
 app.include_router(download.router)
 
 
+async def _ws_authenticate(websocket: WebSocket) -> bool:
+    """Validate API key on WebSocket handshake. Returns False if auth fails."""
+    if not app_settings.api_key:
+        return True
+    key = websocket.query_params.get("api_key", "") or websocket.headers.get("x-api-key", "")
+    if key != app_settings.api_key:
+        await websocket.close(code=4401, reason="Invalid or missing API key")
+        return False
+    return True
+
+
+async def _ws_reader(websocket: WebSocket) -> None:
+    """Read and discard client messages until disconnect."""
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+
+
+async def _ws_writer(websocket: WebSocket, pubsub) -> None:
+    """Forward Redis pub/sub messages to the WebSocket client."""
+    while True:
+        msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
+        if msg and msg["type"] == "message":
+            try:
+                data = json.loads(msg["data"])
+            except (json.JSONDecodeError, TypeError):
+                continue
+            await websocket.send_json({"type": "progress", **data})
+            if data.get("status") in ("completed", "failed", "cancelled"):
+                break
+
+
 @app.websocket("/ws/jobs/{job_id}")
 async def job_websocket(websocket: WebSocket, job_id: str):
     """WebSocket endpoint for real-time job progress via Redis pub/sub"""
     import redis.asyncio as aioredis
 
-    # #193: Validate API key on WebSocket handshake
-    if app_settings.api_key:
-        key = websocket.query_params.get("api_key", "") or (
-            websocket.headers.get("x-api-key", "")
-        )
-        if key != app_settings.api_key:
-            await websocket.close(code=4401, reason="Invalid or missing API key")
-            return
+    if not await _ws_authenticate(websocket):
+        return
 
     await websocket.accept()
-    # #197: Use connection pool instead of creating a new connection per WebSocket
     r = aioredis.from_url(app_settings.redis_url, decode_responses=True, max_connections=20)
     pubsub = r.pubsub()
     await pubsub.subscribe(f"job:{job_id}")
 
     try:
         await websocket.send_json({"type": "connected", "job_id": job_id})
-
-        async def reader():
-            try:
-                while True:
-                    await websocket.receive_text()
-            except WebSocketDisconnect:
-                pass
-
-        async def writer():
-            while True:
-                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
-                if msg and msg["type"] == "message":
-                    try:
-                        data = json.loads(msg["data"])
-                    except (json.JSONDecodeError, TypeError):
-                        continue
-                    await websocket.send_json({"type": "progress", **data})
-                    if data.get("status") in ("completed", "failed", "cancelled"):
-                        break
-
         _, pending = await asyncio.wait(
-            [asyncio.create_task(reader()), asyncio.create_task(writer())],
+            [asyncio.create_task(_ws_reader(websocket)), asyncio.create_task(_ws_writer(websocket, pubsub))],
             return_when=asyncio.FIRST_COMPLETED,
         )
         for t in pending:

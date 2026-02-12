@@ -29,82 +29,85 @@ async def version_info():
     return {"version": VERSION, "build": BUILD_SHA}
 
 
-@router.get("/detailed")
-async def health_detailed():
-    """Detailed health check with dependency status."""
-    checks: dict = {}
-    overall = "healthy"
-
-    # Database check
+async def _check_database() -> dict:
+    """Check database connectivity and latency."""
     try:
         t0 = time.monotonic()
         async with async_session() as session:
             await session.execute(text("SELECT 1"))
         latency = round((time.monotonic() - t0) * 1000, 1)
-        checks["database"] = {"status": "ok", "latency_ms": latency}
+        return {"status": "ok", "latency_ms": latency}
     except Exception as exc:
-        checks["database"] = {"status": "error", "error": str(exc)}
-        overall = "unhealthy"
+        return {"status": "error", "error": str(exc)}
 
-    # Redis check
+
+async def _check_redis() -> dict:
+    """Check Redis connectivity and latency."""
     try:
         t0 = time.monotonic()
         r = aioredis.from_url(settings.redis_url)
         try:
             await r.ping()
             latency = round((time.monotonic() - t0) * 1000, 1)
-            checks["redis"] = {"status": "ok", "latency_ms": latency}
+            return {"status": "ok", "latency_ms": latency}
         finally:
             await r.close()
     except Exception as exc:
-        checks["redis"] = {"status": "error", "error": str(exc)}
-        overall = "unhealthy"
+        return {"status": "error", "error": str(exc)}
 
-    # Disk space check
+
+def _check_disk() -> dict:
+    """Check available disk space."""
     try:
         usage = shutil.disk_usage(settings.storage_path)
         free_gb = round(usage.free / (1024**3), 1)
         if free_gb < 1.0:
-            checks["disk"] = {"status": "warning", "free_gb": free_gb}
-            if overall == "healthy":
-                overall = "degraded"
-        else:
-            checks["disk"] = {"status": "ok", "free_gb": free_gb}
+            return {"status": "warning", "free_gb": free_gb}
+        return {"status": "ok", "free_gb": free_gb}
     except Exception as exc:
-        checks["disk"] = {"status": "error", "error": str(exc)}
-        if overall == "healthy":
-            overall = "degraded"
+        return {"status": "error", "error": str(exc)}
 
-    # Storage directories check
+
+def _check_storage_dirs() -> dict:
+    """Check storage directories exist and are writable."""
     try:
-        dirs_ok = True
         for sub in [settings.upload_dir, settings.output_dir, settings.temp_dir]:
             if sub is None:
                 continue
             p = Path(sub)
             if not p.exists() or not p.is_dir():
-                dirs_ok = False
-                break
-            # Test writable
+                return {"status": "error", "error": "Directory missing or not writable"}
             test_file = p / ".health_check_tmp"
             try:
                 test_file.write_text("ok")
                 test_file.unlink()
             except OSError:
-                dirs_ok = False
-                break
-
-        if dirs_ok:
-            checks["storage"] = {"status": "ok"}
-        else:
-            checks["storage"] = {"status": "error", "error": "Directory missing or not writable"}
-            overall = "unhealthy"
+                return {"status": "error", "error": "Directory missing or not writable"}
+        return {"status": "ok"}
     except Exception as exc:
-        checks["storage"] = {"status": "error", "error": str(exc)}
-        overall = "unhealthy"
+        return {"status": "error", "error": str(exc)}
 
+
+def _derive_overall(checks: dict) -> str:
+    """Derive overall health status from individual checks."""
+    if any(c.get("status") == "error" for c in checks.values()):
+        return "unhealthy"
+    if any(c.get("status") == "warning" for c in checks.values()):
+        return "degraded"
+    return "healthy"
+
+
+@router.get("/detailed")
+async def health_detailed():
+    """Detailed health check with dependency status."""
+    checks = {
+        "database": await _check_database(),
+        "redis": await _check_redis(),
+        "disk": _check_disk(),
+        "storage": _check_storage_dirs(),
+    }
     return {
-        "status": overall,
+        "status": _derive_overall(checks),
         "checks": checks,
         "version": VERSION,
     }

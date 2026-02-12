@@ -180,7 +180,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               selectable && selected?.has(img.id) ? 'border-primary' : 'border-subtle hover:border-space-600'
             }`}
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectable && onToggle ? onToggle(img.id) : setPreview(img); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (selectable && onToggle) { onToggle(img.id); } else { setPreview(img); } } }}
           >
             <div className="aspect-square bg-space-800 flex items-center justify-center relative">
               <img

@@ -62,7 +62,7 @@ def test_fetch_goes_data_success(mock_db, mock_progress, mock_update, mock_fetch
         "end_time": "2026-01-01T01:00:00",
     }
 
-    fetch_goes_data(None, "job-test", params)
+    fetch_goes_data("job-test", params)
     mock_fetch.assert_called_once()
 
 
@@ -85,4 +85,4 @@ def test_fetch_goes_data_failure(mock_db, mock_progress, mock_update, mock_fetch
     }
 
     with pytest.raises(RuntimeError):
-        fetch_goes_data(None, "job-fail", params)
+        fetch_goes_data("job-fail", params)

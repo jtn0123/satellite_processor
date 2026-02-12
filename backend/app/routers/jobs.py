@@ -20,6 +20,8 @@ from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 
+_JOB_NOT_FOUND = "Job not found"
+
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
@@ -124,7 +126,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise APIError(404, "not_found", "Job not found")
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
     return job
 
 
@@ -134,7 +136,7 @@ async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise APIError(404, "not_found", "Job not found")
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     update_data = job_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -178,7 +180,7 @@ async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(g
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise APIError(404, "not_found", "Job not found")
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     if job.status_message and job.status_message.startswith("celery_task_id:"):
         celery_task_id = job.status_message.split(":", 1)[1]
@@ -199,7 +201,7 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise APIError(404, "not_found", "Job not found")
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
     if job.status != "completed":
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 

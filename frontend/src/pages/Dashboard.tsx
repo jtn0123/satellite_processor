@@ -19,6 +19,12 @@ import {
 import JobList from '../components/Jobs/JobList';
 import { formatBytes } from '../utils/format';
 
+function storageBarColor(percent: number): string {
+  if (percent > 90) return 'bg-red-400';
+  if (percent > 70) return 'bg-yellow-400';
+  return 'bg-emerald-400';
+}
+
 const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
   ok: { icon: CheckCircle2, color: 'text-green-400' },
   healthy: { icon: CheckCircle2, color: 'text-green-400' },
@@ -83,9 +89,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-3 h-2 bg-space-700 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${
-                storagePercent > 90 ? 'bg-red-400' : storagePercent > 70 ? 'bg-yellow-400' : 'bg-emerald-400'
-              }`}
+              className={`h-full rounded-full transition-all ${storageBarColor(storagePercent)}`}
               style={{ width: `${storagePercent}%` }}
             />
           </div>
@@ -96,7 +100,7 @@ export default function Dashboard() {
       </div>
 
       {/* Getting Started - shown when no images */}
-      {stats && stats.total_images === 0 && (
+      {stats?.total_images === 0 && (
         <div className="bg-card border border-primary/20 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Rocket className="w-5 h-5 text-primary" />

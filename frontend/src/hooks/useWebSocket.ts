@@ -6,7 +6,7 @@ interface JobProgress {
   status?: string;
 }
 
-const TERMINAL_STATES = ['completed', 'failed', 'cancelled'];
+const TERMINAL_STATES = new Set(['completed', 'failed', 'cancelled']);
 const MAX_BACKOFF_MS = 30_000;
 const DEFAULT_MAX_RETRIES = 10;
 
@@ -67,7 +67,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
         setData(parsed);
 
         // Stop reconnecting if job reached terminal state
-        if (parsed.status && TERMINAL_STATES.includes(parsed.status)) {
+        if (parsed.status && TERMINAL_STATES.has(parsed.status)) {
           terminalRef.current = true;
         }
       } catch (err) { console.error('Failed to parse WebSocket message:', err); }

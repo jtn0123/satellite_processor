@@ -6,6 +6,8 @@ from pathlib import Path
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
+_DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+
 
 class Settings(BaseSettings):
     app_name: str = "Satellite Processor API"
@@ -21,9 +23,9 @@ class Settings(BaseSettings):
     temp_dir: str | None = None
 
     # Redis / Celery
-    redis_url: str = "redis://localhost:6379/0"
-    celery_broker_url: str = "redis://localhost:6379/0"
-    celery_result_backend: str = "redis://localhost:6379/0"
+    redis_url: str = _DEFAULT_REDIS_URL
+    celery_broker_url: str = _DEFAULT_REDIS_URL
+    celery_result_backend: str = _DEFAULT_REDIS_URL
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]

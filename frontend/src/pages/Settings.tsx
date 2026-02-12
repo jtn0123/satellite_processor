@@ -123,15 +123,14 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
               Save Settings
             </button>
             {toast && (
-              <div
+              <output
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${
                   toast.type === 'success' ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
                 }`}
-                role="status"
               >
                 {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                 {toast.message}
-              </div>
+              </output>
             )}
           </div>
       </div>

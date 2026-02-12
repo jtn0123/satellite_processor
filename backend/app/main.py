@@ -121,7 +121,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
                     if data.get("status") in ("completed", "failed", "cancelled"):
                         break
 
-        done, pending = await asyncio.wait(
+        _, pending = await asyncio.wait(
             [asyncio.create_task(reader()), asyncio.create_task(writer())],
             return_when=asyncio.FIRST_COMPLETED,
         )

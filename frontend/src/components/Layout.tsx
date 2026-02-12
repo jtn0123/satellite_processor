@@ -36,17 +36,13 @@ export default function Layout() {
   useJobToasts();
 
   useEffect(() => {
-    try {
-      fetch('/api/health/version')
-        .then((r) => r.json())
-        .then((d) => {
-          const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
-          setVersionInfo(`v${d.version}${sha}`);
-        })
-        .catch(() => {});
-    } catch {
-      // fetch may throw in test environments with relative URLs
-    }
+    fetch('/api/health/version')
+      .then((r) => r.json())
+      .then((d) => {
+        const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
+        setVersionInfo(`v${d.version}${sha}`);
+      })
+      .catch(() => {});
   }, []);
 
   // Close drawer on navigation
@@ -129,8 +125,12 @@ export default function Layout() {
       {/* Mobile drawer overlay */}
       {drawerOpen && (
         <div
+          role="button"
+          tabIndex={0}
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
           onClick={handleOverlayClick}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') handleOverlayClick(); }}
+          aria-label="Close menu"
         />
       )}
 

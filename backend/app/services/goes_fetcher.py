@@ -47,8 +47,12 @@ def _get_s3_client():
     return boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
 
-def _build_s3_prefix(satellite: str, sector: str, band: str, dt_obj: datetime) -> str:
-    """Build the S3 key prefix for a specific hour."""
+def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
+    """Build the S3 key prefix for a specific hour.
+
+    Note: satellite and band are accepted for future use (bucket selection,
+    band-specific products) but not yet used in the prefix.
+    """
     product = SECTOR_PRODUCTS[sector]
     day_of_year = dt_obj.timetuple().tm_yday
     return f"{product}/{dt_obj.year}/{day_of_year:03d}/{dt_obj.hour:02d}/"

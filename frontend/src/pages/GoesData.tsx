@@ -219,7 +219,7 @@ export default function GoesData() {
                     const rangeEnd = new Date(gaps.time_range.end).getTime();
                     const totalMs = rangeEnd - rangeStart;
                     if (totalMs <= 0) return null;
-                    return gaps.gaps.map((gap, i) => {
+                    return gaps.gaps.map((gap) => {
                       const gapStart = new Date(gap.start).getTime();
                       const gapEnd = new Date(gap.end).getTime();
                       const left = ((gapStart - rangeStart) / totalMs) * 100;
@@ -240,7 +240,7 @@ export default function GoesData() {
                 </div>
 
                 <div className="max-h-48 overflow-y-auto space-y-1">
-                  {gaps.gaps.map((gap, i) => (
+                  {gaps.gaps.map((gap) => (
                     <div key={gap.start} className="flex items-center gap-3 text-sm bg-slate-800/50 rounded px-3 py-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                       <span className="text-slate-300">

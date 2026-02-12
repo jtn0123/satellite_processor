@@ -62,7 +62,7 @@ export default function KeyboardShortcuts() {
             <div key={s.keys} className="flex items-center justify-between py-1.5">
               <span className="text-sm text-slate-300">{s.label}</span>
               <div className="flex gap-1">
-                {s.keys.split(' ').map((k, i) => (
+                {s.keys.split(' ').map((k) => (
                   <kbd
                     key={k}
                     className="px-2 py-0.5 bg-space-700 border border-space-600 rounded text-xs font-mono text-slate-300"

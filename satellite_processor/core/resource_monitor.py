@@ -39,7 +39,7 @@ class ResourceMonitor:
         # Callback-based signal replacement
         self.on_resource_update: Callable[[dict], None] | None = None
 
-    def setInterval(self, msec: int):
+    def set_interval(self, msec: int):
         """Set the update interval in milliseconds"""
         self._interval = msec / 1000.0
 

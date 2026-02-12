@@ -17,6 +17,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # Backend coverage
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Run backend tests with coverage
+        run: |
+          cd backend
+          python -m pytest tests/ --cov=app --cov-report=xml:coverage.xml -q
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+
+      # Frontend coverage
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+      - name: Run frontend tests with coverage
+        run: cd frontend && npx vitest run --coverage
+
+      # SonarQube scan
       - uses: sonarsource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

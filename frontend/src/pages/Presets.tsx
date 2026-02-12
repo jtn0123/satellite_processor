@@ -41,7 +41,7 @@ export default function PresetsPage() {
         </div>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 bg-card rounded-lg animate-pulse" />
+            <div key={`skeleton-${i}`} className="h-16 bg-card rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

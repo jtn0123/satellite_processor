@@ -200,7 +200,7 @@ class TestVideoHandlerCommandGeneration:
         }
         output_path = tmp_path / "output.mp4"
 
-        cmd, temp_dir = handler.build_ffmpeg_command(
+        cmd, _ = handler.build_ffmpeg_command(
             str(tmp_path), str(output_path), options
         )
         cmd_str = " ".join(str(c) for c in cmd)
@@ -237,7 +237,7 @@ class TestVideoHandlerCommandGeneration:
         }
         output_path = tmp_path / "output.mp4"
 
-        cmd, temp_dir = handler.build_ffmpeg_command(
+        cmd, _ = handler.build_ffmpeg_command(
             str(tmp_path), str(output_path), options
         )
         cmd_str = " ".join(str(c) for c in cmd)

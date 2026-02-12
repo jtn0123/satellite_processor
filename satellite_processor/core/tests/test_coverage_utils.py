@@ -97,7 +97,7 @@ class TestCalculateUits:
         assert isinstance(result, float)
 
     def test_returns_zero(self):
-        assert calculate_uits({"fps": 30}) == 0.0
+        assert calculate_uits({"fps": 30}) == pytest.approx(0.0)
 
 
 class TestValidateUits:

@@ -1,0 +1,7 @@
+projectKey=satellite_processor
+serverUrl=http://10.27.27.99:9100
+serverVersion=26.2.0.119303
+branch=main
+dashboardUrl=http://10.27.27.99:9100/dashboard?id=satellite_processor&branch=main
+ceTaskId=ea2a6ef1-ed58-4d7c-87e2-9d4a3de36775
+ceTaskUrl=http://10.27.27.99:9100/api/ce/task?id=ea2a6ef1-ed58-4d7c-87e2-9d4a3de36775

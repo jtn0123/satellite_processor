@@ -9,6 +9,9 @@ on:
 jobs:
   sonarqube:
     runs-on: [self-hosted, sonar]
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:

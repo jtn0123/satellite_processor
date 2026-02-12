@@ -11,6 +11,12 @@ export default function UploadZone() {
   const qc = useQueryClient();
   const idxRef = useRef(0);
 
+  const updateUpload = useCallback(
+    (idx: number, patch: Partial<{ progress: number; status: 'uploading' | 'done' | 'error' }>) =>
+      setUploads((prev) => prev.map((u, i) => (i === idx ? { ...u, ...patch } : u))),
+    []
+  );
+
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileArray = Array.from(files).filter((f) =>
@@ -29,24 +35,18 @@ export default function UploadZone() {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (e) => {
               const pct = e.total ? Math.round((e.loaded / e.total) * 100) : 0;
-              setUploads((prev) =>
-                prev.map((u, i) => (i === idx ? { ...u, progress: pct } : u))
-              );
+              updateUpload(idx, { progress: pct });
             },
           });
-          setUploads((prev) =>
-            prev.map((u, i) => (i === idx ? { ...u, progress: 100, status: 'done' } : u))
-          );
+          updateUpload(idx, { progress: 100, status: 'done' });
           qc.invalidateQueries({ queryKey: ['images'] });
         } catch (err) {
           console.error(`Upload failed for ${file.name}:`, err);
-          setUploads((prev) =>
-            prev.map((u, i) => (i === idx ? { ...u, status: 'error' } : u))
-          );
+          updateUpload(idx, { status: 'error' });
         }
       }
     },
-    [qc]
+    [qc, updateUpload]
   );
 
   return (

@@ -120,7 +120,7 @@ export default function PresetsPage() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Delete preset "${p.name}"?`)) {
+                      if (globalThis.confirm(`Delete preset "${p.name}"?`)) {
                         deletePreset.mutate(p.name);
                       }
                     }}

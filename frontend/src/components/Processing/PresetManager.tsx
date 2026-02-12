@@ -14,7 +14,7 @@ interface Props {
   onLoadPreset: (params: Record<string, unknown>) => void;
 }
 
-export default function PresetManager({ currentParams, onLoadPreset }: Props) {
+export default function PresetManager({ currentParams, onLoadPreset }: Readonly<Props>) {
   const { data: presets = [] } = usePresets();
   const createPreset = useCreatePreset();
   const deletePreset = useDeletePreset();
@@ -125,7 +125,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Props) {
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete preset "${p.name}"?`)) {
+                        if (globalThis.confirm(`Delete preset "${p.name}"?`)) {
                           deletePreset.mutate(p.name);
                         }
                       }}

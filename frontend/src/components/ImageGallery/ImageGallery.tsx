@@ -25,7 +25,7 @@ interface Props {
   onToggle?: (id: string) => void;
 }
 
-export default function ImageGallery({ selectable, selected, onToggle }: Props) {
+export default function ImageGallery({ selectable, selected, onToggle }: Readonly<Props>) {
   const { data: images = [], isLoading } = useImages();
   const deleteImage = useDeleteImage();
   const [preview, setPreview] = useState<SatImage | null>(null);
@@ -225,7 +225,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (window.confirm(`Delete "${img.original_name}"? This cannot be undone.`)) {
+                  if (globalThis.confirm(`Delete "${img.original_name}"? This cannot be undone.`)) {
                     deleteImage.mutate(img.id);
                   }
                 }}
@@ -279,7 +279,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
       <p className="text-[10px] text-slate-400 uppercase tracking-wider">{label}</p>

@@ -4,7 +4,7 @@ interface DonutChartProps {
   size?: number;
 }
 
-export default function DonutChart({ value, color, size = 96 }: DonutChartProps) {
+export default function DonutChart({ value, color, size = 96 }: Readonly<DonutChartProps>) {
   const r = 36;
   const circumference = 2 * Math.PI * r;
   const offset = circumference * (1 - value / 100);

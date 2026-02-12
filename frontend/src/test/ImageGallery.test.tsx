@@ -76,8 +76,8 @@ describe('ImageGallery', () => {
   it('opens preview modal on click (non-selectable)', () => {
     render(<ImageGallery />, { wrapper });
     fireEvent.click(screen.getByText('goes16_test.png'));
-    // Preview modal should show the image name in detail
-    // The preview shows metadata about the image
+    // Preview modal should show the image name in the header
+    expect(screen.getAllByText('goes16_test.png').length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows delete button on image hover area', () => {

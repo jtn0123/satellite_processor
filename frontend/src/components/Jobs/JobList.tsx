@@ -23,7 +23,7 @@ interface Props {
   limit?: number;
 }
 
-export default function JobList({ onSelect, limit }: Props) {
+export default function JobList({ onSelect, limit }: Readonly<Props>) {
   const { data: jobs = [], isLoading } = useJobs();
   const deleteJob = useDeleteJob();
 
@@ -108,7 +108,7 @@ export default function JobList({ onSelect, limit }: Props) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (window.confirm('Delete this job? This cannot be undone.')) {
+                  if (globalThis.confirm('Delete this job? This cannot be undone.')) {
                     deleteJob.mutate(job.id);
                   }
                 }}

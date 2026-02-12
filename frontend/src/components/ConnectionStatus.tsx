@@ -27,13 +27,13 @@ function setStatus(s: Status) {
 }
 
 function connect() {
-  if (typeof WebSocket === 'undefined' || !window.location?.host) {
+  if (typeof WebSocket === 'undefined' || !globalThis.location?.host) {
     setStatus('disconnected');
     return;
   }
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
   try {
-    ws = new WebSocket(`${protocol}//${window.location.host}/ws/status`);
+    ws = new WebSocket(`${protocol}//${globalThis.location.host}/ws/status`);
     ws.onopen = () => setStatus('connected');
     ws.onclose = () => {
       ws = null;

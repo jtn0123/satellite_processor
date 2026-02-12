@@ -5,7 +5,7 @@ interface Props {
   src: string;
 }
 
-export default function VideoPlayer({ src }: Props) {
+export default function VideoPlayer({ src }: Readonly<Props>) {
   const [error, setError] = useState(false);
 
   if (error) {
@@ -27,6 +27,7 @@ export default function VideoPlayer({ src }: Props) {
         style={{ maxHeight: '70vh' }}
         onError={() => setError(true)}
       >
+        <track kind="captions" />
         Your browser does not support video playback.
       </video>
     </div>

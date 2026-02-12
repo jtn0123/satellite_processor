@@ -117,7 +117,7 @@ class ImageOperations:
 
         finally:
             # Clean up temp directory
-            if temp_dir and os.path.exists(temp_dir):
+            if temp_dir is not None and os.path.exists(temp_dir):
                 try:
                     shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:

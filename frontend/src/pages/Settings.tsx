@@ -4,7 +4,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
 import { Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
-function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
+function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
   const updateSettings = useUpdateSettings();
   const [form, setForm] = useState<Record<string, unknown>>(settings);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);

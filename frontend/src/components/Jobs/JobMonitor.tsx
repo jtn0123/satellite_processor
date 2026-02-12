@@ -14,7 +14,7 @@ interface Props {
   onBack: () => void;
 }
 
-export default function JobMonitor({ jobId, onBack }: Props) {
+export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
   const { data: job } = useJob(jobId);
   const { data: wsData, connected } = useWebSocket(jobId);
 

@@ -29,7 +29,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
   const { data: images = [], isLoading } = useImages();
   const deleteImage = useDeleteImage();
   const [preview, setPreview] = useState<SatImage | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDialogElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Sort & filter state

@@ -78,6 +78,8 @@ def generate_processed_filename(original_path: Path, timestamp: str, prefix: str
     return f"{prefix}_{original_path.stem}_{timestamp}{original_path.suffix}"
 
 
+
+_PROCESSING_IMAGES_LABEL = "Processing Images"
 class SatelliteImageProcessor:
     """Main image processing class for satellite imagery"""
 
@@ -293,7 +295,7 @@ class SatelliteImageProcessor:
         return current_files
 
     def _stage_scale(
-        self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
+        self, current_files: list[Path], _dirs: dict[str, Path], _pool: multiprocessing.pool.Pool
     ) -> list[Path]:
         """Stage: Scale images (placeholder for future scaling stage)"""
         return current_files
@@ -470,7 +472,7 @@ class SatelliteImageProcessor:
                     processed.append(result)
 
                 progress = int((idx + 1) / total * 100)
-                self._emit_progress("Processing Images", progress)
+                self._emit_progress(_PROCESSING_IMAGES_LABEL, progress)
 
             except Exception as e:
                 self.logger.error(f"Error processing {path}: {e}", exc_info=True)
@@ -583,7 +585,7 @@ class SatelliteImageProcessor:
                     processed_images.append(img)
 
                 progress = int((idx / total_images) * 100)
-                self._emit_progress("Processing Images", progress)
+                self._emit_progress(_PROCESSING_IMAGES_LABEL, progress)
                 self._emit_overall_progress(progress)
 
             if not self.cancelled:
@@ -622,7 +624,7 @@ class SatelliteImageProcessor:
                         processed_images.append(result)
                     completed += 1
                     progress = int((completed / total_steps) * 100)
-                    self._emit_progress("Processing Images", progress)
+                    self._emit_progress(_PROCESSING_IMAGES_LABEL, progress)
                 except Exception as e:
                     self.logger.error(f"Error processing {path}: {e}", exc_info=True)
 
@@ -792,10 +794,9 @@ class SatelliteImageProcessor:
         """Run processing with closing check"""
         if is_closing(None):
             self.cancel()
-            return
 
     def some_method(self):
-        pass
+        """No-op placeholder for future extension."""
 
     def update_resource_usage(self):
         """Update resource usage metrics."""

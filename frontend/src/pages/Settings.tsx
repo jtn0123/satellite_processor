@@ -33,8 +33,9 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
         <h2 className="text-lg font-semibold">Processing Defaults</h2>
         <div className="grid gap-4">
             <div>
-              <label className="text-sm text-slate-400">Default False Color</label>
+              <label htmlFor="false-color" className="text-sm text-slate-400">Default False Color</label>
               <select
+                id="false-color"
                 value={(form.default_false_color as string) ?? 'vegetation'}
                 onChange={(e) => setForm({ ...form, default_false_color: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
@@ -50,18 +51,20 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
             <div>
               <div className="flex items-center gap-3">
                 <input
+                  id="timestamp-enabled"
                   type="checkbox"
                   checked={(form.timestamp_enabled as boolean) ?? true}
                   onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <label className="text-sm text-slate-400">Timestamp Enabled</label>
+                <label htmlFor="timestamp-enabled" className="text-sm text-slate-400">Timestamp Enabled</label>
               </div>
               <p className="text-xs text-slate-500 mt-1">Burn a date/time overlay onto each frame of the output video.</p>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Timestamp Position</label>
+              <label htmlFor="timestamp-position" className="text-sm text-slate-400">Timestamp Position</label>
               <select
+                id="timestamp-position"
                 value={(form.timestamp_position as string) ?? 'bottom-left'}
                 onChange={(e) => setForm({ ...form, timestamp_position: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
@@ -74,8 +77,9 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
               <p className="text-xs text-slate-500 mt-1">Corner where the timestamp text appears on video frames.</p>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Video FPS</label>
+              <label htmlFor="video-fps" className="text-sm text-slate-400">Video FPS</label>
               <input
+                id="video-fps"
                 type="number"
                 min={1}
                 max={120}
@@ -86,8 +90,9 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
               <p className="text-xs text-slate-500 mt-1">Frames per second for output video. Higher = smoother but larger file. Range: 1–120, default 24.</p>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Video Codec</label>
+              <label htmlFor="video-codec" className="text-sm text-slate-400">Video Codec</label>
               <select
+                id="video-codec"
                 value={(form.video_codec as string) ?? 'h264'}
                 onChange={(e) => setForm({ ...form, video_codec: e.target.value })}
                 className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
@@ -99,8 +104,9 @@ function SettingsForm({ settings }: { settings: Record<string, unknown> }) {
               <p className="text-xs text-slate-500 mt-1">H.264 is most compatible. HEVC/AV1 offer better compression but slower encoding and limited browser support.</p>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Video Quality (CRF)</label>
+              <label htmlFor="video-quality" className="text-sm text-slate-400">Video Quality (CRF)</label>
               <input
+                id="video-quality"
                 type="number"
                 min={0}
                 max={51}

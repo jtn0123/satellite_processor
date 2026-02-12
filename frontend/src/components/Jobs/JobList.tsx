@@ -33,7 +33,7 @@ export default function JobList({ onSelect, limit }: Props) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-14 bg-card rounded-lg animate-pulse" />
+          <div key={`skeleton-${i}`} className="h-14 bg-card rounded-lg animate-pulse" />
         ))}
       </div>
     );

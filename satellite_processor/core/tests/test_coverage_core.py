@@ -169,15 +169,15 @@ class TestResourceMonitor:
         """Freshly created monitor should be running with 1-second interval."""
         monitor = ResourceMonitor()
         assert monitor._running is True
-        assert monitor._interval == 1.0
+        assert monitor._interval == pytest.approx(1.0)
         # Clean up without starting the thread
         monitor._running = False
 
     def test_set_interval(self, qapp):
-        """setInterval(ms) should store the value in seconds."""
+        """set_interval(ms) should store the value in seconds."""
         monitor = ResourceMonitor()
-        monitor.setInterval(500)
-        assert monitor._interval == 0.5
+        monitor.set_interval(500)
+        assert monitor._interval == pytest.approx(0.5)
         monitor._running = False
 
     def test_stop(self, qapp):
@@ -193,7 +193,7 @@ class TestResourceMonitor:
     def test_resource_update_signal(self, qapp, qtbot):
         """The monitor should emit resource_update with cpu and memory keys."""
         monitor = ResourceMonitor()
-        monitor.setInterval(50)  # 50 ms for a fast first tick
+        monitor.set_interval(50)  # 50 ms for a fast first tick
 
         with qtbot.waitSignal(monitor.resource_update, timeout=3000) as blocker:
             monitor.start()

@@ -63,7 +63,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
           <button
-            key={i}
+            key={s.label}
             onClick={() => setStep(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               i === step ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'
@@ -165,8 +165,9 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 uppercase">FPS</label>
+                <label htmlFor="proc-fps" className="text-xs text-slate-400 uppercase">FPS</label>
                 <input
+                  id="proc-fps"
                   type="range"
                   min={1}
                   max={60}
@@ -177,8 +178,9 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 <span className="text-sm text-slate-300">{video.fps} fps</span>
               </div>
               <div>
-                <label className="text-xs text-slate-400 uppercase">Quality (CRF)</label>
+                <label htmlFor="proc-quality" className="text-xs text-slate-400 uppercase">Quality (CRF)</label>
                 <input
+                  id="proc-quality"
                   type="range"
                   min={0}
                   max={51}
@@ -191,8 +193,9 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 uppercase">Codec</label>
+                <label htmlFor="proc-codec" className="text-xs text-slate-400 uppercase">Codec</label>
                 <select
+                  id="proc-codec"
                   value={video.codec}
                   onChange={(e) => setVideo({ ...video, codec: e.target.value })}
                   className="mt-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
@@ -203,8 +206,9 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 uppercase">Interpolation</label>
+                <label htmlFor="proc-interp" className="text-xs text-slate-400 uppercase">Interpolation</label>
                 <select
+                  id="proc-interp"
                   value={video.interpolation}
                   onChange={(e) => setVideo({ ...video, interpolation: e.target.value })}
                   className="mt-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"

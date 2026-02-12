@@ -84,8 +84,9 @@ export default function GoesData() {
       {productsError && <div className="text-sm text-red-400">Failed to load satellite products</div>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+          <label htmlFor="goes-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
           <select
+            id="goes-satellite"
             value={satellite}
             onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
@@ -96,8 +97,9 @@ export default function GoesData() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+          <label htmlFor="goes-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
           <select
+            id="goes-sector"
             value={sector}
             onChange={(e) => setSector(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
@@ -108,8 +110,9 @@ export default function GoesData() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Band</label>
+          <label htmlFor="goes-band" className="block text-sm font-medium text-slate-400 mb-1">Band</label>
           <select
+            id="goes-band"
             value={band}
             onChange={(e) => setBand(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
@@ -126,18 +129,20 @@ export default function GoesData() {
         <h2 className="text-lg font-semibold">Fetch Frames</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">Start Time</label>
+            <label htmlFor="goes-start" className="block text-sm font-medium text-slate-400 mb-1">Start Time</label>
             <input
               type="datetime-local"
+              id="goes-start"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">End Time</label>
+            <label htmlFor="goes-end" className="block text-sm font-medium text-slate-400 mb-1">End Time</label>
             <input
               type="datetime-local"
+              id="goes-end"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
               className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
@@ -221,7 +226,7 @@ export default function GoesData() {
                       const width = ((gapEnd - gapStart) / totalMs) * 100;
                       return (
                         <div
-                          key={i}
+                          key={gap.start}
                           className="absolute inset-y-0 bg-red-500/60"
                           style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
                           title={`${gap.duration_minutes}min gap (${gap.expected_frames} missing frames)`}
@@ -236,7 +241,7 @@ export default function GoesData() {
 
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {gaps.gaps.map((gap, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm bg-slate-800/50 rounded px-3 py-1.5">
+                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-slate-800/50 rounded px-3 py-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                       <span className="text-slate-300">
                         {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}

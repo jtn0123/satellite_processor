@@ -3,6 +3,12 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import VideoPlayer from '../VideoPlayer/VideoPlayer';
 import { Download, ArrowLeft } from 'lucide-react';
 
+function statusBadgeClass(status: string): string {
+  if (status === 'completed') return 'bg-green-400/10 text-green-400';
+  if (status === 'failed') return 'bg-red-400/10 text-red-400';
+  return 'bg-blue-400/10 text-blue-400';
+}
+
 interface Props {
   jobId: string;
   onBack: () => void;
@@ -36,13 +42,7 @@ export default function JobMonitor({ jobId, onBack }: Props) {
               </span>
             )}
             <span
-              className={`text-xs px-2 py-0.5 rounded-full ${
-                status === 'completed'
-                  ? 'bg-green-400/10 text-green-400'
-                  : status === 'failed'
-                  ? 'bg-red-400/10 text-red-400'
-                  : 'bg-blue-400/10 text-blue-400'
-              }`}
+              className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClass(status)}`}
             >
               {status}
             </span>

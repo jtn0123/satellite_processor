@@ -30,6 +30,7 @@ import cv2  # type: ignore
 import psutil
 
 from .ffmpeg import (
+    _FFMPEG_WIN_REL,
     DEFAULT_FPS,
     FORMAT_MAP,
     TRANSCODE_QUALITY_PRESETS,
@@ -67,6 +68,8 @@ HIGH_MAXRATE = "45M"
 HIGH_BUFSIZE = "70M"
 
 
+_VIDEO_CANCELLED_MSG = "Video creation cancelled"
+
 class VideoHandler:
     """Handle video creation and processing operations"""
 
@@ -83,9 +86,9 @@ class VideoHandler:
             # Try common Windows paths
             common_paths = [
                 Path("C:/ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg/bin/ffmpeg.exe"),
-                Path(os.environ.get("LOCALAPPDATA", ""), "ffmpeg/bin/ffmpeg.exe"),
+                Path(os.environ.get("PROGRAMFILES", ""), _FFMPEG_WIN_REL),
+                Path(os.environ.get("PROGRAMFILES(X86)", ""), _FFMPEG_WIN_REL),
+                Path(os.environ.get("LOCALAPPDATA", ""), _FFMPEG_WIN_REL),
                 Path(os.path.expanduser("~/ffmpeg/bin/ffmpeg.exe")),
             ]
             for path in common_paths:
@@ -146,7 +149,6 @@ class VideoHandler:
         _retry_count: int = 0,
     ) -> bool:
         """Create video with improved validation and retry handling"""
-        list_file = None
         original_processing_state = self._is_processing
         temp_dir = None
         try:
@@ -212,7 +214,7 @@ class VideoHandler:
                 raise
 
             if self.cancelled:
-                self.logger.info("Video creation cancelled")
+                self.logger.info(_VIDEO_CANCELLED_MSG)
                 return False
 
             self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
@@ -242,7 +244,7 @@ class VideoHandler:
 
             except subprocess.CalledProcessError as e:
                 if self.cancelled:
-                    self.logger.info("Video creation cancelled")
+                    self.logger.info(_VIDEO_CANCELLED_MSG)
                     return False
 
                 if "Cannot use NVENC" in str(e.stderr):
@@ -272,7 +274,7 @@ class VideoHandler:
 
         except Exception as e:
             if self.cancelled:
-                self.logger.info("Video creation cancelled")
+                self.logger.info(_VIDEO_CANCELLED_MSG)
                 return False
             self.logger.error(f"Video creation error: {e}", exc_info=True)
             raise
@@ -280,11 +282,6 @@ class VideoHandler:
         finally:
             self._is_processing = original_processing_state
             self._cleanup_temp_files(options)
-            try:
-                if list_file is not None:
-                    list_file.unlink(missing_ok=True)
-            except Exception as e:
-                self.logger.warning(f"Failed to remove temporary file list: {e}")
             if temp_dir and temp_dir.exists():
                 shutil.rmtree(temp_dir)
 

@@ -7,6 +7,8 @@ from datetime import datetime as dt
 from pathlib import Path
 from typing import Annotated
 
+import aiofiles
+
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
@@ -67,17 +69,16 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     dest = Path(storage_service.upload_dir) / dest_name
 
     file_size = 0
-    with open(dest, "wb") as f:
+    async with aiofiles.open(dest, "wb") as f:
         while True:
             chunk = await file.read(UPLOAD_CHUNK_SIZE)
             if not chunk:
                 break
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
-                f.close()
                 dest.unlink(missing_ok=True)
                 raise APIError(413, "file_too_large", "File exceeds 500MB limit")
-            f.write(chunk)
+            await f.write(chunk)
 
     width = height = None
     try:

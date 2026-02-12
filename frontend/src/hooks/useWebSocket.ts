@@ -30,8 +30,8 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
   const connect = useCallback(() => {
     if (!jobId || terminalRef.current) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/jobs/${jobId}`);
+    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${globalThis.location.host}/ws/jobs/${jobId}`);
     wsRef.current = ws;
 
     ws.onopen = () => {

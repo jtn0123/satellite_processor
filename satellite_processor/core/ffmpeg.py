@@ -58,6 +58,9 @@ FORMAT_MAP = {
 }
 
 
+_FFMPEG_WIN_REL = "ffmpeg/bin/ffmpeg.exe"
+
+
 def find_ffmpeg(testing: bool = False) -> Path | None:
     """Find FFmpeg executable in system PATH or common locations"""
     if testing:
@@ -65,9 +68,9 @@ def find_ffmpeg(testing: bool = False) -> Path | None:
     try:
         common_paths = [
             Path("C:/ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("PROGRAMFILES", ""), "ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg/bin/ffmpeg.exe"),
-            Path(os.environ.get("LOCALAPPDATA", ""), "ffmpeg/bin/ffmpeg.exe"),
+            Path(os.environ.get("PROGRAMFILES", ""), _FFMPEG_WIN_REL),
+            Path(os.environ.get("PROGRAMFILES(X86)", ""), _FFMPEG_WIN_REL),
+            Path(os.environ.get("LOCALAPPDATA", ""), _FFMPEG_WIN_REL),
             Path(os.path.expanduser("~/ffmpeg/bin/ffmpeg.exe")),
         ]
 

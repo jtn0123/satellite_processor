@@ -13,7 +13,7 @@ from PIL import Image as PILImage
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-_IMAGE_NOT_FOUND = _IMAGE_NOT_FOUND
+_IMAGE_NOT_FOUND = "Image not found"
 
 from ..db.database import get_db
 from ..db.models import Image

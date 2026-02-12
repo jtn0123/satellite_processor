@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 
-_JOB_NOT_FOUND = _JOB_NOT_FOUND
+_JOB_NOT_FOUND = "Job not found"
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..celery_app import celery_app

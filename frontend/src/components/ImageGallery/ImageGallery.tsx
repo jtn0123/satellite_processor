@@ -174,10 +174,13 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
         {displayed.map((img) => (
           <div
             key={img.id}
+            role="button"
+            tabIndex={0}
             className={`group relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-colors ${
               selectable && selected?.has(img.id) ? 'border-primary' : 'border-subtle hover:border-space-600'
             }`}
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectable && onToggle ? onToggle(img.id) : setPreview(img); } }}
           >
             <div className="aspect-square bg-space-800 flex items-center justify-center relative">
               <img
@@ -237,11 +240,10 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
 
       {/* Lightbox Preview Modal */}
       {preview && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+        <dialog
+          open
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
           onClick={closePreview}
-          role="dialog"
-          aria-modal="true"
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
         >
@@ -271,7 +273,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
               </div>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

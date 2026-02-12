@@ -52,6 +52,19 @@ export default function UploadZone() {
   return (
     <div className="space-y-4">
       <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = '.png,.tif,.tiff,.jpg,.jpeg';
+            input.onchange = () => input.files && handleFiles(input.files);
+            input.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);

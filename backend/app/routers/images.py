@@ -13,8 +13,6 @@ from PIL import Image as PILImage
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-_IMAGE_NOT_FOUND = "Image not found"
-
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
@@ -23,6 +21,8 @@ from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
+
+_IMAGE_NOT_FOUND = "Image not found"
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 

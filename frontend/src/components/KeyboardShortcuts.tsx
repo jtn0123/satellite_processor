@@ -39,8 +39,9 @@ export default function KeyboardShortcuts() {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+    <dialog
+      open
+      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
       onClick={close}
     >
       <div
@@ -74,6 +75,6 @@ export default function KeyboardShortcuts() {
           ))}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

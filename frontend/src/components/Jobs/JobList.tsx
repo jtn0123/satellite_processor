@@ -51,8 +51,11 @@ export default function JobList({ onSelect, limit }: Props) {
         return (
           <div
             key={job.id}
+            role="button"
+            tabIndex={0}
             className="flex items-center gap-3 bg-card border border-subtle rounded-lg px-4 py-3 hover:bg-card-hover cursor-pointer group transition-colors"
             onClick={() => onSelect?.(job.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(job.id); } }}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon

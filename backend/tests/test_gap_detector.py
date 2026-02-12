@@ -62,7 +62,7 @@ class TestFindGaps:
     async def test_finds_gap(self, db_with_images):
         gaps = await find_gaps(db_with_images, expected_interval=10.0, tolerance=1.5)
         assert len(gaps) == 1
-        assert gaps[0]["duration_minutes"] == 50.0
+        assert gaps[0]["duration_minutes"] == pytest.approx(50.0)
         assert gaps[0]["expected_frames"] == 4
 
     @pytest.mark.asyncio
@@ -94,5 +94,5 @@ class TestGetCoverageStats:
     async def test_empty_db_stats(self, empty_db):
         stats = await get_coverage_stats(empty_db)
         assert stats["total_frames"] == 0
-        assert stats["coverage_percent"] == 0.0
+        assert stats["coverage_percent"] == pytest.approx(0.0)
         assert stats["gaps"] == []

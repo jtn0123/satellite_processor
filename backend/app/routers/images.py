@@ -13,6 +13,8 @@ from PIL import Image as PILImage
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+_IMAGE_NOT_FOUND = _IMAGE_NOT_FOUND
+
 from ..db.database import get_db
 from ..db.models import Image
 from ..errors import APIError
@@ -164,7 +166,7 @@ async def delete_image(request: Request, image_id: str, db: AsyncSession = Depen
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise APIError(404, "not_found", "Image not found")
+        raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
     storage_service.delete_file(image.file_path)
     await db.delete(image)
     await db.commit()
@@ -178,7 +180,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise APIError(404, "not_found", "Image not found")
+        raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
     fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
@@ -210,7 +212,7 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
-        raise APIError(404, "not_found", "Image not found")
+        raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
     fp = _validate_file_path(image.file_path)
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")

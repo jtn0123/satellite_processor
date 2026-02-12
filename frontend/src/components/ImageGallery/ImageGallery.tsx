@@ -42,11 +42,11 @@ export default function ImageGallery({ selectable, selected, onToggle }: Props) 
 
   // Derive unique satellites and channels
   const satellites = useMemo(
-    () => [...new Set(allImages.map((i) => i.satellite).filter(Boolean))].sort(),
+    () => [...new Set(allImages.map((i) => i.satellite).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [allImages]
   );
   const channels = useMemo(
-    () => [...new Set(allImages.map((i) => i.channel).filter(Boolean))].sort(),
+    () => [...new Set(allImages.map((i) => i.channel).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [allImages]
   );
 

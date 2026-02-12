@@ -11,7 +11,7 @@ from alembic import context
 
 # Import Base so Alembic can see all models for autogenerate
 from app.db.database import Base  # noqa: F401
-from app.db.models import *  # noqa: F401, F403
+from app.db.models import Image, Job, Preset  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 
 config = context.config

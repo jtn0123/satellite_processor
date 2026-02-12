@@ -36,17 +36,13 @@ export default function Layout() {
   useJobToasts();
 
   useEffect(() => {
-    try {
-      fetch('/api/health/version')
-        .then((r) => r.json())
-        .then((d) => {
-          const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
-          setVersionInfo(`v${d.version}${sha}`);
-        })
-        .catch(() => {});
-    } catch {
-      // fetch may throw in test environments with relative URLs
-    }
+    fetch('/api/health/version')
+      .then((r) => r.json())
+      .then((d) => {
+        const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
+        setVersionInfo(`v${d.version}${sha}`);
+      })
+      .catch(() => {});
   }, []);
 
   // Close drawer on navigation

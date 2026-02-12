@@ -45,14 +45,13 @@ export default function ToastContainer() {
   return (
     <div className="fixed bottom-4 right-4 z-[100] space-y-2 max-w-sm">
       {currentToasts.map((t) => (
-        <div
+        <output
           key={t.id}
           className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm animate-slide-in ${
             t.type === 'success'
               ? 'bg-green-500/20 border border-green-500/30 text-green-300'
               : 'bg-red-500/20 border border-red-500/30 text-red-300'
           }`}
-          role="status"
         >
           {t.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -63,7 +62,7 @@ export default function ToastContainer() {
           <button onClick={() => dismiss(t.id)} className="p-0.5 hover:opacity-70">
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </output>
       ))}
     </div>
   );

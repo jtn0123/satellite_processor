@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Annotated
 
 import aiofiles
-
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage

@@ -104,6 +104,27 @@ def validate_params(satellite: str, sector: str, band: str) -> None:
         raise ValueError(f"Unknown band: {band}. Valid: {VALID_BANDS}")
 
 
+def _list_hour(
+    s3, bucket: str, prefix: str, sector: str, band: str,
+    start_time: datetime, end_time: datetime,
+) -> list[dict[str, Any]]:
+    """List matching files for a single hour prefix."""
+    results: list[dict[str, Any]] = []
+    try:
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                if not _matches_sector_and_band(key, sector, band):
+                    continue
+                scan_time = _parse_scan_time(key)
+                if scan_time and start_time <= scan_time <= end_time:
+                    results.append({"key": key, "scan_time": scan_time, "size": obj["Size"]})
+    except Exception:
+        logger.warning("Failed to list S3 prefix %s/%s", bucket, prefix)
+    return results
+
+
 def list_available(
     satellite: str,
     sector: str,
@@ -125,22 +146,7 @@ def list_available(
 
     while current < end_ceil:
         prefix = _build_s3_prefix(satellite, sector, band, current)
-        try:
-            paginator = s3.get_paginator("list_objects_v2")
-            for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-                for obj in page.get("Contents", []):
-                    key = obj["Key"]
-                    if not _matches_sector_and_band(key, sector, band):
-                        continue
-                    scan_time = _parse_scan_time(key)
-                    if scan_time and start_time <= scan_time <= end_time:
-                        results.append({
-                            "key": key,
-                            "scan_time": scan_time,
-                            "size": obj["Size"],
-                        })
-        except Exception:
-            logger.warning("Failed to list S3 prefix %s/%s", bucket, prefix)
+        results.extend(_list_hour(s3, bucket, prefix, sector, band, start_time, end_time))
         current += timedelta(hours=1)
 
     results.sort(key=lambda x: x["scan_time"])

@@ -40,8 +40,8 @@ export default function PresetsPage() {
           <p className="text-slate-400 text-sm mt-1">Manage processing presets</p>
         </div>
         <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="h-16 bg-card rounded-lg animate-pulse" />
+          {["a","b","c","d"].map((k) => (
+            <div key={k} className="h-16 bg-card rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

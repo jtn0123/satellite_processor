@@ -32,8 +32,8 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={`skeleton-${i}`} className="h-14 bg-card rounded-lg animate-pulse" />
+        {["a","b","c"].map((k) => (
+          <div key={k} className="h-14 bg-card rounded-lg animate-pulse" />
         ))}
       </div>
     );

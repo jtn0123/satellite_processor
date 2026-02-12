@@ -15,6 +15,23 @@ ALLOWED_PARAM_KEYS = {
 }
 
 
+def _check_unknown_keys(params: dict) -> None:
+    unknown = set(params.keys()) - ALLOWED_PARAM_KEYS
+    if unknown:
+        raise ValueError(f"Unknown parameter keys: {unknown}")
+
+
+def _check_path_traversal(params: dict) -> None:
+    for key, val in params.items():
+        if isinstance(val, str) and (".." in val or val.startswith("/")):
+            if key not in ("input_path", "output_path"):
+                raise ValueError(f"Suspicious value for '{key}'")
+        if key == "image_paths" and isinstance(val, list):
+            for p in val:
+                if isinstance(p, str) and ".." in p:
+                    raise ValueError("Path traversal not allowed in image_paths")
+
+
 class JobCreate(BaseModel):
     job_type: Literal["image_process", "video_create"] = "image_process"
     params: dict = Field(default_factory=dict)
@@ -23,20 +40,9 @@ class JobCreate(BaseModel):
     @field_validator("params")
     @classmethod
     def validate_params(cls, v: dict) -> dict:
-        # Strip keys with None values
         v = {k: val for k, val in v.items() if val is not None}
-        unknown = set(v.keys()) - ALLOWED_PARAM_KEYS
-        if unknown:
-            raise ValueError(f"Unknown parameter keys: {unknown}")
-        for key, val in v.items():
-            if isinstance(val, str) and (".." in val or val.startswith("/")):
-                if key not in ("input_path", "output_path"):
-                    raise ValueError(f"Suspicious value for '{key}'")
-            # #22: Validate image_paths against path traversal
-            if key == "image_paths" and isinstance(val, list):
-                for p in val:
-                    if isinstance(p, str) and ".." in p:
-                        raise ValueError("Path traversal not allowed in image_paths")
+        _check_unknown_keys(v)
+        _check_path_traversal(v)
         return v
 
     @field_validator("input_path")

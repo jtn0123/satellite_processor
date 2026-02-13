@@ -113,7 +113,7 @@ function WelcomeCard({ onFetchClick }: { onFetchClick: () => void }) {
       </p>
       <button
         onClick={onFetchClick}
-        className="flex items-center gap-2 px-6 py-3 bg-primary text-gray-900 dark:text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20"
+        className="flex items-center gap-2 px-6 py-3 bg-primary text-gray-900 dark:text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20 btn-interactive"
       >
         <Download className="w-5 h-5" />
         Fetch Data
@@ -211,7 +211,9 @@ export default function GoesData() {
     return (
       <TabErrorBoundary tabName={tab.name} key={activeTab}>
         <Suspense fallback={<TabLoadingFallback />}>
-          {tab.component}
+          <div className="content-fade-in">
+            {tab.component}
+          </div>
         </Suspense>
       </TabErrorBoundary>
     );
@@ -255,7 +257,7 @@ export default function GoesData() {
       </div>
 
       {/* Tab content */}
-      <div className="animate-fade-in">
+      <div key={activeTab} className="animate-fade-in">
         {showWelcome ? (
           <WelcomeCard onFetchClick={() => setActiveTab('fetch')} />
         ) : (

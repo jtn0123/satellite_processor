@@ -22,7 +22,9 @@ export default function JobsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       {selectedId ? (
-        <JobMonitor jobId={selectedId} onBack={handleBack} />
+        <div key={selectedId} className="panel-enter">
+          <JobMonitor jobId={selectedId} onBack={handleBack} />
+        </div>
       ) : (
         <>
           <div>

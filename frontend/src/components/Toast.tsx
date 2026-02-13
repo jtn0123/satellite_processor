@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { type ToastMessage, type ToastType, subscribeToast } from '../utils/toast';
 
@@ -61,27 +61,32 @@ const progressBarColors: Record<ToastType, string> = {
 
 function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: string) => void }) {
   const progressRef = useRef<HTMLDivElement>(null);
+  const [dismissing, setDismissing] = useState(false);
 
   useEffect(() => {
     const el = progressRef.current;
     if (!el) return;
-    // Start animation on next frame
     requestAnimationFrame(() => {
       el.style.width = '0%';
     });
   }, []);
+
+  const handleDismiss = useCallback(() => {
+    setDismissing(true);
+    setTimeout(() => onDismiss(toast.id), 200);
+  }, [onDismiss, toast.id]);
 
   const style = styleMap[toast.type];
   return (
     <output
       role="alert"
       aria-live="polite"
-      className={`flex flex-col rounded-xl shadow-lg text-sm border overflow-hidden animate-slide-in ${style.bg}`}
+      className={`flex flex-col rounded-xl shadow-lg text-sm border overflow-hidden ${dismissing ? 'animate-slide-out' : 'animate-slide-in'} ${style.bg}`}
     >
       <div className="flex items-center gap-2 px-4 py-3">
         {style.icon}
         <span className="flex-1">{toast.message}</span>
-        <button onClick={() => onDismiss(toast.id)} className="p-0.5 hover:opacity-70" aria-label="Dismiss notification">
+        <button onClick={handleDismiss} className="p-0.5 hover:opacity-70 transition-opacity" aria-label="Dismiss notification">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>

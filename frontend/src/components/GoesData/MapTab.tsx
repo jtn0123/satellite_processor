@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, ImageOverlay, LayersControl } from 'react-leaflet';
-import { LatLngBoundsExpression } from 'leaflet';
+import type { LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Satellite } from 'lucide-react';
 import api from '../../api/client';

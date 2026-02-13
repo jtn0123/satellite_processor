@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import api from '../../api/client';
@@ -8,6 +8,12 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
   const queryClient = useQueryClient();
   const [selectedCollection, setSelectedCollection] = useState('');
   const [newName, setNewName] = useState('');
+
+  useEffect(() => {
+    const handler = () => onClose();
+    window.addEventListener('close-modal', handler);
+    return () => window.removeEventListener('close-modal', handler);
+  }, [onClose]);
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],

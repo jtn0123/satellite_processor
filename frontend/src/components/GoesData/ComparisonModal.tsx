@@ -33,6 +33,12 @@ export default function ComparisonModal({
   const [swapped, setSwapped] = useState(false);
   const [sliderPos, setSliderPos] = useState(50);
   const sliderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = () => onClose();
+    window.addEventListener('close-modal', handler);
+    return () => window.removeEventListener('close-modal', handler);
+  }, [onClose]);
   const isDragging = useRef(false);
 
   const left = swapped ? frameB : frameA;
@@ -107,7 +113,7 @@ export default function ComparisonModal({
                     {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                   </div>
                   <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                    <img src={getUrl(frame)} alt={`Frame ${idx + 1}`}
+                    <img src={getUrl(frame)} alt={`Frame ${idx + 1}`} loading="lazy"
                       className="max-w-full max-h-[60vh] object-contain" />
                   </div>
                 </div>
@@ -130,11 +136,11 @@ export default function ComparisonModal({
                 onClick={handleSliderMove}
               >
                 {/* Right image (full) */}
-                <img src={getUrl(right)} alt="Right"
+                <img src={getUrl(right)} alt="Right" loading="lazy"
                   className="absolute inset-0 w-full h-full object-contain" />
                 {/* Left image (clipped) */}
                 <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
-                  <img src={getUrl(left)} alt="Left"
+                  <img src={getUrl(left)} alt="Left" loading="lazy"
                     className="w-full h-full object-contain" />
                 </div>
                 {/* Slider handle */}

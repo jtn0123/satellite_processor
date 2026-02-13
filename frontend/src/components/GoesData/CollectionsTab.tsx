@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Library } from 'lucide-react';
 import api from '../../api/client';
 import type { CollectionType } from './types';
+import Skeleton from './Skeleton';
+import EmptyState from './EmptyState';
 
 export default function CollectionsTab() {
   const queryClient = useQueryClient();
@@ -51,7 +54,11 @@ export default function CollectionsTab() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-slate-400">Loading...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={`coll-skel-${i}`} variant="card" />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {collections?.map((c) => (
@@ -84,8 +91,12 @@ export default function CollectionsTab() {
             </div>
           ))}
           {collections?.length === 0 && (
-            <div className="col-span-full text-center text-slate-500 py-12">
-              No collections yet. Create one above!
+            <div className="col-span-full">
+              <EmptyState
+                icon={<Library className="w-8 h-8" />}
+                title="Create your first collection"
+                description="Collections help you organize satellite frames into groups. Use the input above to create one."
+              />
             </div>
           )}
         </div>

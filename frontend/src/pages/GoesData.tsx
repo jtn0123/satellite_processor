@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Satellite,
   Download,
@@ -13,16 +13,20 @@ import {
   Layers,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
-import FetchTab from '../components/GoesData/FetchTab';
-import BrowseTab from '../components/GoesData/BrowseTab';
-import CollectionsTab from '../components/GoesData/CollectionsTab';
-import AnimationStudioTab from '../components/GoesData/AnimationStudioTab';
-import StatsTab from '../components/GoesData/StatsTab';
-import PresetsTab from '../components/GoesData/PresetsTab';
-import CleanupTab from '../components/GoesData/CleanupTab';
-import LiveTab from '../components/GoesData/LiveTab';
-import MapTab from '../components/GoesData/MapTab';
-import CompositesTab from '../components/GoesData/CompositesTab';
+import { useHotkeys } from '../hooks/useHotkeys';
+import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
+import Skeleton from '../components/GoesData/Skeleton';
+
+const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
+const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
+const CollectionsTab = lazy(() => import('../components/GoesData/CollectionsTab'));
+const AnimationStudioTab = lazy(() => import('../components/GoesData/AnimationStudioTab'));
+const StatsTab = lazy(() => import('../components/GoesData/StatsTab'));
+const PresetsTab = lazy(() => import('../components/GoesData/PresetsTab'));
+const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
+const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
+const MapTab = lazy(() => import('../components/GoesData/MapTab'));
+const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
 
 type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites';
 
@@ -65,9 +69,72 @@ const tabGroups: TabGroup[] = [
   },
 ];
 
+// Flat list of all tab IDs in order for keyboard shortcut mapping
+const allTabIds: TabId[] = tabGroups.flatMap((g) => g.tabs.map((t) => t.id));
+
+function TabLoadingFallback() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={`tab-skel-${i}`} variant="card" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function GoesData() {
   usePageTitle('GOES Data');
   const [activeTab, setActiveTab] = useState<TabId>('browse');
+
+  // Keyboard shortcuts: 1-0 switch tabs
+  const shortcuts = useMemo(() => {
+    const map: Record<string, () => void> = {};
+    allTabIds.forEach((id, i) => {
+      const key = i < 9 ? String(i + 1) : '0';
+      map[key] = () => setActiveTab(id);
+    });
+    return map;
+  }, []);
+
+  useHotkeys(shortcuts);
+
+  // Listen for switch-tab events from child components (e.g., empty state CTA)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tabId = (e as CustomEvent).detail as TabId;
+      if (allTabIds.includes(tabId)) {
+        setActiveTab(tabId);
+      }
+    };
+    window.addEventListener('switch-tab', handler);
+    return () => window.removeEventListener('switch-tab', handler);
+  }, []);
+
+  const renderTab = useCallback(() => {
+    const tabMap: Record<TabId, { component: React.ReactNode; name: string }> = {
+      fetch: { component: <FetchTab />, name: 'Fetch' },
+      browse: { component: <BrowseTab />, name: 'Browse' },
+      collections: { component: <CollectionsTab />, name: 'Collections' },
+      animation: { component: <AnimationStudioTab />, name: 'Animation Studio' },
+      presets: { component: <PresetsTab />, name: 'Presets' },
+      stats: { component: <StatsTab />, name: 'Stats' },
+      cleanup: { component: <CleanupTab />, name: 'Cleanup' },
+      live: { component: <LiveTab />, name: 'Live' },
+      map: { component: <MapTab />, name: 'Map' },
+      composites: { component: <CompositesTab />, name: 'Composites' },
+    };
+
+    const tab = tabMap[activeTab];
+    return (
+      <TabErrorBoundary tabName={tab.name} key={activeTab}>
+        <Suspense fallback={<TabLoadingFallback />}>
+          {tab.component}
+        </Suspense>
+      </TabErrorBoundary>
+    );
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -102,16 +169,7 @@ export default function GoesData() {
 
       {/* Tab content */}
       <div className="animate-fade-in">
-        {activeTab === 'fetch' && <FetchTab />}
-        {activeTab === 'browse' && <BrowseTab />}
-        {activeTab === 'collections' && <CollectionsTab />}
-        {activeTab === 'animation' && <AnimationStudioTab />}
-        {activeTab === 'presets' && <PresetsTab />}
-        {activeTab === 'stats' && <StatsTab />}
-        {activeTab === 'cleanup' && <CleanupTab />}
-        {activeTab === 'live' && <LiveTab />}
-        {activeTab === 'map' && <MapTab />}
-        {activeTab === 'composites' && <CompositesTab />}
+        {renderTab()}
       </div>
     </div>
   );

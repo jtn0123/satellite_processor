@@ -1,0 +1,42 @@
+interface SkeletonProps {
+  variant?: 'card' | 'text' | 'thumbnail';
+  count?: number;
+  className?: string;
+}
+
+function SkeletonItem({ variant = 'text', className = '' }: Omit<SkeletonProps, 'count'>) {
+  switch (variant) {
+    case 'card':
+      return (
+        <div className={`bg-slate-900 rounded-xl border border-slate-800 overflow-hidden ${className}`}>
+          <div className="aspect-video animate-pulse bg-slate-700 rounded-t" />
+          <div className="p-3 space-y-2">
+            <div className="h-3 animate-pulse bg-slate-700 rounded w-3/4" />
+            <div className="h-3 animate-pulse bg-slate-700 rounded w-1/2" />
+          </div>
+        </div>
+      );
+    case 'thumbnail':
+      return (
+        <div className={`aspect-video animate-pulse bg-slate-700 rounded ${className}`} />
+      );
+    case 'text':
+    default:
+      return (
+        <div className={`h-4 animate-pulse bg-slate-700 rounded w-3/4 ${className}`} />
+      );
+  }
+}
+
+export default function Skeleton({ variant = 'text', count = 1, className = '' }: SkeletonProps) {
+  if (count === 1) {
+    return <SkeletonItem variant={variant} className={className} />;
+  }
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonItem key={`skel-${i}`} variant={variant} className={className} />
+      ))}
+    </div>
+  );
+}

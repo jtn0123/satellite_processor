@@ -1,7 +1,7 @@
 """Tests for GOES fetcher service."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -48,12 +48,12 @@ class TestValidateParams:
 
 class TestBuildS3Prefix:
     def test_fulldisk_prefix(self):
-        dt = datetime(2024, 3, 15, 14, 30)
+        dt = datetime(2024, 3, 15, 14, 30, tzinfo=UTC)
         prefix = _build_s3_prefix("GOES-16", "FullDisk", "C02", dt)
         assert prefix == "ABI-L2-CMIPF/2024/075/14/"
 
     def test_conus_prefix(self):
-        dt = datetime(2024, 1, 1, 0, 0)
+        dt = datetime(2024, 1, 1, 0, 0, tzinfo=UTC)
         prefix = _build_s3_prefix("GOES-16", "CONUS", "C02", dt)
         assert prefix == "ABI-L2-CMIPC/2024/001/00/"
 
@@ -103,8 +103,8 @@ class TestListAvailable:
 
         results = list_available(
             "GOES-16", "FullDisk", "C02",
-            datetime(2024, 3, 15, 14, 0),
-            datetime(2024, 3, 15, 14, 59),
+            datetime(2024, 3, 15, 14, 0, tzinfo=UTC),
+            datetime(2024, 3, 15, 14, 59, tzinfo=UTC),
         )
         assert len(results) == 1
         assert results[0]["scan_time"].hour == 14
@@ -119,7 +119,7 @@ class TestListAvailable:
 
         results = list_available(
             "GOES-16", "FullDisk", "C02",
-            datetime(2024, 3, 15, 14, 0),
-            datetime(2024, 3, 15, 14, 59),
+            datetime(2024, 3, 15, 14, 0, tzinfo=UTC),
+            datetime(2024, 3, 15, 14, 59, tzinfo=UTC),
         )
         assert len(results) == 0

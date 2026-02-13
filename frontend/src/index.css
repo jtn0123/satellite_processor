@@ -62,24 +62,39 @@ body {
 /* Toast slide-in animation */
 @keyframes slide-in {
   from {
-    transform: translateX(100%);
+    transform: translateX(100%) scale(0.95);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
     opacity: 1;
   }
 }
 
+@keyframes slide-out {
+  from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%) scale(0.95);
+    opacity: 0;
+  }
+}
+
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+  animation: slide-in 0.25s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.2s ease-in forwards;
 }
 
 /* Fade in for tab transitions */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -89,6 +104,83 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
+}
+
+/* Modal/overlay entry animations using @starting-style */
+.modal-overlay {
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.modal-panel {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+}
+
+/* Dropdown/popover entry animation */
+.dropdown-enter {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+/* Sidebar panel entry animation (mobile drawer) */
+.sidebar-enter {
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Skeleton → content fade transition */
+@keyframes skeleton-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.content-fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+
+/* Button micro-interactions */
+.btn-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-interactive:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+}
+
+/* Job panel entry animation */
+.panel-enter {
+  animation: fade-in 0.25s ease-out;
 }
 
 /* Hide scrollbar for tab overflow */

@@ -39,13 +39,13 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
   const dialogRef = useFocusTrap(close);
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={close}>
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-overlay" onClick={close}>
       <div
         ref={dialogRef}
         role="dialog"
         aria-label="What's New"
         aria-modal="true"
-        className="bg-space-850 border border-subtle rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto"
+        className="bg-space-850 border border-subtle rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

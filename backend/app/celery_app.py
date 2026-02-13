@@ -35,6 +35,7 @@ celery_app.conf.update(
 
     # Dead letter / retry settings
     task_reject_on_worker_lost=True,
+    task_default_queue="default",
     task_default_retry_delay=60,
     task_max_retries=3,
 

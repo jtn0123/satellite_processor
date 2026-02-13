@@ -29,7 +29,7 @@ vi.mock('../hooks/useApi', () => ({
 }));
 
 vi.mock('../hooks/useWebSocket', () => ({
-  useWebSocket: () => ({ data: null, connected: false }),
+  useWebSocket: () => ({ data: null, connected: false, logs: [] }),
 }));
 
 vi.mock('../components/VideoPlayer/VideoPlayer', () => ({

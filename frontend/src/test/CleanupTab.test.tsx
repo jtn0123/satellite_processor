@@ -14,7 +14,7 @@ vi.mock('../api/client', () => ({
 import CleanupTab from '../components/GoesData/CleanupTab';
 import api from '../api/client';
 
-const mockedApi = api as any;
+const mockedApi = api as unknown;
 
 function renderWithProviders(ui: React.ReactElement) {
   const qc = new QueryClient({

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('../api/client', () => ({
@@ -13,7 +12,7 @@ vi.mock('../api/client', () => ({
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
 
-const mockedApi = api as any;
+const mockedApi = api as unknown;
 
 function renderWithProviders(ui: React.ReactElement) {
   const qc = new QueryClient({

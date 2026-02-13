@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
-from app.db.models import Composite, GoesFrame, Job
+from app.db.models import Composite, GoesFrame
 
 
 def _frame(**kw):

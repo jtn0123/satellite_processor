@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from app.db.models import Animation, Collection, CollectionFrame, CropPreset, GoesFrame, Job
+from app.db.models import Animation, Collection, CollectionFrame, CropPreset, GoesFrame
 
 
 def _frame(**kw):

@@ -35,7 +35,7 @@ describe('ErrorBoundary extended', () => {
 
   it('does not crash the whole page', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { container } = render(
+    render(
       <div>
         <ErrorBoundary>
           <BrokenComponent />

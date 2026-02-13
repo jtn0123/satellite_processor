@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 // Check if ComparisonModal accepts frames and onClose props
 import ComparisonModal from '../components/GoesData/ComparisonModal';
@@ -26,8 +25,8 @@ describe('ComparisonModal', () => {
     const onClose = vi.fn();
     render(<ComparisonModal frameA={frameA} frameB={frameB} onClose={onClose} />);
     const closeBtn = screen.getAllByRole('button')[0];
-    await userEvent.click(closeBtn);
-    expect(true).toBe(true);
+    closeBtn.click();
+    expect(closeBtn).toBeDefined();
   });
 
   it('shows frame info', () => {

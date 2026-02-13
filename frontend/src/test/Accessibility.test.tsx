@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -13,8 +13,6 @@ vi.mock('../api/client', () => ({
 }));
 
 import Layout from '../components/Layout';
-import api from '../api/client';
-const mockedApi = api as any;
 
 function renderApp() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });

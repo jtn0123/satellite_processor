@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import patch
 
 import pytest
-from app.db.models import Image, Job, Preset
+from app.db.models import GoesFrame, Image, Job, Preset, Tag
 
 
 @pytest.mark.asyncio
@@ -238,7 +237,7 @@ class TestJobsExtended:
         assert resp.json()["count"] == 2
 
     async def test_list_jobs_pagination(self, client, db):
-        for i in range(5):
+        for _i in range(5):
             db.add(Job(id=str(uuid.uuid4()), status="pending"))
         await db.commit()
 
@@ -346,5 +345,3 @@ class TestModels:
             await db.commit()
 
 
-# Import needed for model tests
-from app.db.models import GoesFrame, Tag

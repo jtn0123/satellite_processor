@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
@@ -16,7 +15,7 @@ vi.mock('../api/client', () => ({
 import GoesData from '../pages/GoesData';
 import api from '../api/client';
 
-const mockedApi = api as any;
+const mockedApi = api as unknown;
 
 function renderPage() {
   const qc = new QueryClient({

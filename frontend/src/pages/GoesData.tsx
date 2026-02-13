@@ -495,7 +495,7 @@ function FramePreviewModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      <div className="bg-slate-900 rounded-xl border border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
@@ -843,16 +843,24 @@ function BrowseTab() {
 
         {/* Frame grid/list */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+                <div className="aspect-video animate-pulse bg-slate-700 rounded-t" />
+                <div className="p-2 space-y-2">
+                  <div className="h-3 animate-pulse bg-slate-700 rounded w-3/4" />
+                  <div className="h-3 animate-pulse bg-slate-700 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {framesData?.items.map((frame) => (
               <div key={frame.id}
                 onClick={(e) => handleFrameClick(frame, e)}
-                className={`relative bg-slate-900 rounded-lg border overflow-hidden cursor-pointer transition-all ${
-                  selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-800 hover:border-slate-600'
+                className={`relative bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all hover:bg-slate-700 ${
+                  selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-700 hover:border-slate-600'
                 }`}>
                 <div className="aspect-video bg-slate-800 flex items-center justify-center">
                   {frame.thumbnail_path ? (

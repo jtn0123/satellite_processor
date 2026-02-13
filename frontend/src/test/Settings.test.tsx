@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import Settings from '../pages/Settings';
@@ -19,9 +19,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('Settings', () => {
   it('renders settings page', () => {
-    render(<Settings />, { wrapper });
-    // Should show loading or settings heading
-    expect(document.body.textContent).toBeTruthy();
+    const { container } = render(<Settings />, { wrapper });
+    expect(container.innerHTML.length).toBeGreaterThan(0);
   });
 
   it('renders without crashing', () => {

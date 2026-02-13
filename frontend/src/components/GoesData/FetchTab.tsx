@@ -1,17 +1,37 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
   Search,
   AlertTriangle,
   CheckCircle,
+  Clock,
+  Info,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
-import type { Product, CoverageStats } from './types';
+import type { Product, CoverageStats, SatelliteAvailability } from './types';
+
+function formatAvailRange(avail: SatelliteAvailability): string {
+  const from = new Date(avail.available_from);
+  const fromStr = from.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).replace(',', '');
+  if (!avail.available_to) return `${fromStr}–present`;
+  const to = new Date(avail.available_to);
+  const toStr = to.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).replace(',', '');
+  return `${fromStr}–${toStr}`;
+}
+
+function isDateInRange(dateStr: string, avail: SatelliteAvailability): boolean {
+  if (!dateStr) return true;
+  const d = new Date(dateStr).getTime();
+  const from = new Date(avail.available_from).getTime();
+  if (d < from) return false;
+  if (avail.available_to && d > new Date(avail.available_to).getTime()) return false;
+  return true;
+}
 
 export default function FetchTab() {
-  const [satellite, setSatellite] = useState('GOES-16');
+  const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('FullDisk');
   const [band, setBand] = useState('C02');
   const [startTime, setStartTime] = useState('');
@@ -21,6 +41,19 @@ export default function FetchTab() {
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
+
+  const currentAvail = products?.satellite_availability?.[satellite];
+
+  const dateWarning = useMemo(() => {
+    if (!currentAvail) return null;
+    if (startTime && !isDateInRange(startTime, currentAvail)) {
+      return `Start time is outside ${satellite} availability (${formatAvailRange(currentAvail)})`;
+    }
+    if (endTime && !isDateInRange(endTime, currentAvail)) {
+      return `End time is outside ${satellite} availability (${formatAvailRange(currentAvail)})`;
+    }
+    return null;
+  }, [startTime, endTime, currentAvail, satellite]);
 
   const {
     data: gaps,
@@ -69,8 +102,19 @@ export default function FetchTab() {
           <label htmlFor="goes-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
           <select id="goes-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2">
-            {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+            {products?.satellites.map((s) => {
+              const avail = products.satellite_availability?.[s];
+              const range = avail ? formatAvailRange(avail) : '';
+              const active = avail?.status === 'active';
+              return <option key={s} value={s}>{s} ({range}){active ? ' ✓' : ''}</option>;
+            })}
           </select>
+          {currentAvail?.status === 'historical' && (
+            <div className="mt-1 flex items-center gap-1 text-xs text-amber-400">
+              <Clock className="w-3 h-3" />
+              Historical — no new data
+            </div>
+          )}
         </div>
         <div>
           <label htmlFor="goes-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
@@ -91,6 +135,12 @@ export default function FetchTab() {
       <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
         <h2 className="text-lg font-semibold">Fetch Frames</h2>
         <p className="text-xs text-slate-500">Maximum time range: 24 hours</p>
+        {currentAvail && (
+          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800 rounded-lg px-3 py-2">
+            <Info className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{satellite} data available: <span className="text-white font-medium">{formatAvailRange(currentAvail)}</span></span>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="goes-start" className="block text-sm font-medium text-slate-400 mb-1">Start Time</label>
@@ -103,8 +153,14 @@ export default function FetchTab() {
               className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2" />
           </div>
         </div>
+        {dateWarning && (
+          <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            {dateWarning}
+          </div>
+        )}
         <div className="flex gap-3">
-          <button onClick={() => fetchMutation.mutate()} disabled={!startTime || !endTime || fetchMutation.isPending}
+          <button onClick={() => fetchMutation.mutate()} disabled={!startTime || !endTime || fetchMutation.isPending || !!dateWarning}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">
             <Download className="w-4 h-4" />
             {fetchMutation.isPending ? 'Fetching...' : 'Fetch'}

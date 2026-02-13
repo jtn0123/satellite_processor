@@ -22,6 +22,28 @@ SATELLITE_BUCKETS: dict[str, str] = {
     "GOES-19": "noaa-goes19",
 }
 
+# Satellite availability metadata
+SATELLITE_AVAILABILITY: dict[str, dict[str, Any]] = {
+    "GOES-16": {
+        "available_from": "2017-01-01",
+        "available_to": "2025-04-07",
+        "status": "historical",
+        "description": "GOES-East (historical, replaced by GOES-19)",
+    },
+    "GOES-18": {
+        "available_from": "2022-01-01",
+        "available_to": None,
+        "status": "active",
+        "description": "GOES-West (active)",
+    },
+    "GOES-19": {
+        "available_from": "2024-01-01",
+        "available_to": None,
+        "status": "active",
+        "description": "GOES-East (active, replaced GOES-16)",
+    },
+}
+
 # Sector → product prefix mapping
 SECTOR_PRODUCTS: dict[str, str] = {
     "FullDisk": "ABI-L2-CMIPF",

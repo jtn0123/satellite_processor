@@ -80,7 +80,7 @@ export default function Dashboard() {
     <div className="space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Satellite image processing overview</p>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Satellite image processing overview</p>
       </div>
 
       {/* Stats cards */}
@@ -101,7 +101,7 @@ export default function Dashboard() {
               <s.icon className={`w-5 h-5 ${s.color}`} />
             </div>
             <p className="text-2xl font-bold mt-2">{s.value}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.label}</p>
           </div>
         ))}
 
@@ -109,7 +109,7 @@ export default function Dashboard() {
         <div className="bg-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
-            <span className="text-xs text-slate-500">{storagePercent}%</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>
           </div>
           <div className="mt-3 h-2 bg-space-700 rounded-full overflow-hidden">
             <div
@@ -117,7 +117,7 @@ export default function Dashboard() {
               style={{ width: `${storagePercent}%` }}
             />
           </div>
-          <p className="text-xs text-slate-400 mt-1.5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">
             {formatBytes(storageUsed)} / {formatBytes(storageTotal)}
           </p>
         </div>
@@ -132,54 +132,54 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-space-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
-              <p className="text-xs text-slate-400">Total Frames</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>
             </div>
             {Object.entries(goesStats.by_satellite).map(([sat, info]) => (
-              <div key={sat} className="bg-space-800 rounded-lg p-3">
-                <p className="text-2xl font-bold text-white">{info.count.toLocaleString()}</p>
-                <p className="text-xs text-slate-400">{sat}</p>
+              <div key={sat} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{info.count.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{sat}</p>
               </div>
             ))}
-            <div className="bg-space-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <div className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <p className="text-sm font-medium text-white">
+                <Clock className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {goesStats.last_fetch_time
                     ? new Date(goesStats.last_fetch_time).toLocaleString()
                     : 'Never'}
                 </p>
               </div>
-              <p className="text-xs text-slate-400 mt-1">Last Fetch</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Last Fetch</p>
             </div>
-            <div className="bg-space-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <div className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <p className="text-2xl font-bold text-white">{goesStats.active_schedules}</p>
+                <Calendar className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{goesStats.active_schedules}</p>
               </div>
-              <p className="text-xs text-slate-400">Active Schedules</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">Active Schedules</p>
             </div>
           </div>
 
           {/* Storage breakdown bar */}
           {goesStats.storage_by_satellite && Object.keys(goesStats.storage_by_satellite).length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-300">Storage by Satellite</h3>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">Storage by Satellite</h3>
               {(() => {
                 const entries = Object.entries(goesStats.storage_by_satellite);
                 const maxVal = Math.max(...entries.map(([, v]) => v), 1);
                 const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
                 return entries.map(([sat, size], i) => (
                   <div key={sat} className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400 w-20 truncate">{sat}</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400 w-20 truncate">{sat}</span>
                     <div className="flex-1 h-3 bg-space-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${colors[i % colors.length]}`}
                         style={{ width: `${(size / maxVal) * 100}%` }}
                       />
                     </div>
-                    <span className="text-xs text-slate-500 w-16 text-right">{formatBytes(size)}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500 w-16 text-right">{formatBytes(size)}</span>
                   </div>
                 ));
               })()}
@@ -189,19 +189,19 @@ export default function Dashboard() {
           {/* Recent Fetches */}
           {goesStats.recent_jobs && goesStats.recent_jobs.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-300">Recent Fetches</h3>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">Recent Fetches</h3>
               <div className="space-y-1">
                 {goesStats.recent_jobs.slice(0, 5).map((job) => (
-                  <div key={job.job_id} className="flex items-center justify-between bg-space-800 rounded-lg px-3 py-2 text-sm">
+                  <div key={job.job_id} className="flex items-center justify-between bg-gray-100 dark:bg-space-800 rounded-lg px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
                         job.status === 'completed' ? 'bg-emerald-400' :
                         job.status === 'running' ? 'bg-amber-400 animate-pulse' :
                         job.status === 'failed' ? 'bg-red-400' : 'bg-slate-400'
                       }`} />
-                      <span className="text-slate-300">{job.satellite}</span>
+                      <span className="text-gray-600 dark:text-slate-300">{job.satellite}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
                       <span>{job.frames_fetched} frames</span>
                       <span>{new Date(job.created_at).toLocaleString()}</span>
                     </div>
@@ -221,47 +221,47 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Get Started</h2>
           </div>
           <div className="grid md:grid-cols-4 gap-4">
-            <div className="flex items-start gap-3 p-4 bg-space-800 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <span className="text-primary font-bold text-sm">1</span>
               </div>
               <div>
                 <p className="font-medium text-sm">Go to GOES Data → Fetch tab</p>
-                <p className="text-xs text-slate-400 mt-1">Navigate to the satellite data section</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Navigate to the satellite data section</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-4 bg-space-800 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
               <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
                 <span className="text-violet-400 font-bold text-sm">2</span>
               </div>
               <div>
                 <p className="font-medium text-sm">Select satellite</p>
-                <p className="text-xs text-slate-400 mt-1">Default: GOES-19 (latest active)</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Default: GOES-19 (latest active)</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-4 bg-space-800 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
               <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
                 <span className="text-amber-400 font-bold text-sm">3</span>
               </div>
               <div>
                 <p className="font-medium text-sm">Use &quot;Last Hour&quot; quick fetch</p>
-                <p className="text-xs text-slate-400 mt-1">One-click to get recent imagery</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">One-click to get recent imagery</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-4 bg-space-800 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
               <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
                 <span className="text-emerald-400 font-bold text-sm">4</span>
               </div>
               <div>
                 <p className="font-medium text-sm">Browse your first frames</p>
-                <p className="text-xs text-slate-400 mt-1">View, organize, and process imagery</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">View, organize, and process imagery</p>
               </div>
             </div>
           </div>
           <div className="mt-4">
             <button
               onClick={() => navigate('/goes')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
               aria-label="Fetch satellite data now"
             >
               <Download className="w-4 h-4" /> Fetch Now
@@ -278,31 +278,31 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Getting Started with Processing</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
-            <Link to="/upload" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+            <Link to="/upload" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <Upload className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="font-medium text-sm">1. Upload satellite images</p>
-                <p className="text-xs text-slate-400 mt-1">Upload PNG, TIFF, or JPEG satellite imagery</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Upload PNG, TIFF, or JPEG satellite imagery</p>
               </div>
             </Link>
-            <Link to="/process" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+            <Link to="/process" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
               <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
                 <FlaskConical className="w-5 h-5 text-violet-400" />
               </div>
               <div>
                 <p className="font-medium text-sm">2. Create a processing job</p>
-                <p className="text-xs text-slate-400 mt-1">Select images and configure processing parameters</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Select images and configure processing parameters</p>
               </div>
             </Link>
-            <Link to="/jobs" className="flex items-start gap-3 p-4 bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+            <Link to="/jobs" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
               <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
                 <Download className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
                 <p className="font-medium text-sm">3. Download results</p>
-                <p className="text-xs text-slate-400 mt-1">Monitor jobs and download processed outputs</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Monitor jobs and download processed outputs</p>
               </div>
             </Link>
           </div>
@@ -313,7 +313,7 @@ export default function Dashboard() {
       <div className="flex gap-3">
         <button
           onClick={() => navigate('/upload')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
         >
           <Upload className="w-4 h-4" /> Upload Images
         </button>
@@ -364,16 +364,16 @@ export default function Dashboard() {
               const StatusIcon = cfg.icon;
               return (
                 <div key={item.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-slate-300">
-                    <item.icon className="w-4 h-4 text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+                    <item.icon className="w-4 h-4 text-gray-500 dark:text-slate-400" />
                     {item.label}
                   </div>
                   <div className="flex items-center gap-2">
                     {check.latency_ms != null && (
-                      <span className="text-xs text-slate-500">{check.latency_ms}ms</span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500">{check.latency_ms}ms</span>
                     )}
                     {check.free_gb != null && (
-                      <span className="text-xs text-slate-500">{check.free_gb}GB free</span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500">{check.free_gb}GB free</span>
                     )}
                     <StatusIcon className={`w-4 h-4 ${cfg.color}`} />
                   </div>

@@ -51,13 +51,13 @@ export default function CollectionsTab() {
   return (
     <div className="space-y-4">
       {/* Create new */}
-      <div className="flex gap-2 bg-slate-900 rounded-xl p-4 border border-slate-800">
+      <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
         <input aria-label="Newname" type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
           placeholder="New collection name"
-          className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
+          className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
           onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()} />
         <button onClick={() => createMutation.mutate()} disabled={!newName || createMutation.isPending}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
+          className="px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
           Create
         </button>
       </div>
@@ -71,25 +71,25 @@ export default function CollectionsTab() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {collections?.map((c) => (
-            <div key={c.id} className="bg-slate-900 rounded-xl p-5 border border-slate-800 space-y-3">
+            <div key={c.id} className="bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
                   <input aria-label="Editname" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1 rounded bg-slate-800 border-slate-700 text-white px-2 py-1 text-sm"
+                    className="flex-1 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-2 py-1 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })} />
                   <button onClick={() => updateMutation.mutate({ id: c.id, name: editName })}
                     className="text-xs text-emerald-400 hover:text-emerald-300">Save</button>
-                  <button onClick={() => setEditingId(null)} className="text-xs text-slate-400">Cancel</button>
+                  <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 dark:text-slate-400">Cancel</button>
                 </div>
               ) : (
                 <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold text-white">{c.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{c.name}</h3>
                   <div className="flex gap-1">
                     <button onClick={() => { setEditingId(c.id); setEditName(c.name); }}
-                      className="text-xs text-slate-400 hover:text-white">Edit</button>
+                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
                     <button
                       onClick={() => window.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
-                      className="text-xs text-slate-400 hover:text-white"
+                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
                     >
                       <FileDown className="w-3 h-3 inline" /> Export
@@ -99,11 +99,11 @@ export default function CollectionsTab() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-4 text-sm text-slate-400">
+              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
                 <span>{c.frame_count} frames</span>
                 <span>{new Date(c.created_at).toLocaleDateString()}</span>
               </div>
-              {c.description && <p className="text-xs text-slate-500">{c.description}</p>}
+              {c.description && <p className="text-xs text-gray-400 dark:text-slate-500">{c.description}</p>}
             </div>
           ))}
           {collections?.length === 0 && (

@@ -128,16 +128,16 @@ export default function FramePreviewModal({
   })() : undefined;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
       <div ref={dialogRef} role="dialog" aria-label="Frame Preview" aria-modal="true"
-        className="bg-slate-900 rounded-xl border border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
           <div>
             <h3 className="text-lg font-semibold">{frame.satellite} · {frame.band} · {frame.sector}</h3>
-            <p className="text-sm text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
           </div>
-          <button onClick={onClose} aria-label="Close preview"><X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+          <button onClick={onClose} aria-label="Close preview"><X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" /></button>
         </div>
 
         <div className="flex-1 overflow-auto p-4">
@@ -174,15 +174,15 @@ export default function FramePreviewModal({
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-800 space-y-3">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 space-y-3">
           {cropRect && (
             <div className="flex items-center gap-4 text-sm">
               <Crop className="w-4 h-4 text-primary" />
-              <span className="text-slate-300">
-                X: <span className="text-white font-mono">{cropRect.x}</span> &nbsp;
-                Y: <span className="text-white font-mono">{cropRect.y}</span> &nbsp;
-                W: <span className="text-white font-mono">{cropRect.w}</span> &nbsp;
-                H: <span className="text-white font-mono">{cropRect.h}</span>
+              <span className="text-gray-600 dark:text-slate-300">
+                X: <span className="text-gray-900 dark:text-white font-mono">{cropRect.x}</span> &nbsp;
+                Y: <span className="text-gray-900 dark:text-white font-mono">{cropRect.y}</span> &nbsp;
+                W: <span className="text-gray-900 dark:text-white font-mono">{cropRect.w}</span> &nbsp;
+                H: <span className="text-gray-900 dark:text-white font-mono">{cropRect.h}</span>
               </span>
               <button
                 onClick={() => setShowSavePreset(true)}
@@ -192,7 +192,7 @@ export default function FramePreviewModal({
               </button>
               <button
                 onClick={() => setCropRect(null)}
-                className="text-xs text-slate-500 hover:text-white"
+                className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-white"
               >
                 Clear
               </button>
@@ -206,29 +206,29 @@ export default function FramePreviewModal({
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 placeholder="Preset name (e.g. San Diego)"
-                className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-1.5 text-sm"
+                className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm"
               />
               <button
                 onClick={() => saveCropPresetMutation.mutate({
                   name: presetName, x: cropRect.x, y: cropRect.y, width: cropRect.w, height: cropRect.h,
                 })}
                 disabled={!presetName || saveCropPresetMutation.isPending}
-                className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
               >
                 {saveCropPresetMutation.isPending ? 'Saving...' : 'Save'}
               </button>
-              <button onClick={() => setShowSavePreset(false)} className="text-xs text-slate-400">Cancel</button>
+              <button onClick={() => setShowSavePreset(false)} className="text-xs text-gray-500 dark:text-slate-400">Cancel</button>
             </div>
           )}
 
           {cropPresets && cropPresets.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-slate-500">Presets:</span>
+              <span className="text-xs text-gray-400 dark:text-slate-500">Presets:</span>
               {cropPresets.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => applyCropPreset(p)}
-                  className="px-2 py-1 text-xs bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors"
+                  className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors"
                 >
                   {p.name}
                 </button>

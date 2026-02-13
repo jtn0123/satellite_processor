@@ -15,7 +15,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; bg:
   processing: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
   completed: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
-  cancelled: { icon: AlertTriangle, color: 'text-slate-400', bg: 'bg-slate-400/10' },
+  cancelled: { icon: AlertTriangle, color: 'text-gray-500 dark:text-slate-400', bg: 'bg-slate-400/10' },
 };
 
 interface Props {
@@ -40,7 +40,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
   }
 
   if (displayed.length === 0) {
-    return <p className="text-sm text-slate-500 text-center py-8">No jobs yet</p>;
+    return <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No jobs yet</p>;
   }
 
   return (
@@ -69,7 +69,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   {job.status}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 truncate">
+              <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
                 {job.status_message || `Job ${job.id.slice(0, 8)}`}
               </p>
             </div>
@@ -81,7 +81,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                 />
               </div>
             )}
-            <span className="text-xs text-slate-500 hidden sm:block">
+            <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:block">
               {new Date(job.created_at).toLocaleString()}
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -90,7 +90,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   href={`/api/jobs/${job.id}/download`}
                   download
                   onClick={(e) => e.stopPropagation()}
-                  className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-primary"
+                  className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-primary"
                   title="Download" aria-label={`Download job ${job.id.slice(0, 8)}`}
                 >
                   <Download className="w-4 h-4" />
@@ -101,7 +101,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   e.stopPropagation();
                   onSelect?.(job.id);
                 }}
-                className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-white"
+                className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                 aria-label={`View job ${job.id.slice(0, 8)}`}
               >
                 <Eye className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                     deleteJob.mutate(job.id);
                   }
                 }}
-                className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-red-400"
+                className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
                 aria-label={`Delete job ${job.id.slice(0, 8)}`}
               >
                 <Trash2 className="w-4 h-4" />

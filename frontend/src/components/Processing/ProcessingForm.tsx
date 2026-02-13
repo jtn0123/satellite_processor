@@ -66,7 +66,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             key={s.label}
             onClick={() => setStep(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              i === step ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'
+              i === step ? 'bg-primary/10 text-primary' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <s.icon className="w-4 h-4" />
@@ -76,7 +76,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
       </div>
 
       {/* Step content */}
-      <div className="bg-slate-800 rounded-xl p-6 space-y-6">
+      <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-6">
         {step === 0 && (
           <>
             {/* Crop */}
@@ -89,12 +89,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
               <div className="grid grid-cols-4 gap-3">
                 {(['x', 'y', 'w', 'h'] as const).map((key) => (
                   <div key={key}>
-                    <label className="text-xs text-slate-400 uppercase">{key}</label>
+                    <label className="text-xs text-gray-500 dark:text-slate-400 uppercase">{key}</label>
                     <input
                       type="number"
                       value={crop[key]}
                       onChange={(e) => setCrop({ ...crop, [key]: Number(e.target.value) })}
-                      className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm"
+                      className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                 ))}
@@ -111,7 +111,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
               <select
                 value={falseColor.method}
                 onChange={(e) => setFalseColor({ ...falseColor, method: e.target.value })}
-                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
+                className="bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
               >
                 <option value="vegetation">Vegetation (NDVI)</option>
                 <option value="fire">Fire Detection</option>
@@ -131,7 +131,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
               <select
                 value={timestamp.position}
                 onChange={(e) => setTimestamp({ ...timestamp, position: e.target.value })}
-                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
+                className="bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
               >
                 <option value="top-left">Top Left</option>
                 <option value="top-right">Top Right</option>
@@ -156,7 +156,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 onChange={(e) => setScale({ ...scale, factor: Number(e.target.value) })}
                 className="w-full accent-primary"
               />
-              <span className="text-sm text-slate-300">{scale.factor}x</span>
+              <span className="text-sm text-gray-600 dark:text-slate-300">{scale.factor}x</span>
             </Section>
           </>
         )}
@@ -165,7 +165,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="proc-fps" className="text-xs text-slate-400 uppercase">FPS</label>
+                <label htmlFor="proc-fps" className="text-xs text-gray-500 dark:text-slate-400 uppercase">FPS</label>
                 <input
                   id="proc-fps"
                   type="range"
@@ -175,10 +175,10 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                   onChange={(e) => setVideo({ ...video, fps: Number(e.target.value) })}
                   className="w-full accent-primary mt-2"
                 />
-                <span className="text-sm text-slate-300">{video.fps} fps</span>
+                <span className="text-sm text-gray-600 dark:text-slate-300">{video.fps} fps</span>
               </div>
               <div>
-                <label htmlFor="proc-quality" className="text-xs text-slate-400 uppercase">Quality (CRF)</label>
+                <label htmlFor="proc-quality" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Quality (CRF)</label>
                 <input
                   id="proc-quality"
                   type="range"
@@ -188,17 +188,17 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                   onChange={(e) => setVideo({ ...video, quality: Number(e.target.value) })}
                   className="w-full accent-primary mt-2"
                 />
-                <span className="text-sm text-slate-300">{video.quality}</span>
+                <span className="text-sm text-gray-600 dark:text-slate-300">{video.quality}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="proc-codec" className="text-xs text-slate-400 uppercase">Codec</label>
+                <label htmlFor="proc-codec" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Codec</label>
                 <select
                   id="proc-codec"
                   value={video.codec}
                   onChange={(e) => setVideo({ ...video, codec: e.target.value })}
-                  className="mt-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
+                  className="mt-1 bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
                 >
                   <option value="h264">H.264</option>
                   <option value="hevc">HEVC (H.265)</option>
@@ -206,12 +206,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 </select>
               </div>
               <div>
-                <label htmlFor="proc-interp" className="text-xs text-slate-400 uppercase">Interpolation</label>
+                <label htmlFor="proc-interp" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Interpolation</label>
                 <select
                   id="proc-interp"
                   value={video.interpolation}
                   onChange={(e) => setVideo({ ...video, interpolation: e.target.value })}
-                  className="mt-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
+                  className="mt-1 bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
                 >
                   <option value="none">None</option>
                   <option value="blend">Frame Blending</option>
@@ -225,33 +225,33 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
         {step === 2 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Review</h3>
-            <div className="bg-slate-700/50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="bg-gray-200 dark:bg-slate-700/50 rounded-lg p-4 space-y-2 text-sm">
               <p>
-                <span className="text-slate-400">Images:</span> {selectedImages.length} selected
+                <span className="text-gray-500 dark:text-slate-400">Images:</span> {selectedImages.length} selected
               </p>
               {crop.enabled && (
                 <p>
-                  <span className="text-slate-400">Crop:</span> {crop.x},{crop.y} {crop.w}×{crop.h}
+                  <span className="text-gray-500 dark:text-slate-400">Crop:</span> {crop.x},{crop.y} {crop.w}×{crop.h}
                 </p>
               )}
               {falseColor.enabled && (
                 <p>
-                  <span className="text-slate-400">False Color:</span> {falseColor.method}
+                  <span className="text-gray-500 dark:text-slate-400">False Color:</span> {falseColor.method}
                 </p>
               )}
               <p>
-                <span className="text-slate-400">Timestamp:</span>{' '}
+                <span className="text-gray-500 dark:text-slate-400">Timestamp:</span>{' '}
                 {timestamp.enabled ? timestamp.position : 'Off'}
               </p>
               <p>
-                <span className="text-slate-400">Video:</span> {video.fps}fps, {video.codec},{' '}
+                <span className="text-gray-500 dark:text-slate-400">Video:</span> {video.fps}fps, {video.codec},{' '}
                 CRF {video.quality}
               </p>
             </div>
             <button
               onClick={handleLaunch}
               disabled={createJob.isPending || selectedImages.length === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
             >
               <Rocket className="w-5 h-5" />
               {createJob.isPending ? 'Launching...' : 'Launch Job'}
@@ -265,14 +265,14 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
         <button
           onClick={() => setStep(Math.max(0, step - 1))}
           disabled={step === 0}
-          className="flex items-center gap-1 text-sm text-slate-400 hover:text-white disabled:opacity-30"
+          className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30"
         >
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={() => setStep(Math.min(2, step + 1))}
           disabled={step === 2}
-          className="flex items-center gap-1 text-sm text-slate-400 hover:text-white disabled:opacity-30"
+          className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30"
         >
           Next <ChevronRight className="w-4 h-4" />
         </button>

@@ -133,11 +133,11 @@ export default function BrowseTab() {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-              <div className="aspect-video animate-pulse bg-slate-700 rounded-t" />
+            <div key={`skeleton-${i}`} className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden">
+              <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
               <div className="p-2 space-y-2">
-                <div className="h-3 animate-pulse bg-slate-700 rounded w-3/4" />
-                <div className="h-3 animate-pulse bg-slate-700 rounded w-1/2" />
+                <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
+                <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -182,58 +182,58 @@ export default function BrowseTab() {
     <div className="flex gap-6">
       {/* Filter Sidebar */}
       <div className="w-64 flex-shrink-0 space-y-4">
-        <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-300">Filters</h3>
+        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
 
           <div>
-            <label htmlFor="browse-satellite" className="block text-xs text-slate-500 mb-1">Satellite</label>
+            <label htmlFor="browse-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
             <select id="browse-satellite" value={filterSat} onChange={(e) => { setFilterSat(e.target.value); setPage(1); }}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
           <div>
-            <label htmlFor="browse-band" className="block text-xs text-slate-500 mb-1">Band</label>
+            <label htmlFor="browse-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
             <select id="browse-band" value={filterBand} onChange={(e) => { setFilterBand(e.target.value); setPage(1); }}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
             </select>
           </div>
 
           <div>
-            <label htmlFor="browse-sector" className="block text-xs text-slate-500 mb-1">Sector</label>
+            <label htmlFor="browse-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
             <select id="browse-sector" value={filterSector} onChange={(e) => { setFilterSector(e.target.value); setPage(1); }}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label htmlFor="browse-collection" className="block text-xs text-slate-500 mb-1">Collection</label>
+            <label htmlFor="browse-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
             <select id="browse-collection" value={filterCollection} onChange={(e) => { setFilterCollection(e.target.value); setPage(1); }}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {collections?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label htmlFor="browse-tag" className="block text-xs text-slate-500 mb-1">Tag</label>
+            <label htmlFor="browse-tag" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Tag</label>
             <select id="browse-tag" value={filterTag} onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {tags?.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label htmlFor="browse-sort" className="block text-xs text-slate-500 mb-1">Sort by</label>
+            <label htmlFor="browse-sort" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sort by</label>
             <select id="browse-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="capture_time">Capture Time</option>
               <option value="file_size">Size</option>
               <option value="satellite">Satellite</option>
@@ -242,9 +242,9 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label htmlFor="browse-order" className="block text-xs text-slate-500 mb-1">Order</label>
+            <label htmlFor="browse-order" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Order</label>
             <select id="browse-order" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}
-              className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
             </select>
@@ -255,9 +255,9 @@ export default function BrowseTab() {
       {/* Main content */}
       <div className="flex-1 space-y-4">
         {/* Toolbar */}
-        <div className="flex items-center justify-between bg-slate-900 rounded-xl px-4 py-3 border border-slate-800">
+        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 border border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <button onClick={selectAll} className="text-xs text-slate-400 hover:text-white transition-colors">
+            <button onClick={selectAll} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               {selectedIds.size > 0 && framesData && selectedIds.size === framesData.items.length
                 ? 'Deselect All'
                 : 'Select All'}
@@ -275,11 +275,11 @@ export default function BrowseTab() {
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
                 <button onClick={() => setShowAddToCollection(true)} aria-label="Add to collection"
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                   <FolderPlus className="w-3.5 h-3.5" /> Collection
                 </button>
                 <button onClick={() => setShowTagModal(true)} aria-label="Tag selected frames"
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                   <Tag className="w-3.5 h-3.5" /> Tag
                 </button>
                 <button onClick={() => processMutation.mutate([...selectedIds])}
@@ -301,7 +301,7 @@ export default function BrowseTab() {
             {/* Export button */}
             <div className="relative group">
               <button
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                 aria-label="Export frames"
                 onClick={() => {
                   const exportParams = new URLSearchParams();
@@ -316,13 +316,13 @@ export default function BrowseTab() {
               </button>
             </div>
 
-            <div className="flex border border-slate-700 rounded-lg overflow-hidden ml-2">
+            <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden ml-2">
               <button onClick={() => setViewMode('grid')} aria-label="Grid view"
-                className={`p-1.5 ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>
+                className={`p-1.5 ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button onClick={() => setViewMode('list')} aria-label="List view"
-                className={`p-1.5 ${viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>
+                className={`p-1.5 ${viewMode === 'list' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
                 <List className="w-4 h-4" />
               </button>
             </div>
@@ -330,8 +330,8 @@ export default function BrowseTab() {
         </div>
 
         {/* Hint */}
-        <div className="text-xs text-slate-500">
-          {framesData ? `${framesData.total} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
+        <div className="text-xs text-gray-400 dark:text-slate-500">
+          {framesData ? `${framesData.total} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}
@@ -341,12 +341,12 @@ export default function BrowseTab() {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 pt-4">
             <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} aria-label="Previous page"
-              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
+              className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm text-slate-400">Page {page} of {totalPages}</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">Page {page} of {totalPages}</span>
             <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label="Next page"
-              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
+              className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

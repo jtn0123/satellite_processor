@@ -3,78 +3,8 @@
 @tailwind utilities;
 
 body {
-  @apply bg-space-950 text-gray-100 antialiased;
+  @apply bg-gray-50 dark:bg-space-950 text-gray-900 dark:text-gray-100 antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Light theme overrides */
-html.light body {
-  @apply bg-gray-50 text-gray-900;
-}
-
-html.light .bg-slate-900 {
-  @apply !bg-white;
-}
-
-html.light .bg-slate-800 {
-  @apply !bg-gray-100;
-}
-
-html.light .bg-space-900 {
-  @apply !bg-white;
-}
-
-html.light .bg-space-950 {
-  @apply !bg-gray-50;
-}
-
-html.light .border-slate-800,
-html.light .border-subtle {
-  @apply !border-gray-200;
-}
-
-html.light .border-slate-700 {
-  @apply !border-gray-300;
-}
-
-html.light .text-white {
-  @apply !text-gray-900;
-}
-
-html.light .text-slate-400 {
-  @apply !text-gray-500;
-}
-
-html.light .text-slate-500 {
-  @apply !text-gray-400;
-}
-
-html.light .text-slate-300 {
-  @apply !text-gray-600;
-}
-
-html.light .text-gray-100 {
-  @apply !text-gray-900;
-}
-
-html.light select,
-html.light input[type="text"],
-html.light input[type="datetime-local"],
-html.light input[type="number"] {
-  @apply !bg-gray-100 !text-gray-900 !border-gray-300;
-}
-
-html.light .bg-black\/60,
-html.light .bg-black\/80 {
-  background-color: rgba(0, 0, 0, 0.4) !important;
-}
-
-html.light .bg-slate-700 {
-  @apply !bg-gray-200;
-}
-
-html.light .bg-slate-800\/50 {
-  @apply !bg-gray-50;
 }
 
 /* Touch-friendly button targets on mobile */
@@ -84,34 +14,24 @@ html.light .bg-slate-800\/50 {
   }
 }
 
+/* Dark theme scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-space-950;
+  @apply bg-gray-100 dark:bg-space-950;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-space-700 rounded;
+  @apply bg-gray-300 dark:bg-space-700 rounded;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-space-600;
-}
-
-/* Light theme scrollbar */
-html.light ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
-}
-html.light ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
-}
-html.light ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-gray-400 dark:bg-space-600;
 }
 
 /* Focus ring utility */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-space-900;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-space-900;
 }
 
 /* Toast slide-in animation */
@@ -155,11 +75,11 @@ html.light ::-webkit-scrollbar-thumb:hover {
   display: none;
 }
 
-/* Leaflet fixes for dark theme */
+/* Leaflet fixes */
 .leaflet-container {
-  background: #0a1628 !important;
+  background: #f0f0f0 !important;
 }
 
-html.light .leaflet-container {
-  background: #f0f0f0 !important;
+.dark .leaflet-container {
+  background: #0a1628 !important;
 }

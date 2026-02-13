@@ -92,16 +92,16 @@ export default function FetchTab() {
       {productsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={`prod-skel-${i}`} className="h-10 animate-pulse bg-slate-700 rounded-lg" />
+            <div key={`prod-skel-${i}`} className="h-10 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-lg" />
           ))}
         </div>
       )}
       {productsError && <div className="text-sm text-red-400">Failed to load satellite products</div>}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div>
-          <label htmlFor="goes-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+          <label htmlFor="goes-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
           <select id="goes-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
             {products?.satellites.map((s) => {
               const avail = products.satellite_availability?.[s];
               const range = avail ? formatAvailRange(avail) : '';
@@ -117,24 +117,24 @@ export default function FetchTab() {
           )}
         </div>
         <div>
-          <label htmlFor="goes-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+          <label htmlFor="goes-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
           <select id="goes-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
             {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="goes-band" className="block text-sm font-medium text-slate-400 mb-1">Band</label>
+          <label htmlFor="goes-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
           <select id="goes-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
             {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h2 className="text-lg font-semibold">Fetch Frames</h2>
-        <p className="text-xs text-slate-500">Maximum time range: 24 hours</p>
+        <p className="text-xs text-gray-400 dark:text-slate-500">Maximum time range: 24 hours</p>
 
         {/* Quick Fetch Buttons */}
         <div className="flex flex-wrap gap-2">
@@ -153,7 +153,7 @@ export default function FetchTab() {
                 setStartTime(fmt(start));
                 setEndTime(fmt(now));
               }}
-              className="px-4 py-1.5 text-sm rounded-full bg-slate-800 text-slate-300 hover:bg-primary/20 hover:text-primary border border-slate-700 hover:border-primary/30 transition-colors"
+              className="px-4 py-1.5 text-sm rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary border border-gray-200 dark:border-slate-700 hover:border-primary/30 transition-colors"
               aria-label={`Quick fetch: ${preset.label}`}
             >
               {preset.label}
@@ -161,21 +161,21 @@ export default function FetchTab() {
           ))}
         </div>
         {currentAvail && (
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{satellite} data available: <span className="text-white font-medium">{formatAvailRange(currentAvail)}</span></span>
+            <span>{satellite} data available: <span className="text-gray-900 dark:text-white font-medium">{formatAvailRange(currentAvail)}</span></span>
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="goes-start" className="block text-sm font-medium text-slate-400 mb-1">Start Time</label>
+            <label htmlFor="goes-start" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Start Time</label>
             <input type="datetime-local" id="goes-start" value={startTime} onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2" />
+              className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
           </div>
           <div>
-            <label htmlFor="goes-end" className="block text-sm font-medium text-slate-400 mb-1">End Time</label>
+            <label htmlFor="goes-end" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">End Time</label>
             <input type="datetime-local" id="goes-end" value={endTime} onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2" />
+              className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
           </div>
         </div>
         {dateWarning && (
@@ -186,7 +186,7 @@ export default function FetchTab() {
         )}
         <div className="flex gap-3">
           <button onClick={() => fetchMutation.mutate()} disabled={!startTime || !endTime || fetchMutation.isPending || !!dateWarning}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">
             <Download className="w-4 h-4" />
             {fetchMutation.isPending ? 'Fetching...' : 'Fetch'}
           </button>
@@ -206,11 +206,11 @@ export default function FetchTab() {
       </div>
 
       {/* Gap Detection */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Coverage & Gaps</h2>
           <button onClick={() => refetchGaps()} disabled={gapsFetching}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors">
             <Search className="w-4 h-4" />
             {gapsFetching ? 'Analyzing...' : 'Analyze'}
           </button>
@@ -221,19 +221,19 @@ export default function FetchTab() {
               {[
                 { val: `${gaps.coverage_percent}%`, label: 'Coverage', color: 'text-primary' },
                 { val: gaps.gap_count, label: 'Gaps', color: 'text-amber-400' },
-                { val: gaps.total_frames, label: 'Total Frames', color: 'text-white' },
-                { val: gaps.expected_frames, label: 'Expected', color: 'text-slate-400' },
+                { val: gaps.total_frames, label: 'Total Frames', color: 'text-gray-900 dark:text-white' },
+                { val: gaps.expected_frames, label: 'Expected', color: 'text-gray-500 dark:text-slate-400' },
               ].map((s) => (
-                <div key={s.label} className="bg-slate-800 rounded-lg p-4">
+                <div key={s.label} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4">
                   <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
-                  <div className="text-sm text-slate-400">{s.label}</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">{s.label}</div>
                 </div>
               ))}
             </div>
             {gaps.gaps.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-slate-400">Gap Timeline</h3>
-                <div className="h-8 bg-slate-800 rounded-lg overflow-hidden flex relative">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400">Gap Timeline</h3>
+                <div className="h-8 bg-gray-100 dark:bg-slate-800 rounded-lg overflow-hidden flex relative">
                   {gaps.time_range && (() => {
                     const rangeStart = new Date(gaps.time_range.start).getTime();
                     const rangeEnd = new Date(gaps.time_range.end).getTime();
@@ -255,17 +255,17 @@ export default function FetchTab() {
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {gaps.gaps.map((gap) => (
-                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-slate-800/50 rounded px-3 py-1.5">
+                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded px-3 py-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                      <span className="text-slate-300">
+                      <span className="text-gray-600 dark:text-slate-300">
                         {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}
                       </span>
-                      <span className="text-slate-500 ml-auto">{gap.duration_minutes}min · {gap.expected_frames} frames</span>
+                      <span className="text-gray-400 dark:text-slate-500 ml-auto">{gap.duration_minutes}min · {gap.expected_frames} frames</span>
                     </div>
                   ))}
                 </div>
                 <button onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 disabled:opacity-50 transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-gray-900 dark:text-white rounded-lg hover:bg-amber-500 disabled:opacity-50 transition-colors">
                   <Download className="w-4 h-4" />
                   {backfillMutation.isPending ? 'Filling...' : 'Fill Gaps'}
                 </button>

@@ -71,19 +71,19 @@ export default function KeyboardShortcuts() {
             <Keyboard className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
           </div>
-          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-slate-400">
+          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="space-y-2">
           {shortcutList.map((s) => (
             <div key={s.keys} className="flex items-center justify-between py-1.5">
-              <span className="text-sm text-slate-300">{s.label}</span>
+              <span className="text-sm text-gray-600 dark:text-slate-300">{s.label}</span>
               <div className="flex gap-1">
                 {s.keys.split(' ').map((k) => (
                   <kbd
                     key={k}
-                    className="px-2 py-0.5 bg-space-700 border border-space-600 rounded text-xs font-mono text-slate-300"
+                    className="px-2 py-0.5 bg-space-700 border border-space-600 rounded text-xs font-mono text-gray-600 dark:text-slate-300"
                   >
                     {k}
                   </kbd>

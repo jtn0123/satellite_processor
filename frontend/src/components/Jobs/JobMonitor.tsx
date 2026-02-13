@@ -26,7 +26,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
     <div className="space-y-6">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-slate-400 hover:text-white focus-ring rounded-lg px-1"
+        className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white focus-ring rounded-lg px-1"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Jobs
       </button>
@@ -52,8 +52,8 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
         {/* Progress bar */}
         <div className="mb-2">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-300">{message}</span>
-            <span className="text-slate-400">{progress}%</span>
+            <span className="text-gray-600 dark:text-slate-300">{message}</span>
+            <span className="text-gray-500 dark:text-slate-400">{progress}%</span>
           </div>
           <div className="w-full h-3 bg-space-700 rounded-full overflow-hidden">
             <div
@@ -69,22 +69,22 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
         {job && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
             <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-              <p className="text-[10px] text-slate-400 uppercase">Type</p>
+              <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">Type</p>
               <p className="font-medium">{job.job_type}</p>
             </div>
             <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-              <p className="text-[10px] text-slate-400 uppercase">Created</p>
+              <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">Created</p>
               <p className="font-medium">{new Date(job.created_at).toLocaleString()}</p>
             </div>
             {job.started_at && (
               <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-                <p className="text-[10px] text-slate-400 uppercase">Started</p>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">Started</p>
                 <p className="font-medium">{new Date(job.started_at).toLocaleString()}</p>
               </div>
             )}
             {job.completed_at && (
               <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-                <p className="text-[10px] text-slate-400 uppercase">Completed</p>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">Completed</p>
                 <p className="font-medium">{new Date(job.completed_at).toLocaleString()}</p>
               </div>
             )}
@@ -105,7 +105,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           <a
             href={`/api/jobs/${jobId}/download`}
             download
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
           >
             <Download className="w-4 h-4" /> Download Output
           </a>

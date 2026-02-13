@@ -37,20 +37,20 @@ export default class TabErrorBoundary extends Component<Props, State> {
           <div className="w-16 h-16 rounded-full bg-red-600/10 flex items-center justify-center">
             <AlertTriangle className="w-8 h-8 text-red-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {this.props.tabName || 'This tab'} encountered an error
           </h3>
-          <p className="text-sm text-slate-400 max-w-md text-center">
+          <p className="text-sm text-gray-500 dark:text-slate-400 max-w-md text-center">
             Something went wrong while rendering this tab. You can try again or switch to a different tab.
           </p>
           {this.state.error && (
-            <pre className="text-xs text-slate-500 bg-slate-900 rounded-lg p-3 max-w-lg overflow-auto border border-slate-800">
+            <pre className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-900 rounded-lg p-3 max-w-lg overflow-auto border border-gray-200 dark:border-slate-800">
               {this.state.error.message}
             </pre>
           )}
           <button
             onClick={this.handleRetry}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Retry

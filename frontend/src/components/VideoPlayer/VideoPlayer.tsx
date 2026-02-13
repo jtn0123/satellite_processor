@@ -10,16 +10,16 @@ export default function VideoPlayer({ src }: Readonly<Props>) {
 
   if (error) {
     return (
-      <div className="bg-slate-800 rounded-xl p-8 flex flex-col items-center justify-center gap-3 text-slate-400">
+      <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-8 flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-slate-400">
         <AlertCircle className="w-10 h-10 text-red-400" />
         <p className="text-sm font-medium">Video failed to load</p>
-        <p className="text-xs text-slate-500">The video file may be missing or in an unsupported format.</p>
+        <p className="text-xs text-gray-400 dark:text-slate-500">The video file may be missing or in an unsupported format.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-800 rounded-xl overflow-hidden">
+    <div className="bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden">
       <video
         src={src}
         controls

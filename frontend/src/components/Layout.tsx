@@ -119,14 +119,14 @@ export default function Layout() {
       {/* Skip to content link for accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-gray-900 dark:text-white focus:rounded-lg focus:outline-none"
       >
         Skip to content
       </a>
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-space-900 border-r border-subtle">
+      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-subtle">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-subtle">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>
@@ -141,7 +141,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-ring ${
                   isActive
                     ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-slate-400 hover:text-white hover:bg-space-800 border border-transparent'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 border border-transparent'
                 }`
               }
               aria-label={l.label}
@@ -157,7 +157,7 @@ export default function Layout() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="API Documentation (opens in new tab)"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-space-800 transition-colors focus-ring"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 transition-colors focus-ring"
           >
             <FileText className="w-5 h-5" />
             API Docs
@@ -165,7 +165,7 @@ export default function Layout() {
           {/* #9: Keyboard shortcut button */}
           <button
             onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-space-800 transition-colors focus-ring w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 transition-colors focus-ring w-full"
             aria-label="Keyboard shortcuts"
           >
             <HelpCircle className="w-5 h-5" />
@@ -179,7 +179,7 @@ export default function Layout() {
               <NotificationBell />
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
               >
@@ -188,11 +188,11 @@ export default function Layout() {
             </div>
           </div>
           {/* #15: Clickable version footer */}
-          <div className="text-xs text-slate-500 flex items-center gap-2">
+          <div className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-2">
             <Cpu className="w-4 h-4" />
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-slate-300 transition-colors text-left"
+              className="hover:text-gray-600 dark:hover:text-gray-600 dark:text-slate-300 transition-colors text-left"
               aria-label="Show changelog"
             >
               Satellite Processor {versionInfo.display}
@@ -205,7 +205,7 @@ export default function Layout() {
       {drawerOpen && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/60 z-40 md:hidden border-none cursor-default"
+          className="fixed inset-0 bg-black/30 dark:bg-black/60 z-40 md:hidden border-none cursor-default"
           onClick={handleOverlayClick}
           aria-label="Close menu"
         />
@@ -217,7 +217,7 @@ export default function Layout() {
         role="dialog"
         aria-label="Navigation menu"
         aria-modal="true"
-        className={`fixed inset-y-0 left-0 w-72 bg-space-900 border-r border-subtle z-50 transform transition-transform duration-200 ease-out md:hidden ${
+        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-subtle z-50 transform transition-transform duration-200 ease-out md:hidden ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -228,7 +228,7 @@ export default function Layout() {
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-space-800 text-slate-400 focus-ring"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -245,7 +245,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-primary/10 text-primary'
-                    : 'text-slate-400 hover:text-white hover:bg-space-800'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800'
                 }`
               }
               aria-label={l.label}
@@ -259,10 +259,10 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-space-900 border-b border-subtle">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-subtle">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="p-2 rounded-lg hover:bg-space-800 text-slate-400 focus-ring"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -275,7 +275,7 @@ export default function Layout() {
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -287,10 +287,10 @@ export default function Layout() {
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
-          <footer className="md:hidden mt-8 pb-4 text-center text-xs text-slate-500">
+          <footer className="md:hidden mt-8 pb-4 text-center text-xs text-gray-400 dark:text-slate-500">
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-gray-600 dark:hover:text-gray-600 dark:text-slate-300 transition-colors"
               aria-label="Show changelog"
             >
               {versionInfo.display}

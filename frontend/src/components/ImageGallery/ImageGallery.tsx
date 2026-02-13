@@ -107,7 +107,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 
   if (allImages.length === 0) {
     return (
-      <div className="text-center py-16 text-slate-500">
+      <div className="text-center py-16 text-gray-400 dark:text-slate-500">
         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
         <p>No images uploaded yet</p>
       </div>
@@ -119,7 +119,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
       {/* Sort & Filter bar */}
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex items-center gap-1.5">
-          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           {([
             ['uploaded_at', 'Date'],
             ['original_name', 'Name'],
@@ -131,7 +131,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                 sortField === field
                   ? 'bg-primary/10 text-primary'
-                  : 'text-slate-400 hover:text-white hover:bg-space-800'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800'
               }`}
             >
               {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
@@ -141,13 +141,13 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 
         {(satellites.length > 0 || channels.length > 0) && (
           <div className="flex items-center gap-1.5">
-            <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+            <SlidersHorizontal className="w-4 h-4 text-gray-500 dark:text-slate-400" />
             {satellites.length > 0 && (
               <select
                 aria-label="Filter by satellite"
                 value={filterSatellite}
                 onChange={(e) => setFilterSatellite(e.target.value)}
-                className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+                className="bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
               >
                 <option value="">All Satellites</option>
                 {satellites.map((s) => (
@@ -160,7 +160,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 aria-label="Filter by channel"
                 value={filterChannel}
                 onChange={(e) => setFilterChannel(e.target.value)}
-                className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+                className="bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
               >
                 <option value="">All Channels</option>
                 {channels.map((c) => (
@@ -184,7 +184,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (selectable && onToggle) { onToggle(img.id); } else { setPreview(img); } } }}
           >
-            <div className="aspect-square bg-space-800 flex items-center justify-center relative">
+            <div className="aspect-square bg-gray-100 dark:bg-space-800 flex items-center justify-center relative">
               <img
                 src={`/api/images/${img.id}/thumbnail`}
                 alt={img.original_name}
@@ -197,18 +197,18 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 }}
               />
               <div className="absolute inset-0 flex-col items-center justify-center gap-1 hidden">
-                <ImageOff className="w-8 h-8 text-slate-500" />
-                <span className="text-xs text-slate-500">Image unavailable</span>
+                <ImageOff className="w-8 h-8 text-gray-400 dark:text-slate-500" />
+                <span className="text-xs text-gray-400 dark:text-slate-500">Image unavailable</span>
               </div>
             </div>
             {selectable && selected?.has(img.id) && (
               <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-20">
-                <span className="text-white text-xs font-bold">✓</span>
+                <span className="text-gray-900 dark:text-white text-xs font-bold">✓</span>
               </div>
             )}
             <div className="p-2">
               <p className="text-xs truncate font-medium">{img.original_name}</p>
-              <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 dark:text-slate-400">
                 {img.satellite && (
                   <span className="flex items-center gap-0.5">
                     <Satellite className="w-3 h-3" />
@@ -231,7 +231,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                     deleteImage.mutate(img.id);
                   }
                 }}
-                className="absolute top-2 right-2 p-1.5 bg-space-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400"
+                className="absolute top-2 right-2 p-1.5 bg-white dark:bg-space-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 dark:text-slate-400 hover:text-red-400"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -244,7 +244,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
       {preview && (
         <dialog
           open
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
+          className="fixed inset-0 bg-black/40 dark:bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
           onClick={closePreview}
           onKeyDown={(e) => { if (e.key === 'Escape') closePreview(); }}
           aria-label={`Image preview: ${preview.original_name}`}
@@ -259,14 +259,14 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             <div className="flex items-center justify-between p-4 border-b border-subtle">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
               <button onClick={closePreview} aria-label="Close preview" className="focus-ring rounded-lg p-1">
-                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+                <X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" />
               </button>
             </div>
             <div className="p-4">
               <img
                 src={`/api/images/${preview.id}/full`}
                 alt={preview.original_name}
-                className="w-full rounded-lg bg-space-900"
+                className="w-full rounded-lg bg-white dark:bg-space-900"
               />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
                 <Stat label="Resolution" value={`${preview.width}×${preview.height}`} />
@@ -287,7 +287,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-      <p className="text-[10px] text-slate-400 uppercase tracking-wider">{label}</p>
+      <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase tracking-wider">{label}</p>
       <p className="font-medium text-sm mt-0.5">{value}</p>
     </div>
   );

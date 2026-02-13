@@ -21,11 +21,19 @@ import {
   Crop,
   Save,
   Sliders,
+  Radio,
+  Map,
+  Layers,
+  GitCompare,
 } from 'lucide-react';
 import api from '../api/client';
 import { usePageTitle } from '../hooks/usePageTitle';
 import PresetsTab from '../components/GoesData/PresetsTab';
 import CleanupTab from '../components/GoesData/CleanupTab';
+import LiveTab from '../components/GoesData/LiveTab';
+import MapTab from '../components/GoesData/MapTab';
+import CompositesTab from '../components/GoesData/CompositesTab';
+import ComparisonModal from '../components/GoesData/ComparisonModal';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -148,7 +156,7 @@ function formatBytes(bytes: number): string {
 
 // ── Tabs ──────────────────────────────────────────────
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup';
+type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites';
 
 export default function GoesData() {
   usePageTitle('GOES Data');
@@ -156,10 +164,13 @@ export default function GoesData() {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
+    { id: 'live', label: 'Live', icon: <Radio className="w-4 h-4" /> },
+    { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
+    { id: 'composites', label: 'Composites', icon: <Layers className="w-4 h-4" /> },
     { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
     { id: 'collections', label: 'Collections', icon: <Library className="w-4 h-4" /> },
-    { id: 'animation', label: 'Animation Studio', icon: <Film className="w-4 h-4" /> },
-    { id: 'presets', label: 'Presets & Schedules', icon: <Save className="w-4 h-4" /> },
+    { id: 'animation', label: 'Animation', icon: <Film className="w-4 h-4" /> },
+    { id: 'presets', label: 'Presets', icon: <Save className="w-4 h-4" /> },
     { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'cleanup', label: 'Cleanup', icon: <Trash2 className="w-4 h-4" /> },
   ];
@@ -171,15 +182,15 @@ export default function GoesData() {
         <h1 className="text-2xl font-bold">GOES Data</h1>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-900 rounded-xl p-1 border border-slate-800">
+      {/* Tab bar - pill style with overflow scroll on mobile */}
+      <div className="flex gap-1 bg-slate-900 rounded-xl p-1.5 border border-slate-800 overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-white shadow-lg shadow-primary/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -189,13 +200,19 @@ export default function GoesData() {
         ))}
       </div>
 
-      {activeTab === 'fetch' && <FetchTab />}
-      {activeTab === 'browse' && <BrowseTab />}
-      {activeTab === 'collections' && <CollectionsTab />}
-      {activeTab === 'animation' && <AnimationStudioTab />}
-      {activeTab === 'presets' && <PresetsTab />}
-      {activeTab === 'stats' && <StatsTab />}
-      {activeTab === 'cleanup' && <CleanupTab />}
+      {/* Tab content with fade transition */}
+      <div className="animate-fade-in">
+        {activeTab === 'fetch' && <FetchTab />}
+        {activeTab === 'browse' && <BrowseTab />}
+        {activeTab === 'collections' && <CollectionsTab />}
+        {activeTab === 'animation' && <AnimationStudioTab />}
+        {activeTab === 'presets' && <PresetsTab />}
+        {activeTab === 'stats' && <StatsTab />}
+        {activeTab === 'cleanup' && <CleanupTab />}
+        {activeTab === 'live' && <LiveTab />}
+        {activeTab === 'map' && <MapTab />}
+        {activeTab === 'composites' && <CompositesTab />}
+      </div>
     </div>
   );
 }
@@ -606,6 +623,7 @@ function BrowseTab() {
   const [showAddToCollection, setShowAddToCollection] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [previewFrame, setPreviewFrame] = useState<GoesFrame | null>(null);
+  const [compareFrames, setCompareFrames] = useState<[GoesFrame, GoesFrame] | null>(null);
 
   // Filters
   const [filterSat, setFilterSat] = useState('');
@@ -794,6 +812,15 @@ function BrowseTab() {
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors">
                   <Play className="w-3.5 h-3.5" /> Process
                 </button>
+                {selectedIds.size === 2 && framesData && (
+                  <button onClick={() => {
+                    const selected = framesData.items.filter((f) => selectedIds.has(f.id));
+                    if (selected.length === 2) setCompareFrames([selected[0], selected[1]]);
+                  }}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors">
+                    <GitCompare className="w-3.5 h-3.5" /> Compare
+                  </button>
+                )}
               </>
             )}
             <div className="flex border border-slate-700 rounded-lg overflow-hidden ml-2">
@@ -920,6 +947,9 @@ function BrowseTab() {
         )}
         {previewFrame && (
           <FramePreviewModal frame={previewFrame} onClose={() => setPreviewFrame(null)} />
+        )}
+        {compareFrames && (
+          <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={() => setCompareFrames(null)} />
         )}
 
         {processMutation.isSuccess && (

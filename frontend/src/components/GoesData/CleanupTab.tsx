@@ -87,33 +87,33 @@ export default function CleanupTab() {
   return (
     <div className="space-y-6">
       {/* Storage Overview */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><HardDrive className="w-5 h-5" /> Storage Usage</h2>
         {stats ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
               <div className="text-2xl font-bold">{stats.total_frames}</div>
-              <div className="text-sm text-slate-400">Total Frames</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Total Frames</div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
               <div className="text-2xl font-bold">{formatBytes(stats.total_size_bytes)}</div>
-              <div className="text-sm text-slate-400">Total Storage</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Total Storage</div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
               <div className="text-2xl font-bold">{Object.keys(stats.by_satellite).length}</div>
-              <div className="text-sm text-slate-400">Satellites</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Satellites</div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3">
+            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
               <div className="text-2xl font-bold">{Object.keys(stats.by_band).length}</div>
-              <div className="text-sm text-slate-400">Bands</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Bands</div>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={`stat-skel-${i}`} className="bg-slate-800 rounded-lg p-3 space-y-2">
-                <div className="h-8 w-16 animate-pulse bg-slate-700 rounded" />
-                <div className="h-4 w-20 animate-pulse bg-slate-700 rounded" />
+              <div key={`stat-skel-${i}`} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
+                <div className="h-8 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
+                <div className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
               </div>
             ))}
           </div>
@@ -121,12 +121,12 @@ export default function CleanupTab() {
       </div>
 
       {/* Cleanup Rules */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Cleanup Rules</h2>
           <div className="flex gap-2">
             <button onClick={() => refetchPreview()} disabled={previewLoading}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 rounded-lg text-sm hover:bg-slate-600 disabled:opacity-50">
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
             <button onClick={() => runCleanup.mutate()} disabled={runCleanup.isPending}
@@ -156,19 +156,19 @@ export default function CleanupTab() {
         )}
 
         {showCreate && (
-          <div className="mb-4 bg-slate-800 rounded-lg p-4 space-y-3">
+          <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
             <input aria-label="Rule name" placeholder="Rule name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              className="w-full rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" />
+              className="w-full rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm" />
             <div className="grid grid-cols-2 gap-3">
               <select aria-label="Form" value={form.rule_type} onChange={e => setForm({ ...form, rule_type: e.target.value as 'max_age_days' | 'max_storage_gb' })}
-                className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
+                className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
                 <option value="max_age_days">Max Age (days)</option>
                 <option value="max_storage_gb">Max Storage (GB)</option>
               </select>
               <input aria-label="Value" type="number" placeholder="Value" value={form.value} onChange={e => setForm({ ...form, value: Number(e.target.value) })}
-                className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" min={0} step={form.rule_type === 'max_storage_gb' ? 0.1 : 1} />
+                className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm" min={0} step={form.rule_type === 'max_storage_gb' ? 0.1 : 1} />
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
               <input type="checkbox" checked={form.protect_collections} onChange={e => setForm({ ...form, protect_collections: e.target.checked })}
                 className="rounded" />
               <Shield className="w-4 h-4" /> Protect frames in collections
@@ -178,7 +178,7 @@ export default function CleanupTab() {
                 className="px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80 disabled:opacity-50">
                 <Save className="w-4 h-4 inline mr-1" /> Create
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-slate-700 rounded-lg text-sm hover:bg-slate-600">
+              <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
                 <X className="w-4 h-4 inline mr-1" /> Cancel
               </button>
             </div>
@@ -186,22 +186,22 @@ export default function CleanupTab() {
         )}
 
         <div className="space-y-3">
-          {rules.length === 0 && <p className="text-slate-500 text-sm">No cleanup rules configured.</p>}
+          {rules.length === 0 && <p className="text-gray-400 dark:text-slate-500 text-sm">No cleanup rules configured.</p>}
           {rules.map(rule => (
-            <div key={rule.id} className="flex items-center justify-between bg-slate-800 rounded-lg p-4">
+            <div key={rule.id} className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-4">
               <div>
                 <div className="font-medium">{rule.name}</div>
-                <div className="text-sm text-slate-400">
+                <div className="text-sm text-gray-500 dark:text-slate-400">
                   {rule.rule_type === 'max_age_days' ? `Delete frames older than ${rule.value} days` : `Keep storage under ${rule.value} GB`}
                   {rule.protect_collections && <span className="ml-2 text-xs text-green-400">🛡 Collections protected</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => toggleRule.mutate(rule)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'}`}>
                   {rule.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-slate-700 rounded-lg text-red-400">
+                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

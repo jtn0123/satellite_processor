@@ -74,32 +74,32 @@ export default function ComparisonModal({
   }, [handleSliderMove]);
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
       <div ref={dialogRef} role="dialog" aria-label="Compare Frames" aria-modal="true"
-        className="bg-slate-900 rounded-xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
           <h3 className="text-lg font-semibold">Compare Frames</h3>
           <div className="flex items-center gap-2">
             <button onClick={() => setMode('side-by-side')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                mode === 'side-by-side' ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                mode === 'side-by-side' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
               }`}>
               <Columns className="w-4 h-4" /> Side by Side
             </button>
             <button onClick={() => setMode('slider')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                mode === 'slider' ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                mode === 'slider' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
               }`}>
               <SlidersHorizontal className="w-4 h-4" /> Slider
             </button>
             <button onClick={() => setSwapped(!swapped)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               <ArrowLeftRight className="w-4 h-4" /> Swap
             </button>
             <button onClick={onClose} aria-label="Close comparison">
-              <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              <X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" />
             </button>
           </div>
         </div>
@@ -110,8 +110,8 @@ export default function ComparisonModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
               {[left, right].map((frame, idx) => (
                 <div key={frame.id + idx} className="flex flex-col">
-                  <div className="text-xs text-slate-400 mb-2 text-center">
-                    <span className="font-medium text-white">{frame.satellite}</span> · {frame.band} · {frame.sector}
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mb-2 text-center">
+                    <span className="font-medium text-gray-900 dark:text-white">{frame.satellite}</span> · {frame.band} · {frame.sector}
                     <br />
                     {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                   </div>
@@ -124,12 +124,12 @@ export default function ComparisonModal({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="flex justify-between text-xs text-slate-400">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400">
                 <span>
-                  <span className="font-medium text-white">{left.satellite}</span> · {left.band} · {new Date(left.capture_time).toLocaleString()}
+                  <span className="font-medium text-gray-900 dark:text-white">{left.satellite}</span> · {left.band} · {new Date(left.capture_time).toLocaleString()}
                 </span>
                 <span>
-                  <span className="font-medium text-white">{right.satellite}</span> · {right.band} · {new Date(right.capture_time).toLocaleString()}
+                  <span className="font-medium text-gray-900 dark:text-white">{right.satellite}</span> · {right.band} · {new Date(right.capture_time).toLocaleString()}
                 </span>
               </div>
               <div

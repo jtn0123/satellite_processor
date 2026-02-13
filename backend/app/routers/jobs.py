@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..celery_app import celery_app
 from ..config import settings
 from ..db.database import get_db
-from ..db.models import Image, Job
+from ..db.models import Image, Job, JobLog
 from ..errors import APIError, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.job import JobCreate, JobResponse, JobUpdate
@@ -196,6 +196,32 @@ async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(g
     await db.commit()
 
     return {"deleted": True}
+
+
+@router.get("/{job_id}/logs")
+async def get_job_logs(
+    job_id: str,
+    level: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return logs for a job ordered by timestamp."""
+    validate_uuid(job_id, "job_id")
+    query = select(JobLog).where(JobLog.job_id == job_id)
+    if level:
+        query = query.where(JobLog.level == level)
+    query = query.order_by(JobLog.timestamp.asc()).limit(limit)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+    return [
+        {
+            "id": log.id,
+            "level": log.level,
+            "message": log.message,
+            "timestamp": log.timestamp.isoformat(),
+        }
+        for log in logs
+    ]
 
 
 @router.get("/{job_id}/output")

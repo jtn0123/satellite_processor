@@ -53,7 +53,7 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
             <Sparkles className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">What&apos;s New</h2>
           </div>
-          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-slate-400" aria-label="Close">
+          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -62,11 +62,11 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
             <div key={release.version}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm font-bold text-primary">v{release.version}</span>
-                <span className="text-xs text-slate-500">{release.date}</span>
+                <span className="text-xs text-gray-400 dark:text-slate-500">{release.date}</span>
               </div>
               <ul className="space-y-1">
                 {release.changes.map((change) => (
-                  <li key={change} className="text-sm text-slate-300 flex items-start gap-2">
+                  <li key={change} className="text-sm text-gray-600 dark:text-slate-300 flex items-start gap-2">
                     <span className="text-primary mt-1">•</span>
                     {change}
                   </li>

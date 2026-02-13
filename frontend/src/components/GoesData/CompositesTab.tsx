@@ -88,7 +88,7 @@ export default function CompositesTab() {
   return (
     <div className="space-y-6">
       {/* Recipe Selection */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Layers className="w-5 h-5 text-primary" /> Composite Recipes
         </h3>
@@ -100,16 +100,16 @@ export default function CompositesTab() {
               className={`text-left p-4 rounded-xl border transition-all ${
                 selectedRecipe === recipe.id
                   ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                  : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+                  : 'border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
               }`}
             >
-              <div className="font-medium text-white text-sm">{recipe.name}</div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="font-medium text-gray-900 dark:text-white text-sm">{recipe.name}</div>
+              <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                 {RECIPE_DESCRIPTIONS[recipe.id] || `Bands: ${recipe.bands.join(', ')}`}
               </div>
               <div className="flex gap-1 mt-2">
                 {recipe.bands.map((b) => (
-                  <span key={b} className="px-1.5 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded">
+                  <span key={b} className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded">
                     {b}
                   </span>
                 ))}
@@ -121,33 +121,33 @@ export default function CompositesTab() {
 
       {/* Generate Form */}
       {selectedRecipe && (
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
           <h3 className="text-lg font-semibold">Generate Composite</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="comp-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+              <label htmlFor="comp-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
               <select id="comp-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-                className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
                 {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="comp-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+              <label htmlFor="comp-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
               <select id="comp-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-                className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
                 {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="comp-capture-time" className="block text-sm font-medium text-slate-400 mb-1">Capture Time</label>
+              <label htmlFor="comp-capture-time" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Capture Time</label>
               <input id="comp-capture-time" type="datetime-local" value={captureTime} onChange={(e) => setCaptureTime(e.target.value)}
-                className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none" />
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none" />
             </div>
           </div>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!captureTime || createMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
           >
             <Layers className="w-4 h-4" />
             {createMutation.isPending ? 'Generating...' : 'Generate Composite'}
@@ -165,12 +165,12 @@ export default function CompositesTab() {
       )}
 
       {/* History */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Generated Composites</h3>
         {composites && composites.items.length > 0 ? (
           <div className="space-y-3">
             {composites.items.map((comp) => (
-              <div key={comp.id} className="flex items-center gap-4 bg-slate-800/50 rounded-lg px-4 py-3">
+              <div key={comp.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 {comp.file_path && comp.status === 'completed' && (
                   <div className="w-16 h-12 rounded overflow-hidden flex-shrink-0">
                     <img
@@ -182,8 +182,8 @@ export default function CompositesTab() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white">{comp.name}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{comp.name}</div>
+                  <div className="text-xs text-gray-400 dark:text-slate-500">
                     {comp.satellite} · {comp.sector} · {new Date(comp.capture_time).toLocaleString()}
                     {comp.file_size > 0 && ` · ${formatBytes(comp.file_size)}`}
                   </div>
@@ -216,7 +216,7 @@ export default function CompositesTab() {
             ))}
           </div>
         ) : (
-          <div className="text-center text-slate-500 py-8">
+          <div className="text-center text-gray-400 dark:text-slate-500 py-8">
             No composites yet. Select a recipe and generate one above!
           </div>
         )}

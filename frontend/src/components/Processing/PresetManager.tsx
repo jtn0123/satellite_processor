@@ -58,12 +58,12 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
           value={saveName}
           onChange={(e) => setSaveName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-          className="flex-1 bg-space-800 border border-subtle rounded-lg px-3 py-2 text-sm focus-ring"
+          className="flex-1 bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-3 py-2 text-sm focus-ring"
         />
         <button
           onClick={handleSave}
           disabled={!saveName.trim() || createPreset.isPending}
-          className="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
         >
           <Save className="w-3.5 h-3.5" />
           Save
@@ -76,7 +76,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
           {(presets as Preset[]).map((p) => (
             <div
               key={p.id}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-space-800 group"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 group"
             >
               {editingName === p.name ? (
                 <div className="flex-1 flex gap-1.5">
@@ -99,7 +99,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                   </button>
                   <button
                     onClick={() => setEditingName(null)}
-                    className="p-1 text-slate-400 hover:text-white"
+                    className="p-1 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -108,7 +108,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                 <>
                   <button
                     onClick={() => onLoadPreset(p.params)}
-                    className="flex-1 text-left text-sm text-slate-300 hover:text-white truncate"
+                    className="flex-1 text-left text-sm text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white truncate"
                   >
                     {p.name}
                   </button>
@@ -118,7 +118,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                         setEditingName(p.name);
                         setNewName(p.name);
                       }}
-                      className="p-1 text-slate-400 hover:text-white"
+                      className="p-1 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       title="Rename"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -129,7 +129,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                           deletePreset.mutate(p.name);
                         }
                       }}
-                      className="p-1 text-slate-400 hover:text-red-400"
+                      className="p-1 text-gray-500 dark:text-slate-400 hover:text-red-400"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

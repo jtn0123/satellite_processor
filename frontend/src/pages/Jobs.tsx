@@ -27,7 +27,7 @@ export default function JobsPage() {
         <>
           <div>
             <h1 className="text-2xl font-bold">Jobs</h1>
-            <p className="text-slate-400 text-sm mt-1">Monitor and manage processing jobs</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Monitor and manage processing jobs</p>
           </div>
           <JobList onSelect={handleSelect} />
         </>

@@ -103,22 +103,22 @@ function TabLoadingFallback() {
 function WelcomeCard({ onFetchClick }: { onFetchClick: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8">
-      <div className="bg-slate-800/50 rounded-full p-6 mb-6">
+      <div className="bg-gray-100/50 dark:bg-slate-800/50 rounded-full p-6 mb-6">
         <Satellite className="w-16 h-16 text-primary" />
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Welcome to GOES Data Manager</h2>
-      <p className="text-slate-400 text-center max-w-md mb-8">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome to GOES Data Manager</h2>
+      <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-8">
         Start by fetching your first satellite frames. You can download GOES-16 and GOES-18
         imagery across multiple bands and sectors.
       </p>
       <button
         onClick={onFetchClick}
-        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20"
+        className="flex items-center gap-2 px-6 py-3 bg-primary text-gray-900 dark:text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20"
       >
         <Download className="w-5 h-5" />
         Fetch Data
       </button>
-      <div className="flex gap-6 mt-8 text-sm text-slate-500">
+      <div className="flex gap-6 mt-8 text-sm text-gray-400 dark:text-slate-500">
         <span>16 spectral bands</span>
         <span>·</span>
         <span>Multiple sectors</span>
@@ -228,11 +228,11 @@ export default function GoesData() {
       </div>
 
       {/* Tab bar - grouped with dividers */}
-      <div className="flex gap-1 bg-slate-900 rounded-xl p-1.5 border border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
+      <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
         {tabGroups.map((group, gi) => (
           <div key={group.label} className="flex items-center gap-1">
-            {gi > 0 && <div className="w-px h-6 bg-slate-700 mx-1 flex-shrink-0" />}
-            <span className="text-[10px] uppercase tracking-wider text-slate-600 px-1 flex-shrink-0">{group.label}</span>
+            {gi > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1 flex-shrink-0" />}
+            <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-slate-600 px-1 flex-shrink-0">{group.label}</span>
             {group.tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -242,8 +242,8 @@ export default function GoesData() {
                 aria-selected={activeTab === tab.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
                   activeTab === tab.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
                 }`}
               >
                 {tab.icon}

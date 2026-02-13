@@ -8,7 +8,7 @@ export default function UploadPage() {
     <div className="space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold">Upload Images</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
           Upload satellite images for processing
         </p>
       </div>

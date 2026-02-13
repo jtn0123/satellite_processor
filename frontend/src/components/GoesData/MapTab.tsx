@@ -77,30 +77,30 @@ export default function MapTab() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div>
-          <label htmlFor="map-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+          <label htmlFor="map-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
           <select id="map-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="map-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+          <label htmlFor="map-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
           <select id="map-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="map-band" className="block text-sm font-medium text-slate-400 mb-1">Band</label>
+          <label htmlFor="map-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
           <select id="map-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
           </select>
         </div>
         <div className="md:col-span-2">
-          <label htmlFor="map-overlay-opacity" className="block text-sm font-medium text-slate-400 mb-1">
+          <label htmlFor="map-overlay-opacity" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">
             Overlay Opacity: {Math.round(opacity * 100)}%
           </label>
           <input
@@ -114,7 +114,7 @@ export default function MapTab() {
       </div>
 
       {/* Map */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden" style={{ height: '600px' }}>
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden" style={{ height: '600px' }}>
         <MapContainer
           center={center}
           zoom={sector === 'FullDisk' ? 2 : 4}
@@ -149,12 +149,12 @@ export default function MapTab() {
 
       {/* Info */}
       {frame ? (
-        <div className="text-sm text-slate-400 flex items-center gap-2">
+        <div className="text-sm text-gray-500 dark:text-slate-400 flex items-center gap-2">
           <Satellite className="w-4 h-4" />
           Showing {frame.satellite} · {frame.band} · {frame.sector} · captured {new Date(frame.capture_time).toLocaleString()}
         </div>
       ) : (
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-gray-400 dark:text-slate-500">
           No frames available for overlay. Fetch data first from the Fetch tab.
         </div>
       )}

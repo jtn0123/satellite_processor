@@ -37,7 +37,7 @@ export default function PresetsPage() {
       <div className="space-y-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold">Presets</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage processing presets</p>
+          <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Manage processing presets</p>
         </div>
         <div className="space-y-2">
           {["a","b","c","d"].map((k) => (
@@ -52,11 +52,11 @@ export default function PresetsPage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold">Presets</h1>
-        <p className="text-slate-400 text-sm mt-1">Manage saved processing presets</p>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Manage saved processing presets</p>
       </div>
 
       {presetList.length === 0 ? (
-        <div className="text-center py-16 text-slate-500">
+        <div className="text-center py-16 text-gray-400 dark:text-slate-500">
           <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No presets yet</p>
           <p className="text-sm mt-1">Create presets from the Process page</p>
@@ -91,7 +91,7 @@ export default function PresetsPage() {
                     </button>
                     <button
                       onClick={() => setEditingName(null)}
-                      className="p-1.5 text-slate-400 hover:text-white"
+                      className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -99,7 +99,7 @@ export default function PresetsPage() {
                 ) : (
                   <>
                     <p className="font-medium text-sm">{p.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       Created {new Date(p.created_at).toLocaleDateString()} · {Object.keys(p.params).length} parameters
                     </p>
                   </>
@@ -113,7 +113,7 @@ export default function PresetsPage() {
                       setEditingName(p.name);
                       setNewName(p.name);
                     }}
-                    className="p-2 hover:bg-space-700 rounded-lg text-slate-400 hover:text-white"
+                    className="p-2 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                     title="Rename"
                   >
                     <Pencil className="w-4 h-4" />
@@ -124,7 +124,7 @@ export default function PresetsPage() {
                         deletePreset.mutate(p.name);
                       }
                     }}
-                    className="p-2 hover:bg-space-700 rounded-lg text-slate-400 hover:text-red-400"
+                    className="p-2 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

@@ -31,7 +31,7 @@ export default function SystemMonitor() {
       {metrics.map((m) => (
         <div key={m.label} className="bg-card border border-subtle rounded-xl p-4 flex flex-col items-center">
           <DonutChart value={m.value} color={m.color} />
-          <div className="flex items-center gap-1.5 mt-2 text-sm text-slate-300">
+          <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-600 dark:text-slate-300">
             <m.icon className="w-4 h-4" style={{ color: m.color }} />
             {m.label}
           </div>

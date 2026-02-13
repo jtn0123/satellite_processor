@@ -14,9 +14,9 @@ test.beforeEach(async ({ page }) => {
     }
     if (url.includes('/api/settings')) return route.fulfill({ json: { default_false_color: 'vegetation', timestamp_enabled: true, timestamp_position: 'bottom-left', video_fps: 24, video_codec: 'h264', video_quality: 23 } });
     if (url.includes('/api/presets')) return route.fulfill({ json: [] });
-    if (url.includes('/api/stats/storage/breakdown')) return route.fulfill({ json: { total_size: 0, total_frames: 0, by_satellite: {}, by_band: {}, by_age: {} } });
+    if (url.includes('/api/goes/stats')) return route.fulfill({ json: { total_size: 0, total_frames: 0, by_satellite: {}, by_band: {}, by_age: {} } });
     if (url.includes('/api/goes/dashboard-stats')) return route.fulfill({ json: { total_frames: 0, frames_by_satellite: {}, last_fetch_time: null, active_schedules: 0, storage_by_satellite: {}, storage_by_band: {}, recent_jobs: [] } });
-    return route.continue();
+    return route.fulfill({ json: {} });
   });
 });
 

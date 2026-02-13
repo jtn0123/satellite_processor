@@ -27,15 +27,31 @@
   --border-color-subtle: #1e3a5f;
 }
 
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 body {
   @apply bg-gray-50 dark:bg-space-950 text-gray-900 dark:text-gray-100 antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Touch-friendly button targets on mobile */
+/* Responsive typography — smaller on mobile, larger on desktop */
+html {
+  font-size: 14px;
+}
+@media (min-width: 640px) {
+  html { font-size: 15px; }
+}
+@media (min-width: 1024px) {
+  html { font-size: 16px; }
+}
+
+/* Touch-friendly button targets on mobile (WCAG 2.5.5 — 44px minimum) */
 @media (max-width: 640px) {
   button, [role="button"], a {
     min-height: 2.75rem; /* 44px */
+    min-width: 2.75rem;
   }
 }
 
@@ -194,6 +210,14 @@ body {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Smooth theme transition on cards and panels */
+.bg-card,
+.glass-card,
+aside,
+header {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Leaflet fixes */

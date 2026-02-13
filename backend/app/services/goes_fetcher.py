@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import tempfile
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -165,7 +165,7 @@ def _parse_scan_time(key: str) -> datetime | None:
     if not match:
         return None
     year, doy, hour, minute, second = (int(x) for x in match.groups())
-    base = datetime(year, 1, 1) + timedelta(days=doy - 1)
+    base = datetime(year, 1, 1, tzinfo=UTC) + timedelta(days=doy - 1)
     return base.replace(hour=hour, minute=minute, second=second)
 
 

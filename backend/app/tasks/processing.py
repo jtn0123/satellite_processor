@@ -3,12 +3,12 @@
 import json
 import logging
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
 from ..services.processor import configure_processor
+from ..utils import utcnow
 
 # Add parent project to path for core imports (handles both local dev and Docker)
 try:
@@ -109,11 +109,11 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
     """Update job DB and publish final status."""
     if success:
         _update_job_db(job_id, status="completed", progress=100, output_path=output_path,
-                       completed_at=datetime.now(UTC), status_message="Processing complete")
+                       completed_at=utcnow(), status_message="Processing complete")
         _publish_progress(job_id, 100, "Processing complete", "completed")
     else:
         _update_job_db(job_id, status="failed", error="Processing returned False",
-                       completed_at=datetime.now(UTC), status_message="Processing failed")
+                       completed_at=utcnow(), status_message="Processing failed")
         _publish_progress(job_id, 0, "Processing failed", "failed")
 
 
@@ -122,7 +122,7 @@ def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
     logger.info(f"Starting image processing job {job_id}")
 
-    _update_job_db(job_id, status="processing", started_at=datetime.now(UTC),
+    _update_job_db(job_id, status="processing", started_at=utcnow(),
                    status_message="Initializing processor...")
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
 
@@ -156,7 +156,7 @@ def process_images_task(self, job_id: str, params: dict):
     except Exception as e:
         logger.exception(f"Job {job_id} failed")
         _update_job_db(job_id, status="failed", error=str(e),
-                       completed_at=datetime.now(UTC), status_message=f"Error: {e}")
+                       completed_at=utcnow(), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
     finally:
@@ -174,7 +174,7 @@ def create_video_task(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(UTC),
+        started_at=utcnow(),
         status_message="Initializing video creation...",
     )
     _publish_progress(job_id, 0, "Initializing video creation...", "processing")
@@ -218,7 +218,7 @@ def create_video_task(self, job_id: str, params: dict):
                 status="completed",
                 progress=100,
                 output_path=output_path,
-                completed_at=datetime.now(UTC),
+                completed_at=utcnow(),
                 status_message="Video creation complete",
             )
             _publish_progress(job_id, 100, "Video creation complete", "completed")
@@ -227,7 +227,7 @@ def create_video_task(self, job_id: str, params: dict):
                 job_id,
                 status="failed",
                 error="Video creation returned False",
-                completed_at=datetime.now(UTC),
+                completed_at=utcnow(),
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
@@ -237,7 +237,7 @@ def create_video_task(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")

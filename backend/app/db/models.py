@@ -1,7 +1,6 @@
 """ORM models for jobs, images, presets, GOES frames, collections, and tags"""
 
 import uuid
-from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
@@ -18,15 +17,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from ..utils import utcnow
 from .database import Base
 
 
 def gen_uuid():
     return str(uuid.uuid4())
-
-
-def _utcnow():
-    return datetime.now(UTC)
 
 
 class Job(Base):
@@ -41,7 +37,7 @@ class Job(Base):
     input_path = Column(Text, default="")
     output_path = Column(Text, default="")
     error = Column(Text, default="")
-    created_at = Column(DateTime, default=_utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
@@ -64,7 +60,7 @@ class Image(Base):
     channel = Column(String(10), nullable=True)
     captured_at = Column(DateTime, nullable=True)
     source = Column(String(20), default="local")
-    uploaded_at = Column(DateTime, default=_utcnow, index=True)
+    uploaded_at = Column(DateTime, default=utcnow, index=True)
 
 
 class Preset(Base):
@@ -73,7 +69,7 @@ class Preset(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     name = Column(String(100), unique=True, nullable=False, index=True)
     params = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 # --- GOES Data Management Models ---
@@ -93,7 +89,7 @@ class GoesFrame(Base):
     height = Column(Integer, nullable=True)
     thumbnail_path = Column(Text, nullable=True)
     source_job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     source_job = relationship("Job", foreign_keys=[source_job_id])
     tags = relationship("Tag", secondary="frame_tags", back_populates="frames")
@@ -113,8 +109,8 @@ class Collection(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     name = Column(String(200), nullable=False)
     description = Column(Text, default="")
-    created_at = Column(DateTime, default=_utcnow)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     frames = relationship(
         "GoesFrame", secondary="collection_frames", back_populates="collections"
@@ -164,7 +160,7 @@ class CropPreset(Base):
     y = Column(Integer, nullable=False)
     width = Column(Integer, nullable=False)
     height = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class Animation(Base):
@@ -183,7 +179,7 @@ class Animation(Base):
     output_path = Column(Text, nullable=True)
     file_size = Column(BigInteger, default=0)
     duration_seconds = Column(Integer, default=0)
-    created_at = Column(DateTime, default=_utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
     error = Column(Text, default="")
     job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
@@ -204,7 +200,7 @@ class FetchPreset(Base):
     sector = Column(String(20), nullable=False)
     band = Column(String(10), nullable=False)
     description = Column(Text, default="")
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     schedules = relationship("FetchSchedule", back_populates="preset", cascade="all, delete-orphan")
 
@@ -219,8 +215,8 @@ class FetchSchedule(Base):
     is_active = Column(Boolean, default=False)
     last_run_at = Column(DateTime, nullable=True)
     next_run_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=_utcnow)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     preset = relationship("FetchPreset", back_populates="schedules")
 
@@ -239,7 +235,7 @@ class Composite(Base):
     status = Column(String(20), default="pending", index=True)
     error = Column(Text, default="")
     job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     job = relationship("Job", foreign_keys=[job_id])
 
@@ -253,4 +249,4 @@ class CleanupRule(Base):
     value = Column(Float, nullable=False)
     protect_collections = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=utcnow)

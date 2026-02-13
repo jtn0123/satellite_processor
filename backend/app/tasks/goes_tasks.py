@@ -4,11 +4,12 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(UTC),
+        started_at=utcnow(),
         status_message="Fetching GOES data...",
     )
     _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
@@ -166,7 +167,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
             status="completed",
             progress=100,
             output_path=output_dir,
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Fetched {len(results)} frames",
         )
         _publish_progress(job_id, 100, f"Fetched {len(results)} frames", "completed")
@@ -177,7 +178,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -191,7 +192,7 @@ def backfill_gaps(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(UTC),
+        started_at=utcnow(),
         status_message="Detecting gaps...",
     )
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
@@ -238,7 +239,7 @@ def backfill_gaps(self, job_id: str, params: dict):
                 job_id,
                 status="completed",
                 progress=100,
-                completed_at=datetime.now(UTC),
+                completed_at=utcnow(),
                 status_message="No gaps found",
             )
             _publish_progress(job_id, 100, "No gaps found", "completed")
@@ -294,7 +295,7 @@ def backfill_gaps(self, job_id: str, params: dict):
             status="completed",
             progress=100,
             output_path=output_dir,
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Backfilled {total_fetched} frames across {len(gaps)} gaps",
         )
         _publish_progress(job_id, 100, f"Backfilled {total_fetched} frames", "completed")
@@ -305,7 +306,7 @@ def backfill_gaps(self, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -322,7 +323,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
-        started_at=datetime.now(UTC),
+        started_at=utcnow(),
         status_message="Generating composite...",
     )
     _publish_progress(job_id, 0, "Generating composite...", "processing")
@@ -352,8 +353,8 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
                     )
                     .order_by(
                         sa_func.abs(
-                            sa_func.julianday(GoesFrame.capture_time)
-                            - sa_func.julianday(capture_time)
+                            sa_func.extract("epoch", GoesFrame.capture_time)
+                            - sa_func.extract("epoch", capture_time)
                         )
                     )
                     .limit(1)
@@ -410,7 +411,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
             job_id,
             status="completed",
             progress=100,
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message="Composite generated",
         )
         _publish_progress(job_id, 100, "Composite generated", "completed")
@@ -432,7 +433,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
             job_id,
             status="failed",
             error=str(e),
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

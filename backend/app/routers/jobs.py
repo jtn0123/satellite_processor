@@ -1,7 +1,6 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
 import os
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -19,6 +18,7 @@ from ..models.bulk import BulkDeleteRequest
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
+from ..utils import utcnow
 
 _JOB_NOT_FOUND = "Job not found"
 
@@ -39,7 +39,7 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
         missing = [iid for iid in image_ids if iid not in found]
         raise APIError(404, "images_not_found", f"Images not found: {missing}")
 
-    staging_dir = Path(settings.temp_dir) / f"job_staging_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}"
+    staging_dir = Path(settings.temp_dir) / f"job_staging_{utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
     staging_dir.mkdir(parents=True, exist_ok=True)
 
     image_paths = []

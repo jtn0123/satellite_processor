@@ -4,11 +4,11 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
-from datetime import UTC, datetime
 from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..utils import utcnow
 from .goes_tasks import _get_sync_db, _publish_progress, _update_job_db
 
 logger = logging.getLogger(__name__)
@@ -19,10 +19,10 @@ QUALITY_CRF = {"low": "28", "medium": "23", "high": "18"}
 @celery_app.task(bind=True, name="generate_animation")
 def generate_animation(self, job_id: str, animation_id: str):
     """Generate an animation (MP4/GIF) from selected GOES frames."""
-    from ..db.models import Animation, CropPreset, GoesFrame
+    from ..db.models import Animation, CropPreset, GoesFrame, Job
 
     logger.info("Starting animation job %s (anim %s)", job_id, animation_id)
-    _update_job_db(job_id, status="processing", started_at=datetime.now(UTC),
+    _update_job_db(job_id, status="processing", started_at=utcnow(),
                    status_message="Preparing animation...")
     _publish_progress(job_id, 0, "Preparing animation...", "processing")
 
@@ -32,9 +32,7 @@ def generate_animation(self, job_id: str, animation_id: str):
         if not anim:
             raise RuntimeError(f"Animation {animation_id} not found")
 
-        job_record = session.query(
-            __import__("app.db.models", fromlist=["Job"]).Job
-        ).filter_by(id=job_id).first()
+        job_record = session.query(Job).filter_by(id=job_id).first()
         params = job_record.params if job_record else {}
 
         frame_ids = params.get("frame_ids", [])
@@ -42,7 +40,6 @@ def generate_animation(self, job_id: str, animation_id: str):
         fmt = params.get("format", "mp4")
         quality = params.get("quality", "medium")
         crop_preset_id = params.get("crop_preset_id")
-        params.get("false_color", False)
         scale = params.get("scale", "100%")
 
         # Fetch frames ordered by capture time
@@ -148,13 +145,13 @@ def generate_animation(self, job_id: str, animation_id: str):
         anim.output_path = str(output_path)
         anim.file_size = file_size
         anim.duration_seconds = int(duration_seconds)
-        anim.completed_at = datetime.now(UTC)
+        anim.completed_at = utcnow()
         session.commit()
 
         _update_job_db(
             job_id, status="completed", progress=100,
             output_path=str(output_path),
-            completed_at=datetime.now(UTC),
+            completed_at=utcnow(),
             status_message=f"Animation complete: {len(frames)} frames, {duration_seconds:.1f}s",
         )
         _publish_progress(job_id, 100,
@@ -171,14 +168,14 @@ def generate_animation(self, job_id: str, animation_id: str):
             if anim:
                 anim.status = "failed"
                 anim.error = str(e)
-                anim.completed_at = datetime.now(UTC)
+                anim.completed_at = utcnow()
                 session.commit()
         except Exception:
             pass
 
         _update_job_db(
             job_id, status="failed", error=str(e),
-            completed_at=datetime.now(UTC), status_message=f"Error: {e}",
+            completed_at=utcnow(), status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

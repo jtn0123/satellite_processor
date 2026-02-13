@@ -135,6 +135,31 @@ export default function FetchTab() {
       <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
         <h2 className="text-lg font-semibold">Fetch Frames</h2>
         <p className="text-xs text-slate-500">Maximum time range: 24 hours</p>
+
+        {/* Quick Fetch Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'Last Hour', hours: 1 },
+            { label: 'Last 6 Hours', hours: 6 },
+            { label: 'Last 12 Hours', hours: 12 },
+            { label: 'Last 24 Hours', hours: 24 },
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => {
+                const now = new Date();
+                const start = new Date(now.getTime() - preset.hours * 60 * 60 * 1000);
+                const fmt = (d: Date) => d.toISOString().slice(0, 16);
+                setStartTime(fmt(start));
+                setEndTime(fmt(now));
+              }}
+              className="px-4 py-1.5 text-sm rounded-full bg-slate-800 text-slate-300 hover:bg-primary/20 hover:text-primary border border-slate-700 hover:border-primary/30 transition-colors"
+              aria-label={`Quick fetch: ${preset.label}`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
         {currentAvail && (
           <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 flex-shrink-0" />

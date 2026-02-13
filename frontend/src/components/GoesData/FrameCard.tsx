@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Satellite, CheckCircle } from 'lucide-react';
+import { Satellite, CheckCircle, Search } from 'lucide-react';
 import { formatBytes } from './utils';
 import type { GoesFrame } from './types';
 
@@ -22,7 +22,7 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         isSelected ? 'border-primary ring-1 ring-primary' : 'border-slate-700 hover:border-slate-600'
       }`}
     >
-      <div className="aspect-video bg-slate-800 flex items-center justify-center">
+      <div className="aspect-video bg-slate-800 flex items-center justify-center relative group/img">
         {frame.thumbnail_path ? (
           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
             alt={`${frame.satellite} ${frame.band}`}
@@ -31,6 +31,9 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         ) : (
           <Satellite className="w-8 h-8 text-slate-600" />
         )}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+          <Search className="w-6 h-6 text-white" />
+        </div>
       </div>
       <div className="p-2 space-y-1">
         <div className="text-xs font-medium text-white truncate">

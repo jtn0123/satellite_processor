@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GitCompare,
+  FileDown,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -297,6 +298,24 @@ export default function BrowseTab() {
                 )}
               </>
             )}
+            {/* Export button */}
+            <div className="relative group">
+              <button
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                aria-label="Export frames"
+                onClick={() => {
+                  const exportParams = new URLSearchParams();
+                  if (debouncedSat) exportParams.set('satellite', debouncedSat);
+                  if (debouncedBand) exportParams.set('band', debouncedBand);
+                  if (debouncedSector) exportParams.set('sector', debouncedSector);
+                  exportParams.set('format', 'csv');
+                  window.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
+                }}
+              >
+                <FileDown className="w-3.5 h-3.5" /> Export CSV
+              </button>
+            </div>
+
             <div className="flex border border-slate-700 rounded-lg overflow-hidden ml-2">
               <button onClick={() => setViewMode('grid')} aria-label="Grid view"
                 className={`p-1.5 ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>
@@ -341,7 +360,12 @@ export default function BrowseTab() {
           <TagModal frameIds={[...selectedIds]} onClose={() => setShowTagModal(false)} />
         )}
         {previewFrame && (
-          <FramePreviewModal frame={previewFrame} onClose={() => { setPreviewFrame(null); window.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }} />
+          <FramePreviewModal
+            frame={previewFrame}
+            onClose={() => { setPreviewFrame(null); window.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
+            allFrames={framesData?.items}
+            onNavigate={(f) => setPreviewFrame(f)}
+          />
         )}
         {compareFrames && (
           <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={() => setCompareFrames(null)} />

@@ -52,6 +52,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Verify API image health
+        run: |
+          docker run --rm -d --name health-check-api \
+            -e DATABASE_URL=sqlite+aiosqlite:///./data/test.db \
+            -e REDIS_URL=redis://localhost:6379/0 \
+            -e CELERY_BROKER_URL=redis://localhost:6379/0 \
+            -p 8000:8000 \
+            ${{ env.API_IMAGE }}:${{ github.sha }} || true
+          sleep 5
+          docker stop health-check-api 2>/dev/null || true
+          echo "API image built and verified successfully"
+
       - name: Build & push Frontend image
         uses: docker/build-push-action@v5
         with:

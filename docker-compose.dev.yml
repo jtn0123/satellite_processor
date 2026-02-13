@@ -18,6 +18,7 @@ services:
       - DEBUG=true
     depends_on:
       - redis
+    restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   worker:
@@ -37,6 +38,7 @@ services:
       - DEBUG=false
     depends_on:
       - redis
+    restart: unless-stopped
     command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2
 
   redis:
@@ -50,6 +52,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 volumes:
   sat-data:

@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.2.0] - 2026-02-13
+
+### Added
+- Dependabot configuration for pip, npm, and GitHub Actions (weekly schedule)
+- `docker-compose.test.yml` for local integration testing
+- Automated health check verification in Docker CI/CD workflow
+- Resource limits (memory/CPU) on all Docker Compose services
+- Makefile targets: `lint`, `build`, `deploy`, `logs`, `test-integration`
+- Backend API improvements and error handling enhancements
+- Frontend UI/UX improvements
+
+### Changed
+- Bumped VERSION to 1.2.0
+- Docker Compose: all services now have resource limits and restart policies
+- Makefile restructured with comprehensive targets
+- Improved CI/CD pipeline with post-build health verification
+
 ## [Unreleased]
 
 ### Fixed

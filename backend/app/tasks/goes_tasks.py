@@ -245,16 +245,17 @@ def fetch_goes_data(self, job_id: str, params: dict):
         else:
             status_msg = f"Fetched {fetched_count} frames"
 
-        _log(status_msg)
+        _log(status_msg, level="warning" if fetched_count == 0 else "info")
+        final_status = "completed" if fetched_count > 0 else "failed"
         _update_job_db(
             job_id,
-            status="completed",
+            status=final_status,
             progress=100,
             output_path=output_dir,
             completed_at=utcnow(),
             status_message=status_msg,
         )
-        _publish_progress(job_id, 100, status_msg, "completed")
+        _publish_progress(job_id, 100, status_msg, final_status)
 
     except Exception as e:
         logger.exception("GOES fetch job %s failed", job_id)

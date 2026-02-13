@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Crop, Save } from 'lucide-react';
 import api from '../../api/client';
@@ -20,6 +20,13 @@ export default function FramePreviewModal({
   const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
+
+  // Listen for global close-modal event (Escape key)
+  useEffect(() => {
+    const handler = () => onClose();
+    window.addEventListener('close-modal', handler);
+    return () => window.removeEventListener('close-modal', handler);
+  }, [onClose]);
 
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
@@ -124,6 +131,7 @@ export default function FramePreviewModal({
                 : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
               alt={`${frame.satellite} ${frame.band}`}
               className="max-w-full max-h-[60vh] rounded"
+              loading="lazy"
               draggable={false}
               onLoad={handleImageLoad}
             />

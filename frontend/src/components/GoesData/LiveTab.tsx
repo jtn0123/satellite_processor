@@ -150,6 +150,7 @@ export default function LiveTab() {
               src={imageUrl}
               alt={`${satellite} ${band} ${sector}`}
               className="max-w-full max-h-full object-contain"
+              loading="lazy"
             />
           ) : null}
         </div>

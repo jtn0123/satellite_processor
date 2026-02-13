@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import api from '../../api/client';
@@ -9,6 +9,12 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
+
+  useEffect(() => {
+    const handler = () => onClose();
+    window.addEventListener('close-modal', handler);
+    return () => window.removeEventListener('close-modal', handler);
+  }, [onClose]);
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],

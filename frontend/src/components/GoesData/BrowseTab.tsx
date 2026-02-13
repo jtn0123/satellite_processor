@@ -14,12 +14,14 @@ import {
   GitCompare,
 } from 'lucide-react';
 import api from '../../api/client';
+import { useDebounce } from '../../hooks/useDebounce';
 import { formatBytes } from './utils';
 import type { Product, TagType, GoesFrame, CollectionType, PaginatedFrames } from './types';
 import FramePreviewModal from './FramePreviewModal';
 import AddToCollectionModal from './AddToCollectionModal';
 import TagModal from './TagModal';
 import ComparisonModal from './ComparisonModal';
+import EmptyState from './EmptyState';
 
 export default function BrowseTab() {
   const queryClient = useQueryClient();
@@ -56,12 +58,19 @@ export default function BrowseTab() {
     queryFn: () => api.get('/goes/tags').then((r) => r.data),
   });
 
+  // Debounce filter values to prevent excessive API calls
+  const debouncedSat = useDebounce(filterSat, 300);
+  const debouncedBand = useDebounce(filterBand, 300);
+  const debouncedSector = useDebounce(filterSector, 300);
+  const debouncedCollection = useDebounce(filterCollection, 300);
+  const debouncedTag = useDebounce(filterTag, 300);
+
   const params: Record<string, string | number> = { page, limit: 50, sort: sortBy, order: sortOrder };
-  if (filterSat) params.satellite = filterSat;
-  if (filterBand) params.band = filterBand;
-  if (filterSector) params.sector = filterSector;
-  if (filterCollection) params.collection_id = filterCollection;
-  if (filterTag) params.tag = filterTag;
+  if (debouncedSat) params.satellite = debouncedSat;
+  if (debouncedBand) params.band = debouncedBand;
+  if (debouncedSector) params.sector = debouncedSector;
+  if (debouncedCollection) params.collection_id = debouncedCollection;
+  if (debouncedTag) params.tag = debouncedTag;
 
   const { data: framesData, isLoading } = useQuery<PaginatedFrames>({
     queryKey: ['goes-frames', params],
@@ -126,6 +135,22 @@ export default function BrowseTab() {
         </div>
       );
     }
+    if (!framesData || framesData.items.length === 0) {
+      return (
+        <EmptyState
+          icon={<Satellite className="w-8 h-8" />}
+          title="No frames yet"
+          description="Fetch satellite data to start browsing frames. Head over to the Fetch tab to download GOES imagery."
+          action={{
+            label: 'Go to Fetch Tab',
+            onClick: () => {
+              // Dispatch a custom event that GoesData can listen to for tab switching
+              window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+            },
+          }}
+        />
+      );
+    }
     if (viewMode === 'grid') {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -142,6 +167,7 @@ export default function BrowseTab() {
                 {frame.thumbnail_path ? (
                   <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
                     alt={`${frame.satellite} ${frame.band}`}
+                    loading="lazy"
                     className="w-full h-full object-cover" />
                 ) : (
                   <Satellite className="w-8 h-8 text-slate-600" />
@@ -188,7 +214,7 @@ export default function BrowseTab() {
             <div className="w-16 h-10 rounded bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {frame.thumbnail_path ? (
                 <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                  alt={`${frame.satellite} ${frame.band} thumbnail`} className="w-full h-full object-cover" />
+                  alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <Satellite className="w-4 h-4 text-slate-600" />
               )}
@@ -348,7 +374,7 @@ export default function BrowseTab() {
 
         {/* Hint */}
         <div className="text-xs text-slate-500">
-          {framesData ? `${framesData.total} frames` : 'Loading...'} · Click to preview, Shift+Click to select
+          {framesData ? `${framesData.total} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}

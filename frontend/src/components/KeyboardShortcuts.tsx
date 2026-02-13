@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { X, Keyboard } from 'lucide-react';
@@ -11,7 +11,10 @@ const shortcutList = [
   { keys: 'g s', label: 'Go to Settings' },
   { keys: 'g f', label: 'Go to GOES Data' },
   { keys: '?', label: 'Show shortcuts' },
-  { keys: 'Escape', label: 'Close modals' },
+  { keys: 'Escape', label: 'Close any open modal' },
+  { keys: '← →', label: 'Navigate frames in preview' },
+  { keys: '1-0', label: 'Switch GOES Data tabs' },
+  { keys: 'Space', label: 'Play/pause animation preview' },
 ];
 
 export default function KeyboardShortcuts() {
@@ -19,6 +22,18 @@ export default function KeyboardShortcuts() {
   const navigate = useNavigate();
 
   const close = useCallback(() => setOpen(false), []);
+
+  // Global Escape handler that dispatches custom event for modals
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Dispatch custom event so modals can listen
+        window.dispatchEvent(new CustomEvent('close-modal'));
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   const shortcuts = useMemo(
     () => ({

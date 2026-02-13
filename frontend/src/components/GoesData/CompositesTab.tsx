@@ -174,6 +174,7 @@ export default function CompositesTab() {
                       src={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
                       alt={comp.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                 )}

@@ -57,10 +57,19 @@ class GoesBackfillRequest(BaseModel):
     expected_interval: float = Field(default=10.0, ge=0.5, le=60.0)
 
 
+class SatelliteAvailability(BaseModel):
+    available_from: str
+    available_to: str | None
+    status: str
+    description: str
+
+
 class GoesProductsResponse(BaseModel):
     satellites: list[str]
+    satellite_availability: dict[str, SatelliteAvailability]
     sectors: list[dict[str, str]]
     bands: list[dict[str, str]]
+    default_satellite: str
 
 
 class GapInfo(BaseModel):

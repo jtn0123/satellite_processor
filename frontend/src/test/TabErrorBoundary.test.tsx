@@ -1,13 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
 
-function ThrowingChild() {
+function ThrowingChild(): ReactNode {
   throw new Error('Test crash');
 }
 
 describe('TabErrorBoundary', () => {
-  // Suppress console.error for expected errors
   const originalError = console.error;
   beforeEach(() => { console.error = vi.fn(); });
   afterEach(() => { console.error = originalError; });

@@ -162,9 +162,11 @@ export default function BrowseTab() {
     }
     if (viewMode === 'grid') {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
           {framesData?.items.map((frame) => (
-            <FrameCard key={frame.id} frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="grid" />
+            <div key={frame.id} className="cv-auto @container">
+              <FrameCard frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="grid" />
+            </div>
           ))}
         </div>
       );
@@ -172,7 +174,9 @@ export default function BrowseTab() {
     return (
       <div className="space-y-1">
         {framesData?.items.map((frame) => (
-          <FrameCard key={frame.id} frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="list" />
+          <div key={frame.id} className="cv-auto-list">
+            <FrameCard frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="list" />
+          </div>
         ))}
       </div>
     );

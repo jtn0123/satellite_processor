@@ -191,7 +191,7 @@ export default function AnimationStudioTab() {
                       <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
                         {frame.thumbnail_path ? (
                           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                            alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" className="w-full h-full object-cover" />
+                            alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Satellite className="w-4 h-4 text-gray-400 dark:text-slate-600" />

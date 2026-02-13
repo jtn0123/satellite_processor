@@ -69,9 +69,9 @@ export default function CollectionsTab() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="@container grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
           {collections?.map((c) => (
-            <div key={c.id} className="bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
+            <div key={c.id} className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
                   <input aria-label="Editname" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}

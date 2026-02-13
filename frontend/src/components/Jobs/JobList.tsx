@@ -44,7 +44,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       {displayed.map((job) => {
         const cfg = statusConfig[job.status] || statusConfig.pending;
         const Icon = cfg.icon;
@@ -53,7 +53,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
             key={job.id}
             role="button"
             tabIndex={0}
-            className="flex items-center gap-3 bg-card border border-subtle rounded-lg px-4 py-3 hover:bg-card-hover cursor-pointer group transition-colors"
+            className="flex items-center gap-3 @max-[400px]:flex-wrap @max-[400px]:gap-2 bg-card border border-subtle rounded-lg px-4 py-3 @max-[400px]:px-3 @max-[400px]:py-2 hover:bg-card-hover cursor-pointer group transition-colors"
             onClick={() => onSelect?.(job.id)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(job.id); } }}
           >

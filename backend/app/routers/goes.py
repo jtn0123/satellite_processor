@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Composite, GoesFrame, Job
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.goes import (
     GoesBackfillRequest,
     GoesFetchRequest,
@@ -19,7 +19,7 @@ from ..models.goes import (
 )
 from ..rate_limit import limiter
 from ..services.gap_detector import get_coverage_stats
-from ..services.goes_fetcher import SATELLITE_BUCKETS, SECTOR_PRODUCTS, VALID_BANDS
+from ..services.goes_fetcher import SATELLITE_AVAILABILITY, SATELLITE_BUCKETS, SECTOR_PRODUCTS, VALID_BANDS
 
 router = APIRouter(prefix="/api/goes", tags=["goes"])
 
@@ -39,6 +39,9 @@ async def list_products():
     """List available GOES satellites, sectors, and bands."""
     return GoesProductsResponse(
         satellites=list(SATELLITE_BUCKETS.keys()),
+        satellite_availability={
+            sat: info for sat, info in SATELLITE_AVAILABILITY.items()
+        },
         sectors=[
             {"id": k, "name": k, "product": v}
             for k, v in SECTOR_PRODUCTS.items()
@@ -47,6 +50,7 @@ async def list_products():
             {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
             for band in VALID_BANDS
         ],
+        default_satellite="GOES-19",
     )
 
 
@@ -58,6 +62,30 @@ async def fetch_goes(
     db: AsyncSession = Depends(get_db),
 ):
     """Kick off a GOES data fetch job."""
+    # Validate time range against satellite availability
+    avail = SATELLITE_AVAILABILITY.get(payload.satellite)
+    if avail:
+        avail_from = datetime.fromisoformat(avail["available_from"])
+        avail_to = datetime.fromisoformat(avail["available_to"]) if avail["available_to"] else None
+        if avail_to and payload.start_time.replace(tzinfo=None) > avail_to:
+            suggestion = "GOES-19" if payload.satellite == "GOES-16" else "GOES-18"
+            raise APIError(
+                422,
+                "out_of_range",
+                f"{payload.satellite} data is only available from "
+                f"{avail['available_from'][:7]} through "
+                f"{avail['available_to'][:7]}. "
+                f"Use {suggestion} for current data.",
+            )
+        if payload.end_time.replace(tzinfo=None) < avail_from:
+            raise APIError(
+                422,
+                "out_of_range",
+                f"{payload.satellite} data is only available from "
+                f"{avail['available_from'][:7]}. "
+                f"Your requested time range is before data availability.",
+            )
+
     job_id = str(uuid.uuid4())
     job = Job(
         id=job_id,
@@ -306,6 +334,7 @@ async def list_composites(
 @router.get("/composites/{composite_id}")
 async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Get composite detail."""
+    validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()
     if not c:

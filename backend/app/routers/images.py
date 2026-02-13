@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
@@ -161,6 +161,7 @@ async def bulk_delete_images(
 @limiter.limit("10/minute")
 async def delete_image(request: Request, image_id: str, db: AsyncSession = Depends(get_db)):
     """Delete an uploaded image"""
+    validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
@@ -174,6 +175,7 @@ async def delete_image(request: Request, image_id: str, db: AsyncSession = Depen
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     """Return a ~256px thumbnail"""
+    validate_uuid(image_id, "image_id")
     from ..config import settings as app_settings
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -207,6 +209,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/{image_id}/full")
 async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     """Return the original image file"""
+    validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:

@@ -71,7 +71,7 @@ class TestFetchGoes:
     async def test_valid_fetch(self, mock_delay, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
             "start_time": (now - timedelta(hours=1)).isoformat(),
@@ -97,7 +97,7 @@ class TestFetchGoes:
     async def test_invalid_band(self, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C99",
             "start_time": (now - timedelta(hours=1)).isoformat(),
@@ -108,7 +108,7 @@ class TestFetchGoes:
     async def test_invalid_sector(self, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "INVALID",
             "band": "C02",
             "start_time": (now - timedelta(hours=1)).isoformat(),
@@ -119,7 +119,7 @@ class TestFetchGoes:
     async def test_time_range_exceeds_24h(self, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
             "start_time": (now - timedelta(hours=25)).isoformat(),
@@ -130,7 +130,7 @@ class TestFetchGoes:
     async def test_end_before_start(self, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
             "start_time": now.isoformat(),
@@ -140,7 +140,7 @@ class TestFetchGoes:
 
     async def test_missing_fields(self, client):
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
         })
         assert resp.status_code == 422
 
@@ -160,7 +160,7 @@ class TestFetchGoes:
     async def test_fetch_fulldisk(self, mock_delay, client):
         now = datetime.now(UTC)
         resp = await client.post("/api/goes/fetch", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "sector": "FullDisk",
             "band": "C02",
             "start_time": (now - timedelta(hours=1)).isoformat(),
@@ -259,7 +259,7 @@ class TestBackfill:
     @patch("app.tasks.goes_tasks.backfill_gaps.delay")
     async def test_backfill_valid(self, mock_delay, client):
         resp = await client.post("/api/goes/backfill", json={
-            "satellite": "GOES-16",
+            "satellite": "GOES-19",
             "band": "C02",
             "sector": "CONUS",
         })

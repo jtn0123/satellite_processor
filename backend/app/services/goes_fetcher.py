@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import tempfile
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -11,15 +12,49 @@ import boto3
 import numpy as np
 from botocore import UNSIGNED
 from botocore.config import Config
+from botocore.exceptions import (
+    ClientError,
+    ConnectTimeoutError,
+    EndpointConnectionError,
+    ReadTimeoutError,
+)
 from PIL import Image as PILImage
 
 logger = logging.getLogger(__name__)
+
+# Retry configuration for S3 operations
+S3_MAX_RETRIES = 3
+S3_BASE_DELAY = 1.0  # seconds
+S3_READ_TIMEOUT = 60  # seconds per object download
+S3_CONNECT_TIMEOUT = 10  # seconds
 
 # Satellite → S3 bucket mapping
 SATELLITE_BUCKETS: dict[str, str] = {
     "GOES-16": "noaa-goes16",
     "GOES-18": "noaa-goes18",
     "GOES-19": "noaa-goes19",
+}
+
+# Satellite availability metadata
+SATELLITE_AVAILABILITY: dict[str, dict[str, Any]] = {
+    "GOES-16": {
+        "available_from": "2017-01-01",
+        "available_to": "2025-04-07",
+        "status": "historical",
+        "description": "GOES-East (historical, replaced by GOES-19)",
+    },
+    "GOES-18": {
+        "available_from": "2022-01-01",
+        "available_to": None,
+        "status": "active",
+        "description": "GOES-West (active)",
+    },
+    "GOES-19": {
+        "available_from": "2024-01-01",
+        "available_to": None,
+        "status": "active",
+        "description": "GOES-East (active, replaced GOES-16)",
+    },
 }
 
 # Sector → product prefix mapping
@@ -44,7 +79,53 @@ SECTOR_INTERVALS: dict[str, int] = {
 
 def _get_s3_client():
     """Create an unsigned S3 client for public NOAA buckets."""
-    return boto3.client("s3", config=Config(signature_version=UNSIGNED))
+    return boto3.client(
+        "s3",
+        config=Config(
+            signature_version=UNSIGNED,
+            connect_timeout=S3_CONNECT_TIMEOUT,
+            read_timeout=S3_READ_TIMEOUT,
+            retries={"max_attempts": 0},  # We handle retries ourselves
+        ),
+    )
+
+
+def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, **kwargs):
+    """Execute an S3 operation with exponential backoff retry.
+
+    Retries on transient errors: timeouts, throttling, connection issues.
+    """
+    _retryable_errors = (
+        ConnectTimeoutError,
+        ReadTimeoutError,
+        EndpointConnectionError,
+        ConnectionError,
+        OSError,
+    )
+    for attempt in range(1, max_retries + 1):
+        try:
+            return func(*args, **kwargs)
+        except ClientError as exc:
+            error_code = exc.response.get("Error", {}).get("Code", "")
+            if error_code in ("Throttling", "SlowDown", "RequestTimeout") and attempt < max_retries:
+                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    "S3 throttled/timeout (attempt %d/%d, code=%s), retrying in %.1fs",
+                    attempt, max_retries, error_code, delay,
+                )
+                time.sleep(delay)
+            else:
+                raise
+        except _retryable_errors:
+            if attempt < max_retries:
+                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    "S3 connection error (attempt %d/%d), retrying in %.1fs",
+                    attempt, max_retries, delay,
+                )
+                time.sleep(delay)
+            else:
+                raise
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
@@ -112,7 +193,12 @@ def _list_hour(
     results: list[dict[str, Any]] = []
     try:
         paginator = s3.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+
+        def _do_list():
+            return list(paginator.paginate(Bucket=bucket, Prefix=prefix))
+
+        pages = _retry_s3_operation(_do_list)
+        for page in pages:
             for obj in page.get("Contents", []):
                 key = obj["Key"]
                 if not _matches_sector_and_band(key, sector, band):
@@ -120,8 +206,10 @@ def _list_hour(
                 scan_time = _parse_scan_time(key)
                 if scan_time and start_time <= scan_time <= end_time:
                     results.append({"key": key, "scan_time": scan_time, "size": obj["Size"]})
+    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
+        logger.warning("Failed to list S3 prefix %s/%s: %s", bucket, prefix, exc)
     except Exception:
-        logger.warning("Failed to list S3 prefix %s/%s", bucket, prefix)
+        logger.warning("Failed to list S3 prefix %s/%s", bucket, prefix, exc_info=True)
     return results
 
 
@@ -216,7 +304,7 @@ def fetch_frames(
 
     for i, item in enumerate(available):
         try:
-            response = s3.get_object(Bucket=bucket, Key=item["key"])
+            response = _retry_s3_operation(s3.get_object, Bucket=bucket, Key=item["key"])
             nc_bytes = response["Body"].read()
 
             scan_time: datetime = item["scan_time"]
@@ -235,8 +323,10 @@ def fetch_frames(
             if on_progress:
                 on_progress(i + 1, len(available))
 
+        except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
+            logger.warning("Failed to fetch %s: %s", item["key"], exc)
         except Exception:
-            logger.exception("Failed to fetch %s", item["key"])
+            logger.exception("Unexpected error fetching %s", item["key"])
 
     return results
 
@@ -258,7 +348,9 @@ def fetch_single_preview(
     closest = min(available, key=lambda x: abs((x["scan_time"] - time).total_seconds()))
     s3 = _get_s3_client()
     try:
-        response = s3.get_object(Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"])
+        response = _retry_s3_operation(
+            s3.get_object, Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"],
+        )
         nc_bytes = response["Body"].read()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = Path(tmp.name)

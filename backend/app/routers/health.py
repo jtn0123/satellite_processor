@@ -1,5 +1,6 @@
 """Health check endpoints."""
 
+import os
 import shutil
 import time
 from pathlib import Path
@@ -13,20 +14,54 @@ from ..db.database import async_session
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 
-VERSION = "2.1.0"
-BUILD_SHA = __import__("os").environ.get("BUILD_SHA", "dev")
+
+def _read_version() -> str:
+    """Read version from VERSION file or env, fallback to 0.0.0."""
+    env_ver = os.environ.get("BUILD_VERSION", "")
+    if env_ver:
+        return env_ver
+    for candidate in [Path(__file__).resolve().parents[4] / "VERSION", Path("VERSION")]:
+        if candidate.is_file():
+            return candidate.read_text().strip()
+    return "0.0.0"
+
+
+VERSION = _read_version()
+BUILD_COMMIT = os.environ.get("BUILD_COMMIT", "dev")
+BUILD_DATE = os.environ.get("BUILD_DATE", "")
 
 
 @router.get("")
 async def health_basic():
-    """Basic liveness check."""
+    """Basic liveness check with dependency awareness.
+
+    Returns 'ok' if core services are reachable, 'degraded' if DB or Redis
+    is down but the app is still running.
+    """
+    db_check = await _check_database()
+    redis_check = await _check_redis()
+
+    if db_check["status"] == "error":
+        return {
+            "status": "degraded",
+            "database": db_check["status"],
+            "redis": redis_check["status"],
+        }
+    # Redis is optional (used for real-time progress only)
+    if redis_check["status"] == "error":
+        return {"status": "ok", "redis": "unavailable"}
     return {"status": "ok"}
 
 
 @router.get("/version")
 async def version_info():
     """Return app version and build info."""
-    return {"version": VERSION, "build": BUILD_SHA}
+    return {
+        "version": VERSION,
+        "commit": BUILD_COMMIT,
+        "build_date": BUILD_DATE,
+        "build": BUILD_COMMIT,
+    }
 
 
 async def _check_database() -> dict:
@@ -110,4 +145,5 @@ async def health_detailed():
         "status": _derive_overall(checks),
         "checks": checks,
         "version": VERSION,
+        "commit": BUILD_COMMIT,
     }

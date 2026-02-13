@@ -1,5 +1,11 @@
 FROM python:3.11-slim
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_COMMIT=dev
+ARG BUILD_DATE=""
 ARG BUILD_SHA=dev
+ENV BUILD_VERSION=${BUILD_VERSION}
+ENV BUILD_COMMIT=${BUILD_COMMIT}
+ENV BUILD_DATE=${BUILD_DATE}
 ENV BUILD_SHA=${BUILD_SHA}
 
 WORKDIR /app
@@ -12,6 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for caching
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy VERSION file
+COPY VERSION /app/VERSION
 
 # Copy core processor module
 COPY satellite_processor /app/satellite_processor

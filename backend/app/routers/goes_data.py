@@ -22,7 +22,7 @@ from ..db.models import (
     Job,
     Tag,
 )
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.goes_data import (
     BulkFrameDeleteRequest,
     BulkTagRequest,
@@ -160,6 +160,7 @@ async def frame_stats(db: AsyncSession = Depends(get_db)):
 @router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
 async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
     """Get single frame detail."""
+    validate_uuid(frame_id, "frame_id")
     result = await db.execute(
         select(GoesFrame)
         .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))

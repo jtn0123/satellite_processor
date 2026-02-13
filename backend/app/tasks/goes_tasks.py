@@ -17,10 +17,11 @@ _redis = None
 
 
 def _get_redis():
+    """Get Redis client with lazy initialization."""
     global _redis
     if _redis is None:
         import redis
-        _redis = redis.Redis.from_url(settings.redis_url)
+        _redis = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=5)
     return _redis
 
 
@@ -40,14 +41,17 @@ def _get_sync_db():
 
 
 def _publish_progress(job_id: str, progress: int, message: str, status: str = "processing"):
-    """Publish progress update to Redis pub/sub."""
-    payload = json.dumps({
-        "job_id": job_id,
-        "progress": progress,
-        "message": message,
-        "status": status,
-    })
-    _get_redis().publish(f"job:{job_id}", payload)
+    """Publish progress update to Redis pub/sub. Fails silently if Redis is down."""
+    try:
+        payload = json.dumps({
+            "job_id": job_id,
+            "progress": progress,
+            "message": message,
+            "status": status,
+        })
+        _get_redis().publish(f"job:{job_id}", payload)
+    except Exception:
+        logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 
 
 def _update_job_db(job_id: str, **kwargs):
@@ -86,11 +90,43 @@ def fetch_goes_data(self, job_id: str, params: dict):
         end_time = datetime.fromisoformat(params["end_time"])
         output_dir = str(Path(settings.output_dir) / f"goes_{job_id}")
 
+        # Log S3 prefixes being searched for debugging
+        from ..services.goes_fetcher import (
+            SATELLITE_AVAILABILITY,
+            SATELLITE_BUCKETS,
+            _build_s3_prefix,
+            list_available,
+        )
+
+        bucket = SATELLITE_BUCKETS[satellite]
+        current_hour = start_time.replace(minute=0, second=0, microsecond=0)
+        from datetime import timedelta as _td
+
+        end_ceil = end_time.replace(minute=0, second=0, microsecond=0) + _td(hours=1)
+        while current_hour < end_ceil:
+            prefix = _build_s3_prefix(satellite, sector, band, current_hour)
+            logger.info("Searching S3: s3://%s/%s", bucket, prefix)
+            current_hour += _td(hours=1)
+
+        # Check available count before downloading
+        available = list_available(satellite, sector, band, start_time, end_time)
+        available_count = len(available)
+        logger.info(
+            "Found %d available frames for %s %s %s [%s → %s]",
+            available_count, satellite, sector, band,
+            start_time.isoformat(), end_time.isoformat(),
+        )
+
         def on_progress(current: int, total: int):
             pct = int(current / total * 100) if total > 0 else 0
             msg = f"Downloading frame {current}/{total}"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
+
+        logger.info(
+            "Searching S3 for %s %s %s from %s to %s",
+            satellite, sector, band, start_time.isoformat(), end_time.isoformat(),
+        )
 
         results = fetch_frames(
             satellite=satellite,
@@ -162,15 +198,39 @@ def fetch_goes_data(self, job_id: str, params: dict):
         finally:
             session.close()
 
+        # Build descriptive status message
+        fetched_count = len(results)
+        if fetched_count == 0 and available_count == 0:
+            avail = SATELLITE_AVAILABILITY.get(satellite, {})
+            avail_hint = ""
+            if avail.get("available_to"):
+                avail_hint = (
+                    f" {satellite} data is only available from "
+                    f"{avail['available_from']} through {avail['available_to']}."
+                )
+            status_msg = (
+                f"No frames found on S3 for {satellite} {sector} {band} "
+                f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
+                f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
+            )
+        elif fetched_count < available_count:
+            failed = available_count - fetched_count
+            status_msg = (
+                f"Fetched {fetched_count} of {available_count} frames "
+                f"({failed} failed to download)"
+            )
+        else:
+            status_msg = f"Fetched {fetched_count} frames"
+
         _update_job_db(
             job_id,
             status="completed",
             progress=100,
             output_path=output_dir,
             completed_at=utcnow(),
-            status_message=f"Fetched {len(results)} frames",
+            status_message=status_msg,
         )
-        _publish_progress(job_id, 100, f"Fetched {len(results)} frames", "completed")
+        _publish_progress(job_id, 100, status_msg, "completed")
 
     except Exception as e:
         logger.exception("GOES fetch job %s failed", job_id)

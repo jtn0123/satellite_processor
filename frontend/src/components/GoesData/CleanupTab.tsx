@@ -37,7 +37,7 @@ function formatBytes(bytes: number) {
 export default function CleanupTab() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', rule_type: 'max_age_days' as const, value: 30, protect_collections: true });
+  const [form, setForm] = useState<{ name: string; rule_type: 'max_age_days' | 'max_storage_gb'; value: number; protect_collections: boolean }>({ name: '', rule_type: 'max_age_days', value: 30, protect_collections: true });
 
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],

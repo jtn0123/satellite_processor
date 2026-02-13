@@ -31,7 +31,7 @@ const links = [
 ];
 
 export default function Layout() {
-  const [versionInfo, setVersionInfo] = useState('v2.1.0');
+  const [versionInfo, setVersionInfo] = useState({ version: '', commit: '', display: '' });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -63,8 +63,13 @@ export default function Layout() {
     fetch('/api/health/version')
       .then((r) => r.json())
       .then((d) => {
-        const sha = d.build && d.build !== 'dev' ? ` (${d.build.slice(0, 7)})` : '';
-        setVersionInfo(`v${d.version}${sha}`);
+        const commit = d.commit ?? d.build ?? 'dev';
+        const sha = commit && commit !== 'dev' ? ` (${commit.slice(0, 7)})` : '';
+        setVersionInfo({
+          version: d.version ?? '',
+          commit,
+          display: `v${d.version}${sha}`,
+        });
       })
       .catch(() => {});
   }, []);
@@ -151,7 +156,18 @@ export default function Layout() {
           </div>
           <div className="text-xs text-slate-500 flex items-center gap-2">
             <Cpu className="w-4 h-4" />
-            Satellite Processor {versionInfo}
+            {versionInfo.commit && versionInfo.commit !== 'dev' ? (
+              <a
+                href={`https://github.com/jtn0123/satallite_processor/commit/${versionInfo.commit}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-slate-300 transition-colors"
+              >
+                Satellite Processor {versionInfo.display}
+              </a>
+            ) : (
+              <span>Satellite Processor {versionInfo.display}</span>
+            )}
           </div>
         </div>
       </aside>
@@ -235,6 +251,20 @@ export default function Layout() {
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
+          <footer className="md:hidden mt-8 pb-4 text-center text-xs text-slate-500">
+            {versionInfo.commit && versionInfo.commit !== 'dev' ? (
+              <a
+                href={`https://github.com/jtn0123/satallite_processor/commit/${versionInfo.commit}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-slate-300 transition-colors"
+              >
+                {versionInfo.display}
+              </a>
+            ) : (
+              <span>{versionInfo.display}</span>
+            )}
+          </footer>
         </main>
       </div>
     </div>

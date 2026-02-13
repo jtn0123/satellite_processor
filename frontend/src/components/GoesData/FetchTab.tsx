@@ -162,7 +162,7 @@ export default function FetchTab() {
         </div>
         {currentAvail && (
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
-            <Info className="w-3.5 h-3.5 flex-shrink-0" />
+            <Info className="w-3.5 h-3.5 shrink-0" />
             <span>{satellite} data available: <span className="text-gray-900 dark:text-white font-medium">{formatAvailRange(currentAvail)}</span></span>
           </div>
         )}
@@ -180,7 +180,7 @@ export default function FetchTab() {
         </div>
         {dateWarning && (
           <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 shrink-0" />
             {dateWarning}
           </div>
         )}
@@ -255,8 +255,8 @@ export default function FetchTab() {
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {gaps.gaps.map((gap) => (
-                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded px-3 py-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded-sm px-3 py-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="text-gray-600 dark:text-slate-300">
                         {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}
                       </span>

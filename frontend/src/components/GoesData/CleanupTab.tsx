@@ -112,8 +112,8 @@ export default function CleanupTab() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={`stat-skel-${i}`} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
-                <div className="h-8 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
-                <div className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
+                <div className="h-8 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-sm" />
+                <div className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-sm" />
               </div>
             ))}
           </div>
@@ -170,7 +170,7 @@ export default function CleanupTab() {
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
               <input type="checkbox" checked={form.protect_collections} onChange={e => setForm({ ...form, protect_collections: e.target.checked })}
-                className="rounded" />
+                className="rounded-sm" />
               <Shield className="w-4 h-4" /> Protect frames in collections
             </label>
             <div className="flex gap-2">

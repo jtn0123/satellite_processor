@@ -119,7 +119,7 @@ export default function Layout() {
       {/* Skip to content link for accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-gray-900 dark:text-white focus:rounded-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-200 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-gray-900 dark:text-white focus:rounded-lg focus:outline-hidden"
       >
         Skip to content
       </a>

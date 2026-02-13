@@ -231,8 +231,8 @@ export default function GoesData() {
       <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
         {tabGroups.map((group, gi) => (
           <div key={group.label} className="flex items-center gap-1">
-            {gi > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1 flex-shrink-0" />}
-            <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-slate-600 px-1 flex-shrink-0">{group.label}</span>
+            {gi > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1 shrink-0" />}
+            <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-slate-600 px-1 shrink-0">{group.label}</span>
             {group.tabs.map((tab) => (
               <button
                 key={tab.id}

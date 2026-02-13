@@ -46,7 +46,7 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         {frame.tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {frame.tags.map((t) => (
-              <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
+              <span key={t.id} className="px-1.5 py-0.5 rounded-sm text-[10px] text-gray-900 dark:text-white"
                 style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
             ))}
           </div>
@@ -73,7 +73,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:bg-slate-800/50'
       }`}
     >
-      <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div className="w-16 h-10 rounded-sm bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
         {frame.thumbnail_path ? (
           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
             alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" className="w-full h-full object-cover" />
@@ -91,7 +91,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       )}
       <div className="flex gap-1">
         {frame.tags.map((t) => (
-          <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
+          <span key={t.id} className="px-1.5 py-0.5 rounded-sm text-[10px] text-gray-900 dark:text-white"
             style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
         ))}
       </div>

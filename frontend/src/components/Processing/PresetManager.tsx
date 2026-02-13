@@ -89,7 +89,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                       if (e.key === 'Escape') setEditingName(null);
                     }}
                     autoFocus
-                    className="flex-1 bg-space-700 border border-subtle rounded px-2 py-1 text-sm"
+                    className="flex-1 bg-space-700 border border-subtle rounded-sm px-2 py-1 text-sm"
                   />
                   <button
                     onClick={() => handleRename(p.name)}

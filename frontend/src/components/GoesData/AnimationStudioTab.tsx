@@ -136,7 +136,7 @@ export default function AnimationStudioTab() {
                 <div>
                   <label htmlFor="anim-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
                   <select id="anim-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-                    className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                    className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -144,7 +144,7 @@ export default function AnimationStudioTab() {
                 <div>
                   <label htmlFor="anim-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
                   <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
-                    className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                    className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
                   </select>
@@ -152,7 +152,7 @@ export default function AnimationStudioTab() {
                 <div>
                   <label htmlFor="anim-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
                   <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-                    className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                    className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -160,19 +160,19 @@ export default function AnimationStudioTab() {
                 <div>
                   <label htmlFor="anim-start-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Start Date</label>
                   <input id="anim-start-date" type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+                    className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
                 </div>
                 <div>
                   <label htmlFor="anim-end-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">End Date</label>
                   <input id="anim-end-date" type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+                    className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
                 </div>
               </div>
             ) : (
               <div>
                 <label htmlFor="anim-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
                 <select id="anim-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
-                  className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                  className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                   <option value="">Select collection...</option>
                   {collections?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count} frames)</option>)}
                 </select>
@@ -187,8 +187,8 @@ export default function AnimationStudioTab() {
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {previewFrames.items.map((frame) => (
-                    <div key={frame.id} className="flex-shrink-0 w-24">
-                      <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
+                    <div key={frame.id} className="shrink-0 w-24">
+                      <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded-sm overflow-hidden">
                         {frame.thumbnail_path ? (
                           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
                             alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" className="w-full h-full object-cover" />
@@ -220,7 +220,7 @@ export default function AnimationStudioTab() {
               <label htmlFor="anim-animation-name" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Animation Name</label>
               <input id="anim-animation-name" type="text" value={animName} onChange={(e) => setAnimName(e.target.value)}
                 placeholder="Untitled Animation"
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+                className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
             </div>
 
             <div>
@@ -256,7 +256,7 @@ export default function AnimationStudioTab() {
             <div>
               <label htmlFor="anim-crop-preset" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Crop Preset</label>
               <select id="anim-crop-preset" value={cropPresetId} onChange={(e) => setCropPresetId(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                 <option value="">None (full frame)</option>
                 {cropPresets?.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.width}×{p.height})</option>
@@ -267,7 +267,7 @@ export default function AnimationStudioTab() {
             <div>
               <label htmlFor="anim-scale" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Scale</label>
               <select id="anim-scale" value={scale} onChange={(e) => setScale(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                className="w-full rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                 <option value="100%">100% (Original)</option>
                 <option value="75%">75%</option>
                 <option value="50%">50%</option>
@@ -277,7 +277,7 @@ export default function AnimationStudioTab() {
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={falseColor} onChange={(e) => setFalseColor(e.target.checked)}
-                className="rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-primary" />
+                className="rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-primary" />
               <span className="text-sm text-gray-600 dark:text-slate-300">Apply false color</span>
             </label>
 
@@ -319,14 +319,14 @@ export default function AnimationStudioTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   {anim.status === 'pending' && (
-                    <span className="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded">Pending</span>
+                    <span className="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded-sm">Pending</span>
                   )}
                   {anim.status === 'processing' && (
-                    <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded animate-pulse">Processing</span>
+                    <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded-sm animate-pulse">Processing</span>
                   )}
                   {anim.status === 'completed' && (
                     <>
-                      <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded">Done</span>
+                      <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded-sm">Done</span>
                       {anim.output_path && (
                         <a href={`/api/download?path=${encodeURIComponent(anim.output_path)}`}
                           download className="text-xs text-primary hover:underline">Download</a>
@@ -334,7 +334,7 @@ export default function AnimationStudioTab() {
                     </>
                   )}
                   {anim.status === 'failed' && (
-                    <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={anim.error}>Failed</span>
+                    <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded-sm" title={anim.error}>Failed</span>
                   )}
                   <button onClick={() => deleteMutation.mutate(anim.id)}
                     className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors">

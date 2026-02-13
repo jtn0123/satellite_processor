@@ -12,7 +12,8 @@ vi.mock('../api/client', () => ({
 import CompositesTab from '../components/GoesData/CompositesTab';
 import api from '../api/client';
 
-const mockedApi = api as unknown;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockedApi = api as any;
 
 function renderWithProviders(ui: React.ReactElement) {
   const qc = new QueryClient({

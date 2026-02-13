@@ -4,10 +4,11 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def check_schedules(self):
 
     session = _get_sync_db()
     try:
-        now = datetime.now(UTC)
+        now = utcnow()
         due = (
             session.query(FetchSchedule)
             .filter(FetchSchedule.is_active == True, FetchSchedule.next_run_at <= now)  # noqa: E712
@@ -115,7 +116,7 @@ def run_cleanup(self):
             frames_to_delete = []
 
             if rule.rule_type == "max_age_days":
-                cutoff = datetime.now(UTC) - timedelta(days=rule.value)
+                cutoff = utcnow() - timedelta(days=rule.value)
                 frames = session.query(GoesFrame).filter(GoesFrame.created_at < cutoff).all()
                 frames_to_delete = [f for f in frames if f.id not in protected_ids]
 

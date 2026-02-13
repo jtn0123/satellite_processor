@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy import func, select
@@ -34,6 +34,7 @@ from ..models.scheduling import (
     FetchScheduleResponse,
     FetchScheduleUpdate,
 )
+from ..utils import utcnow
 
 router = APIRouter(prefix="/api/goes", tags=["scheduling"])
 
@@ -109,7 +110,7 @@ async def run_fetch_preset(
     if not preset:
         raise APIError(404, "not_found", "Fetch preset not found")
 
-    now = datetime.now(UTC)
+    now = utcnow()
     job_id = str(uuid.uuid4())
     job = Job(
         id=job_id,
@@ -145,7 +146,7 @@ async def create_schedule(
     if not result.scalars().first():
         raise APIError(404, "not_found", "Fetch preset not found")
 
-    now = datetime.now(UTC)
+    now = utcnow()
     schedule = FetchSchedule(
         id=str(uuid.uuid4()),
         name=payload.name,
@@ -197,7 +198,7 @@ async def update_schedule(
 
     # Recompute next_run_at if toggled active
     if schedule.is_active and schedule.next_run_at is None:
-        schedule.next_run_at = datetime.now(UTC) + timedelta(minutes=schedule.interval_minutes)
+        schedule.next_run_at = utcnow() + timedelta(minutes=schedule.interval_minutes)
     elif not schedule.is_active:
         schedule.next_run_at = None
 
@@ -234,7 +235,7 @@ async def toggle_schedule(
 
     schedule.is_active = not schedule.is_active
     if schedule.is_active:
-        schedule.next_run_at = datetime.now(UTC) + timedelta(minutes=schedule.interval_minutes)
+        schedule.next_run_at = utcnow() + timedelta(minutes=schedule.interval_minutes)
     else:
         schedule.next_run_at = None
 
@@ -365,7 +366,7 @@ async def _get_frames_to_cleanup(db: AsyncSession) -> list[GoesFrame]:
             protected_ids = {r[0] for r in prot.all()}
 
         if rule.rule_type == "max_age_days":
-            cutoff = datetime.now(UTC) - timedelta(days=rule.value)
+            cutoff = utcnow() - timedelta(days=rule.value)
             q = select(GoesFrame).where(GoesFrame.created_at < cutoff)
             res = await db.execute(q)
             for frame in res.scalars().all():

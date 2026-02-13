@@ -67,7 +67,7 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
           {selectedCollection && (
             <button onClick={() => addMutation.mutate(selectedCollection)}
               disabled={addMutation.isPending}
-              className="w-full px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
+              className="w-full px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
               {addMutation.isPending ? 'Adding...' : `Add ${frameIds.length} frames`}
             </button>
           )}

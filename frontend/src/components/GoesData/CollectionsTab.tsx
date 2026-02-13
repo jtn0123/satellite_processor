@@ -57,7 +57,7 @@ export default function CollectionsTab() {
           className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
           onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()} />
         <button onClick={() => createMutation.mutate()} disabled={!newName || createMutation.isPending}
-          className="px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
+          className="px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
           Create
         </button>
       </div>

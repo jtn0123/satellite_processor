@@ -63,7 +63,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
         <button
           onClick={handleSave}
           disabled={!saveName.trim() || createPreset.isPending}
-          className="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
         >
           <Save className="w-3.5 h-3.5" />
           Save

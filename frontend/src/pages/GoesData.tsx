@@ -113,7 +113,7 @@ function WelcomeCard({ onFetchClick }: { onFetchClick: () => void }) {
       </p>
       <button
         onClick={onFetchClick}
-        className="flex items-center gap-2 px-6 py-3 bg-primary text-gray-900 dark:text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20 btn-interactive"
+        className="flex items-center gap-2 px-6 py-3 btn-primary-mix text-gray-900 dark:text-white rounded-xl transition-colors font-medium text-lg shadow-lg shadow-primary/20 btn-interactive"
       >
         <Download className="w-5 h-5" />
         Fetch Data
@@ -244,7 +244,7 @@ export default function GoesData() {
                 aria-selected={activeTab === tab.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
                   activeTab === tab.id
-                    ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
+                    ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20 glow-primary'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
                 }`}
               >

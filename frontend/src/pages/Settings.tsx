@@ -30,7 +30,7 @@ function StorageSection() {
   const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400', 'bg-pink-400'];
 
   return (
-    <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4">
+    <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4 inset-shadow-sm dark:inset-shadow-white/5">
       <div className="flex items-center gap-2">
         <HardDrive className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold">Storage</h2>
@@ -111,7 +111,7 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Application configuration</p>
       </div>
 
-      <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4">
+      <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4 inset-shadow-sm dark:inset-shadow-white/5">
         <h2 className="text-lg font-semibold">Processing Defaults</h2>
         <div className="grid gap-4">
             <div>
@@ -201,7 +201,7 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
             <button
               onClick={handleSave}
               disabled={updateSettings.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-lg text-sm font-medium w-fit transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium w-fit transition-colors disabled:opacity-50"
             >
               {updateSettings.isPending ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />

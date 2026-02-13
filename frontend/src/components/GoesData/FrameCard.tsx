@@ -18,8 +18,8 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       onClick={(e) => onClick(frame, e)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(frame, e as unknown as React.MouseEvent); } }}
       aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
-      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 ${
-        isSelected ? 'border-primary ring-1 ring-primary' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600'
+      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all inset-shadow-sm dark:inset-shadow-white/5 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 ${
+        isSelected ? 'border-primary ring-1 ring-primary glow-primary' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600'
       }`}
     >
       <div className="aspect-video bg-gray-100 dark:bg-slate-800 flex items-center justify-center relative group/img">
@@ -38,10 +38,10 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       </div>
       {/* Compact layout for narrow containers, expanded for wide */}
       <div className="p-2 space-y-1 @max-[280px]:p-1.5 @max-[280px]:space-y-0.5">
-        <div className="text-xs font-medium text-gray-900 dark:text-white truncate">
+        <div className="text-xs font-medium text-gray-900 dark:text-white truncate text-shadow-overlay">
           {frame.satellite} · {frame.band} · {frame.sector}
         </div>
-        <div className="text-xs text-gray-400 dark:text-slate-500 @max-[280px]:hidden">
+        <div className="text-xs text-gray-400 dark:text-slate-500 @max-[280px]:hidden text-shadow-overlay">
           {new Date(frame.capture_time).toLocaleString()}
         </div>
         <div className="text-xs text-gray-400 dark:text-slate-600">{formatBytes(frame.file_size)}</div>
@@ -72,7 +72,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(frame, e as unknown as React.MouseEvent); } }}
       aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
       className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors min-h-[44px] ${
-        isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:bg-slate-800/50'
+        isSelected ? 'bg-primary/10 border border-primary/30 glow-primary' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:bg-slate-800/50'
       }`}
     >
       <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">

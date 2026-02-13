@@ -11,7 +11,7 @@ export default function NotFound() {
       <p className="text-gray-500 dark:text-slate-400 mb-6">Page not found</p>
       <button
         onClick={() => navigate('/')}
-        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-lg transition-colors"
+        className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg transition-colors"
       >
         <Home className="w-4 h-4" />
         Back to Dashboard

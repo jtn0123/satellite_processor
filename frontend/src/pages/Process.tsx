@@ -44,7 +44,7 @@ export default function ProcessPage() {
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Upload some satellite images to get started.</p>
           <Link
             to="/upload"
-            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors"
           >
             <Upload className="w-4 h-4" /> Upload Images
           </Link>

@@ -50,7 +50,7 @@ export default class TabErrorBoundary extends Component<Props, State> {
           )}
           <button
             onClick={this.handleRetry}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Retry

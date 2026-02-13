@@ -12,7 +12,7 @@ from app.db.models import GoesFrame
 def _make_frame(db, **overrides):
     defaults = {
         "id": str(uuid.uuid4()),
-        "satellite": "GOES-19",
+        "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
         "capture_time": datetime(2024, 3, 15, 14, 0, tzinfo=UTC),

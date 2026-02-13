@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   BookOpen,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import KeyboardShortcuts from './KeyboardShortcuts';
@@ -32,6 +34,28 @@ export default function Layout() {
   const [versionInfo, setVersionInfo] = useState('v2.1.0');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   useJobToasts();
 
@@ -114,7 +138,17 @@ export default function Layout() {
           </a>
         </div>
         <div className="px-6 py-4 border-t border-subtle space-y-2">
-          <ConnectionStatus />
+          <div className="flex items-center justify-between">
+            <ConnectionStatus />
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
           <div className="text-xs text-slate-500 flex items-center gap-2">
             <Cpu className="w-4 h-4" />
             Satellite Processor {versionInfo}
@@ -190,7 +224,13 @@ export default function Layout() {
             <Satellite className="w-5 h-5 text-primary" />
             <span className="font-bold">SatTracker</span>
           </div>
-          <div className="w-9" /> {/* Spacer for centering */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">

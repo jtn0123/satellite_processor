@@ -225,6 +225,25 @@ class FetchSchedule(Base):
     preset = relationship("FetchPreset", back_populates="schedules")
 
 
+class Composite(Base):
+    __tablename__ = "composites"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False)
+    recipe = Column(String(50), nullable=False)
+    satellite = Column(String(20), nullable=False)
+    sector = Column(String(20), nullable=False)
+    capture_time = Column(DateTime, nullable=False)
+    file_path = Column(Text, nullable=True)
+    file_size = Column(BigInteger, default=0)
+    status = Column(String(20), default="pending", index=True)
+    error = Column(Text, default="")
+    job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    job = relationship("Job", foreign_keys=[job_id])
+
+
 class CleanupRule(Base):
     __tablename__ = "cleanup_rules"
 

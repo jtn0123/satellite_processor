@@ -310,3 +310,129 @@ def backfill_gaps(self, job_id: str, params: dict):
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
+
+
+@celery_app.task(bind=True, name="generate_composite")
+def generate_composite(self, composite_id: str, job_id: str, params: dict):
+    """Generate a band composite image from multiple GOES bands."""
+    import numpy as np
+    from PIL import Image as PILImage
+
+    logger.info("Starting composite generation %s", composite_id)
+    _update_job_db(
+        job_id,
+        status="processing",
+        started_at=datetime.now(UTC),
+        status_message="Generating composite...",
+    )
+    _publish_progress(job_id, 0, "Generating composite...", "processing")
+
+    try:
+        from ..db.models import Composite, GoesFrame
+
+        _recipe = params["recipe"]  # noqa: F841 — kept for logging/future use
+        satellite = params["satellite"]
+        sector = params["sector"]
+        capture_time = datetime.fromisoformat(params["capture_time"])
+        bands = params["bands"]
+
+        session = _get_sync_db()
+        try:
+            from sqlalchemy import func as sa_func
+            from sqlalchemy import select as sa_select
+
+            band_images = []
+            for band_name in bands[:3]:  # RGB = first 3 bands
+                query = (
+                    sa_select(GoesFrame)
+                    .where(
+                        GoesFrame.satellite == satellite,
+                        GoesFrame.sector == sector,
+                        GoesFrame.band == band_name,
+                    )
+                    .order_by(
+                        sa_func.abs(
+                            sa_func.julianday(GoesFrame.capture_time)
+                            - sa_func.julianday(capture_time)
+                        )
+                    )
+                    .limit(1)
+                )
+                result = session.execute(query)
+                frame = result.scalars().first()
+                if frame and Path(frame.file_path).exists():
+                    img = PILImage.open(frame.file_path).convert("L")
+                    band_images.append(np.array(img, dtype=np.float32))
+                else:
+                    band_images.append(None)
+
+            if not any(b is not None for b in band_images):
+                raise ValueError("No band images found for composite")
+
+            ref_shape = next(b.shape for b in band_images if b is not None)
+
+            channels = []
+            for b in band_images:
+                if b is None:
+                    channels.append(np.zeros(ref_shape, dtype=np.uint8))
+                else:
+                    if b.shape != ref_shape:
+                        img_resized = PILImage.fromarray(b.astype(np.uint8)).resize(
+                            (ref_shape[1], ref_shape[0]), PILImage.BILINEAR
+                        )
+                        b = np.array(img_resized, dtype=np.float32)
+                    bmin, bmax = b.min(), b.max()
+                    if bmax > bmin:
+                        normalized = ((b - bmin) / (bmax - bmin) * 255).astype(np.uint8)
+                    else:
+                        normalized = np.zeros_like(b, dtype=np.uint8)
+                    channels.append(normalized)
+
+            rgb = np.stack(channels, axis=-1)
+            composite_img = PILImage.fromarray(rgb, "RGB")
+
+            output_dir = Path(settings.output_dir) / "composites"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"{composite_id}.png"
+            composite_img.save(str(output_path), "PNG")
+            file_size = output_path.stat().st_size
+
+            comp = session.query(Composite).filter(Composite.id == composite_id).first()
+            if comp:
+                comp.file_path = str(output_path)
+                comp.file_size = file_size
+                comp.status = "completed"
+            session.commit()
+        finally:
+            session.close()
+
+        _update_job_db(
+            job_id,
+            status="completed",
+            progress=100,
+            completed_at=datetime.now(UTC),
+            status_message="Composite generated",
+        )
+        _publish_progress(job_id, 100, "Composite generated", "completed")
+
+    except Exception as e:
+        logger.exception("Composite generation %s failed", composite_id)
+
+        session = _get_sync_db()
+        try:
+            comp = session.query(Composite).filter(Composite.id == composite_id).first()
+            if comp:
+                comp.status = "failed"
+                comp.error = str(e)
+            session.commit()
+        finally:
+            session.close()
+
+        _update_job_db(
+            job_id,
+            status="failed",
+            error=str(e),
+            completed_at=datetime.now(UTC),
+        )
+        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        raise

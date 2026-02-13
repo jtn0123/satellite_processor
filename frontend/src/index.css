@@ -4,6 +4,69 @@
 
 body {
   @apply bg-space-950 text-gray-100 antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light theme overrides */
+html.light body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+html.light .bg-slate-900 {
+  @apply !bg-white;
+}
+
+html.light .bg-slate-800 {
+  @apply !bg-gray-100;
+}
+
+html.light .bg-space-900 {
+  @apply !bg-white;
+}
+
+html.light .bg-space-950 {
+  @apply !bg-gray-50;
+}
+
+html.light .border-slate-800,
+html.light .border-subtle {
+  @apply !border-gray-200;
+}
+
+html.light .border-slate-700 {
+  @apply !border-gray-300;
+}
+
+html.light .text-white {
+  @apply !text-gray-900;
+}
+
+html.light .text-slate-400 {
+  @apply !text-gray-500;
+}
+
+html.light .text-slate-500 {
+  @apply !text-gray-400;
+}
+
+html.light .text-slate-300 {
+  @apply !text-gray-600;
+}
+
+html.light .text-gray-100 {
+  @apply !text-gray-900;
+}
+
+html.light select,
+html.light input[type="text"],
+html.light input[type="datetime-local"],
+html.light input[type="number"] {
+  @apply !bg-gray-100 !text-gray-900 !border-gray-300;
+}
+
+html.light .bg-black\/60,
+html.light .bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
 ::-webkit-scrollbar {
@@ -38,4 +101,38 @@ body {
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+/* Fade in for tab transitions */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Hide scrollbar for tab overflow */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Leaflet fixes for dark theme */
+.leaflet-container {
+  background: #0a1628 !important;
+}
+
+html.light .leaflet-container {
+  background: #f0f0f0 !important;
 }

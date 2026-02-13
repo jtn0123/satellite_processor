@@ -127,21 +127,21 @@ export default function CompositesTab() {
             <div>
               <label htmlFor="comp-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
               <select id="comp-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
                 {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="comp-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
               <select id="comp-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
                 {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="comp-capture-time" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Capture Time</label>
               <input id="comp-capture-time" type="datetime-local" value={captureTime} onChange={(e) => setCaptureTime(e.target.value)}
-                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none" />
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden" />
             </div>
           </div>
           <button
@@ -172,7 +172,7 @@ export default function CompositesTab() {
             {composites.items.map((comp) => (
               <div key={comp.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 {comp.file_path && comp.status === 'completed' && (
-                  <div className="w-16 h-12 rounded overflow-hidden flex-shrink-0">
+                  <div className="w-16 h-12 rounded overflow-hidden shrink-0">
                     <img
                       src={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
                       alt={comp.name}

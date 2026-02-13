@@ -181,7 +181,7 @@ export default function BrowseTab() {
   return (
     <div className="flex gap-6">
       {/* Filter Sidebar */}
-      <div className="w-64 flex-shrink-0 space-y-4">
+      <div className="w-64 shrink-0 space-y-4">
         <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3">
           <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
 

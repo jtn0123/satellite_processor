@@ -187,7 +187,7 @@ export default function AnimationStudioTab() {
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {previewFrames.items.map((frame) => (
-                    <div key={frame.id} className="flex-shrink-0 w-24">
+                    <div key={frame.id} className="shrink-0 w-24">
                       <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
                         {frame.thumbnail_path ? (
                           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}

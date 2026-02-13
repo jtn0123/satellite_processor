@@ -73,7 +73,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:bg-slate-800/50'
       }`}
     >
-      <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
         {frame.thumbnail_path ? (
           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
             alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" className="w-full h-full object-cover" />

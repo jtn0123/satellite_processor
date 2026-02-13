@@ -178,7 +178,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {connected && (
               <span className="flex items-center gap-1 text-xs text-green-400">
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />

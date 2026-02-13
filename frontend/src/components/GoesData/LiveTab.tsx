@@ -76,28 +76,28 @@ export default function LiveTab() {
         <div>
           <label htmlFor="live-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
           <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
             {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="live-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
           <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
             {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="live-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
           <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
             {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="live-auto-refresh" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Auto-refresh</label>
           <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
             {REFRESH_INTERVALS.map((ri) => (
               <option key={ri.value} value={ri.value}>{ri.label}</option>
             ))}
@@ -108,7 +108,7 @@ export default function LiveTab() {
       {/* Live View */}
       <div ref={containerRef} className={`bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
         {/* Header bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-sm font-medium text-gray-900 dark:text-white">Live View</span>
@@ -157,7 +157,7 @@ export default function LiveTab() {
 
         {/* Timestamp overlay */}
         {frame && (
-          <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur text-gray-900 dark:text-white text-xs px-3 py-1.5 rounded-lg">
+          <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-gray-900 dark:text-white text-xs px-3 py-1.5 rounded-lg">
             {frame.satellite} · {frame.band} · {frame.sector} · {new Date(frame.capture_time).toLocaleString()}
           </div>
         )}

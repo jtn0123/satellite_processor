@@ -1,6 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-primary: #06b6d4;
+  --color-primary-dark: #0891b2;
+  --color-primary-light: #22d3ee;
+
+  --color-space-500: #2d6094;
+  --color-space-600: #254d7a;
+  --color-space-700: #1e3a5f;
+  --color-space-750: #1a2d4d;
+  --color-space-800: #132240;
+  --color-space-850: #0f1d32;
+  --color-space-900: #0a1628;
+  --color-space-950: #020617;
+
+  --color-accent-cyan: #22d3ee;
+  --color-accent-blue: #3b82f6;
+  --color-accent-indigo: #6366f1;
+  --color-accent-glow: #06b6d4;
+
+  --background-color-card: #0f1d32;
+  --background-color-card-hover: #132240;
+
+  --border-color-subtle: #1e3a5f;
+}
 
 body {
   @apply bg-gray-50 dark:bg-space-950 text-gray-900 dark:text-gray-100 antialiased;
@@ -31,7 +56,7 @@ body {
 
 /* Focus ring utility */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-space-900;
+  @apply focus:outline-hidden focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-space-900;
 }
 
 /* Toast slide-in animation */

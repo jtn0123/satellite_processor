@@ -25,9 +25,9 @@ test('page loads with dark theme by default', async ({ page }) => {
   expect(className?.includes('light')).toBeFalsy();
 });
 
-test('mobile viewport renders sidebar differently', async ({ page }) => {
+test('mobile viewport renders page content', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto('/');
-  // Page should still load on mobile
-  await expect(page.locator('text=Dashboard').first()).toBeVisible();
+  // On mobile, sidebar is hidden but main content loads
+  await expect(page.locator('text=SatTracker').first()).toBeVisible();
 });

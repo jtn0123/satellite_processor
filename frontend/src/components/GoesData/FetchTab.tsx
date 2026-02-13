@@ -41,7 +41,11 @@ export default function FetchTab() {
         end_time: new Date(endTime).toISOString(),
       }).then((r) => r.data),
     onSuccess: (data) => showToast('success', `Fetch job created: ${data.job_id}`),
-    onError: () => showToast('error', 'Failed to create fetch job'),
+    onError: (err: unknown) => {
+      const detail = (err as { response?: { data?: { detail?: Array<{ msg?: string }> | string } } })?.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail[0]?.msg ?? 'Validation error' : typeof detail === 'string' ? detail : 'Failed to create fetch job';
+      showToast('error', msg.replace(/^Value error, /i, ''));
+    },
   });
 
   const backfillMutation = useMutation({
@@ -86,6 +90,7 @@ export default function FetchTab() {
 
       <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
         <h2 className="text-lg font-semibold">Fetch Frames</h2>
+        <p className="text-xs text-slate-500">Maximum time range: 24 hours</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="goes-start" className="block text-sm font-medium text-slate-400 mb-1">Start Time</label>

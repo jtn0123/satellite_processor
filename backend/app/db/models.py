@@ -26,7 +26,7 @@ def gen_uuid():
 
 
 def _utcnow():
-    return datetime.now(UTC)
+    return datetime.utcnow()
 
 
 class Job(Base):

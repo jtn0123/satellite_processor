@@ -198,7 +198,8 @@ async def _ws_writer(websocket: WebSocket, pubsub) -> None:
                 data = json.loads(msg["data"])
             except (json.JSONDecodeError, TypeError):
                 continue
-            await websocket.send_json({"type": "progress", **data})
+            msg_type = data.pop("type", "progress")
+            await websocket.send_json({"type": msg_type, **data})
             if data.get("status") in ("completed", "failed", "cancelled"):
                 break
 

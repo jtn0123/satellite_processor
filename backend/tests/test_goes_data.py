@@ -1,9 +1,10 @@
 """Tests for GOES data management endpoints (frames, collections, tags)."""
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from app.db.models import Collection, CollectionFrame, GoesFrame, Tag
-from datetime import datetime, UTC
 
 
 def _make_frame(**overrides):

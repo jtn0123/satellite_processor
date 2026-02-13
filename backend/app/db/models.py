@@ -1,9 +1,20 @@
-"""ORM models for jobs, images, and presets"""
+"""ORM models for jobs, images, presets, GOES frames, collections, and tags"""
 
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, BigInteger, Column, DateTime, Index, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
@@ -61,3 +72,82 @@ class Preset(Base):
     name = Column(String(100), unique=True, nullable=False, index=True)
     params = Column(JSON, default=dict)
     created_at = Column(DateTime, default=_utcnow)
+
+
+# --- GOES Data Management Models ---
+
+
+class GoesFrame(Base):
+    __tablename__ = "goes_frames"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    satellite = Column(String(20), nullable=False, index=True)
+    sector = Column(String(20), nullable=False, index=True)
+    band = Column(String(10), nullable=False, index=True)
+    capture_time = Column(DateTime, nullable=False, index=True)
+    file_path = Column(Text, nullable=False)
+    file_size = Column(BigInteger, default=0)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    thumbnail_path = Column(Text, nullable=True)
+    source_job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    source_job = relationship("Job", foreign_keys=[source_job_id])
+    tags = relationship("Tag", secondary="frame_tags", back_populates="frames")
+    collections = relationship(
+        "Collection", secondary="collection_frames", back_populates="frames"
+    )
+
+    __table_args__ = (
+        Index("ix_goes_frames_sat_band", "satellite", "band"),
+        Index("ix_goes_frames_capture", "capture_time"),
+    )
+
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    frames = relationship(
+        "GoesFrame", secondary="collection_frames", back_populates="collections"
+    )
+
+
+class CollectionFrame(Base):
+    __tablename__ = "collection_frames"
+
+    collection_id = Column(
+        String(36), ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True
+    )
+    frame_id = Column(
+        String(36), ForeignKey("goes_frames.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    color = Column(String(7), default="#3b82f6")
+
+    frames = relationship(
+        "GoesFrame", secondary="frame_tags", back_populates="tags"
+    )
+
+
+class FrameTag(Base):
+    __tablename__ = "frame_tags"
+
+    frame_id = Column(
+        String(36), ForeignKey("goes_frames.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id = Column(
+        String(36), ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
+    )

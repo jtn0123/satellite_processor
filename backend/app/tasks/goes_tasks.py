@@ -101,24 +101,62 @@ def fetch_goes_data(self, job_id: str, params: dict):
             on_progress=on_progress,
         )
 
-        # Create Image records
-        from ..db.models import Image
+        # Create Image + GoesFrame records and auto-collection
+        from ..db.models import Collection, CollectionFrame, GoesFrame, Image
+        from ..services.thumbnail import generate_thumbnail, get_image_dimensions
+
         session = _get_sync_db()
         try:
+            # Auto-create a collection for this fetch job
+            collection = Collection(
+                id=str(uuid.uuid4()),
+                name=f"GOES Fetch {satellite} {band} {sector}",
+                description=f"Auto-created from fetch job {job_id}",
+            )
+            session.add(collection)
+
             for frame in results:
                 path = Path(frame["path"])
+                file_size = path.stat().st_size if path.exists() else 0
+                width, height = get_image_dimensions(str(path))
+                thumb_path = generate_thumbnail(str(path), output_dir)
+
+                # Legacy Image record
                 img_record = Image(
                     id=str(uuid.uuid4()),
                     filename=path.name,
                     original_name=path.name,
                     file_path=str(path),
-                    file_size=path.stat().st_size if path.exists() else 0,
+                    file_size=file_size,
                     satellite=frame["satellite"],
                     channel=frame["band"],
                     captured_at=frame["scan_time"],
                     source="goes_fetch",
+                    width=width,
+                    height=height,
                 )
                 session.add(img_record)
+
+                # New GoesFrame record
+                gf_id = str(uuid.uuid4())
+                goes_frame = GoesFrame(
+                    id=gf_id,
+                    satellite=frame["satellite"],
+                    sector=sector,
+                    band=frame["band"],
+                    capture_time=frame["scan_time"],
+                    file_path=str(path),
+                    file_size=file_size,
+                    width=width,
+                    height=height,
+                    thumbnail_path=thumb_path,
+                    source_job_id=job_id,
+                )
+                session.add(goes_frame)
+
+                # Add to auto-collection
+                session.add(CollectionFrame(collection_id=collection.id, frame_id=gf_id))
+
             session.commit()
         finally:
             session.close()

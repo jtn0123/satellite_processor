@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Play, Trash2, Edit2, Clock, Save, X } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 
 interface FetchPreset {
   id: string;
@@ -44,36 +45,44 @@ export default function PresetsTab() {
 
   const createPreset = useMutation({
     mutationFn: (data: typeof form) => api.post('/goes/fetch-presets', data).then(r => r.data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }); setShowCreate(false); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }); setShowCreate(false); resetForm(); showToast('success', 'Preset created'); },
+    onError: () => showToast('error', 'Failed to create preset'),
   });
 
   const updatePreset = useMutation({
     mutationFn: ({ id, ...data }: { id: string } & Partial<typeof form>) => api.put(`/goes/fetch-presets/${id}`, data).then(r => r.data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }); setEditingPreset(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }); setEditingPreset(null); showToast('success', 'Preset updated'); },
+    onError: () => showToast('error', 'Failed to update preset'),
   });
 
   const deletePreset = useMutation({
     mutationFn: (id: string) => api.delete(`/goes/fetch-presets/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-presets'] }); showToast('success', 'Preset deleted'); },
+    onError: () => showToast('error', 'Failed to delete preset'),
   });
 
   const runPreset = useMutation({
     mutationFn: (id: string) => api.post(`/goes/fetch-presets/${id}/run`).then(r => r.data),
+    onSuccess: () => showToast('success', 'Preset fetch job started'),
+    onError: () => showToast('error', 'Failed to run preset'),
   });
 
   const createSchedule = useMutation({
     mutationFn: (data: typeof schedForm) => api.post('/goes/schedules', data).then(r => r.data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }); setShowScheduleCreate(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }); setShowScheduleCreate(false); showToast('success', 'Schedule created'); },
+    onError: () => showToast('error', 'Failed to create schedule'),
   });
 
   const toggleSchedule = useMutation({
     mutationFn: (id: string) => api.post(`/goes/schedules/${id}/toggle`).then(r => r.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }),
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }); showToast('success', `Schedule ${data.is_active ? 'activated' : 'deactivated'}`); },
+    onError: () => showToast('error', 'Failed to toggle schedule'),
   });
 
   const deleteSchedule = useMutation({
     mutationFn: (id: string) => api.delete(`/goes/schedules/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fetch-schedules'] }); showToast('success', 'Schedule deleted'); },
+    onError: () => showToast('error', 'Failed to delete schedule'),
   });
 
   const resetForm = () => setForm({ name: '', satellite: 'GOES-16', sector: 'FullDisk', band: 'C02', description: '' });

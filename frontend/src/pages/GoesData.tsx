@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Satellite,
   Download,
@@ -16,6 +17,8 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
 import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
 import Skeleton from '../components/GoesData/Skeleton';
+import Breadcrumb, { type BreadcrumbSegment } from '../components/GoesData/Breadcrumb';
+import api from '../api/client';
 
 const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
 const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
@@ -69,6 +72,19 @@ const tabGroups: TabGroup[] = [
   },
 ];
 
+const tabLabels: Record<TabId, string> = {
+  fetch: 'Fetch',
+  browse: 'Browse',
+  collections: 'Collections',
+  animation: 'Animation',
+  presets: 'Presets',
+  stats: 'Stats',
+  cleanup: 'Cleanup',
+  live: 'Live',
+  map: 'Map',
+  composites: 'Composites',
+};
+
 // Flat list of all tab IDs in order for keyboard shortcut mapping
 const allTabIds: TabId[] = tabGroups.flatMap((g) => g.tabs.map((t) => t.id));
 
@@ -84,33 +100,98 @@ function TabLoadingFallback() {
   );
 }
 
+function WelcomeCard({ onFetchClick }: { onFetchClick: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-8">
+      <div className="bg-slate-800/50 rounded-full p-6 mb-6">
+        <Satellite className="w-16 h-16 text-primary" />
+      </div>
+      <h2 className="text-2xl font-bold text-white mb-2">Welcome to GOES Data Manager</h2>
+      <p className="text-slate-400 text-center max-w-md mb-8">
+        Start by fetching your first satellite frames. You can download GOES-16 and GOES-18
+        imagery across multiple bands and sectors.
+      </p>
+      <button
+        onClick={onFetchClick}
+        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-lg shadow-lg shadow-primary/20"
+      >
+        <Download className="w-5 h-5" />
+        Fetch Data
+      </button>
+      <div className="flex gap-6 mt-8 text-sm text-slate-500">
+        <span>16 spectral bands</span>
+        <span>·</span>
+        <span>Multiple sectors</span>
+        <span>·</span>
+        <span>Animation studio</span>
+      </div>
+    </div>
+  );
+}
+
 export default function GoesData() {
   usePageTitle('GOES Data');
   const [activeTab, setActiveTab] = useState<TabId>('browse');
+  const [subView, setSubView] = useState<string | null>(null);
+
+  // Check if any frames exist for smart landing
+  const { data: frameCheck, isLoading: frameCheckLoading } = useQuery<{ items: unknown[]; total: number }>({
+    queryKey: ['goes-frames-check'],
+    queryFn: () => api.get('/goes/frames', { params: { limit: 1 } }).then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  const hasFrames = frameCheck ? frameCheck.total > 0 : null;
+  const showWelcome = !frameCheckLoading && hasFrames === false && activeTab === 'browse';
 
   // Keyboard shortcuts: 1-0 switch tabs
   const shortcuts = useMemo(() => {
     const map: Record<string, () => void> = {};
     allTabIds.forEach((id, i) => {
       const key = i < 9 ? String(i + 1) : '0';
-      map[key] = () => setActiveTab(id);
+      map[key] = () => { setActiveTab(id); setSubView(null); };
     });
     return map;
   }, []);
 
   useHotkeys(shortcuts);
 
-  // Listen for switch-tab events from child components (e.g., empty state CTA)
+  // Listen for switch-tab events from child components
   useEffect(() => {
     const handler = (e: Event) => {
       const tabId = (e as CustomEvent).detail as TabId;
       if (allTabIds.includes(tabId)) {
         setActiveTab(tabId);
+        setSubView(null);
       }
     };
     window.addEventListener('switch-tab', handler);
     return () => window.removeEventListener('switch-tab', handler);
   }, []);
+
+  // Listen for breadcrumb sub-view changes from child components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setSubView((e as CustomEvent).detail as string | null);
+    };
+    window.addEventListener('set-subview', handler);
+    return () => window.removeEventListener('set-subview', handler);
+  }, []);
+
+  // Build breadcrumb segments
+  const breadcrumbSegments = useMemo<BreadcrumbSegment[]>(() => {
+    const segments: BreadcrumbSegment[] = [
+      { label: 'GOES Data' },
+      {
+        label: tabLabels[activeTab],
+        onClick: subView ? () => setSubView(null) : undefined,
+      },
+    ];
+    if (subView) {
+      segments.push({ label: subView });
+    }
+    return segments;
+  }, [activeTab, subView]);
 
   const renderTab = useCallback(() => {
     const tabMap: Record<TabId, { component: React.ReactNode; name: string }> = {
@@ -140,7 +221,10 @@ export default function GoesData() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Satellite className="w-7 h-7 text-primary" />
-        <h1 className="text-2xl font-bold">GOES Data</h1>
+        <div>
+          <h1 className="text-2xl font-bold">GOES Data</h1>
+          <Breadcrumb segments={breadcrumbSegments} />
+        </div>
       </div>
 
       {/* Tab bar - grouped with dividers */}
@@ -152,7 +236,7 @@ export default function GoesData() {
             {group.tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setSubView(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
@@ -169,7 +253,11 @@ export default function GoesData() {
 
       {/* Tab content */}
       <div className="animate-fade-in">
-        {renderTab()}
+        {showWelcome ? (
+          <WelcomeCard onFetchClick={() => setActiveTab('fetch')} />
+        ) : (
+          renderTab()
+        )}
       </div>
     </div>
   );

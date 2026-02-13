@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import type { TagType } from './types';
 
 export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
@@ -25,8 +26,10 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
     mutationFn: () => api.post('/goes/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
+      showToast('success', `Tagged ${frameIds.length} frame(s)`);
       onClose();
     },
+    onError: () => showToast('error', 'Failed to tag frames'),
   });
 
   const createTagMutation = useMutation({
@@ -34,8 +37,10 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-tags'] });
       setSelectedTags((prev) => [...prev, data.id]);
+      showToast('success', `Tag "${newTagName}" created`);
       setNewTagName('');
     },
+    onError: () => showToast('error', 'Failed to create tag'),
   });
 
   const toggleTag = (id: string) => {

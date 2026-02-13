@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layers, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 
 interface Product {
   satellites: string[];
@@ -79,7 +80,9 @@ export default function CompositesTab() {
       }).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['composites'] });
+      showToast('success', 'Composite generation started!');
     },
+    onError: () => showToast('error', 'Failed to create composite'),
   });
 
   return (

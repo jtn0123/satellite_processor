@@ -186,7 +186,7 @@ export default function FetchTab() {
         )}
         <div className="flex gap-3">
           <button onClick={() => fetchMutation.mutate()} disabled={!startTime || !endTime || fetchMutation.isPending || !!dateWarning}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">
+            className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors">
             <Download className="w-4 h-4" />
             {fetchMutation.isPending ? 'Fetching...' : 'Fetch'}
           </button>

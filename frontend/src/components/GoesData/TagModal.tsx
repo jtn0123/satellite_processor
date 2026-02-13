@@ -74,7 +74,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
         {selectedTags.length > 0 && (
           <button onClick={() => tagMutation.mutate()} disabled={tagMutation.isPending}
-            className="w-full px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
+            className="w-full px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
             {tagMutation.isPending ? 'Tagging...' : `Tag ${frameIds.length} frames`}
           </button>
         )}

@@ -251,7 +251,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             <button
               onClick={handleLaunch}
               disabled={createJob.isPending || selectedImages.length === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 btn-primary-mix text-gray-900 dark:text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
             >
               <Rocket className="w-5 h-5" />
               {createJob.isPending ? 'Launching...' : 'Launch Job'}

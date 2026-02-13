@@ -59,6 +59,10 @@ body {
   @apply focus:outline-hidden focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-space-900;
 }
 
+.focus-ring:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 0 8px 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
 /* Toast slide-in animation */
 @keyframes slide-in {
   from {
@@ -210,4 +214,59 @@ body {
 .cv-auto-list {
   content-visibility: auto;
   contain-intrinsic-size: auto 56px;
+}
+
+/* === Visual Polish: Tailwind v4 utilities === */
+
+/* Text shadow for overlay text on satellite images */
+.text-shadow-overlay {
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.4);
+}
+
+/* color-mix() hover utilities — derive hover from base color */
+.hover-mix-darken {
+  transition: background-color 0.15s ease;
+}
+.hover-mix-darken:hover {
+  background-color: color-mix(in srgb, currentColor 12%, var(--tw-bg-base, transparent));
+}
+
+/* Glassmorphism for stat cards */
+.glass-card {
+  background: color-mix(in srgb, var(--color-space-800) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Light mode glass */
+:not(.dark) .glass-card {
+  background: color-mix(in srgb, white 75%, transparent);
+}
+
+/* Primary button with color-mix hover */
+.btn-primary-mix {
+  background-color: var(--color-primary);
+  transition: background-color 0.15s ease;
+}
+.btn-primary-mix:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 85%, black);
+}
+
+/* Subtle glow for active/selected elements */
+.glow-primary {
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.glow-primary-strong {
+  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+/* Field sizing for auto-sizing inputs */
+.field-sizing-content {
+  field-sizing: content;
+}
+
+/* Focus glow for inputs */
+.focus-glow:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }

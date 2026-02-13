@@ -95,7 +95,7 @@ export default function Dashboard() {
         {statCards.map((s) => (
           <div
             key={s.label}
-            className="bg-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors"
+            className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5"
           >
             <div className="flex items-center justify-between">
               <s.icon className={`w-5 h-5 ${s.color}`} />
@@ -106,7 +106,7 @@ export default function Dashboard() {
         ))}
 
         {/* Storage card */}
-        <div className="bg-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors">
+        <div className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>
@@ -261,7 +261,7 @@ export default function Dashboard() {
           <div className="mt-4">
             <button
               onClick={() => navigate('/goes')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+              className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
               aria-label="Fetch satellite data now"
             >
               <Download className="w-4 h-4" /> Fetch Now
@@ -313,7 +313,7 @@ export default function Dashboard() {
       <div className="flex gap-3">
         <button
           onClick={() => navigate('/upload')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+          className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
         >
           <Upload className="w-4 h-4" /> Upload Images
         </button>
@@ -335,7 +335,7 @@ export default function Dashboard() {
         {/* System Health */}
         <div>
           <h2 className="text-lg font-semibold mb-3">System Health</h2>
-          <div className="bg-card border border-subtle rounded-xl p-4 space-y-3">
+          <div className="bg-card border border-subtle rounded-xl p-4 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
             {/* Overall status */}
             {health && (
               <div className="flex items-center gap-2 pb-3 border-b border-subtle">

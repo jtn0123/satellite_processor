@@ -22,15 +22,15 @@ export default function StatsTab() {
     <div className="space-y-6">
       {/* Overview cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="text-3xl font-bold text-primary">{stats.total_frames.toLocaleString()}</div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Total Frames</div>
         </div>
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="text-3xl font-bold text-emerald-400">{formatBytes(stats.total_size_bytes)}</div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Total Storage</div>
         </div>
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="text-3xl font-bold text-amber-400">{Object.keys(stats.by_satellite).length}</div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Satellites</div>
         </div>

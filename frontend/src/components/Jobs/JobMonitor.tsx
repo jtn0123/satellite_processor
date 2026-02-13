@@ -357,7 +357,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           <a
             href={`/api/jobs/${jobId}/download`}
             download
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-medium transition-colors focus-ring btn-interactive"
+            className="inline-flex items-center gap-2 px-4 py-2 btn-primary-mix text-white rounded-xl text-sm font-medium transition-colors focus-ring btn-interactive"
           >
             <Download className="w-4 h-4" /> Download Output
           </a>  

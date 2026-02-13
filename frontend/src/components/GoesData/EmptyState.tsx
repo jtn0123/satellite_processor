@@ -21,7 +21,7 @@ export default function EmptyState({ icon, title, description, action }: EmptySt
       {action && (
         <button
           onClick={action.onClick}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg transition-colors"
         >
           {action.label}
         </button>

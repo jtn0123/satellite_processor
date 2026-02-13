@@ -284,7 +284,7 @@ export default function AnimationStudioTab() {
             <button
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending || (!previewFrames?.total)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-gray-900 dark:text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
             >
               <Play className="w-5 h-5" />
               {createMutation.isPending ? 'Creating...' : 'Generate Animation'}

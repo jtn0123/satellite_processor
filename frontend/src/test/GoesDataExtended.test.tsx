@@ -66,21 +66,36 @@ describe('GoesData page extended', () => {
     });
   });
 
-  it('shows satellite product info', async () => {
+  it('shows satellite product info when frames exist', async () => {
+    // Override to return frames so browse tab shows instead of welcome
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === '/goes/products') {
+        return Promise.resolve({
+          data: {
+            satellites: ['GOES-16', 'GOES-18'],
+            sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
+            bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
+          },
+        });
+      }
+      if (url.includes('/frames')) {
+        return Promise.resolve({ data: { items: [{ id: '1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1000, tags: [] }], total: 1, page: 1, limit: 50 } });
+      }
+      if (url === '/goes/collections') return Promise.resolve({ data: [] });
+      if (url === '/goes/tags') return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: {} });
+    });
     renderPage();
     await waitFor(() => {
-      // Should display satellite selector once products load
       const selects = document.querySelectorAll('select');
       expect(selects.length).toBeGreaterThan(0);
     });
   });
 
-  it('renders filter controls', async () => {
+  it('renders welcome card when no frames', async () => {
     renderPage();
     await waitFor(() => {
-      // Browse tab has filter selects
-      const selects = document.querySelectorAll('select');
-      expect(selects.length).toBeGreaterThan(0);
+      expect(screen.getByText(/Welcome to GOES Data Manager/i)).toBeInTheDocument();
     });
   });
 

@@ -67,24 +67,23 @@ describe('GoesData page', () => {
   it('renders without crashing', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByText(/GOES Data/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'GOES Data' })).toBeInTheDocument();
     });
   });
 
   it('renders tab navigation', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByText(/Browse/i)).toBeInTheDocument();
-      expect(screen.getByText(/Fetch/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Browse/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Fetch/i })).toBeInTheDocument();
     });
   });
 
-  it('renders browse tab by default', async () => {
+  it('shows welcome card when no frames exist', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      // Browse tab should be active and show frames area
-      const browseTab = screen.getAllByText(/Browse/i);
-      expect(browseTab.length).toBeGreaterThan(0);
+      expect(screen.getByText(/Welcome to GOES Data Manager/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Fetch Data/i })).toBeInTheDocument();
     });
   });
 });

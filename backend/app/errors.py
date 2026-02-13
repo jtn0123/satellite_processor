@@ -28,7 +28,7 @@ def validate_uuid(value: str, name: str = "id") -> str:
     try:
         uuid.UUID(value)
     except (ValueError, AttributeError):
-        raise APIError(400, "invalid_id", f"'{name}' is not a valid UUID: {value}")
+        raise APIError(404, "not_found", f"Resource not found (invalid {name})")
     return value
 
 

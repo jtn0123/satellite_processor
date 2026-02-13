@@ -41,12 +41,15 @@ async def health_basic():
     db_check = await _check_database()
     redis_check = await _check_redis()
 
-    if db_check["status"] == "error" or redis_check["status"] == "error":
+    if db_check["status"] == "error":
         return {
             "status": "degraded",
             "database": db_check["status"],
             "redis": redis_check["status"],
         }
+    # Redis is optional (used for real-time progress only)
+    if redis_check["status"] == "error":
+        return {"status": "ok", "redis": "unavailable"}
     return {"status": "ok"}
 
 

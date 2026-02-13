@@ -9,6 +9,7 @@ from pathlib import Path
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..services.job_logger import log_job_sync
 from ..utils import utcnow
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,17 @@ def fetch_goes_data(self, job_id: str, params: dict):
     )
     _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
 
+    def _log(msg: str, level: str = "info") -> None:
+        session = _get_sync_db()
+        try:
+            log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
+        except Exception:
+            logger.debug("Failed to write job log: %s", msg)
+        finally:
+            session.close()
+
+    _log(f"GOES fetch started — {params.get('satellite')} {params.get('sector')} {params.get('band')}")
+
     try:
         satellite = params["satellite"]
         sector = params["sector"]
@@ -119,6 +131,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
         # Check available count before downloading
         available = list_available(satellite, sector, band, start_time, end_time)
         available_count = len(available)
+        _log(f"Found {len(available)} available frames on S3")
         logger.info(
             "Found %d available frames for %s %s %s [%s → %s]",
             available_count, satellite, sector, band,
@@ -130,6 +143,8 @@ def fetch_goes_data(self, job_id: str, params: dict):
             msg = f"Downloading frame {current}/{total}"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
+            if current == 1 or current == total or current % 10 == 0:
+                _log(msg)
 
         logger.info(
             "Searching S3 for %s %s %s from %s to %s",
@@ -230,6 +245,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
         else:
             status_msg = f"Fetched {fetched_count} frames"
 
+        _log(status_msg)
         _update_job_db(
             job_id,
             status="completed",
@@ -242,6 +258,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
     except Exception as e:
         logger.exception("GOES fetch job %s failed", job_id)
+        _log(f"GOES fetch failed: {e}", "error")
         _update_job_db(
             job_id,
             status="failed",

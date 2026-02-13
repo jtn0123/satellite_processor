@@ -19,6 +19,8 @@ sys.path.insert(0, _project_root)
 
 from satellite_processor.core.processor import SatelliteImageProcessor
 
+from ..services.job_logger import log_job_sync
+
 logger = logging.getLogger(__name__)
 
 _redis = None
@@ -133,9 +135,19 @@ def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
     logger.info("Starting image processing job %s", job_id, extra={"job_id": job_id})
 
+    def _log(msg: str, level: str = "info") -> None:
+        session = _get_sync_db()
+        try:
+            log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
+        except Exception:
+            logger.debug("Failed to write job log: %s", msg)
+        finally:
+            session.close()
+
     _update_job_db(job_id, status="processing", started_at=utcnow(),
                    status_message="Initializing processor...")
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
+    _log("Image processing started")
 
     try:
         processor = SatelliteImageProcessor(options=params)
@@ -149,11 +161,14 @@ def process_images_task(self, job_id: str, params: dict):
             msg = f"{operation}: {pct}%"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
+            if pct == 0 or pct == 100 or pct % 25 == 0:
+                _log(msg)
 
         processor.on_progress = on_progress
         processor.on_status_update = lambda msg: (
             _publish_progress(job_id, -1, msg),
             _update_job_db(job_id, status_message=msg),
+            _log(msg),
         )
 
         image_paths = params.get("image_paths")
@@ -162,10 +177,13 @@ def process_images_task(self, job_id: str, params: dict):
 
         processor.set_input_directory(input_path)
         processor.set_output_directory(output_path)
-        _finalize_job(job_id, processor.process(), output_path)
+        result = processor.process()
+        _finalize_job(job_id, result, output_path)
+        _log("Processing complete" if result else "Processing failed", "info" if result else "error")
 
     except Exception as e:
         logger.exception("Job %s failed", job_id, extra={"job_id": job_id})
+        _log(f"Processing failed: {e}", "error")
         _update_job_db(job_id, status="failed", error=str(e),
                        completed_at=utcnow(), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -182,6 +200,15 @@ def create_video_task(self, job_id: str, params: dict):
     """Video creation task"""
     logger.info("Starting video creation job %s", job_id, extra={"job_id": job_id})
 
+    def _log(msg: str, level: str = "info") -> None:
+        session = _get_sync_db()
+        try:
+            log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
+        except Exception:
+            logger.debug("Failed to write job log: %s", msg)
+        finally:
+            session.close()
+
     _update_job_db(
         job_id,
         status="processing",
@@ -189,6 +216,7 @@ def create_video_task(self, job_id: str, params: dict):
         status_message="Initializing video creation...",
     )
     _publish_progress(job_id, 0, "Initializing video creation...", "processing")
+    _log("Video creation started")
 
     try:
         processor = SatelliteImageProcessor(options=params)
@@ -224,6 +252,7 @@ def create_video_task(self, job_id: str, params: dict):
         success = processor.create_video(input_files, output_path, video_options)
 
         if success:
+            _log("Video creation complete")
             _update_job_db(
                 job_id,
                 status="completed",
@@ -234,6 +263,7 @@ def create_video_task(self, job_id: str, params: dict):
             )
             _publish_progress(job_id, 100, "Video creation complete", "completed")
         else:
+            _log("Video creation failed", "error")
             _update_job_db(
                 job_id,
                 status="failed",
@@ -244,6 +274,7 @@ def create_video_task(self, job_id: str, params: dict):
 
     except Exception as e:
         logger.exception("Video job %s failed", job_id, extra={"job_id": job_id})
+        _log(f"Video creation failed: {e}", "error")
         _update_job_db(
             job_id,
             status="failed",

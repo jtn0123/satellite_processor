@@ -268,6 +268,21 @@ class Notification(Base):
     )
 
 
+class JobLog(Base):
+    __tablename__ = "job_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    job_id = Column(
+        String(36),
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    timestamp = Column(DateTime, default=utcnow, nullable=False)
+    level = Column(String(10), default="info")  # info, warn, error, debug
+    message = Column(Text, nullable=False)
+
+
 class CleanupRule(Base):
     __tablename__ = "cleanup_rules"
 

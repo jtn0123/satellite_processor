@@ -14,13 +14,13 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       # Backend coverage
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install backend dependencies
@@ -34,7 +34,7 @@ jobs:
 
       # Frontend coverage
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
       - name: Install frontend dependencies
@@ -43,7 +43,7 @@ jobs:
         run: cd frontend && npx vitest run --coverage
 
       # SonarQube scan (quality gate non-blocking during rapid development)
-      - uses: sonarsource/sonarqube-scan-action@v5
+      - uses: sonarsource/sonarqube-scan-action@v7
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

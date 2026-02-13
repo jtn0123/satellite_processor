@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Animation, CollectionFrame, CropPreset, GoesFrame, Job
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.animation import (
     AnimationCreate,
     AnimationResponse,
@@ -223,6 +223,7 @@ async def list_animations(
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
 async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+    validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
     if not anim:
@@ -250,6 +251,7 @@ async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.delete("/animations/{animation_id}")
 async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+    validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
     if not anim:

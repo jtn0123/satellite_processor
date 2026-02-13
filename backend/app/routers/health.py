@@ -33,7 +33,20 @@ BUILD_DATE = os.environ.get("BUILD_DATE", "")
 
 @router.get("")
 async def health_basic():
-    """Basic liveness check."""
+    """Basic liveness check with dependency awareness.
+
+    Returns 'ok' if core services are reachable, 'degraded' if DB or Redis
+    is down but the app is still running.
+    """
+    db_check = await _check_database()
+    redis_check = await _check_redis()
+
+    if db_check["status"] == "error" or redis_check["status"] == "error":
+        return {
+            "status": "degraded",
+            "database": db_check["status"],
+            "redis": redis_check["status"],
+        }
     return {"status": "ok"}
 
 

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import Job
-from ..errors import APIError
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
@@ -66,6 +66,7 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
 @limiter.limit("20/minute")
 async def download_job_output(request: Request, job_id: str, db: AsyncSession = Depends(get_db)):
     """Download job output as a single file or zip of all outputs."""
+    validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
@@ -74,6 +75,8 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
         raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
+    # Prevent path traversal — ensure output stays within storage
+    validate_safe_path(output_path, settings.storage_path)
     if not os.path.exists(output_path):
         raise APIError(404, "not_found", "Output not found on disk")
 
@@ -110,6 +113,8 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: AsyncS
     job_ids = payload.ids
     if not job_ids:
         raise APIError(400, "no_jobs", "No job IDs provided")
+    for jid in job_ids:
+        validate_uuid(jid, "job_id")
 
     result = await db.execute(select(Job).where(Job.id.in_(job_ids), Job.status == "completed"))
     jobs = result.scalars().all()

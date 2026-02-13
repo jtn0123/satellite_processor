@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Composite, GoesFrame, Job
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.goes import (
     GoesBackfillRequest,
     GoesFetchRequest,
@@ -334,6 +334,7 @@ async def list_composites(
 @router.get("/composites/{composite_id}")
 async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Get composite detail."""
+    validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()
     if not c:

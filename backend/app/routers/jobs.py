@@ -13,7 +13,7 @@ from ..celery_app import celery_app
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import Image, Job
-from ..errors import APIError
+from ..errors import APIError, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
@@ -123,6 +123,7 @@ async def list_jobs(
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     """Get job details"""
+    validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
@@ -133,6 +134,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 @router.patch("/{job_id}", response_model=JobResponse)
 async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(get_db)):
     """Partially update a job record"""
+    validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
@@ -177,6 +179,7 @@ async def bulk_delete_jobs(
 @limiter.limit("10/minute")
 async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(get_db)):
     """Cancel/delete a job - revokes the Celery task"""
+    validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
@@ -198,6 +201,7 @@ async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(g
 @router.get("/{job_id}/output")
 async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     """Download job output"""
+    validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:

@@ -25,10 +25,11 @@ _redis = None
 
 
 def _get_redis():
+    """Get Redis client with lazy initialization."""
     global _redis
     if _redis is None:
         import redis
-        _redis = redis.Redis.from_url(settings.redis_url)
+        _redis = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=5)
     return _redis
 
 
@@ -49,14 +50,17 @@ def _get_sync_db():
 
 
 def _publish_progress(job_id: str, progress: int, message: str, status: str = "processing"):
-    """Publish progress update to Redis pub/sub"""
-    payload = json.dumps({
-        "job_id": job_id,
-        "progress": progress,
-        "message": message,
-        "status": status,
-    })
-    _get_redis().publish(f"job:{job_id}", payload)
+    """Publish progress update to Redis pub/sub. Fails silently if Redis is down."""
+    try:
+        payload = json.dumps({
+            "job_id": job_id,
+            "progress": progress,
+            "message": message,
+            "status": status,
+        })
+        _get_redis().publish(f"job:{job_id}", payload)
+    except Exception:
+        logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 
 
 _last_progress_update: dict[str, int] = {}

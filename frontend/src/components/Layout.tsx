@@ -228,7 +228,7 @@ export default function Layout() {
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring"
+            className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -242,7 +242,7 @@ export default function Layout() {
               end={l.to === '/'}
               onClick={closeDrawer}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] ${
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800'
@@ -262,7 +262,7 @@ export default function Layout() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-subtle">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring"
+            className="p-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />

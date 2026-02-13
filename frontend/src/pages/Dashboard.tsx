@@ -91,7 +91,7 @@ export default function Dashboard() {
           ))}
         </div>
       )}
-      <div className={`@container grid grid-cols-2 @md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
+      <div className={`@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
         {statCards.map((s) => (
           <div
             key={s.label}
@@ -131,7 +131,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Satellite Data</h2>
           </div>
 
-          <div className="@container grid grid-cols-2 @md:grid-cols-4 gap-4">
+          <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4">
             <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
               <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>
@@ -310,22 +310,22 @@ export default function Dashboard() {
       )}
 
       {/* Quick actions */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <button
           onClick={() => navigate('/upload')}
-          className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
+          className="flex items-center gap-2 px-5 py-2.5 min-h-11 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >
           <Upload className="w-4 h-4" /> Upload Images
         </button>
         <button
           onClick={() => navigate('/process')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-space-700 hover:bg-space-600 border border-subtle rounded-xl text-sm font-medium transition-colors focus-ring"
+          className="flex items-center gap-2 px-5 py-2.5 min-h-11 bg-space-700 hover:bg-space-600 border border-subtle rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >
           <FlaskConical className="w-4 h-4" /> New Job
         </button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Recent jobs - #5: with progress bars */}
         <div className="md:col-span-2">
           <h2 className="text-lg font-semibold mb-3">Recent Jobs</h2>

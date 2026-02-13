@@ -215,7 +215,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           {(status === 'processing' || status === 'pending') && (
             <button
               onClick={handleCancel}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 min-h-11 text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
             >
               <X className="w-3.5 h-3.5" /> Cancel
             </button>
@@ -223,14 +223,14 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           {status === 'failed' && (
             <button
               onClick={handleRetry}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 min-h-11 text-sm bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Retry
             </button>
           )}
           <button
             onClick={handleDelete}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 min-h-11 text-sm bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 rounded-lg transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
@@ -241,7 +241,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       {paramEntries.length > 0 && (
         <div className="bg-card border border-subtle rounded-xl p-6">
           <h3 className="text-sm font-semibold text-slate-300 mb-3">Job Parameters</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-3 gap-3 text-sm">
             {paramEntries.map(([key, val]) => (
               <div key={key} className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
                 <p className="text-[10px] text-slate-400 uppercase">{key.replace(/_/g, ' ')}</p>

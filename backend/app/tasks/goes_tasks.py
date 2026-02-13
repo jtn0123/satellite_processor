@@ -245,8 +245,9 @@ def fetch_goes_data(self, job_id: str, params: dict):
         else:
             status_msg = f"Fetched {fetched_count} frames"
 
-        _log(status_msg, level="warning" if fetched_count == 0 else "info")
-        final_status = "completed" if fetched_count > 0 else "failed"
+        is_full_success = fetched_count > 0 and fetched_count >= available_count
+        _log(status_msg, level="info" if is_full_success else "warning")
+        final_status = "completed" if is_full_success else "failed"
         _update_job_db(
             job_id,
             status=final_status,

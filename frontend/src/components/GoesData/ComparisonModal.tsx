@@ -116,7 +116,7 @@ export default function ComparisonModal({
                     {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                   </div>
                   <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                    <img src={getUrl(frame)} alt={`Frame ${idx + 1}`} loading="lazy"
+                    <img src={getUrl(frame)} alt={`Frame ${idx + 1}`} loading="lazy" decoding="async"
                       className="max-w-full max-h-[60vh] object-contain" />
                   </div>
                 </div>
@@ -139,11 +139,11 @@ export default function ComparisonModal({
                 onClick={handleSliderMove}
               >
                 {/* Right image (full) */}
-                <img src={getUrl(right)} alt="Right" loading="lazy"
+                <img src={getUrl(right)} alt="Right" loading="lazy" decoding="async"
                   className="absolute inset-0 w-full h-full object-contain" />
                 {/* Left image (clipped) */}
                 <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
-                  <img src={getUrl(left)} alt="Left" loading="lazy"
+                  <img src={getUrl(left)} alt="Left" loading="lazy" decoding="async"
                     className="w-full h-full object-contain" />
                 </div>
                 {/* Slider handle */}

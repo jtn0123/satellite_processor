@@ -91,7 +91,7 @@ export default function Dashboard() {
           ))}
         </div>
       )}
-      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
+      <div className={`@container grid grid-cols-2 @md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
         {statCards.map((s) => (
           <div
             key={s.label}
@@ -131,7 +131,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Satellite Data</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="@container grid grid-cols-2 @md:grid-cols-4 gap-4">
             <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
               <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>

@@ -108,3 +108,14 @@ body {
 .dark .leaflet-container {
   background: #0a1628 !important;
 }
+
+/* Performance: content-visibility for virtualized frame lists */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
+}
+
+.cv-auto-list {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}

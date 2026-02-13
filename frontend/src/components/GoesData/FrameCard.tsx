@@ -27,6 +27,7 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
             alt={`${frame.satellite} ${frame.band}`}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover" />
         ) : (
           <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-600" />
@@ -35,16 +36,17 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
           <Search className="w-6 h-6 text-gray-900 dark:text-white" />
         </div>
       </div>
-      <div className="p-2 space-y-1">
+      {/* Compact layout for narrow containers, expanded for wide */}
+      <div className="p-2 space-y-1 @max-[280px]:p-1.5 @max-[280px]:space-y-0.5">
         <div className="text-xs font-medium text-gray-900 dark:text-white truncate">
           {frame.satellite} · {frame.band} · {frame.sector}
         </div>
-        <div className="text-xs text-gray-400 dark:text-slate-500">
+        <div className="text-xs text-gray-400 dark:text-slate-500 @max-[280px]:hidden">
           {new Date(frame.capture_time).toLocaleString()}
         </div>
         <div className="text-xs text-gray-400 dark:text-slate-600">{formatBytes(frame.file_size)}</div>
         {frame.tags.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap @max-[280px]:hidden">
             {frame.tags.map((t) => (
               <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
                 style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
@@ -76,7 +78,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
         {frame.thumbnail_path ? (
           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-            alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" className="w-full h-full object-cover" />
+            alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         ) : (
           <Satellite className="w-4 h-4 text-gray-400 dark:text-slate-600" />
         )}

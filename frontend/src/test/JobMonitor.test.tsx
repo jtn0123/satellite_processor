@@ -48,7 +48,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('JobMonitor', () => {
   it('renders job details', () => {
     render(<JobMonitor jobId="job-abc-12345678" onBack={vi.fn()} />, { wrapper });
-    expect(screen.getByText('Job job-abc-')).toBeInTheDocument();
+    expect(screen.getByText('job-abc-12345678')).toBeInTheDocument();
   });
 
   it('renders progress bar', () => {

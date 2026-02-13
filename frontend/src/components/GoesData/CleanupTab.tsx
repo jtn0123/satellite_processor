@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 
 interface CleanupRule {
   id: string;
@@ -57,25 +58,30 @@ export default function CleanupTab() {
 
   const createRule = useMutation({
     mutationFn: (data: typeof form) => api.post('/goes/cleanup-rules', data).then(r => r.data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); setShowCreate(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); setShowCreate(false); showToast('success', 'Cleanup rule created'); },
+    onError: () => showToast('error', 'Failed to create cleanup rule'),
   });
 
   const deleteRule = useMutation({
     mutationFn: (id: string) => api.delete(`/goes/cleanup-rules/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); showToast('success', 'Cleanup rule deleted'); },
+    onError: () => showToast('error', 'Failed to delete cleanup rule'),
   });
 
   const toggleRule = useMutation({
     mutationFn: (rule: CleanupRule) => api.put(`/goes/cleanup-rules/${rule.id}`, { is_active: !rule.is_active }).then(r => r.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }),
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); showToast('success', `Rule ${data.is_active ? 'activated' : 'deactivated'}`); },
+    onError: () => showToast('error', 'Failed to toggle cleanup rule'),
   });
 
   const runCleanup = useMutation({
     mutationFn: () => api.post('/goes/cleanup/run').then(r => r.data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-frame-stats'] });
       queryClient.invalidateQueries({ queryKey: ['cleanup-preview'] });
+      showToast('success', `Cleaned up ${data.deleted_frames} frames, freed ${formatBytes(data.freed_bytes)}`);
     },
+    onError: () => showToast('error', 'Failed to run cleanup'),
   });
 
   return (

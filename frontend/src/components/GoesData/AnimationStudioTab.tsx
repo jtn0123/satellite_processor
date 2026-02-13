@@ -9,6 +9,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import { formatBytes } from './utils';
 import type { Product, CollectionType, PaginatedFrames, CropPreset, PaginatedAnimations } from './types';
 
@@ -95,12 +96,18 @@ export default function AnimationStudioTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['animations'] });
+      showToast('success', 'Animation job created!');
     },
+    onError: () => showToast('error', 'Failed to create animation'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/goes/animations/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['animations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animations'] });
+      showToast('success', 'Animation deleted');
+    },
+    onError: () => showToast('error', 'Failed to delete animation'),
   });
 
   return (

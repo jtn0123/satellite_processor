@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Library } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import type { CollectionType } from './types';
 import Skeleton from './Skeleton';
 import EmptyState from './EmptyState';
@@ -22,7 +23,9 @@ export default function CollectionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
       setNewName('');
+      showToast('success', `Collection "${newName}" created`);
     },
+    onError: () => showToast('error', 'Failed to create collection'),
   });
 
   const updateMutation = useMutation({
@@ -31,12 +34,18 @@ export default function CollectionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
       setEditingId(null);
+      showToast('success', 'Collection updated');
     },
+    onError: () => showToast('error', 'Failed to update collection'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/goes/collections/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goes-collections'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
+      showToast('success', 'Collection deleted');
+    },
+    onError: () => showToast('error', 'Failed to delete collection'),
   });
 
   return (

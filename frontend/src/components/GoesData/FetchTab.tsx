@@ -7,6 +7,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import type { Product, CoverageStats } from './types';
 
 export default function FetchTab() {
@@ -39,10 +40,14 @@ export default function FetchTab() {
         start_time: new Date(startTime).toISOString(),
         end_time: new Date(endTime).toISOString(),
       }).then((r) => r.data),
+    onSuccess: (data) => showToast('success', `Fetch job created: ${data.job_id}`),
+    onError: () => showToast('error', 'Failed to create fetch job'),
   });
 
   const backfillMutation = useMutation({
     mutationFn: () => api.post('/goes/backfill', { satellite, band, sector }).then((r) => r.data),
+    onSuccess: (data) => showToast('success', `Backfill job created: ${data.job_id}`),
+    onError: () => showToast('error', 'Failed to create backfill job'),
   });
 
   return (

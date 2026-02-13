@@ -14,6 +14,7 @@ import {
   GitCompare,
 } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatBytes } from './utils';
 import type { Product, TagType, GoesFrame, CollectionType, PaginatedFrames } from './types';
@@ -79,16 +80,22 @@ export default function BrowseTab() {
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => api.delete('/goes/frames', { data: { ids } }),
-    onSuccess: () => {
+    onSuccess: (_data, ids) => {
       queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
       setSelectedIds(new Set());
+      showToast('success', `Deleted ${ids.length} frame(s)`);
     },
+    onError: () => showToast('error', 'Failed to delete frames'),
   });
 
   const processMutation = useMutation({
     mutationFn: (frameIds: string[]) =>
       api.post('/goes/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
-    onSuccess: () => setShowProcessModal(false),
+    onSuccess: (data) => {
+      setShowProcessModal(false);
+      showToast('success', `Processing job created: ${data.job_id}`);
+    },
+    onError: () => showToast('error', 'Failed to create processing job'),
   });
 
   const toggleSelect = (id: string) => {

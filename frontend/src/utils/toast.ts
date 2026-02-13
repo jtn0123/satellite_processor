@@ -1,13 +1,16 @@
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'error';
+  type: ToastType;
   message: string;
+  createdAt: number;
 }
 
 const listeners = new Set<(toast: ToastMessage) => void>();
 
-export function showToast(type: ToastMessage['type'], message: string) {
-  const toast: ToastMessage = { id: crypto.randomUUID(), type, message };
+export function showToast(type: ToastType, message: string) {
+  const toast: ToastMessage = { id: crypto.randomUUID(), type, message, createdAt: Date.now() };
   listeners.forEach((fn) => fn(toast));
 }
 

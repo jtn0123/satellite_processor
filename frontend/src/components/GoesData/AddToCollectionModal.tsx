@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import type { CollectionType } from './types';
 
 export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
@@ -26,8 +27,10 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
+      showToast('success', `Added ${frameIds.length} frame(s) to collection`);
       onClose();
     },
+    onError: () => showToast('error', 'Failed to add frames to collection'),
   });
 
   const createAndAddMutation = useMutation({
@@ -37,8 +40,10 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
+      showToast('success', `Created "${newName}" and added ${frameIds.length} frame(s)`);
       onClose();
     },
+    onError: () => showToast('error', 'Failed to create collection'),
   });
 
   return (

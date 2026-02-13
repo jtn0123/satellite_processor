@@ -1,15 +1,22 @@
 """Integration tests — test real DB + API flow (not mocked)."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_create_job_and_retrieve(client, db):
     """Create a job via API, then verify it's in the DB."""
-    resp = await client.post("/api/jobs", json={
-        "job_type": "image_process",
-        "params": {},
-    })
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-integration"
+
+    with patch("app.routers.jobs.celery_app") as mock_celery:
+        mock_celery.send_task.return_value = mock_result
+        resp = await client.post("/api/jobs", json={
+            "job_type": "image_process",
+            "params": {},
+        })
     assert resp.status_code == 200
     data = resp.json()
     job_id = data["id"]

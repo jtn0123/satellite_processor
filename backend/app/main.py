@@ -16,7 +16,7 @@ from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
 from .rate_limit import limiter
-from .routers import animations, download, goes, goes_data, health, images, jobs, presets, stats, system
+from .routers import animations, download, goes, goes_data, health, images, jobs, presets, scheduling, stats, system
 from .routers import settings as settings_router
 
 # Paths that skip API key auth
@@ -79,6 +79,7 @@ app.include_router(health.router)
 app.include_router(stats.router)
 app.include_router(animations.router)
 app.include_router(download.router)
+app.include_router(scheduling.router)
 
 
 async def _ws_authenticate(websocket: WebSocket) -> bool:

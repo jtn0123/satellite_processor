@@ -6,8 +6,10 @@ from datetime import UTC, datetime
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -188,3 +190,48 @@ class Animation(Base):
 
     crop_preset = relationship("CropPreset", foreign_keys=[crop_preset_id])
     job = relationship("Job", foreign_keys=[job_id])
+
+
+# --- Phase 3: Scheduling & Cleanup Models ---
+
+
+class FetchPreset(Base):
+    __tablename__ = "fetch_presets"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False, unique=True)
+    satellite = Column(String(20), nullable=False)
+    sector = Column(String(20), nullable=False)
+    band = Column(String(10), nullable=False)
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=_utcnow)
+
+    schedules = relationship("FetchSchedule", back_populates="preset", cascade="all, delete-orphan")
+
+
+class FetchSchedule(Base):
+    __tablename__ = "fetch_schedules"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False)
+    preset_id = Column(String(36), ForeignKey("fetch_presets.id", ondelete="CASCADE"), nullable=False)
+    interval_minutes = Column(Integer, nullable=False)
+    is_active = Column(Boolean, default=False)
+    last_run_at = Column(DateTime, nullable=True)
+    next_run_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    preset = relationship("FetchPreset", back_populates="schedules")
+
+
+class CleanupRule(Base):
+    __tablename__ = "cleanup_rules"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False)
+    rule_type = Column(String(20), nullable=False)  # 'max_age_days' or 'max_storage_gb'
+    value = Column(Float, nullable=False)
+    protect_collections = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)

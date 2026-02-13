@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { usePageTitle } from '../hooks/usePageTitle';
+import PresetsTab from '../components/GoesData/PresetsTab';
+import CleanupTab from '../components/GoesData/CleanupTab';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -146,7 +148,7 @@ function formatBytes(bytes: number): string {
 
 // ── Tabs ──────────────────────────────────────────────
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation';
+type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup';
 
 export default function GoesData() {
   usePageTitle('GOES Data');
@@ -157,7 +159,9 @@ export default function GoesData() {
     { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
     { id: 'collections', label: 'Collections', icon: <Library className="w-4 h-4" /> },
     { id: 'animation', label: 'Animation Studio', icon: <Film className="w-4 h-4" /> },
+    { id: 'presets', label: 'Presets & Schedules', icon: <Save className="w-4 h-4" /> },
     { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'cleanup', label: 'Cleanup', icon: <Trash2 className="w-4 h-4" /> },
   ];
 
   return (
@@ -189,7 +193,9 @@ export default function GoesData() {
       {activeTab === 'browse' && <BrowseTab />}
       {activeTab === 'collections' && <CollectionsTab />}
       {activeTab === 'animation' && <AnimationStudioTab />}
+      {activeTab === 'presets' && <PresetsTab />}
       {activeTab === 'stats' && <StatsTab />}
+      {activeTab === 'cleanup' && <CleanupTab />}
     </div>
   );
 }

@@ -98,7 +98,7 @@ export default function ComparisonModal({
         {/* Content */}
         <div className="flex-1 overflow-auto p-4">
           {mode === 'side-by-side' ? (
-            <div className="grid grid-cols-2 gap-4 h-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
               {[left, right].map((frame, idx) => (
                 <div key={frame.id + idx} className="flex flex-col">
                   <div className="text-xs text-slate-400 mb-2 text-center">

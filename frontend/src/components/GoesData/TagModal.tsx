@@ -1,0 +1,82 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
+import api from '../../api/client';
+import type { TagType } from './types';
+
+export default function TagModal({ frameIds, onClose }: { frameIds: string[]; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#3b82f6');
+
+  const { data: tags } = useQuery<TagType[]>({
+    queryKey: ['goes-tags'],
+    queryFn: () => api.get('/goes/tags').then((r) => r.data),
+  });
+
+  const tagMutation = useMutation({
+    mutationFn: () => api.post('/goes/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
+      onClose();
+    },
+  });
+
+  const createTagMutation = useMutation({
+    mutationFn: () => api.post('/goes/tags', { name: newTagName, color: newTagColor }).then((r) => r.data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['goes-tags'] });
+      setSelectedTags((prev) => [...prev, data.id]);
+      setNewTagName('');
+    },
+  });
+
+  const toggleTag = (id: string) => {
+    setSelectedTags((prev) => prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 w-96 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Tag Frames</h3>
+          <button onClick={onClose}><X className="w-5 h-5 text-slate-400" /></button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {tags?.map((t) => (
+            <button key={t.id} onClick={() => toggleTag(t.id)}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                selectedTags.includes(t.id)
+                  ? 'border-primary bg-primary/20 text-white'
+                  : 'border-slate-700 text-slate-400 hover:text-white'
+              }`}>
+              <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: t.color }} />
+              {t.name}
+            </button>
+          ))}
+        </div>
+
+        {selectedTags.length > 0 && (
+          <button onClick={() => tagMutation.mutate()} disabled={tagMutation.isPending}
+            className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
+            {tagMutation.isPending ? 'Tagging...' : `Tag ${frameIds.length} frames`}
+          </button>
+        )}
+
+        <div className="border-t border-slate-700 pt-4 space-y-2">
+          <label className="text-sm text-slate-400">Create new tag</label>
+          <div className="flex gap-2">
+            <input type="color" value={newTagColor} onChange={(e) => setNewTagColor(e.target.value)}
+              className="w-10 h-10 rounded bg-slate-800 border-slate-700 cursor-pointer" />
+            <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="Tag name" className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2" />
+            <button onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

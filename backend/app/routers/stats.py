@@ -1,7 +1,5 @@
 """Stats endpoint for dashboard widgets."""
 
-from __future__ import annotations
-
 import shutil
 
 from fastapi import APIRouter, Depends, Request

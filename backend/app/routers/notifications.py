@@ -1,7 +1,5 @@
 """Notification events endpoints."""
 
-from __future__ import annotations
-
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -24,7 +22,7 @@ class NotificationResponse(BaseModel):
     read: bool
 
     @classmethod
-    def from_orm_model(cls, n: Notification) -> NotificationResponse:
+    def from_orm_model(cls, n: Notification) -> "NotificationResponse":
         return cls(
             id=n.id,
             type=n.type,

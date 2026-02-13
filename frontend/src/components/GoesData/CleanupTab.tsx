@@ -108,7 +108,16 @@ export default function CleanupTab() {
               <div className="text-sm text-slate-400">Bands</div>
             </div>
           </div>
-        ) : <p className="text-slate-500 text-sm">Loading storage stats...</p>}
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={`stat-skel-${i}`} className="bg-slate-800 rounded-lg p-3 space-y-2">
+                <div className="h-8 w-16 animate-pulse bg-slate-700 rounded" />
+                <div className="h-4 w-20 animate-pulse bg-slate-700 rounded" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cleanup Rules */}

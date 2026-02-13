@@ -52,7 +52,13 @@ export default function FetchTab() {
 
   return (
     <div className="space-y-6">
-      {productsLoading && <div className="text-sm text-slate-400">Loading products...</div>}
+      {productsLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={`prod-skel-${i}`} className="h-10 animate-pulse bg-slate-700 rounded-lg" />
+          ))}
+        </div>
+      )}
       {productsError && <div className="text-sm text-red-400">Failed to load satellite products</div>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
         <div>

@@ -112,6 +112,7 @@ export default function BrowseTab() {
       toggleSelect(frame.id);
     } else {
       setPreviewFrame(frame);
+      window.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
     }
   };
 
@@ -410,7 +411,7 @@ export default function BrowseTab() {
           <TagModal frameIds={[...selectedIds]} onClose={() => setShowTagModal(false)} />
         )}
         {previewFrame && (
-          <FramePreviewModal frame={previewFrame} onClose={() => setPreviewFrame(null)} />
+          <FramePreviewModal frame={previewFrame} onClose={() => { setPreviewFrame(null); window.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }} />
         )}
         {compareFrames && (
           <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={() => setCompareFrames(null)} />

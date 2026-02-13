@@ -38,6 +38,8 @@ from ..models.goes_data import (
 )
 from ..models.pagination import PaginatedResponse
 
+_COLLECTION_NOT_FOUND = "Collection not found"
+
 router = APIRouter(prefix="/api/goes", tags=["goes-data"])
 
 
@@ -307,7 +309,7 @@ async def update_collection(
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
-        raise APIError(404, "not_found", "Collection not found")
+        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
     if payload.name is not None:
         coll.name = payload.name
     if payload.description is not None:
@@ -340,7 +342,7 @@ async def delete_collection(
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
-        raise APIError(404, "not_found", "Collection not found")
+        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
     await db.delete(coll)
     await db.commit()
     return {"deleted": collection_id}
@@ -355,7 +357,7 @@ async def add_frames_to_collection(
     # Verify collection exists
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
-        raise APIError(404, "not_found", "Collection not found")
+        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
 
     added = 0
     for frame_id in payload.frame_ids:

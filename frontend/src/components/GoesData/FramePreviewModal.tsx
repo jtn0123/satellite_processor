@@ -8,10 +8,10 @@ import type { GoesFrame, CropPreset } from './types';
 export default function FramePreviewModal({
   frame,
   onClose,
-}: {
+}: Readonly<{
   frame: GoesFrame;
   onClose: () => void;
-}) {
+}>) {
   const queryClient = useQueryClient();
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

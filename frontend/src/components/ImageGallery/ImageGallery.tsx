@@ -144,6 +144,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             <SlidersHorizontal className="w-4 h-4 text-slate-400" />
             {satellites.length > 0 && (
               <select
+                aria-label="Filter by satellite"
                 value={filterSatellite}
                 onChange={(e) => setFilterSatellite(e.target.value)}
                 className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
@@ -156,6 +157,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             )}
             {channels.length > 0 && (
               <select
+                aria-label="Filter by channel"
                 value={filterChannel}
                 onChange={(e) => setFilterChannel(e.target.value)}
                 className="bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
@@ -244,12 +246,15 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           open
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
           onClick={closePreview}
+          onKeyDown={(e) => { if (e.key === 'Escape') closePreview(); }}
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
         >
           <div
+            role="document"
             className="bg-space-850 border border-subtle rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-subtle">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>

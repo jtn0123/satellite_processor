@@ -21,15 +21,26 @@ def _check_unknown_keys(params: dict) -> None:
         raise ValueError(f"Unknown parameter keys: {unknown}")
 
 
+def _is_suspicious_path(key: str, val: str) -> bool:
+    """Check if a string param value looks like path traversal."""
+    if key in ("input_path", "output_path"):
+        return False
+    return ".." in val or val.startswith("/")
+
+
+def _check_image_paths(paths: list) -> None:
+    """Validate image_paths list for traversal attacks."""
+    for p in paths:
+        if isinstance(p, str) and ".." in p:
+            raise ValueError("Path traversal not allowed in image_paths")
+
+
 def _check_path_traversal(params: dict) -> None:
     for key, val in params.items():
-        if isinstance(val, str) and (".." in val or val.startswith("/")):
-            if key not in ("input_path", "output_path"):
-                raise ValueError(f"Suspicious value for '{key}'")
+        if isinstance(val, str) and _is_suspicious_path(key, val):
+            raise ValueError(f"Suspicious value for '{key}'")
         if key == "image_paths" and isinstance(val, list):
-            for p in val:
-                if isinstance(p, str) and ".." in p:
-                    raise ValueError("Path traversal not allowed in image_paths")
+            _check_image_paths(val)
 
 
 class JobCreate(BaseModel):

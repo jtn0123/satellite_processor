@@ -79,28 +79,28 @@ export default function MapTab() {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-900 rounded-xl p-6 border border-slate-800">
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
-          <select value={satellite} onChange={(e) => setSatellite(e.target.value)}
+          <label htmlFor="map-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+          <select id="map-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
-          <select value={sector} onChange={(e) => setSector(e.target.value)}
+          <label htmlFor="map-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+          <select id="map-sector" value={sector} onChange={(e) => setSector(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Band</label>
-          <select value={band} onChange={(e) => setBand(e.target.value)}
+          <label htmlFor="map-band" className="block text-sm font-medium text-slate-400 mb-1">Band</label>
+          <select id="map-band" value={band} onChange={(e) => setBand(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
             {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
           </select>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-400 mb-1">
+          <label htmlFor="map-overlay-opacity-math-round-opacity-100" className="block text-sm font-medium text-slate-400 mb-1">
             Overlay Opacity: {Math.round(opacity * 100)}%
           </label>
           <input

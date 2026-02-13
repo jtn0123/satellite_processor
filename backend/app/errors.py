@@ -13,7 +13,7 @@ class APIError(Exception):
         self.detail = detail
 
 
-async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
+def api_error_handler(_request: Request, exc: APIError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": exc.error, "detail": exc.detail},

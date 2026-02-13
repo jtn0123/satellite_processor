@@ -34,7 +34,7 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 const RECIPE_DESCRIPTIONS: Record<string, string> = {
@@ -122,22 +122,22 @@ export default function CompositesTab() {
           <h3 className="text-lg font-semibold">Generate Composite</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
-              <select value={satellite} onChange={(e) => setSatellite(e.target.value)}
+              <label htmlFor="comp-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+              <select id="comp-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
                 className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
                 {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
-              <select value={sector} onChange={(e) => setSector(e.target.value)}
+              <label htmlFor="comp-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+              <select id="comp-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                 className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none">
                 {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Capture Time</label>
-              <input type="datetime-local" value={captureTime} onChange={(e) => setCaptureTime(e.target.value)}
+              <label htmlFor="comp-capture-time" className="block text-sm font-medium text-slate-400 mb-1">Capture Time</label>
+              <input id="comp-capture-time" type="datetime-local" value={captureTime} onChange={(e) => setCaptureTime(e.target.value)}
                 className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none" />
             </div>
           </div>

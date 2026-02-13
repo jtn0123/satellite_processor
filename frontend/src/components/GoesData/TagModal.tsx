@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import api from '../../api/client';
 import type { TagType } from './types';
 
-export default function TagModal({ frameIds, onClose }: { frameIds: string[]; onClose: () => void }) {
+export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
   const queryClient = useQueryClient();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -66,11 +66,11 @@ export default function TagModal({ frameIds, onClose }: { frameIds: string[]; on
         )}
 
         <div className="border-t border-slate-700 pt-4 space-y-2">
-          <label className="text-sm text-slate-400">Create new tag</label>
+          <label htmlFor="tagmod-create-new-tag" className="text-sm text-slate-400">Create new tag</label>
           <div className="flex gap-2">
-            <input type="color" value={newTagColor} onChange={(e) => setNewTagColor(e.target.value)}
+            <input id="tagmod-create-new-tag" type="color" value={newTagColor} onChange={(e) => setNewTagColor(e.target.value)}
               className="w-10 h-10 rounded bg-slate-800 border-slate-700 cursor-pointer" />
-            <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
+            <input aria-label="Newtagname" type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
               placeholder="Tag name" className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2" />
             <button onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50">+</button>

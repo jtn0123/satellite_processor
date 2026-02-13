@@ -199,6 +199,76 @@ def validate_encoder(encoder: str) -> None:
         raise ValueError(f"Unsupported encoder selected: {encoder}")
 
 
+def _write_concat_file(
+    list_file: Path,
+    frame_files: list[Path],
+    options: dict,
+    fix_unc: bool = False,
+) -> None:
+    """Write a concat-demuxer file listing frames."""
+    with open(list_file, "w", encoding="utf-8") as f:
+        for frame in frame_files:
+            frame_path = str(frame).replace("\\", "/")
+            if fix_unc and not frame_path.startswith("//"):
+                frame_path = "//" + frame_path.lstrip("/")
+            f.write(f"file '{frame_path}'\n")
+            if options.get("frame_duration"):
+                f.write(f"duration {options['frame_duration']}\n")
+
+
+def _build_concat_input(
+    ffmpeg_path: str | Path,
+    input_dir: Path,
+    options: dict,
+    is_unc_path: bool,
+) -> tuple[list[str], Path | None]:
+    """Build the input portion of the FFmpeg command using concat demuxer or pattern."""
+    if is_unc_path:
+        return _build_concat_from_list(ffmpeg_path, input_dir, options, fix_unc=True)
+
+    if options.get("test_mode") or any(input_dir.glob("frame*.png")):
+        input_str = str(input_dir).replace("\\", "/")
+        input_pattern = f"{input_str}/frame%04d.png"
+        cmd = [
+            str(ffmpeg_path).replace("\\", "/"),
+            "-y", "-framerate", str(options.get("fps", DEFAULT_FPS)),
+            "-i", input_pattern,
+        ]
+        return cmd, None
+
+    return _build_concat_from_list(ffmpeg_path, input_dir, options, fix_unc=False)
+
+
+def _build_concat_from_list(
+    ffmpeg_path: str | Path,
+    input_dir: Path,
+    options: dict,
+    fix_unc: bool,
+) -> tuple[list[str], Path | None]:
+    """Build concat-based input command."""
+    temp_dir = Path(tempfile.mkdtemp())
+    list_file = temp_dir / "frames.txt"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    frame_files = _collect_frame_files(input_dir)
+    _write_concat_file(list_file, frame_files, options, fix_unc=fix_unc)
+    cmd = [
+        str(ffmpeg_path).replace("\\", "/"),
+        "-y", "-f", "concat", "-safe", "0",
+        "-i", str(list_file).replace("\\", "/"),
+    ]
+    return cmd, temp_dir
+
+
+def _append_hardware_flags(cmd: list[str], hardware: str) -> None:
+    """Append hardware acceleration flags to the command."""
+    hw_flags = {
+        "NVIDIA GPU": ["-hwaccel", "cuda", "-vf", "scale_cuda"],
+        "Intel GPU": ["-hwaccel", "qsv", "-vf", "scale_qsv"],
+        "AMD GPU": ["-hwaccel", "amf", "-vf", "scale_amf"],
+    }
+    cmd.extend(hw_flags.get(hardware, []))
+
+
 def build_ffmpeg_command(
     ffmpeg_path: str | Path,
     input_path: str | Path,
@@ -209,59 +279,11 @@ def build_ffmpeg_command(
     try:
         input_dir = Path(input_path).resolve()
         output_path = Path(output_path).resolve()
-        temp_dir = None
 
         input_str = str(input_dir).replace("\\", "/")
         is_unc_path = input_str.startswith("//") or str(input_dir).startswith("\\\\")
 
-        if is_unc_path:
-            temp_dir = Path(tempfile.mkdtemp())
-            list_file = temp_dir / "frames.txt"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-
-            frame_files = _collect_frame_files(input_dir)
-
-            with open(list_file, "w", encoding="utf-8") as f:
-                for frame in frame_files:
-                    frame_path = str(frame).replace("\\", "/")
-                    if is_unc_path and not frame_path.startswith("//"):
-                        frame_path = "//" + frame_path.lstrip("/")
-                    f.write(f"file '{frame_path}'\n")
-                    if options.get("frame_duration"):
-                        f.write(f"duration {options['frame_duration']}\n")
-
-            cmd = [
-                str(ffmpeg_path).replace("\\", "/"),
-                "-y", "-f", "concat", "-safe", "0",
-                "-i", str(list_file).replace("\\", "/"),
-            ]
-        else:
-            if options.get("test_mode") or any(input_dir.glob("frame*.png")):
-                input_pattern = f"{input_str}/frame%04d.png"
-                cmd = [
-                    str(ffmpeg_path).replace("\\", "/"),
-                    "-y", "-framerate", str(options.get("fps", DEFAULT_FPS)),
-                    "-i", input_pattern,
-                ]
-            else:
-                temp_dir = Path(tempfile.mkdtemp())
-                list_file = temp_dir / "frames.txt"
-                temp_dir.mkdir(parents=True, exist_ok=True)
-
-                frame_files = _collect_frame_files(input_dir)
-
-                with open(list_file, "w", encoding="utf-8") as f:
-                    for frame in frame_files:
-                        frame_path = str(frame).replace("\\", "/")
-                        f.write(f"file '{frame_path}'\n")
-                        if options.get("frame_duration"):
-                            f.write(f"duration {options['frame_duration']}\n")
-
-                cmd = [
-                    str(ffmpeg_path).replace("\\", "/"),
-                    "-y", "-f", "concat", "-safe", "0",
-                    "-i", str(list_file).replace("\\", "/"),
-                ]
+        cmd, temp_dir = _build_concat_input(ffmpeg_path, input_dir, options, is_unc_path)
 
         if metadata := options.get("metadata"):
             for key, value in metadata.items():
@@ -270,12 +292,7 @@ def build_ffmpeg_command(
         cmd.extend(["-framerate", str(options.get("fps", DEFAULT_FPS))])
 
         hardware = options.get("hardware", "CPU")
-        if hardware == "NVIDIA GPU":
-            cmd.extend(["-hwaccel", "cuda", "-vf", "scale_cuda"])
-        elif hardware == "Intel GPU":
-            cmd.extend(["-hwaccel", "qsv", "-vf", "scale_qsv"])
-        elif hardware == "AMD GPU":
-            cmd.extend(["-hwaccel", "amf", "-vf", "scale_amf"])
+        _append_hardware_flags(cmd, hardware)
 
         cmd.extend([
             "-c:v", get_codec(options.get("encoder", "H.264"), hardware),

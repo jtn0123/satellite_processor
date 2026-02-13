@@ -40,7 +40,7 @@ export default function CollectionsTab() {
     <div className="space-y-4">
       {/* Create new */}
       <div className="flex gap-2 bg-slate-900 rounded-xl p-4 border border-slate-800">
-        <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+        <input aria-label="Newname" type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
           placeholder="New collection name"
           className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2"
           onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()} />
@@ -58,7 +58,7 @@ export default function CollectionsTab() {
             <div key={c.id} className="bg-slate-900 rounded-xl p-5 border border-slate-800 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
-                  <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                  <input aria-label="Editname" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
                     className="flex-1 rounded bg-slate-800 border-slate-700 text-white px-2 py-1 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })} />
                   <button onClick={() => updateMutation.mutate({ id: c.id, name: editName })}

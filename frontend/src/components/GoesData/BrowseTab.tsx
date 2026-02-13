@@ -110,6 +110,109 @@ export default function BrowseTab() {
 
   const totalPages = framesData ? Math.ceil(framesData.total / framesData.limit) : 0;
 
+  const renderFrameGrid = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={`skeleton-${i}`} className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+              <div className="aspect-video animate-pulse bg-slate-700 rounded-t" />
+              <div className="p-2 space-y-2">
+                <div className="h-3 animate-pulse bg-slate-700 rounded w-3/4" />
+                <div className="h-3 animate-pulse bg-slate-700 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (viewMode === 'grid') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {framesData?.items.map((frame) => (
+            <div key={frame.id}
+              role="button"
+              tabIndex={0}
+              onClick={(e) => handleFrameClick(frame, e)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFrameClick(frame, e as unknown as React.MouseEvent); } }}
+              className={`relative bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all hover:bg-slate-700 ${
+                selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-700 hover:border-slate-600'
+              }`}>
+              <div className="aspect-video bg-slate-800 flex items-center justify-center">
+                {frame.thumbnail_path ? (
+                  <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+                    alt={`${frame.satellite} ${frame.band}`}
+                    className="w-full h-full object-cover" />
+                ) : (
+                  <Satellite className="w-8 h-8 text-slate-600" />
+                )}
+              </div>
+              <div className="p-2 space-y-1">
+                <div className="text-xs font-medium text-white truncate">
+                  {frame.satellite} · {frame.band} · {frame.sector}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {new Date(frame.capture_time).toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-600">{formatBytes(frame.file_size)}</div>
+                {frame.tags.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {frame.tags.map((t) => (
+                      <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
+                        style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedIds.has(frame.id) && (
+                <div className="absolute top-2 left-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-1">
+        {framesData?.items.map((frame) => (
+          <div key={frame.id}
+            role="button"
+            tabIndex={0}
+            onClick={(e) => handleFrameClick(frame, e)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFrameClick(frame, e as unknown as React.MouseEvent); } }}
+            className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
+              selectedIds.has(frame.id) ? 'bg-primary/10 border border-primary/30' : 'bg-slate-900 border border-slate-800 hover:bg-slate-800/50'
+            }`}>
+            <div className="w-16 h-10 rounded bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {frame.thumbnail_path ? (
+                <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+                  alt={`${frame.satellite} ${frame.band} thumbnail`} className="w-full h-full object-cover" />
+              ) : (
+                <Satellite className="w-4 h-4 text-slate-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-white">{frame.satellite} · {frame.band} · {frame.sector}</div>
+              <div className="text-xs text-slate-500">{new Date(frame.capture_time).toLocaleString()}</div>
+            </div>
+            <div className="text-xs text-slate-500">{formatBytes(frame.file_size)}</div>
+            {frame.width && frame.height && (
+              <div className="text-xs text-slate-600">{frame.width}×{frame.height}</div>
+            )}
+            <div className="flex gap-1">
+              {frame.tags.map((t) => (
+                <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
+                  style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="flex gap-6">
       {/* Filter Sidebar */}
@@ -118,8 +221,8 @@ export default function BrowseTab() {
           <h3 className="text-sm font-semibold text-slate-300">Filters</h3>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Satellite</label>
-            <select value={filterSat} onChange={(e) => { setFilterSat(e.target.value); setPage(1); }}
+            <label htmlFor="browse-satellite" className="block text-xs text-slate-500 mb-1">Satellite</label>
+            <select id="browse-satellite" value={filterSat} onChange={(e) => { setFilterSat(e.target.value); setPage(1); }}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -127,8 +230,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Band</label>
-            <select value={filterBand} onChange={(e) => { setFilterBand(e.target.value); setPage(1); }}
+            <label htmlFor="browse-band" className="block text-xs text-slate-500 mb-1">Band</label>
+            <select id="browse-band" value={filterBand} onChange={(e) => { setFilterBand(e.target.value); setPage(1); }}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
@@ -136,8 +239,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Sector</label>
-            <select value={filterSector} onChange={(e) => { setFilterSector(e.target.value); setPage(1); }}
+            <label htmlFor="browse-sector" className="block text-xs text-slate-500 mb-1">Sector</label>
+            <select id="browse-sector" value={filterSector} onChange={(e) => { setFilterSector(e.target.value); setPage(1); }}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -145,8 +248,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Collection</label>
-            <select value={filterCollection} onChange={(e) => { setFilterCollection(e.target.value); setPage(1); }}
+            <label htmlFor="browse-collection" className="block text-xs text-slate-500 mb-1">Collection</label>
+            <select id="browse-collection" value={filterCollection} onChange={(e) => { setFilterCollection(e.target.value); setPage(1); }}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {collections?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -154,8 +257,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Tag</label>
-            <select value={filterTag} onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
+            <label htmlFor="browse-tag" className="block text-xs text-slate-500 mb-1">Tag</label>
+            <select id="browse-tag" value={filterTag} onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="">All</option>
               {tags?.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -163,8 +266,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Sort by</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+            <label htmlFor="browse-sort" className="block text-xs text-slate-500 mb-1">Sort by</label>
+            <select id="browse-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="capture_time">Capture Time</option>
               <option value="file_size">Size</option>
@@ -174,8 +277,8 @@ export default function BrowseTab() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Order</label>
-            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}
+            <label htmlFor="browse-order" className="block text-xs text-slate-500 mb-1">Order</label>
+            <select id="browse-order" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}
               className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
@@ -249,94 +352,7 @@ export default function BrowseTab() {
         </div>
 
         {/* Frame grid/list */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-                <div className="aspect-video animate-pulse bg-slate-700 rounded-t" />
-                <div className="p-2 space-y-2">
-                  <div className="h-3 animate-pulse bg-slate-700 rounded w-3/4" />
-                  <div className="h-3 animate-pulse bg-slate-700 rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {framesData?.items.map((frame) => (
-              <div key={frame.id}
-                onClick={(e) => handleFrameClick(frame, e)}
-                className={`relative bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all hover:bg-slate-700 ${
-                  selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-700 hover:border-slate-600'
-                }`}>
-                <div className="aspect-video bg-slate-800 flex items-center justify-center">
-                  {frame.thumbnail_path ? (
-                    <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                      alt={`${frame.satellite} ${frame.band}`}
-                      className="w-full h-full object-cover" />
-                  ) : (
-                    <Satellite className="w-8 h-8 text-slate-600" />
-                  )}
-                </div>
-                <div className="p-2 space-y-1">
-                  <div className="text-xs font-medium text-white truncate">
-                    {frame.satellite} · {frame.band} · {frame.sector}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {new Date(frame.capture_time).toLocaleString()}
-                  </div>
-                  <div className="text-xs text-slate-600">{formatBytes(frame.file_size)}</div>
-                  {frame.tags.length > 0 && (
-                    <div className="flex gap-1 flex-wrap">
-                      {frame.tags.map((t) => (
-                        <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
-                          style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selectedIds.has(frame.id) && (
-                  <div className="absolute top-2 left-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {framesData?.items.map((frame) => (
-              <div key={frame.id}
-                onClick={(e) => handleFrameClick(frame, e)}
-                className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedIds.has(frame.id) ? 'bg-primary/10 border border-primary/30' : 'bg-slate-900 border border-slate-800 hover:bg-slate-800/50'
-                }`}>
-                <div className="w-16 h-10 rounded bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {frame.thumbnail_path ? (
-                    <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                      alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Satellite className="w-4 h-4 text-slate-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">{frame.satellite} · {frame.band} · {frame.sector}</div>
-                  <div className="text-xs text-slate-500">{new Date(frame.capture_time).toLocaleString()}</div>
-                </div>
-                <div className="text-xs text-slate-500">{formatBytes(frame.file_size)}</div>
-                {frame.width && frame.height && (
-                  <div className="text-xs text-slate-600">{frame.width}×{frame.height}</div>
-                )}
-                <div className="flex gap-1">
-                  {frame.tags.map((t) => (
-                    <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
-                      style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderFrameGrid()}
 
         {/* Pagination */}
         {totalPages > 1 && (

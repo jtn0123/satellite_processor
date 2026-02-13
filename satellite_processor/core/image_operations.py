@@ -116,12 +116,8 @@ class ImageOperations:
             return False
 
         finally:
-            # Clean up temp directory
-            if temp_dir is not None and os.path.exists(temp_dir):
-                try:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                except Exception as e:
-                    logger.error(f"Error cleaning up temp directory: {e}", exc_info=True)
+            # temp_dir is reserved for future use when Sanchez needs staging
+            pass
 
     @staticmethod
     def add_timestamp(

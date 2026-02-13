@@ -28,6 +28,6 @@ test('page loads with dark theme by default', async ({ page }) => {
 test('mobile viewport renders page content', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto('/');
-  // On mobile, sidebar is hidden but main content loads
-  await expect(page.locator('text=SatTracker').first()).toBeVisible();
+  // On mobile, the mobile header is visible with menu button
+  await expect(page.locator('header button[aria-label="Open menu"]')).toBeVisible();
 });

@@ -15,14 +15,20 @@ from ..config import settings
 
 logger = logging.getLogger(__name__)
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-    pool_recycle=1800,
-)
+_engine_kwargs: dict = {
+    "echo": settings.debug,
+}
+
+# Pool settings only apply to non-SQLite databases (SQLite uses NullPool)
+if "sqlite" not in settings.database_url:
+    _engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_recycle": 1800,
+    })
+
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

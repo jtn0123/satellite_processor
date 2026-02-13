@@ -23,9 +23,6 @@ from ..db.models import (
     Tag,
 )
 from ..errors import APIError
-
-_COLLECTION_NOT_FOUND = "Collection not found"
-
 from ..models.goes_data import (
     BulkFrameDeleteRequest,
     BulkTagRequest,
@@ -40,6 +37,8 @@ from ..models.goes_data import (
     TagResponse,
 )
 from ..models.pagination import PaginatedResponse
+
+_COLLECTION_NOT_FOUND = "Collection not found"
 
 router = APIRouter(prefix="/api/goes", tags=["goes-data"])
 

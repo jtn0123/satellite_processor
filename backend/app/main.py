@@ -2,6 +2,8 @@
 
 import asyncio
 import json
+import logging
+import shutil
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -15,12 +17,23 @@ from .config import settings as app_settings
 from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
+from .metrics import (
+    DISK_FREE_BYTES,
+    DISK_USED_BYTES,
+    FRAME_COUNT,
+    PrometheusMiddleware,
+    get_metrics_response,
+)
 from .rate_limit import limiter
+from .redis_pool import close_redis_pool, get_redis_client
 from .routers import animations, download, goes, goes_data, health, images, jobs, presets, scheduling, stats, system
 from .routers import settings as settings_router
+from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
+
+logger = logging.getLogger(__name__)
 
 # Paths that skip API key auth
-AUTH_SKIP_PATHS = {"/api/health", "/docs", "/redoc", "/openapi.json"}
+AUTH_SKIP_PATHS = {"/api/health", "/api/metrics", "/docs", "/redoc", "/openapi.json"}
 
 
 @asynccontextmanager
@@ -29,6 +42,7 @@ async def lifespan(app: FastAPI):
     setup_logging(debug=app_settings.debug)
     await init_db()
     yield
+    await close_redis_pool()
 
 
 app = FastAPI(
@@ -45,6 +59,16 @@ app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(APIError, api_error_handler)
 
 
+# Global unhandled exception handler for consistent error envelope
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_error", "detail": "An unexpected error occurred"},
+    )
+
+
 # #21: API key auth middleware (optional — disabled when API_KEY env var is empty)
 @app.middleware("http")
 async def api_key_auth(request: Request, call_next):
@@ -53,18 +77,23 @@ async def api_key_auth(request: Request, call_next):
         if path not in AUTH_SKIP_PATHS and not path.startswith("/ws/"):
             key = request.headers.get("X-API-Key", "")
             if key != app_settings.api_key:
-                return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+                return JSONResponse(status_code=401, content={"error": "unauthorized", "detail": "Invalid or missing API key"})
     return await call_next(request)
 
 
-# Middleware
+# Middleware stack (order matters — outermost first)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestBodyLimitMiddleware)
+app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=app_settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key"],
+    expose_headers=["X-Request-ID"],
+    max_age=600,
 )
 
 # Register routers
@@ -80,6 +109,50 @@ app.include_router(stats.router)
 app.include_router(animations.router)
 app.include_router(download.router)
 app.include_router(scheduling.router)
+
+
+# ── Metrics endpoint ──────────────────────────────────────────────
+
+
+@app.get("/api/metrics", include_in_schema=False)
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    # Update storage metrics on each scrape
+    try:
+        usage = shutil.disk_usage(app_settings.storage_path)
+        DISK_FREE_BYTES.set(usage.free)
+        DISK_USED_BYTES.set(usage.used)
+    except Exception:
+        pass
+
+    # Update frame count
+    try:
+        from sqlalchemy import func, select
+
+        from .db.database import async_session
+        from .db.models import GoesFrame
+
+        async with async_session() as session:
+            count = (await session.execute(select(func.count(GoesFrame.id)))).scalar() or 0
+            FRAME_COUNT.set(count)
+    except Exception:
+        pass
+
+    return get_metrics_response()
+
+
+# ── OpenAPI JSON fix (#2) ─────────────────────────────────────────
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi_json():
+    """Return raw OpenAPI JSON (fixes broken /openapi.json response)."""
+    return JSONResponse(content=app.openapi())
+
+
+# ── WebSocket ─────────────────────────────────────────────────────
+
+WS_PING_INTERVAL = 30  # seconds
 
 
 async def _ws_authenticate(websocket: WebSocket) -> bool:
@@ -116,23 +189,35 @@ async def _ws_writer(websocket: WebSocket, pubsub) -> None:
                 break
 
 
+async def _ws_ping(websocket: WebSocket) -> None:
+    """Send periodic ping to keep WebSocket alive."""
+    try:
+        while True:
+            await asyncio.sleep(WS_PING_INTERVAL)
+            await websocket.send_json({"type": "ping"})
+    except (WebSocketDisconnect, Exception):
+        pass
+
+
 @app.websocket("/ws/jobs/{job_id}")
 async def job_websocket(websocket: WebSocket, job_id: str):
     """WebSocket endpoint for real-time job progress via Redis pub/sub"""
-    import redis.asyncio as aioredis
-
     if not await _ws_authenticate(websocket):
         return
 
     await websocket.accept()
-    r = aioredis.from_url(app_settings.redis_url, decode_responses=True, max_connections=20)
+    r = get_redis_client()
     pubsub = r.pubsub()
     await pubsub.subscribe(f"job:{job_id}")
 
     try:
         await websocket.send_json({"type": "connected", "job_id": job_id})
         _, pending = await asyncio.wait(
-            [asyncio.create_task(_ws_reader(websocket)), asyncio.create_task(_ws_writer(websocket, pubsub))],
+            [
+                asyncio.create_task(_ws_reader(websocket)),
+                asyncio.create_task(_ws_writer(websocket, pubsub)),
+                asyncio.create_task(_ws_ping(websocket)),
+            ],
             return_when=asyncio.FIRST_COMPLETED,
         )
         for t in pending:
@@ -142,4 +227,49 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     finally:
         await pubsub.unsubscribe(f"job:{job_id}")
         await pubsub.close()
-        await r.close()
+
+
+# ── Global event WebSocket ────────────────────────────────────────
+
+GLOBAL_EVENT_CHANNEL = "sat_processor:events"
+
+
+@app.websocket("/ws/events")
+async def global_events_websocket(websocket: WebSocket):
+    """WebSocket for global events: new frames, schedule completions, etc."""
+    if not await _ws_authenticate(websocket):
+        return
+
+    await websocket.accept()
+    r = get_redis_client()
+    pubsub = r.pubsub()
+    await pubsub.subscribe(GLOBAL_EVENT_CHANNEL)
+
+    try:
+        await websocket.send_json({"type": "connected"})
+
+        async def _event_writer():
+            while True:
+                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
+                if msg and msg["type"] == "message":
+                    try:
+                        data = json.loads(msg["data"])
+                        await websocket.send_json(data)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+
+        _, pending = await asyncio.wait(
+            [
+                asyncio.create_task(_ws_reader(websocket)),
+                asyncio.create_task(_event_writer()),
+                asyncio.create_task(_ws_ping(websocket)),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for t in pending:
+            t.cancel()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await pubsub.unsubscribe(GLOBAL_EVENT_CHANNEL)
+        await pubsub.close()

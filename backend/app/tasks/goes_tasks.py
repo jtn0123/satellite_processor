@@ -49,7 +49,15 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
             "message": message,
             "status": status,
         })
-        _get_redis().publish(f"job:{job_id}", payload)
+        r = _get_redis()
+        r.publish(f"job:{job_id}", payload)
+        # Broadcast terminal events to global channel
+        if status in ("completed", "failed"):
+            r.publish("sat_processor:events", json.dumps({
+                "type": f"job_{status}",
+                "job_id": job_id,
+                "message": message,
+            }))
     except Exception:
         logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 

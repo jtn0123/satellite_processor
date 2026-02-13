@@ -6,6 +6,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -43,6 +44,11 @@ class Job(Base):
 
     __table_args__ = (
         Index("ix_jobs_status_created_at", "status", "created_at"),
+        CheckConstraint("progress >= 0 AND progress <= 100", name="ck_jobs_progress"),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')",
+            name="ck_jobs_status",
+        ),
     )
 
 
@@ -100,6 +106,7 @@ class GoesFrame(Base):
     __table_args__ = (
         Index("ix_goes_frames_sat_band", "satellite", "band"),
         Index("ix_goes_frames_capture", "capture_time"),
+        CheckConstraint("file_size >= 0", name="ck_goes_frames_file_size"),
     )
 
 
@@ -219,6 +226,10 @@ class FetchSchedule(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     preset = relationship("FetchPreset", back_populates="schedules")
+
+    __table_args__ = (
+        CheckConstraint("interval_minutes > 0", name="ck_fetch_schedules_interval"),
+    )
 
 
 class Composite(Base):

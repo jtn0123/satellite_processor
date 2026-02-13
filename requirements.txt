@@ -13,4 +13,7 @@ python-dateutil==2.9.0.post0
 pyyaml==6.0.1
 requests==2.32.5
 
+# Observability
+prometheus_client>=0.20
+
 # Dev tools moved to requirements-dev.txt

@@ -19,7 +19,11 @@ class APIError(Exception):
 def api_error_handler(_request: Request, exc: APIError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.error, "detail": exc.detail},
+        content={
+            "error": exc.error,
+            "detail": exc.detail,
+            "status_code": exc.status_code,
+        },
     )
 
 

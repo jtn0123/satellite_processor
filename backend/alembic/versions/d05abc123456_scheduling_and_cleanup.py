@@ -34,7 +34,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(200), nullable=False),
         sa.Column("preset_id", sa.String(36), sa.ForeignKey("fetch_presets.id", ondelete="CASCADE"), nullable=False),
         sa.Column("interval_minutes", sa.Integer(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), server_default=sa.text("0")),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("false")),
         sa.Column("last_run_at", sa.DateTime(), nullable=True),
         sa.Column("next_run_at", sa.DateTime(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
@@ -47,8 +47,8 @@ def upgrade() -> None:
         sa.Column("name", sa.String(200), nullable=False),
         sa.Column("rule_type", sa.String(20), nullable=False),
         sa.Column("value", sa.Float(), nullable=False),
-        sa.Column("protect_collections", sa.Boolean(), server_default=sa.text("1")),
-        sa.Column("is_active", sa.Boolean(), server_default=sa.text("1")),
+        sa.Column("protect_collections", sa.Boolean(), server_default=sa.text("true")),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
         sa.Column("created_at", sa.DateTime(), nullable=True),
     )
 

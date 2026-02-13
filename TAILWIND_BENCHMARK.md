@@ -29,6 +29,21 @@
 | Total bundle | 852K | 868K | +1.9% |
 | Config | 41-line JS file | CSS-first @theme block | Simpler, colocated |
 
+## v4 Optimized (Compat Layer Removed)
+
+| Metric | Value |
+|---|---|
+| Build time (avg of 3) | ~12.9s |
+| CSS output size | 65,741 bytes (50,134 + 15,607) |
+| Total bundle size | ~868K |
+
+### Changes
+- Removed v3→v4 border-color compatibility layer (`@layer base` reset) — all components already specify explicit border colors
+- Reverted 49 unnecessary `rounded-sm` → `rounded` (both are 0.25rem in v4; migration tool was overly defensive)
+- PostCSS config verified: only `@tailwindcss/postcss` (no autoprefixer)
+- All 120 tests pass, ESLint clean (zero warnings)
+- CSS output reduced by 219 bytes (65,960 → 65,741); remaining delta vs v3 is v4's larger preflight/reset
+
 ### Notes
 - CSS output is larger in v4 due to compatibility layer (border-color reset) and v4's different output strategy
 - Build time improved slightly (~0.7s faster)

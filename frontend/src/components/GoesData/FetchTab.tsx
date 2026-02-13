@@ -255,7 +255,7 @@ export default function FetchTab() {
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {gaps.gaps.map((gap) => (
-                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded-sm px-3 py-1.5">
+                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded px-3 py-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="text-gray-600 dark:text-slate-300">
                         {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}

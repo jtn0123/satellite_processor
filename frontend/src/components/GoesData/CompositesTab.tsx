@@ -109,7 +109,7 @@ export default function CompositesTab() {
               </div>
               <div className="flex gap-1 mt-2">
                 {recipe.bands.map((b) => (
-                  <span key={b} className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-sm">
+                  <span key={b} className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded">
                     {b}
                   </span>
                 ))}
@@ -172,7 +172,7 @@ export default function CompositesTab() {
             {composites.items.map((comp) => (
               <div key={comp.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 {comp.file_path && comp.status === 'completed' && (
-                  <div className="w-16 h-12 rounded-sm overflow-hidden shrink-0">
+                  <div className="w-16 h-12 rounded overflow-hidden shrink-0">
                     <img
                       src={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
                       alt={comp.name}
@@ -190,14 +190,14 @@ export default function CompositesTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   {comp.status === 'pending' && (
-                    <span className="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded-sm">Pending</span>
+                    <span className="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded">Pending</span>
                   )}
                   {comp.status === 'processing' && (
-                    <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded-sm animate-pulse">Processing</span>
+                    <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded animate-pulse">Processing</span>
                   )}
                   {comp.status === 'completed' && (
                     <>
-                      <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded-sm">Done</span>
+                      <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded">Done</span>
                       {comp.file_path && (
                         <a href={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
                           download className="p-1 text-primary hover:text-primary-light transition-colors">
@@ -207,7 +207,7 @@ export default function CompositesTab() {
                     </>
                   )}
                   {comp.status === 'failed' && (
-                    <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded-sm" title={comp.error}>
+                    <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={comp.error}>
                       <AlertTriangle className="w-3 h-3 inline mr-1" />Failed
                     </span>
                   )}

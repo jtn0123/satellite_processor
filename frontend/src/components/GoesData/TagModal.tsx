@@ -83,7 +83,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
           <label htmlFor="tagmod-create-new-tag" className="text-sm text-gray-500 dark:text-slate-400">Create new tag</label>
           <div className="flex gap-2">
             <input id="tagmod-create-new-tag" type="color" value={newTagColor} onChange={(e) => setNewTagColor(e.target.value)}
-              className="w-10 h-10 rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-pointer" />
+              className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-pointer" />
             <input aria-label="Newtagname" type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
               placeholder="Tag name" className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
             <button onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}

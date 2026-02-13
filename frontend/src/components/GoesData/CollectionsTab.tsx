@@ -75,7 +75,7 @@ export default function CollectionsTab() {
               {editingId === c.id ? (
                 <div className="flex gap-2">
                   <input aria-label="Editname" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1 rounded-sm bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-2 py-1 text-sm"
+                    className="flex-1 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-2 py-1 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })} />
                   <button onClick={() => updateMutation.mutate({ id: c.id, name: editName })}
                     className="text-xs text-emerald-400 hover:text-emerald-300">Save</button>

@@ -83,7 +83,7 @@ export default function KeyboardShortcuts() {
                 {s.keys.split(' ').map((k) => (
                   <kbd
                     key={k}
-                    className="px-2 py-0.5 bg-space-700 border border-space-600 rounded-sm text-xs font-mono text-gray-600 dark:text-slate-300"
+                    className="px-2 py-0.5 bg-space-700 border border-space-600 rounded text-xs font-mono text-gray-600 dark:text-slate-300"
                   >
                     {k}
                   </kbd>

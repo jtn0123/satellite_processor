@@ -155,7 +155,7 @@ export default function FramePreviewModal({
                 ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`
                 : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
               alt={`${frame.satellite} ${frame.band}`}
-              className="max-w-full max-h-[60vh] rounded-sm"
+              className="max-w-full max-h-[60vh] rounded"
               loading="lazy"
               draggable={false}
               onLoad={handleImageLoad}
@@ -228,7 +228,7 @@ export default function FramePreviewModal({
                 <button
                   key={p.id}
                   onClick={() => applyCropPreset(p)}
-                  className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors"
+                  className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors"
                 >
                   {p.name}
                 </button>

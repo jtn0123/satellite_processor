@@ -33,9 +33,9 @@ async def test_frames_pagination(client, db):
 
 @pytest.mark.asyncio
 async def test_frames_filter_satellite(client, db):
-    db.add(GoesFrame(id="f1", satellite="GOES-16", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
-    db.add(GoesFrame(id="f2", satellite="GOES-18", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-18", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=100))
     await db.commit()
 
@@ -65,13 +65,13 @@ async def test_frame_detail_not_found(client):
 
 @pytest.mark.asyncio
 async def test_frame_detail(client, db):
-    db.add(GoesFrame(id="f1", satellite="GOES-16", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames/f1")
+    resp = await client.get("/api/goes/frames/40b8f45e-7bd1-5131-9043-bb2d8253153d")
     assert resp.status_code == 200
-    assert resp.json()["id"] == "f1"
+    assert resp.json()["id"] == "40b8f45e-7bd1-5131-9043-bb2d8253153d"
 
 
 @pytest.mark.asyncio
@@ -85,9 +85,9 @@ async def test_frame_stats_empty(client):
 
 @pytest.mark.asyncio
 async def test_frame_stats_with_data(client, db):
-    db.add(GoesFrame(id="f1", satellite="GOES-16", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=500))
-    db.add(GoesFrame(id="f2", satellite="GOES-18", sector="CONUS", band="C13",
+    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-18", sector="CONUS", band="C13",
                      capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=300))
     await db.commit()
 
@@ -188,12 +188,12 @@ async def test_process_frames_no_match(client):
 
 @pytest.mark.asyncio
 async def test_frames_date_filter(client, db):
-    db.add(GoesFrame(id="f1", satellite="GOES-16", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
-    db.add(GoesFrame(id="f2", satellite="GOES-16", sector="CONUS", band="C02",
+    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-16", sector="CONUS", band="C02",
                      capture_time=datetime(2024, 6, 1), file_path="/t/2.nc", file_size=100))
     await db.commit()
 
     resp = await client.get("/api/goes/frames?start_date=2024-03-01T00:00:00")
     assert resp.json()["total"] == 1
-    assert resp.json()["items"][0]["id"] == "f2"
+    assert resp.json()["items"][0]["id"] == "2f0ef28f-ecc6-51f7-9295-0094dd96ac29"

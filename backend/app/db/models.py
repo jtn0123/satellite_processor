@@ -251,6 +251,23 @@ class Composite(Base):
     job = relationship("Job", foreign_keys=[job_id])
 
 
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    type = Column(String(30), nullable=False, index=True)
+    message = Column(Text, nullable=False)
+    read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "type IN ('fetch_complete', 'fetch_failed', 'schedule_run')",
+            name="ck_notifications_type",
+        ),
+    )
+
+
 class CleanupRule(Base):
     __tablename__ = "cleanup_rules"
 

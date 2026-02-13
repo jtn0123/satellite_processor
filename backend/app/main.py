@@ -26,7 +26,20 @@ from .metrics import (
 )
 from .rate_limit import limiter
 from .redis_pool import close_redis_pool, get_redis_client
-from .routers import animations, download, goes, goes_data, health, images, jobs, presets, scheduling, stats, system
+from .routers import (
+    animations,
+    download,
+    goes,
+    goes_data,
+    health,
+    images,
+    jobs,
+    notifications,
+    presets,
+    scheduling,
+    stats,
+    system,
+)
 from .routers import settings as settings_router
 from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 
@@ -109,6 +122,7 @@ app.include_router(stats.router)
 app.include_router(animations.router)
 app.include_router(download.router)
 app.include_router(scheduling.router)
+app.include_router(notifications.router)
 
 
 # ── Metrics endpoint ──────────────────────────────────────────────

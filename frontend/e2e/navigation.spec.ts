@@ -28,6 +28,7 @@ test.beforeEach(async ({ page }) => {
     if (url.includes('/api/presets')) {
       return route.fulfill({ json: [] });
     }
+    if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
     return route.continue();
   });
 });

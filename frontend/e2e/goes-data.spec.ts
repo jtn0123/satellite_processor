@@ -44,6 +44,7 @@ const mockApiHandler = async (route: unknown) => {
     return route.fulfill({ json: { total_images: 0, total_jobs: 0, active_jobs: 0, storage_used_mb: 0 } });
   }
   if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
+    if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
   if (url.includes('/api/presets')) return route.fulfill({ json: [] });
   return route.continue();
 };

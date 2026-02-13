@@ -1,10 +1,8 @@
 """Unit tests for error handling module."""
 
 import pytest
-from fastapi import Request
-from starlette.testclient import TestClient
-
 from app.errors import APIError, api_error_handler
+from fastapi import Request
 
 
 class TestAPIError:

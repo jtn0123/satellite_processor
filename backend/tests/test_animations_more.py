@@ -1,8 +1,7 @@
 """Additional animation and crop preset tests."""
 
+
 import pytest
-from app.db.models import GoesFrame
-from datetime import datetime
 
 
 @pytest.mark.asyncio

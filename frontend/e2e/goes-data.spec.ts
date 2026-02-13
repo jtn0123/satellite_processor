@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const mockApiHandler = async (route: any) => {
+const mockApiHandler = async (route: unknown) => {
   const url = route.request().url();
   if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
   if (url.includes('/api/goes/frames/stats')) {

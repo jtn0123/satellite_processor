@@ -1,8 +1,9 @@
 """Additional GOES router tests — edge cases, composites, latest, preview."""
 
+from datetime import datetime
+
 import pytest
 from app.db.models import GoesFrame
-from datetime import datetime
 
 
 @pytest.mark.asyncio

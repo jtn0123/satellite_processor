@@ -1,8 +1,9 @@
 """Additional GOES data tests — frames, collections, tags edge cases."""
 
-import pytest
-from app.db.models import GoesFrame, Collection, Tag
 from datetime import datetime
+
+import pytest
+from app.db.models import GoesFrame
 
 
 @pytest.mark.asyncio

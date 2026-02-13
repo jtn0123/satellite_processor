@@ -121,12 +121,12 @@ export default function LiveTab() {
           <div className="flex items-center gap-2">
             <button onClick={() => refetch()}
               className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-              title="Refresh now">
+              title="Refresh now" aria-label="Refresh now">
               <RefreshCw className="w-4 h-4" />
             </button>
             <button onClick={toggleFullscreen}
               className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>

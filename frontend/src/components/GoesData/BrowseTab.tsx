@@ -16,13 +16,13 @@ import {
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useDebounce } from '../../hooks/useDebounce';
-import { formatBytes } from './utils';
 import type { Product, TagType, GoesFrame, CollectionType, PaginatedFrames } from './types';
 import FramePreviewModal from './FramePreviewModal';
 import AddToCollectionModal from './AddToCollectionModal';
 import TagModal from './TagModal';
 import ComparisonModal from './ComparisonModal';
 import EmptyState from './EmptyState';
+import FrameCard from './FrameCard';
 
 export default function BrowseTab() {
   const queryClient = useQueryClient();
@@ -163,47 +163,7 @@ export default function BrowseTab() {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {framesData?.items.map((frame) => (
-            <div key={frame.id}
-              role="button"
-              tabIndex={0}
-              onClick={(e) => handleFrameClick(frame, e)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFrameClick(frame, e as unknown as React.MouseEvent); } }}
-              className={`relative bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all hover:bg-slate-700 ${
-                selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-700 hover:border-slate-600'
-              }`}>
-              <div className="aspect-video bg-slate-800 flex items-center justify-center">
-                {frame.thumbnail_path ? (
-                  <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                    alt={`${frame.satellite} ${frame.band}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover" />
-                ) : (
-                  <Satellite className="w-8 h-8 text-slate-600" />
-                )}
-              </div>
-              <div className="p-2 space-y-1">
-                <div className="text-xs font-medium text-white truncate">
-                  {frame.satellite} · {frame.band} · {frame.sector}
-                </div>
-                <div className="text-xs text-slate-500">
-                  {new Date(frame.capture_time).toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-600">{formatBytes(frame.file_size)}</div>
-                {frame.tags.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {frame.tags.map((t) => (
-                      <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
-                        style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {selectedIds.has(frame.id) && (
-                <div className="absolute top-2 left-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-3.5 h-3.5 text-white" />
-                </div>
-              )}
-            </div>
+            <FrameCard key={frame.id} frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="grid" />
           ))}
         </div>
       );
@@ -211,37 +171,7 @@ export default function BrowseTab() {
     return (
       <div className="space-y-1">
         {framesData?.items.map((frame) => (
-          <div key={frame.id}
-            role="button"
-            tabIndex={0}
-            onClick={(e) => handleFrameClick(frame, e)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFrameClick(frame, e as unknown as React.MouseEvent); } }}
-            className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
-              selectedIds.has(frame.id) ? 'bg-primary/10 border border-primary/30' : 'bg-slate-900 border border-slate-800 hover:bg-slate-800/50'
-            }`}>
-            <div className="w-16 h-10 rounded bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {frame.thumbnail_path ? (
-                <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                  alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" className="w-full h-full object-cover" />
-              ) : (
-                <Satellite className="w-4 h-4 text-slate-600" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm text-white">{frame.satellite} · {frame.band} · {frame.sector}</div>
-              <div className="text-xs text-slate-500">{new Date(frame.capture_time).toLocaleString()}</div>
-            </div>
-            <div className="text-xs text-slate-500">{formatBytes(frame.file_size)}</div>
-            {frame.width && frame.height && (
-              <div className="text-xs text-slate-600">{frame.width}×{frame.height}</div>
-            )}
-            <div className="flex gap-1">
-              {frame.tags.map((t) => (
-                <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-white"
-                  style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
-              ))}
-            </div>
-          </div>
+          <FrameCard key={frame.id} frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="list" />
         ))}
       </div>
     );
@@ -339,15 +269,15 @@ export default function BrowseTab() {
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
               <>
-                <button onClick={() => deleteMutation.mutate([...selectedIds])}
+                <button onClick={() => deleteMutation.mutate([...selectedIds])} aria-label="Delete selected frames"
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
-                <button onClick={() => setShowAddToCollection(true)}
+                <button onClick={() => setShowAddToCollection(true)} aria-label="Add to collection"
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">
                   <FolderPlus className="w-3.5 h-3.5" /> Collection
                 </button>
-                <button onClick={() => setShowTagModal(true)}
+                <button onClick={() => setShowTagModal(true)} aria-label="Tag selected frames"
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">
                   <Tag className="w-3.5 h-3.5" /> Tag
                 </button>
@@ -368,11 +298,11 @@ export default function BrowseTab() {
               </>
             )}
             <div className="flex border border-slate-700 rounded-lg overflow-hidden ml-2">
-              <button onClick={() => setViewMode('grid')}
+              <button onClick={() => setViewMode('grid')} aria-label="Grid view"
                 className={`p-1.5 ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>
                 <Grid3X3 className="w-4 h-4" />
               </button>
-              <button onClick={() => setViewMode('list')}
+              <button onClick={() => setViewMode('list')} aria-label="List view"
                 className={`p-1.5 ${viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>
                 <List className="w-4 h-4" />
               </button>
@@ -391,12 +321,12 @@ export default function BrowseTab() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 pt-4">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} aria-label="Previous page"
               className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm text-slate-400">Page {page} of {totalPages}</span>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label="Next page"
               className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>

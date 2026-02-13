@@ -100,13 +100,15 @@ export default function MapTab() {
           </select>
         </div>
         <div className="md:col-span-2">
-          <label htmlFor="map-overlay-opacity-math-round-opacity-100" className="block text-sm font-medium text-slate-400 mb-1">
+          <label htmlFor="map-overlay-opacity" className="block text-sm font-medium text-slate-400 mb-1">
             Overlay Opacity: {Math.round(opacity * 100)}%
           </label>
           <input
+            id="map-overlay-opacity"
             type="range" min={0} max={1} step={0.05} value={opacity}
             onChange={(e) => setOpacity(Number(e.target.value))}
             className="w-full accent-primary mt-1"
+            aria-label={`Overlay opacity: ${Math.round(opacity * 100)}%`}
           />
         </div>
       </div>

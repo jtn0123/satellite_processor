@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { TagType } from './types';
 
 export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
@@ -10,6 +11,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
+  const dialogRef = useFocusTrap(onClose);
 
   useEffect(() => {
     const handler = () => onClose();
@@ -49,10 +51,11 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 w-96 space-y-4" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-label="Tag Frames" aria-modal="true"
+        className="bg-slate-900 rounded-xl p-6 border border-slate-700 w-96 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Tag Frames</h3>
-          <button onClick={onClose}><X className="w-5 h-5 text-slate-400" /></button>
+          <button onClick={onClose} aria-label="Close tag modal"><X className="w-5 h-5 text-slate-400" /></button>
         </div>
 
         <div className="flex flex-wrap gap-2">

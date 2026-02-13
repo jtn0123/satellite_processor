@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 
 class ImageResponse(BaseModel):
+    """Response schema for an uploaded satellite image with dimensions and metadata."""
+
     id: str
     filename: str
     original_name: str

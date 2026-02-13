@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Crop, Save } from 'lucide-react';
 import api from '../../api/client';
 import { formatBytes } from './utils';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { GoesFrame, CropPreset } from './types';
 
 export default function FramePreviewModal({
@@ -20,6 +21,7 @@ export default function FramePreviewModal({
   const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
+  const dialogRef = useFocusTrap(onClose);
 
   // Listen for global close-modal event (Escape key)
   useEffect(() => {
@@ -105,14 +107,15 @@ export default function FramePreviewModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 rounded-xl border border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col"
+      <div ref={dialogRef} role="dialog" aria-label="Frame Preview" aria-modal="true"
+        className="bg-slate-900 rounded-xl border border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <div>
             <h3 className="text-lg font-semibold">{frame.satellite} · {frame.band} · {frame.sector}</h3>
             <p className="text-sm text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
           </div>
-          <button onClick={onClose}><X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+          <button onClick={onClose} aria-label="Close preview"><X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
         </div>
 
         <div className="flex-1 overflow-auto p-4">

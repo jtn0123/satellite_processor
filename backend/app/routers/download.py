@@ -1,7 +1,5 @@
 """Download endpoints for job outputs."""
 
-from __future__ import annotations
-
 import os
 import zipfile
 from collections.abc import Generator

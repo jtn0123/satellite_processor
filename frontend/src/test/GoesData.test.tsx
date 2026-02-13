@@ -74,8 +74,8 @@ describe('GoesData page', () => {
   it('renders tab navigation', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Browse/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Fetch/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Browse/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Fetch/i })).toBeInTheDocument();
     });
   });
 

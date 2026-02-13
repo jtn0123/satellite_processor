@@ -91,7 +91,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   download
                   onClick={(e) => e.stopPropagation()}
                   className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-primary"
-                  title="Download"
+                  title="Download" aria-label={`Download job ${job.id.slice(0, 8)}`}
                 >
                   <Download className="w-4 h-4" />
                 </a>
@@ -102,6 +102,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   onSelect?.(job.id);
                 }}
                 className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-white"
+                aria-label={`View job ${job.id.slice(0, 8)}`}
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -113,6 +114,7 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
                   }
                 }}
                 className="p-1.5 hover:bg-space-700 rounded-lg text-slate-400 hover:text-red-400"
+                aria-label={`Delete job ${job.id.slice(0, 8)}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

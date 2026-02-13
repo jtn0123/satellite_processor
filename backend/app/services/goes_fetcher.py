@@ -90,11 +90,18 @@ def _get_s3_client():
     )
 
 
-def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, **kwargs):
-    """Execute an S3 operation with exponential backoff retry.
+def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
+    """Execute an S3 operation with exponential backoff retry and circuit breaker.
 
     Retries on transient errors: timeouts, throttling, connection issues.
     """
+    from ..circuit_breaker import CircuitBreakerOpen, s3_circuit_breaker
+    from ..metrics import S3_FETCH_COUNT, S3_FETCH_ERRORS
+
+    if not s3_circuit_breaker.allow_request():
+        S3_FETCH_ERRORS.labels(operation=operation, error_type="circuit_open").inc()
+        raise CircuitBreakerOpen("s3")
+
     _retryable_errors = (
         ConnectTimeoutError,
         ReadTimeoutError,
@@ -104,7 +111,10 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, **kwargs
     )
     for attempt in range(1, max_retries + 1):
         try:
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            S3_FETCH_COUNT.labels(operation=operation).inc()
+            s3_circuit_breaker.record_success()
+            return result
         except ClientError as exc:
             error_code = exc.response.get("Error", {}).get("Code", "")
             if error_code in ("Throttling", "SlowDown", "RequestTimeout") and attempt < max_retries:
@@ -115,8 +125,10 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, **kwargs
                 )
                 time.sleep(delay)
             else:
+                s3_circuit_breaker.record_failure()
+                S3_FETCH_ERRORS.labels(operation=operation, error_type=error_code or "client_error").inc()
                 raise
-        except _retryable_errors:
+        except _retryable_errors as exc:
             if attempt < max_retries:
                 delay = S3_BASE_DELAY * (2 ** (attempt - 1))
                 logger.warning(
@@ -125,6 +137,8 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, **kwargs
                 )
                 time.sleep(delay)
             else:
+                s3_circuit_breaker.record_failure()
+                S3_FETCH_ERRORS.labels(operation=operation, error_type=type(exc).__name__).inc()
                 raise
 
 
@@ -197,7 +211,7 @@ def _list_hour(
         def _do_list():
             return list(paginator.paginate(Bucket=bucket, Prefix=prefix))
 
-        pages = _retry_s3_operation(_do_list)
+        pages = _retry_s3_operation(_do_list, operation="list")
         for page in pages:
             for obj in page.get("Contents", []):
                 key = obj["Key"]
@@ -304,7 +318,7 @@ def fetch_frames(
 
     for i, item in enumerate(available):
         try:
-            response = _retry_s3_operation(s3.get_object, Bucket=bucket, Key=item["key"])
+            response = _retry_s3_operation(s3.get_object, Bucket=bucket, Key=item["key"], operation="get")
             nc_bytes = response["Body"].read()
 
             scan_time: datetime = item["scan_time"]
@@ -349,7 +363,7 @@ def fetch_single_preview(
     s3 = _get_s3_client()
     try:
         response = _retry_s3_operation(
-            s3.get_object, Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"],
+            s3.get_object, Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"], operation="get",
         )
         nc_bytes = response["Body"].read()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:

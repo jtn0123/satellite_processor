@@ -14,10 +14,13 @@ import {
   BookOpen,
   Sun,
   Moon,
+  HelpCircle,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import KeyboardShortcuts from './KeyboardShortcuts';
 import ConnectionStatus from './ConnectionStatus';
+import NotificationBell from './NotificationBell';
+import WhatsNewModal from './WhatsNewModal';
 import { useJobToasts } from '../hooks/useJobToasts';
 
 const links = [
@@ -33,12 +36,17 @@ const links = [
 export default function Layout() {
   const [versionInfo, setVersionInfo] = useState({ version: '', commit: '', display: '' });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  // #8: System theme detection - check preference on first load
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
-    }
-    return 'dark';
+    if (typeof window === 'undefined') return 'dark';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    // No manual preference - detect system
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
   });
 
   useEffect(() => {
@@ -54,7 +62,11 @@ export default function Layout() {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme-manual', 'true');
+      return next;
+    });
   }, []);
 
   useJobToasts();
@@ -104,6 +116,13 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Skip to content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:outline-none"
+      >
+        Skip to content
+      </a>
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
@@ -125,49 +144,59 @@ export default function Layout() {
                     : 'text-slate-400 hover:text-white hover:bg-space-800 border border-transparent'
                 }`
               }
+              aria-label={l.label}
             >
               <l.icon className="w-5 h-5" />
               {l.label}
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-2 space-y-1">
           <a
             href="/docs"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="API Documentation (opens in new tab)"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-space-800 transition-colors focus-ring"
           >
             <FileText className="w-5 h-5" />
             API Docs
           </a>
+          {/* #9: Keyboard shortcut button */}
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-space-800 transition-colors focus-ring w-full"
+            aria-label="Keyboard shortcuts"
+          >
+            <HelpCircle className="w-5 h-5" />
+            Shortcuts
+          </button>
         </div>
         <div className="px-6 py-4 border-t border-subtle space-y-2">
           <div className="flex items-center justify-between">
             <ConnectionStatus />
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
+          {/* #15: Clickable version footer */}
           <div className="text-xs text-slate-500 flex items-center gap-2">
             <Cpu className="w-4 h-4" />
-            {versionInfo.commit && versionInfo.commit !== 'dev' ? (
-              <a
-                href={`https://github.com/jtn0123/satallite_processor/commit/${versionInfo.commit}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-slate-300 transition-colors"
-              >
-                Satellite Processor {versionInfo.display}
-              </a>
-            ) : (
-              <span>Satellite Processor {versionInfo.display}</span>
-            )}
+            <button
+              onClick={() => setShowWhatsNew(true)}
+              className="hover:text-slate-300 transition-colors text-left"
+              aria-label="Show changelog"
+            >
+              Satellite Processor {versionInfo.display}
+            </button>
           </div>
         </div>
       </aside>
@@ -185,6 +214,9 @@ export default function Layout() {
       {/* Mobile slide-out drawer */}
       <div
         ref={drawerRef}
+        role="dialog"
+        aria-label="Navigation menu"
+        aria-modal="true"
         className={`fixed inset-y-0 left-0 w-72 bg-space-900 border-r border-subtle z-50 transform transition-transform duration-200 ease-out md:hidden ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -216,6 +248,7 @@ export default function Layout() {
                     : 'text-slate-400 hover:text-white hover:bg-space-800'
                 }`
               }
+              aria-label={l.label}
             >
               <l.icon className="w-5 h-5" />
               {l.label}
@@ -238,35 +271,36 @@ export default function Layout() {
             <Satellite className="w-5 h-5 text-primary" />
             <span className="font-bold">SatTracker</span>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-space-800 text-slate-400 hover:text-white transition-colors focus-ring"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
           <footer className="md:hidden mt-8 pb-4 text-center text-xs text-slate-500">
-            {versionInfo.commit && versionInfo.commit !== 'dev' ? (
-              <a
-                href={`https://github.com/jtn0123/satallite_processor/commit/${versionInfo.commit}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-slate-300 transition-colors"
-              >
-                {versionInfo.display}
-              </a>
-            ) : (
-              <span>{versionInfo.display}</span>
-            )}
+            <button
+              onClick={() => setShowWhatsNew(true)}
+              className="hover:text-slate-300 transition-colors"
+              aria-label="Show changelog"
+            >
+              {versionInfo.display}
+            </button>
           </footer>
         </main>
       </div>
+
+      {/* What's New Modal */}
+      {showWhatsNew && <WhatsNewModal onClose={() => setShowWhatsNew(false)} />}
     </div>
   );
 }

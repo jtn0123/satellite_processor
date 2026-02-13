@@ -6,6 +6,8 @@ export function useImages() {
   return useQuery({
     queryKey: ['images'],
     queryFn: () => api.get('/images').then((r) => r.data.items ?? r.data),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -34,6 +36,8 @@ export function useJobs() {
     queryKey: ['jobs'],
     queryFn: () => api.get('/jobs').then((r) => r.data.items ?? r.data),
     refetchInterval: 5000,
+    staleTime: 3_000,
+    gcTime: 60_000,
   });
 }
 
@@ -76,6 +80,8 @@ export function useSettings() {
   return useQuery({
     queryKey: ['settings'],
     queryFn: () => api.get('/settings').then((r) => r.data),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -92,6 +98,8 @@ export function usePresets() {
   return useQuery({
     queryKey: ['presets'],
     queryFn: () => api.get('/presets').then((r) => r.data),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 

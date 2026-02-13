@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Library } from 'lucide-react';
+import { Library, FileDown } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import type { CollectionType } from './types';
@@ -87,6 +87,13 @@ export default function CollectionsTab() {
                   <div className="flex gap-1">
                     <button onClick={() => { setEditingId(c.id); setEditName(c.name); }}
                       className="text-xs text-slate-400 hover:text-white">Edit</button>
+                    <button
+                      onClick={() => window.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
+                      className="text-xs text-slate-400 hover:text-white"
+                      aria-label={`Export collection ${c.name}`}
+                    >
+                      <FileDown className="w-3 h-3 inline" /> Export
+                    </button>
                     <button onClick={() => deleteMutation.mutate(c.id)}
                       className="text-xs text-red-400 hover:text-red-300">Delete</button>
                   </div>

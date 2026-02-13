@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class ProcessingSettings(BaseModel):
+    """Global processing settings for crop, color, timestamp, and video encoding."""
+
     crop_enabled: bool = False
     crop_x: int = Field(default=0, ge=0)
     crop_y: int = Field(default=0, ge=0)
@@ -18,6 +20,8 @@ class ProcessingSettings(BaseModel):
 
 
 class PresetCreate(BaseModel):
+    """Request schema for creating a named processing parameter preset."""
+
     name: str = Field(min_length=1, max_length=100)
     params: dict
 
@@ -37,6 +41,8 @@ class PresetCreate(BaseModel):
 
 
 class PresetResponse(BaseModel):
+    """Response schema for a processing preset with its stored parameters."""
+
     id: str
     name: str
     params: dict

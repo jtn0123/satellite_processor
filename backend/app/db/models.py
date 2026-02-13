@@ -6,6 +6,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -43,6 +44,11 @@ class Job(Base):
 
     __table_args__ = (
         Index("ix_jobs_status_created_at", "status", "created_at"),
+        CheckConstraint("progress >= 0 AND progress <= 100", name="ck_jobs_progress"),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')",
+            name="ck_jobs_status",
+        ),
     )
 
 
@@ -100,6 +106,7 @@ class GoesFrame(Base):
     __table_args__ = (
         Index("ix_goes_frames_sat_band", "satellite", "band"),
         Index("ix_goes_frames_capture", "capture_time"),
+        CheckConstraint("file_size >= 0", name="ck_goes_frames_file_size"),
     )
 
 
@@ -220,6 +227,10 @@ class FetchSchedule(Base):
 
     preset = relationship("FetchPreset", back_populates="schedules")
 
+    __table_args__ = (
+        CheckConstraint("interval_minutes > 0", name="ck_fetch_schedules_interval"),
+    )
+
 
 class Composite(Base):
     __tablename__ = "composites"
@@ -238,6 +249,23 @@ class Composite(Base):
     created_at = Column(DateTime, default=utcnow)
 
     job = relationship("Job", foreign_keys=[job_id])
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    type = Column(String(30), nullable=False, index=True)
+    message = Column(Text, nullable=False)
+    read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "type IN ('fetch_complete', 'fetch_failed', 'schedule_run')",
+            name="ck_notifications_type",
+        ),
+    )
 
 
 class CleanupRule(Base):

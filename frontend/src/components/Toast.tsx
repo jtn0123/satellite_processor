@@ -74,12 +74,14 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
   const style = styleMap[toast.type];
   return (
     <output
+      role="alert"
+      aria-live="polite"
       className={`flex flex-col rounded-xl shadow-lg text-sm border overflow-hidden animate-slide-in ${style.bg}`}
     >
       <div className="flex items-center gap-2 px-4 py-3">
         {style.icon}
         <span className="flex-1">{toast.message}</span>
-        <button onClick={() => onDismiss(toast.id)} className="p-0.5 hover:opacity-70">
+        <button onClick={() => onDismiss(toast.id)} className="p-0.5 hover:opacity-70" aria-label="Dismiss notification">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>

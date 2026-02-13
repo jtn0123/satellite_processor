@@ -1,8 +1,90 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
-import { Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive } from 'lucide-react';
+import api from '../api/client';
+import { formatBytes } from '../utils/format';
+
+interface StorageBreakdown {
+  by_satellite: Record<string, { count: number; size: number }>;
+  by_band: Record<string, { count: number; size: number }>;
+  total_size: number;
+  total_frames: number;
+}
+
+function StorageSection() {
+  const { data: storage } = useQuery<StorageBreakdown>({
+    queryKey: ['goes-storage-breakdown'],
+    queryFn: () => api.get('/goes/stats').then((r) => r.data),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  if (!storage) return null;
+
+  const satEntries = Object.entries(storage.by_satellite);
+  const bandEntries = Object.entries(storage.by_band);
+  const maxSatSize = Math.max(...satEntries.map(([, v]) => v.size), 1);
+  const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400', 'bg-pink-400'];
+
+  return (
+    <div className="bg-slate-800 rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <HardDrive className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-semibold">Storage</h2>
+        <span className="text-sm text-slate-400 ml-auto">
+          {formatBytes(storage.total_size)} · {storage.total_frames.toLocaleString()} frames
+        </span>
+      </div>
+
+      {satEntries.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-slate-300">By Satellite</h3>
+          {satEntries.map(([sat, info], i) => (
+            <div key={sat} className="flex items-center gap-3">
+              <span className="text-xs text-slate-400 w-20 truncate">{sat}</span>
+              <div className="flex-1 h-3 bg-space-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${colors[i % colors.length]}`}
+                  style={{ width: `${(info.size / maxSatSize) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-slate-500 w-24 text-right">{formatBytes(info.size)} ({info.count})</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {bandEntries.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-slate-300">By Band</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-500 border-b border-slate-700">
+                  <th className="py-2 pr-4">Band</th>
+                  <th className="py-2 pr-4">Frames</th>
+                  <th className="py-2">Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bandEntries.map(([band, info]) => (
+                  <tr key={band} className="border-b border-slate-700/50">
+                    <td className="py-1.5 pr-4 text-slate-300">{band}</td>
+                    <td className="py-1.5 pr-4 text-slate-400">{info.count.toLocaleString()}</td>
+                    <td className="py-1.5 text-slate-400">{formatBytes(info.size)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
   const updateSettings = useUpdateSettings();
@@ -140,6 +222,8 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
             )}
           </div>
       </div>
+
+      <StorageSection />
 
       <div>
         <h2 className="text-lg font-semibold mb-4">System Resources</h2>

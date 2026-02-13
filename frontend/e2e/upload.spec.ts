@@ -13,6 +13,7 @@ test.beforeEach(async ({ page }) => {
     if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
     if (url.includes('/api/presets')) return route.fulfill({ json: [] });
     if (url.includes('/api/jobs')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
     return route.continue();
   });
 });

@@ -44,6 +44,8 @@ def _check_path_traversal(params: dict) -> None:
 
 
 class JobCreate(BaseModel):
+    """Request schema for creating a processing or video creation job."""
+
     job_type: Literal["image_process", "video_create"] = "image_process"
     params: dict = Field(default_factory=dict)
     input_path: str = Field(default="", max_length=500)
@@ -69,6 +71,8 @@ class JobCreate(BaseModel):
 
 
 class JobResponse(BaseModel):
+    """Response schema for a job with status, progress, and output path."""
+
     id: str
     status: str
     job_type: str
@@ -86,6 +90,8 @@ class JobResponse(BaseModel):
 
 
 class JobUpdate(BaseModel):
+    """Request schema for updating job status and progress."""
+
     status: str | None = None
     progress: int | None = None
     status_message: str | None = None

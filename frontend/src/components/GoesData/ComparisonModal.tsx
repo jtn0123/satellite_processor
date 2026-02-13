@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, ArrowLeftRight, Columns, SlidersHorizontal } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface GoesFrame {
   id: string;
@@ -33,6 +34,7 @@ export default function ComparisonModal({
   const [swapped, setSwapped] = useState(false);
   const [sliderPos, setSliderPos] = useState(50);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useFocusTrap(onClose);
 
   useEffect(() => {
     const handler = () => onClose();
@@ -73,7 +75,8 @@ export default function ComparisonModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      <div ref={dialogRef} role="dialog" aria-label="Compare Frames" aria-modal="true"
+        className="bg-slate-900 rounded-xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
@@ -95,7 +98,7 @@ export default function ComparisonModal({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors">
               <ArrowLeftRight className="w-4 h-4" /> Swap
             </button>
-            <button onClick={onClose}>
+            <button onClick={onClose} aria-label="Close comparison">
               <X className="w-5 h-5 text-slate-400 hover:text-white" />
             </button>
           </div>

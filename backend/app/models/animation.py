@@ -10,6 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CropPresetCreate(BaseModel):
+    """Request schema for creating a crop preset with name and region coordinates."""
+
     name: str = Field(..., min_length=1, max_length=200)
     x: int = Field(..., ge=0)
     y: int = Field(..., ge=0)
@@ -18,6 +20,8 @@ class CropPresetCreate(BaseModel):
 
 
 class CropPresetUpdate(BaseModel):
+    """Request schema for updating a crop preset. All fields are optional."""
+
     name: str | None = None
     x: int | None = Field(None, ge=0)
     y: int | None = Field(None, ge=0)
@@ -26,6 +30,8 @@ class CropPresetUpdate(BaseModel):
 
 
 class CropPresetResponse(BaseModel):
+    """Response schema for a crop preset with coordinates and metadata."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -41,6 +47,8 @@ class CropPresetResponse(BaseModel):
 
 
 class AnimationCreate(BaseModel):
+    """Request schema for creating an animation from selected frames or filters."""
+
     name: str = Field("Untitled Animation", min_length=1, max_length=200)
     frame_ids: list[str] | None = None
     # Filter-based frame selection (alternative to frame_ids)
@@ -60,6 +68,7 @@ class AnimationCreate(BaseModel):
 
 
 class AnimationResponse(BaseModel):
+    """Response schema for an animation with status, output path, and metadata."""
     model_config = ConfigDict(from_attributes=True)
 
     id: str

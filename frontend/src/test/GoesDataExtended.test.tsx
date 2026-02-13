@@ -61,8 +61,8 @@ describe('GoesData page extended', () => {
   it('renders multiple tab buttons', async () => {
     renderPage();
     await waitFor(() => {
-      const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBeGreaterThanOrEqual(3);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.length).toBeGreaterThanOrEqual(3);
     });
   });
 

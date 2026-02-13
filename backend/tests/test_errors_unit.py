@@ -30,7 +30,7 @@ async def test_api_error_handler_response():
     request = Request(scope)
     response = api_error_handler(request, exc)
     assert response.status_code == 422
-    assert response.body == b'{"error":"validation_error","detail":"bad field"}'
+    assert response.body == b'{"error":"validation_error","detail":"bad field","status_code":422}'
 
 
 @pytest.mark.asyncio

@@ -228,7 +228,7 @@ export default function GoesData() {
       </div>
 
       {/* Tab bar - grouped with dividers */}
-      <div className="flex gap-1 bg-slate-900 rounded-xl p-1.5 border border-slate-800 overflow-x-auto scrollbar-hide items-center">
+      <div className="flex gap-1 bg-slate-900 rounded-xl p-1.5 border border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
         {tabGroups.map((group, gi) => (
           <div key={group.label} className="flex items-center gap-1">
             {gi > 0 && <div className="w-px h-6 bg-slate-700 mx-1 flex-shrink-0" />}
@@ -237,7 +237,10 @@ export default function GoesData() {
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id); setSubView(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                role="tab"
+                aria-label={`${tab.label} tab`}
+                aria-selected={activeTab === tab.id}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
                   activeTab === tab.id
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'

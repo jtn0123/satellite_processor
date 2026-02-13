@@ -3,6 +3,7 @@
 import pytest_asyncio
 from app.db.database import Base, get_db
 from app.main import app
+from app.rate_limit import limiter
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -18,6 +19,9 @@ async def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+# Disable rate limiting in tests
+limiter.enabled = False
 
 
 @pytest_asyncio.fixture(autouse=True)

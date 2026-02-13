@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 # --- Fetch Preset schemas ---
 
 class FetchPresetCreate(BaseModel):
+    """Request schema for creating a fetch preset with satellite/sector/band configuration."""
+
     name: str = Field(..., min_length=1, max_length=200)
     satellite: str = Field(..., min_length=1, max_length=20)
     sector: str = Field(..., min_length=1, max_length=20)
@@ -17,6 +19,8 @@ class FetchPresetCreate(BaseModel):
 
 
 class FetchPresetUpdate(BaseModel):
+    """Request schema for updating a fetch preset. All fields are optional."""
+
     name: str | None = None
     satellite: str | None = None
     sector: str | None = None
@@ -25,6 +29,8 @@ class FetchPresetUpdate(BaseModel):
 
 
 class FetchPresetResponse(BaseModel):
+    """Response schema for a fetch preset with satellite configuration."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str

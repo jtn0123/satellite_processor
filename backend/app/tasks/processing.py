@@ -58,7 +58,14 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
             "message": message,
             "status": status,
         })
-        _get_redis().publish(f"job:{job_id}", payload)
+        r = _get_redis()
+        r.publish(f"job:{job_id}", payload)
+        if status in ("completed", "failed"):
+            r.publish("sat_processor:events", json.dumps({
+                "type": f"job_{status}",
+                "job_id": job_id,
+                "message": message,
+            }))
     except Exception:
         logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 
@@ -124,7 +131,7 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
 @celery_app.task(bind=True, name="process_images")
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
-    logger.info(f"Starting image processing job {job_id}")
+    logger.info("Starting image processing job %s", job_id, extra={"job_id": job_id})
 
     _update_job_db(job_id, status="processing", started_at=utcnow(),
                    status_message="Initializing processor...")
@@ -158,7 +165,7 @@ def process_images_task(self, job_id: str, params: dict):
         _finalize_job(job_id, processor.process(), output_path)
 
     except Exception as e:
-        logger.exception(f"Job {job_id} failed")
+        logger.exception("Job %s failed", job_id, extra={"job_id": job_id})
         _update_job_db(job_id, status="failed", error=str(e),
                        completed_at=utcnow(), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
@@ -173,7 +180,7 @@ def process_images_task(self, job_id: str, params: dict):
 @celery_app.task(bind=True, name="create_video")
 def create_video_task(self, job_id: str, params: dict):
     """Video creation task"""
-    logger.info(f"Starting video creation job {job_id}")
+    logger.info("Starting video creation job %s", job_id, extra={"job_id": job_id})
 
     _update_job_db(
         job_id,
@@ -236,7 +243,7 @@ def create_video_task(self, job_id: str, params: dict):
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
     except Exception as e:
-        logger.exception(f"Video job {job_id} failed")
+        logger.exception("Video job %s failed", job_id, extra={"job_id": job_id})
         _update_job_db(
             job_id,
             status="failed",

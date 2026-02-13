@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class GoesFetchRequest(BaseModel):
+    """Request schema for fetching GOES frames within a time range. Max 24h window."""
+
     satellite: str = Field(..., description="Satellite name (GOES-16, GOES-18, GOES-19)")
     sector: str = Field(..., description="Sector (FullDisk, CONUS, Mesoscale1, Mesoscale2)")
     band: str = Field(..., description="Band (C01-C16)")

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Satellite,
@@ -17,6 +17,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Film,
+  Crop,
+  Save,
+  Sliders,
 } from 'lucide-react';
 import api from '../api/client';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -93,6 +97,43 @@ interface PaginatedFrames {
   limit: number;
 }
 
+interface CropPreset {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  created_at: string;
+}
+
+interface AnimationType {
+  id: string;
+  name: string;
+  status: string;
+  frame_count: number;
+  fps: number;
+  format: string;
+  quality: string;
+  crop_preset_id: string | null;
+  false_color: boolean;
+  scale: string;
+  output_path: string | null;
+  file_size: number;
+  duration_seconds: number;
+  created_at: string;
+  completed_at: string | null;
+  error: string;
+  job_id: string | null;
+}
+
+interface PaginatedAnimations {
+  items: AnimationType[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 // ── Helpers ──────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -105,7 +146,7 @@ function formatBytes(bytes: number): string {
 
 // ── Tabs ──────────────────────────────────────────────
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats';
+type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation';
 
 export default function GoesData() {
   usePageTitle('GOES Data');
@@ -115,6 +156,7 @@ export default function GoesData() {
     { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
     { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
     { id: 'collections', label: 'Collections', icon: <Library className="w-4 h-4" /> },
+    { id: 'animation', label: 'Animation Studio', icon: <Film className="w-4 h-4" /> },
     { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
@@ -146,6 +188,7 @@ export default function GoesData() {
       {activeTab === 'fetch' && <FetchTab />}
       {activeTab === 'browse' && <BrowseTab />}
       {activeTab === 'collections' && <CollectionsTab />}
+      {activeTab === 'animation' && <AnimationStudioTab />}
       {activeTab === 'stats' && <StatsTab />}
     </div>
   );
@@ -331,6 +374,221 @@ function FetchTab() {
   );
 }
 
+// ── Frame Preview Modal with Crop Tool ──────────────────
+
+function FramePreviewModal({
+  frame,
+  onClose,
+}: {
+  frame: GoesFrame;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(null);
+  const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [presetName, setPresetName] = useState('');
+  const [showSavePreset, setShowSavePreset] = useState(false);
+
+  const { data: cropPresets } = useQuery<CropPreset[]>({
+    queryKey: ['crop-presets'],
+    queryFn: () => api.get('/goes/crop-presets').then((r) => r.data),
+  });
+
+  const saveCropPresetMutation = useMutation({
+    mutationFn: (data: { name: string; x: number; y: number; width: number; height: number }) =>
+      api.post('/goes/crop-presets', data).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crop-presets'] });
+      setShowSavePreset(false);
+      setPresetName('');
+    },
+  });
+
+  // Convert screen coords to image coords
+  const screenToImage = useCallback((clientX: number, clientY: number) => {
+    const img = imgRef.current;
+    const container = containerRef.current;
+    if (!img || !container) return { x: 0, y: 0 };
+
+    const rect = img.getBoundingClientRect();
+    const scaleX = (frame.width || img.naturalWidth) / rect.width;
+    const scaleY = (frame.height || img.naturalHeight) / rect.height;
+    const x = Math.max(0, Math.round((clientX - rect.left) * scaleX));
+    const y = Math.max(0, Math.round((clientY - rect.top) * scaleY));
+    return { x, y };
+  }, [frame.width, frame.height]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const pos = screenToImage(e.clientX, e.clientY);
+    setCropStart(pos);
+    setCropRect(null);
+    setIsDragging(true);
+  }, [screenToImage]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !cropStart) return;
+    const pos = screenToImage(e.clientX, e.clientY);
+    const x = Math.min(cropStart.x, pos.x);
+    const y = Math.min(cropStart.y, pos.y);
+    const w = Math.abs(pos.x - cropStart.x);
+    const h = Math.abs(pos.y - cropStart.y);
+    setCropRect({ x, y, w, h });
+  }, [isDragging, cropStart, screenToImage]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const applyCropPreset = (preset: CropPreset) => {
+    setCropRect({ x: preset.x, y: preset.y, w: preset.width, h: preset.height });
+  };
+
+  // Track image dimensions for overlay calculation
+  const [imgDims, setImgDims] = useState<{ w: number; h: number; natW: number; natH: number } | null>(null);
+
+  const handleImageLoad = useCallback(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    const rect = img.getBoundingClientRect();
+    setImgDims({ w: rect.width, h: rect.height, natW: img.naturalWidth, natH: img.naturalHeight });
+  }, []);
+
+  // Convert image crop coords to screen overlay position
+  const overlayStyle = cropRect && imgDims ? (() => {
+    const imgW = frame.width || imgDims.natW;
+    const imgH = frame.height || imgDims.natH;
+    const scaleX = imgDims.w / imgW;
+    const scaleY = imgDims.h / imgH;
+    return {
+      left: cropRect.x * scaleX,
+      top: cropRect.y * scaleY,
+      width: cropRect.w * scaleX,
+      height: cropRect.h * scaleY,
+    };
+  })() : undefined;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+          <div>
+            <h3 className="text-lg font-semibold">{frame.satellite} · {frame.band} · {frame.sector}</h3>
+            <p className="text-sm text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
+          </div>
+          <button onClick={onClose}><X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+        </div>
+
+        {/* Image with crop overlay */}
+        <div className="flex-1 overflow-auto p-4">
+          <div
+            ref={containerRef}
+            className="relative inline-block cursor-crosshair select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <img
+              ref={imgRef}
+              src={frame.thumbnail_path
+                ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`
+                : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
+              alt={`${frame.satellite} ${frame.band}`}
+              className="max-w-full max-h-[60vh] rounded"
+              draggable={false}
+              onLoad={handleImageLoad}
+            />
+            {/* Crop overlay */}
+            {overlayStyle && (
+              <div
+                className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
+                style={{
+                  left: overlayStyle.left,
+                  top: overlayStyle.top,
+                  width: overlayStyle.width,
+                  height: overlayStyle.height,
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Crop controls */}
+        <div className="px-6 py-4 border-t border-slate-800 space-y-3">
+          {/* Crop coordinates */}
+          {cropRect && (
+            <div className="flex items-center gap-4 text-sm">
+              <Crop className="w-4 h-4 text-primary" />
+              <span className="text-slate-300">
+                X: <span className="text-white font-mono">{cropRect.x}</span> &nbsp;
+                Y: <span className="text-white font-mono">{cropRect.y}</span> &nbsp;
+                W: <span className="text-white font-mono">{cropRect.w}</span> &nbsp;
+                H: <span className="text-white font-mono">{cropRect.h}</span>
+              </span>
+              <button
+                onClick={() => setShowSavePreset(true)}
+                className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30"
+              >
+                <Save className="w-3 h-3" /> Save Preset
+              </button>
+              <button
+                onClick={() => setCropRect(null)}
+                className="text-xs text-slate-500 hover:text-white"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* Save preset form */}
+          {showSavePreset && cropRect && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="Preset name (e.g. San Diego)"
+                className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-1.5 text-sm"
+              />
+              <button
+                onClick={() => saveCropPresetMutation.mutate({
+                  name: presetName, x: cropRect.x, y: cropRect.y, width: cropRect.w, height: cropRect.h,
+                })}
+                disabled={!presetName || saveCropPresetMutation.isPending}
+                className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {saveCropPresetMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => setShowSavePreset(false)} className="text-xs text-slate-400">Cancel</button>
+            </div>
+          )}
+
+          {/* Load crop presets */}
+          {cropPresets && cropPresets.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-500">Presets:</span>
+              {cropPresets.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => applyCropPreset(p)}
+                  className="px-2 py-1 text-xs bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Browse Tab ──────────────────────────────────────────
 
 function BrowseTab() {
@@ -341,6 +599,7 @@ function BrowseTab() {
   const [, setShowProcessModal] = useState(false);
   const [showAddToCollection, setShowAddToCollection] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [previewFrame, setPreviewFrame] = useState<GoesFrame | null>(null);
 
   // Filters
   const [filterSat, setFilterSat] = useState('');
@@ -399,6 +658,14 @@ function BrowseTab() {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleFrameClick = (frame: GoesFrame, e: React.MouseEvent) => {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      toggleSelect(frame.id);
+    } else {
+      setPreviewFrame(frame);
+    }
   };
 
   const selectAll = () => {
@@ -536,9 +803,9 @@ function BrowseTab() {
           </div>
         </div>
 
-        {/* Results info */}
+        {/* Hint */}
         <div className="text-xs text-slate-500">
-          {framesData ? `${framesData.total} frames` : 'Loading...'}
+          {framesData ? `${framesData.total} frames` : 'Loading...'} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}
@@ -550,7 +817,7 @@ function BrowseTab() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {framesData?.items.map((frame) => (
               <div key={frame.id}
-                onClick={() => toggleSelect(frame.id)}
+                onClick={(e) => handleFrameClick(frame, e)}
                 className={`relative bg-slate-900 rounded-lg border overflow-hidden cursor-pointer transition-all ${
                   selectedIds.has(frame.id) ? 'border-primary ring-1 ring-primary' : 'border-slate-800 hover:border-slate-600'
                 }`}>
@@ -592,7 +859,7 @@ function BrowseTab() {
           <div className="space-y-1">
             {framesData?.items.map((frame) => (
               <div key={frame.id}
-                onClick={() => toggleSelect(frame.id)}
+                onClick={(e) => handleFrameClick(frame, e)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
                   selectedIds.has(frame.id) ? 'bg-primary/10 border border-primary/30' : 'bg-slate-900 border border-slate-800 hover:bg-slate-800/50'
                 }`}>
@@ -638,23 +905,17 @@ function BrowseTab() {
           </div>
         )}
 
-        {/* Add to Collection Modal */}
+        {/* Modals */}
         {showAddToCollection && (
-          <AddToCollectionModal
-            frameIds={[...selectedIds]}
-            onClose={() => setShowAddToCollection(false)}
-          />
+          <AddToCollectionModal frameIds={[...selectedIds]} onClose={() => setShowAddToCollection(false)} />
         )}
-
-        {/* Tag Modal */}
         {showTagModal && (
-          <TagModal
-            frameIds={[...selectedIds]}
-            onClose={() => setShowTagModal(false)}
-          />
+          <TagModal frameIds={[...selectedIds]} onClose={() => setShowTagModal(false)} />
+        )}
+        {previewFrame && (
+          <FramePreviewModal frame={previewFrame} onClose={() => setPreviewFrame(null)} />
         )}
 
-        {/* Process success */}
         {processMutation.isSuccess && (
           <div className="text-sm text-emerald-400 flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
@@ -820,6 +1081,343 @@ function TagModal({ frameIds, onClose }: { frameIds: string[]; onClose: () => vo
   );
 }
 
+// ── Animation Studio Tab ──────────────────────────────────
+
+function AnimationStudioTab() {
+  const queryClient = useQueryClient();
+
+  // Frame selection mode
+  const [selectionMode, setSelectionMode] = useState<'filters' | 'collection'>('filters');
+  const [satellite, setSatellite] = useState('');
+  const [band, setBand] = useState('');
+  const [sector, setSector] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [collectionId, setCollectionId] = useState('');
+
+  // Settings
+  const [animName, setAnimName] = useState('');
+  const [fps, setFps] = useState(10);
+  const [format, setFormat] = useState<'mp4' | 'gif'>('mp4');
+  const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
+  const [cropPresetId, setCropPresetId] = useState('');
+  const [falseColor, setFalseColor] = useState(false);
+  const [scale, setScale] = useState('100%');
+
+  const { data: products } = useQuery<Product>({
+    queryKey: ['goes-products'],
+    queryFn: () => api.get('/goes/products').then((r) => r.data),
+  });
+
+  const { data: collections } = useQuery<CollectionType[]>({
+    queryKey: ['goes-collections'],
+    queryFn: () => api.get('/goes/collections').then((r) => r.data),
+  });
+
+  const { data: cropPresets } = useQuery<CropPreset[]>({
+    queryKey: ['crop-presets'],
+    queryFn: () => api.get('/goes/crop-presets').then((r) => r.data),
+  });
+
+  // Preview frames based on current filters
+  const previewParams: Record<string, string | number> = { page: 1, limit: 20, sort: 'capture_time', order: 'asc' };
+  if (selectionMode === 'filters') {
+    if (satellite) previewParams.satellite = satellite;
+    if (band) previewParams.band = band;
+    if (sector) previewParams.sector = sector;
+  } else if (collectionId) {
+    previewParams.collection_id = collectionId;
+  }
+
+  const { data: previewFrames } = useQuery<PaginatedFrames>({
+    queryKey: ['anim-preview-frames', previewParams],
+    queryFn: () => api.get('/goes/frames', { params: previewParams }).then((r) => r.data),
+    enabled: selectionMode === 'collection' ? !!collectionId : !!(satellite || band || sector),
+  });
+
+  // Animation history
+  const { data: animations } = useQuery<PaginatedAnimations>({
+    queryKey: ['animations'],
+    queryFn: () => api.get('/goes/animations').then((r) => r.data),
+    refetchInterval: 5000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => {
+      const payload: Record<string, unknown> = {
+        name: animName || `Animation ${new Date().toLocaleString()}`,
+        fps,
+        format,
+        quality,
+        false_color: falseColor,
+        scale,
+      };
+      if (cropPresetId) payload.crop_preset_id = cropPresetId;
+      if (selectionMode === 'filters') {
+        if (satellite) payload.satellite = satellite;
+        if (band) payload.band = band;
+        if (sector) payload.sector = sector;
+        if (startDate) payload.start_date = new Date(startDate).toISOString();
+        if (endDate) payload.end_date = new Date(endDate).toISOString();
+      } else if (collectionId) {
+        payload.collection_id = collectionId;
+      }
+      return api.post('/goes/animations', payload).then((r) => r.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animations'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/goes/animations/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['animations'] }),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Frame Selection */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Film className="w-5 h-5 text-primary" /> Frame Selection
+            </h3>
+
+            <div className="flex gap-2">
+              <button onClick={() => setSelectionMode('filters')}
+                className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'filters' ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400'}`}>
+                By Filters
+              </button>
+              <button onClick={() => setSelectionMode('collection')}
+                className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'collection' ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400'}`}>
+                From Collection
+              </button>
+            </div>
+
+            {selectionMode === 'filters' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Satellite</label>
+                  <select value={satellite} onChange={(e) => setSatellite(e.target.value)}
+                    className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                    <option value="">All</option>
+                    {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Band</label>
+                  <select value={band} onChange={(e) => setBand(e.target.value)}
+                    className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                    <option value="">All</option>
+                    {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Sector</label>
+                  <select value={sector} onChange={(e) => setSector(e.target.value)}
+                    className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                    <option value="">All</option>
+                    {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Start Date</label>
+                  <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">End Date</label>
+                  <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Collection</label>
+                <select value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
+                  className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                  <option value="">Select collection...</option>
+                  {collections?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count} frames)</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Preview strip */}
+            {previewFrames && previewFrames.total > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs text-slate-400">
+                  {previewFrames.total} frames matched (showing first {previewFrames.items.length})
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {previewFrames.items.map((frame) => (
+                    <div key={frame.id} className="flex-shrink-0 w-24">
+                      <div className="aspect-video bg-slate-800 rounded overflow-hidden">
+                        {frame.thumbnail_path ? (
+                          <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+                            alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Satellite className="w-4 h-4 text-slate-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1 truncate">
+                        {new Date(frame.capture_time).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Settings Panel */}
+        <div className="space-y-4">
+          <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-primary" /> Settings
+            </h3>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Animation Name</label>
+              <input type="text" value={animName} onChange={(e) => setAnimName(e.target.value)}
+                placeholder="Untitled Animation"
+                className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">FPS: {fps}</label>
+              <input type="range" min={1} max={30} value={fps} onChange={(e) => setFps(Number(e.target.value))}
+                className="w-full accent-primary" />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Format</label>
+              <div className="flex gap-2">
+                {(['mp4', 'gif'] as const).map((f) => (
+                  <button key={f} onClick={() => setFormat(f)}
+                    className={`px-4 py-1.5 text-sm rounded-lg ${format === f ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    {f.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Quality</label>
+              <div className="flex gap-2">
+                {(['low', 'medium', 'high'] as const).map((q) => (
+                  <button key={q} onClick={() => setQuality(q)}
+                    className={`px-3 py-1.5 text-sm rounded-lg capitalize ${quality === q ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Crop Preset</label>
+              <select value={cropPresetId} onChange={(e) => setCropPresetId(e.target.value)}
+                className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                <option value="">None (full frame)</option>
+                {cropPresets?.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.width}×{p.height})</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Scale</label>
+              <select value={scale} onChange={(e) => setScale(e.target.value)}
+                className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
+                <option value="100%">100% (Original)</option>
+                <option value="75%">75%</option>
+                <option value="50%">50%</option>
+                <option value="25%">25%</option>
+              </select>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={falseColor} onChange={(e) => setFalseColor(e.target.checked)}
+                className="rounded bg-slate-800 border-slate-700 text-primary" />
+              <span className="text-sm text-slate-300">Apply false color</span>
+            </label>
+
+            <button
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending || (!previewFrames?.total)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+            >
+              <Play className="w-5 h-5" />
+              {createMutation.isPending ? 'Creating...' : 'Generate Animation'}
+            </button>
+
+            {createMutation.isSuccess && (
+              <div className="text-sm text-emerald-400 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Animation job created!
+              </div>
+            )}
+            {createMutation.isError && (
+              <div className="text-sm text-red-400">Failed to create animation</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Animation History */}
+      <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
+        <h3 className="text-lg font-semibold">Animation History</h3>
+        {animations && animations.items.length > 0 ? (
+          <div className="space-y-3">
+            {animations.items.map((anim) => (
+              <div key={anim.id} className="flex items-center gap-4 bg-slate-800/50 rounded-lg px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white">{anim.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {anim.frame_count} frames · {anim.fps} FPS · {anim.format.toUpperCase()} · {anim.quality}
+                    {anim.file_size > 0 && ` · ${formatBytes(anim.file_size)}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {anim.status === 'pending' && (
+                    <span className="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded">Pending</span>
+                  )}
+                  {anim.status === 'processing' && (
+                    <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded animate-pulse">Processing</span>
+                  )}
+                  {anim.status === 'completed' && (
+                    <>
+                      <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded">Done</span>
+                      {anim.output_path && (
+                        <a href={`/api/download?path=${encodeURIComponent(anim.output_path)}`}
+                          download className="text-xs text-primary hover:underline">Download</a>
+                      )}
+                    </>
+                  )}
+                  {anim.status === 'failed' && (
+                    <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={anim.error}>Failed</span>
+                  )}
+                  <button onClick={() => deleteMutation.mutate(anim.id)}
+                    className="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-slate-500 py-8">
+            No animations yet. Configure settings and generate one above!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Collections Tab ──────────────────────────────────────
 
 function CollectionsTab() {
@@ -971,9 +1569,9 @@ function StatsTab() {
       <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Frames by Band</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {Object.entries(stats.by_band).map(([band, data]) => (
-            <div key={band} className="bg-slate-800 rounded-lg p-3 space-y-2">
-              <div className="text-sm font-medium text-white">{band}</div>
+          {Object.entries(stats.by_band).map(([bandKey, data]) => (
+            <div key={bandKey} className="bg-slate-800 rounded-lg p-3 space-y-2">
+              <div className="text-sm font-medium text-white">{bandKey}</div>
               <div className="text-xl font-bold text-primary">{data.count}</div>
               <div className="text-xs text-slate-500">{formatBytes(data.size)}</div>
               <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">

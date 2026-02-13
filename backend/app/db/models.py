@@ -151,3 +151,40 @@ class FrameTag(Base):
     tag_id = Column(
         String(36), ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
     )
+
+
+class CropPreset(Base):
+    __tablename__ = "crop_presets"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False, unique=True)
+    x = Column(Integer, nullable=False)
+    y = Column(Integer, nullable=False)
+    width = Column(Integer, nullable=False)
+    height = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+
+
+class Animation(Base):
+    __tablename__ = "animations"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False)
+    status = Column(String(20), default="pending", index=True)
+    frame_count = Column(Integer, default=0)
+    fps = Column(Integer, default=10)
+    format = Column(String(10), default="mp4")
+    quality = Column(String(10), default="medium")
+    crop_preset_id = Column(String(36), ForeignKey("crop_presets.id"), nullable=True)
+    false_color = Column(Integer, default=0)  # Boolean as int for SQLite compat
+    scale = Column(String(10), default="100%")
+    output_path = Column(Text, nullable=True)
+    file_size = Column(BigInteger, default=0)
+    duration_seconds = Column(Integer, default=0)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+    completed_at = Column(DateTime, nullable=True)
+    error = Column(Text, default="")
+    job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+
+    crop_preset = relationship("CropPreset", foreign_keys=[crop_preset_id])
+    job = relationship("Job", foreign_keys=[job_id])

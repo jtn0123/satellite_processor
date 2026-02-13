@@ -31,7 +31,7 @@ function formatBytes(bytes: number) {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 export default function CleanupTab() {
@@ -142,15 +142,15 @@ export default function CleanupTab() {
 
         {showCreate && (
           <div className="mb-4 bg-slate-800 rounded-lg p-4 space-y-3">
-            <input placeholder="Rule name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+            <input aria-label="Rule name" placeholder="Rule name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               className="w-full rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" />
             <div className="grid grid-cols-2 gap-3">
-              <select value={form.rule_type} onChange={e => setForm({ ...form, rule_type: e.target.value as 'max_age_days' | 'max_storage_gb' })}
+              <select aria-label="Form" value={form.rule_type} onChange={e => setForm({ ...form, rule_type: e.target.value as 'max_age_days' | 'max_storage_gb' })}
                 className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
                 <option value="max_age_days">Max Age (days)</option>
                 <option value="max_storage_gb">Max Storage (GB)</option>
               </select>
-              <input type="number" placeholder="Value" value={form.value} onChange={e => setForm({ ...form, value: Number(e.target.value) })}
+              <input aria-label="Value" type="number" placeholder="Value" value={form.value} onChange={e => setForm({ ...form, value: Number(e.target.value) })}
                 className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" min={0} step={form.rule_type === 'max_storage_gb' ? 0.1 : 1} />
             </div>
             <label className="flex items-center gap-2 text-sm text-slate-300">

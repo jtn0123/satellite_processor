@@ -43,10 +43,13 @@ export default function KeyboardShortcuts() {
       open
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
       onClick={close}
+      onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
     >
       <div
+        role="document"
         className="bg-space-850 border border-subtle rounded-2xl p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

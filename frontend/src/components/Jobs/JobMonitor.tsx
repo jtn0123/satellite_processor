@@ -40,7 +40,8 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 Live
               </span>
-            )}{' '}
+            )}
+            {' '}
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClass(status)}`}
             >

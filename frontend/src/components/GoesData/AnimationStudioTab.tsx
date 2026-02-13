@@ -127,44 +127,44 @@ export default function AnimationStudioTab() {
             {selectionMode === 'filters' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Satellite</label>
-                  <select value={satellite} onChange={(e) => setSatellite(e.target.value)}
+                  <label htmlFor="anim-satellite" className="block text-xs text-slate-500 mb-1">Satellite</label>
+                  <select id="anim-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
                     className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Band</label>
-                  <select value={band} onChange={(e) => setBand(e.target.value)}
+                  <label htmlFor="anim-band" className="block text-xs text-slate-500 mb-1">Band</label>
+                  <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
                     className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Sector</label>
-                  <select value={sector} onChange={(e) => setSector(e.target.value)}
+                  <label htmlFor="anim-sector" className="block text-xs text-slate-500 mb-1">Sector</label>
+                  <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                     className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
                     {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Start Date</label>
-                  <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                  <label htmlFor="anim-start-date" className="block text-xs text-slate-500 mb-1">Start Date</label>
+                  <input id="anim-start-date" type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                     className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">End Date</label>
-                  <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                  <label htmlFor="anim-end-date" className="block text-xs text-slate-500 mb-1">End Date</label>
+                  <input id="anim-end-date" type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                     className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
                 </div>
               </div>
             ) : (
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Collection</label>
-                <select value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
+                <label htmlFor="anim-collection" className="block text-xs text-slate-500 mb-1">Collection</label>
+                <select id="anim-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
                   className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                   <option value="">Select collection...</option>
                   {collections?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count} frames)</option>)}
@@ -184,7 +184,7 @@ export default function AnimationStudioTab() {
                       <div className="aspect-video bg-slate-800 rounded overflow-hidden">
                         {frame.thumbnail_path ? (
                           <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-                            alt="" className="w-full h-full object-cover" />
+                            alt={`${frame.satellite} ${frame.band} preview`} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Satellite className="w-4 h-4 text-slate-600" />
@@ -210,20 +210,20 @@ export default function AnimationStudioTab() {
             </h3>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Animation Name</label>
-              <input type="text" value={animName} onChange={(e) => setAnimName(e.target.value)}
+              <label htmlFor="anim-animation-name" className="block text-xs text-slate-500 mb-1">Animation Name</label>
+              <input id="anim-animation-name" type="text" value={animName} onChange={(e) => setAnimName(e.target.value)}
                 placeholder="Untitled Animation"
                 className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5" />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">FPS: {fps}</label>
-              <input type="range" min={1} max={30} value={fps} onChange={(e) => setFps(Number(e.target.value))}
+              <label htmlFor="anim-fps-fps" className="block text-xs text-slate-500 mb-1">FPS: {fps}</label>
+              <input id="anim-fps-fps" type="range" min={1} max={30} value={fps} onChange={(e) => setFps(Number(e.target.value))}
                 className="w-full accent-primary" />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Format</label>
+              <label htmlFor="anim-format" className="block text-xs text-slate-500 mb-1">Format</label>
               <div className="flex gap-2">
                 {(['mp4', 'gif'] as const).map((f) => (
                   <button key={f} onClick={() => setFormat(f)}
@@ -235,7 +235,7 @@ export default function AnimationStudioTab() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Quality</label>
+              <label htmlFor="anim-quality" className="block text-xs text-slate-500 mb-1">Quality</label>
               <div className="flex gap-2">
                 {(['low', 'medium', 'high'] as const).map((q) => (
                   <button key={q} onClick={() => setQuality(q)}
@@ -247,8 +247,8 @@ export default function AnimationStudioTab() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Crop Preset</label>
-              <select value={cropPresetId} onChange={(e) => setCropPresetId(e.target.value)}
+              <label htmlFor="anim-crop-preset" className="block text-xs text-slate-500 mb-1">Crop Preset</label>
+              <select id="anim-crop-preset" value={cropPresetId} onChange={(e) => setCropPresetId(e.target.value)}
                 className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                 <option value="">None (full frame)</option>
                 {cropPresets?.map((p) => (
@@ -258,8 +258,8 @@ export default function AnimationStudioTab() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Scale</label>
-              <select value={scale} onChange={(e) => setScale(e.target.value)}
+              <label htmlFor="anim-scale" className="block text-xs text-slate-500 mb-1">Scale</label>
+              <select id="anim-scale" value={scale} onChange={(e) => setScale(e.target.value)}
                 className="w-full rounded bg-slate-800 border-slate-700 text-white text-sm px-2 py-1.5">
                 <option value="100%">100% (Original)</option>
                 <option value="75%">75%</option>

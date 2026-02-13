@@ -74,29 +74,29 @@ export default function LiveTab() {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 dark:bg-slate-900 rounded-xl p-6 border border-slate-800 dark:border-slate-800">
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
-          <select value={satellite} onChange={(e) => setSatellite(e.target.value)}
+          <label htmlFor="live-satellite" className="block text-sm font-medium text-slate-400 mb-1">Satellite</label>
+          <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
             {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
-          <select value={sector} onChange={(e) => setSector(e.target.value)}
+          <label htmlFor="live-sector" className="block text-sm font-medium text-slate-400 mb-1">Sector</label>
+          <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
             {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Band</label>
-          <select value={band} onChange={(e) => setBand(e.target.value)}
+          <label htmlFor="live-band" className="block text-sm font-medium text-slate-400 mb-1">Band</label>
+          <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
             {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-1">Auto-refresh</label>
-          <select value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))}
+          <label htmlFor="live-auto-refresh" className="block text-sm font-medium text-slate-400 mb-1">Auto-refresh</label>
+          <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))}
             className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors">
             {REFRESH_INTERVALS.map((ri) => (
               <option key={ri.value} value={ri.value}>{ri.label}</option>

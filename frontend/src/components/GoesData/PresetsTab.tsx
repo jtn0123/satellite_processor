@@ -149,15 +149,15 @@ export default function PresetsTab() {
 
         {showScheduleCreate && (
           <div className="mb-4 bg-slate-800 rounded-lg p-4 space-y-3">
-            <input placeholder="Schedule name" value={schedForm.name} onChange={e => setSchedForm({ ...schedForm, name: e.target.value })}
+            <input aria-label="Schedule name" placeholder="Schedule name" value={schedForm.name} onChange={e => setSchedForm({ ...schedForm, name: e.target.value })}
               className="w-full rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" />
             <div className="grid grid-cols-2 gap-3">
-              <select value={schedForm.preset_id} onChange={e => setSchedForm({ ...schedForm, preset_id: e.target.value })}
+              <select aria-label="Schedform" value={schedForm.preset_id} onChange={e => setSchedForm({ ...schedForm, preset_id: e.target.value })}
                 className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
                 <option value="">Select preset...</option>
                 {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <select value={schedForm.interval_minutes} onChange={e => setSchedForm({ ...schedForm, interval_minutes: Number(e.target.value) })}
+              <select aria-label="Schedform" value={schedForm.interval_minutes} onChange={e => setSchedForm({ ...schedForm, interval_minutes: Number(e.target.value) })}
                 className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
                 {intervals.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
               </select>
@@ -218,29 +218,29 @@ function PresetForm({ form, setForm, onSubmit, onCancel, loading, title }: {
   return (
     <div className="mb-4 bg-slate-800 rounded-lg p-4 space-y-3">
       <h3 className="text-sm font-medium text-slate-300">{title}</h3>
-      <input placeholder="Preset name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+      <input aria-label="Preset name" placeholder="Preset name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
         className="w-full rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" />
       <div className="grid grid-cols-3 gap-3">
-        <select value={form.satellite} onChange={e => setForm(f => ({ ...f, satellite: e.target.value }))}
+        <select aria-label="Form" value={form.satellite} onChange={e => setForm(f => ({ ...f, satellite: e.target.value }))}
           className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
           <option value="GOES-16">GOES-16</option>
           <option value="GOES-18">GOES-18</option>
         </select>
-        <select value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
+        <select aria-label="Form" value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
           className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
           <option value="FullDisk">Full Disk</option>
           <option value="CONUS">CONUS</option>
           <option value="Mesoscale-1">Mesoscale-1</option>
           <option value="Mesoscale-2">Mesoscale-2</option>
         </select>
-        <select value={form.band} onChange={e => setForm(f => ({ ...f, band: e.target.value }))}
+        <select aria-label="Form" value={form.band} onChange={e => setForm(f => ({ ...f, band: e.target.value }))}
           className="rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm">
           {['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12','C13','C14','C15','C16'].map(b => (
             <option key={b} value={b}>{b}</option>
           ))}
         </select>
       </div>
-      <input placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+      <input aria-label="Description (optional)" placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
         className="w-full rounded-lg bg-slate-700 border-slate-600 text-white px-3 py-2 text-sm" />
       <div className="flex gap-2">
         <button onClick={onSubmit} disabled={loading || !form.name} className="px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80 disabled:opacity-50">

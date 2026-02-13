@@ -41,9 +41,7 @@ ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 
-# TODO (#31): Pre-generate thumbnails in background after upload to avoid
-# on-demand thumbnail generation latency. Could use a Celery task or
-# asyncio.create_task to generate thumbnails immediately after upload completes.
+# Background thumbnail pre-generation deferred — see GitHub issue #31
 
 
 @router.post("/upload")

@@ -85,17 +85,45 @@ def _update_job_db(job_id: str, **kwargs):
         session.close()
 
 
+def _stage_image_paths(input_path: str, image_paths: list[str]) -> None:
+    """Create staging directory with symlinks/copies for resolved image paths."""
+    staging = Path(input_path)
+    if staging.exists():
+        return
+    staging.mkdir(parents=True, exist_ok=True)
+    for p in image_paths:
+        src = Path(p)
+        if not src.exists():
+            continue
+        dst = staging / src.name
+        if dst.exists():
+            continue
+        try:
+            dst.symlink_to(src)
+        except OSError:
+            import shutil
+            shutil.copy2(str(src), str(dst))
+
+
+def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
+    """Update job DB and publish final status."""
+    if success:
+        _update_job_db(job_id, status="completed", progress=100, output_path=output_path,
+                       completed_at=datetime.now(UTC), status_message="Processing complete")
+        _publish_progress(job_id, 100, "Processing complete", "completed")
+    else:
+        _update_job_db(job_id, status="failed", error="Processing returned False",
+                       completed_at=datetime.now(UTC), status_message="Processing failed")
+        _publish_progress(job_id, 0, "Processing failed", "failed")
+
+
 @celery_app.task(bind=True, name="process_images")
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
     logger.info(f"Starting image processing job {job_id}")
 
-    _update_job_db(
-        job_id,
-        status="processing",
-        started_at=datetime.now(UTC),
-        status_message="Initializing processor...",
-    )
+    _update_job_db(job_id, status="processing", started_at=datetime.now(UTC),
+                   status_message="Initializing processor...")
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
 
     try:
@@ -111,68 +139,27 @@ def process_images_task(self, job_id: str, params: dict):
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
 
-        def on_status(msg: str):
-            _publish_progress(job_id, -1, msg)
-            _update_job_db(job_id, status_message=msg)
-
         processor.on_progress = on_progress
-        processor.on_status_update = on_status
-        # If image_paths were resolved from image_ids, use them
+        processor.on_status_update = lambda msg: (
+            _publish_progress(job_id, -1, msg),
+            _update_job_db(job_id, status_message=msg),
+        )
+
         image_paths = params.get("image_paths")
         if image_paths:
-            # Create staging dir with just these images if not already done
-            staging = Path(input_path)
-            if not staging.exists():
-                staging.mkdir(parents=True, exist_ok=True)
-                for p in image_paths:
-                    src = Path(p)
-                    if src.exists():
-                        dst = staging / src.name
-                        if not dst.exists():
-                            try:
-                                dst.symlink_to(src)
-                            except OSError:
-                                import shutil
-                                shutil.copy2(str(src), str(dst))
+            _stage_image_paths(input_path, image_paths)
 
         processor.set_input_directory(input_path)
         processor.set_output_directory(output_path)
-
-        success = processor.process()
-
-        if success:
-            _update_job_db(
-                job_id,
-                status="completed",
-                progress=100,
-                output_path=output_path,
-                completed_at=datetime.now(UTC),
-                status_message="Processing complete",
-            )
-            _publish_progress(job_id, 100, "Processing complete", "completed")
-        else:
-            _update_job_db(
-                job_id,
-                status="failed",
-                error="Processing returned False",
-                completed_at=datetime.now(UTC),
-                status_message="Processing failed",
-            )
-            _publish_progress(job_id, 0, "Processing failed", "failed")
+        _finalize_job(job_id, processor.process(), output_path)
 
     except Exception as e:
         logger.exception(f"Job {job_id} failed")
-        _update_job_db(
-            job_id,
-            status="failed",
-            error=str(e),
-            completed_at=datetime.now(UTC),
-            status_message=f"Error: {e}",
-        )
+        _update_job_db(job_id, status="failed", error=str(e),
+                       completed_at=datetime.now(UTC), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
     finally:
-        # Clean up staging directory
         input_path = params.get("input_path", "")
         if input_path and "job_staging_" in input_path:
             import shutil

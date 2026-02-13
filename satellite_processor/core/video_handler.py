@@ -141,6 +141,60 @@ class VideoHandler:
         """Validate interpolation quality."""
         validate_interpolation_quality(quality)
 
+    def _validate_video_paths(
+        self, input_dir: str | Path, output_path: str | Path
+    ) -> tuple[Path, Path]:
+        """Validate and resolve input/output paths for video creation."""
+        if not output_path:
+            raise ValueError("Empty output path")
+        output_path = Path(output_path)
+        if not output_path.parent.exists():
+            raise ValueError("Directory does not exist")
+        if output_path.suffix.lower() not in VALID_VIDEO_EXTENSIONS:
+            raise ValueError("Invalid file extension")
+
+        input_dir = Path(input_dir).resolve()
+        output_path = output_path.resolve()
+
+        # Handle UNC paths on Windows
+        if os.name == "nt":
+            if str(input_dir).startswith("\\\\"):
+                input_dir = Path("//" + str(input_dir)[2:])
+            if str(output_path).startswith("\\\\"):
+                output_path = Path("//" + str(output_path)[2:])
+
+        if not input_dir.exists():
+            raise ValueError(f"Input directory does not exist: {input_dir}")
+        if not input_dir.is_dir():
+            raise ValueError(f"Input path is not a directory: {input_dir}")
+
+        return input_dir, output_path
+
+    def _handle_ffmpeg_error(
+        self, e: subprocess.CalledProcessError, input_dir: Path,
+        output_path: Path, options: dict, retry_count: int,
+    ) -> bool:
+        """Handle FFmpeg CalledProcessError with retry logic."""
+        if self.cancelled:
+            self.logger.info(_VIDEO_CANCELLED_MSG)
+            return False
+
+        stderr = str(e.stderr)
+        if "Cannot use NVENC" in stderr and retry_count < MAX_RETRY_COUNT:
+            self.logger.warning("NVENC failed, falling back to CPU encoding")
+            self._is_processing = False
+            options["hardware"] = "CPU"
+            options["encoder"] = "H.264"
+            return self.create_video(input_dir, output_path, options, _retry_count=retry_count + 1)
+
+        if "Temporary failure" in stderr and retry_count < MAX_RETRY_COUNT:
+            self.logger.warning("Temporary failure, retrying...")
+            self._is_processing = False
+            return self.create_video(input_dir, output_path, options, _retry_count=retry_count + 1)
+
+        self.logger.error(f"FFmpeg error: {e.stderr}")
+        raise RuntimeError(f"FFmpeg error: {e.stderr}")
+
     def create_video(
         self,
         input_dir: str | Path,
@@ -159,75 +213,27 @@ class VideoHandler:
             self._is_processing = True
             self.cancelled = False
 
-            if not output_path:
-                raise ValueError("Empty output path")
-
-            output_path = Path(output_path)
-            if not output_path.parent.exists():
-                raise ValueError("Directory does not exist")
-
-            if output_path.suffix.lower() not in VALID_VIDEO_EXTENSIONS:
-                raise ValueError("Invalid file extension")
-
-            input_dir = Path(input_dir).resolve()
-            output_path = Path(output_path).resolve()
-
-            # Handle UNC paths on Windows
-            if os.name == "nt":
-                if str(input_dir).startswith("\\\\"):
-                    input_dir = Path("//" + str(input_dir)[2:])
-                if str(output_path).startswith("\\\\"):
-                    output_path = Path("//" + str(output_path)[2:])
-
+            input_dir, output_path = self._validate_video_paths(input_dir, output_path)
             self.logger.debug(f"Resolved input directory: {input_dir}")
             self.logger.debug(f"Resolved output path: {output_path}")
-
-            if not input_dir.exists():
-                self.logger.error(f"Input directory not found: {input_dir}")
-                raise ValueError(f"Input directory does not exist: {input_dir}")
-
-            if not input_dir.is_dir():
-                self.logger.error(f"Input path is not a directory: {input_dir}")
-                raise ValueError(f"Input path is not a directory: {input_dir}")
 
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             frame_files = sorted(input_dir.glob("*.*"))
-            frame_files = [
-                f for f in frame_files if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
-            ]
-
+            frame_files = [f for f in frame_files if f.suffix.lower() in [".png", ".jpg", ".jpeg"]]
             if not frame_files:
-                error_msg = f"No frame files found in {input_dir}"
-                self.logger.error(error_msg)
-                raise RuntimeError(error_msg)
+                raise RuntimeError(f"No frame files found in {input_dir}")
 
             self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
-
-            try:
-                self._validate_frame_sequence(frame_files)
-            except RuntimeError as e:
-                if "Frame sequence is not continuous" in str(e):
-                    self.logger.error(str(e))
-                    raise
-                self.logger.error(f"Frame validation error: {e}")
-                raise
+            self._validate_frame_sequence(frame_files)
 
             if self.cancelled:
                 self.logger.info(_VIDEO_CANCELLED_MSG)
                 return False
 
-            self.logger.info(f"Found {len(frame_files)} frames in {input_dir}")
-            for frame in frame_files[:5]:
-                self.logger.debug(f"Frame found: {frame.name}")
-
             if not self.testing:
                 initial_usage = self.get_resource_usage()
                 self.logger.debug(f"Initial resource usage: {initial_usage}")
-                memory_info = self.process.memory_info()
-                self.logger.debug(
-                    f"Memory usage before encoding: {memory_info.rss / 1024 / 1024:.2f} MB"
-                )
 
             if getattr(self, "testing", False):
                 options["test_mode"] = True
@@ -236,41 +242,11 @@ class VideoHandler:
             self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
 
             try:
-                subprocess.run(
-                    cmd, check=True, capture_output=True, text=True, cwd=str(input_dir)
-                )
+                subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=str(input_dir))
                 self.logger.info(f"Successfully created video at {output_path}")
                 return True
-
             except subprocess.CalledProcessError as e:
-                if self.cancelled:
-                    self.logger.info(_VIDEO_CANCELLED_MSG)
-                    return False
-
-                if "Cannot use NVENC" in str(e.stderr):
-                    if _retry_count >= MAX_RETRY_COUNT:
-                        self.logger.error("Max retries exceeded for NVENC fallback")
-                        return False
-                    self.logger.warning("NVENC failed, falling back to CPU encoding")
-                    self._is_processing = False
-                    options["hardware"] = "CPU"
-                    options["encoder"] = "H.264"
-                    return self.create_video(
-                        input_dir, output_path, options, _retry_count=_retry_count + 1
-                    )
-
-                if "Temporary failure" in str(e.stderr):
-                    if _retry_count >= MAX_RETRY_COUNT:
-                        self.logger.error("Max retries exceeded for temporary failure")
-                        return False
-                    self.logger.warning("Temporary failure, retrying...")
-                    self._is_processing = False
-                    return self.create_video(
-                        input_dir, output_path, options, _retry_count=_retry_count + 1
-                    )
-
-                self.logger.error(f"FFmpeg error: {e.stderr}")
-                raise RuntimeError(f"FFmpeg error: {e.stderr}")
+                return self._handle_ffmpeg_error(e, input_dir, output_path, options, _retry_count)
 
         except Exception as e:
             if self.cancelled:
@@ -312,6 +288,20 @@ class VideoHandler:
         """Get list of supported encoders"""
         return get_supported_encoders()
 
+    def _verify_output(self, output_path: Path) -> bool:
+        """Verify the encoded output file exists and is non-empty."""
+        if not output_path.exists():
+            self.logger.error("Output file was not created")
+            return False
+        file_size = output_path.stat().st_size
+        if file_size == 0:
+            self.logger.error("Output file is empty")
+            return False
+        self.logger.info(
+            f"Successfully created video at {output_path} ({file_size / 1024 / 1024:.1f} MB)"
+        )
+        return True
+
     def _try_encode(self, cmd: list[str], temp_dir: Path, output_path: Path) -> bool:
         """Try to encode with given FFmpeg command"""
         process = None
@@ -349,19 +339,7 @@ class VideoHandler:
                 self.logger.error(f"FFmpeg error: {stderr}")
                 return False
 
-            if not output_path.exists():
-                self.logger.error("Output file was not created")
-                return False
-
-            file_size = output_path.stat().st_size
-            if file_size == 0:
-                self.logger.error("Output file is empty")
-                return False
-
-            self.logger.info(
-                f"Successfully created video at {output_path} ({file_size / 1024 / 1024:.1f} MB)"
-            )
-            return True
+            return self._verify_output(output_path)
 
         except Exception as e:
             self.logger.error(f"Encoding failed: {e}", exc_info=True)
@@ -484,22 +462,24 @@ class VideoHandler:
             return False
 
         finally:
-            try:
-                if image_list_path and isinstance(image_list_path, Path):
-                    image_list_path.unlink(missing_ok=True)
-                if frame_paths:
-                    for frame_path in frame_paths:
-                        try:
-                            frame_path.unlink(missing_ok=True)
-                        except Exception as e:
-                            self.logger.debug(f"Failed to remove frame: {e}")
-                if temp_dir and temp_dir.exists():
-                    try:
-                        shutil.rmtree(temp_dir, ignore_errors=True)
-                    except Exception as e:
-                        self.logger.debug(f"Failed to remove temp directory: {e}")
-            except Exception as e:
-                self.logger.error(f"Cleanup error: {e}", exc_info=True)
+            self._cleanup_ffmpeg_artifacts(image_list_path, frame_paths, temp_dir)
+
+    def _cleanup_ffmpeg_artifacts(
+        self, image_list_path: Path | None, frame_paths: list[Path], temp_dir: Path | None
+    ) -> None:
+        """Clean up temporary files created during FFmpeg video creation."""
+        try:
+            if image_list_path and isinstance(image_list_path, Path):
+                image_list_path.unlink(missing_ok=True)
+            for frame_path in frame_paths:
+                try:
+                    frame_path.unlink(missing_ok=True)
+                except Exception as e:
+                    self.logger.debug(f"Failed to remove frame: {e}")
+            if temp_dir and temp_dir.exists():
+                shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception as e:
+            self.logger.error(f"Cleanup error: {e}", exc_info=True)
 
     def apply_interpolation(
         self, video_path: Path, output_path: Path, fps: int

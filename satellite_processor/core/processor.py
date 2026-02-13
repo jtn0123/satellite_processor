@@ -488,44 +488,42 @@ class SatelliteImageProcessor:
             if hasattr(self, "logger"):
                 self.logger.error(f"Deletion cleanup error: {e}", exc_info=True)
 
+    def _terminate_ffmpeg_processes(self) -> None:
+        """Terminate any running FFmpeg processes."""
+        for process in self._ffmpeg_processes.copy():
+            try:
+                if process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)
+                    self._ffmpeg_processes.remove(process)
+            except Exception as e:
+                self.logger.error(f"Error terminating FFmpeg process: {e}", exc_info=True)
+
+    def _stop_optional_resource(self, attr: str, action: str = "stop") -> None:
+        """Stop an optional resource attribute (resource_monitor, update_timer, etc.)."""
+        obj = getattr(self, attr, None)
+        if obj is None:
+            return
+        try:
+            getattr(obj, action)()
+            setattr(self, attr, None)
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup {attr}: {e}", exc_info=True)
+
     def cleanup(self) -> None:
         """Clean up resources safely"""
         try:
-            # Terminate any running FFmpeg processes first
-            for process in self._ffmpeg_processes.copy():
-                try:
-                    if process.poll() is None:
-                        process.terminate()
-                        process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)
-                        self._ffmpeg_processes.remove(process)
-                except Exception as e:
-                    self.logger.error(f"Error terminating FFmpeg process: {e}", exc_info=True)
-
-            # Clean up file manager
+            self._terminate_ffmpeg_processes()
             self.file_manager.cleanup()
+            self._stop_optional_resource("resource_monitor", "stop")
+            self._stop_optional_resource("update_timer", "cancel")
 
-            # Stop resource monitor
-            if hasattr(self, "resource_monitor") and self.resource_monitor is not None:
+            temp_dir_path = getattr(self, "temp_dir", None)
+            if temp_dir_path is not None:
                 try:
-                    self.resource_monitor.stop()
-                    self.resource_monitor = None
-                except Exception as e:
-                    self.logger.error(f"Failed to stop resource monitor: {e}", exc_info=True)
-
-            # Stop update timer if exists
-            if hasattr(self, "update_timer") and self.update_timer is not None:
-                try:
-                    self.update_timer.cancel()
-                    self.update_timer = None
-                except Exception as e:
-                    self.logger.error(f"Timer cleanup error: {e}", exc_info=True)
-
-            # Clean up temp directory if it exists
-            if hasattr(self, "temp_dir") and self.temp_dir is not None:
-                try:
-                    temp_dir = Path(self.temp_dir)
-                    if temp_dir.exists():
-                        shutil.rmtree(temp_dir, ignore_errors=True)
+                    td = Path(temp_dir_path)
+                    if td.exists():
+                        shutil.rmtree(td, ignore_errors=True)
                 except Exception as e:
                     self.logger.error(f"Failed to cleanup temp directory: {e}", exc_info=True)
 
@@ -927,7 +925,7 @@ class SatelliteImageProcessor:
     @staticmethod
     def _save_single_image(args) -> bool:
         """Save a single image (called by multiprocessing pool)"""
-        # TODO (#18): Preserve EXIF metadata from source image using PIL/Pillow
+        # EXIF metadata preservation deferred — see GitHub issue #18
         idx, img, output_dir, timestamp = args
         try:
             output_filename = f"processed_image_{idx:04d}_{timestamp}.png"

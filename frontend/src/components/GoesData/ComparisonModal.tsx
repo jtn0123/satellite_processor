@@ -17,18 +17,18 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 export default function ComparisonModal({
   frameA,
   frameB,
   onClose,
-}: {
+}: Readonly<{
   frameA: GoesFrame;
   frameB: GoesFrame;
   onClose: () => void;
-}) {
+}>) {
   const [mode, setMode] = useState<'side-by-side' | 'slider'>('side-by-side');
   const [swapped, setSwapped] = useState(false);
   const [sliderPos, setSliderPos] = useState(50);

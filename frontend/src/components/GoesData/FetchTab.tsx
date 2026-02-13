@@ -70,8 +70,8 @@ export default function FetchTab() {
     mutationFn: () =>
       api.post('/goes/fetch', {
         satellite, sector, band,
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
+        start_time: startTime.includes('Z') || startTime.includes('+') ? startTime : startTime + 'Z',
+        end_time: endTime.includes('Z') || endTime.includes('+') ? endTime : endTime + 'Z',
       }).then((r) => r.data),
     onSuccess: (data) => showToast('success', `Fetch job created: ${data.job_id}`),
     onError: (err: unknown) => {

@@ -255,8 +255,54 @@ def list_available(
     return results
 
 
-def _cmi_to_png(cmi: np.ndarray, output_path: Path) -> Path:
-    """Normalize CMI array to 0-255 and save as PNG."""
+# Maximum output image dimension (pixels). FullDisk CMI is 21696x21696 (~1.8GB
+# float32). We downsample to keep memory under ~100MB per frame while still
+# producing sharp images for web display and animation.
+MAX_IMAGE_DIM = 2048
+
+
+def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
+    """Convert a NetCDF file on disk to PNG (memory-efficient).
+
+    For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
+    downsample during load, keeping peak memory well under 500MB.
+    """
+    try:
+        import netCDF4
+
+        nc = netCDF4.Dataset(str(nc_path), "r")
+        cmi_var = nc.variables["CMI"]
+        shape = cmi_var.shape  # e.g. (21696, 21696)
+
+        # Calculate stride to keep dimensions under MAX_IMAGE_DIM
+        stride = max(1, max(shape[0], shape[1]) // MAX_IMAGE_DIM)
+
+        if stride > 1:
+            logger.info(
+                "Downsampling CMI %dx%d by stride %d → ~%dx%d",
+                shape[0], shape[1], stride,
+                shape[0] // stride, shape[1] // stride,
+            )
+            # Strided read — netCDF4 only reads the selected elements from disk
+            cmi = cmi_var[::stride, ::stride]
+        else:
+            cmi = cmi_var[:]
+
+        nc.close()
+
+        # Convert masked array to regular numpy, replacing fill values with NaN
+        if hasattr(cmi, "filled"):
+            cmi = cmi.filled(np.nan).astype(np.float32)
+        else:
+            cmi = np.asarray(cmi, dtype=np.float32)
+
+    except Exception:
+        logger.warning("netCDF4 unavailable or read failed, generating placeholder")
+        img = PILImage.new("L", (100, 100), 128)
+        img.save(str(output_path))
+        return output_path
+
+    # Normalize to 0-255
     valid = cmi[~np.isnan(cmi)]
     if len(valid) == 0:
         h = cmi.shape[0] if len(cmi.shape) > 0 else 100
@@ -266,29 +312,15 @@ def _cmi_to_png(cmi: np.ndarray, output_path: Path) -> Path:
         vmin, vmax = np.nanpercentile(cmi, [2, 98])
         if vmax <= vmin:
             vmax = vmin + 1
-        normalized = np.clip((cmi - vmin) / (vmax - vmin) * 255, 0, 255)
-        normalized = np.nan_to_num(normalized, nan=0).astype(np.uint8)
-        img = PILImage.fromarray(normalized)
+        # In-place operations to avoid copies
+        np.clip(cmi, vmin, vmax, out=cmi)
+        cmi -= vmin
+        cmi *= 255.0 / (vmax - vmin)
+        np.nan_to_num(cmi, nan=0, copy=False)
+        img = PILImage.fromarray(cmi.astype(np.uint8))
 
     img.save(str(output_path))
     return output_path
-
-
-def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
-    """Convert a NetCDF file on disk to PNG (memory-efficient)."""
-    try:
-        import xarray as xr
-
-        ds = xr.open_dataset(str(nc_path), engine="netcdf4")
-        cmi = ds["CMI"].values
-        ds.close()
-    except Exception:
-        logger.warning("xarray/netCDF4 unavailable, generating placeholder image")
-        img = PILImage.new("L", (100, 100), 128)
-        img.save(str(output_path))
-        return output_path
-
-    return _cmi_to_png(cmi, output_path)
 
 
 def _netcdf_to_png(nc_bytes: bytes, output_path: Path) -> Path:

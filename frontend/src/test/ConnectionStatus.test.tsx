@@ -3,20 +3,20 @@ import { render, screen } from '@testing-library/react';
 import ConnectionStatus from '../components/ConnectionStatus';
 
 describe('ConnectionStatus', () => {
-  it('renders with disconnected status initially', () => {
+  it('renders nothing when disconnected (initial state)', () => {
+    const { container } = render(<ConnectionStatus />);
+    // Component returns null when disconnected to avoid scary status indicators
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('does not render a status dot when disconnected', () => {
+    const { container } = render(<ConnectionStatus />);
+    const dot = container.querySelector('.rounded-full');
+    expect(dot).toBeNull();
+  });
+
+  it('does not show Disconnected text (hidden by design)', () => {
     render(<ConnectionStatus />);
-    expect(screen.getByText('Disconnected')).toBeInTheDocument();
-  });
-
-  it('renders a status indicator dot', () => {
-    const { container } = render(<ConnectionStatus />);
-    const dot = container.querySelector('.rounded-full');
-    expect(dot).toBeInTheDocument();
-  });
-
-  it('has red indicator when disconnected', () => {
-    const { container } = render(<ConnectionStatus />);
-    const dot = container.querySelector('.rounded-full');
-    expect(dot?.className).toContain('bg-red-400');
+    expect(screen.queryByText('Disconnected')).not.toBeInTheDocument();
   });
 });

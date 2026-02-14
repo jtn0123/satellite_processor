@@ -159,8 +159,8 @@ async def test_goes_fetch_creates_job(client, db):
         mock_result.id = "celery-goes-fetch"
         mock_task.delay.return_value = mock_result
 
-        from datetime import datetime, timedelta, timezone
-        now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
+        from datetime import UTC, datetime, timedelta
+        now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
         resp = await client.post("/api/goes/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",

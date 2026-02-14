@@ -27,4 +27,15 @@ describe('Settings', () => {
     const { container } = render(<Settings />, { wrapper });
     expect(container).toBeInTheDocument();
   });
+
+  it('renders the settings container', () => {
+    const { container } = render(<Settings />, { wrapper });
+    expect(container.firstChild).toBeTruthy();
+  });
+
+  it('renders heading or label elements', () => {
+    const { container } = render(<Settings />, { wrapper });
+    // Should have some text content
+    expect(container.textContent?.length).toBeGreaterThan(0);
+  });
 });

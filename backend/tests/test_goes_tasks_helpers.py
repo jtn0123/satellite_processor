@@ -239,3 +239,147 @@ def test_download_and_convert_frame_transient_failure(mock_retry, tmp_path):
 
     result = _download_and_convert_frame(s3, "bucket", item, "GOES-16", "FullDisk", "C02", tmp_path)
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# _process_single_frame
+# ---------------------------------------------------------------------------
+
+@patch("app.services.goes_fetcher._download_and_convert_frame")
+def test_process_single_frame_success(mock_dl, tmp_path):
+    from pathlib import Path as _P
+
+    from app.services.goes_fetcher import _process_single_frame
+
+    mock_dl.return_value = {"path": "/tmp/f.png", "satellite": "GOES-16", "band": "C02", "scan_time": datetime(2026, 1, 1, tzinfo=UTC)}
+    results = []
+    progress_calls = []
+    ok = _process_single_frame(
+        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
+        _P(tmp_path), results, 0, 5, lambda cur, tot: progress_calls.append((cur, tot)),
+    )
+    assert ok is True
+    assert len(results) == 1
+    assert progress_calls == [(1, 5)]
+
+
+@patch("app.services.goes_fetcher._download_and_convert_frame")
+def test_process_single_frame_returns_none(mock_dl, tmp_path):
+    from pathlib import Path as _P
+
+    from app.services.goes_fetcher import _process_single_frame
+
+    mock_dl.return_value = None
+    results = []
+    ok = _process_single_frame(
+        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
+        _P(tmp_path), results, 0, 5, None,
+    )
+    assert ok is False
+    assert len(results) == 0
+
+
+@patch("app.services.goes_fetcher._download_and_convert_frame")
+def test_process_single_frame_unexpected_error(mock_dl, tmp_path):
+    from pathlib import Path as _P
+
+    from app.services.goes_fetcher import _process_single_frame
+
+    mock_dl.side_effect = RuntimeError("boom")
+    results = []
+    ok = _process_single_frame(
+        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
+        _P(tmp_path), results, 0, 5, None,
+    )
+    assert ok is False
+
+
+# ---------------------------------------------------------------------------
+# _detect_gaps edge cases
+# ---------------------------------------------------------------------------
+
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_detect_gaps_empty_timestamps(mock_db):
+    from app.tasks.goes_tasks import _detect_gaps
+
+    session = MagicMock()
+    mock_db.return_value = session
+    session.execute.return_value.all.return_value = []
+
+    gaps = _detect_gaps("GOES-16", "C02", "FullDisk", 10.0)
+    assert gaps == []
+
+
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_detect_gaps_single_timestamp(mock_db):
+    from app.tasks.goes_tasks import _detect_gaps
+
+    session = MagicMock()
+    mock_db.return_value = session
+    session.execute.return_value.all.return_value = [
+        (datetime(2026, 1, 1, 0, 0, tzinfo=UTC),),
+    ]
+
+    gaps = _detect_gaps("GOES-16", "C02", "FullDisk", 10.0)
+    assert gaps == []
+
+
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_detect_gaps_no_filter(mock_db):
+    """Test _detect_gaps with None satellite/band/sector (no WHERE filters)."""
+    from app.tasks.goes_tasks import _detect_gaps
+
+    session = MagicMock()
+    mock_db.return_value = session
+    session.execute.return_value.all.return_value = [
+        (datetime(2026, 1, 1, 0, 0, tzinfo=UTC),),
+        (datetime(2026, 1, 1, 1, 0, tzinfo=UTC),),  # 60 min gap
+    ]
+
+    gaps = _detect_gaps(None, None, None, 10.0)
+    assert len(gaps) == 1
+    assert gaps[0]["duration_minutes"] == 60.0
+
+
+# ---------------------------------------------------------------------------
+# _create_backfill_image_records
+# ---------------------------------------------------------------------------
+
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_create_backfill_image_records(mock_db, tmp_path):
+    from app.tasks.goes_tasks import _create_backfill_image_records
+
+    session = MagicMock()
+    mock_db.return_value = session
+
+    # Create a fake file
+    f = tmp_path / "frame.png"
+    f.write_bytes(b"fake")
+
+    _create_backfill_image_records([{
+        "path": str(f),
+        "satellite": "GOES-16",
+        "band": "C02",
+        "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+    }])
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
+    session.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _read_max_frames_setting — non-numeric value
+# ---------------------------------------------------------------------------
+
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_read_max_frames_setting_non_numeric(mock_db):
+    from app.tasks.goes_tasks import _read_max_frames_setting
+
+    session = MagicMock()
+    mock_db.return_value = session
+    setting = MagicMock()
+    setting.value = "not-a-number"
+    session.query.return_value.filter.return_value.first.return_value = setting
+
+    result = _read_max_frames_setting()
+    assert result == 200  # Falls through to default

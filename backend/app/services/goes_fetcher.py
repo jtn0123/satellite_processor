@@ -444,6 +444,39 @@ def _build_fetch_result(
     }
 
 
+def _process_single_frame(
+    s3: Any,
+    bucket: str,
+    item: dict[str, Any],
+    satellite: str,
+    sector: str,
+    band: str,
+    out: Path,
+    results: list[dict[str, Any]],
+    index: int,
+    total: int,
+    on_progress: Any | None,
+) -> bool:
+    """Download and convert one frame, appending to *results*. Returns True on success."""
+    try:
+        if index > 0 and index % 10 == 0:
+            _check_disk_space(out, min_gb=0.5)
+
+        frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
+        if frame is None:
+            return False
+
+        results.append(frame)
+        if on_progress:
+            on_progress(index + 1, total)
+        return True
+    except OSError:
+        raise
+    except Exception:
+        logger.exception("Unexpected error fetching %s", item["key"])
+        return False
+
+
 def fetch_frames(
     satellite: str,
     sector: str,
@@ -492,22 +525,10 @@ def fetch_frames(
     failed_downloads = 0
 
     for i, item in enumerate(available):
-        try:
-            if i > 0 and i % 10 == 0:
-                _check_disk_space(out, min_gb=0.5)
-
-            frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
-            if frame is None:
-                failed_downloads += 1
-                continue
-
-            results.append(frame)
-            if on_progress:
-                on_progress(i + 1, len(available))
-        except OSError:
-            raise
-        except Exception:
-            logger.exception("Unexpected error fetching %s", item["key"])
+        ok = _process_single_frame(
+            s3, bucket, item, satellite, sector, band, out, results, i, len(available), on_progress,
+        )
+        if not ok:
             failed_downloads += 1
 
     return _build_fetch_result(results, total_available, capped, len(available), failed_downloads)

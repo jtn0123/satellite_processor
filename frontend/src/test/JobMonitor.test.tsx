@@ -21,9 +21,17 @@ const completedJob = {
   output_path: '/output/job-abc',
 };
 
+const failedJob = {
+  ...mockJob,
+  status: 'failed',
+  progress: 0,
+  error: 'Something went wrong',
+  completed_at: '2026-01-01T00:05:00Z',
+};
+
 vi.mock('../hooks/useApi', () => ({
   useJob: (id: string) => ({
-    data: id === 'completed-job' ? completedJob : mockJob,
+    data: id === 'completed-job' ? completedJob : id === 'failed-job' ? failedJob : mockJob,
     isLoading: false,
   }),
 }));
@@ -69,5 +77,27 @@ describe('JobMonitor', () => {
   it('renders back button', () => {
     render(<JobMonitor jobId="job-abc-12345678" onBack={vi.fn()} />, { wrapper });
     expect(screen.getByText('Back to Jobs')).toBeInTheDocument();
+  });
+
+  it('shows Retry button for failed jobs', () => {
+    // We need a failed job mock — use a special id
+    render(<JobMonitor jobId="failed-job" onBack={vi.fn()} />, { wrapper });
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+
+  it('shows error section for failed jobs', () => {
+    render(<JobMonitor jobId="failed-job" onBack={vi.fn()} />, { wrapper });
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('renders Delete button', () => {
+    render(<JobMonitor jobId="job-abc-12345678" onBack={vi.fn()} />, { wrapper });
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+  });
+
+  it('renders Cancel button for processing jobs', () => {
+    render(<JobMonitor jobId="job-abc-12345678" onBack={vi.fn()} />, { wrapper });
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
 });

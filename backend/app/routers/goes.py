@@ -103,7 +103,9 @@ async def fetch_goes(
     await db.commit()
 
     from ..tasks.goes_tasks import fetch_goes_data
-    fetch_goes_data.delay(job_id, job.params)
+    result = fetch_goes_data.delay(job_id, job.params)
+    job.task_id = result.id
+    await db.commit()
 
     return GoesFetchResponse(
         job_id=job_id,

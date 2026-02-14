@@ -1,28 +1,43 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
+import logging
 import os
+import shutil
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..celery_app import celery_app
 from ..config import settings
 from ..db.database import get_db
-from ..db.models import Image, Job, JobLog
+from ..db.models import (
+    CollectionFrame,
+    GoesFrame,
+    Image,
+    Job,
+    JobLog,
+)
 from ..errors import APIError, validate_uuid
-from ..models.bulk import BulkDeleteRequest
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..utils import utcnow
 
+logger = logging.getLogger(__name__)
+
 _JOB_NOT_FOUND = "Job not found"
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+
+class BulkJobDeleteRequest(BaseModel):
+    job_ids: list[str] = []
+    delete_files: bool = False
 
 
 async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
@@ -50,13 +65,88 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
             try:
                 dst.symlink_to(src)
             except OSError:
-                import shutil
                 shutil.copy2(str(src), str(dst))
             image_paths.append(str(dst))
 
     updated = {**params, "image_paths": image_paths}
     updated["input_path"] = str(staging_dir)
     return updated
+
+
+def _get_job_task_id(job: Job) -> str | None:
+    """Extract Celery task ID from job (task_id column or legacy status_message)."""
+    if job.task_id:
+        return job.task_id
+    if job.status_message and job.status_message.startswith("celery_task_id:"):
+        return job.status_message.split(":", 1)[1]
+    return None
+
+
+def _calc_dir_size(path: str) -> int:
+    """Calculate total size of a directory in bytes."""
+    total = 0
+    p = Path(path)
+    if p.is_dir():
+        for f in p.rglob("*"):
+            if f.is_file():
+                total += f.stat().st_size
+    return total
+
+
+async def _delete_job_files(db: AsyncSession, job: Job) -> int:
+    """Delete all files and DB records associated with a job. Returns bytes freed."""
+    bytes_freed = 0
+
+    # Delete output directory
+    output_path = job.output_path or str(Path(settings.output_dir) / job.id)
+    if os.path.isdir(output_path):
+        bytes_freed += _calc_dir_size(output_path)
+        shutil.rmtree(output_path, ignore_errors=True)
+
+    # Also check goes_<job_id> pattern
+    goes_dir = str(Path(settings.output_dir) / f"goes_{job.id}")
+    if os.path.isdir(goes_dir):
+        bytes_freed += _calc_dir_size(goes_dir)
+        shutil.rmtree(goes_dir, ignore_errors=True)
+
+    # Delete associated GoesFrame records and their files/thumbnails
+    frames_result = await db.execute(
+        select(GoesFrame).where(GoesFrame.source_job_id == job.id)
+    )
+    frames = frames_result.scalars().all()
+
+    for frame in frames:
+        # Delete thumbnail
+        if frame.thumbnail_path and os.path.isfile(frame.thumbnail_path):
+            bytes_freed += os.path.getsize(frame.thumbnail_path)
+            os.remove(frame.thumbnail_path)
+
+        # Delete frame file
+        if frame.file_path and os.path.isfile(frame.file_path):
+            bytes_freed += os.path.getsize(frame.file_path)
+            os.remove(frame.file_path)
+
+        # Delete CollectionFrame join records
+        await db.execute(
+            select(CollectionFrame).where(CollectionFrame.frame_id == frame.id)
+        )
+        await db.execute(
+            CollectionFrame.__table__.delete().where(
+                CollectionFrame.frame_id == frame.id
+            )
+        )
+
+        await db.delete(frame)
+
+    # Note: Image records don't have source_job_id so we can't easily
+    # link them back to jobs. The frame files are already deleted above.
+
+    # Delete job logs
+    await db.execute(
+        JobLog.__table__.delete().where(JobLog.job_id == job.id)
+    )
+
+    return bytes_freed
 
 
 @router.post("", response_model=JobResponse)
@@ -89,6 +179,7 @@ async def create_job(request: Request, job_in: JobCreate, db: AsyncSession = Dep
     else:
         task = celery_app.send_task("process_images", args=[db_job.id, task_params])
 
+    db_job.task_id = task.id
     db_job.status_message = f"celery_task_id:{task.id}"
     await db.commit()
     await db.refresh(db_job)
@@ -149,53 +240,116 @@ async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(
     return job
 
 
-@router.delete("/bulk")
-async def bulk_delete_jobs(
-    payload: BulkDeleteRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk delete/cancel jobs by IDs."""
-    ids = payload.ids
-
-    result = await db.execute(select(Job).where(Job.id.in_(ids)))
-    jobs = result.scalars().all()
-
-    deleted_ids = []
-    for job in jobs:
-        if job.status_message and job.status_message.startswith("celery_task_id:"):
-            celery_task_id = job.status_message.split(":", 1)[1]
-            try:
-                celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
-            except Exception:
-                pass
-        await db.delete(job)
-        deleted_ids.append(job.id)
-
-    await db.commit()
-    return {"deleted": deleted_ids, "count": len(deleted_ids)}
-
-
-@router.delete("/{job_id}")
-@limiter.limit("10/minute")
-async def delete_job(request: Request, job_id: str, db: AsyncSession = Depends(get_db)):
-    """Cancel/delete a job - revokes the Celery task"""
+@router.post("/{job_id}/cancel")
+async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Cancel a running job — revokes the Celery task and cleans up partial files."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
-    if job.status_message and job.status_message.startswith("celery_task_id:"):
-        celery_task_id = job.status_message.split(":", 1)[1]
+    if job.status not in ("pending", "processing"):
+        raise APIError(400, "not_cancellable", f"Job is already {job.status}")
+
+    # Revoke Celery task
+    task_id = _get_job_task_id(job)
+    if task_id:
         try:
-            celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+            celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
+        except Exception:
+            logger.warning("Failed to revoke Celery task %s", task_id)
+
+    # Clean up partial output files
+    output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
+    if os.path.isdir(output_path):
+        shutil.rmtree(output_path, ignore_errors=True)
+
+    job.status = "cancelled"
+    job.completed_at = utcnow()
+    job.status_message = "Cancelled by user"
+    await db.commit()
+    await db.refresh(job)
+
+    return {"cancelled": True, "job_id": job.id}
+
+
+@router.delete("/bulk")
+async def bulk_delete_jobs(
+    payload: BulkJobDeleteRequest,
+    delete_files: Annotated[bool, Query()] = False,
+    all_jobs: Annotated[bool, Query(alias="all")] = False,
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk delete jobs by IDs or all jobs."""
+    use_delete_files = payload.delete_files or delete_files
+
+    if all_jobs:
+        result = await db.execute(select(Job))
+    elif payload.job_ids:
+        result = await db.execute(select(Job).where(Job.id.in_(payload.job_ids)))
+    else:
+        return {"deleted": [], "count": 0, "bytes_freed": 0}
+
+    jobs = result.scalars().all()
+
+    deleted_ids = []
+    total_bytes_freed = 0
+
+    for job in jobs:
+        # Revoke any running tasks
+        task_id = _get_job_task_id(job)
+        if task_id and job.status in ("pending", "processing"):
+            try:
+                celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
+            except Exception:
+                pass
+
+        if use_delete_files:
+            total_bytes_freed += await _delete_job_files(db, job)
+
+        await db.delete(job)
+        deleted_ids.append(job.id)
+
+    await db.commit()
+    return {
+        "deleted": deleted_ids,
+        "count": len(deleted_ids),
+        "bytes_freed": total_bytes_freed,
+    }
+
+
+@router.delete("/{job_id}")
+@limiter.limit("10/minute")
+async def delete_job(
+    request: Request,
+    job_id: str,
+    delete_files: Annotated[bool, Query()] = False,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a job — optionally delete associated files and DB records."""
+    validate_uuid(job_id, "job_id")
+    result = await db.execute(select(Job).where(Job.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
+
+    # Revoke Celery task if still running
+    task_id = _get_job_task_id(job)
+    if task_id and job.status in ("pending", "processing"):
+        try:
+            celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
         except Exception:
             pass
+
+    bytes_freed = 0
+    if delete_files:
+        bytes_freed = await _delete_job_files(db, job)
 
     await db.delete(job)
     await db.commit()
 
-    return {"deleted": True}
+    return {"deleted": True, "bytes_freed": bytes_freed}
 
 
 @router.get("/{job_id}/logs")

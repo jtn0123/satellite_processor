@@ -86,6 +86,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
+        task_id=self.request.id,
         started_at=utcnow(),
         status_message="Fetching GOES data...",
     )
@@ -143,8 +144,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
             msg = f"Downloading frame {current}/{total}"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
-            if current == 1 or current == total or current % 10 == 0:
-                _log(msg)
+            _log(msg)
 
         logger.info(
             "Searching S3 for %s %s %s from %s to %s",
@@ -284,6 +284,7 @@ def backfill_gaps(self, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
+        task_id=self.request.id,
         started_at=utcnow(),
         status_message="Detecting gaps...",
     )
@@ -415,6 +416,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
     _update_job_db(
         job_id,
         status="processing",
+        task_id=self.request.id,
         started_at=utcnow(),
         status_message="Generating composite...",
     )

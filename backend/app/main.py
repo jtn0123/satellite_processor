@@ -49,12 +49,46 @@ logger = logging.getLogger(__name__)
 AUTH_SKIP_PATHS = {"/api/health", "/api/metrics", "/docs", "/redoc", "/openapi.json"}
 
 
+async def _stale_job_checker():
+    """Periodically check for stale jobs every 5 minutes."""
+    from .db.database import async_session
+    from .services.stale_jobs import mark_stale_jobs
+
+    while True:
+        await asyncio.sleep(300)  # 5 minutes
+        try:
+            async with async_session() as db:
+                count = await mark_stale_jobs(db)
+                if count:
+                    logger.info("Marked %d stale jobs as failed", count)
+        except Exception:
+            logger.debug("Stale job check failed", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown events"""
     setup_logging(debug=app_settings.debug)
     await init_db()
+
+    # Check for stale jobs on startup
+    try:
+        from .db.database import async_session
+        from .services.stale_jobs import mark_stale_jobs
+
+        async with async_session() as db:
+            count = await mark_stale_jobs(db)
+            if count:
+                logger.info("Startup: marked %d stale jobs as failed", count)
+    except Exception:
+        logger.debug("Startup stale job check failed", exc_info=True)
+
+    # Start periodic checker
+    checker_task = asyncio.create_task(_stale_job_checker())
+
     yield
+
+    checker_task.cancel()
     await close_redis_pool()
 
 

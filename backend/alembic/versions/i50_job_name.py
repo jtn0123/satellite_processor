@@ -15,15 +15,20 @@ depends_on = None
 
 
 def upgrade():
-    conn = op.get_bind()
-    result = conn.execute(
-        sa.text(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name='jobs' AND column_name='name'"
+    # Use try/except to handle race condition when multiple containers
+    # (api + worker) run alembic upgrade head simultaneously
+    try:
+        conn = op.get_bind()
+        result = conn.execute(
+            sa.text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name='jobs' AND column_name='name'"
+            )
         )
-    )
-    if not result.fetchone():
-        op.add_column("jobs", sa.Column("name", sa.String(255), nullable=True))
+        if not result.fetchone():
+            op.add_column("jobs", sa.Column("name", sa.String(255), nullable=True))
+    except sa.exc.ProgrammingError:
+        pass
 
 
 def downgrade():

@@ -1,8 +1,21 @@
 #!/bin/sh
 set -e
 
-# Run database migrations
-alembic upgrade head
+# Run database migrations with retry (handles race condition when
+# multiple containers run alembic upgrade head simultaneously)
+MAX_RETRIES=3
+for i in $(seq 1 $MAX_RETRIES); do
+    if alembic upgrade head; then
+        break
+    else
+        if [ "$i" -eq "$MAX_RETRIES" ]; then
+            echo "Alembic migration failed after $MAX_RETRIES attempts"
+            exit 1
+        fi
+        echo "Migration attempt $i failed, retrying in 3s..."
+        sleep 3
+    fi
+done
 
 # If a command is provided (e.g. celery worker), run it directly.
 # Otherwise, start the default uvicorn server.

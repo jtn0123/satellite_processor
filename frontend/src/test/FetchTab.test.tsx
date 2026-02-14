@@ -87,7 +87,6 @@ describe('FetchTab', () => {
     // The warning should appear since cache has count 500 > limit 200
     // Give it a moment
     await new Promise((r) => setTimeout(r, 100));
-    const warning = container.querySelector('.text-amber-400');
     // At minimum, verify the inputs are set
     expect((startInput as HTMLInputElement).value).toBe(start);
     expect((endInput as HTMLInputElement).value).toBe(end);

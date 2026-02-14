@@ -103,7 +103,7 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
                 src={`/api/goes/frames/${frameA.id}/image`}
                 alt="Frame A"
                 className="absolute inset-0 w-full h-full object-contain"
-                style={{ width: containerRef.current?.offsetWidth ?? '100%' }}
+                style={{ width: '100%' }}
               />
             </div>
             {/* Divider */}

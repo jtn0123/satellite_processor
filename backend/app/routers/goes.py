@@ -13,11 +13,13 @@ from ..db.models import Composite, GoesFrame, Job
 from ..errors import APIError, validate_uuid
 from ..models.goes import (
     CompositeCreateRequest,
+    CompositeResponse,
     GoesBackfillRequest,
     GoesFetchRequest,
     GoesFetchResponse,
     GoesProductsResponse,
 )
+from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.gap_detector import get_coverage_stats
 from ..services.goes_fetcher import SATELLITE_AVAILABILITY, SATELLITE_BUCKETS, SECTOR_PRODUCTS, VALID_BANDS
@@ -298,7 +300,7 @@ async def create_composite(
     }
 
 
-@router.get("/composites")
+@router.get("/composites", response_model=PaginatedResponse[CompositeResponse])
 async def list_composites(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -313,27 +315,23 @@ async def list_composites(
         .limit(limit)
     )
     composites = result.scalars().all()
-    return {
-        "items": [
-            {
-                "id": c.id,
-                "name": c.name,
-                "recipe": c.recipe,
-                "satellite": c.satellite,
-                "sector": c.sector,
-                "capture_time": c.capture_time.isoformat() if c.capture_time else None,
-                "file_path": c.file_path,
-                "file_size": c.file_size,
-                "status": c.status,
-                "error": c.error,
-                "created_at": c.created_at.isoformat() if c.created_at else None,
-            }
-            for c in composites
-        ],
-        "total": total,
-        "page": page,
-        "limit": limit,
-    }
+    items = [
+        CompositeResponse(
+            id=c.id,
+            name=c.name,
+            recipe=c.recipe,
+            satellite=c.satellite,
+            sector=c.sector,
+            capture_time=c.capture_time.isoformat() if c.capture_time else None,
+            file_path=c.file_path,
+            file_size=c.file_size,
+            status=c.status,
+            error=c.error,
+            created_at=c.created_at.isoformat() if c.created_at else None,
+        )
+        for c in composites
+    ]
+    return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
 @router.get("/composites/{composite_id}")

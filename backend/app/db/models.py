@@ -323,3 +323,12 @@ class CleanupRule(Base):
     protect_collections = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utcnow)
+
+
+class AppSetting(Base):
+    """Key-value settings stored in the database."""
+    __tablename__ = "app_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(JSON, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

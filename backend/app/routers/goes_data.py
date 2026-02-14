@@ -440,8 +440,13 @@ async def create_collection(
     )
 
 
-@router.get("/collections", response_model=list[CollectionResponse])
-async def list_collections(db: AsyncSession = Depends(get_db)):
+@router.get("/collections", response_model=PaginatedResponse[CollectionResponse])
+async def list_collections(
+    db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+):
+    total = (await db.execute(select(func.count(Collection.id)))).scalar() or 0
     result = await db.execute(
         select(
             Collection,
@@ -450,9 +455,11 @@ async def list_collections(db: AsyncSession = Depends(get_db)):
         .outerjoin(CollectionFrame, CollectionFrame.collection_id == Collection.id)
         .group_by(Collection.id)
         .order_by(Collection.created_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
     rows = result.all()
-    return [
+    items = [
         CollectionResponse(
             id=coll.id,
             name=coll.name,
@@ -463,6 +470,7 @@ async def list_collections(db: AsyncSession = Depends(get_db)):
         )
         for coll, count in rows
     ]
+    return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
 @router.put("/collections/{collection_id}", response_model=CollectionResponse)
@@ -636,10 +644,18 @@ async def create_tag(
     return TagResponse.model_validate(tag)
 
 
-@router.get("/tags", response_model=list[TagResponse])
-async def list_tags(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Tag).order_by(Tag.name))
-    return [TagResponse.model_validate(t) for t in result.scalars().all()]
+@router.get("/tags", response_model=PaginatedResponse[TagResponse])
+async def list_tags(
+    db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
+):
+    total = (await db.execute(select(func.count(Tag.id)))).scalar() or 0
+    result = await db.execute(
+        select(Tag).order_by(Tag.name).offset((page - 1) * limit).limit(limit)
+    )
+    items = [TagResponse.model_validate(t) for t in result.scalars().all()]
+    return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
 @router.delete("/tags/{tag_id}")

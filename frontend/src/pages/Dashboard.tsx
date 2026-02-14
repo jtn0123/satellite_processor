@@ -41,11 +41,12 @@ const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
 
 interface DashboardStats {
   total_frames: number;
-  by_satellite: Record<string, { count: number; size: number }>;
+  frames_by_satellite: Record<string, number>;
   last_fetch_time: string | null;
   active_schedules: number;
-  recent_jobs: Array<{ job_id: string; status: string; satellite: string; created_at: string; frames_fetched: number }>;
+  recent_jobs: Array<{ id: string; status: string; created_at: string; status_message: string }>;
   storage_by_satellite: Record<string, number>;
+  storage_by_band: Record<string, number>;
 }
 
 export default function Dashboard() {
@@ -151,9 +152,9 @@ export default function Dashboard() {
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
               <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>
             </div>
-            {Object.entries(goesStats.by_satellite).map(([sat, info]) => (
+            {goesStats.frames_by_satellite && Object.entries(goesStats.frames_by_satellite).map(([sat, count]) => (
               <div key={sat} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{info.count.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{count.toLocaleString()}</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400">{sat}</p>
               </div>
             ))}
@@ -207,17 +208,16 @@ export default function Dashboard() {
               <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">Recent Fetches</h3>
               <div className="space-y-1">
                 {goesStats.recent_jobs.slice(0, 5).map((job) => (
-                  <div key={job.job_id} className="flex items-center justify-between bg-gray-100 dark:bg-space-800 rounded-lg px-3 py-2 text-sm">
+                  <div key={job.id} className="flex items-center justify-between bg-gray-100 dark:bg-space-800 rounded-lg px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
                         job.status === 'completed' ? 'bg-emerald-400' :
                         job.status === 'running' ? 'bg-amber-400 animate-pulse' :
                         job.status === 'failed' ? 'bg-red-400' : 'bg-slate-400'
                       }`} />
-                      <span className="text-gray-600 dark:text-slate-300">{job.satellite}</span>
+                      <span className="text-gray-600 dark:text-slate-300 truncate max-w-[150px]">{job.status_message || job.status}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
-                      <span>{job.frames_fetched} frames</span>
                       <span>{new Date(job.created_at).toLocaleString()}</span>
                     </div>
                   </div>

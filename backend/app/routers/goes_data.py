@@ -625,3 +625,68 @@ async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
     await db.delete(tag)
     await db.commit()
     return {"deleted": tag_id}
+
+
+# ── Frame Image Endpoint ──────────────────────────────────────────────
+
+
+@router.get("/frames/{frame_id}/image")
+async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
+    """Serve the raw image file for a frame."""
+    validate_uuid(frame_id, "frame_id")
+    result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
+    frame = result.scalars().first()
+    if not frame:
+        raise APIError(404, "not_found", "Frame not found")
+
+    file_path = Path(frame.file_path)
+    if not file_path.is_absolute():
+        file_path = Path(settings.DATA_DIR) / file_path
+
+    if not file_path.exists():
+        raise APIError(404, "not_found", "Frame image file not found on disk")
+
+    import mimetypes
+
+    media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
+
+    def _iter():
+        with open(file_path, "rb") as f:
+            while chunk := f.read(65536):
+                yield chunk
+
+    return StreamingResponse(
+        _iter(),
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+# ── Collection Frames Endpoint ────────────────────────────────────────
+
+
+@router.get(
+    "/collections/{collection_id}/frames",
+    response_model=list[GoesFrameResponse],
+)
+async def get_collection_frames(
+    collection_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all frames in a collection, ordered by capture_time ascending."""
+    validate_uuid(collection_id, "collection_id")
+    result = await db.execute(
+        select(Collection).where(Collection.id == collection_id)
+    )
+    if not result.scalars().first():
+        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
+
+    frame_result = await db.execute(
+        select(GoesFrame)
+        .join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id)
+        .where(CollectionFrame.collection_id == collection_id)
+        .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
+        .order_by(GoesFrame.capture_time.asc())
+    )
+    frames = frame_result.scalars().all()
+    return [GoesFrameResponse.model_validate(f) for f in frames]

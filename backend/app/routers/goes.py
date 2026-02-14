@@ -87,8 +87,12 @@ async def fetch_goes(
             )
 
     job_id = str(uuid.uuid4())
+    hours_diff = max(1, round((payload.end_time - payload.start_time).total_seconds() / 3600))
+    time_label = f"{hours_diff}hr" if hours_diff < 24 else f"{hours_diff // 24}d"
+    job_name = f"{payload.satellite} {payload.sector} {payload.band} ({time_label})"
     job = Job(
         id=job_id,
+        name=job_name,
         status="pending",
         job_type="goes_fetch",
         params={

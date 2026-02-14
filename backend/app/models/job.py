@@ -47,6 +47,7 @@ class JobCreate(BaseModel):
     """Request schema for creating a processing or video creation job."""
 
     job_type: Literal["image_process", "video_create"] = "image_process"
+    name: str | None = None
     params: dict = Field(default_factory=dict)
     input_path: str = Field(default="", max_length=500)
 
@@ -74,6 +75,7 @@ class JobResponse(BaseModel):
     """Response schema for a job with status, progress, and output path."""
 
     id: str
+    name: str | None = None
     status: str
     job_type: str
     params: dict

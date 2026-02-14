@@ -30,6 +30,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(255), nullable=True)
     status = Column(String(20), default="pending", index=True)
     job_type = Column(String(20), default="image_process")
     params = Column(JSON, default=dict)

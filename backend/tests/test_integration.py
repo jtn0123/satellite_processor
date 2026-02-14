@@ -128,3 +128,153 @@ async def test_system_status(client):
     data = resp.json()
     assert "cpu_percent" in data
     assert "memory" in data
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_settings_persistence(client, db):
+    """Update settings, read back, verify persistence."""
+    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "h265"})
+    assert resp.status_code == 200
+
+    resp2 = await client.get("/api/settings")
+    assert resp2.status_code == 200
+    data = resp2.json()
+    assert data["video_fps"] == 30
+    assert data["video_codec"] == "h265"
+
+    # Update again
+    resp3 = await client.put("/api/settings", json={"video_fps": 60})
+    assert resp3.status_code == 200
+    resp4 = await client.get("/api/settings")
+    assert resp4.json()["video_fps"] == 60
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_goes_fetch_creates_job(client, db):
+    """GOES fetch endpoint should create a job record."""
+    with patch("app.routers.goes.celery_app") as mock_celery:
+        mock_result = MagicMock()
+        mock_result.id = "celery-goes-fetch"
+        mock_celery.send_task.return_value = mock_result
+
+        resp = await client.post("/api/goes/fetch", json={
+            "satellite": "GOES-16",
+            "sector": "CONUS",
+            "band": "C02",
+        })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "job_id" in data or "id" in data
+    job_id = data.get("job_id") or data.get("id")
+
+    # Verify job exists
+    resp2 = await client.get(f"/api/jobs/{job_id}")
+    assert resp2.status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_collection_full_lifecycle(client, db):
+    """Create collection → add frames → list frames → remove → delete."""
+    from app.db.models import GoesFrame
+
+    from tests.conftest import TestSessionLocal
+
+    # Seed frames
+    frame_ids = []
+    async with TestSessionLocal() as session:
+        for i in range(3):
+            from datetime import UTC, datetime, timedelta
+
+            f = GoesFrame(
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime.now(UTC) - timedelta(minutes=i * 10),
+                file_path=f"/tmp/coll_{i}.nc",
+                file_size=500,
+            )
+            session.add(f)
+            await session.flush()
+            frame_ids.append(str(f.id))
+        await session.commit()
+
+    # Create collection
+    resp = await client.post("/api/goes/collections", json={
+        "name": "Integration Collection",
+        "description": "Testing",
+    })
+    assert resp.status_code == 200
+    coll_id = resp.json()["id"]
+
+    # Add frames
+    resp2 = await client.post(
+        f"/api/goes/collections/{coll_id}/frames",
+        json={"frame_ids": frame_ids},
+    )
+    assert resp2.status_code == 200
+
+    # List frames
+    resp3 = await client.get(f"/api/goes/collections/{coll_id}/frames")
+    assert resp3.status_code == 200
+    assert resp3.json()["total"] >= 3
+
+    # Delete collection
+    resp4 = await client.delete(f"/api/goes/collections/{coll_id}")
+    assert resp4.status_code == 200
+
+    # Verify gone
+    resp5 = await client.get(f"/api/goes/collections/{coll_id}/frames")
+    assert resp5.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_animation_workflow(client, db):
+    """Full animation workflow: seed frames → create animation → verify."""
+    from app.db.models import GoesFrame
+
+    from tests.conftest import TestSessionLocal
+
+    frame_ids = []
+    async with TestSessionLocal() as session:
+        for i in range(4):
+            from datetime import UTC, datetime, timedelta
+
+            f = GoesFrame(
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime.now(UTC) - timedelta(minutes=i * 10),
+                file_path=f"/tmp/anim_{i}.nc",
+                file_size=1000,
+            )
+            session.add(f)
+            await session.flush()
+            frame_ids.append(str(f.id))
+        await session.commit()
+
+    with patch("app.routers.animations.celery_app", create=True) as mock_celery:
+        mock_result = MagicMock()
+        mock_result.id = "task-anim-integration"
+        mock_celery.send_task.return_value = mock_result
+
+        resp = await client.post("/api/goes/animations", json={
+            "frame_ids": frame_ids,
+            "fps": 10,
+            "format": "mp4",
+        })
+    assert resp.status_code == 200
+    anim_id = resp.json()["id"]
+
+    # Verify in list
+    resp2 = await client.get("/api/goes/animations")
+    assert resp2.status_code == 200
+    assert any(a["id"] == anim_id for a in resp2.json()["items"])
+
+    # Verify by ID
+    resp3 = await client.get(f"/api/goes/animations/{anim_id}")
+    assert resp3.status_code == 200
+    assert resp3.json()["frame_count"] == 4

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { buildWsUrl } from '../api/ws';
 
 type Status = 'connected' | 'reconnecting' | 'disconnected';
 
@@ -31,9 +32,8 @@ function connect() {
     setStatus('disconnected');
     return;
   }
-  const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
   try {
-    ws = new WebSocket(`${protocol}//${globalThis.location.host}/ws/status`);
+    ws = new WebSocket(buildWsUrl('/ws/status'));
     ws.onopen = () => setStatus('connected');
     ws.onclose = () => {
       ws = null;

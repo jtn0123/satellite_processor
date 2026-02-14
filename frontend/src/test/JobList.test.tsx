@@ -36,11 +36,6 @@ describe('JobList', () => {
 
   it('renders completed_partial badge with amber styling', () => {
     // Override the mock for this test
-    const { useJobs, useDeleteJob } = vi.hoisted(() => ({
-      useJobs: vi.fn(),
-      useDeleteJob: vi.fn(),
-    }));
-
     vi.doMock('../hooks/useApi', () => ({
       useJobs: () => ({
         data: [

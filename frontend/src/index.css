@@ -294,3 +294,22 @@ header {
 .focus-glow:focus {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
+
+/* === Light mode overrides === */
+:not(.dark) .bg-card {
+  background-color: #ffffff;
+}
+
+:not(.dark) .border-subtle {
+  border-color: #e5e7eb;
+}
+
+:not(.dark) .bg-space-700,
+:not(.dark) .bg-space-800,
+:not(.dark) .bg-space-900 {
+  background-color: #f3f4f6;
+}
+
+:not(.dark) .bg-card-hover {
+  background-color: #f9fafb;
+}

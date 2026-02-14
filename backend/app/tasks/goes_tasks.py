@@ -174,6 +174,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
                 description=f"Auto-created from fetch job {job_id}",
             )
             session.add(collection)
+            session.flush()  # Ensure collection exists before adding frames
 
             for frame in results:
                 path = Path(frame["path"])
@@ -213,6 +214,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
                     source_job_id=job_id,
                 )
                 session.add(goes_frame)
+                session.flush()  # Ensure GoesFrame exists before FK reference
 
                 # Add to auto-collection
                 session.add(CollectionFrame(collection_id=collection.id, frame_id=gf_id))

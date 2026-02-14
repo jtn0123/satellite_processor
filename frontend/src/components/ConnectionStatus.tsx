@@ -54,8 +54,11 @@ function connect() {
     ws.onerror = () => ws?.close();
   } catch {
     setStatus('disconnected');
-    if (refCount > 0) {
-      timer = setTimeout(connect, 5000);
+    if (refCount > 0 && retryCount < MAX_RETRIES) {
+      retryCount++;
+      setStatus('reconnecting');
+      const delay = Math.min(5000 * 2 ** (retryCount - 1), 30000);
+      timer = setTimeout(connect, delay);
     }
   }
 }
@@ -72,6 +75,7 @@ function subscribe(cb: () => void) {
       ws?.close();
       ws = null;
       currentStatus = 'disconnected';
+      retryCount = 0;
     }
   };
 }

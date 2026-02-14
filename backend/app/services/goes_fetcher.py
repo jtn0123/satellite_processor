@@ -419,7 +419,6 @@ def fetch_frames(
     failed_downloads = 0
 
     _transient_errors = (
-        ClientError,
         ConnectTimeoutError,
         ReadTimeoutError,
         EndpointConnectionError,

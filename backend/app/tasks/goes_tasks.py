@@ -90,8 +90,8 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
         # Read configurable frame limit from DB settings
         from ..db.models import AppSetting
-
-        max_frames_limit = 200  # default
+        from ..services.goes_fetcher import DEFAULT_MAX_FRAMES
+        max_frames_limit = DEFAULT_MAX_FRAMES
         settings_session = _get_sync_db()
         try:
             setting = settings_session.query(AppSetting).filter(

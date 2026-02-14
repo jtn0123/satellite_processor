@@ -89,7 +89,7 @@ export default function FetchTab() {
     staleTime: 60_000,
   });
 
-  const frameLimit = (appSettings?.max_frames_per_fetch as number) || 200;
+  const frameLimit = Number(appSettings?.max_frames_per_fetch) || 200;
 
   const fetchMutation = useMutation({
     mutationFn: () =>

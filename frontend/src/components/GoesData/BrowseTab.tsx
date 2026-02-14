@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Satellite,
@@ -67,12 +67,15 @@ export default function BrowseTab() {
   const debouncedCollection = useDebounce(filterCollection, 300);
   const debouncedTag = useDebounce(filterTag, 300);
 
-  const params: Record<string, string | number> = { page, limit: 50, sort: sortBy, order: sortOrder };
-  if (debouncedSat) params.satellite = debouncedSat;
-  if (debouncedBand) params.band = debouncedBand;
-  if (debouncedSector) params.sector = debouncedSector;
-  if (debouncedCollection) params.collection_id = debouncedCollection;
-  if (debouncedTag) params.tag = debouncedTag;
+  const params = useMemo(() => {
+    const p: Record<string, string | number> = { page, limit: 50, sort: sortBy, order: sortOrder };
+    if (debouncedSat) p.satellite = debouncedSat;
+    if (debouncedBand) p.band = debouncedBand;
+    if (debouncedSector) p.sector = debouncedSector;
+    if (debouncedCollection) p.collection_id = debouncedCollection;
+    if (debouncedTag) p.tag = debouncedTag;
+    return p;
+  }, [page, sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag]);
 
   const { data: framesData, isLoading } = useQuery<PaginatedFrames>({
     queryKey: ['goes-frames', params],
@@ -108,14 +111,14 @@ export default function BrowseTab() {
     });
   };
 
-  const handleFrameClick = (frame: GoesFrame, e: React.MouseEvent) => {
+  const handleFrameClick = useCallback((frame: GoesFrame, e: React.MouseEvent) => {
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       toggleSelect(frame.id);
     } else {
       setPreviewFrame(frame);
       window.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
     }
-  };
+  }, []);
 
   const selectAll = () => {
     if (!framesData) return;

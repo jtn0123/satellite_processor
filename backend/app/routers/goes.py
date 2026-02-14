@@ -19,6 +19,7 @@ from ..models.goes import (
     GoesProductsResponse,
 )
 from ..rate_limit import limiter
+from ..services.cache import get_cached, invalidate, make_cache_key
 from ..services.gap_detector import get_coverage_stats
 from ..services.goes_fetcher import SATELLITE_AVAILABILITY, SATELLITE_BUCKETS, SECTOR_PRODUCTS, VALID_BANDS
 
@@ -38,21 +39,26 @@ BAND_DESCRIPTIONS = {
 @router.get("/products", response_model=GoesProductsResponse)
 async def list_products():
     """List available GOES satellites, sectors, and bands."""
-    return GoesProductsResponse(
-        satellites=list(SATELLITE_BUCKETS.keys()),
-        satellite_availability={
-            sat: info for sat, info in SATELLITE_AVAILABILITY.items()
-        },
-        sectors=[
-            {"id": k, "name": k, "product": v}
-            for k, v in SECTOR_PRODUCTS.items()
-        ],
-        bands=[
-            {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
-            for band in VALID_BANDS
-        ],
-        default_satellite="GOES-19",
-    )
+    cache_key = make_cache_key("products")
+
+    async def _fetch():
+        return {
+            "satellites": list(SATELLITE_BUCKETS.keys()),
+            "satellite_availability": {
+                sat: info for sat, info in SATELLITE_AVAILABILITY.items()
+            },
+            "sectors": [
+                {"id": k, "name": k, "product": v}
+                for k, v in SECTOR_PRODUCTS.items()
+            ],
+            "bands": [
+                {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
+                for band in VALID_BANDS
+            ],
+            "default_satellite": "GOES-19",
+        }
+
+    return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
 
 
 @router.post("/fetch", response_model=GoesFetchResponse)
@@ -111,6 +117,8 @@ async def fetch_goes(
     result = fetch_goes_data.delay(job_id, job.params)
     job.task_id = str(result.id)
     await db.commit()
+
+    await invalidate("cache:dashboard-stats*")
 
     return GoesFetchResponse(
         job_id=job_id,

@@ -109,6 +109,7 @@ class GoesFrame(Base):
     __table_args__ = (
         Index("ix_goes_frames_sat_band", "satellite", "band"),
         Index("ix_goes_frames_capture", "capture_time"),
+        Index("ix_goes_frames_sat_sector_band_capture", "satellite", "sector", "band", "capture_time"),
         CheckConstraint("file_size >= 0", name="ck_goes_frames_file_size"),
     )
 

@@ -41,6 +41,7 @@ from ..models.goes_data import (
     TagResponse,
 )
 from ..models.pagination import PaginatedResponse
+from ..services.cache import get_cached, invalidate, make_cache_key
 from ..utils.path_validation import validate_file_path
 
 _COLLECTION_NOT_FOUND = "Collection not found"
@@ -53,70 +54,68 @@ router = APIRouter(prefix="/api/goes", tags=["goes-data"])
 @router.get("/dashboard-stats")
 async def dashboard_stats(db: AsyncSession = Depends(get_db)):
     """Aggregated dashboard statistics for the GOES data overview."""
-    # Total frames
-    total = (await db.execute(select(func.count(GoesFrame.id)))).scalar() or 0
+    cache_key = make_cache_key("dashboard-stats")
 
-    # Frames by satellite
-    sat_rows = (await db.execute(
-        select(GoesFrame.satellite, func.count(GoesFrame.id))
-        .group_by(GoesFrame.satellite)
-    )).all()
-    frames_by_satellite = {row[0]: row[1] for row in sat_rows}
+    async def _fetch():
+        total = (await db.execute(select(func.count(GoesFrame.id)))).scalar() or 0
 
-    # Last fetch time (most recent goes_fetch job)
-    last_job = (await db.execute(
-        select(Job.completed_at)
-        .where(Job.job_type == "goes_fetch", Job.status == "completed")
-        .order_by(Job.completed_at.desc())
-        .limit(1)
-    )).scalar()
-    last_fetch_time = last_job.isoformat() if last_job else None
+        sat_rows = (await db.execute(
+            select(GoesFrame.satellite, func.count(GoesFrame.id))
+            .group_by(GoesFrame.satellite)
+        )).all()
+        frames_by_satellite = {row[0]: row[1] for row in sat_rows}
 
-    # Active schedules
-    active_schedules = (await db.execute(
-        select(func.count(FetchSchedule.id)).where(FetchSchedule.is_active.is_(True))
-    )).scalar() or 0
+        last_job = (await db.execute(
+            select(Job.completed_at)
+            .where(Job.job_type == "goes_fetch", Job.status == "completed")
+            .order_by(Job.completed_at.desc())
+            .limit(1)
+        )).scalar()
+        last_fetch_time = last_job.isoformat() if last_job else None
 
-    # Storage by satellite
-    sat_storage_rows = (await db.execute(
-        select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0))
-        .group_by(GoesFrame.satellite)
-    )).all()
-    storage_by_satellite = {row[0]: row[1] for row in sat_storage_rows}
+        active_schedules = (await db.execute(
+            select(func.count(FetchSchedule.id)).where(FetchSchedule.is_active.is_(True))
+        )).scalar() or 0
 
-    # Storage by band
-    band_storage_rows = (await db.execute(
-        select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0))
-        .group_by(GoesFrame.band)
-    )).all()
-    storage_by_band = {row[0]: row[1] for row in band_storage_rows}
+        sat_storage_rows = (await db.execute(
+            select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0))
+            .group_by(GoesFrame.satellite)
+        )).all()
+        storage_by_satellite = {row[0]: row[1] for row in sat_storage_rows}
 
-    # Recent jobs (last 5 goes_fetch)
-    recent_rows = (await db.execute(
-        select(Job)
-        .where(Job.job_type == "goes_fetch")
-        .order_by(Job.created_at.desc())
-        .limit(5)
-    )).scalars().all()
-    recent_jobs = [
-        {
-            "id": j.id,
-            "status": j.status,
-            "created_at": j.created_at.isoformat() if j.created_at else None,
-            "status_message": j.status_message or "",
+        band_storage_rows = (await db.execute(
+            select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0))
+            .group_by(GoesFrame.band)
+        )).all()
+        storage_by_band = {row[0]: row[1] for row in band_storage_rows}
+
+        recent_rows = (await db.execute(
+            select(Job)
+            .where(Job.job_type == "goes_fetch")
+            .order_by(Job.created_at.desc())
+            .limit(5)
+        )).scalars().all()
+        recent_jobs = [
+            {
+                "id": j.id,
+                "status": j.status,
+                "created_at": j.created_at.isoformat() if j.created_at else None,
+                "status_message": j.status_message or "",
+            }
+            for j in recent_rows
+        ]
+
+        return {
+            "total_frames": total,
+            "frames_by_satellite": frames_by_satellite,
+            "last_fetch_time": last_fetch_time,
+            "active_schedules": active_schedules,
+            "storage_by_satellite": storage_by_satellite,
+            "storage_by_band": storage_by_band,
+            "recent_jobs": recent_jobs,
         }
-        for j in recent_rows
-    ]
 
-    return {
-        "total_frames": total,
-        "frames_by_satellite": frames_by_satellite,
-        "last_fetch_time": last_fetch_time,
-        "active_schedules": active_schedules,
-        "storage_by_satellite": storage_by_satellite,
-        "storage_by_band": storage_by_band,
-        "recent_jobs": recent_jobs,
-    }
+    return await get_cached(cache_key, ttl=30, fetch_fn=_fetch)
 
 
 # ── Quick Fetch Presets ───────────────────────────────────────────────
@@ -283,6 +282,7 @@ async def bulk_delete_frames(
 
     await db.execute(delete(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
     await db.commit()
+    await invalidate("cache:dashboard-stats*")
     return {"deleted": len(frames)}
 
 

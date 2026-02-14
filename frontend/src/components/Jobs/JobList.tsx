@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { useJobs, useDeleteJob } from '../../hooks/useApi';
 import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Download } from 'lucide-react';
 
@@ -23,11 +24,14 @@ interface Props {
   limit?: number;
 }
 
-export default function JobList({ onSelect, limit }: Readonly<Props>) {
+function JobList({ onSelect, limit }: Readonly<Props>) {
   const { data: jobs = [], isLoading } = useJobs();
   const deleteJob = useDeleteJob();
 
-  const displayed = limit ? (jobs as Job[]).slice(0, limit) : (jobs as Job[]);
+  const displayed = useMemo(
+    () => (limit ? (jobs as Job[]).slice(0, limit) : (jobs as Job[])),
+    [jobs, limit],
+  );
 
   if (isLoading) {
     return (
@@ -125,3 +129,5 @@ export default function JobList({ onSelect, limit }: Readonly<Props>) {
     </div>
   );
 }
+
+export default memo(JobList);

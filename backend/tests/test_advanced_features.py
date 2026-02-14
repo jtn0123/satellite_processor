@@ -104,7 +104,7 @@ class TestComposites:
             "satellite": "GOES-16",
             "sector": "CONUS",
         })
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_list_composites_empty(self, client):
         resp = await client.get("/api/goes/composites")

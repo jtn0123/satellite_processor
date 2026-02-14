@@ -88,7 +88,7 @@ export default function Dashboard() {
       {statsLoading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["a","b","c","d"].map((k) => (
-            <div key={k} className="bg-card border border-subtle rounded-xl p-4 h-24 animate-pulse" />
+            <div key={k} className="bg-gray-200/50 dark:bg-white/[0.06] border border-subtle rounded-xl p-4 h-24 animate-pulse" />
           ))}
         </div>
       )}
@@ -126,16 +126,25 @@ export default function Dashboard() {
 
       {/* GOES stats loading skeleton (#9) */}
       {goesLoading && (
-        <div className="bg-card border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
+        <div className="bg-gray-200/50 dark:bg-white/[0.06] border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-space-700" />
-            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-space-700" />
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-white/10" />
+            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-white/10" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1,2,3,4].map((k) => (
-              <div key={k} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3 h-16" />
+              <div key={k} className="bg-gray-100 dark:bg-white/[0.06] rounded-lg p-3 h-16" />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* GOES stats empty state (API returned but no data) */}
+      {!goesLoading && goesStats && totalGoesFrames === 0 && !showOnboarding && (
+        <div className="bg-card border border-subtle rounded-xl p-6 text-center">
+          <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Fetch GOES data to see stats here</p>
         </div>
       )}
 

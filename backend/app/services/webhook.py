@@ -8,18 +8,20 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models import AppSettings
+from ..db.models import AppSetting
 
 logger = logging.getLogger(__name__)
 
 
 async def send_webhook_notification(db: AsyncSession, message: str) -> None:
     """Send a Discord webhook if webhook_url is configured in settings."""
-    result = await db.execute(select(AppSettings).where(AppSettings.id == 1))
+    result = await db.execute(
+        select(AppSetting).where(AppSetting.key == "webhook_url")
+    )
     row = result.scalars().first()
-    if not row:
+    if not row or not row.value:
         return
-    url = row.data.get("webhook_url")
+    url = row.value if isinstance(row.value, str) else row.value.get("url", "")
     if not url:
         return
 

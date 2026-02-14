@@ -231,10 +231,8 @@ async def test_create_animation_with_frames(client, db):
             frame_ids.append(str(frame.id))
         await session.commit()
 
-    with patch("app.routers.animations.celery_app", create=True) as mock_celery:
-        mock_result = MagicMock()
-        mock_result.id = "task-anim-test"
-        mock_celery.send_task.return_value = mock_result
+    with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
+        mock_task.delay.return_value = MagicMock(id="task-anim-test")
 
         resp = await client.post("/api/goes/animations", json={
             "frame_ids": frame_ids,

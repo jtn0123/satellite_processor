@@ -103,7 +103,8 @@ def test_fetch_frames_retry_on_transient_error(mock_list, mock_s3_client, mock_p
     # First call to get_object raises, second succeeds
     body = MagicMock()
     body.iter_chunks.return_value = [b"data"]
-    s3.get_object.side_effect = [_client_error("SlowDown"), {"Body": body}]
+    from botocore.exceptions import ConnectTimeoutError
+    s3.get_object.side_effect = [ConnectTimeoutError(endpoint_url="https://s3.amazonaws.com"), {"Body": body}]
 
     # Patch _retry_s3_operation to just call the function directly (bypass circuit breaker)
     with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)})):
@@ -129,7 +130,8 @@ def test_fetch_frames_retry_exhausted(mock_list, mock_s3_client, mock_disk, tmp_
 
     s3 = MagicMock()
     mock_s3_client.return_value = s3
-    s3.get_object.side_effect = _client_error("SlowDown")
+    from botocore.exceptions import ConnectTimeoutError
+    s3.get_object.side_effect = ConnectTimeoutError(endpoint_url="https://s3.amazonaws.com")
 
     with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)})):
         result = fetch_frames(

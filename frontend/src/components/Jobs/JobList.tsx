@@ -15,6 +15,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; bg:
   pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
   processing: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
   completed: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
+  completed_partial: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-400/10' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
   cancelled: { icon: AlertTriangle, color: 'text-gray-500 dark:text-slate-400', bg: 'bg-slate-400/10' },
 };
@@ -89,7 +90,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
               {new Date(job.created_at).toLocaleString()}
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {job.status === 'completed' && (
+              {(job.status === 'completed' || job.status === 'completed_partial') && (
                 <a
                   href={`/api/jobs/${job.id}/download`}
                   download

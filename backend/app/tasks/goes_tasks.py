@@ -69,11 +69,10 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
         # Check available count before downloading
         available = list_available(satellite, sector, band, start_time, end_time)
-        available_count = len(available)
         _log(f"Found {len(available)} available frames on S3")
         logger.info(
             "Found %d available frames for %s %s %s [%s → %s]",
-            available_count, satellite, sector, band,
+            len(available), satellite, sector, band,
             start_time.isoformat(), end_time.isoformat(),
         )
 
@@ -89,7 +88,23 @@ def fetch_goes_data(self, job_id: str, params: dict):
             satellite, sector, band, start_time.isoformat(), end_time.isoformat(),
         )
 
-        results = fetch_frames(
+        # Read configurable frame limit from DB settings
+        from ..db.models import AppSetting
+
+        max_frames_limit = 200  # default
+        settings_session = _get_sync_db()
+        try:
+            setting = settings_session.query(AppSetting).filter(
+                AppSetting.key == "max_frames_per_fetch"
+            ).first()
+            if setting and isinstance(setting.value, (int, float)):
+                max_frames_limit = int(setting.value)
+        except Exception:
+            logger.debug("Could not read max_frames_per_fetch setting, using default")
+        finally:
+            settings_session.close()
+
+        fetch_result = fetch_frames(
             satellite=satellite,
             sector=sector,
             band=band,
@@ -97,7 +112,13 @@ def fetch_goes_data(self, job_id: str, params: dict):
             end_time=end_time,
             output_dir=output_dir,
             on_progress=on_progress,
+            max_frames=max_frames_limit,
         )
+
+        results = fetch_result["frames"]
+        total_available = fetch_result["total_available"]
+        was_capped = fetch_result["capped"]
+        failed_downloads = fetch_result["failed_downloads"]
 
         # Create Image + GoesFrame records and auto-collection
         from ..db.models import Collection, CollectionFrame, GoesFrame, Image
@@ -166,7 +187,9 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
         # Build descriptive status message
         fetched_count = len(results)
-        if fetched_count == 0 and available_count == 0:
+        beyond_cap = total_available - max_frames_limit if was_capped else 0
+
+        if fetched_count == 0 and total_available == 0:
             avail = SATELLITE_AVAILABILITY.get(satellite, {})
             avail_hint = ""
             if avail.get("available_to"):
@@ -179,18 +202,33 @@ def fetch_goes_data(self, job_id: str, params: dict):
                 f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
                 f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
             )
-        elif fetched_count < available_count:
-            failed = available_count - fetched_count
-            status_msg = (
-                f"Fetched {fetched_count} of {available_count} frames "
-                f"({failed} failed to download)"
-            )
-        else:
+            final_status = "failed"
+        elif fetched_count == 0:
+            status_msg = f"All {total_available} frames failed to download"
+            final_status = "failed"
+        elif failed_downloads == 0 and not was_capped:
+            # All frames fetched successfully
             status_msg = f"Fetched {fetched_count} frames"
+            final_status = "completed"
+        elif failed_downloads == 0 and was_capped:
+            # Hit the cap but no download failures
+            status_msg = (
+                f"Fetched {fetched_count} of {total_available} available frames "
+                f"(frame limit: {max_frames_limit}). "
+                f"Adjust limit in settings or narrow time range."
+            )
+            final_status = "completed_partial"
+        else:
+            # Some download failures (and possibly capped)
+            parts = [f"Fetched {fetched_count} frames"]
+            if failed_downloads > 0:
+                parts.append(f"{failed_downloads} failed to download")
+            if beyond_cap > 0:
+                parts.append(f"{beyond_cap} beyond frame limit of {max_frames_limit}")
+            status_msg = f"{parts[0]} ({', '.join(parts[1:])})"
+            final_status = "completed_partial"
 
-        is_full_success = fetched_count > 0 and fetched_count >= available_count
-        _log(status_msg, level="info" if is_full_success else "warning")
-        final_status = "completed" if is_full_success else "failed"
+        _log(status_msg, level="info" if final_status == "completed" else "warning")
         _update_job_db(
             job_id,
             status=final_status,
@@ -288,7 +326,7 @@ def backfill_gaps(self, job_id: str, params: dict):
         for i, gap in enumerate(gaps):
             start = datetime.fromisoformat(gap["start"])
             end = datetime.fromisoformat(gap["end"])
-            results = fetch_frames(
+            fetch_result = fetch_frames(
                 satellite=satellite or "GOES-16",
                 sector=sector,
                 band=band or "C02",
@@ -296,6 +334,7 @@ def backfill_gaps(self, job_id: str, params: dict):
                 end_time=end,
                 output_dir=output_dir,
             )
+            results = fetch_result["frames"]
             total_fetched += len(results)
 
             # Create Image records

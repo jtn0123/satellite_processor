@@ -352,8 +352,15 @@ def _check_disk_space(path: Path, min_gb: float = 1.0) -> None:
         )
 
 
-# Maximum frames per single fetch to prevent OOM / disk exhaustion
-MAX_FRAMES_PER_FETCH = 100
+# Default maximum frames per single fetch to prevent OOM / disk exhaustion
+DEFAULT_MAX_FRAMES = 200
+
+# Keep old name as alias for backward compatibility
+MAX_FRAMES_PER_FETCH = DEFAULT_MAX_FRAMES
+
+# Per-frame retry config for transient S3 errors
+_FRAME_RETRY_ATTEMPTS = 2  # 1 retry = 2 total attempts
+_FRAME_RETRY_DELAY = 5.0   # seconds
 
 
 def fetch_frames(
@@ -364,11 +371,20 @@ def fetch_frames(
     end_time: datetime,
     output_dir: str,
     on_progress: Any | None = None,
-) -> list[dict[str, Any]]:
+    max_frames: int | None = None,
+) -> dict[str, Any]:
     """Download GOES frames and convert to PNG.
 
-    Returns list of dicts with 'path', 'scan_time', 'satellite', 'band' fields.
+    Returns a dict with:
+        - frames: list of dicts with 'path', 'scan_time', 'satellite', 'band', 'sector'
+        - total_available: number of frames found on S3
+        - capped: whether the frame limit was hit
+        - attempted: number of frames attempted for download
+        - failed_downloads: number of frames that failed to download
     """
+    if max_frames is None:
+        max_frames = DEFAULT_MAX_FRAMES
+
     validate_params(satellite, sector, band)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -377,19 +393,35 @@ def fetch_frames(
     _check_disk_space(out, min_gb=1.0)
 
     available = list_available(satellite, sector, band, start_time, end_time)
+    total_available = len(available)
     if not available:
-        return []
+        return {
+            "frames": [],
+            "total_available": 0,
+            "capped": False,
+            "attempted": 0,
+            "failed_downloads": 0,
+        }
 
-    if len(available) > MAX_FRAMES_PER_FETCH:
+    capped = len(available) > max_frames
+    if capped:
         logger.warning(
             "Limiting fetch from %d to %d frames (max per job)",
-            len(available), MAX_FRAMES_PER_FETCH,
+            len(available), max_frames,
         )
-        available = available[:MAX_FRAMES_PER_FETCH]
+        available = available[:max_frames]
 
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     results: list[dict[str, Any]] = []
+    failed_downloads = 0
+
+    _transient_errors = (
+        ClientError,
+        ConnectTimeoutError,
+        ReadTimeoutError,
+        EndpointConnectionError,
+    )
 
     for i, item in enumerate(available):
         try:
@@ -402,19 +434,39 @@ def fetch_frames(
             png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
             png_path = out / png_name
 
-            with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
-                tmp_nc_path = Path(tmp_nc.name)
-                response = _retry_s3_operation(
-                    s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
-                )
-                # Stream in chunks to avoid holding entire file in memory
-                for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
-                    tmp_nc.write(chunk)
+            # Per-frame retry for transient S3 errors
+            last_exc = None
+            for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
+                try:
+                    with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
+                        tmp_nc_path = Path(tmp_nc.name)
+                        response = _retry_s3_operation(
+                            s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
+                        )
+                        # Stream in chunks to avoid holding entire file in memory
+                        for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                            tmp_nc.write(chunk)
 
-            try:
-                _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
-            finally:
-                tmp_nc_path.unlink(missing_ok=True)
+                    try:
+                        _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
+                    finally:
+                        tmp_nc_path.unlink(missing_ok=True)
+
+                    last_exc = None
+                    break  # success
+                except _transient_errors as exc:
+                    last_exc = exc
+                    if attempt < _FRAME_RETRY_ATTEMPTS:
+                        logger.warning(
+                            "Frame %s attempt %d/%d failed: %s — retrying in %.0fs",
+                            item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
+                        )
+                        time.sleep(_FRAME_RETRY_DELAY)
+
+            if last_exc is not None:
+                logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)
+                failed_downloads += 1
+                continue
 
             results.append({
                 "path": str(png_path),
@@ -430,12 +482,17 @@ def fetch_frames(
         except OSError:
             # Disk space errors should stop the whole job
             raise
-        except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
-            logger.warning("Failed to fetch %s: %s", item["key"], exc)
         except Exception:
             logger.exception("Unexpected error fetching %s", item["key"])
+            failed_downloads += 1
 
-    return results
+    return {
+        "frames": results,
+        "total_available": total_available,
+        "capped": capped,
+        "attempted": len(available),
+        "failed_downloads": failed_downloads,
+    }
 
 
 def fetch_single_preview(

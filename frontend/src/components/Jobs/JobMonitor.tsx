@@ -20,6 +20,7 @@ import api from '../../api/client';
 
 function statusBadgeClass(status: string): string {
   if (status === 'completed') return 'bg-green-400/10 text-green-400';
+  if (status === 'completed_partial') return 'bg-amber-400/10 text-amber-400';
   if (status === 'failed') return 'bg-red-400/10 text-red-400';
   if (status === 'cancelled') return 'bg-slate-400/10 text-slate-400';
   if (status === 'processing') return 'bg-blue-400/10 text-blue-400';
@@ -146,6 +147,8 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       timelineSteps.push({ label: 'Failed', time: job.completed_at ?? null, done: true });
     } else if (status === 'cancelled') {
       timelineSteps.push({ label: 'Cancelled', time: job.completed_at ?? null, done: true });
+    } else if (status === 'completed_partial') {
+      timelineSteps.push({ label: 'Partial', time: job.completed_at ?? null, done: true });
     } else {
       timelineSteps.push({
         label: 'Completed',
@@ -203,7 +206,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           <div className="w-full h-3 bg-space-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                status === 'failed' ? 'bg-red-500' : 'bg-primary'
+                status === 'failed' ? 'bg-red-500' : status === 'completed_partial' ? 'bg-amber-500' : 'bg-primary'
               }`}
               style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
             />
@@ -267,7 +270,9 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
                       step.done
                         ? step.label === 'Failed'
                           ? 'bg-red-400'
-                          : 'bg-green-400'
+                          : step.label === 'Partial'
+                            ? 'bg-amber-400'
+                            : 'bg-green-400'
                         : 'bg-slate-600'
                     }`}
                   />
@@ -351,7 +356,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       )}
 
       {/* ── Output ─────────────────────────────────────── */}
-      {status === 'completed' && (
+      {(status === 'completed' || status === 'completed_partial') && (
         <div className="space-y-4">
           {job?.output_path && <VideoPlayer src={`/api/jobs/${jobId}/output`} />}
           <a

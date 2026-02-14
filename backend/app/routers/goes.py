@@ -181,6 +181,23 @@ async def backfill_gaps(
     )
 
 
+@router.get("/frame-count")
+@limiter.limit("30/minute")
+async def estimate_frame_count(
+    request: Request,
+    satellite: str = Query(...),
+    sector: str = Query(...),
+    band: str = Query(...),
+    start_time: datetime = Query(...),
+    end_time: datetime = Query(...),
+):
+    """Estimate frame count for a time range without downloading."""
+    from ..services.goes_fetcher import list_available
+
+    available = list_available(satellite, sector, band, start_time, end_time)
+    return {"count": len(available)}
+
+
 @router.get("/preview")
 @limiter.limit("10/minute")
 async def preview_frame(

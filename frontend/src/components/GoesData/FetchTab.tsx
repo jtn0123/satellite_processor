@@ -67,6 +67,30 @@ export default function FetchTab() {
     enabled: false,
   });
 
+  // Estimate frame count and fetch limit from settings
+  const { data: frameEstimate } = useQuery<{ count: number }>({
+    queryKey: ['frame-count', satellite, sector, band, startTime, endTime],
+    queryFn: () =>
+      api.get('/goes/frame-count', {
+        params: {
+          satellite, sector, band,
+          start_time: startTime.includes('Z') || startTime.includes('+') ? startTime : startTime + 'Z',
+          end_time: endTime.includes('Z') || endTime.includes('+') ? endTime : endTime + 'Z',
+        },
+      }).then((r) => r.data),
+    enabled: !!startTime && !!endTime && !dateWarning,
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  const { data: appSettings } = useQuery<Record<string, unknown>>({
+    queryKey: ['settings'],
+    queryFn: () => api.get('/settings').then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  const frameLimit = (appSettings?.max_frames_per_fetch as number) || 200;
+
   const fetchMutation = useMutation({
     mutationFn: () =>
       api.post('/goes/fetch', {
@@ -186,6 +210,12 @@ export default function FetchTab() {
           <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             {dateWarning}
+          </div>
+        )}
+        {frameEstimate && frameEstimate.count > frameLimit && (
+          <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            This range has ~{frameEstimate.count} frames. Current limit is {frameLimit}. The first {frameLimit} will be fetched.
           </div>
         )}
         <div className="flex gap-3">

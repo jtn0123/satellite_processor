@@ -52,7 +52,13 @@ def test_fetch_goes_data_success(mock_db, mock_progress, mock_update, mock_fetch
     mock_session = MagicMock()
     mock_db.return_value = mock_session
 
-    mock_fetch.return_value = []
+    mock_fetch.return_value = {
+        "frames": [],
+        "total_available": 0,
+        "capped": False,
+        "attempted": 0,
+        "failed_downloads": 0,
+    }
 
     params = {
         "satellite": "GOES-16",

@@ -1,10 +1,14 @@
-"""Security middleware — headers and request body size limits."""
+"""Security middleware — headers and request body size limits.
+
+Uses pure ASGI middleware instead of BaseHTTPMiddleware to avoid
+breaking WebSocket connections (BaseHTTPMiddleware intercepts
+WebSocket upgrade requests and returns HTTP errors).
+"""
 
 from __future__ import annotations
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # 10 MB default request body limit
 MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024
@@ -19,32 +23,61 @@ SECURITY_HEADERS = {
 }
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add security headers to all responses."""
+class SecurityHeadersMiddleware:
+    """Add security headers to all HTTP responses. Passes WebSocket through."""
 
-    async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
-        for header, value in SECURITY_HEADERS.items():
-            response.headers[header] = value
-        return response
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                raw_headers = list(message.get("headers", []))
+                for key, value in SECURITY_HEADERS.items():
+                    raw_headers.append((key.lower().encode(), value.encode()))
+                message["headers"] = raw_headers
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
 
 
-class RequestBodyLimitMiddleware(BaseHTTPMiddleware):
+class RequestBodyLimitMiddleware:
     """Reject requests with bodies exceeding the configured limit.
 
-    Skips file upload endpoints which have their own size checks.
+    Skips file upload endpoints and WebSocket connections.
     """
 
     SKIP_PATHS = {"/api/images/upload"}
 
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path in self.SKIP_PATHS:
-            return await call_next(request)
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
 
-        content_length = request.headers.get("content-length")
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        if path in self.SKIP_PATHS:
+            await self.app(scope, receive, send)
+            return
+
+        # Check content-length header
+        headers = dict(
+            (k.decode("latin-1"), v.decode("latin-1"))
+            for k, v in scope.get("headers", [])
+        )
+        content_length = headers.get("content-length")
         if content_length and int(content_length) > MAX_REQUEST_BODY_BYTES:
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=413,
                 content={"error": "request_too_large", "detail": "Request body exceeds 10MB limit"},
             )
-        return await call_next(request)
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)

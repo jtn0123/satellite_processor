@@ -168,14 +168,15 @@ def fetch_goes_data(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             # Auto-create a collection for this fetch job
+            collection_id = str(uuid.uuid4())
             collection = Collection(
-                id=str(uuid.uuid4()),
+                id=collection_id,
                 name=f"GOES Fetch {satellite} {band} {sector}",
                 description=f"Auto-created from fetch job {job_id}",
             )
             session.add(collection)
-            session.flush()  # Ensure collection exists before adding frames
 
+            frame_ids = []
             for frame in results:
                 path = Path(frame["path"])
                 file_size = path.stat().st_size if path.exists() else 0
@@ -214,10 +215,12 @@ def fetch_goes_data(self, job_id: str, params: dict):
                     source_job_id=job_id,
                 )
                 session.add(goes_frame)
-                session.flush()  # Ensure GoesFrame exists before FK reference
+                frame_ids.append(gf_id)
 
-                # Add to auto-collection
-                session.add(CollectionFrame(collection_id=collection.id, frame_id=gf_id))
+            # Flush collection + frames first, then add join records
+            session.flush()
+            for gf_id in frame_ids:
+                session.add(CollectionFrame(collection_id=collection_id, frame_id=gf_id))
 
             session.commit()
         finally:

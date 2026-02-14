@@ -9,9 +9,8 @@ from __future__ import annotations
 import time
 
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 # ── HTTP Request Metrics ──────────────────────────────────────────
 
@@ -99,27 +98,42 @@ def _normalize_path(path: str) -> str:
     return "/".join(normalized)
 
 
-class PrometheusMiddleware(BaseHTTPMiddleware):
-    """Collect HTTP request metrics for Prometheus."""
+class PrometheusMiddleware:
+    """Collect HTTP request metrics for Prometheus.
 
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
+    Uses pure ASGI to avoid breaking WebSocket connections.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
         if path in _SKIP_PATHS:
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
-        method = request.method
+        method = scope.get("method", "GET")
         norm_path = _normalize_path(path)
         start = time.perf_counter()
+        status_code = 500
 
-        response: Response = await call_next(request)
+        async def send_wrapper(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+            await send(message)
 
-        duration = time.perf_counter() - start
-        status = str(response.status_code)
-
-        REQUEST_COUNT.labels(method=method, path=norm_path, status=status).inc()
-        REQUEST_LATENCY.labels(method=method, path=norm_path).observe(duration)
-
-        return response
+        try:
+            await self.app(scope, receive, send_wrapper)
+        finally:
+            duration = time.perf_counter() - start
+            REQUEST_COUNT.labels(method=method, path=norm_path, status=str(status_code)).inc()
+            REQUEST_LATENCY.labels(method=method, path=norm_path).observe(duration)
 
 
 def get_metrics_response() -> Response:

@@ -157,21 +157,8 @@ def _build_status_message(
     return f"{parts[0]} ({', '.join(parts[1:])})", "completed_partial"
 
 
-@celery_app.task(bind=True, name="fetch_goes_data")
-def fetch_goes_data(self, job_id: str, params: dict):
-    """Download GOES frames for a time range and create Image records."""
-    from ..services.goes_fetcher import SATELLITE_BUCKETS, _build_s3_prefix, fetch_frames, list_available
-
-    logger.info("Starting GOES fetch job %s", job_id)
-    _update_job_db(
-        job_id,
-        status="processing",
-        task_id=self.request.id,
-        started_at=utcnow(),
-        status_message="Fetching GOES data...",
-    )
-    _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
-
+def _make_job_logger(job_id: str):
+    """Return a helper function that writes to the job log."""
     def _log(msg: str, level: str = "info") -> None:
         session = _get_sync_db()
         try:
@@ -180,27 +167,57 @@ def fetch_goes_data(self, job_id: str, params: dict):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
+    return _log
 
+
+def _log_s3_prefixes(satellite: str, sector: str, band: str, start_time: datetime, end_time: datetime) -> None:
+    """Log the S3 prefixes that will be searched."""
+    from datetime import timedelta as _td
+
+    from ..services.goes_fetcher import SATELLITE_BUCKETS, _build_s3_prefix
+
+    bucket = SATELLITE_BUCKETS[satellite]
+    current_hour = start_time.replace(minute=0, second=0, microsecond=0)
+    end_ceil = end_time.replace(minute=0, second=0, microsecond=0) + _td(hours=1)
+    while current_hour < end_ceil:
+        prefix = _build_s3_prefix(satellite, sector, band, current_hour)
+        logger.info("Searching S3: s3://%s/%s", bucket, prefix)
+        current_hour += _td(hours=1)
+
+
+def _make_progress_callback(job_id: str, _log):
+    """Return an on_progress callback for fetch_frames."""
+    def on_progress(current: int, total: int):
+        pct = int(current / total * 100) if total > 0 else 0
+        msg = f"Downloading frame {current}/{total}"
+        _publish_progress(job_id, pct, msg)
+        _update_job_db(job_id, progress=pct, status_message=msg)
+        _log(msg)
+    return on_progress
+
+
+@celery_app.task(bind=True, name="fetch_goes_data")
+def fetch_goes_data(self, job_id: str, params: dict):
+    """Download GOES frames for a time range and create Image records."""
+    from ..services.goes_fetcher import fetch_frames, list_available
+
+    logger.info("Starting GOES fetch job %s", job_id)
+    _update_job_db(
+        job_id, status="processing", task_id=self.request.id,
+        started_at=utcnow(), status_message="Fetching GOES data...",
+    )
+    _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
+
+    _log = _make_job_logger(job_id)
     _log(f"GOES fetch started — {params.get('satellite')} {params.get('sector')} {params.get('band')}")
 
     try:
-        satellite = params["satellite"]
-        sector = params["sector"]
-        band = params["band"]
+        satellite, sector, band = params["satellite"], params["sector"], params["band"]
         start_time = datetime.fromisoformat(params["start_time"])
         end_time = datetime.fromisoformat(params["end_time"])
         output_dir = str(Path(settings.output_dir) / f"goes_{job_id}")
 
-        # Log S3 prefixes being searched for debugging
-        bucket = SATELLITE_BUCKETS[satellite]
-        current_hour = start_time.replace(minute=0, second=0, microsecond=0)
-        from datetime import timedelta as _td
-
-        end_ceil = end_time.replace(minute=0, second=0, microsecond=0) + _td(hours=1)
-        while current_hour < end_ceil:
-            prefix = _build_s3_prefix(satellite, sector, band, current_hour)
-            logger.info("Searching S3: s3://%s/%s", bucket, prefix)
-            current_hour += _td(hours=1)
+        _log_s3_prefixes(satellite, sector, band, start_time, end_time)
 
         available = list_available(satellite, sector, band, start_time, end_time)
         _log(f"Found {len(available)} available frames on S3")
@@ -210,28 +227,16 @@ def fetch_goes_data(self, job_id: str, params: dict):
             start_time.isoformat(), end_time.isoformat(),
         )
 
-        def on_progress(current: int, total: int):
-            pct = int(current / total * 100) if total > 0 else 0
-            msg = f"Downloading frame {current}/{total}"
-            _publish_progress(job_id, pct, msg)
-            _update_job_db(job_id, progress=pct, status_message=msg)
-            _log(msg)
-
         max_frames_limit = _read_max_frames_setting()
-
         fetch_result = fetch_frames(
-            satellite=satellite,
-            sector=sector,
-            band=band,
-            start_time=start_time,
-            end_time=end_time,
+            satellite=satellite, sector=sector, band=band,
+            start_time=start_time, end_time=end_time,
             output_dir=output_dir,
-            on_progress=on_progress,
+            on_progress=_make_progress_callback(job_id, _log),
             max_frames=max_frames_limit,
         )
 
         results = fetch_result["frames"]
-
         if results:
             _create_fetch_records(job_id, sector, output_dir, results)
 
@@ -244,12 +249,8 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
         _log(status_msg, level="info" if final_status == "completed" else "warning")
         _update_job_db(
-            job_id,
-            status=final_status,
-            progress=100,
-            output_path=output_dir,
-            completed_at=utcnow(),
-            status_message=status_msg,
+            job_id, status=final_status, progress=100, output_path=output_dir,
+            completed_at=utcnow(), status_message=status_msg,
         )
         _publish_progress(job_id, 100, status_msg, final_status)
 
@@ -257,11 +258,8 @@ def fetch_goes_data(self, job_id: str, params: dict):
         logger.exception("GOES fetch job %s failed", job_id)
         _log(f"GOES fetch failed: {e}", "error")
         _update_job_db(
-            job_id,
-            status="failed",
-            error=str(e),
-            completed_at=utcnow(),
-            status_message=f"Error: {e}",
+            job_id, status="failed", error=str(e),
+            completed_at=utcnow(), status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
@@ -333,27 +331,51 @@ def _create_backfill_image_records(results: list[dict]) -> None:
         session.close()
 
 
+def _fill_single_gap(
+    gap: dict,
+    gap_index: int,
+    satellite: str,
+    sector: str,
+    band: str,
+    output_dir: str,
+) -> int:
+    """Fetch frames for a single gap. Returns number of frames fetched."""
+    from ..services.goes_fetcher import fetch_frames
+
+    start = datetime.fromisoformat(gap["start"])
+    end = datetime.fromisoformat(gap["end"])
+    fetch_result = fetch_frames(
+        satellite=satellite, sector=sector, band=band,
+        start_time=start, end_time=end, output_dir=output_dir,
+    )
+    results = fetch_result["frames"]
+    if fetch_result["capped"] or fetch_result["failed_downloads"] > 0:
+        logger.warning(
+            "Backfill gap %d: %d fetched, %d available, capped=%s, failed=%d",
+            gap_index + 1, len(results), fetch_result["total_available"],
+            fetch_result["capped"], fetch_result["failed_downloads"],
+        )
+    _create_backfill_image_records(results)
+    return len(results)
+
+
 @celery_app.task(bind=True, name="backfill_gaps")
 def backfill_gaps(self, job_id: str, params: dict):
     """Run gap detection then fetch missing frames."""
     logger.info("Starting backfill job %s", job_id)
     _update_job_db(
-        job_id,
-        status="processing",
-        task_id=self.request.id,
-        started_at=utcnow(),
-        status_message="Detecting gaps...",
+        job_id, status="processing", task_id=self.request.id,
+        started_at=utcnow(), status_message="Detecting gaps...",
     )
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
 
     try:
-        satellite = params.get("satellite")
-        band = params.get("band")
+        satellite = params.get("satellite") or "GOES-16"
+        band = params.get("band") or "C02"
         sector = params.get("sector", "FullDisk")
         expected_interval = params.get("expected_interval", 10.0)
 
         gaps = _detect_gaps(satellite, band, sector, expected_interval)
-
         if not gaps:
             _update_job_db(
                 job_id, status="completed", progress=100,
@@ -363,41 +385,16 @@ def backfill_gaps(self, job_id: str, params: dict):
             return
 
         _publish_progress(job_id, 10, f"Found {len(gaps)} gaps, fetching...", "processing")
-
-        from ..services.goes_fetcher import fetch_frames
-
-        total_fetched = 0
         output_dir = str(Path(settings.output_dir) / f"backfill_{job_id}")
+        total_fetched = 0
 
         for i, gap in enumerate(gaps):
-            start = datetime.fromisoformat(gap["start"])
-            end = datetime.fromisoformat(gap["end"])
-            fetch_result = fetch_frames(
-                satellite=satellite or "GOES-16",
-                sector=sector,
-                band=band or "C02",
-                start_time=start,
-                end_time=end,
-                output_dir=output_dir,
-            )
-            results = fetch_result["frames"]
-            total_fetched += len(results)
-            if fetch_result["capped"] or fetch_result["failed_downloads"] > 0:
-                logger.warning(
-                    "Backfill gap %d: %d fetched, %d available, capped=%s, failed=%d",
-                    i + 1, len(results), fetch_result["total_available"],
-                    fetch_result["capped"], fetch_result["failed_downloads"],
-                )
-
-            _create_backfill_image_records(results)
+            total_fetched += _fill_single_gap(gap, i, satellite, sector, band, output_dir)
             pct = 10 + int((i + 1) / len(gaps) * 90)
             _publish_progress(job_id, pct, f"Filled gap {i + 1}/{len(gaps)}")
 
         _update_job_db(
-            job_id,
-            status="completed",
-            progress=100,
-            output_path=output_dir,
+            job_id, status="completed", progress=100, output_path=output_dir,
             completed_at=utcnow(),
             status_message=f"Backfilled {total_fetched} frames across {len(gaps)} gaps",
         )
@@ -406,21 +403,106 @@ def backfill_gaps(self, job_id: str, params: dict):
     except Exception as e:
         logger.exception("Backfill job %s failed", job_id)
         _update_job_db(
-            job_id,
-            status="failed",
-            error=str(e),
-            completed_at=utcnow(),
-            status_message=f"Error: {e}",
+            job_id, status="failed", error=str(e),
+            completed_at=utcnow(), status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
 
 
+def _load_band_images(
+    session,
+    bands: list[str],
+    satellite: str,
+    sector: str,
+    capture_time: datetime,
+) -> list:
+    """Load grayscale band images from the database, returning a list of arrays or None."""
+    import numpy as np
+    from PIL import Image as PILImage
+
+    from ..db.models import GoesFrame
+
+    from sqlalchemy import func as sa_func
+    from sqlalchemy import select as sa_select
+
+    band_images = []
+    for band_name in bands[:3]:
+        query = (
+            sa_select(GoesFrame)
+            .where(
+                GoesFrame.satellite == satellite,
+                GoesFrame.sector == sector,
+                GoesFrame.band == band_name,
+            )
+            .order_by(
+                sa_func.abs(
+                    sa_func.extract("epoch", GoesFrame.capture_time)
+                    - sa_func.extract("epoch", capture_time)
+                )
+            )
+            .limit(1)
+        )
+        frame = session.execute(query).scalars().first()
+        if frame and Path(frame.file_path).exists():
+            img = PILImage.open(frame.file_path).convert("L")
+            band_images.append(np.array(img, dtype=np.float32))
+        else:
+            band_images.append(None)
+    return band_images
+
+
+def _normalize_band(band_array, ref_shape) -> "np.ndarray":
+    """Normalize a single band array to uint8, resizing if needed."""
+    import numpy as np
+    from PIL import Image as PILImage
+
+    if band_array.shape != ref_shape:
+        img_resized = PILImage.fromarray(band_array.astype(np.uint8)).resize(
+            (ref_shape[1], ref_shape[0]), PILImage.BILINEAR
+        )
+        band_array = np.array(img_resized, dtype=np.float32)
+    bmin, bmax = band_array.min(), band_array.max()
+    if bmax > bmin:
+        return ((band_array - bmin) / (bmax - bmin) * 255).astype(np.uint8)
+    return np.zeros_like(band_array, dtype=np.uint8)
+
+
+def _compose_rgb(band_images: list) -> "PILImage.Image":
+    """Stack band images into an RGB PIL image."""
+    import numpy as np
+    from PIL import Image as PILImage
+
+    ref_shape = next(b.shape for b in band_images if b is not None)
+    channels = []
+    for b in band_images:
+        if b is None:
+            channels.append(np.zeros(ref_shape, dtype=np.uint8))
+        else:
+            channels.append(_normalize_band(b, ref_shape))
+    rgb = np.stack(channels, axis=-1)
+    return PILImage.fromarray(rgb, "RGB")
+
+
+def _mark_composite_failed(composite_id: str, error: str) -> None:
+    """Mark a Composite record as failed in the database."""
+    from ..db.models import Composite
+
+    session = _get_sync_db()
+    try:
+        comp = session.query(Composite).filter(Composite.id == composite_id).first()
+        if comp:
+            comp.status = "failed"
+            comp.error = error
+        session.commit()
+    finally:
+        session.close()
+
+
 @celery_app.task(bind=True, name="generate_composite")
 def generate_composite(self, composite_id: str, job_id: str, params: dict):
     """Generate a band composite image from multiple GOES bands."""
-    import numpy as np
-    from PIL import Image as PILImage
+    from ..db.models import Composite
 
     logger.info("Starting composite generation %s", composite_id)
     _update_job_db(
@@ -433,111 +515,40 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
     _publish_progress(job_id, 0, "Generating composite...", "processing")
 
     try:
-        from ..db.models import Composite, GoesFrame
-
-        _recipe = params["recipe"]  # noqa: F841 — kept for logging/future use
-        satellite = params["satellite"]
-        sector = params["sector"]
         capture_time = datetime.fromisoformat(params["capture_time"])
-        bands = params["bands"]
-
         session = _get_sync_db()
         try:
-            from sqlalchemy import func as sa_func
-            from sqlalchemy import select as sa_select
-
-            band_images = []
-            for band_name in bands[:3]:  # RGB = first 3 bands
-                query = (
-                    sa_select(GoesFrame)
-                    .where(
-                        GoesFrame.satellite == satellite,
-                        GoesFrame.sector == sector,
-                        GoesFrame.band == band_name,
-                    )
-                    .order_by(
-                        sa_func.abs(
-                            sa_func.extract("epoch", GoesFrame.capture_time)
-                            - sa_func.extract("epoch", capture_time)
-                        )
-                    )
-                    .limit(1)
-                )
-                result = session.execute(query)
-                frame = result.scalars().first()
-                if frame and Path(frame.file_path).exists():
-                    img = PILImage.open(frame.file_path).convert("L")
-                    band_images.append(np.array(img, dtype=np.float32))
-                else:
-                    band_images.append(None)
-
+            band_images = _load_band_images(
+                session, params["bands"], params["satellite"], params["sector"], capture_time,
+            )
             if not any(b is not None for b in band_images):
                 raise ValueError("No band images found for composite")
 
-            ref_shape = next(b.shape for b in band_images if b is not None)
-
-            channels = []
-            for b in band_images:
-                if b is None:
-                    channels.append(np.zeros(ref_shape, dtype=np.uint8))
-                else:
-                    if b.shape != ref_shape:
-                        img_resized = PILImage.fromarray(b.astype(np.uint8)).resize(
-                            (ref_shape[1], ref_shape[0]), PILImage.BILINEAR
-                        )
-                        b = np.array(img_resized, dtype=np.float32)
-                    bmin, bmax = b.min(), b.max()
-                    if bmax > bmin:
-                        normalized = ((b - bmin) / (bmax - bmin) * 255).astype(np.uint8)
-                    else:
-                        normalized = np.zeros_like(b, dtype=np.uint8)
-                    channels.append(normalized)
-
-            rgb = np.stack(channels, axis=-1)
-            composite_img = PILImage.fromarray(rgb, "RGB")
+            composite_img = _compose_rgb(band_images)
 
             output_dir = Path(settings.output_dir) / "composites"
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / f"{composite_id}.png"
             composite_img.save(str(output_path), "PNG")
-            file_size = output_path.stat().st_size
 
             comp = session.query(Composite).filter(Composite.id == composite_id).first()
             if comp:
                 comp.file_path = str(output_path)
-                comp.file_size = file_size
+                comp.file_size = output_path.stat().st_size
                 comp.status = "completed"
             session.commit()
         finally:
             session.close()
 
         _update_job_db(
-            job_id,
-            status="completed",
-            progress=100,
-            completed_at=utcnow(),
-            status_message="Composite generated",
+            job_id, status="completed", progress=100,
+            completed_at=utcnow(), status_message="Composite generated",
         )
         _publish_progress(job_id, 100, "Composite generated", "completed")
 
     except Exception as e:
         logger.exception("Composite generation %s failed", composite_id)
-
-        session = _get_sync_db()
-        try:
-            comp = session.query(Composite).filter(Composite.id == composite_id).first()
-            if comp:
-                comp.status = "failed"
-                comp.error = str(e)
-            session.commit()
-        finally:
-            session.close()
-
-        _update_job_db(
-            job_id,
-            status="failed",
-            error=str(e),
-            completed_at=utcnow(),
-        )
+        _mark_composite_failed(composite_id, str(e))
+        _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow())
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

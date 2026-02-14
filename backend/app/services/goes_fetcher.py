@@ -90,6 +90,37 @@ def _get_s3_client():
     )
 
 
+_RETRYABLE_S3_ERRORS = (
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    EndpointConnectionError,
+    ConnectionError,
+    OSError,
+)
+
+_THROTTLE_CODES = frozenset(("Throttling", "SlowDown", "RequestTimeout"))
+
+
+def _is_retryable_client_error(exc: ClientError) -> bool:
+    """Return True if the ClientError code indicates a retryable throttle/timeout."""
+    code = exc.response.get("Error", {}).get("Code", "")
+    return code in _THROTTLE_CODES
+
+
+def _s3_retry_delay(attempt: int) -> float:
+    """Calculate exponential backoff delay for the given attempt number."""
+    return S3_BASE_DELAY * (2 ** (attempt - 1))
+
+
+def _record_s3_failure(operation: str, error_type: str) -> None:
+    """Record a circuit-breaker failure and increment the error metric."""
+    from ..circuit_breaker import s3_circuit_breaker
+    from ..metrics import S3_FETCH_ERRORS
+
+    s3_circuit_breaker.record_failure()
+    S3_FETCH_ERRORS.labels(operation=operation, error_type=error_type).inc()
+
+
 def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
     """Execute an S3 operation with exponential backoff retry and circuit breaker.
 
@@ -102,13 +133,6 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
         S3_FETCH_ERRORS.labels(operation=operation, error_type="circuit_open").inc()
         raise CircuitBreakerOpen("s3")
 
-    _retryable_errors = (
-        ConnectTimeoutError,
-        ReadTimeoutError,
-        EndpointConnectionError,
-        ConnectionError,
-        OSError,
-    )
     for attempt in range(1, max_retries + 1):
         try:
             result = func(*args, **kwargs)
@@ -116,30 +140,28 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
             s3_circuit_breaker.record_success()
             return result
         except ClientError as exc:
-            error_code = exc.response.get("Error", {}).get("Code", "")
-            if error_code in ("Throttling", "SlowDown", "RequestTimeout") and attempt < max_retries:
-                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
+            if _is_retryable_client_error(exc) and attempt < max_retries:
+                delay = _s3_retry_delay(attempt)
+                error_code = exc.response.get("Error", {}).get("Code", "")
                 logger.warning(
                     "S3 throttled/timeout (attempt %d/%d, code=%s), retrying in %.1fs",
                     attempt, max_retries, error_code, delay,
                 )
                 time.sleep(delay)
-            else:
-                s3_circuit_breaker.record_failure()
-                S3_FETCH_ERRORS.labels(operation=operation, error_type=error_code or "client_error").inc()
-                raise
-        except _retryable_errors as exc:
+                continue
+            _record_s3_failure(operation, exc.response.get("Error", {}).get("Code", "") or "client_error")
+            raise
+        except _RETRYABLE_S3_ERRORS as exc:
             if attempt < max_retries:
-                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
+                delay = _s3_retry_delay(attempt)
                 logger.warning(
                     "S3 connection error (attempt %d/%d), retrying in %.1fs",
                     attempt, max_retries, delay,
                 )
                 time.sleep(delay)
-            else:
-                s3_circuit_breaker.record_failure()
-                S3_FETCH_ERRORS.labels(operation=operation, error_type=type(exc).__name__).inc()
-                raise
+                continue
+            _record_s3_failure(operation, type(exc).__name__)
+            raise
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
@@ -266,20 +288,18 @@ SECTOR_MAX_DIM: dict[str, int] = {
 }
 
 
-def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "FullDisk") -> Path:
-    """Convert a NetCDF file on disk to PNG (memory-efficient).
+def _read_cmi_data(nc_path: Path, sector: str) -> np.ndarray | None:
+    """Read CMI variable from a NetCDF file, with optional strided downsampling.
 
-    For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
-    downsample during load, keeping peak memory well under 500MB.
+    Returns a float32 numpy array, or ``None`` if reading fails.
     """
     try:
         import netCDF4
 
         nc = netCDF4.Dataset(str(nc_path), "r")
         cmi_var = nc.variables["CMI"]
-        shape = cmi_var.shape  # e.g. (21696, 21696)
+        shape = cmi_var.shape
 
-        # Calculate stride based on sector-specific max dimension
         max_dim = SECTOR_MAX_DIM.get(sector, 4096)
         stride = max(1, max(shape[0], shape[1]) // max_dim)
 
@@ -289,42 +309,51 @@ def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "Fu
                 shape[0], shape[1], stride,
                 shape[0] // stride, shape[1] // stride,
             )
-            # Strided read — netCDF4 only reads the selected elements from disk
             cmi = cmi_var[::stride, ::stride]
         else:
             cmi = cmi_var[:]
 
         nc.close()
 
-        # Convert masked array to regular numpy, replacing fill values with NaN
         if hasattr(cmi, "filled"):
-            cmi = cmi.filled(np.nan).astype(np.float32)
-        else:
-            cmi = np.asarray(cmi, dtype=np.float32)
-
+            return cmi.filled(np.nan).astype(np.float32)
+        return np.asarray(cmi, dtype=np.float32)
     except Exception:
-        logger.warning("netCDF4 unavailable or read failed, generating placeholder")
-        img = PILImage.new("L", (100, 100), 128)
-        img.save(str(output_path))
-        return output_path
+        logger.warning("netCDF4 unavailable or read failed")
+        return None
 
-    # Normalize to 0-255
+
+def _normalize_cmi_to_image(cmi: np.ndarray) -> PILImage.Image:
+    """Normalize a float32 CMI array to an 8-bit grayscale PIL image."""
     valid = cmi[~np.isnan(cmi)]
     if len(valid) == 0:
         h = cmi.shape[0] if len(cmi.shape) > 0 else 100
         w = cmi.shape[1] if len(cmi.shape) > 1 else 100
-        img = PILImage.new("L", (w, h), 0)
-    else:
-        vmin, vmax = np.nanpercentile(cmi, [2, 98])
-        if vmax <= vmin:
-            vmax = vmin + 1
-        # In-place operations to avoid copies
-        np.clip(cmi, vmin, vmax, out=cmi)
-        cmi -= vmin
-        cmi *= 255.0 / (vmax - vmin)
-        np.nan_to_num(cmi, nan=0, copy=False)
-        img = PILImage.fromarray(cmi.astype(np.uint8))
+        return PILImage.new("L", (w, h), 0)
 
+    vmin, vmax = np.nanpercentile(cmi, [2, 98])
+    if vmax <= vmin:
+        vmax = vmin + 1
+    np.clip(cmi, vmin, vmax, out=cmi)
+    cmi -= vmin
+    cmi *= 255.0 / (vmax - vmin)
+    np.nan_to_num(cmi, nan=0, copy=False)
+    return PILImage.fromarray(cmi.astype(np.uint8))
+
+
+def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "FullDisk") -> Path:
+    """Convert a NetCDF file on disk to PNG (memory-efficient).
+
+    For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
+    downsample during load, keeping peak memory well under 500MB.
+    """
+    cmi = _read_cmi_data(nc_path, sector)
+    if cmi is None:
+        img = PILImage.new("L", (100, 100), 128)
+        img.save(str(output_path))
+        return output_path
+
+    img = _normalize_cmi_to_image(cmi)
     img.save(str(output_path))
     return output_path
 

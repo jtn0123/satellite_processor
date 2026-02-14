@@ -384,6 +384,8 @@ def fetch_frames(
     """
     if max_frames is None:
         max_frames = DEFAULT_MAX_FRAMES
+    if max_frames <= 0:
+        raise ValueError("max_frames must be a positive integer")
 
     validate_params(satellite, sector, band)
     out = Path(output_dir)

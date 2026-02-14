@@ -662,6 +662,43 @@ async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/frames/{frame_id}/thumbnail")
+async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db)):
+    """Serve the thumbnail image for a frame."""
+    validate_uuid(frame_id, "frame_id")
+    result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
+    frame = result.scalars().first()
+    if not frame:
+        raise APIError(404, "not_found", "Frame not found")
+
+    thumb_path = frame.thumbnail_path
+    if not thumb_path:
+        # Fall back to the full image
+        thumb_path = frame.file_path
+
+    file_path = Path(thumb_path)
+    if not file_path.is_absolute():
+        file_path = Path(settings.DATA_DIR) / file_path
+
+    if not file_path.exists():
+        raise APIError(404, "not_found", "Thumbnail file not found on disk")
+
+    import mimetypes
+
+    media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
+
+    def _iter():
+        with open(file_path, "rb") as f:
+            while chunk := f.read(65536):
+                yield chunk
+
+    return StreamingResponse(
+        _iter(),
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 # ── Collection Frames Endpoint ────────────────────────────────────────
 
 

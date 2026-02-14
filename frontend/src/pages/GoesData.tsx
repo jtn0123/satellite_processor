@@ -12,6 +12,7 @@ import {
   Radio,
   Map,
   Layers,
+  GalleryHorizontalEnd,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -30,8 +31,9 @@ const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
 const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
 const MapTab = lazy(() => import('../components/GoesData/MapTab'));
 const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
+const FrameGallery = lazy(() => import('../components/GoesData/FrameGallery'));
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites';
+type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites' | 'gallery';
 
 interface TabDef {
   id: TabId;
@@ -49,6 +51,7 @@ const tabGroups: TabGroup[] = [
     label: 'Data',
     tabs: [
       { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
+      { id: 'gallery', label: 'Gallery', icon: <GalleryHorizontalEnd className="w-4 h-4" /> },
       { id: 'live', label: 'Live', icon: <Radio className="w-4 h-4" /> },
       { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
       { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
@@ -80,6 +83,7 @@ const tabLabels: Record<TabId, string> = {
   presets: 'Presets',
   stats: 'Stats',
   cleanup: 'Cleanup',
+  gallery: 'Gallery',
   live: 'Live',
   map: 'Map',
   composites: 'Composites',
@@ -197,6 +201,7 @@ export default function GoesData() {
     const tabMap: Record<TabId, { component: React.ReactNode; name: string }> = {
       fetch: { component: <FetchTab />, name: 'Fetch' },
       browse: { component: <BrowseTab />, name: 'Browse' },
+      gallery: { component: <FrameGallery />, name: 'Gallery' },
       collections: { component: <CollectionsTab />, name: 'Collections' },
       animation: { component: <AnimationStudioTab />, name: 'Animation Studio' },
       presets: { component: <PresetsTab />, name: 'Presets' },

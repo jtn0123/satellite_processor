@@ -80,6 +80,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    logging: *default-logging
+    command: celery -A app.celery_app:celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - STORAGE_PATH=/app/data
+      - PYTHONPATH=/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     deploy:

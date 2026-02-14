@@ -7,23 +7,10 @@ import uuid
 from datetime import timedelta
 
 from ..celery_app import celery_app
-from ..config import settings
 from ..utils import utcnow
+from .helpers import _get_sync_db
 
 logger = logging.getLogger(__name__)
-
-_sync_engine = None
-
-
-def _get_sync_db():
-    global _sync_engine
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import Session
-
-    if _sync_engine is None:
-        sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
-        _sync_engine = create_engine(sync_url, pool_size=5, max_overflow=10, pool_recycle=3600)
-    return Session(_sync_engine)
 
 
 @celery_app.task(bind=True, name="check_schedules")
@@ -84,8 +71,7 @@ def check_schedules(self):
     finally:
         session.close()
 
-    # Re-queue self in 60 seconds
-    check_schedules.apply_async(countdown=60)
+    # Scheduling now handled by Celery Beat — no self-requeueing needed
 
 
 @celery_app.task(bind=True, name="run_cleanup")
@@ -101,7 +87,6 @@ def run_cleanup(self):
         rules = session.query(CleanupRule).filter(CleanupRule.is_active == True).all()  # noqa: E712
         if not rules:
             logger.info("No active cleanup rules")
-            run_cleanup.apply_async(countdown=3600)
             return
 
         total_deleted = 0
@@ -157,5 +142,4 @@ def run_cleanup(self):
     finally:
         session.close()
 
-    # Re-queue in 1 hour
-    run_cleanup.apply_async(countdown=3600)
+    # Scheduling now handled by Celery Beat — no self-requeueing needed

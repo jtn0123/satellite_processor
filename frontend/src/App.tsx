@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -38,13 +39,13 @@ export default function App() {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="upload" element={<UploadPage />} />
-              <Route path="process" element={<ProcessPage />} />
-              <Route path="jobs" element={<JobsPage />} />
-              <Route path="goes" element={<GoesData />} />
-              <Route path="presets" element={<PresetsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
+              <Route index element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+              <Route path="upload" element={<ErrorBoundary><UploadPage /></ErrorBoundary>} />
+              <Route path="process" element={<ErrorBoundary><ProcessPage /></ErrorBoundary>} />
+              <Route path="jobs" element={<ErrorBoundary><JobsPage /></ErrorBoundary>} />
+              <Route path="goes" element={<ErrorBoundary><GoesData /></ErrorBoundary>} />
+              <Route path="presets" element={<ErrorBoundary><PresetsPage /></ErrorBoundary>} />
+              <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

@@ -41,6 +41,7 @@ from ..models.goes_data import (
     TagResponse,
 )
 from ..models.pagination import PaginatedResponse
+from ..utils.path_validation import validate_file_path
 
 _COLLECTION_NOT_FOUND = "Collection not found"
 
@@ -304,48 +305,6 @@ async def bulk_tag_frames(
     return {"tagged": len(payload.frame_ids)}
 
 
-@router.post("/frames/bulk-tag")
-async def bulk_tag_frames_v2(
-    payload: BulkTagRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk tag frames (v2 — accepts single tag_id or tag_ids list)."""
-    tag_ids = payload.tag_ids
-    for frame_id in payload.frame_ids:
-        for tag_id in tag_ids:
-            existing = await db.execute(
-                select(FrameTag).where(
-                    FrameTag.frame_id == frame_id, FrameTag.tag_id == tag_id
-                )
-            )
-            if not existing.scalars().first():
-                db.add(FrameTag(frame_id=frame_id, tag_id=tag_id))
-    await db.commit()
-    return {"tagged": len(payload.frame_ids)}
-
-
-@router.post("/frames/bulk-delete")
-async def bulk_delete_frames_v2(
-    payload: BulkFrameDeleteRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk delete frames (v2 endpoint)."""
-    result = await db.execute(
-        select(GoesFrame).where(GoesFrame.id.in_(payload.ids))
-    )
-    frames = result.scalars().all()
-    for frame in frames:
-        for path in [frame.file_path, frame.thumbnail_path]:
-            if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
-    await db.execute(delete(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
-    await db.commit()
-    return {"deleted": len(frames)}
-
-
 def _frames_to_csv(frames: list[GoesFrame]) -> str:
     output = io.StringIO()
     writer = csv.writer(output)
@@ -377,17 +336,39 @@ def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
 async def export_frames(
     format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
     db: AsyncSession = Depends(get_db),
+    limit: int = Query(10000, ge=1, le=100000),
+    offset: int = Query(0, ge=0),
 ):
-    """Export all frame metadata as CSV or JSON."""
-    result = await db.execute(select(GoesFrame).order_by(GoesFrame.capture_time.desc()))
+    """Export frame metadata as CSV or JSON with pagination."""
+    import json as json_mod
+
+    query = (
+        select(GoesFrame)
+        .order_by(GoesFrame.capture_time.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
     frames = result.scalars().all()
+
     if format == "csv":
+        csv_data = _frames_to_csv(frames)
         return StreamingResponse(
-            io.BytesIO(_frames_to_csv(frames).encode()),
+            io.BytesIO(csv_data.encode()),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=goes_frames.csv"},
         )
-    return _frames_to_json_list(frames)
+
+    items = _frames_to_json_list(frames)
+
+    async def _stream_json():
+        yield json_mod.dumps(items)
+
+    return StreamingResponse(
+        _stream_json(),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=goes_frames.json"},
+    )
 
 
 @router.post("/frames/process")
@@ -553,8 +534,10 @@ async def add_frames_to_collection(
 async def list_collection_frames(
     collection_id: str,
     db: AsyncSession = Depends(get_db),
+    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
 ):
-    """Return ordered frames for a collection."""
+    """Return ordered frames for a collection with optional pagination."""
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -565,6 +548,8 @@ async def list_collection_frames(
         .where(CollectionFrame.collection_id == collection_id)
         .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
         .order_by(GoesFrame.capture_time.asc())
+        .offset(offset)
+        .limit(limit)
     )
     frames = frame_result.scalars().all()
     return [GoesFrameResponse.model_validate(f) for f in frames]
@@ -660,9 +645,10 @@ async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
     if not frame:
         raise APIError(404, "not_found", "Frame not found")
 
-    file_path = Path(frame.file_path)
-    if not file_path.is_absolute():
-        file_path = Path(settings.DATA_DIR) / file_path
+    raw_path = frame.file_path
+    if not Path(raw_path).is_absolute():
+        raw_path = str(Path(settings.storage_path) / raw_path)
+    file_path = validate_file_path(raw_path)
 
     if not file_path.exists():
         raise APIError(404, "not_found", "Frame image file not found on disk")
@@ -697,9 +683,9 @@ async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db))
         # Fall back to the full image
         thumb_path = frame.file_path
 
-    file_path = Path(thumb_path)
-    if not file_path.is_absolute():
-        file_path = Path(settings.DATA_DIR) / file_path
+    if not Path(thumb_path).is_absolute():
+        thumb_path = str(Path(settings.storage_path) / thumb_path)
+    file_path = validate_file_path(thumb_path)
 
     if not file_path.exists():
         raise APIError(404, "not_found", "Thumbnail file not found on disk")
@@ -718,33 +704,3 @@ async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db))
         media_type=media_type,
         headers={"Cache-Control": "public, max-age=86400"},
     )
-
-
-# ── Collection Frames Endpoint ────────────────────────────────────────
-
-
-@router.get(
-    "/collections/{collection_id}/frames",
-    response_model=list[GoesFrameResponse],
-)
-async def get_collection_frames(
-    collection_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """Get all frames in a collection, ordered by capture_time ascending."""
-    validate_uuid(collection_id, "collection_id")
-    result = await db.execute(
-        select(Collection).where(Collection.id == collection_id)
-    )
-    if not result.scalars().first():
-        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
-
-    frame_result = await db.execute(
-        select(GoesFrame)
-        .join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id)
-        .where(CollectionFrame.collection_id == collection_id)
-        .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
-        .order_by(GoesFrame.capture_time.asc())
-    )
-    frames = frame_result.scalars().all()
-    return [GoesFrameResponse.model_validate(f) for f in frames]

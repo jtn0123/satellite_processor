@@ -201,6 +201,19 @@ async def openapi_json():
 # ── WebSocket ─────────────────────────────────────────────────────
 
 WS_PING_INTERVAL = 30  # seconds
+WS_MAX_CONNECTIONS_PER_IP = 10
+_ws_connections: dict[str, int] = {}  # ip -> count
+
+
+def _ws_track(ip: str, delta: int) -> bool:
+    """Track WS connections per IP. Returns False if limit exceeded on connect."""
+    count = _ws_connections.get(ip, 0) + delta
+    if delta > 0 and count > WS_MAX_CONNECTIONS_PER_IP:
+        return False
+    _ws_connections[ip] = max(0, count)
+    if _ws_connections[ip] == 0:
+        _ws_connections.pop(ip, None)
+    return True
 
 
 async def _ws_authenticate(websocket: WebSocket) -> bool:
@@ -254,6 +267,11 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     if not await _ws_authenticate(websocket):
         return
 
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    if not _ws_track(client_ip, 1):
+        await websocket.close(code=4429, reason="Too many connections")
+        return
+
     await websocket.accept()
     r = get_redis_client()
     pubsub = r.pubsub()
@@ -274,6 +292,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     except WebSocketDisconnect:
         pass
     finally:
+        _ws_track(client_ip, -1)
         await pubsub.unsubscribe(f"job:{job_id}")
         await pubsub.close()
 

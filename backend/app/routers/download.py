@@ -20,21 +20,33 @@ from ..rate_limit import limiter
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
+MAX_ZIP_FILES = 1000
+
+
 def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
-    """#202: Stream zip creation to avoid loading entire archive into memory.
+    """Stream zip creation without buffering entire archive in memory.
 
     Each tuple is (absolute_path, archive_name).
+    Uses ZIP_STORED (no compression) so bytes can be yielded incrementally.
     """
     import io
 
-    # We use ZIP_STORED (no compression) so we can stream without buffering.
-    # For large satellite outputs this is much safer than in-memory ZIP_DEFLATED.
+    if len(files) > MAX_ZIP_FILES:
+        raise APIError(
+            400,
+            "export_too_large",
+            f"Export exceeds maximum of {MAX_ZIP_FILES} files. "
+            f"Requested {len(files)} files.",
+        )
+
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
         for abs_path, arc_name in files:
             zf.write(abs_path, arc_name)
-            # Flush what we have so far
-            yield buf.getvalue()
+            # Yield bytes written so far and reset buffer
+            data = buf.getvalue()
+            if data:
+                yield data
             buf.seek(0)
             buf.truncate(0)
     # Final central directory bytes

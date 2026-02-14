@@ -332,14 +332,23 @@ def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
     ]
 
 
+MAX_EXPORT_LIMIT = 5000
+
+
 @router.get("/frames/export")
 async def export_frames(
     format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
     db: AsyncSession = Depends(get_db),
-    limit: int = Query(10000, ge=1, le=100000),
+    limit: int = Query(1000, ge=1),
     offset: int = Query(0, ge=0),
 ):
     """Export frame metadata as CSV or JSON with pagination."""
+    if limit > MAX_EXPORT_LIMIT:
+        raise APIError(
+            400,
+            "limit_exceeded",
+            f"Export limit must not exceed {MAX_EXPORT_LIMIT}. Requested: {limit}",
+        )
     import json as json_mod
 
     query = (
@@ -530,17 +539,23 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
-@router.get("/collections/{collection_id}/frames", response_model=list[GoesFrameResponse])
+@router.get("/collections/{collection_id}/frames")
 async def list_collection_frames(
     collection_id: str,
     db: AsyncSession = Depends(get_db),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
-    """Return ordered frames for a collection with optional pagination."""
+    """Return ordered frames for a collection with pagination."""
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
+
+    count_result = await db.execute(
+        select(func.count(CollectionFrame.frame_id))
+        .where(CollectionFrame.collection_id == collection_id)
+    )
+    total = count_result.scalar() or 0
 
     frame_result = await db.execute(
         select(GoesFrame)
@@ -552,7 +567,12 @@ async def list_collection_frames(
         .limit(limit)
     )
     frames = frame_result.scalars().all()
-    return [GoesFrameResponse.model_validate(f) for f in frames]
+    return {
+        "items": [GoesFrameResponse.model_validate(f) for f in frames],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/collections/{collection_id}/export")

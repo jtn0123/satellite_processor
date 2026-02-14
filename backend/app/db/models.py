@@ -286,6 +286,14 @@ class JobLog(Base):
     message = Column(Text, nullable=False)
 
 
+class AppSettings(Base):
+    __tablename__ = "app_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    data = Column(JSON, nullable=False, default=dict)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
 class CleanupRule(Base):
     __tablename__ = "cleanup_rules"
 

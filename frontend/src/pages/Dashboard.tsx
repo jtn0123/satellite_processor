@@ -102,7 +102,7 @@ export default function Dashboard() {
               <s.icon className={`w-5 h-5 ${s.color}`} />
             </div>
             <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{s.value}</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.label}</p>
+            <p className="text-xs text-gray-600 dark:text-slate-400 mt-0.5">{s.label}</p>
           </div>
         ))}
 
@@ -124,15 +124,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* GOES stats loading skeleton */}
+      {/* GOES stats loading skeleton (#9) */}
       {goesLoading && (
         <div className="bg-card border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-gray-200 dark:bg-space-700 rounded" />
-            <div className="h-5 w-32 bg-gray-200 dark:bg-space-700 rounded" />
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-space-700" />
+            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-space-700" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['a','b','c','d'].map((k) => (
+            {[1,2,3,4].map((k) => (
               <div key={k} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3 h-16" />
             ))}
           </div>

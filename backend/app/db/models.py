@@ -183,6 +183,9 @@ class Animation(Base):
     fps = Column(Integer, default=10)
     format = Column(String(10), default="mp4")
     quality = Column(String(10), default="medium")
+    resolution = Column(String(10), default="full")
+    loop_style = Column(String(10), default="forward")
+    overlay = Column(JSON, nullable=True)
     crop_preset_id = Column(String(36), ForeignKey("crop_presets.id"), nullable=True)
     false_color = Column(Boolean, default=False)
     scale = Column(String(10), default="100%")
@@ -196,6 +199,22 @@ class Animation(Base):
 
     crop_preset = relationship("CropPreset", foreign_keys=[crop_preset_id])
     job = relationship("Job", foreign_keys=[job_id])
+
+
+class AnimationPreset(Base):
+    __tablename__ = "animation_presets"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    name = Column(String(200), nullable=False, unique=True)
+    satellite = Column(String(20), nullable=True)
+    sector = Column(String(20), nullable=True)
+    band = Column(String(10), nullable=True)
+    fps = Column(Integer, default=10)
+    format = Column(String(10), default="mp4")
+    quality = Column(String(10), default="medium")
+    resolution = Column(String(10), default="full")
+    loop_style = Column(String(10), default="forward")
+    created_at = Column(DateTime, default=utcnow)
 
 
 # --- Phase 3: Scheduling & Cleanup Models ---

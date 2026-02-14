@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Ensure data directories exist and are writable
+mkdir -p /app/data/output /app/data/uploads /app/data/temp 2>/dev/null || true
+
 # Run database migrations with retry (handles race condition when
 # multiple containers run alembic upgrade head simultaneously)
 MAX_RETRIES=3

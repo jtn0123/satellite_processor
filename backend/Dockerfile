@@ -36,7 +36,8 @@ COPY backend/alembic /app/alembic
 COPY backend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+RUN mkdir -p /app/data/output /app/data/uploads /app/data/temp && \
+    adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000

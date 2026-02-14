@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { buildWsUrl } from '../api/ws';
 
 interface JobProgress {
   progress: number;
@@ -38,8 +39,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
   const connect = useCallback(() => {
     if (!jobId || terminalRef.current) return;
 
-    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${globalThis.location.host}/ws/jobs/${jobId}`);
+    const ws = new WebSocket(buildWsUrl(`/ws/jobs/${jobId}`));
     wsRef.current = ws;
 
     ws.onopen = () => {

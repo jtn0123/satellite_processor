@@ -25,6 +25,9 @@
   --background-color-card-hover: #132240;
 
   --border-color-subtle: #1e3a5f;
+
+  --background-color-card-light: #ffffff;
+  --background-color-card-hover-light: #f8fafc;
 }
 
 html {
@@ -53,6 +56,24 @@ html {
     min-height: 2.75rem; /* 44px */
     min-width: 2.75rem;
   }
+}
+
+/* Light mode overrides for card/border utilities */
+:not(.dark) .bg-card {
+  background-color: #ffffff;
+}
+:not(.dark) .bg-card-hover,
+:not(.dark) .hover\:bg-card-hover:hover {
+  background-color: #f8fafc;
+}
+:not(.dark) .border-subtle {
+  border-color: #e2e8f0;
+}
+:not(.dark) .bg-space-700 {
+  background-color: #e2e8f0;
+}
+:not(.dark) .bg-space-800 {
+  background-color: #f1f5f9;
 }
 
 /* Dark theme scrollbar */

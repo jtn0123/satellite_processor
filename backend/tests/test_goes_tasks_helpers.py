@@ -4,9 +4,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # _read_max_frames_setting
 # ---------------------------------------------------------------------------
@@ -232,9 +229,8 @@ def test_download_and_convert_frame_success(mock_retry, mock_png, tmp_path):
 @patch("app.services.goes_fetcher._FRAME_RETRY_DELAY", 0)
 @patch("app.services.goes_fetcher._retry_s3_operation")
 def test_download_and_convert_frame_transient_failure(mock_retry, tmp_path):
-    from botocore.exceptions import ConnectTimeoutError
-
     from app.services.goes_fetcher import _download_and_convert_frame
+    from botocore.exceptions import ConnectTimeoutError
 
     mock_retry.side_effect = ConnectTimeoutError(endpoint_url="https://s3")
 

@@ -134,7 +134,6 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
     }
   }, [status]);
 
-  const isTerminal = isTerminalStatus(status);
   const durationMs = computeDuration(job, status, now);
 
   /* ── Logs: fetch historical + merge WS ────────────────── */

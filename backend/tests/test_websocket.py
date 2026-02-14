@@ -61,3 +61,14 @@ async def test_events_websocket_connect(client):
                 assert data["type"] == "connected"
     finally:
         main_module.get_redis_client = original
+
+
+@pytest.mark.asyncio
+async def test_status_websocket_connect(client):
+    """Status heartbeat WebSocket should accept and send connected message."""
+    from starlette.testclient import TestClient
+
+    with TestClient(main_module.app) as sync_client:
+        with sync_client.websocket_connect("/ws/status") as ws:
+            data = ws.receive_json()
+            assert data["type"] == "connected"

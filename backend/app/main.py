@@ -288,3 +288,23 @@ async def global_events_websocket(websocket: WebSocket):
     finally:
         await pubsub.unsubscribe(GLOBAL_EVENT_CHANNEL)
         await pubsub.close()
+
+
+# ── Status heartbeat WebSocket ────────────────────────────────────
+
+
+@app.websocket("/ws/status")
+async def status_websocket(websocket: WebSocket):
+    """Lightweight heartbeat WebSocket used by ConnectionStatus indicator."""
+    if not await _ws_authenticate(websocket):
+        return
+
+    await websocket.accept()
+    try:
+        await websocket.send_json({"type": "connected"})
+        # Keep alive with pings; close when client disconnects
+        while True:
+            await asyncio.sleep(WS_PING_INTERVAL)
+            await websocket.send_json({"type": "ping"})
+    except (WebSocketDisconnect, Exception):
+        pass

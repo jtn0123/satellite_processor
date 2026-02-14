@@ -111,7 +111,7 @@ describe('useWebSocket', () => {
   });
 
   it('should stop reconnecting on terminal state', () => {
-    const { result } = renderHook(() => useWebSocket('job-123'));
+    renderHook(() => useWebSocket('job-123'));
     act(() => MockWebSocket.instances[0].simulateOpen());
     act(() => {
       MockWebSocket.instances[0].simulateMessage({

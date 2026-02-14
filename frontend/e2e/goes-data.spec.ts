@@ -11,6 +11,7 @@ const mockApiHandler = async (route: unknown) => {
   if (url.includes('/api/goes/frames')) {
     return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 50 } });
   }
+  if (url.match(/\/api\/goes\/collections\/[^/]+\/frames/)) return route.fulfill({ json: [] });
   if (url.includes('/api/goes/collections')) return route.fulfill({ json: [] });
   if (url.includes('/api/goes/tags')) return route.fulfill({ json: [] });
   if (url.includes('/api/goes/products')) {

@@ -549,6 +549,27 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
+@router.get("/collections/{collection_id}/frames", response_model=list[GoesFrameResponse])
+async def list_collection_frames(
+    collection_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return ordered frames for a collection."""
+    result = await db.execute(select(Collection).where(Collection.id == collection_id))
+    if not result.scalars().first():
+        raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
+
+    frame_result = await db.execute(
+        select(GoesFrame)
+        .join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id)
+        .where(CollectionFrame.collection_id == collection_id)
+        .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
+        .order_by(GoesFrame.capture_time.asc())
+    )
+    frames = frame_result.scalars().all()
+    return [GoesFrameResponse.model_validate(f) for f in frames]
+
+
 @router.get("/collections/{collection_id}/export")
 async def export_collection(
     collection_id: str,

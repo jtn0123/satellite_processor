@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Library, FileDown } from 'lucide-react';
+import { Library, FileDown, Play } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
-import type { CollectionType } from './types';
+import type { CollectionType, GoesFrame } from './types';
 import Skeleton from './Skeleton';
 import EmptyState from './EmptyState';
+import AnimationPlayer from './AnimationPlayer';
 
 export default function CollectionsTab() {
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [animatingFrames, setAnimatingFrames] = useState<GoesFrame[] | null>(null);
+  const [loadingAnimateId, setLoadingAnimateId] = useState<string | null>(null);
 
   const { data: collections, isLoading } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
@@ -47,6 +50,23 @@ export default function CollectionsTab() {
     },
     onError: () => showToast('error', 'Failed to delete collection'),
   });
+
+  const handleAnimate = async (collectionId: string) => {
+    setLoadingAnimateId(collectionId);
+    try {
+      const res = await api.get(`/goes/collections/${collectionId}/frames`);
+      const frames: GoesFrame[] = res.data;
+      if (frames.length === 0) {
+        showToast('error', 'Collection has no frames to animate');
+        return;
+      }
+      setAnimatingFrames(frames);
+    } catch {
+      showToast('error', 'Failed to load collection frames');
+    } finally {
+      setLoadingAnimateId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -88,6 +108,14 @@ export default function CollectionsTab() {
                     <button onClick={() => { setEditingId(c.id); setEditName(c.name); }}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
                     <button
+                      onClick={() => handleAnimate(c.id)}
+                      disabled={loadingAnimateId === c.id || c.frame_count === 0}
+                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+                      aria-label={`Animate collection ${c.name}`}
+                    >
+                      <Play className="w-3 h-3 inline" /> {loadingAnimateId === c.id ? '...' : 'Animate'}
+                    </button>
+                    <button
                       onClick={() => window.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
@@ -116,6 +144,13 @@ export default function CollectionsTab() {
             </div>
           )}
         </div>
+      )}
+
+      {animatingFrames && (
+        <AnimationPlayer
+          frames={animatingFrames}
+          onClose={() => setAnimatingFrames(null)}
+        />
       )}
     </div>
   );

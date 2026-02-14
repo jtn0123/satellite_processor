@@ -1,6 +1,7 @@
 """Celery application configuration with reliability improvements."""
 
 import logging
+import traceback as traceback_mod
 
 from celery import Celery
 from celery.signals import task_failure, task_success
@@ -51,14 +52,20 @@ celery_app.conf.update(
 
     # Result expiry
     result_expires=86400,  # 24 hours
+
+    # Celery Beat periodic schedules (replaces self-requeueing tasks)
+    beat_schedule={
+        "check-schedules": {"task": "check_schedules", "schedule": 60.0},
+        "run-cleanup": {"task": "run_cleanup", "schedule": 3600.0},
+    },
 )
 
 
 @task_failure.connect
-def on_task_failure(sender=None, task_id=None, exception=None, traceback=None, **kwargs):
+def on_task_failure(sender=None, task_id=None, exception=None, tb=None, **kwargs):
     """Log task failures with full stack traces for observability."""
     task_name = sender.name if sender else "unknown"
-    tb_str = "".join(traceback.format_list(traceback.extract_tb(exception.__traceback__))) if exception and hasattr(exception, "__traceback__") else str(traceback)
+    tb_str = "".join(traceback_mod.format_list(traceback_mod.extract_tb(exception.__traceback__))) if exception and hasattr(exception, "__traceback__") else str(tb)
     logger.error(
         "Celery task FAILED: task=%s task_id=%s error=%s",
         task_name, task_id, exception,

@@ -4,8 +4,8 @@ Revision ID: j60_composites
 Revises: i50_job_name
 Create Date: 2026-02-14
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "j60_composites"
 down_revision = "i50_job_name"

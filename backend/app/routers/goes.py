@@ -12,6 +12,7 @@ from ..db.database import get_db
 from ..db.models import Composite, GoesFrame, Job
 from ..errors import APIError, validate_uuid
 from ..models.goes import (
+    CompositeCreateRequest,
     GoesBackfillRequest,
     GoesFetchRequest,
     GoesFetchResponse,
@@ -248,19 +249,17 @@ async def list_composite_recipes():
 @router.post("/composites")
 async def create_composite(
     request: Request,
-    payload: dict = Body(...),
+    payload: CompositeCreateRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a band composite image via Celery task."""
-    recipe = payload.get("recipe")
+    recipe = payload.recipe
     if recipe not in COMPOSITE_RECIPES:
         raise APIError(400, "bad_request", f"Unknown recipe: {recipe}")
 
-    satellite = payload.get("satellite", "GOES-16")
-    sector = payload.get("sector", "CONUS")
-    capture_time = payload.get("capture_time")
-    if not capture_time:
-        raise APIError(400, "bad_request", "capture_time is required")
+    satellite = payload.satellite
+    sector = payload.sector
+    capture_time = payload.capture_time
 
     composite_id = str(uuid.uuid4())
     job_id = str(uuid.uuid4())

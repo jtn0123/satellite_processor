@@ -9,7 +9,7 @@ from pathlib import Path
 from ..celery_app import celery_app
 from ..config import settings
 from ..utils import utcnow
-from .goes_tasks import _get_sync_db, _publish_progress, _update_job_db
+from .helpers import _get_sync_db, _publish_progress, _update_job_db
 
 logger = logging.getLogger(__name__)
 

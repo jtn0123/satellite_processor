@@ -184,7 +184,7 @@ class Animation(Base):
     format = Column(String(10), default="mp4")
     quality = Column(String(10), default="medium")
     crop_preset_id = Column(String(36), ForeignKey("crop_presets.id"), nullable=True)
-    false_color = Column(Integer, default=0)  # Boolean as int for SQLite compat
+    false_color = Column(Boolean, default=False)
     scale = Column(String(10), default="100%")
     output_path = Column(Text, nullable=True)
     file_size = Column(BigInteger, default=0)

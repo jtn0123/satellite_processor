@@ -90,6 +90,15 @@ class CoverageStats(BaseModel):
     gaps: list[GapInfo]
 
 
+class CompositeCreateRequest(BaseModel):
+    """Request schema for creating a band composite image."""
+
+    recipe: str = Field(..., description="Composite recipe name")
+    satellite: str = Field(default="GOES-16")
+    sector: str = Field(default="CONUS")
+    capture_time: str = Field(..., description="Capture time (ISO format)")
+
+
 class GoesFetchResponse(BaseModel):
     job_id: str
     status: str

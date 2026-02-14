@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models import Image
+from ..db.models import GoesFrame
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ async def detect_capture_pattern(db: AsyncSession) -> dict[str, Any]:
     'total_images', and 'time_range'.
     """
     result = await db.execute(
-        select(Image.satellite, Image.channel, Image.captured_at)
-        .where(Image.captured_at.isnot(None))
-        .order_by(Image.captured_at.asc())
+        select(GoesFrame.satellite, GoesFrame.band, GoesFrame.sector, GoesFrame.capture_time)
+        .where(GoesFrame.capture_time.isnot(None))
+        .order_by(GoesFrame.capture_time.asc())
     )
     rows = result.all()
 
@@ -43,8 +43,11 @@ async def detect_capture_pattern(db: AsyncSession) -> dict[str, Any]:
     dominant_satellite = satellites.most_common(1)[0][0] if satellites else None
     dominant_band = bands.most_common(1)[0][0] if bands else None
 
+    sectors = Counter(r[2] for r in rows if r[2])
+    dominant_sector = sectors.most_common(1)[0][0] if sectors else None
+
     # Calculate intervals between consecutive captures
-    timestamps = sorted(r[2] for r in rows if r[2] is not None)
+    timestamps = sorted(r[3] for r in rows if r[3] is not None)
     intervals: list[float] = []
     for i in range(1, len(timestamps)):
         delta = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
@@ -60,7 +63,7 @@ async def detect_capture_pattern(db: AsyncSession) -> dict[str, Any]:
     return {
         "satellite": dominant_satellite,
         "band": dominant_band,
-        "sector": None,  # Not stored in current model
+        "sector": dominant_sector,
         "expected_interval_minutes": expected_interval,
         "total_images": len(rows),
         "time_range": {
@@ -84,21 +87,23 @@ async def find_gaps(
         db: Database session
         satellite: Filter by satellite name
         band: Filter by band/channel
-        sector: Unused currently (no sector column)
+        sector: Filter by sector
         expected_interval: Expected interval between captures in minutes
         tolerance: Multiplier for expected interval to detect a gap
 
     Returns list of dicts with 'start', 'end', 'duration_minutes', 'expected_frames'.
     """
     query = (
-        select(Image.captured_at)
-        .where(Image.captured_at.isnot(None))
-        .order_by(Image.captured_at.asc())
+        select(GoesFrame.capture_time)
+        .where(GoesFrame.capture_time.isnot(None))
+        .order_by(GoesFrame.capture_time.asc())
     )
     if satellite:
-        query = query.where(Image.satellite == satellite)
+        query = query.where(GoesFrame.satellite == satellite)
     if band:
-        query = query.where(Image.channel == band)
+        query = query.where(GoesFrame.band == band)
+    if sector:
+        query = query.where(GoesFrame.sector == sector)
 
     result = await db.execute(query)
     timestamps = [r[0] for r in result.all()]
@@ -139,14 +144,14 @@ async def get_coverage_stats(
 
     # Get time range
     query = select(
-        func.min(Image.captured_at),
-        func.max(Image.captured_at),
-        func.count(Image.id),
-    ).where(Image.captured_at.isnot(None))
+        func.min(GoesFrame.capture_time),
+        func.max(GoesFrame.capture_time),
+        func.count(GoesFrame.id),
+    ).where(GoesFrame.capture_time.isnot(None))
     if satellite:
-        query = query.where(Image.satellite == satellite)
+        query = query.where(GoesFrame.satellite == satellite)
     if band:
-        query = query.where(Image.channel == band)
+        query = query.where(GoesFrame.band == band)
 
     result = await db.execute(query)
     row = result.one()

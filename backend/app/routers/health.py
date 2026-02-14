@@ -5,12 +5,12 @@ import shutil
 import time
 from pathlib import Path
 
-import redis.asyncio as aioredis
 from fastapi import APIRouter
 from sqlalchemy import text
 
 from ..config import settings
 from ..db.database import async_session
+from ..redis_pool import get_redis_client
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 
@@ -77,16 +77,13 @@ async def _check_database() -> dict:
 
 
 async def _check_redis() -> dict:
-    """Check Redis connectivity and latency."""
+    """Check Redis connectivity and latency using shared pool."""
     try:
         t0 = time.monotonic()
-        r = aioredis.from_url(settings.redis_url)
-        try:
-            await r.ping()
-            latency = round((time.monotonic() - t0) * 1000, 1)
-            return {"status": "ok", "latency_ms": latency}
-        finally:
-            await r.close()
+        r = get_redis_client()
+        await r.ping()
+        latency = round((time.monotonic() - t0) * 1000, 1)
+        return {"status": "ok", "latency_ms": latency}
     except Exception as exc:
         return {"status": "error", "error": str(exc)}
 

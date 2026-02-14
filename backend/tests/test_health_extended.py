@@ -222,9 +222,10 @@ class TestJobsExtended:
         resp = await client.delete(f"/api/jobs/{jid}")
         assert resp.status_code == 200
 
-    async def test_bulk_delete_jobs_empty_rejected(self, client):
-        resp = await client.request("DELETE", "/api/jobs/bulk", json={"ids": []})
-        assert resp.status_code == 422  # min_length=1
+    async def test_bulk_delete_jobs_empty_returns_zero(self, client):
+        resp = await client.request("DELETE", "/api/jobs/bulk", json={"job_ids": []})
+        assert resp.status_code == 200
+        assert resp.json()["count"] == 0
 
     async def test_bulk_delete_jobs(self, client, db):
         j1 = str(uuid.uuid4())
@@ -233,7 +234,7 @@ class TestJobsExtended:
         db.add(Job(id=j2, status="completed"))
         await db.commit()
 
-        resp = await client.request("DELETE", "/api/jobs/bulk", json={"ids": [j1, j2]})
+        resp = await client.request("DELETE", "/api/jobs/bulk", json={"job_ids": [j1, j2]})
         assert resp.json()["count"] == 2
 
     async def test_list_jobs_pagination(self, client, db):

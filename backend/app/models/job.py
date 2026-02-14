@@ -82,9 +82,11 @@ class JobResponse(BaseModel):
     input_path: str
     output_path: str
     error: str
+    task_id: str | None = None
     created_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

@@ -38,9 +38,11 @@ class Job(Base):
     input_path = Column(Text, default="")
     output_path = Column(Text, default="")
     error = Column(Text, default="")
+    task_id = Column(String(255), nullable=True, index=True)
     created_at = Column(DateTime, default=utcnow, index=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         Index("ix_jobs_status_created_at", "status", "created_at"),

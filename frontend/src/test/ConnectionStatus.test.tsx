@@ -9,6 +9,7 @@ class MockWebSocket {
   onclose: (() => void) | null = null;
   onerror: (() => void) | null = null;
   closed = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(_url: string) {
     MockWebSocket.instances.push(this);
   }

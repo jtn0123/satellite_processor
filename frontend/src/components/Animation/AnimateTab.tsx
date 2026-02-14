@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Play, Loader2, Clock, Trash2, CheckCircle, Download } from 'lucide-react';
+import { Play, Loader2, Clock, Trash2, Download } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { formatBytes } from '../GoesData/utils';

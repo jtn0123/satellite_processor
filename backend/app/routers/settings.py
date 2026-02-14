@@ -38,6 +38,7 @@ class SettingsUpdate(BaseModel):
     video_fps: int | None = Field(default=None, ge=1, le=120)
     video_codec: Literal["h264", "hevc", "av1"] | None = None
     video_quality: int | None = Field(default=None, ge=0, le=51)
+    webhook_url: str | None = None
 
 
 async def _load(db: AsyncSession) -> dict:

@@ -313,6 +313,18 @@ class AppSettings(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
 
+class ShareLink(Base):
+    __tablename__ = "share_links"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    frame_id = Column(String(36), ForeignKey("goes_frames.id"), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=utcnow)
+
+    frame = relationship("GoesFrame", foreign_keys=[frame_id])
+
+
 class CleanupRule(Base):
     __tablename__ = "cleanup_rules"
 

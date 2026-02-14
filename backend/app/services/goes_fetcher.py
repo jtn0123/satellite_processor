@@ -437,6 +437,7 @@ def fetch_frames(
             # Per-frame retry for transient S3 errors
             last_exc = None
             for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
+                tmp_nc_path = None
                 try:
                     with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
                         tmp_nc_path = Path(tmp_nc.name)
@@ -447,10 +448,7 @@ def fetch_frames(
                         for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
                             tmp_nc.write(chunk)
 
-                    try:
-                        _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
-                    finally:
-                        tmp_nc_path.unlink(missing_ok=True)
+                    _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
 
                     last_exc = None
                     break  # success
@@ -462,6 +460,9 @@ def fetch_frames(
                             item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
                         )
                         time.sleep(_FRAME_RETRY_DELAY)
+                finally:
+                    if tmp_nc_path:
+                        tmp_nc_path.unlink(missing_ok=True)
 
             if last_exc is not None:
                 logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)

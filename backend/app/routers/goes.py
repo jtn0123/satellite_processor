@@ -192,9 +192,18 @@ async def estimate_frame_count(
     end_time: datetime = Query(...),
 ):
     """Estimate frame count for a time range without downloading."""
-    from ..services.goes_fetcher import list_available
+    import asyncio
 
-    available = list_available(satellite, sector, band, start_time, end_time)
+    from ..services.goes_fetcher import list_available, validate_params
+
+    validate_params(satellite, sector, band)
+    if start_time >= end_time:
+        raise APIError(400, "invalid_range", "start_time must be before end_time")
+
+    loop = asyncio.get_event_loop()
+    available = await loop.run_in_executor(
+        None, lambda: list_available(satellite, sector, band, start_time, end_time)
+    )
     return {"count": len(available)}
 
 

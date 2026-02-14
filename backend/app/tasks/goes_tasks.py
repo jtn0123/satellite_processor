@@ -336,6 +336,12 @@ def backfill_gaps(self, job_id: str, params: dict):
             )
             results = fetch_result["frames"]
             total_fetched += len(results)
+            if fetch_result["capped"] or fetch_result["failed_downloads"] > 0:
+                logger.warning(
+                    "Backfill gap %d: %d fetched, %d available, capped=%s, failed=%d",
+                    i + 1, len(results), fetch_result["total_available"],
+                    fetch_result["capped"], fetch_result["failed_downloads"],
+                )
 
             # Create Image records
             from ..db.models import GoesFrame, Image

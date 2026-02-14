@@ -82,8 +82,9 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
     }
   }, [status]);
 
+  const isTerminal = status === 'completed' || status === 'completed_partial' || status === 'failed' || status === 'cancelled';
   const durationMs = job
-    ? (status === 'completed' || status === 'failed' || status === 'cancelled'
+    ? (isTerminal
         ? job.completed_at
           ? new Date(job.completed_at).getTime() - new Date(job.started_at ?? job.created_at).getTime()
           : 0

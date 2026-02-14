@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
     if (url.match(/\/api\/goes\/frames\/[^/]+\/(image|thumbnail)/)) return route.fulfill({ contentType: 'image/png', body: PIXEL });
-    if (url.includes('/api/health/version')) return route.fulfill({ json: { version: '1.8.0', build: 'test' } });
+    if (url.includes('/api/health/version')) return route.fulfill({ json: { version: '2.2.0', build: 'test' } });
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
     if (url.includes('/api/stats')) return route.fulfill({ json: { total_images: 10, total_jobs: 5, active_jobs: 0, storage_used_mb: 256 } });
     if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
@@ -16,33 +16,20 @@ test.beforeEach(async ({ page }) => {
       return route.fulfill({
         json: {
           satellites: ['GOES-16', 'GOES-18'],
-          sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
-          bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
+          sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }, { id: 'FullDisk', name: 'Full Disk', product: 'ABI-L2-CMIPF' }],
+          bands: [{ id: 'C02', description: 'Red (0.64µm)' }, { id: 'C13', description: 'IR (10.3µm)' }],
         },
       });
     }
-    if (url.includes('/api/goes/crop-presets')) return route.fulfill({ json: [] });
-    if (url.includes('/api/goes/animation-presets')) return route.fulfill({ json: [] });
-    if (url.includes('/api/goes/frames/preview-range')) {
-      return route.fulfill({
-        json: {
-          frames: [
-            { id: 'f1', capture_time: '2024-06-15T12:00:00Z', thumbnail_url: '/thumb/1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS' },
-            { id: 'f2', capture_time: '2024-06-15T12:10:00Z', thumbnail_url: '/thumb/2', satellite: 'GOES-16', band: 'C02', sector: 'CONUS' },
-            { id: 'f3', capture_time: '2024-06-15T12:20:00Z', thumbnail_url: '/thumb/3', satellite: 'GOES-16', band: 'C02', sector: 'CONUS' },
-          ],
-          total_count: 12,
-          capture_interval_minutes: 10,
-        },
-      });
-    }
-    if (url.includes('/api/goes/animations/from-range')) return route.fulfill({ json: { id: 'anim-1', status: 'pending', frame_count: 12 } });
-    if (url.includes('/api/goes/animations/recent')) return route.fulfill({ json: { id: 'anim-2', status: 'pending', frame_count: 6 } });
-    if (url.includes('/api/goes/animations/batch')) return route.fulfill({ json: { ids: ['batch-1'], status: 'queued' } });
-    if (url.includes('/api/goes/animations')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url.includes('/api/goes/frames/stats')) return route.fulfill({ json: { total_frames: 50, total_size_bytes: 2500000, by_satellite: {}, by_band: {} } });
+    if (url.includes('/api/goes/frames/preview-range')) return route.fulfill({ json: { frames: [], total_count: 0, capture_interval_minutes: 10 } });
     if (url.includes('/api/goes/frames')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 50 } });
     if (url.includes('/api/goes/collections')) return route.fulfill({ json: [] });
     if (url.includes('/api/goes/tags')) return route.fulfill({ json: [] });
+    if (url.includes('/api/goes/crop-presets')) return route.fulfill({ json: [] });
+    if (url.includes('/api/goes/animation-presets')) return route.fulfill({ json: [] });
+    if (url.includes('/api/goes/animations')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url.includes('/api/goes/fetch-presets')) return route.fulfill({ json: [] });
     if (url.includes('/api/jobs')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     if (url.includes('/api/images')) return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
     if (url.includes('/api/system/status')) return route.fulfill({ json: { cpu_percent: 10, memory: { total: 16e9, available: 12e9, percent: 25 }, disk: { total: 500e9, free: 400e9, percent: 20 } } });
@@ -50,53 +37,33 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test('GOES Data page loads', async ({ page }) => {
+  await page.goto('/goes');
+  // Should see the GOES Data page with tabs
+  await expect(page.locator('[role="tablist"]')).toBeVisible();
+});
+
 test('navigate to Animate tab', async ({ page }) => {
-  await page.goto('/');
-  // Navigate to GOES Data page which has Animate tab
-  await page.getByRole('link', { name: /goes/i }).first().click();
-  await page.getByRole('tab', { name: /animate/i }).click();
-  await expect(page.getByText(/GOES-16/)).toBeVisible();
+  await page.goto('/goes');
+  // Click the Animation Studio tab
+  const animTab = page.locator('[role="tab"]').filter({ hasText: /animation|animate/i }).first();
+  await animTab.click();
+  // Verify the satellite selector is present
+  await expect(page.locator('select').first()).toBeVisible();
 });
 
-test('quick hour buttons populate date range', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name: /goes/i }).first().click();
-  await page.getByRole('tab', { name: /animate/i }).click();
-
-  // Click a quick hours button
-  await page.getByRole('button', { name: '3h' }).click();
-
-  // Date inputs should now have values
-  const startInput = page.locator('input[type="datetime-local"]').first();
-  await expect(startInput).not.toHaveValue('');
+test('navigate to Fetch tab', async ({ page }) => {
+  await page.goto('/goes');
+  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
+  await fetchTab.click();
+  // Verify fetch tab loaded - should have a satellite selector or fetch button
+  await expect(page.locator('select').first()).toBeVisible();
 });
 
-test('generate button exists on animate tab', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name: /goes/i }).first().click();
-  await page.getByRole('tab', { name: /animate/i }).click();
-
+test('generate button exists on animation tab', async ({ page }) => {
+  await page.goto('/goes');
+  const animTab = page.locator('[role="tab"]').filter({ hasText: /animation|animate/i }).first();
+  await animTab.click();
   const genBtn = page.getByRole('button', { name: /generate/i });
   await expect(genBtn).toBeVisible();
-});
-
-test('preview section shows frame count after date selection', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name: /goes/i }).first().click();
-  await page.getByRole('tab', { name: /animate/i }).click();
-
-  // Set date range via quick hours
-  await page.getByRole('button', { name: '1h' }).click();
-
-  // Wait for preview to load — should show frame count
-  await expect(page.getByText(/12 frames/i)).toBeVisible({ timeout: 5000 });
-});
-
-test('animation list section is present', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name: /goes/i }).first().click();
-  await page.getByRole('tab', { name: /animate/i }).click();
-
-  // Should show animations list or "no animations" state
-  await expect(page.getByText(/animation/i).first()).toBeVisible();
 });

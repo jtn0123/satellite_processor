@@ -82,6 +82,29 @@ describe('ConnectionStatus', () => {
     delete globalThis.WebSocket;
   });
 
+  it('handles onerror by closing the WebSocket', () => {
+    // @ts-expect-error mock
+    globalThis.WebSocket = MockWebSocket;
+    const { unmount } = render(<ConnectionStatus />);
+
+    act(() => {
+      const ws = MockWebSocket.instances[0];
+      ws.onopen?.();
+    });
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+
+    act(() => {
+      const ws = MockWebSocket.instances[0];
+      ws.onerror?.();
+    });
+    // onerror calls ws.close(), which should trigger onclose -> reconnecting
+    expect(MockWebSocket.instances[0].closed).toBe(true);
+
+    unmount();
+    // @ts-expect-error cleanup
+    delete globalThis.WebSocket;
+  });
+
   it('gives up after MAX_RETRIES and shows disconnected (null)', () => {
     // @ts-expect-error mock
     globalThis.WebSocket = MockWebSocket;

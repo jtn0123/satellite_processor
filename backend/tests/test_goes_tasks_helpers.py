@@ -371,6 +371,51 @@ def test_create_backfill_image_records(mock_db, tmp_path):
 # _read_max_frames_setting — non-numeric value
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# _create_fetch_records
+# ---------------------------------------------------------------------------
+
+@patch("app.services.thumbnail.generate_thumbnail", return_value="/tmp/thumb.png")
+@patch("app.services.thumbnail.get_image_dimensions", return_value=(1000, 1000))
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_create_fetch_records(mock_db, mock_dims, mock_thumb, tmp_path):
+    from app.tasks.goes_tasks import _create_fetch_records
+
+    session = MagicMock()
+    mock_db.return_value = session
+
+    f = tmp_path / "frame.png"
+    f.write_bytes(b"fake")
+
+    _create_fetch_records("job-1", "FullDisk", str(tmp_path), [{
+        "path": str(f),
+        "satellite": "GOES-16",
+        "band": "C02",
+        "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+    }])
+    assert session.add.call_count >= 3  # Collection + Image + GoesFrame + CollectionFrame
+    session.commit.assert_called_once()
+    session.close.assert_called_once()
+
+
+@patch("app.services.thumbnail.generate_thumbnail", return_value="/tmp/thumb.png")
+@patch("app.services.thumbnail.get_image_dimensions", return_value=(1000, 1000))
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_create_fetch_records_empty(mock_db, mock_dims, mock_thumb):
+    from app.tasks.goes_tasks import _create_fetch_records
+
+    session = MagicMock()
+    mock_db.return_value = session
+
+    _create_fetch_records("job-1", "FullDisk", "/tmp", [])
+    session.commit.assert_called_once()
+    session.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _read_max_frames_setting — non-numeric value
+# ---------------------------------------------------------------------------
+
 @patch("app.tasks.goes_tasks._get_sync_db")
 def test_read_max_frames_setting_non_numeric(mock_db):
     from app.tasks.goes_tasks import _read_max_frames_setting

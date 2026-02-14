@@ -263,7 +263,7 @@ header {
 }
 
 /* Light mode glass */
-:not(.dark) .glass-card {
+:root:not(.dark) .glass-card {
   background: color-mix(in srgb, white 75%, transparent);
 }
 
@@ -296,20 +296,20 @@ header {
 }
 
 /* === Light mode overrides === */
-:not(.dark) .bg-card {
+:root:not(.dark) .bg-card {
   background-color: #ffffff;
 }
 
-:not(.dark) .border-subtle {
+:root:not(.dark) .border-subtle {
   border-color: #e5e7eb;
 }
 
-:not(.dark) .bg-space-700,
-:not(.dark) .bg-space-800,
-:not(.dark) .bg-space-900 {
+:root:not(.dark) .bg-space-700,
+:root:not(.dark) .bg-space-800,
+:root:not(.dark) .bg-space-900 {
   background-color: #f3f4f6;
 }
 
-:not(.dark) .bg-card-hover {
+:root:not(.dark) .bg-card-hover {
   background-color: #f9fafb;
 }

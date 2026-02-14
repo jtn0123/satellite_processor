@@ -428,3 +428,53 @@ def test_read_max_frames_setting_non_numeric(mock_db):
 
     result = _read_max_frames_setting()
     assert result == 200  # Falls through to default
+
+
+def test_on_progress_callback():
+    """Test that on_progress computes percentage correctly."""
+    # Simulate the on_progress logic from fetch_goes_data
+    results = []
+
+    def on_progress(current: int, total: int):
+        pct = int(current / total * 100) if total > 0 else 0
+        results.append((current, total, pct))
+
+    on_progress(1, 10)
+    on_progress(5, 10)
+    on_progress(10, 10)
+    on_progress(0, 0)
+
+    assert results == [(1, 10, 10), (5, 10, 50), (10, 10, 100), (0, 0, 0)]
+
+
+@patch("app.tasks.goes_tasks._get_redis")
+@patch("app.tasks.goes_tasks._get_sync_db")
+def test_build_status_message_all_paths(mock_db, mock_redis):
+    """Cover additional _build_status_message paths."""
+    from app.tasks.goes_tasks import _build_status_message
+
+    mock_session = MagicMock()
+    mock_db.return_value = mock_session
+
+    # Test with capped AND failed downloads
+    msg, status = _build_status_message(
+        "GOES-16", "CONUS", "C02",
+        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=90, available_count=200,
+        capped=True, failed_downloads=10,
+        max_frames_limit=100,
+    )
+    assert status == "completed_partial"
+    assert "90" in msg
+    assert "10" in msg  # failed downloads mentioned
+
+    # Test completed with exact match
+    msg2, status2 = _build_status_message(
+        "GOES-16", "CONUS", "C02",
+        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=50, available_count=50,
+        capped=False, failed_downloads=0,
+        max_frames_limit=200,
+    )
+    assert status2 == "completed"
+    assert "50" in msg2

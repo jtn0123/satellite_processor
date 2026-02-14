@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from app.db.models import GoesFrame, Image
+from app.db.models import GoesFrame
 
 
 @pytest.mark.asyncio

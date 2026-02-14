@@ -99,6 +99,22 @@ class CompositeCreateRequest(BaseModel):
     capture_time: str = Field(..., description="Capture time (ISO format)")
 
 
+class CompositeResponse(BaseModel):
+    id: str
+    name: str
+    recipe: str
+    satellite: str
+    sector: str
+    capture_time: str | None = None
+    file_path: str | None = None
+    file_size: int | None = None
+    status: str
+    error: str | None = None
+    created_at: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class GoesFetchResponse(BaseModel):
     job_id: str
     status: str

@@ -15,17 +15,21 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    # Idempotent: only create if not exists
-    if not conn.dialect.has_table(conn, "app_settings"):
-        op.create_table(
-            "app_settings",
-            sa.Column("id", sa.Integer(), primary_key=True, default=1),
-            sa.Column("data", sa.JSON(), nullable=False, server_default="{}"),
-            sa.Column("updated_at", sa.DateTime(), nullable=True),
+    result = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.tables "
+            "WHERE table_name='app_settings'"
         )
+    )
+    if result.fetchone():
+        return
+    op.create_table(
+        "app_settings",
+        sa.Column("key", sa.String(100), primary_key=True),
+        sa.Column("value", sa.JSON, nullable=False),
+        sa.Column("updated_at", sa.DateTime),
+    )
 
 
 def downgrade() -> None:
-    conn = op.get_bind()
-    if conn.dialect.has_table(conn, "app_settings"):
-        op.drop_table("app_settings")
+    op.drop_table("app_settings")

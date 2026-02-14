@@ -13,6 +13,7 @@ import {
   Map,
   Layers,
   GalleryHorizontalEnd,
+  Sparkles,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -25,6 +26,7 @@ const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
 const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
 const CollectionsTab = lazy(() => import('../components/GoesData/CollectionsTab'));
 const AnimationStudioTab = lazy(() => import('../components/GoesData/AnimationStudioTab'));
+const AnimateTab = lazy(() => import('../components/Animation/AnimateTab'));
 const StatsTab = lazy(() => import('../components/GoesData/StatsTab'));
 const PresetsTab = lazy(() => import('../components/GoesData/PresetsTab'));
 const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
@@ -33,7 +35,7 @@ const MapTab = lazy(() => import('../components/GoesData/MapTab'));
 const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
 const FrameGallery = lazy(() => import('../components/GoesData/FrameGallery'));
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites' | 'gallery';
+type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'animate' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites' | 'gallery';
 
 interface TabDef {
   id: TabId;
@@ -61,6 +63,7 @@ const tabGroups: TabGroup[] = [
     label: 'Tools',
     tabs: [
       { id: 'composites', label: 'Composites', icon: <Layers className="w-4 h-4" /> },
+      { id: 'animate', label: 'Animate', icon: <Sparkles className="w-4 h-4" /> },
       { id: 'animation', label: 'Animation', icon: <Film className="w-4 h-4" /> },
     ],
   },
@@ -79,6 +82,7 @@ const tabLabels: Record<TabId, string> = {
   fetch: 'Fetch',
   browse: 'Browse',
   collections: 'Collections',
+  animate: 'Animate',
   animation: 'Animation',
   presets: 'Presets',
   stats: 'Stats',
@@ -203,6 +207,7 @@ export default function GoesData() {
       browse: { component: <BrowseTab />, name: 'Browse' },
       gallery: { component: <FrameGallery />, name: 'Gallery' },
       collections: { component: <CollectionsTab />, name: 'Collections' },
+      animate: { component: <AnimateTab />, name: 'Animate' },
       animation: { component: <AnimationStudioTab />, name: 'Animation Studio' },
       presets: { component: <PresetsTab />, name: 'Presets' },
       stats: { component: <StatsTab />, name: 'Stats' },

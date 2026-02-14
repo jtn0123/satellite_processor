@@ -1,20 +1,20 @@
-"""Utility for validating and sanitising file paths."""
+"""Shared file path validation utilities."""
 
 from pathlib import Path
 
-from fastapi import HTTPException
+from ..config import settings
+from ..errors import APIError
 
 
-def validate_file_path(raw_path: str) -> Path:
-    """Resolve *raw_path* and ensure it doesn't escape the expected directories.
+def validate_file_path(file_path: str) -> Path:
+    """Validate that a file path is within allowed storage directories.
 
-    Returns the resolved :class:`Path` on success.
-    Raises :class:`HTTPException` (400) when the path looks malicious.
+    Prevents path traversal attacks by resolving symlinks and checking
+    that the resolved path is under the storage or output directory.
     """
-    resolved = Path(raw_path).resolve()
-
-    # Block obvious traversal attempts
-    if ".." in Path(raw_path).parts:
-        raise HTTPException(status_code=400, detail="Invalid file path")
-
+    storage_root = Path(settings.storage_path).resolve()
+    output_root = Path(settings.output_dir).resolve()
+    resolved = Path(file_path).resolve()
+    if not (str(resolved).startswith(str(storage_root)) or str(resolved).startswith(str(output_root))):
+        raise APIError(403, "forbidden", "File path outside allowed directories")
     return resolved

@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
+    if (url.match(/\/api\/goes\/frames\/[^/]+\/image/) || url.match(/\/api\/goes\/frames\/[^/]+\/thumbnail/)) { return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64') }); }
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
     if (url.includes('/api/stats')) return route.fulfill({ json: { total_images: 0, total_jobs: 0, active_jobs: 0, storage_used_mb: 0 } });
     if (url.includes('/api/system/status')) {

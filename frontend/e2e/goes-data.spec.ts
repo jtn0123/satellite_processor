@@ -3,6 +3,12 @@ import { test, expect } from '@playwright/test';
 const mockApiHandler = async (route: unknown) => {
   const url = route.request().url();
   if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
+  if (url.match(/\/api\/goes\/frames\/[^/]+\/image/) || url.match(/\/api\/goes\/frames\/[^/]+\/thumbnail/)) {
+    return route.fulfill({
+      contentType: 'image/png',
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'),
+    });
+  }
   if (url.includes('/api/goes/frames/stats')) {
     return route.fulfill({
       json: { total_frames: 100, total_size_bytes: 5000000, by_satellite: {}, by_band: {} },

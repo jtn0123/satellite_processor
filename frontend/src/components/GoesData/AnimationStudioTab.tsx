@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { BAND_INFO } from '../../constants/bands';
 import {
   Satellite,
   Trash2,
@@ -146,7 +147,10 @@ export default function AnimationStudioTab() {
                   <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
                     className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
-                    {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
+                    {products?.bands.map((b) => {
+                      const info = BAND_INFO[b.id];
+                      return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : ''}</option>;
+                    })}
                   </select>
                 </div>
                 <div>

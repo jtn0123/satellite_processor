@@ -13,6 +13,7 @@ import {
   ChevronRight,
   GitCompare,
   FileDown,
+  Share2,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -301,6 +302,22 @@ export default function BrowseTab() {
                   }}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors">
                     <GitCompare className="w-3.5 h-3.5" /> Compare
+                  </button>
+                )}
+                {selectedIds.size === 1 && (
+                  <button onClick={async () => {
+                    const frameId = [...selectedIds][0];
+                    try {
+                      const res = await api.post(`/goes/frames/${frameId}/share`);
+                      const url = `${window.location.origin}${res.data.url}`;
+                      await navigator.clipboard.writeText(url);
+                      showToast('success', 'Share link copied to clipboard!');
+                    } catch {
+                      showToast('error', 'Failed to create share link');
+                    }
+                  }}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600/20 text-emerald-400 rounded-lg hover:bg-emerald-600/30 transition-colors">
+                    <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
                 )}
               </>

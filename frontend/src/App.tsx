@@ -13,6 +13,7 @@ const SettingsPage = lazy(() => import('./pages/Settings'));
 const GoesData = lazy(() => import('./pages/GoesData'));
 const PresetsPage = lazy(() => import('./pages/Presets'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const SharedFrame = lazy(() => import('./pages/SharedFrame'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
+            <Route path="shared/:token" element={<ErrorBoundary><SharedFrame /></ErrorBoundary>} />
             <Route element={<Layout />}>
               <Route index element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
               <Route path="upload" element={<ErrorBoundary><UploadPage /></ErrorBoundary>} />

@@ -54,7 +54,7 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useStats();
   const { data: health } = useHealthDetailed();
 
-  const { data: goesStats } = useQuery<DashboardStats>({
+  const { data: goesStats, isLoading: goesLoading } = useQuery<DashboardStats>({
     queryKey: ['goes-dashboard-stats'],
     queryFn: () => api.get('/goes/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
@@ -77,7 +77,7 @@ export default function Dashboard() {
   const showOnboarding = !statsLoading && (stats?.total_images === 0) && totalGoesFrames === 0;
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="space-y-6 sm:space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Satellite image processing overview</p>
@@ -100,7 +100,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <s.icon className={`w-5 h-5 ${s.color}`} />
             </div>
-            <p className="text-2xl font-bold mt-2">{s.value}</p>
+            <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{s.value}</p>
             <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.label}</p>
           </div>
         ))}
@@ -111,7 +111,7 @@ export default function Dashboard() {
             <HardDrive className="w-5 h-5 text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>
           </div>
-          <div className="mt-3 h-2 bg-space-700 rounded-full overflow-hidden">
+          <div className="mt-3 h-2.5 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${storageBarColor(storagePercent)}`}
               style={{ width: `${storagePercent}%` }}
@@ -122,6 +122,21 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* GOES stats loading skeleton */}
+      {goesLoading && (
+        <div className="bg-card border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-gray-200 dark:bg-space-700 rounded" />
+            <div className="h-5 w-32 bg-gray-200 dark:bg-space-700 rounded" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['a','b','c','d'].map((k) => (
+              <div key={k} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3 h-16" />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* #1: Satellite Data Section */}
       {goesStats && totalGoesFrames > 0 && (
@@ -173,7 +188,7 @@ export default function Dashboard() {
                 return entries.map(([sat, size], i) => (
                   <div key={sat} className="flex items-center gap-3">
                     <span className="text-xs text-gray-500 dark:text-slate-400 w-20 truncate">{sat}</span>
-                    <div className="flex-1 h-3 bg-space-700 rounded-full overflow-hidden">
+                    <div className="flex-1 h-3 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${colors[i % colors.length]}`}
                         style={{ width: `${(size / maxVal) * 100}%` }}
@@ -218,7 +233,7 @@ export default function Dashboard() {
         <div className="bg-card border border-primary/20 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Rocket className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Get Started</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Get Started</h2>
           </div>
           <div className="grid md:grid-cols-4 gap-4">
             <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
@@ -226,7 +241,7 @@ export default function Dashboard() {
                 <span className="text-primary font-bold text-sm">1</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Go to GOES Data → Fetch tab</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">Go to GOES Data → Fetch tab</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Navigate to the satellite data section</p>
               </div>
             </div>
@@ -235,7 +250,7 @@ export default function Dashboard() {
                 <span className="text-violet-400 font-bold text-sm">2</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Select satellite</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">Select satellite</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Default: GOES-19 (latest active)</p>
               </div>
             </div>
@@ -244,7 +259,7 @@ export default function Dashboard() {
                 <span className="text-amber-400 font-bold text-sm">3</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Use &quot;Last Hour&quot; quick fetch</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">Use &quot;Last Hour&quot; quick fetch</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">One-click to get recent imagery</p>
               </div>
             </div>
@@ -253,7 +268,7 @@ export default function Dashboard() {
                 <span className="text-emerald-400 font-bold text-sm">4</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Browse your first frames</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">Browse your first frames</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">View, organize, and process imagery</p>
               </div>
             </div>
@@ -283,7 +298,7 @@ export default function Dashboard() {
                 <Upload className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">1. Upload satellite images</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">1. Upload satellite images</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Upload PNG, TIFF, or JPEG satellite imagery</p>
               </div>
             </Link>
@@ -292,7 +307,7 @@ export default function Dashboard() {
                 <FlaskConical className="w-5 h-5 text-violet-400" />
               </div>
               <div>
-                <p className="font-medium text-sm">2. Create a processing job</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">2. Create a processing job</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Select images and configure processing parameters</p>
               </div>
             </Link>
@@ -301,7 +316,7 @@ export default function Dashboard() {
                 <Download className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="font-medium text-sm">3. Download results</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">3. Download results</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Monitor jobs and download processed outputs</p>
               </div>
             </Link>
@@ -310,7 +325,7 @@ export default function Dashboard() {
       )}
 
       {/* Quick actions */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <button
           onClick={() => navigate('/upload')}
           className="flex items-center gap-2 px-5 py-2.5 min-h-11 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
@@ -334,7 +349,7 @@ export default function Dashboard() {
 
         {/* System Health */}
         <div>
-          <h2 className="text-lg font-semibold mb-3">System Health</h2>
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-primary" />System Health</h2>
           <div className="bg-card border border-subtle rounded-xl p-4 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
             {/* Overall status */}
             {health && (

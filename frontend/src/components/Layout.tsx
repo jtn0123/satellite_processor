@@ -188,7 +188,7 @@ export default function Layout() {
             </div>
           </div>
           {/* #15: Clickable version footer */}
-          <div className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-2">
+          <div className="text-sm text-gray-500 dark:text-slate-400 flex items-center gap-2">
             <Cpu className="w-4 h-4" />
             <button
               onClick={() => setShowWhatsNew(true)}
@@ -242,10 +242,10 @@ export default function Layout() {
               end={l.to === '/'}
               onClick={closeDrawer}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] ${
+                `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] active:bg-primary/5 ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800'
+                    ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 border-l-2 border-transparent'
                 }`
               }
               aria-label={l.label}
@@ -287,7 +287,7 @@ export default function Layout() {
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
-          <footer className="md:hidden mt-8 pb-4 text-center text-xs text-gray-400 dark:text-slate-500">
+          <footer className="md:hidden mt-8 pb-4 text-center text-sm text-gray-500 dark:text-slate-400">
             <button
               onClick={() => setShowWhatsNew(true)}
               className="hover:text-gray-600 dark:hover:text-gray-600 dark:text-slate-300 transition-colors"

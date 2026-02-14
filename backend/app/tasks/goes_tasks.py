@@ -15,10 +15,152 @@ from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db
 logger = logging.getLogger(__name__)
 
 
+def _read_max_frames_setting() -> int:
+    """Read the max_frames_per_fetch setting from the DB, falling back to default."""
+    from ..db.models import AppSetting
+    from ..services.goes_fetcher import DEFAULT_MAX_FRAMES
+
+    max_frames_limit = DEFAULT_MAX_FRAMES
+    session = _get_sync_db()
+    try:
+        setting = session.query(AppSetting).filter(
+            AppSetting.key == "max_frames_per_fetch"
+        ).first()
+        if setting and isinstance(setting.value, (int, float)):
+            max_frames_limit = int(setting.value)
+    except Exception:
+        logger.debug("Could not read max_frames_per_fetch setting, using default")
+    finally:
+        session.close()
+    return max_frames_limit
+
+
+def _create_fetch_records(
+    job_id: str,
+    sector: str,
+    output_dir: str,
+    results: list[dict],
+) -> None:
+    """Create Image, GoesFrame, Collection, and CollectionFrame DB records."""
+    from ..db.models import Collection, CollectionFrame, GoesFrame, Image
+    from ..services.thumbnail import generate_thumbnail, get_image_dimensions
+
+    session = _get_sync_db()
+    try:
+        collection_id = str(uuid.uuid4())
+        collection = Collection(
+            id=collection_id,
+            name=f"GOES Fetch {results[0]['satellite'] if results else ''} {results[0]['band'] if results else ''} {sector}",
+            description=f"Auto-created from fetch job {job_id}",
+        )
+        session.add(collection)
+
+        frame_ids = []
+        for frame in results:
+            path = Path(frame["path"])
+            file_size = path.stat().st_size if path.exists() else 0
+            width, height = get_image_dimensions(str(path))
+            thumb_path = generate_thumbnail(str(path), output_dir)
+
+            img_record = Image(
+                id=str(uuid.uuid4()),
+                filename=path.name,
+                original_name=path.name,
+                file_path=str(path),
+                file_size=file_size,
+                satellite=frame["satellite"],
+                channel=frame["band"],
+                captured_at=frame["scan_time"],
+                source="goes_fetch",
+                width=width,
+                height=height,
+            )
+            session.add(img_record)
+
+            gf_id = str(uuid.uuid4())
+            goes_frame = GoesFrame(
+                id=gf_id,
+                satellite=frame["satellite"],
+                sector=sector,
+                band=frame["band"],
+                capture_time=frame["scan_time"],
+                file_path=str(path),
+                file_size=file_size,
+                width=width,
+                height=height,
+                thumbnail_path=thumb_path,
+                source_job_id=job_id,
+            )
+            session.add(goes_frame)
+            frame_ids.append(gf_id)
+
+        session.flush()
+        for gf_id in frame_ids:
+            session.add(CollectionFrame(collection_id=collection_id, frame_id=gf_id))
+
+        session.commit()
+    finally:
+        session.close()
+
+
+def _build_status_message(
+    satellite: str,
+    sector: str,
+    band: str,
+    start_time: datetime,
+    end_time: datetime,
+    fetched_count: int,
+    total_available: int,
+    was_capped: bool,
+    failed_downloads: int,
+    max_frames_limit: int,
+) -> tuple[str, str]:
+    """Return ``(status_message, final_status)`` for a fetch job."""
+    from ..services.goes_fetcher import SATELLITE_AVAILABILITY
+
+    beyond_cap = total_available - max_frames_limit if was_capped else 0
+
+    if fetched_count == 0 and total_available == 0:
+        avail = SATELLITE_AVAILABILITY.get(satellite, {})
+        avail_hint = ""
+        if avail.get("available_to"):
+            avail_hint = (
+                f" {satellite} data is only available from "
+                f"{avail['available_from']} through {avail['available_to']}."
+            )
+        status_msg = (
+            f"No frames found on S3 for {satellite} {sector} {band} "
+            f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
+            f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
+        )
+        return status_msg, "failed"
+
+    if fetched_count == 0:
+        return f"All {total_available} frames failed to download", "failed"
+
+    if failed_downloads == 0 and not was_capped:
+        return f"Fetched {fetched_count} frames", "completed"
+
+    if failed_downloads == 0 and was_capped:
+        status_msg = (
+            f"Fetched {fetched_count} of {total_available} available frames "
+            f"(frame limit: {max_frames_limit}). "
+            f"Adjust limit in settings or narrow time range."
+        )
+        return status_msg, "completed_partial"
+
+    parts = [f"Fetched {fetched_count} frames"]
+    if failed_downloads > 0:
+        parts.append(f"{failed_downloads} failed to download")
+    if beyond_cap > 0:
+        parts.append(f"{beyond_cap} beyond frame limit of {max_frames_limit}")
+    return f"{parts[0]} ({', '.join(parts[1:])})", "completed_partial"
+
+
 @celery_app.task(bind=True, name="fetch_goes_data")
 def fetch_goes_data(self, job_id: str, params: dict):
     """Download GOES frames for a time range and create Image records."""
-    from ..services.goes_fetcher import fetch_frames
+    from ..services.goes_fetcher import SATELLITE_BUCKETS, _build_s3_prefix, fetch_frames, list_available
 
     logger.info("Starting GOES fetch job %s", job_id)
     _update_job_db(
@@ -50,13 +192,6 @@ def fetch_goes_data(self, job_id: str, params: dict):
         output_dir = str(Path(settings.output_dir) / f"goes_{job_id}")
 
         # Log S3 prefixes being searched for debugging
-        from ..services.goes_fetcher import (
-            SATELLITE_AVAILABILITY,
-            SATELLITE_BUCKETS,
-            _build_s3_prefix,
-            list_available,
-        )
-
         bucket = SATELLITE_BUCKETS[satellite]
         current_hour = start_time.replace(minute=0, second=0, microsecond=0)
         from datetime import timedelta as _td
@@ -67,7 +202,6 @@ def fetch_goes_data(self, job_id: str, params: dict):
             logger.info("Searching S3: s3://%s/%s", bucket, prefix)
             current_hour += _td(hours=1)
 
-        # Check available count before downloading
         available = list_available(satellite, sector, band, start_time, end_time)
         _log(f"Found {len(available)} available frames on S3")
         logger.info(
@@ -83,26 +217,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
             _update_job_db(job_id, progress=pct, status_message=msg)
             _log(msg)
 
-        logger.info(
-            "Searching S3 for %s %s %s from %s to %s",
-            satellite, sector, band, start_time.isoformat(), end_time.isoformat(),
-        )
-
-        # Read configurable frame limit from DB settings
-        from ..db.models import AppSetting
-        from ..services.goes_fetcher import DEFAULT_MAX_FRAMES
-        max_frames_limit = DEFAULT_MAX_FRAMES
-        settings_session = _get_sync_db()
-        try:
-            setting = settings_session.query(AppSetting).filter(
-                AppSetting.key == "max_frames_per_fetch"
-            ).first()
-            if setting and isinstance(setting.value, (int, float)):
-                max_frames_limit = int(setting.value)
-        except Exception:
-            logger.debug("Could not read max_frames_per_fetch setting, using default")
-        finally:
-            settings_session.close()
+        max_frames_limit = _read_max_frames_setting()
 
         fetch_result = fetch_frames(
             satellite=satellite,
@@ -116,117 +231,16 @@ def fetch_goes_data(self, job_id: str, params: dict):
         )
 
         results = fetch_result["frames"]
-        total_available = fetch_result["total_available"]
-        was_capped = fetch_result["capped"]
-        failed_downloads = fetch_result["failed_downloads"]
 
-        # Create Image + GoesFrame records and auto-collection
-        from ..db.models import Collection, CollectionFrame, GoesFrame, Image
-        from ..services.thumbnail import generate_thumbnail, get_image_dimensions
+        if results:
+            _create_fetch_records(job_id, sector, output_dir, results)
 
-        session = _get_sync_db()
-        try:
-            # Auto-create a collection for this fetch job
-            collection_id = str(uuid.uuid4())
-            collection = Collection(
-                id=collection_id,
-                name=f"GOES Fetch {satellite} {band} {sector}",
-                description=f"Auto-created from fetch job {job_id}",
-            )
-            session.add(collection)
-
-            frame_ids = []
-            for frame in results:
-                path = Path(frame["path"])
-                file_size = path.stat().st_size if path.exists() else 0
-                width, height = get_image_dimensions(str(path))
-                thumb_path = generate_thumbnail(str(path), output_dir)
-
-                # Legacy Image record
-                img_record = Image(
-                    id=str(uuid.uuid4()),
-                    filename=path.name,
-                    original_name=path.name,
-                    file_path=str(path),
-                    file_size=file_size,
-                    satellite=frame["satellite"],
-                    channel=frame["band"],
-                    captured_at=frame["scan_time"],
-                    source="goes_fetch",
-                    width=width,
-                    height=height,
-                )
-                session.add(img_record)
-
-                # New GoesFrame record
-                gf_id = str(uuid.uuid4())
-                goes_frame = GoesFrame(
-                    id=gf_id,
-                    satellite=frame["satellite"],
-                    sector=sector,
-                    band=frame["band"],
-                    capture_time=frame["scan_time"],
-                    file_path=str(path),
-                    file_size=file_size,
-                    width=width,
-                    height=height,
-                    thumbnail_path=thumb_path,
-                    source_job_id=job_id,
-                )
-                session.add(goes_frame)
-                frame_ids.append(gf_id)
-
-            # Flush collection + frames first, then add join records
-            session.flush()
-            for gf_id in frame_ids:
-                session.add(CollectionFrame(collection_id=collection_id, frame_id=gf_id))
-
-            session.commit()
-        finally:
-            session.close()
-
-        # Build descriptive status message
-        fetched_count = len(results)
-        beyond_cap = total_available - max_frames_limit if was_capped else 0
-
-        if fetched_count == 0 and total_available == 0:
-            avail = SATELLITE_AVAILABILITY.get(satellite, {})
-            avail_hint = ""
-            if avail.get("available_to"):
-                avail_hint = (
-                    f" {satellite} data is only available from "
-                    f"{avail['available_from']} through {avail['available_to']}."
-                )
-            status_msg = (
-                f"No frames found on S3 for {satellite} {sector} {band} "
-                f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
-                f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
-            )
-            final_status = "failed"
-        elif fetched_count == 0:
-            status_msg = f"All {total_available} frames failed to download"
-            final_status = "failed"
-        elif failed_downloads == 0 and not was_capped:
-            # All frames fetched successfully
-            status_msg = f"Fetched {fetched_count} frames"
-            final_status = "completed"
-        elif failed_downloads == 0 and was_capped:
-            # Hit the cap but no download failures
-            status_msg = (
-                f"Fetched {fetched_count} of {total_available} available frames "
-                f"(frame limit: {max_frames_limit}). "
-                f"Adjust limit in settings or narrow time range."
-            )
-            final_status = "completed_partial"
-        else:
-            # Some download failures (and possibly capped)
-            parts = [f"Fetched {fetched_count} frames"]
-            if failed_downloads > 0:
-                parts.append(f"{failed_downloads} failed to download")
-            if beyond_cap > 0:
-                parts.append(f"{beyond_cap} beyond frame limit of {max_frames_limit}")
-            status_msg = f"{parts[0]} ({', '.join(parts[1:])})"
-            final_status = "completed_partial"
+        status_msg, final_status = _build_status_message(
+            satellite, sector, band, start_time, end_time,
+            len(results), fetch_result["total_available"],
+            fetch_result["capped"], fetch_result["failed_downloads"],
+            max_frames_limit,
+        )
 
         _log(status_msg, level="info" if final_status == "completed" else "warning")
         _update_job_db(
@@ -253,6 +267,72 @@ def fetch_goes_data(self, job_id: str, params: dict):
         raise
 
 
+def _detect_gaps(
+    satellite: str | None,
+    band: str | None,
+    sector: str | None,
+    expected_interval: float,
+) -> list[dict]:
+    """Query GoesFrame timestamps and return a list of gap dicts."""
+    from ..db.models import GoesFrame
+
+    session = _get_sync_db()
+    try:
+        from sqlalchemy import select as sa_select
+
+        query = sa_select(GoesFrame.capture_time).where(
+            GoesFrame.capture_time.isnot(None)
+        ).order_by(GoesFrame.capture_time.asc())
+        if satellite:
+            query = query.where(GoesFrame.satellite == satellite)
+        if band:
+            query = query.where(GoesFrame.band == band)
+        if sector:
+            query = query.where(GoesFrame.sector == sector)
+        timestamps = [r[0] for r in session.execute(query).all()]
+    finally:
+        session.close()
+
+    threshold = expected_interval * 1.5
+    gaps: list[dict] = []
+    for i in range(1, len(timestamps)):
+        delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
+        if delta_minutes > threshold:
+            expected_frames = max(int(delta_minutes / expected_interval) - 1, 1)
+            gaps.append({
+                "start": timestamps[i - 1].isoformat(),
+                "end": timestamps[i].isoformat(),
+                "duration_minutes": round(delta_minutes, 1),
+                "expected_frames": expected_frames,
+            })
+    return gaps
+
+
+def _create_backfill_image_records(results: list[dict]) -> None:
+    """Create Image records for backfilled frames."""
+    from ..db.models import Image
+
+    session = _get_sync_db()
+    try:
+        for frame in results:
+            path = Path(frame["path"])
+            img_record = Image(
+                id=str(uuid.uuid4()),
+                filename=path.name,
+                original_name=path.name,
+                file_path=str(path),
+                file_size=path.stat().st_size if path.exists() else 0,
+                satellite=frame["satellite"],
+                channel=frame["band"],
+                captured_at=frame["scan_time"],
+                source="goes_fetch",
+            )
+            session.add(img_record)
+        session.commit()
+    finally:
+        session.close()
+
+
 @celery_app.task(bind=True, name="backfill_gaps")
 def backfill_gaps(self, job_id: str, params: dict):
     """Run gap detection then fetch missing frames."""
@@ -267,51 +347,17 @@ def backfill_gaps(self, job_id: str, params: dict):
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
 
     try:
-        # #206: Use sync DB for gap detection instead of asyncio.run() which is fragile
-        from ..db.models import GoesFrame
-
         satellite = params.get("satellite")
         band = params.get("band")
         sector = params.get("sector", "FullDisk")
         expected_interval = params.get("expected_interval", 10.0)
 
-        session = _get_sync_db()
-        try:
-            from sqlalchemy import select as sa_select
-            query = sa_select(GoesFrame.capture_time).where(
-                GoesFrame.capture_time.isnot(None)
-            ).order_by(GoesFrame.capture_time.asc())
-            if satellite:
-                query = query.where(GoesFrame.satellite == satellite)
-            if band:
-                query = query.where(GoesFrame.band == band)
-            if sector:
-                query = query.where(GoesFrame.sector == sector)
-            timestamps = [r[0] for r in session.execute(query).all()]
-        finally:
-            session.close()
-
-        # Find gaps
-        threshold = expected_interval * 1.5
-        gaps = []
-        for i in range(1, len(timestamps)):
-            delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
-            if delta_minutes > threshold:
-                expected_frames = max(int(delta_minutes / expected_interval) - 1, 1)
-                gaps.append({
-                    "start": timestamps[i - 1].isoformat(),
-                    "end": timestamps[i].isoformat(),
-                    "duration_minutes": round(delta_minutes, 1),
-                    "expected_frames": expected_frames,
-                })
+        gaps = _detect_gaps(satellite, band, sector, expected_interval)
 
         if not gaps:
             _update_job_db(
-                job_id,
-                status="completed",
-                progress=100,
-                completed_at=utcnow(),
-                status_message="No gaps found",
+                job_id, status="completed", progress=100,
+                completed_at=utcnow(), status_message="No gaps found",
             )
             _publish_progress(job_id, 100, "No gaps found", "completed")
             return
@@ -343,28 +389,7 @@ def backfill_gaps(self, job_id: str, params: dict):
                     fetch_result["capped"], fetch_result["failed_downloads"],
                 )
 
-            # Create Image records
-            from ..db.models import GoesFrame, Image
-            session = _get_sync_db()
-            try:
-                for frame in results:
-                    path = Path(frame["path"])
-                    img_record = Image(
-                        id=str(uuid.uuid4()),
-                        filename=path.name,
-                        original_name=path.name,
-                        file_path=str(path),
-                        file_size=path.stat().st_size if path.exists() else 0,
-                        satellite=frame["satellite"],
-                        channel=frame["band"],
-                        captured_at=frame["scan_time"],
-                        source="goes_fetch",
-                    )
-                    session.add(img_record)
-                session.commit()
-            finally:
-                session.close()
-
+            _create_backfill_image_records(results)
             pct = 10 + int((i + 1) / len(gaps) * 90)
             _publish_progress(job_id, pct, f"Filled gap {i + 1}/{len(gaps)}")
 

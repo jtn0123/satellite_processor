@@ -27,6 +27,58 @@ function statusBadgeClass(status: string): string {
   return 'bg-yellow-400/10 text-yellow-400';
 }
 
+function progressBarColor(status: string): string {
+  if (status === 'failed') return 'bg-red-500';
+  if (status === 'completed_partial') return 'bg-amber-500';
+  return 'bg-primary';
+}
+
+function timelineDotColor(step: { label: string; done: boolean }): string {
+  if (!step.done) return 'bg-slate-600';
+  if (step.label === 'Failed') return 'bg-red-400';
+  if (step.label === 'Partial') return 'bg-amber-400';
+  return 'bg-green-400';
+}
+
+function isTerminalStatus(status: string): boolean {
+  return status === 'completed' || status === 'completed_partial' || status === 'failed' || status === 'cancelled';
+}
+
+function computeDuration(
+  job: { completed_at?: string; started_at?: string; created_at: string } | null,
+  status: string,
+  now: number,
+): number {
+  if (!job) return 0;
+  if (isTerminalStatus(status)) {
+    return job.completed_at
+      ? new Date(job.completed_at).getTime() - new Date(job.started_at ?? job.created_at).getTime()
+      : 0;
+  }
+  return now - new Date(job.started_at ?? job.created_at).getTime();
+}
+
+function buildTimelineSteps(
+  job: { created_at: string; started_at?: string; completed_at?: string } | null,
+  status: string,
+): Array<{ label: string; time: string | null; done: boolean }> {
+  if (!job) return [];
+  const steps: Array<{ label: string; time: string | null; done: boolean }> = [
+    { label: 'Created', time: job.created_at, done: true },
+    { label: 'Started', time: job.started_at ?? null, done: !!job.started_at },
+  ];
+  if (status === 'failed') {
+    steps.push({ label: 'Failed', time: job.completed_at ?? null, done: true });
+  } else if (status === 'cancelled') {
+    steps.push({ label: 'Cancelled', time: job.completed_at ?? null, done: true });
+  } else if (status === 'completed_partial') {
+    steps.push({ label: 'Partial', time: job.completed_at ?? null, done: true });
+  } else {
+    steps.push({ label: 'Completed', time: job.completed_at ?? null, done: status === 'completed' });
+  }
+  return steps;
+}
+
 function formatDuration(ms: number): string {
   if (ms < 1000) return '<1s';
   const s = Math.floor(ms / 1000);
@@ -82,14 +134,8 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
     }
   }, [status]);
 
-  const isTerminal = status === 'completed' || status === 'completed_partial' || status === 'failed' || status === 'cancelled';
-  const durationMs = job
-    ? (isTerminal
-        ? job.completed_at
-          ? new Date(job.completed_at).getTime() - new Date(job.started_at ?? job.created_at).getTime()
-          : 0
-        : now - new Date(job.started_at ?? job.created_at).getTime())
-    : 0;
+  const isTerminal = isTerminalStatus(status);
+  const durationMs = computeDuration(job, status, now);
 
   /* ── Logs: fetch historical + merge WS ────────────────── */
   const [historicalLogs, setHistoricalLogs] = useState<JobLogEntry[]>([]);
@@ -136,28 +182,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
   );
 
   /* ── Timeline steps ───────────────────────────────────── */
-  const timelineSteps: Array<{ label: string; time: string | null; done: boolean }> = [];
-  if (job) {
-    timelineSteps.push({ label: 'Created', time: job.created_at, done: true });
-    timelineSteps.push({
-      label: 'Started',
-      time: job.started_at ?? null,
-      done: !!job.started_at,
-    });
-    if (status === 'failed') {
-      timelineSteps.push({ label: 'Failed', time: job.completed_at ?? null, done: true });
-    } else if (status === 'cancelled') {
-      timelineSteps.push({ label: 'Cancelled', time: job.completed_at ?? null, done: true });
-    } else if (status === 'completed_partial') {
-      timelineSteps.push({ label: 'Partial', time: job.completed_at ?? null, done: true });
-    } else {
-      timelineSteps.push({
-        label: 'Completed',
-        time: job.completed_at ?? null,
-        done: status === 'completed',
-      });
-    }
-  }
+  const timelineSteps = buildTimelineSteps(job, status);
 
   return (
     <div className="space-y-6">
@@ -206,9 +231,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           </div>
           <div className="w-full h-3 bg-space-700 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                status === 'failed' ? 'bg-red-500' : status === 'completed_partial' ? 'bg-amber-500' : 'bg-primary'
-              }`}
+              className={`h-full rounded-full transition-all duration-300 ${progressBarColor(status)}`}
               style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
             />
           </div>
@@ -267,15 +290,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
               <div key={step.label} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      step.done
-                        ? step.label === 'Failed'
-                          ? 'bg-red-400'
-                          : step.label === 'Partial'
-                            ? 'bg-amber-400'
-                            : 'bg-green-400'
-                        : 'bg-slate-600'
-                    }`}
+                    className={`w-3 h-3 rounded-full ${timelineDotColor(step)}`}
                   />
                   <span className="text-[10px] text-slate-400 mt-1">{step.label}</span>
                   {step.time && (
@@ -284,9 +299,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
                 </div>
                 {i < timelineSteps.length - 1 && (
                   <div
-                    className={`w-16 sm:w-24 h-0.5 mx-1 ${
-                      timelineSteps[i + 1].done ? 'bg-green-400/50' : 'bg-slate-700'
-                    }`}
+                    className={`w-16 sm:w-24 h-0.5 mx-1 ${timelineSteps[i + 1].done ? 'bg-green-400/50' : 'bg-slate-700'}`}
                   />
                 )}
               </div>

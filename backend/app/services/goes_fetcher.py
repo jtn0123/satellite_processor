@@ -363,6 +363,87 @@ _FRAME_RETRY_ATTEMPTS = 2  # 1 retry = 2 total attempts
 _FRAME_RETRY_DELAY = 5.0   # seconds
 
 
+def _download_and_convert_frame(
+    s3: Any,
+    bucket: str,
+    item: dict[str, Any],
+    satellite: str,
+    sector: str,
+    band: str,
+    out: Path,
+) -> dict[str, Any] | None:
+    """Download a single S3 frame and convert to PNG.
+
+    Returns a frame metadata dict on success, or ``None`` if all retry
+    attempts fail with transient errors.
+
+    Raises:
+        OSError: On disk-space or other OS-level failures (should abort the job).
+        Exception: On unexpected non-transient errors.
+    """
+    _transient_errors = (
+        ConnectTimeoutError,
+        ReadTimeoutError,
+        EndpointConnectionError,
+    )
+
+    scan_time: datetime = item["scan_time"]
+    png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
+    png_path = out / png_name
+
+    last_exc = None
+    for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
+        tmp_nc_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
+                tmp_nc_path = Path(tmp_nc.name)
+                response = _retry_s3_operation(
+                    s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
+                )
+                for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                    tmp_nc.write(chunk)
+
+            _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
+            return {
+                "path": str(png_path),
+                "scan_time": scan_time,
+                "satellite": satellite,
+                "band": band,
+                "sector": sector,
+            }
+        except _transient_errors as exc:
+            last_exc = exc
+            if attempt < _FRAME_RETRY_ATTEMPTS:
+                logger.warning(
+                    "Frame %s attempt %d/%d failed: %s — retrying in %.0fs",
+                    item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
+                )
+                time.sleep(_FRAME_RETRY_DELAY)
+        finally:
+            if tmp_nc_path:
+                tmp_nc_path.unlink(missing_ok=True)
+
+    logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)
+    return None
+
+
+def _build_fetch_result(
+    results: list[dict[str, Any]],
+    total_available: int,
+    capped: bool,
+    attempted: int,
+    failed_downloads: int,
+) -> dict[str, Any]:
+    """Build the standardised result dict returned by ``fetch_frames``."""
+    return {
+        "frames": results,
+        "total_available": total_available,
+        "capped": capped,
+        "attempted": attempted,
+        "failed_downloads": failed_downloads,
+    }
+
+
 def fetch_frames(
     satellite: str,
     sector: str,
@@ -390,20 +471,12 @@ def fetch_frames(
     validate_params(satellite, sector, band)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-
-    # Check disk space before starting
     _check_disk_space(out, min_gb=1.0)
 
     available = list_available(satellite, sector, band, start_time, end_time)
     total_available = len(available)
     if not available:
-        return {
-            "frames": [],
-            "total_available": 0,
-            "capped": False,
-            "attempted": 0,
-            "failed_downloads": 0,
-        }
+        return _build_fetch_result([], 0, False, 0, 0)
 
     capped = len(available) > max_frames
     if capped:
@@ -418,83 +491,26 @@ def fetch_frames(
     results: list[dict[str, Any]] = []
     failed_downloads = 0
 
-    _transient_errors = (
-        ConnectTimeoutError,
-        ReadTimeoutError,
-        EndpointConnectionError,
-    )
-
     for i, item in enumerate(available):
         try:
-            # Check disk space every 10 frames
             if i > 0 and i % 10 == 0:
                 _check_disk_space(out, min_gb=0.5)
 
-            # Stream to temp file instead of holding full NetCDF in memory
-            scan_time: datetime = item["scan_time"]
-            png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
-            png_path = out / png_name
-
-            # Per-frame retry for transient S3 errors
-            last_exc = None
-            for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
-                tmp_nc_path = None
-                try:
-                    with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
-                        tmp_nc_path = Path(tmp_nc.name)
-                        response = _retry_s3_operation(
-                            s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
-                        )
-                        # Stream in chunks to avoid holding entire file in memory
-                        for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
-                            tmp_nc.write(chunk)
-
-                    _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
-
-                    last_exc = None
-                    break  # success
-                except _transient_errors as exc:
-                    last_exc = exc
-                    if attempt < _FRAME_RETRY_ATTEMPTS:
-                        logger.warning(
-                            "Frame %s attempt %d/%d failed: %s — retrying in %.0fs",
-                            item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
-                        )
-                        time.sleep(_FRAME_RETRY_DELAY)
-                finally:
-                    if tmp_nc_path:
-                        tmp_nc_path.unlink(missing_ok=True)
-
-            if last_exc is not None:
-                logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)
+            frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
+            if frame is None:
                 failed_downloads += 1
                 continue
 
-            results.append({
-                "path": str(png_path),
-                "scan_time": scan_time,
-                "satellite": satellite,
-                "band": band,
-                "sector": sector,
-            })
-
+            results.append(frame)
             if on_progress:
                 on_progress(i + 1, len(available))
-
         except OSError:
-            # Disk space errors should stop the whole job
             raise
         except Exception:
             logger.exception("Unexpected error fetching %s", item["key"])
             failed_downloads += 1
 
-    return {
-        "frames": results,
-        "total_available": total_available,
-        "capped": capped,
-        "attempted": len(available),
-        "failed_downloads": failed_downloads,
-    }
+    return _build_fetch_result(results, total_available, capped, len(available), failed_downloads)
 
 
 def fetch_single_preview(

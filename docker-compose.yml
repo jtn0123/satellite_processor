@@ -63,7 +63,7 @@ services:
         limits:
           memory: 4G
           cpus: "2.0"
-    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
       - REDIS_URL=redis://redis:6379/0

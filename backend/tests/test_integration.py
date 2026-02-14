@@ -57,7 +57,7 @@ async def test_create_and_delete_tag(client, db):
 
     resp2 = await client.get("/api/goes/tags")
     assert resp2.status_code == 200
-    assert any(t["id"] == tag_id for t in resp2.json())
+    assert any(t["id"] == tag_id for t in resp2.json()["items"])
 
     resp3 = await client.delete(f"/api/goes/tags/{tag_id}")
     assert resp3.status_code == 200

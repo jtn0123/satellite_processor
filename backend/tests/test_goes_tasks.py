@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture
 def mock_redis():
-    with patch("app.tasks.goes_tasks._get_redis") as m:
+    with patch("app.tasks.helpers._get_redis") as m:
         redis_mock = MagicMock()
         m.return_value = redis_mock
         yield redis_mock
@@ -16,7 +16,7 @@ def mock_redis():
 
 @pytest.fixture
 def mock_sync_db():
-    with patch("app.tasks.goes_tasks._get_sync_db") as m:
+    with patch("app.tasks.helpers._get_sync_db") as m:
         session = MagicMock()
         m.return_value = session
         yield session

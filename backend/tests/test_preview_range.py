@@ -42,8 +42,10 @@ async def test_preview_range_basic(client, db):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["total_count"] == 5
-    assert len(data["frames"]) == 5
+    assert data["total_frames"] == 5
+    assert data["first"] is not None
+    assert data["middle"] is not None
+    assert data["last"] is not None
 
 
 @pytest.mark.asyncio
@@ -58,8 +60,10 @@ async def test_preview_range_empty(client, db):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["total_count"] == 0
-    assert data["frames"] == []
+    assert data["total_frames"] == 0
+    assert data["first"] is None
+    assert data["middle"] is None
+    assert data["last"] is None
 
 
 @pytest.mark.asyncio
@@ -75,7 +79,7 @@ async def test_preview_range_filters_satellite(client, db):
         "end_time": "2024-06-15T13:00:00Z",
     })
     assert resp.status_code == 200
-    assert resp.json()["total_count"] == 2
+    assert resp.json()["total_frames"] == 2
 
 
 @pytest.mark.asyncio
@@ -91,7 +95,7 @@ async def test_preview_range_filters_band(client, db):
         "end_time": "2024-06-15T13:00:00Z",
     })
     assert resp.status_code == 200
-    assert resp.json()["total_count"] == 2
+    assert resp.json()["total_frames"] == 2
 
 
 @pytest.mark.asyncio
@@ -117,8 +121,8 @@ async def test_preview_range_missing_params(client, db):
 
 
 @pytest.mark.asyncio
-async def test_preview_range_captures_interval(client, db):
-    """Verify capture_interval_minutes is computed."""
+async def test_preview_range_sample_frames(client, db):
+    """Verify first/middle/last sample frames are returned."""
     await _seed_frames(5)
 
     resp = await client.get("/api/goes/frames/preview-range", params={
@@ -130,6 +134,10 @@ async def test_preview_range_captures_interval(client, db):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "capture_interval_minutes" in data
-    # 5 frames 10 min apart → interval ~10
-    assert data["capture_interval_minutes"] == pytest.approx(10, abs=1)
+    # First frame should be earliest capture time
+    assert data["first"]["satellite"] == "GOES-16"
+    assert data["last"]["satellite"] == "GOES-16"
+    # Thumbnails should be present
+    assert data["first_thumbnail"] is not None
+    assert data["middle_thumbnail"] is not None
+    assert data["last_thumbnail"] is not None

@@ -91,8 +91,11 @@ class TestCreateComposite:
             "sector": "CONUS",
         })
         assert resp.status_code in (400, 422)
-        detail = resp.json()["detail"]
-        assert any("capture_time" in str(e.get("loc", "")) for e in detail)
+        detail = resp.json().get("detail", resp.json())
+        if isinstance(detail, list):
+            assert any("capture_time" in str(e.get("loc", "")) for e in detail)
+        else:
+            assert "capture_time" in str(detail)
 
     async def test_create_missing_recipe(self, client):
         resp = await client.post("/api/goes/composites", json={

@@ -136,6 +136,7 @@ async def test_preview_range_sample_frames(client, db):
     data = resp.json()
     # First frame should be earliest capture time
     assert data["first"]["satellite"] == "GOES-16"
+    assert data["middle"]["satellite"] == "GOES-16"
     assert data["last"]["satellite"] == "GOES-16"
     # Thumbnails should be present
     assert data["first_thumbnail"] is not None

@@ -134,7 +134,7 @@ async def test_system_status(client):
 @pytest.mark.integration
 async def test_settings_persistence(client, db):
     """Update settings, read back, verify persistence."""
-    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "hevc"})
+    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "hevc", "max_frames_per_fetch": 500})
     assert resp.status_code == 200
 
     resp2 = await client.get("/api/settings")
@@ -142,6 +142,7 @@ async def test_settings_persistence(client, db):
     data = resp2.json()
     assert data["video_fps"] == 30
     assert data["video_codec"] == "hevc"
+    assert data["max_frames_per_fetch"] == 500
 
     # Update again
     resp3 = await client.put("/api/settings", json={"video_fps": 60})

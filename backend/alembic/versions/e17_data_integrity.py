@@ -15,14 +15,7 @@ depends_on = None
 def _table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the current database."""
     import sqlalchemy as sa
-    result = conn.execute(
-        sa.text(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
-            "WHERE table_name = :t)"
-        ),
-        {"t": table_name},
-    )
-    return result.scalar()
+    return sa.inspect(conn).has_table(table_name)
 
 
 def _safe_add_constraint(conn, table: str, sql: str) -> None:
@@ -78,4 +71,7 @@ def downgrade() -> None:
         ("composites", "ck_composites_status"),
     ]:
         if _table_exists(conn, table):
-            op.drop_constraint(name, table)
+            try:
+                op.drop_constraint(name, table)
+            except Exception:
+                pass

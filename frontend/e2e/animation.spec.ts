@@ -10,7 +10,8 @@ test.beforeEach(async ({ page }) => {
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
     if (url.includes('/api/stats')) return route.fulfill({ json: { total_images: 10, total_jobs: 5, active_jobs: 0, storage_used_mb: 256 } });
     if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
-    if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24 } });
+    if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, max_frames_per_fetch: 200 } });
+    if (url.includes('/api/goes/frame-count')) return route.fulfill({ json: { estimate: 0 } });
     if (url.includes('/api/presets')) return route.fulfill({ json: [] });
     if (url.includes('/api/goes/products')) {
       return route.fulfill({

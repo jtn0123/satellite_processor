@@ -10,7 +10,8 @@ test.beforeEach(async ({ page }) => {
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
     if (url.includes('/api/stats')) return route.fulfill({ json: { total_images: 10, total_jobs: 5, active_jobs: 0, storage_used_mb: 256 } });
     if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
-    if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24 } });
+    if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, max_frames_per_fetch: 200 } });
+    if (url.includes('/api/goes/frame-count')) return route.fulfill({ json: { estimate: 0 } });
     if (url.includes('/api/presets')) return route.fulfill({ json: [] });
     if (url.includes('/api/goes/products')) {
       return route.fulfill({
@@ -70,19 +71,13 @@ test('trigger fetch creates job notification', async ({ page }) => {
   const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
   await fetchTab.click();
 
-  // Click fetch button
   const fetchBtn = page.getByRole('button', { name: /fetch/i }).first();
-  await fetchBtn.click();
 
-  // Should see some indication (toast, status text, or job created)
-  // The fetch button click should not error; check for any status feedback or just verify no crash
-  const indicator = page.getByText(/pending|started|queued|success|fetching|created|submitted|job/i).first();
-  try {
-    await expect(indicator).toBeVisible({ timeout: 5000 });
-  } catch {
-    // If no toast appears, at minimum verify the page is still functional
-    await expect(page.locator('[role="tablist"]')).toBeVisible();
-  }
+  const [response] = await Promise.all([
+    page.waitForResponse(resp => resp.url().includes('/api/goes/fetch')),
+    fetchBtn.click(),
+  ]);
+  expect(response.status()).toBeLessThan(500);
 });
 
 test('GOES data page shows tabs', async ({ page }) => {

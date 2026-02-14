@@ -15,7 +15,15 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("jobs", sa.Column("name", sa.String(255), nullable=True))
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='jobs' AND column_name='name'"
+        )
+    )
+    if not result.fetchone():
+        op.add_column("jobs", sa.Column("name", sa.String(255), nullable=True))
 
 
 def downgrade():

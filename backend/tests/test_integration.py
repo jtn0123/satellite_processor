@@ -154,15 +154,19 @@ async def test_settings_persistence(client, db):
 @pytest.mark.integration
 async def test_goes_fetch_creates_job(client, db):
     """GOES fetch endpoint should create a job record."""
-    with patch("app.routers.goes.fetch_goes_data") as mock_task:
+    with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
         mock_result = MagicMock()
         mock_result.id = "celery-goes-fetch"
         mock_task.delay.return_value = mock_result
 
+        from datetime import datetime, timedelta, timezone
+        now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
         resp = await client.post("/api/goes/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C02",
+            "start_time": (now - timedelta(hours=3)).isoformat(),
+            "end_time": now.isoformat(),
         })
     assert resp.status_code == 200
     data = resp.json()

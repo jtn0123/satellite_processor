@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "m90_share_links"
-down_revision = "l80_animation_ux"
+down_revision = "m90_performance_indexes"
 branch_labels = None
 depends_on = None
 

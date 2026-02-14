@@ -255,30 +255,13 @@ def list_available(
     return results
 
 
-def _netcdf_to_png(nc_bytes: bytes, output_path: Path) -> Path:
-    """Convert NetCDF CMI data to a PNG image."""
-    try:
-        import xarray as xr
-
-        with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
-            tmp.write(nc_bytes)
-            tmp_path = tmp.name
-
-        ds = xr.open_dataset(tmp_path, engine="netcdf4")
-        cmi = ds["CMI"].values
-        ds.close()
-        Path(tmp_path).unlink(missing_ok=True)
-    except Exception:
-        logger.warning("xarray/netCDF4 unavailable, generating placeholder image")
-        # Generate a small placeholder if netcdf libs are missing
-        img = PILImage.new("L", (100, 100), 128)
-        img.save(str(output_path))
-        return output_path
-
-    # Normalize to 0-255
+def _cmi_to_png(cmi: np.ndarray, output_path: Path) -> Path:
+    """Normalize CMI array to 0-255 and save as PNG."""
     valid = cmi[~np.isnan(cmi)]
     if len(valid) == 0:
-        img = PILImage.new("L", (cmi.shape[1] if len(cmi.shape) > 1 else 100, cmi.shape[0] if len(cmi.shape) > 0 else 100), 0)
+        h = cmi.shape[0] if len(cmi.shape) > 0 else 100
+        w = cmi.shape[1] if len(cmi.shape) > 1 else 100
+        img = PILImage.new("L", (w, h), 0)
     else:
         vmin, vmax = np.nanpercentile(cmi, [2, 98])
         if vmax <= vmin:
@@ -289,6 +272,50 @@ def _netcdf_to_png(nc_bytes: bytes, output_path: Path) -> Path:
 
     img.save(str(output_path))
     return output_path
+
+
+def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
+    """Convert a NetCDF file on disk to PNG (memory-efficient)."""
+    try:
+        import xarray as xr
+
+        ds = xr.open_dataset(str(nc_path), engine="netcdf4")
+        cmi = ds["CMI"].values
+        ds.close()
+    except Exception:
+        logger.warning("xarray/netCDF4 unavailable, generating placeholder image")
+        img = PILImage.new("L", (100, 100), 128)
+        img.save(str(output_path))
+        return output_path
+
+    return _cmi_to_png(cmi, output_path)
+
+
+def _netcdf_to_png(nc_bytes: bytes, output_path: Path) -> Path:
+    """Convert NetCDF CMI data (bytes) to a PNG image."""
+    with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
+        tmp.write(nc_bytes)
+        tmp_path = Path(tmp.name)
+    try:
+        return _netcdf_to_png_from_file(tmp_path, output_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def _check_disk_space(path: Path, min_gb: float = 1.0) -> None:
+    """Raise if available disk space is below threshold."""
+    import shutil
+    usage = shutil.disk_usage(path)
+    free_gb = usage.free / (1024 ** 3)
+    if free_gb < min_gb:
+        raise OSError(
+            f"Insufficient disk space: {free_gb:.1f} GB free, need at least {min_gb} GB. "
+            f"Free up space or reduce the time range."
+        )
+
+
+# Maximum frames per single fetch to prevent OOM / disk exhaustion
+MAX_FRAMES_PER_FETCH = 100
 
 
 def fetch_frames(
@@ -308,9 +335,19 @@ def fetch_frames(
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    # Check disk space before starting
+    _check_disk_space(out, min_gb=1.0)
+
     available = list_available(satellite, sector, band, start_time, end_time)
     if not available:
         return []
+
+    if len(available) > MAX_FRAMES_PER_FETCH:
+        logger.warning(
+            "Limiting fetch from %d to %d frames (max per job)",
+            len(available), MAX_FRAMES_PER_FETCH,
+        )
+        available = available[:MAX_FRAMES_PER_FETCH]
 
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
@@ -318,13 +355,28 @@ def fetch_frames(
 
     for i, item in enumerate(available):
         try:
-            response = _retry_s3_operation(s3.get_object, Bucket=bucket, Key=item["key"], operation="get")
-            nc_bytes = response["Body"].read()
+            # Check disk space every 10 frames
+            if i > 0 and i % 10 == 0:
+                _check_disk_space(out, min_gb=0.5)
 
+            # Stream to temp file instead of holding full NetCDF in memory
             scan_time: datetime = item["scan_time"]
             png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
             png_path = out / png_name
-            _netcdf_to_png(nc_bytes, png_path)
+
+            with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
+                tmp_nc_path = Path(tmp_nc.name)
+                response = _retry_s3_operation(
+                    s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
+                )
+                # Stream in chunks to avoid holding entire file in memory
+                for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                    tmp_nc.write(chunk)
+
+            try:
+                _netcdf_to_png_from_file(tmp_nc_path, png_path)
+            finally:
+                tmp_nc_path.unlink(missing_ok=True)
 
             results.append({
                 "path": str(png_path),
@@ -337,6 +389,9 @@ def fetch_frames(
             if on_progress:
                 on_progress(i + 1, len(available))
 
+        except OSError:
+            # Disk space errors should stop the whole job
+            raise
         except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
             logger.warning("Failed to fetch %s: %s", item["key"], exc)
         except Exception:

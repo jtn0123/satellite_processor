@@ -255,13 +255,18 @@ def list_available(
     return results
 
 
-# Maximum output image dimension (pixels). FullDisk CMI is 21696x21696 (~1.8GB
-# float32). We downsample to keep memory under ~100MB per frame while still
-# producing sharp images for web display and animation.
-MAX_IMAGE_DIM = 2048
+# Maximum output dimensions per sector. FullDisk (21696x21696) needs heavy
+# downsampling; CONUS (5424x3000) is moderate; Mesoscale (1000x1000) is small
+# enough to keep as-is.
+SECTOR_MAX_DIM: dict[str, int] = {
+    "FullDisk": 4096,
+    "CONUS": 4096,
+    "Mesoscale1": 2048,
+    "Mesoscale2": 2048,
+}
 
 
-def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
+def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "FullDisk") -> Path:
     """Convert a NetCDF file on disk to PNG (memory-efficient).
 
     For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
@@ -274,8 +279,9 @@ def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
         cmi_var = nc.variables["CMI"]
         shape = cmi_var.shape  # e.g. (21696, 21696)
 
-        # Calculate stride to keep dimensions under MAX_IMAGE_DIM
-        stride = max(1, max(shape[0], shape[1]) // MAX_IMAGE_DIM)
+        # Calculate stride based on sector-specific max dimension
+        max_dim = SECTOR_MAX_DIM.get(sector, 4096)
+        stride = max(1, max(shape[0], shape[1]) // max_dim)
 
         if stride > 1:
             logger.info(
@@ -323,13 +329,13 @@ def _netcdf_to_png_from_file(nc_path: Path, output_path: Path) -> Path:
     return output_path
 
 
-def _netcdf_to_png(nc_bytes: bytes, output_path: Path) -> Path:
+def _netcdf_to_png(nc_bytes: bytes, output_path: Path, sector: str = "FullDisk") -> Path:
     """Convert NetCDF CMI data (bytes) to a PNG image."""
     with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
         tmp.write(nc_bytes)
         tmp_path = Path(tmp.name)
     try:
-        return _netcdf_to_png_from_file(tmp_path, output_path)
+        return _netcdf_to_png_from_file(tmp_path, output_path, sector=sector)
     finally:
         tmp_path.unlink(missing_ok=True)
 
@@ -406,7 +412,7 @@ def fetch_frames(
                     tmp_nc.write(chunk)
 
             try:
-                _netcdf_to_png_from_file(tmp_nc_path, png_path)
+                _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
             finally:
                 tmp_nc_path.unlink(missing_ok=True)
 
@@ -456,7 +462,7 @@ def fetch_single_preview(
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = Path(tmp.name)
         try:
-            _netcdf_to_png(nc_bytes, tmp_path)
+            _netcdf_to_png(nc_bytes, tmp_path, sector=sector)
             return tmp_path.read_bytes()
         finally:
             tmp_path.unlink(missing_ok=True)

@@ -35,6 +35,11 @@ test.beforeEach(async ({ page }) => {
     }
     if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
     if (url.includes('/api/presets')) return route.fulfill({ json: [] });
+  if (url.includes('/api/goes/frames/preview-range')) return route.fulfill({ json: { frames: [], total_count: 0, capture_interval_minutes: 10 } });
+  if (url.includes('/api/goes/animations/from-range')) return route.fulfill({ json: { id: 'mock-1', status: 'pending' } });
+  if (url.includes('/api/goes/animations/recent')) return route.fulfill({ json: { id: 'mock-2', status: 'pending' } });
+  if (url.includes('/api/goes/animations/batch')) return route.fulfill({ json: { ids: [], status: 'queued' } });
+  if (url.includes('/api/goes/animation-presets')) return route.fulfill({ json: [] });
     return route.continue();
   });
 });

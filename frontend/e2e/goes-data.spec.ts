@@ -31,6 +31,21 @@ const mockApiHandler = async (route: unknown) => {
   }
   if (url.includes('/api/goes/fetch-presets')) return route.fulfill({ json: [] });
   if (url.includes('/api/goes/crop-presets')) return route.fulfill({ json: [] });
+  if (url.includes('/api/goes/frames/preview-range')) {
+    return route.fulfill({ json: { frames: [], total_count: 0, capture_interval_minutes: 10 } });
+  }
+  if (url.includes('/api/goes/animations/from-range')) {
+    return route.fulfill({ json: { id: 'mock-anim-1', status: 'pending' } });
+  }
+  if (url.includes('/api/goes/animations/recent')) {
+    return route.fulfill({ json: { id: 'mock-anim-2', status: 'pending' } });
+  }
+  if (url.includes('/api/goes/animations/batch')) {
+    return route.fulfill({ json: { ids: [], status: 'queued' } });
+  }
+  if (url.includes('/api/goes/animation-presets')) {
+    return route.fulfill({ json: [] });
+  }
   if (url.includes('/api/goes/animations')) {
     return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } });
   }

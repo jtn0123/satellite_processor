@@ -134,14 +134,14 @@ async def test_system_status(client):
 @pytest.mark.integration
 async def test_settings_persistence(client, db):
     """Update settings, read back, verify persistence."""
-    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "h265"})
+    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "hevc"})
     assert resp.status_code == 200
 
     resp2 = await client.get("/api/settings")
     assert resp2.status_code == 200
     data = resp2.json()
     assert data["video_fps"] == 30
-    assert data["video_codec"] == "h265"
+    assert data["video_codec"] == "hevc"
 
     # Update again
     resp3 = await client.put("/api/settings", json={"video_fps": 60})
@@ -154,10 +154,10 @@ async def test_settings_persistence(client, db):
 @pytest.mark.integration
 async def test_goes_fetch_creates_job(client, db):
     """GOES fetch endpoint should create a job record."""
-    with patch("app.routers.goes.celery_app") as mock_celery:
+    with patch("app.routers.goes.fetch_goes_data") as mock_task:
         mock_result = MagicMock()
         mock_result.id = "celery-goes-fetch"
-        mock_celery.send_task.return_value = mock_result
+        mock_task.delay.return_value = mock_result
 
         resp = await client.post("/api/goes/fetch", json={
             "satellite": "GOES-16",

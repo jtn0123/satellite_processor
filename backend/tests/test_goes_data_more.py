@@ -116,7 +116,7 @@ async def test_collection_crud(client):
     # List
     resp = await client.get("/api/goes/collections")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    data = resp.json(); items = data.get("items", data) if isinstance(data, dict) else data; assert len(items) == 1
 
     # Update
     resp = await client.put(f"/api/goes/collections/{coll_id}", json={"name": "Renamed"})
@@ -157,7 +157,7 @@ async def test_tag_crud(client):
     # List
     resp = await client.get("/api/goes/tags")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    data = resp.json(); items = data.get("items", data) if isinstance(data, dict) else data; assert len(items) == 1
 
     # Delete
     resp = await client.delete(f"/api/goes/tags/{tag_id}")

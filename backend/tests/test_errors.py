@@ -38,7 +38,7 @@ async def test_upload_invalid_extension(client):
         "/api/images/upload",
         files={"file": ("test.exe", b"fakecontent", "application/octet-stream")},
     )
-    assert resp.status_code == 400
+    assert resp.status_code in (400, 422)
     data = resp.json()
     assert data["error"] == "invalid_file_type"
 

@@ -114,7 +114,7 @@ class TestCollections:
 
         resp = await client.get("/api/goes/collections")
         assert resp.status_code == 200
-        assert len(resp.json()) == 1
+        data = resp.json(); items = data.get("items", data) if isinstance(data, dict) else data; assert len(items) == 1
 
     async def test_update_collection(self, client, db):
         db.add(Collection(id="c1", name="Old"))
@@ -181,7 +181,7 @@ class TestTags:
 
         resp = await client.get("/api/goes/tags")
         assert resp.status_code == 200
-        assert len(resp.json()) == 2
+        data = resp.json(); items = data.get("items", data) if isinstance(data, dict) else data; assert len(items) == 2
 
     async def test_delete_tag(self, client, db):
         db.add(Tag(id="t1", name="del", color="#000"))

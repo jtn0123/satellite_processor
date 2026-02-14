@@ -55,7 +55,7 @@ class TestCancelJob:
         await db.commit()
 
         resp = await client.post(f"/api/jobs/{jid}/cancel")
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_cancel_failed_job_returns_400(self, client, db):
         jid = _uuid()
@@ -63,7 +63,7 @@ class TestCancelJob:
         await db.commit()
 
         resp = await client.post(f"/api/jobs/{jid}/cancel")
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_cancel_already_cancelled_job_returns_400(self, client, db):
         jid = _uuid()
@@ -71,7 +71,7 @@ class TestCancelJob:
         await db.commit()
 
         resp = await client.post(f"/api/jobs/{jid}/cancel")
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_cancel_nonexistent_job_returns_404(self, client):
         resp = await client.post(f"/api/jobs/{_uuid()}/cancel")

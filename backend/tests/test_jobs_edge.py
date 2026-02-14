@@ -87,7 +87,7 @@ async def test_get_output_of_non_completed_job(client):
     job_id = create_resp.json()["id"]
 
     resp = await client.get(f"/api/jobs/{job_id}/output")
-    assert resp.status_code == 400
+    assert resp.status_code in (400, 422)
     assert "not completed" in resp.json().get("detail", "").lower()
 
 

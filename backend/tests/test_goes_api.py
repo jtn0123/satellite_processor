@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from app.db.models import Image
+from app.db.models import GoesFrame, Image
 
 
 @pytest.mark.asyncio
@@ -78,29 +78,27 @@ class TestGoesGaps:
     async def test_gaps_with_data(self, client, db):
         base = datetime(2024, 3, 15, 12, 0, 0)
         for i in range(5):
-            img = Image(
+            frame = GoesFrame(
                 id=f"gap-test-{i}",
-                filename=f"t{i}.png",
-                original_name=f"t{i}.png",
-                file_path=f"/data/t{i}.png",
-                file_size=100,
                 satellite="GOES-16",
-                channel="C02",
-                captured_at=base + timedelta(minutes=10 * i),
+                sector="CONUS",
+                band="C02",
+                capture_time=base + timedelta(minutes=10 * i),
+                file_path=f"/data/t{i}.nc",
+                file_size=100,
             )
-            db.add(img)
+            db.add(frame)
         # Add one more after a gap
-        img = Image(
+        frame = GoesFrame(
             id="gap-test-5",
-            filename="t5.png",
-            original_name="t5.png",
-            file_path="/data/t5.png",
-            file_size=100,
             satellite="GOES-16",
-            channel="C02",
-            captured_at=base + timedelta(minutes=100),
+            sector="CONUS",
+            band="C02",
+            capture_time=base + timedelta(minutes=100),
+            file_path="/data/t5.nc",
+            file_size=100,
         )
-        db.add(img)
+        db.add(frame)
         await db.commit()
 
         resp = await client.get("/api/goes/gaps", params={"expected_interval": 10})

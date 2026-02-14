@@ -5,31 +5,32 @@ from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
-from app.db.models import Image
+from app.db.models import GoesFrame
 from app.services.gap_detector import detect_capture_pattern, find_gaps, get_coverage_stats
+
+
+def _frame(id_: str, satellite: str, band: str, sector: str, capture_time: datetime) -> GoesFrame:
+    return GoesFrame(
+        id=id_,
+        satellite=satellite,
+        sector=sector,
+        band=band,
+        capture_time=capture_time,
+        file_path=f"/data/{id_}.nc",
+        file_size=1000,
+    )
 
 
 @pytest_asyncio.fixture
 async def db_with_images(db):
-    """Populate DB with images at known timestamps."""
+    """Populate DB with GoesFrame records at known timestamps."""
     base = datetime(2024, 3, 15, 12, 0, 0)
-    # Create 10 images at 10-minute intervals, then a 50-minute gap, then 5 more
+    # 10 frames at 10-min intervals, then a 50-min gap, then 5 more
     timestamps = [base + timedelta(minutes=10 * i) for i in range(10)]
-    # Gap from 13:30 to 14:20
     timestamps += [base + timedelta(minutes=140 + 10 * i) for i in range(5)]
 
     for i, ts in enumerate(timestamps):
-        img = Image(
-            id=f"img-{i:03d}",
-            filename=f"test_{i}.png",
-            original_name=f"test_{i}.png",
-            file_path=f"/data/test_{i}.png",
-            file_size=1000,
-            satellite="GOES-16",
-            channel="C02",
-            captured_at=ts,
-        )
-        db.add(img)
+        db.add(_frame(f"frm-{i:03d}", "GOES-16", "C02", "CONUS", ts))
     await db.commit()
     return db
 
@@ -73,7 +74,7 @@ class TestFindGaps:
     @pytest.mark.asyncio
     async def test_filter_by_satellite(self, db_with_images):
         gaps = await find_gaps(db_with_images, satellite="GOES-18", expected_interval=10.0)
-        assert len(gaps) == 0  # No GOES-18 images
+        assert len(gaps) == 0
 
     @pytest.mark.asyncio
     async def test_empty_db(self, empty_db):

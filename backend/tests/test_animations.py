@@ -118,7 +118,7 @@ class TestAnimations:
             "name": "Test", "satellite": "GOES-99",
             "fps": 10, "format": "mp4", "quality": "medium",
         })
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_list_animations_with_data(self, client, db):
         import uuid

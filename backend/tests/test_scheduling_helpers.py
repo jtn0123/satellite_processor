@@ -95,7 +95,7 @@ class TestCollectStorageBasedDeletions:
 
         f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
-        session.query.return_value.order_by.return_value.all.return_value = [f1, f2]
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
 
         rule = SimpleNamespace(value=1)  # 1 GB limit → need to free 1GB
         result = _collect_storage_based_deletions(session, rule, set())
@@ -107,7 +107,7 @@ class TestCollectStorageBasedDeletions:
 
         f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
-        session.query.return_value.order_by.return_value.all.return_value = [f1, f2]
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
 
         rule = SimpleNamespace(value=1)
         result = _collect_storage_based_deletions(session, rule, {"f1"})

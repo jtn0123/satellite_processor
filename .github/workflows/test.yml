@@ -44,8 +44,12 @@ jobs:
         run: alembic upgrade head
 
   backend:
-    name: Backend Tests
+    name: Backend Tests (Shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v6
 
@@ -68,9 +72,11 @@ jobs:
           pip install ruff
 
       - name: Lint with ruff
+        if: matrix.shard == 1
         run: ruff check backend/
 
       - name: Security audit (pip-audit)
+        if: matrix.shard == 1
         run: |
           pip install pip-audit
           pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
@@ -79,9 +85,17 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
+        run: |
+          if [ "${{ matrix.shard }}" = "1" ]; then
+            pytest tests/test_[a-g]* -v --tb=short -q
+          elif [ "${{ matrix.shard }}" = "2" ]; then
+            pytest tests/test_[h-r]* -v --tb=short -q
+          else
+            pytest tests/test_[s-z]* -v --tb=short -q
+          fi
 
       - name: Run core processor tests
+        if: matrix.shard == 1
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml

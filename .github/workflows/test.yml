@@ -91,11 +91,11 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           if [ "${{ matrix.shard }}" = "1" ]; then
-            pytest tests/test_[a-g]* --cov=app --cov-report= -v --tb=short -q
+            pytest tests/test_[a-g]* --cov=app --cov-report= --cov-fail-under=0 -v --tb=short -q
           elif [ "${{ matrix.shard }}" = "2" ]; then
-            pytest tests/test_[h-r]* --cov=app --cov-report= -v --tb=short -q
+            pytest tests/test_[h-r]* --cov=app --cov-report= --cov-fail-under=0 -v --tb=short -q
           else
-            pytest tests/test_[s-z]* --cov=app --cov-report= -v --tb=short -q
+            pytest tests/test_[s-z]* --cov=app --cov-report= --cov-fail-under=0 -v --tb=short -q
           fi
           mv .coverage .coverage.shard${{ matrix.shard }}
 

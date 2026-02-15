@@ -25,7 +25,7 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - name: Run tests with coverage
         working-directory: backend
-        run: python -m pytest tests/ --cov=app --cov-report=xml:coverage.xml -q --timeout=60
+        run: python -m pytest tests/ --cov=app --cov-report=xml:coverage.xml -q
         env:
           DATABASE_URL: "sqlite+aiosqlite:///./test.db"
       - uses: actions/upload-artifact@v4

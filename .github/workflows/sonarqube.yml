@@ -10,6 +10,7 @@ jobs:
   sonarqube:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork == false
     runs-on: [self-hosted, sonar]
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read

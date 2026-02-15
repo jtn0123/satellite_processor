@@ -1,64 +1,29 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import JobList from '../components/Jobs/JobList';
 
 vi.mock('../hooks/useApi', () => ({
-  useJobs: () => ({
+  useJobs: vi.fn(() => ({
     data: [
-      {
-        id: '1',
-        status: 'completed',
-        job_type: 'image_process',
-        progress: 100,
-        created_at: '2024-01-15T12:00:00Z',
-        status_message: 'Done',
-      },
+      { id: 'j1', job_type: 'goes_fetch', status: 'completed', progress: 100, status_message: 'Done', created_at: '2026-01-01T12:00:00Z' },
+      { id: 'j2', job_type: 'animation', status: 'processing', progress: 50, status_message: 'Working', created_at: '2026-01-01T11:00:00Z' },
     ],
     isLoading: false,
-    error: null,
-  }),
-  useDeleteJob: () => ({
-    mutate: vi.fn(),
-  }),
+  })),
+  useDeleteJob: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
-function wrapper({ children }: { children: React.ReactNode }) {
+import JobList from '../components/Jobs/JobList';
+
+function renderWithQuery(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
 describe('JobList', () => {
-  it('renders job entries', () => {
-    render(<JobList />, { wrapper });
-    expect(document.body.textContent).toContain('completed');
-  });
-
-  it('renders completed_partial badge with amber styling', () => {
-    // Override the mock for this test
-    vi.doMock('../hooks/useApi', () => ({
-      useJobs: () => ({
-        data: [
-          {
-            id: '2',
-            status: 'completed_partial',
-            job_type: 'goes_fetch',
-            progress: 100,
-            created_at: '2024-01-15T12:00:00Z',
-            status_message: 'Fetched 5 of 10 frames (frame limit: 5)',
-          },
-        ],
-        isLoading: false,
-        error: null,
-      }),
-      useDeleteJob: () => ({ mutate: vi.fn() }),
-    }));
-
-    // Re-import to pick up new mock — but vitest module cache means
-    // the top-level mock still applies. Instead, just check that the
-    // status config mapping exists in the component source.
-    // The top-level mock renders 'completed'; verify it renders.
-    const { container } = render(<JobList />, { wrapper });
-    expect(container).toBeTruthy();
+  it('renders job list with status messages', () => {
+    renderWithQuery(<JobList />);
+    expect(screen.getByText('Done')).toBeInTheDocument();
+    expect(screen.getByText('Working')).toBeInTheDocument();
   });
 });

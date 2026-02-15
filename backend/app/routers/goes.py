@@ -46,9 +46,7 @@ async def list_products():
     async def _fetch():
         return {
             "satellites": list(SATELLITE_BUCKETS.keys()),
-            "satellite_availability": {
-                sat: info for sat, info in SATELLITE_AVAILABILITY.items()
-            },
+            "satellite_availability": dict(SATELLITE_AVAILABILITY),
             "sectors": [
                 {"id": k, "name": k, "product": v}
                 for k, v in SECTOR_PRODUCTS.items()
@@ -274,7 +272,7 @@ COMPOSITE_RECIPES = {
 
 
 @router.get("/composite-recipes")
-async def list_composite_recipes():
+def list_composite_recipes():
     """List available composite recipes."""
     return [
         {"id": k, "name": v["name"], "bands": v["bands"]}

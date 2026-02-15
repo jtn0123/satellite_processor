@@ -36,6 +36,8 @@ from ..models.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/api/goes", tags=["animation-studio"])
 
+_ANIMATION_PRESET_NOT_FOUND = "Animation preset not found"
+
 
 # ── Helpers ──────────────────────────────────────────
 
@@ -491,7 +493,7 @@ async def get_animation_preset(
     )
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Animation preset not found")
+        raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)
     return AnimationPresetResponse.model_validate(preset)
 
 
@@ -507,7 +509,7 @@ async def update_animation_preset(
     )
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Animation preset not found")
+        raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)
     for field in ("name", "satellite", "sector", "band", "fps", "format",
                   "quality", "resolution", "loop_style"):
         val = getattr(payload, field)
@@ -529,7 +531,7 @@ async def delete_animation_preset(
     )
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Animation preset not found")
+        raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)
     await db.delete(preset)
     await db.commit()
     return {"deleted": preset_id}

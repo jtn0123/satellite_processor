@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import shutil
 import subprocess
 from pathlib import Path
@@ -142,7 +143,7 @@ def generate_animation(self, job_id: str, animation_id: str):
             # Apply scale
             if scale and scale != "100%":
                 pct = int(scale.replace("%", "")) / 100.0
-                if pct != 1.0 and pct > 0:
+                if not math.isclose(pct, 1.0) and pct > 0:
                     new_w = int(img.shape[1] * pct)
                     new_h = int(img.shape[0] * pct)
                     interp = cv2.INTER_AREA if pct < 1 else cv2.INTER_CUBIC

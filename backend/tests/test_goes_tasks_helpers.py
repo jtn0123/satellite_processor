@@ -460,8 +460,8 @@ def test_build_status_message_all_paths(mock_db, mock_redis):
     msg, status = _build_status_message(
         "GOES-16", "CONUS", "C02",
         datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=90, available_count=200,
-        capped=True, failed_downloads=10,
+        fetched_count=90, total_available=200,
+        was_capped=True, failed_downloads=10,
         max_frames_limit=100,
     )
     assert status == "completed_partial"
@@ -472,8 +472,8 @@ def test_build_status_message_all_paths(mock_db, mock_redis):
     msg2, status2 = _build_status_message(
         "GOES-16", "CONUS", "C02",
         datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=50, available_count=50,
-        capped=False, failed_downloads=0,
+        fetched_count=50, total_available=50,
+        was_capped=False, failed_downloads=0,
         max_frames_limit=200,
     )
     assert status2 == "completed"

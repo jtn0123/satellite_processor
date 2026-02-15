@@ -4,6 +4,19 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const CHANGELOG = [
   {
+    version: '2.2.0',
+    date: '2026-02-15',
+    changes: [
+      'Configurable frame fetch cap (default 200, adjustable in Settings)',
+      'New completed_partial status for capped or partially failed fetches',
+      'Per-frame S3 retry with circuit breaker for transient errors',
+      'Dashboard: empty states instead of stuck skeletons',
+      'Dark mode contrast improvements',
+      'WebSocket graceful reconnect with exponential backoff',
+      'SonarQube quality gate: 91.6% coverage on new code',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-02-13',
     changes: [

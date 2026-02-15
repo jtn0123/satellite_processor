@@ -52,10 +52,10 @@ interface DashboardStats {
 export default function Dashboard() {
   usePageTitle('Dashboard');
   const navigate = useNavigate();
-  const { data: stats, isLoading: statsLoading } = useStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useStats();
   const { data: health } = useHealthDetailed();
 
-  const { data: goesStats, isLoading: goesLoading } = useQuery<DashboardStats>({
+  const { data: goesStats, isLoading: goesLoading, isError: goesError } = useQuery<DashboardStats>({
     queryKey: ['goes-dashboard-stats'],
     queryFn: () => api.get('/goes/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
@@ -85,18 +85,18 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      {statsLoading && (
+      {statsLoading && !statsError && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["a","b","c","d"].map((k) => (
             <div key={k} className="bg-gray-200/50 dark:bg-white/[0.06] border border-subtle rounded-xl p-4 h-24 animate-pulse" />
           ))}
         </div>
       )}
-      <div className={`@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4 ${statsLoading ? 'hidden' : ''}`}>
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${statsLoading && !statsError ? 'hidden' : ''}`}>
         {statCards.map((s) => (
           <div
             key={s.label}
-            className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5"
+            className="bg-white/75 dark:bg-space-800/70 backdrop-blur-sm border border-subtle rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-space-700 transition-colors inset-shadow-sm dark:inset-shadow-white/5"
           >
             <div className="flex items-center justify-between">
               <s.icon className={`w-5 h-5 ${s.color}`} />
@@ -107,7 +107,7 @@ export default function Dashboard() {
         ))}
 
         {/* Storage card */}
-        <div className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5">
+        <div className="bg-white/75 dark:bg-space-800/70 backdrop-blur-sm border border-subtle rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-space-700 transition-colors inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>
@@ -124,8 +124,16 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* GOES stats error fallback */}
+      {goesError && (
+        <div className="bg-white dark:bg-space-800 border border-subtle rounded-xl p-6 text-center">
+          <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-500 dark:text-slate-400">Could not load satellite data</p>
+        </div>
+      )}
+
       {/* GOES stats loading skeleton (#9) */}
-      {goesLoading && (
+      {goesLoading && !goesError && (
         <div className="bg-gray-200/50 dark:bg-white/[0.06] border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-gray-200 dark:bg-white/10" />
@@ -156,7 +164,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Satellite Data</h2>
           </div>
 
-          <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
               <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>

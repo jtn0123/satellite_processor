@@ -2,17 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const mockGet = vi.fn(() => Promise.resolve({ data: [] }));
-const mockPost = vi.fn(() => Promise.resolve({ data: {} }));
-const mockPut = vi.fn(() => Promise.resolve({ data: {} }));
-const mockDelete = vi.fn(() => Promise.resolve({}));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockGet = vi.fn((_url?: string) => Promise.resolve({ data: [] as unknown[] }));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockPost = vi.fn((_url?: string, _data?: unknown) => Promise.resolve({ data: {} }));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockPut = vi.fn((_url?: string, _data?: unknown) => Promise.resolve({ data: {} }));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockDelete = vi.fn((_url?: string) => Promise.resolve({}));
 
 vi.mock('../api/client', () => ({
   default: {
-    get: (...args: unknown[]) => mockGet(...args),
-    post: (...args: unknown[]) => mockPost(...args),
-    put: (...args: unknown[]) => mockPut(...args),
-    delete: (...args: unknown[]) => mockDelete(...args),
+    get: (url: string) => mockGet(url),
+    post: (url: string, data: unknown) => mockPost(url, data),
+    put: (url: string, data: unknown) => mockPut(url, data),
+    delete: (url: string) => mockDelete(url),
   },
 }));
 
@@ -39,9 +43,9 @@ const collections = [
 describe('CollectionsTab extended', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGet.mockImplementation((url: string) => {
+    mockGet.mockImplementation((url?: string) => {
       if (url === '/goes/collections') return Promise.resolve({ data: collections });
-      if (url.includes('/frames')) return Promise.resolve({ data: [{ id: 'f1' }, { id: 'f2' }] });
+      if (url?.includes('/frames')) return Promise.resolve({ data: [{ id: 'f1' }, { id: 'f2' }] });
       return Promise.resolve({ data: [] });
     });
   });

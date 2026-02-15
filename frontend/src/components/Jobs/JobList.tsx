@@ -54,13 +54,11 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
         const cfg = statusConfig[job.status] || statusConfig.pending;
         const Icon = cfg.icon;
         return (
-          <div
+          <button
+            type="button"
             key={job.id}
-            role="button"
-            tabIndex={0}
-            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700 rounded-lg px-4 py-3 sm:px-4 sm:py-3 hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer group transition-colors"
+            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700 rounded-lg px-4 py-3 sm:px-4 sm:py-3 hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer group transition-colors w-full text-left"
             onClick={() => onSelect?.(job.id)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(job.id); } }}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon
@@ -124,7 +122,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

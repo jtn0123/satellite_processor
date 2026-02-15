@@ -104,7 +104,7 @@ class TestFetchFrames:
         # Use FullDisk + C13 (clean IR, always available day/night)
         # Narrow window to get fewer frames
         narrow_end = start + timedelta(minutes=15)
-        results = fetch_frames(
+        result = fetch_frames(
             satellite=satellite,
             sector="FullDisk",
             band="C13",
@@ -112,12 +112,15 @@ class TestFetchFrames:
             end_time=narrow_end,
             output_dir=str(tmp_path),
         )
-        assert len(results) >= 1, f"No frames downloaded for {satellite}"
+        frames = result["frames"]
+        assert len(frames) >= 1, f"No frames downloaded for {satellite}"
+        assert isinstance(result["total_available"], int)
+        assert isinstance(result["capped"], bool)
         from pathlib import Path
 
-        downloaded = Path(results[0]["path"])
+        downloaded = Path(frames[0]["path"])
         assert downloaded.exists()
         assert downloaded.stat().st_size > 0
-        assert results[0]["satellite"] == satellite
-        assert results[0]["band"] == "C13"
+        assert frames[0]["satellite"] == satellite
+        assert frames[0]["band"] == "C13"
         # tmp_path auto-cleans up

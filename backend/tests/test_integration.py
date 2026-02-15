@@ -57,7 +57,7 @@ async def test_create_and_delete_tag(client, db):
 
     resp2 = await client.get("/api/goes/tags")
     assert resp2.status_code == 200
-    assert any(t["id"] == tag_id for t in resp2.json())
+    assert any(t["id"] == tag_id for t in resp2.json()["items"])
 
     resp3 = await client.delete(f"/api/goes/tags/{tag_id}")
     assert resp3.status_code == 200
@@ -134,14 +134,15 @@ async def test_system_status(client):
 @pytest.mark.integration
 async def test_settings_persistence(client, db):
     """Update settings, read back, verify persistence."""
-    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "h265"})
+    resp = await client.put("/api/settings", json={"video_fps": 30, "video_codec": "hevc", "max_frames_per_fetch": 500})
     assert resp.status_code == 200
 
     resp2 = await client.get("/api/settings")
     assert resp2.status_code == 200
     data = resp2.json()
     assert data["video_fps"] == 30
-    assert data["video_codec"] == "h265"
+    assert data["video_codec"] == "hevc"
+    assert data["max_frames_per_fetch"] == 500
 
     # Update again
     resp3 = await client.put("/api/settings", json={"video_fps": 60})
@@ -154,15 +155,19 @@ async def test_settings_persistence(client, db):
 @pytest.mark.integration
 async def test_goes_fetch_creates_job(client, db):
     """GOES fetch endpoint should create a job record."""
-    with patch("app.routers.goes.celery_app") as mock_celery:
+    with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
         mock_result = MagicMock()
         mock_result.id = "celery-goes-fetch"
-        mock_celery.send_task.return_value = mock_result
+        mock_task.delay.return_value = mock_result
 
+        from datetime import UTC, datetime, timedelta
+        now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
         resp = await client.post("/api/goes/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C02",
+            "start_time": (now - timedelta(hours=3)).isoformat(),
+            "end_time": now.isoformat(),
         })
     assert resp.status_code == 200
     data = resp.json()
@@ -256,10 +261,8 @@ async def test_animation_workflow(client, db):
             frame_ids.append(str(f.id))
         await session.commit()
 
-    with patch("app.routers.animations.celery_app", create=True) as mock_celery:
-        mock_result = MagicMock()
-        mock_result.id = "task-anim-integration"
-        mock_celery.send_task.return_value = mock_result
+    with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
+        mock_task.delay.return_value = MagicMock(id="task-anim-integration")
 
         resp = await client.post("/api/goes/animations", json={
             "frame_ids": frame_ids,

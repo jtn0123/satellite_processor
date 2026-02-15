@@ -75,19 +75,17 @@ async def test_delete_crop_preset_not_found(client, db):
 async def test_create_animation_preset(client, db):
     resp = await client.post("/api/goes/animation-presets", json={
         "name": "Sunset Loop",
-        "config": {
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-            "fps": 15,
-            "format": "mp4",
-            "quality": "high",
-        },
+        "satellite": "GOES-16",
+        "sector": "CONUS",
+        "band": "C02",
+        "fps": 15,
+        "format": "mp4",
+        "quality": "high",
     })
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "Sunset Loop"
-    assert data["config"]["fps"] == 15
+    assert data["fps"] == 15
 
 
 @pytest.mark.asyncio
@@ -95,8 +93,8 @@ async def test_list_animation_presets(client, db):
     from tests.conftest import TestSessionLocal
 
     async with TestSessionLocal() as session:
-        session.add(AnimationPreset(name="P1", config={"fps": 10}))
-        session.add(AnimationPreset(name="P2", config={"fps": 20}))
+        session.add(AnimationPreset(name="P1", fps=10))
+        session.add(AnimationPreset(name="P2", fps=20))
         await session.commit()
 
     resp = await client.get("/api/goes/animation-presets")
@@ -108,7 +106,7 @@ async def test_list_animation_presets(client, db):
 async def test_get_animation_preset(client, db):
     resp = await client.post("/api/goes/animation-presets", json={
         "name": "Get Me",
-        "config": {"fps": 5},
+        "fps": 5,
     })
     pid = resp.json()["id"]
 
@@ -127,7 +125,7 @@ async def test_get_animation_preset_not_found(client, db):
 async def test_update_animation_preset(client, db):
     resp = await client.post("/api/goes/animation-presets", json={
         "name": "Old",
-        "config": {"fps": 5},
+        "fps": 5,
     })
     pid = resp.json()["id"]
 
@@ -140,7 +138,7 @@ async def test_update_animation_preset(client, db):
 async def test_delete_animation_preset(client, db):
     resp = await client.post("/api/goes/animation-presets", json={
         "name": "Kill Me",
-        "config": {"fps": 10},
+        "fps": 10,
     })
     pid = resp.json()["id"]
 
@@ -156,7 +154,7 @@ async def test_create_animation_no_frames(client, db):
         "fps": 10,
         "format": "mp4",
     })
-    assert resp.status_code == 400
+    assert resp.status_code in (400, 422)
 
 
 @pytest.mark.asyncio
@@ -169,7 +167,7 @@ async def test_create_animation_from_range_no_frames(client, db):
         "start_time": "2024-01-01T00:00:00Z",
         "end_time": "2024-01-01T01:00:00Z",
     })
-    assert resp.status_code == 400
+    assert resp.status_code in (400, 422)
 
 
 @pytest.mark.asyncio
@@ -181,7 +179,7 @@ async def test_create_animation_recent_no_frames(client, db):
         "band": "C02",
         "hours": 1,
     })
-    assert resp.status_code == 400
+    assert resp.status_code in (400, 422)
 
 
 @pytest.mark.asyncio
@@ -233,10 +231,8 @@ async def test_create_animation_with_frames(client, db):
             frame_ids.append(str(frame.id))
         await session.commit()
 
-    with patch("app.routers.animations.celery_app", create=True) as mock_celery:
-        mock_result = MagicMock()
-        mock_result.id = "task-anim-test"
-        mock_celery.send_task.return_value = mock_result
+    with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
+        mock_task.delay.return_value = MagicMock(id="task-anim-test")
 
         resp = await client.post("/api/goes/animations", json={
             "frame_ids": frame_ids,

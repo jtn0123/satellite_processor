@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "k70_false_color_bool"
-down_revision = "j60_composites"
+down_revision = "k70_app_settings"
 branch_labels = None
 depends_on = None
 

@@ -299,7 +299,7 @@ class TestFetchGoesDataTaskParams:
              patch("app.tasks.goes_tasks._publish_progress"), \
              patch("app.tasks.goes_tasks._get_redis"), \
              patch("app.tasks.goes_tasks._get_sync_db"), \
-             patch("app.services.goes_fetcher.fetch_frames", return_value=[]) as mock_fetch, \
+             patch("app.services.goes_fetcher.fetch_frames", return_value={"frames": [], "total_available": 0, "capped": False, "attempted": 0, "failed_downloads": 0}) as mock_fetch, \
              patch("app.services.goes_fetcher.list_available", return_value=[]):
             from app.tasks.goes_tasks import fetch_goes_data
             fetch_goes_data("test-job-id", params)

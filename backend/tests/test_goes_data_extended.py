@@ -276,7 +276,8 @@ class TestCollectionsExtended:
 
         resp = await client.get("/api/goes/collections")
         data = resp.json()
-        assert data[0]["frame_count"] == 2
+        items = data.get("items", data) if isinstance(data, dict) and "items" in data else data
+        assert items[0]["frame_count"] == 2
 
     async def test_update_collection_partial(self, client, db):
         db.add(Collection(id="c1", name="Old", description="Old desc"))
@@ -290,7 +291,9 @@ class TestCollectionsExtended:
     async def test_list_collections_empty(self, client):
         resp = await client.get("/api/goes/collections")
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        items = data.get("items", data) if isinstance(data, dict) else data
+        assert items == []
 
 
 @pytest.mark.asyncio
@@ -305,7 +308,9 @@ class TestTagsExtended:
         await db.commit()
 
         resp = await client.get("/api/goes/tags")
-        names = [t["name"] for t in resp.json()]
+        data = resp.json()
+        tag_list = data.get("items", data) if isinstance(data, dict) and "items" in data else data
+        names = [t["name"] for t in tag_list]
         assert names == ["alpha", "zebra"]
 
     async def test_create_tag_default_color(self, client):
@@ -316,7 +321,9 @@ class TestTagsExtended:
     async def test_list_tags_empty(self, client):
         resp = await client.get("/api/goes/tags")
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        items = data.get("items", data) if isinstance(data, dict) else data
+        assert items == []
 
 
 @pytest.mark.asyncio

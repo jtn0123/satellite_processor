@@ -186,6 +186,19 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
               <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">H.264 is most compatible. HEVC/AV1 offer better compression but slower encoding and limited browser support.</p>
             </div>
             <div>
+              <label htmlFor="max-frames" className="text-sm text-gray-500 dark:text-slate-400">Max Frames per Fetch</label>
+              <input
+                id="max-frames"
+                type="number"
+                min={50}
+                max={1000}
+                value={(form.max_frames_per_fetch as number) ?? 200}
+                onChange={(e) => setForm({ ...form, max_frames_per_fetch: Number(e.target.value) })}
+                className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+              />
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Maximum number of frames downloaded per fetch job. Range: 50–1000, default 200. Reduce if running low on disk space.</p>
+            </div>
+            <div>
               <label htmlFor="video-quality" className="text-sm text-gray-500 dark:text-slate-400">Video Quality (CRF)</label>
               <input
                 id="video-quality"

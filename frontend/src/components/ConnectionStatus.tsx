@@ -15,6 +15,8 @@ const listeners = new Set<() => void>();
 let ws: WebSocket | null = null;
 let timer: ReturnType<typeof setTimeout> | undefined = undefined;
 let refCount = 0;
+let retryCount = 0;
+const MAX_RETRIES = 5;
 
 function notify() {
   listeners.forEach((fn) => fn());
@@ -34,12 +36,17 @@ function connect() {
   }
   try {
     ws = new WebSocket(buildWsUrl('/ws/status'));
-    ws.onopen = () => setStatus('connected');
+    ws.onopen = () => {
+      setStatus('connected');
+      retryCount = 0;
+    };
     ws.onclose = () => {
       ws = null;
-      if (refCount > 0) {
+      if (refCount > 0 && retryCount < MAX_RETRIES) {
+        retryCount++;
         setStatus('reconnecting');
-        timer = setTimeout(connect, 5000);
+        const delay = Math.min(5000 * 2 ** (retryCount - 1), 30000);
+        timer = setTimeout(connect, delay);
       } else {
         setStatus('disconnected');
       }
@@ -47,8 +54,11 @@ function connect() {
     ws.onerror = () => ws?.close();
   } catch {
     setStatus('disconnected');
-    if (refCount > 0) {
-      timer = setTimeout(connect, 5000);
+    if (refCount > 0 && retryCount < MAX_RETRIES) {
+      retryCount++;
+      setStatus('reconnecting');
+      const delay = Math.min(5000 * 2 ** (retryCount - 1), 30000);
+      timer = setTimeout(connect, delay);
     }
   }
 }
@@ -65,6 +75,7 @@ function subscribe(cb: () => void) {
       ws?.close();
       ws = null;
       currentStatus = 'disconnected';
+      retryCount = 0;
     }
   };
 }
@@ -76,6 +87,10 @@ function getSnapshot() {
 export default function ConnectionStatus() {
   const status = useSyncExternalStore(subscribe, getSnapshot);
   const cfg = statusConfig[status];
+
+  // Don't show persistent "Reconnecting" or "Disconnected" — only show when connected
+  // This prevents the UI from showing a scary status when WS endpoint isn't available
+  if (status === 'disconnected') return null;
 
   return (
     <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">

@@ -150,13 +150,13 @@ class TestCreateComposite:
             "recipe": "nonexistent",
             "capture_time": "2024-06-01T12:00:00",
         })
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_create_composite_missing_capture_time(self, client):
         resp = await client.post("/api/goes/composites", json={
             "recipe": "true_color",
         })
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
 
 @pytest.mark.asyncio

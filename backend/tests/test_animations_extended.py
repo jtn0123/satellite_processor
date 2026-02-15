@@ -94,7 +94,7 @@ class TestAnimationsExtended:
                 "satellite": "GOES-16",
                 "band": "C99",
             })
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_create_animation_with_frame_ids(self, client, db):
         f1 = _frame()

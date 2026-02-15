@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AnimateTab from '../components/Animation/AnimateTab';
 
@@ -44,16 +44,16 @@ describe('AnimateTab', () => {
 
   it('renders quick hour buttons', () => {
     renderWithProviders(<AnimateTab />);
-    expect(screen.getByText('1h')).toBeInTheDocument();
-    expect(screen.getByText('3h')).toBeInTheDocument();
-    expect(screen.getByText('6h')).toBeInTheDocument();
-    expect(screen.getByText('12h')).toBeInTheDocument();
-    expect(screen.getByText('24h')).toBeInTheDocument();
+    expect(screen.getByText('Last 1h')).toBeInTheDocument();
+    expect(screen.getByText('Last 3h')).toBeInTheDocument();
+    expect(screen.getByText('Last 6h')).toBeInTheDocument();
+    expect(screen.getByText('Last 12h')).toBeInTheDocument();
+    expect(screen.getByText('Last 24h')).toBeInTheDocument();
   });
 
   it('clicking quick hour sets date range', async () => {
     renderWithProviders(<AnimateTab />);
-    const btn = screen.getByText('1h');
+    const btn = screen.getByText('Last 1h');
     fireEvent.click(btn);
 
     // After clicking, the date inputs should have values
@@ -61,11 +61,11 @@ describe('AnimateTab', () => {
     expect(inputs.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders format selector with mp4 default', () => {
+  it('renders generate button exists', () => {
     renderWithProviders(<AnimateTab />);
-    // There should be a format selection showing mp4
-    const mp4Element = screen.getByDisplayValue?.('mp4') ?? screen.queryByText('mp4');
-    expect(mp4Element).toBeTruthy();
+    // Format is hardcoded as mp4 in config, no UI selector
+    const generateBtns = screen.getAllByRole('button', { name: /generate/i });
+    expect(generateBtns.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders generate button', () => {

@@ -90,56 +90,104 @@ def _get_s3_client():
     )
 
 
-def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
-    """Execute an S3 operation with exponential backoff retry and circuit breaker.
+_RETRYABLE_S3_ERRORS = (
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    EndpointConnectionError,
+    ConnectionError,
+    OSError,
+)
 
-    Retries on transient errors: timeouts, throttling, connection issues.
-    """
+_THROTTLE_CODES = frozenset(("Throttling", "SlowDown", "RequestTimeout"))
+
+
+def _is_retryable_client_error(exc: ClientError) -> bool:
+    """Return True if the ClientError code indicates a retryable throttle/timeout."""
+    code = exc.response.get("Error", {}).get("Code", "")
+    return code in _THROTTLE_CODES
+
+
+def _s3_retry_delay(attempt: int) -> float:
+    """Calculate exponential backoff delay for the given attempt number."""
+    return S3_BASE_DELAY * (2 ** (attempt - 1))
+
+
+def _record_s3_failure(operation: str, error_type: str) -> None:
+    """Record a circuit-breaker failure and increment the error metric."""
+    from ..circuit_breaker import s3_circuit_breaker
+    from ..metrics import S3_FETCH_ERRORS
+
+    s3_circuit_breaker.record_failure()
+    S3_FETCH_ERRORS.labels(operation=operation, error_type=error_type).inc()
+
+
+def _handle_client_error_retry(exc: ClientError, attempt: int, max_retries: int, error_code: str) -> bool:
+    """Return True (and sleep) if a ClientError should be retried."""
+    if not _is_retryable_client_error(exc):
+        return False
+    return _should_retry_and_wait(attempt, max_retries, f"throttled/timeout (code={error_code})")
+
+
+def _should_retry_and_wait(attempt: int, max_retries: int, label: str) -> bool:
+    """If retries remain, log a warning, sleep with backoff, and return True."""
+    if attempt >= max_retries:
+        return False
+    delay = _s3_retry_delay(attempt)
+    logger.warning(
+        "S3 %s (attempt %d/%d), retrying in %.1fs",
+        label, attempt, max_retries, delay,
+    )
+    time.sleep(delay)
+    return True
+
+
+def _check_circuit_breaker(operation: str) -> None:
+    """Raise CircuitBreakerOpen if the S3 circuit breaker is tripped."""
     from ..circuit_breaker import CircuitBreakerOpen, s3_circuit_breaker
-    from ..metrics import S3_FETCH_COUNT, S3_FETCH_ERRORS
+    from ..metrics import S3_FETCH_ERRORS
 
     if not s3_circuit_breaker.allow_request():
         S3_FETCH_ERRORS.labels(operation=operation, error_type="circuit_open").inc()
         raise CircuitBreakerOpen("s3")
 
-    _retryable_errors = (
-        ConnectTimeoutError,
-        ReadTimeoutError,
-        EndpointConnectionError,
-        ConnectionError,
-        OSError,
-    )
+
+def _handle_retry_exception(exc: Exception, attempt: int, max_retries: int, operation: str) -> None:
+    """Handle an exception from an S3 operation attempt.
+
+    Returns normally if the operation should be retried.
+    Raises the exception if it is not retryable.
+    """
+    if isinstance(exc, ClientError):
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        if _handle_client_error_retry(exc, attempt, max_retries, error_code):
+            return
+        _record_s3_failure(operation, error_code or "client_error")
+        raise exc
+    # Must be a _RETRYABLE_S3_ERRORS instance
+    if _should_retry_and_wait(attempt, max_retries, "connection error"):
+        return
+    _record_s3_failure(operation, type(exc).__name__)
+    raise exc
+
+
+def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
+    """Execute an S3 operation with exponential backoff retry and circuit breaker.
+
+    Retries on transient errors: timeouts, throttling, connection issues.
+    """
+    from ..circuit_breaker import s3_circuit_breaker
+    from ..metrics import S3_FETCH_COUNT
+
+    _check_circuit_breaker(operation)
+
     for attempt in range(1, max_retries + 1):
         try:
             result = func(*args, **kwargs)
             S3_FETCH_COUNT.labels(operation=operation).inc()
             s3_circuit_breaker.record_success()
             return result
-        except ClientError as exc:
-            error_code = exc.response.get("Error", {}).get("Code", "")
-            if error_code in ("Throttling", "SlowDown", "RequestTimeout") and attempt < max_retries:
-                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
-                logger.warning(
-                    "S3 throttled/timeout (attempt %d/%d, code=%s), retrying in %.1fs",
-                    attempt, max_retries, error_code, delay,
-                )
-                time.sleep(delay)
-            else:
-                s3_circuit_breaker.record_failure()
-                S3_FETCH_ERRORS.labels(operation=operation, error_type=error_code or "client_error").inc()
-                raise
-        except _retryable_errors as exc:
-            if attempt < max_retries:
-                delay = S3_BASE_DELAY * (2 ** (attempt - 1))
-                logger.warning(
-                    "S3 connection error (attempt %d/%d), retrying in %.1fs",
-                    attempt, max_retries, delay,
-                )
-                time.sleep(delay)
-            else:
-                s3_circuit_breaker.record_failure()
-                S3_FETCH_ERRORS.labels(operation=operation, error_type=type(exc).__name__).inc()
-                raise
+        except (*_RETRYABLE_S3_ERRORS, ClientError) as exc:
+            _handle_retry_exception(exc, attempt, max_retries, operation)
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
@@ -266,20 +314,18 @@ SECTOR_MAX_DIM: dict[str, int] = {
 }
 
 
-def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "FullDisk") -> Path:
-    """Convert a NetCDF file on disk to PNG (memory-efficient).
+def _read_cmi_data(nc_path: Path, sector: str) -> np.ndarray | None:
+    """Read CMI variable from a NetCDF file, with optional strided downsampling.
 
-    For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
-    downsample during load, keeping peak memory well under 500MB.
+    Returns a float32 numpy array, or ``None`` if reading fails.
     """
     try:
         import netCDF4
 
         nc = netCDF4.Dataset(str(nc_path), "r")
         cmi_var = nc.variables["CMI"]
-        shape = cmi_var.shape  # e.g. (21696, 21696)
+        shape = cmi_var.shape
 
-        # Calculate stride based on sector-specific max dimension
         max_dim = SECTOR_MAX_DIM.get(sector, 4096)
         stride = max(1, max(shape[0], shape[1]) // max_dim)
 
@@ -289,42 +335,51 @@ def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "Fu
                 shape[0], shape[1], stride,
                 shape[0] // stride, shape[1] // stride,
             )
-            # Strided read — netCDF4 only reads the selected elements from disk
             cmi = cmi_var[::stride, ::stride]
         else:
             cmi = cmi_var[:]
 
         nc.close()
 
-        # Convert masked array to regular numpy, replacing fill values with NaN
         if hasattr(cmi, "filled"):
-            cmi = cmi.filled(np.nan).astype(np.float32)
-        else:
-            cmi = np.asarray(cmi, dtype=np.float32)
-
+            return cmi.filled(np.nan).astype(np.float32)
+        return np.asarray(cmi, dtype=np.float32)
     except Exception:
-        logger.warning("netCDF4 unavailable or read failed, generating placeholder")
-        img = PILImage.new("L", (100, 100), 128)
-        img.save(str(output_path))
-        return output_path
+        logger.warning("netCDF4 unavailable or read failed")
+        return None
 
-    # Normalize to 0-255
+
+def _normalize_cmi_to_image(cmi: np.ndarray) -> PILImage.Image:
+    """Normalize a float32 CMI array to an 8-bit grayscale PIL image."""
     valid = cmi[~np.isnan(cmi)]
     if len(valid) == 0:
         h = cmi.shape[0] if len(cmi.shape) > 0 else 100
         w = cmi.shape[1] if len(cmi.shape) > 1 else 100
-        img = PILImage.new("L", (w, h), 0)
-    else:
-        vmin, vmax = np.nanpercentile(cmi, [2, 98])
-        if vmax <= vmin:
-            vmax = vmin + 1
-        # In-place operations to avoid copies
-        np.clip(cmi, vmin, vmax, out=cmi)
-        cmi -= vmin
-        cmi *= 255.0 / (vmax - vmin)
-        np.nan_to_num(cmi, nan=0, copy=False)
-        img = PILImage.fromarray(cmi.astype(np.uint8))
+        return PILImage.new("L", (w, h), 0)
 
+    vmin, vmax = np.nanpercentile(cmi, [2, 98])
+    if vmax <= vmin:
+        vmax = vmin + 1
+    np.clip(cmi, vmin, vmax, out=cmi)
+    cmi -= vmin
+    cmi *= 255.0 / (vmax - vmin)
+    np.nan_to_num(cmi, nan=0, copy=False)
+    return PILImage.fromarray(cmi.astype(np.uint8))
+
+
+def _netcdf_to_png_from_file(nc_path: Path, output_path: Path, sector: str = "FullDisk") -> Path:
+    """Convert a NetCDF file on disk to PNG (memory-efficient).
+
+    For large arrays (e.g. FullDisk 21696x21696), uses strided slicing to
+    downsample during load, keeping peak memory well under 500MB.
+    """
+    cmi = _read_cmi_data(nc_path, sector)
+    if cmi is None:
+        img = PILImage.new("L", (100, 100), 128)
+        img.save(str(output_path))
+        return output_path
+
+    img = _normalize_cmi_to_image(cmi)
     img.save(str(output_path))
     return output_path
 
@@ -352,8 +407,137 @@ def _check_disk_space(path: Path, min_gb: float = 1.0) -> None:
         )
 
 
-# Maximum frames per single fetch to prevent OOM / disk exhaustion
-MAX_FRAMES_PER_FETCH = 100
+# Default maximum frames per single fetch to prevent OOM / disk exhaustion
+DEFAULT_MAX_FRAMES = 200
+
+# Keep old name as alias for backward compatibility
+MAX_FRAMES_PER_FETCH = DEFAULT_MAX_FRAMES
+
+# Per-frame retry config for transient S3 errors
+_FRAME_RETRY_ATTEMPTS = 2  # 1 retry = 2 total attempts
+_FRAME_RETRY_DELAY = 5.0   # seconds
+
+
+_FRAME_TRANSIENT_ERRORS = (
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    EndpointConnectionError,
+)
+
+
+def _download_nc_and_convert(
+    s3: Any, bucket: str, key: str, png_path: Path, sector: str,
+) -> dict[str, Any]:
+    """Download a NetCDF from S3 and convert to PNG. Returns on success, raises on error."""
+    tmp_nc_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
+            tmp_nc_path = Path(tmp_nc.name)
+            response = _retry_s3_operation(
+                s3.get_object, Bucket=bucket, Key=key, operation="get",
+            )
+            for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                tmp_nc.write(chunk)
+        _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
+    finally:
+        if tmp_nc_path:
+            tmp_nc_path.unlink(missing_ok=True)
+
+
+def _download_and_convert_frame(
+    s3: Any,
+    bucket: str,
+    item: dict[str, Any],
+    satellite: str,
+    sector: str,
+    band: str,
+    out: Path,
+) -> dict[str, Any] | None:
+    """Download a single S3 frame and convert to PNG.
+
+    Returns a frame metadata dict on success, or ``None`` if all retry
+    attempts fail with transient errors.
+
+    Raises:
+        OSError: On disk-space or other OS-level failures (should abort the job).
+        Exception: On unexpected non-transient errors.
+    """
+    scan_time: datetime = item["scan_time"]
+    png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
+    png_path = out / png_name
+
+    last_exc = None
+    for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
+        try:
+            _download_nc_and_convert(s3, bucket, item["key"], png_path, sector)
+            return {
+                "path": str(png_path),
+                "scan_time": scan_time,
+                "satellite": satellite,
+                "band": band,
+                "sector": sector,
+            }
+        except _FRAME_TRANSIENT_ERRORS as exc:
+            last_exc = exc
+            if attempt < _FRAME_RETRY_ATTEMPTS:
+                logger.warning(
+                    "Frame %s attempt %d/%d failed: %s — retrying in %.0fs",
+                    item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
+                )
+                time.sleep(_FRAME_RETRY_DELAY)
+
+    logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)
+    return None
+
+
+def _build_fetch_result(
+    results: list[dict[str, Any]],
+    total_available: int,
+    capped: bool,
+    attempted: int,
+    failed_downloads: int,
+) -> dict[str, Any]:
+    """Build the standardised result dict returned by ``fetch_frames``."""
+    return {
+        "frames": results,
+        "total_available": total_available,
+        "capped": capped,
+        "attempted": attempted,
+        "failed_downloads": failed_downloads,
+    }
+
+
+def _process_single_frame(
+    s3: Any,
+    bucket: str,
+    item: dict[str, Any],
+    satellite: str,
+    sector: str,
+    band: str,
+    out: Path,
+    results: list[dict[str, Any]],
+    index: int,
+    total: int,
+    on_progress: Any | None,
+) -> bool:
+    """Download and convert one frame, appending to *results*. Returns True on success."""
+    try:
+        if index > 0 and index % 10 == 0:
+            _check_disk_space(out, min_gb=0.5)
+
+        frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
+        if frame is None:
+            return False
+
+        results.append(frame)
+        if on_progress:
+            on_progress(index + 1, total)
+        return True
+    except OSError:
+        raise
+    except Exception:
+        logger.exception("Unexpected error fetching %s", item["key"])
+        return False
 
 
 def fetch_frames(
@@ -364,78 +548,53 @@ def fetch_frames(
     end_time: datetime,
     output_dir: str,
     on_progress: Any | None = None,
-) -> list[dict[str, Any]]:
+    max_frames: int | None = None,
+) -> dict[str, Any]:
     """Download GOES frames and convert to PNG.
 
-    Returns list of dicts with 'path', 'scan_time', 'satellite', 'band' fields.
+    Returns a dict with:
+        - frames: list of dicts with 'path', 'scan_time', 'satellite', 'band', 'sector'
+        - total_available: number of frames found on S3
+        - capped: whether the frame limit was hit
+        - attempted: number of frames attempted for download
+        - failed_downloads: number of frames that failed to download
     """
+    if max_frames is None:
+        max_frames = DEFAULT_MAX_FRAMES
+    if max_frames <= 0:
+        raise ValueError("max_frames must be a positive integer")
+
     validate_params(satellite, sector, band)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-
-    # Check disk space before starting
     _check_disk_space(out, min_gb=1.0)
 
     available = list_available(satellite, sector, band, start_time, end_time)
+    total_available = len(available)
     if not available:
-        return []
+        return _build_fetch_result([], 0, False, 0, 0)
 
-    if len(available) > MAX_FRAMES_PER_FETCH:
+    capped = len(available) > max_frames
+    if capped:
         logger.warning(
             "Limiting fetch from %d to %d frames (max per job)",
-            len(available), MAX_FRAMES_PER_FETCH,
+            len(available), max_frames,
         )
-        available = available[:MAX_FRAMES_PER_FETCH]
+        available = available[:max_frames]
 
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     results: list[dict[str, Any]] = []
+    failed_downloads = 0
 
     for i, item in enumerate(available):
-        try:
-            # Check disk space every 10 frames
-            if i > 0 and i % 10 == 0:
-                _check_disk_space(out, min_gb=0.5)
+        ok = _process_single_frame(
+            s3, bucket, item, satellite, sector, band, out, results, i, len(available), on_progress,
+        )
+        if not ok:
+            failed_downloads += 1
 
-            # Stream to temp file instead of holding full NetCDF in memory
-            scan_time: datetime = item["scan_time"]
-            png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
-            png_path = out / png_name
-
-            with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
-                tmp_nc_path = Path(tmp_nc.name)
-                response = _retry_s3_operation(
-                    s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
-                )
-                # Stream in chunks to avoid holding entire file in memory
-                for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
-                    tmp_nc.write(chunk)
-
-            try:
-                _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
-            finally:
-                tmp_nc_path.unlink(missing_ok=True)
-
-            results.append({
-                "path": str(png_path),
-                "scan_time": scan_time,
-                "satellite": satellite,
-                "band": band,
-                "sector": sector,
-            })
-
-            if on_progress:
-                on_progress(i + 1, len(available))
-
-        except OSError:
-            # Disk space errors should stop the whole job
-            raise
-        except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
-            logger.warning("Failed to fetch %s: %s", item["key"], exc)
-        except Exception:
-            logger.exception("Unexpected error fetching %s", item["key"])
-
-    return results
+    return _build_fetch_result(results, total_available, capped, len(available), failed_downloads)
 
 
 def fetch_single_preview(

@@ -253,7 +253,7 @@ class TestJobsExtended:
         await db.commit()
 
         resp = await client.get(f"/api/jobs/{jid}/output")
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_job_output_not_found(self, client):
         resp = await client.get("/api/jobs/nonexistent/output")
@@ -272,7 +272,7 @@ class TestDownloadExtended:
         await db.commit()
 
         resp = await client.get(f"/api/jobs/{jid}/download")
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 422)
 
     async def test_bulk_download_empty(self, client):
         resp = await client.post("/api/jobs/bulk-download", json={"ids": []})

@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "l80_animation_ux"
-down_revision = "k70_app_settings"
+down_revision = "k70_false_color_bool"
 branch_labels = None
 depends_on = None
 

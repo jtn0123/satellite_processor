@@ -23,6 +23,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Props) {
 
   const saveMutation = useMutation({
     mutationFn: () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { start_date: _s, end_date: _e, name: _n, ...presetConfig } = config;
       return api
         .post('/goes/animation-presets', { name: newName || 'Untitled Preset', config: presetConfig })

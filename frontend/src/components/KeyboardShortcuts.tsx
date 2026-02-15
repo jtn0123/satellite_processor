@@ -61,10 +61,8 @@ export default function KeyboardShortcuts() {
       onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
     >
       <div
-        role="document"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

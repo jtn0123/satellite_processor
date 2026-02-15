@@ -37,7 +37,7 @@ export default function Layout() {
   const [versionInfo, setVersionInfo] = useState({ version: '', commit: '', display: '' });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDialogElement>(null);
 
   // #8: System theme detection - check preference on first load
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -212,12 +212,12 @@ export default function Layout() {
       )}
 
       {/* Mobile slide-out drawer */}
-      <div
+      <dialog
         ref={drawerRef}
-        role="dialog"
+        open={drawerOpen}
         aria-label="Navigation menu"
         aria-modal="true"
-        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform transition-transform duration-200 ease-out md:hidden ${
+        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform transition-transform duration-200 ease-out md:hidden p-0 m-0 max-h-none h-full ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -255,7 +255,7 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-      </div>
+      </dialog>
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">

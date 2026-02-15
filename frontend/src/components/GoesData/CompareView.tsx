@@ -11,7 +11,7 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
   const [sliderPos, setSliderPos] = useState(50);
   const [mode, setMode] = useState<'slider' | 'side-by-side'>('side-by-side');
   const containerRef = useRef<HTMLDivElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const handleSliderMove = useCallback(
     (e: React.MouseEvent) => {
@@ -39,16 +39,16 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-    window.addEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
     // Focus first button
     setTimeout(() => dialogRef.current?.querySelector<HTMLElement>('button')?.focus(), 0);
-    return () => window.removeEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [onClose]);
 
   const formatTime = (t: string) => new Date(t).toLocaleString();
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Compare frames" className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white">
+    <dialog ref={dialogRef} open aria-label="Compare frames" className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white m-0 w-full h-full max-w-none max-h-none border-none p-0">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-4">
@@ -139,6 +139,6 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
           </div>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }

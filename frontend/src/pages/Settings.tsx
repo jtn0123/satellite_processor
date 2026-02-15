@@ -259,8 +259,8 @@ export default function SettingsPage() {
           <div className="h-4 w-48 bg-gray-200 dark:bg-slate-700 rounded mt-2" />
         </div>
         <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={`skel-${i}`} className="space-y-2">
+          {['name', 'email', 'theme', 'lang'].map((field) => (
+            <div key={field} className="space-y-2">
               <div className="h-4 w-24 bg-gray-200 dark:bg-slate-700 rounded" />
               <div className="h-10 w-full bg-gray-200 dark:bg-slate-700 rounded-lg" />
             </div>
@@ -278,7 +278,7 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Failed to load settings</h2>
           <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">Something went wrong while fetching your configuration.</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.location.reload()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-500 transition-colors"
           >
             <RefreshCw className="w-4 h-4" /> Retry

@@ -52,12 +52,15 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
   const dialogRef = useFocusTrap(close);
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-overlay" onClick={close}>
+    <dialog
+      open
+      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
+      onClick={close}
+      onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+    >
       <div
         ref={dialogRef}
-        role="dialog"
         aria-label="What's New"
-        aria-modal="true"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
@@ -89,6 +92,6 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
           ))}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -129,7 +129,7 @@ export default function CleanupTab() {
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
-            <button onClick={() => { if (window.confirm('Run cleanup now? This will permanently delete frames matching your active rules.')) runCleanup.mutate(); }} disabled={runCleanup.isPending}
+            <button onClick={() => { if (globalThis.confirm('Run cleanup now? This will permanently delete frames matching your active rules.')) runCleanup.mutate(); }} disabled={runCleanup.isPending}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg text-sm font-medium hover:bg-red-500 disabled:opacity-50">
               <Play className="w-4 h-4" /> Run Now
             </button>

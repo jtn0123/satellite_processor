@@ -176,53 +176,55 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
         {displayed.map((img) => (
           <div
             key={img.id}
-            role="button"
-            tabIndex={0}
             className={`group relative bg-white dark:bg-space-800/70 border rounded-xl overflow-hidden cursor-pointer transition-colors ${
               selectable && selected?.has(img.id) ? 'border-primary' : 'border-gray-200 dark:border-space-700/50 hover:border-space-600'
             }`}
-            onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (selectable && onToggle) { onToggle(img.id); } else { setPreview(img); } } }}
           >
-            <div className="aspect-square bg-gray-100 dark:bg-space-800 flex items-center justify-center relative">
-              <img
-                src={`/api/images/${img.id}/thumbnail`}
-                alt={img.original_name}
-                className="w-full h-full object-cover relative z-10"
-                onError={(e) => {
-                  const el = e.target as HTMLImageElement;
-                  el.style.display = 'none';
-                  const fallback = el.nextElementSibling;
-                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                }}
-              />
-              <div className="absolute inset-0 flex-col items-center justify-center gap-1 hidden">
-                <ImageOff className="w-8 h-8 text-gray-400 dark:text-slate-500" />
-                <span className="text-xs text-gray-400 dark:text-slate-500">Image unavailable</span>
+            <button
+              type="button"
+              className="w-full text-left"
+              onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
+            >
+              <div className="aspect-square bg-gray-100 dark:bg-space-800 flex items-center justify-center relative">
+                <img
+                  src={`/api/images/${img.id}/thumbnail`}
+                  alt={img.original_name}
+                  className="w-full h-full object-cover relative z-10"
+                  onError={(e) => {
+                    const el = e.target as HTMLImageElement;
+                    el.style.display = 'none';
+                    const fallback = el.nextElementSibling;
+                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                  }}
+                />
+                <div className="absolute inset-0 flex-col items-center justify-center gap-1 hidden">
+                  <ImageOff className="w-8 h-8 text-gray-400 dark:text-slate-500" />
+                  <span className="text-xs text-gray-400 dark:text-slate-500">Image unavailable</span>
+                </div>
               </div>
-            </div>
-            {selectable && selected?.has(img.id) && (
-              <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-20">
-                <span className="text-gray-900 dark:text-white text-xs font-bold">✓</span>
+              {selectable && selected?.has(img.id) && (
+                <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-20">
+                  <span className="text-gray-900 dark:text-white text-xs font-bold">✓</span>
+                </div>
+              )}
+              <div className="p-2">
+                <p className="text-xs truncate font-medium">{img.original_name}</p>
+                <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 dark:text-slate-400">
+                  {img.satellite && (
+                    <span className="flex items-center gap-0.5">
+                      <Satellite className="w-3 h-3" />
+                      {img.satellite}
+                    </span>
+                  )}
+                  {img.captured_at && (
+                    <span className="flex items-center gap-0.5">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(img.captured_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="p-2">
-              <p className="text-xs truncate font-medium">{img.original_name}</p>
-              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 dark:text-slate-400">
-                {img.satellite && (
-                  <span className="flex items-center gap-0.5">
-                    <Satellite className="w-3 h-3" />
-                    {img.satellite}
-                  </span>
-                )}
-                {img.captured_at && (
-                  <span className="flex items-center gap-0.5">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(img.captured_at).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            </div>
+            </button>
             {!selectable && (
               <button
                 onClick={(e) => {
@@ -251,10 +253,8 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           ref={modalRef}
         >
           <div
-            role="document"
             className="bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>

@@ -36,6 +36,9 @@ from ..models.scheduling import (
 )
 from ..utils import utcnow
 
+_FETCH_PRESET_NOT_FOUND = "Fetch preset not found"
+_SCHEDULE_NOT_FOUND = "Schedule not found"
+
 router = APIRouter(prefix="/api/goes", tags=["scheduling"])
 
 
@@ -75,7 +78,7 @@ async def update_fetch_preset(
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Fetch preset not found")
+        raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
     for field in ("name", "satellite", "sector", "band", "description"):
         val = getattr(payload, field)
         if val is not None:
@@ -93,7 +96,7 @@ async def delete_fetch_preset(
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Fetch preset not found")
+        raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
     await db.delete(preset)
     await db.commit()
     return {"deleted": preset_id}
@@ -108,7 +111,7 @@ async def run_fetch_preset(
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
-        raise APIError(404, "not_found", "Fetch preset not found")
+        raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
 
     now = utcnow()
     job_id = str(uuid.uuid4())
@@ -144,7 +147,7 @@ async def create_schedule(
     # Verify preset exists
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == payload.preset_id))
     if not result.scalars().first():
-        raise APIError(404, "not_found", "Fetch preset not found")
+        raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
 
     now = utcnow()
     schedule = FetchSchedule(
@@ -183,12 +186,12 @@ async def update_schedule(
     )
     schedule = result.scalars().first()
     if not schedule:
-        raise APIError(404, "not_found", "Schedule not found")
+        raise APIError(404, "not_found", _SCHEDULE_NOT_FOUND)
 
     if payload.preset_id is not None:
         p = await db.execute(select(FetchPreset).where(FetchPreset.id == payload.preset_id))
         if not p.scalars().first():
-            raise APIError(404, "not_found", "Fetch preset not found")
+            raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
         schedule.preset_id = payload.preset_id
 
     for field in ("name", "interval_minutes", "is_active"):
@@ -215,7 +218,7 @@ async def delete_schedule(
     result = await db.execute(select(FetchSchedule).where(FetchSchedule.id == schedule_id))
     schedule = result.scalars().first()
     if not schedule:
-        raise APIError(404, "not_found", "Schedule not found")
+        raise APIError(404, "not_found", _SCHEDULE_NOT_FOUND)
     await db.delete(schedule)
     await db.commit()
     return {"deleted": schedule_id}
@@ -231,7 +234,7 @@ async def toggle_schedule(
     )
     schedule = result.scalars().first()
     if not schedule:
-        raise APIError(404, "not_found", "Schedule not found")
+        raise APIError(404, "not_found", _SCHEDULE_NOT_FOUND)
 
     schedule.is_active = not schedule.is_active
     if schedule.is_active:
@@ -349,6 +352,43 @@ async def run_cleanup_now(db: AsyncSession = Depends(get_db)):
     return CleanupRunResponse(deleted_frames=len(frames_to_delete), freed_bytes=freed)
 
 
+async def _get_protected_ids(db: AsyncSession, protect_collections: bool) -> set[str]:
+    """Return IDs of frames in collections if protection is enabled."""
+    if not protect_collections:
+        return set()
+    prot = await db.execute(select(CollectionFrame.frame_id))
+    return {r[0] for r in prot.all()}
+
+
+async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
+    """Find frame IDs older than max age that are not protected."""
+    cutoff = utcnow() - timedelta(days=rule.value)
+    res = await db.execute(select(GoesFrame).where(GoesFrame.created_at < cutoff))
+    return {f.id for f in res.scalars().all() if f.id not in protected_ids}
+
+
+async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
+    """Find oldest frame IDs to delete to bring storage under the limit."""
+    total_result = await db.execute(select(func.coalesce(func.sum(GoesFrame.file_size), 0)))
+    total_bytes = total_result.scalar() or 0
+    max_bytes = rule.value * 1024 * 1024 * 1024
+
+    if total_bytes <= max_bytes:
+        return set()
+
+    res = await db.execute(select(GoesFrame).order_by(GoesFrame.created_at.asc()))
+    excess = total_bytes - max_bytes
+    freed = 0
+    ids: set[str] = set()
+    for frame in res.scalars().all():
+        if freed >= excess:
+            break
+        if frame.id not in protected_ids:
+            ids.add(frame.id)
+            freed += frame.file_size or 0
+    return ids
+
+
 async def _get_frames_to_cleanup(db: AsyncSession) -> list[GoesFrame]:
     """Compute which frames should be cleaned up based on active rules."""
     result = await db.execute(select(CleanupRule).where(CleanupRule.is_active == True))  # noqa: E712
@@ -359,38 +399,12 @@ async def _get_frames_to_cleanup(db: AsyncSession) -> list[GoesFrame]:
     delete_ids: set[str] = set()
 
     for rule in rules:
-        # Get IDs of frames in collections (for protection)
-        protected_ids: set[str] = set()
-        if rule.protect_collections:
-            prot = await db.execute(select(CollectionFrame.frame_id))
-            protected_ids = {r[0] for r in prot.all()}
+        protected_ids = await _get_protected_ids(db, rule.protect_collections)
 
         if rule.rule_type == "max_age_days":
-            cutoff = utcnow() - timedelta(days=rule.value)
-            q = select(GoesFrame).where(GoesFrame.created_at < cutoff)
-            res = await db.execute(q)
-            for frame in res.scalars().all():
-                if frame.id not in protected_ids:
-                    delete_ids.add(frame.id)
-
+            delete_ids |= await _collect_age_deletions(db, rule, protected_ids)
         elif rule.rule_type == "max_storage_gb":
-            # Get total storage
-            total_result = await db.execute(select(func.coalesce(func.sum(GoesFrame.file_size), 0)))
-            total_bytes = total_result.scalar() or 0
-            max_bytes = rule.value * 1024 * 1024 * 1024
-
-            if total_bytes > max_bytes:
-                # Get oldest frames first
-                q = select(GoesFrame).order_by(GoesFrame.created_at.asc())
-                res = await db.execute(q)
-                excess = total_bytes - max_bytes
-                freed = 0
-                for frame in res.scalars().all():
-                    if freed >= excess:
-                        break
-                    if frame.id not in protected_ids:
-                        delete_ids.add(frame.id)
-                        freed += frame.file_size or 0
+            delete_ids |= await _collect_storage_deletions(db, rule, protected_ids)
 
     if not delete_ids:
         return []

@@ -47,6 +47,117 @@ def _apply_overlay(img, frame, overlay: dict, label_text: str):
     return result
 
 
+def _apply_loop_style(frames, loop_style: str, fps: int) -> list:
+    """Apply loop style (pingpong/hold) to the frame list."""
+    if loop_style == "pingpong":
+        return list(frames) + list(reversed(frames[1:-1]))
+    if loop_style == "hold":
+        hold_count = fps * 2
+        return list(frames) + [frames[-1]] * hold_count
+    return list(frames)
+
+
+def _build_overlay_label(overlay: dict | None, frames) -> str:
+    """Build the overlay label text from the first frame."""
+    if not (overlay and overlay.get("label") and frames):
+        return ""
+    f0 = frames[0]
+    return f"{f0.satellite} {f0.sector} Band {f0.band.replace('C', '')}"
+
+
+def _process_single_frame(img, crop, resolution: str, scale: str):
+    """Apply crop, resolution, and scale transforms to a single frame image."""
+    import cv2
+
+    if crop:
+        img = img[crop.y:crop.y + crop.height, crop.x:crop.x + crop.width]
+
+    if resolution == "preview":
+        h, w = img.shape[:2]
+        if w > PREVIEW_MAX_WIDTH:
+            ratio = PREVIEW_MAX_WIDTH / w
+            img = cv2.resize(img, (PREVIEW_MAX_WIDTH, int(h * ratio)), interpolation=cv2.INTER_AREA)
+
+    if scale and scale != "100%":
+        pct = int(scale.replace("%", "")) / 100.0
+        if not math.isclose(pct, 1.0) and pct > 0:
+            new_w = int(img.shape[1] * pct)
+            new_h = int(img.shape[0] * pct)
+            interp = cv2.INTER_AREA if pct < 1 else cv2.INTER_CUBIC
+            img = cv2.resize(img, (new_w, new_h), interpolation=interp)
+
+    return img
+
+
+def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution: str,
+                          scale: str, overlay: dict | None, label_text: str):
+    """Read, transform, and write all frames to the working directory."""
+    import cv2
+
+    for i, frame in enumerate(frames):
+        src = Path(frame.file_path)
+        if not src.exists():
+            logger.warning("Frame file missing: %s", src)
+            continue
+
+        img = cv2.imread(str(src))
+        if img is None:
+            continue
+
+        img = _process_single_frame(img, crop, resolution, scale)
+
+        if overlay and (overlay.get("timestamp") or overlay.get("label")):
+            img = _apply_overlay(img, frame, overlay, label_text)
+
+        dest = work_dir / f"frame{i:06d}.png"
+        cv2.imwrite(str(dest), img)
+
+        pct_done = 10 + int((i + 1) / len(frames) * 60)
+        if (i + 1) % max(1, len(frames) // 20) == 0:
+            _publish_progress(job_id, pct_done,
+                              f"Processed frame {i + 1}/{len(frames)}", "processing")
+            _update_job_db(job_id, progress=pct_done,
+                           status_message=f"Processed frame {i + 1}/{len(frames)}")
+
+
+def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path: Path):
+    """Encode frames into GIF or MP4 using FFmpeg."""
+    ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
+    input_pattern = str(work_dir / "frame%06d.png")
+
+    if fmt == "gif":
+        palette = str(work_dir / "palette.png")
+        cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
+                 "-vf", "palettegen", palette]
+        subprocess.run(cmd1, capture_output=True, check=True)
+        cmd2 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
+                 "-i", palette, "-lavfi", "paletteuse", str(output_path)]
+        subprocess.run(cmd2, capture_output=True, check=True)
+    else:
+        crf = QUALITY_CRF.get(quality, "23")
+        cmd = [
+            ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
+            "-c:v", "libx264", "-crf", crf, "-preset", "medium",
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            str(output_path),
+        ]
+        subprocess.run(cmd, capture_output=True, check=True)
+
+
+def _mark_animation_failed(session, animation_id: str, error: str):
+    """Mark the animation record as failed in the database."""
+    from ..db.models import Animation
+    try:
+        anim = session.query(Animation).filter(Animation.id == animation_id).first()
+        if anim:
+            anim.status = "failed"
+            anim.error = error
+            anim.completed_at = utcnow()
+            session.commit()
+    except Exception:
+        pass
+
+
 @celery_app.task(bind=True, name="generate_animation")
 def generate_animation(self, job_id: str, animation_id: str):
     """Generate an animation (MP4/GIF) from selected GOES frames."""
@@ -76,120 +187,38 @@ def generate_animation(self, job_id: str, animation_id: str):
         crop_preset_id = params.get("crop_preset_id")
         scale = params.get("scale", "100%")
 
-        # Fetch frames ordered by capture time
         frames = (
             session.query(GoesFrame)
             .filter(GoesFrame.id.in_(frame_ids))
             .order_by(GoesFrame.capture_time.asc())
             .all()
         )
-
         if not frames:
             raise RuntimeError("No frames found")
 
-        # Apply loop style
-        if loop_style == "pingpong":
-            frames = list(frames) + list(reversed(frames[1:-1]))
-        elif loop_style == "hold":
-            hold_count = fps * 2  # hold last frame for 2 seconds
-            frames = list(frames) + [frames[-1]] * hold_count
+        frames = _apply_loop_style(frames, loop_style, fps)
 
         anim.status = "processing"
         anim.frame_count = len(frames)
         session.commit()
 
-        # Load crop preset if specified
         crop = None
         if crop_preset_id:
             crop = session.query(CropPreset).filter(CropPreset.id == crop_preset_id).first()
 
-        # Build overlay label
-        label_text = ""
-        if overlay and overlay.get("label") and frames:
-            f0 = frames[0]
-            label_text = f"{f0.satellite} {f0.sector} Band {f0.band.replace('C', '')}"
+        label_text = _build_overlay_label(overlay, frames)
 
-        # Create working directory
         work_dir = Path(settings.output_dir) / f"anim_{animation_id}"
         work_dir.mkdir(parents=True, exist_ok=True)
 
         _publish_progress(job_id, 10, "Processing frames...", "processing")
-
-        import cv2
-
-        for i, frame in enumerate(frames):
-            src = Path(frame.file_path)
-            if not src.exists():
-                logger.warning("Frame file missing: %s", src)
-                continue
-
-            img = cv2.imread(str(src))
-            if img is None:
-                continue
-
-            # Apply crop
-            if crop:
-                img = img[crop.y:crop.y + crop.height, crop.x:crop.x + crop.width]
-
-            # Apply resolution preset
-            if resolution == "preview":
-                h, w = img.shape[:2]
-                if w > PREVIEW_MAX_WIDTH:
-                    ratio = PREVIEW_MAX_WIDTH / w
-                    new_w = PREVIEW_MAX_WIDTH
-                    new_h = int(h * ratio)
-                    img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-
-            # Apply scale
-            if scale and scale != "100%":
-                pct = int(scale.replace("%", "")) / 100.0
-                if not math.isclose(pct, 1.0) and pct > 0:
-                    new_w = int(img.shape[1] * pct)
-                    new_h = int(img.shape[0] * pct)
-                    interp = cv2.INTER_AREA if pct < 1 else cv2.INTER_CUBIC
-                    img = cv2.resize(img, (new_w, new_h), interpolation=interp)
-
-            # Apply overlay
-            if overlay and (overlay.get("timestamp") or overlay.get("label")):
-                img = _apply_overlay(img, frame, overlay, label_text)
-
-            dest = work_dir / f"frame{i:06d}.png"
-            cv2.imwrite(str(dest), img)
-
-            pct_done = 10 + int((i + 1) / len(frames) * 60)
-            if (i + 1) % max(1, len(frames) // 20) == 0:
-                _publish_progress(job_id, pct_done,
-                                  f"Processed frame {i + 1}/{len(frames)}", "processing")
-                _update_job_db(job_id, progress=pct_done,
-                               status_message=f"Processed frame {i + 1}/{len(frames)}")
+        _render_frames_to_dir(frames, work_dir, job_id, crop, resolution, scale, overlay, label_text)
 
         _publish_progress(job_id, 75, "Encoding video...", "processing")
 
-        # Build output path
         ext = "gif" if fmt == "gif" else "mp4"
         output_path = Path(settings.output_dir) / f"animation_{animation_id}.{ext}"
-
-        # Use FFmpeg to create video/gif
-        ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
-        input_pattern = str(work_dir / "frame%06d.png")
-
-        if fmt == "gif":
-            palette = str(work_dir / "palette.png")
-            cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                     "-vf", "palettegen", palette]
-            subprocess.run(cmd1, capture_output=True, check=True)
-            cmd2 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                     "-i", palette, "-lavfi", "paletteuse", str(output_path)]
-            subprocess.run(cmd2, capture_output=True, check=True)
-        else:
-            crf = QUALITY_CRF.get(quality, "23")
-            cmd = [
-                ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                "-c:v", "libx264", "-crf", crf, "-preset", "medium",
-                "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-                str(output_path),
-            ]
-            subprocess.run(cmd, capture_output=True, check=True)
+        _encode_output(fmt, fps, quality, work_dir, output_path)
 
         file_size = output_path.stat().st_size if output_path.exists() else 0
         duration_seconds = len(frames) / fps if fps > 0 else 0
@@ -214,16 +243,7 @@ def generate_animation(self, job_id: str, animation_id: str):
 
     except Exception as e:
         logger.exception("Animation job %s failed", job_id)
-        try:
-            anim = session.query(Animation).filter(Animation.id == animation_id).first()
-            if anim:
-                anim.status = "failed"
-                anim.error = str(e)
-                anim.completed_at = utcnow()
-                session.commit()
-        except Exception:
-            pass
-
+        _mark_animation_failed(session, animation_id, str(e))
         _update_job_db(
             job_id, status="failed", error=str(e),
             completed_at=utcnow(), status_message=f"Error: {e}",

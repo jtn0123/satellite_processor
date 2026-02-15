@@ -119,7 +119,7 @@ export default function BrowseTab() {
       toggleSelect(frame.id);
     } else {
       setPreviewFrame(frame);
-      window.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
+      globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
     }
   }, []);
 
@@ -160,7 +160,7 @@ export default function BrowseTab() {
             label: 'Go to Fetch Tab',
             onClick: () => {
               // Dispatch a custom event that GoesData can listen to for tab switching
-              window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+              globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
             },
           }}
         />
@@ -321,7 +321,7 @@ export default function BrowseTab() {
                     const frameId = [...selectedIds][0];
                     try {
                       const res = await api.post(`/goes/frames/${frameId}/share`);
-                      const url = `${window.location.origin}${res.data.url}`;
+                      const url = `${globalThis.location.origin}${res.data.url}`;
                       await navigator.clipboard.writeText(url);
                       showToast('success', 'Share link copied to clipboard!');
                     } catch {
@@ -345,7 +345,7 @@ export default function BrowseTab() {
                   if (debouncedBand) exportParams.set('band', debouncedBand);
                   if (debouncedSector) exportParams.set('sector', debouncedSector);
                   exportParams.set('format', 'csv');
-                  window.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
+                  globalThis.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
                 }}
               >
                 <FileDown className="w-3.5 h-3.5" /> Export CSV
@@ -398,7 +398,7 @@ export default function BrowseTab() {
         {previewFrame && (
           <FramePreviewModal
             frame={previewFrame}
-            onClose={() => { setPreviewFrame(null); window.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
+            onClose={() => { setPreviewFrame(null); globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
             allFrames={framesData?.items}
             onNavigate={(f) => setPreviewFrame(f)}
           />

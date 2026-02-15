@@ -30,8 +30,8 @@ export default function FramePreviewModal({
   // Listen for global close-modal event (Escape key)
   useEffect(() => {
     const handler = () => onClose();
-    window.addEventListener('close-modal', handler);
-    return () => window.removeEventListener('close-modal', handler);
+    globalThis.addEventListener('close-modal', handler);
+    return () => globalThis.removeEventListener('close-modal', handler);
   }, [onClose]);
 
   // Keyboard navigation between frames

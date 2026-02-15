@@ -28,7 +28,7 @@ export default function KeyboardShortcuts() {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         // Dispatch custom event so modals can listen
-        window.dispatchEvent(new CustomEvent('close-modal'));
+        globalThis.dispatchEvent(new CustomEvent('close-modal'));
       }
     };
     document.addEventListener('keydown', handler);

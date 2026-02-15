@@ -104,8 +104,8 @@ export default function AnimationPlayer({ frames, onClose }: AnimationPlayerProp
         }
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [togglePlay, stepForward, stepBack, fullscreen, onClose]);
 
   // Fullscreen API

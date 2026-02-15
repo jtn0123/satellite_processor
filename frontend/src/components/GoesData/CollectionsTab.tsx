@@ -116,7 +116,7 @@ export default function CollectionsTab() {
                       <Play className="w-3 h-3 inline" /> {loadingAnimateId === c.id ? '...' : 'Animate'}
                     </button>
                     <button
-                      onClick={() => window.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
+                      onClick={() => globalThis.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
                     >

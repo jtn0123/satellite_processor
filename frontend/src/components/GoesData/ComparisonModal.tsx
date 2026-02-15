@@ -38,8 +38,8 @@ export default function ComparisonModal({
 
   useEffect(() => {
     const handler = () => onClose();
-    window.addEventListener('close-modal', handler);
-    return () => window.removeEventListener('close-modal', handler);
+    globalThis.addEventListener('close-modal', handler);
+    return () => globalThis.removeEventListener('close-modal', handler);
   }, [onClose]);
   const isDragging = useRef(false);
 
@@ -65,11 +65,11 @@ export default function ComparisonModal({
       if (isDragging.current) handleSliderMove(e);
     };
     const handleMouseUp = () => { isDragging.current = false; };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    globalThis.addEventListener('mousemove', handleMouseMove);
+    globalThis.addEventListener('mouseup', handleMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      globalThis.removeEventListener('mousemove', handleMouseMove);
+      globalThis.removeEventListener('mouseup', handleMouseUp);
     };
   }, [handleSliderMove]);
 

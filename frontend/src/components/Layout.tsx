@@ -41,11 +41,11 @@ export default function Layout() {
 
   // #8: System theme detection - check preference on first load
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window === 'undefined') return 'dark';
+    if (typeof globalThis === 'undefined') return 'dark';
     const stored = localStorage.getItem('theme');
     if (stored === 'dark' || stored === 'light') return stored;
     // No manual preference - detect system
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prefersDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
     return prefersDark ? 'dark' : 'light';
   });
 
@@ -164,7 +164,7 @@ export default function Layout() {
           </a>
           {/* #9: Keyboard shortcut button */}
           <button
-            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
+            onClick={() => globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 transition-colors focus-ring w-full"
             aria-label="Keyboard shortcuts"
           >

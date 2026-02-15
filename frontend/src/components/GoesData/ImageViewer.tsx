@@ -40,8 +40,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
       if (e.key === 'ArrowRight') goNext();
       if (e.key === 'ArrowLeft') goPrev();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [onClose, goNext, goPrev]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {

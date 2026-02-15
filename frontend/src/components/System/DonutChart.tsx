@@ -26,7 +26,7 @@ export default function DonutChart({ value, color, size = 96 }: Readonly<DonutCh
         x="48" y="48"
         textAnchor="middle"
         dominantBaseline="central"
-        fill="white"
+        className="fill-gray-900 dark:fill-white"
         fontSize={size < 64 ? 14 : 18}
         fontWeight="bold"
       >

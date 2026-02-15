@@ -35,19 +35,19 @@ function subscribeToasts(cb: () => void) {
 
 const styleMap: Record<ToastType, { bg: string; icon: React.ReactNode }> = {
   success: {
-    bg: 'bg-green-500/20 border-green-500/30 text-green-300',
+    bg: 'bg-green-100 dark:bg-green-500/20 border-green-300 dark:border-green-500/30 text-green-700 dark:text-green-300',
     icon: <CheckCircle2 className="w-4 h-4 shrink-0" />,
   },
   error: {
-    bg: 'bg-red-500/20 border-red-500/30 text-red-300',
+    bg: 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-300',
     icon: <XCircle className="w-4 h-4 shrink-0" />,
   },
   warning: {
-    bg: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-300',
+    bg: 'bg-yellow-100 dark:bg-yellow-500/20 border-yellow-300 dark:border-yellow-500/30 text-yellow-700 dark:text-yellow-300',
     icon: <AlertTriangle className="w-4 h-4 shrink-0" />,
   },
   info: {
-    bg: 'bg-blue-500/20 border-blue-500/30 text-blue-300',
+    bg: 'bg-blue-100 dark:bg-blue-500/20 border-blue-300 dark:border-blue-500/30 text-blue-700 dark:text-blue-300',
     icon: <Info className="w-4 h-4 shrink-0" />,
   },
 };

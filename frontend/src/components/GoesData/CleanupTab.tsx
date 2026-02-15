@@ -129,7 +129,7 @@ export default function CleanupTab() {
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
-            <button onClick={() => runCleanup.mutate()} disabled={runCleanup.isPending}
+            <button onClick={() => { if (globalThis.confirm('Run cleanup now? This will permanently delete frames matching your active rules.')) runCleanup.mutate(); }} disabled={runCleanup.isPending}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg text-sm font-medium hover:bg-red-500 disabled:opacity-50">
               <Play className="w-4 h-4" /> Run Now
             </button>
@@ -141,15 +141,15 @@ export default function CleanupTab() {
         </div>
 
         {runCleanup.isSuccess && (
-          <div className="mb-4 bg-green-900/30 border border-green-800 rounded-lg p-3 text-sm text-green-300">
+          <div className="mb-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-300">
             Cleaned up {runCleanup.data.deleted_frames} frames, freed {formatBytes(runCleanup.data.freed_bytes)}
           </div>
         )}
 
         {preview && (
-          <div className="mb-4 bg-amber-900/30 border border-amber-800 rounded-lg p-3">
-            <div className="text-sm text-amber-300 font-medium">Cleanup Preview</div>
-            <div className="text-sm text-amber-200 mt-1">
+          <div className="mb-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-800 rounded-lg p-3">
+            <div className="text-sm text-amber-700 dark:text-amber-300 font-medium">Cleanup Preview</div>
+            <div className="text-sm text-amber-600 dark:text-amber-200 mt-1">
               Would delete <strong>{preview.frame_count}</strong> frames ({formatBytes(preview.total_size_bytes)})
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function CleanupTab() {
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'}`}>
                   {rule.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400">
+                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

@@ -173,8 +173,8 @@ export default function GoesData() {
         setSubView(null);
       }
     };
-    window.addEventListener('switch-tab', handler);
-    return () => window.removeEventListener('switch-tab', handler);
+    globalThis.addEventListener('switch-tab', handler);
+    return () => globalThis.removeEventListener('switch-tab', handler);
   }, []);
 
   // Listen for breadcrumb sub-view changes from child components
@@ -182,8 +182,8 @@ export default function GoesData() {
     const handler = (e: Event) => {
       setSubView((e as CustomEvent).detail as string | null);
     };
-    window.addEventListener('set-subview', handler);
-    return () => window.removeEventListener('set-subview', handler);
+    globalThis.addEventListener('set-subview', handler);
+    return () => globalThis.removeEventListener('set-subview', handler);
   }, []);
 
   // Build breadcrumb segments

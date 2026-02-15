@@ -93,15 +93,6 @@ export default function FrameGallery() {
           Compare {compareMode && compareFrames.length > 0 ? `(${compareFrames.length}/2)` : ''}
         </button>
 
-        {compareMode && compareFrames.length === 2 && (
-          <button
-            onClick={() => {/* handled below */}}
-            className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
-          >
-            View Comparison
-          </button>
-        )}
-
         <span className="text-sm text-gray-500 dark:text-slate-400 ml-auto">
           {data?.total ?? 0} frames
         </span>

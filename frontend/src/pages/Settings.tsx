@@ -45,7 +45,7 @@ function StorageSection() {
           {satEntries.map(([sat, info], i) => (
             <div key={sat} className="flex items-center gap-3">
               <span className="text-xs text-gray-500 dark:text-slate-400 w-20 truncate">{sat}</span>
-              <div className="flex-1 h-3 bg-space-700 rounded-full overflow-hidden">
+              <div className="flex-1 h-3 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${colors[i % colors.length]}`}
                   style={{ width: `${(info.size / maxSatSize) * 100}%` }}
@@ -251,11 +251,41 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
 
   if (isLoading) {
-    return <div className="text-center py-12 text-gray-500 dark:text-slate-400">Loading settings...</div>;
+    return (
+      <div className="space-y-8 max-w-4xl animate-pulse">
+        <div>
+          <span className="sr-only">Loading settings</span>
+          <div className="h-8 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
+          <div className="h-4 w-48 bg-gray-200 dark:bg-slate-700 rounded mt-2" />
+        </div>
+        <div className="bg-gray-100 dark:bg-slate-800 rounded-xl p-6 space-y-4">
+          {['name', 'email', 'theme', 'lang'].map((field) => (
+            <div key={field} className="space-y-2">
+              <div className="h-4 w-24 bg-gray-200 dark:bg-slate-700 rounded" />
+              <div className="h-10 w-full bg-gray-200 dark:bg-slate-700 rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!settings) {
-    return <div className="text-center py-12 text-gray-500 dark:text-slate-400">Failed to load settings</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="bg-red-100 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-6 text-center max-w-md">
+          <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Failed to load settings</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">Something went wrong while fetching your configuration.</p>
+          <button
+            onClick={() => globalThis.location.reload()}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-500 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" /> Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // key={JSON.stringify(settings)} remounts the form when settings change from server

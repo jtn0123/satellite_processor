@@ -38,7 +38,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
     return (
       <div className="space-y-2">
         {["a","b","c"].map((k) => (
-          <div key={k} className="h-14 bg-card rounded-lg animate-pulse" />
+          <div key={k} className="h-14 bg-white dark:bg-space-800/70 rounded-lg animate-pulse" />
         ))}
       </div>
     );
@@ -87,13 +87,13 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:block">
               {new Date(job.created_at).toLocaleString()}
             </span>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
               {(job.status === 'completed' || job.status === 'completed_partial') && (
                 <a
                   href={`/api/jobs/${job.id}/download`}
                   download
                   onClick={(e) => e.stopPropagation()}
-                  className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-primary"
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-primary"
                   title="Download" aria-label={`Download job ${job.id.slice(0, 8)}`}
                 >
                   <Download className="w-4 h-4" />
@@ -104,7 +104,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                   e.stopPropagation();
                   onSelect?.(job.id);
                 }}
-                className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                 aria-label={`View job ${job.id.slice(0, 8)}`}
               >
                 <Eye className="w-4 h-4" />
@@ -116,7 +116,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                     deleteJob.mutate(job.id);
                   }
                 }}
-                className="p-1.5 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
                 aria-label={`Delete job ${job.id.slice(0, 8)}`}
               >
                 <Trash2 className="w-4 h-4" />

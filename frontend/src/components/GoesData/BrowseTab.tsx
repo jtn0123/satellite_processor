@@ -14,6 +14,7 @@ import {
   GitCompare,
   FileDown,
   Share2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -36,6 +37,7 @@ export default function BrowseTab() {
   const [showTagModal, setShowTagModal] = useState(false);
   const [previewFrame, setPreviewFrame] = useState<GoesFrame | null>(null);
   const [compareFrames, setCompareFrames] = useState<[GoesFrame, GoesFrame] | null>(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Filters
   const [filterSat, setFilterSat] = useState('');
@@ -117,7 +119,7 @@ export default function BrowseTab() {
       toggleSelect(frame.id);
     } else {
       setPreviewFrame(frame);
-      window.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
+      globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
     }
   }, []);
 
@@ -158,7 +160,7 @@ export default function BrowseTab() {
             label: 'Go to Fetch Tab',
             onClick: () => {
               // Dispatch a custom event that GoesData can listen to for tab switching
-              window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+              globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
             },
           }}
         />
@@ -188,8 +190,18 @@ export default function BrowseTab() {
 
   return (
     <div className="flex gap-6">
+      {/* Mobile filter toggle */}
+      <button
+        onClick={() => setShowMobileFilters(!showMobileFilters)}
+        className="md:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-medium text-gray-600 dark:text-slate-300 mb-2 absolute right-4 top-0 z-10"
+        aria-label="Toggle filters"
+      >
+        <SlidersHorizontal className="w-4 h-4" />
+        Filters
+      </button>
+
       {/* Filter Sidebar */}
-      <div className="w-64 shrink-0 space-y-4">
+      <div className={`w-64 shrink-0 space-y-4 ${showMobileFilters ? 'block' : 'hidden'} md:block`}>
         <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
           <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
 
@@ -309,7 +321,7 @@ export default function BrowseTab() {
                     const frameId = [...selectedIds][0];
                     try {
                       const res = await api.post(`/goes/frames/${frameId}/share`);
-                      const url = `${window.location.origin}${res.data.url}`;
+                      const url = `${globalThis.location.origin}${res.data.url}`;
                       await navigator.clipboard.writeText(url);
                       showToast('success', 'Share link copied to clipboard!');
                     } catch {
@@ -333,7 +345,7 @@ export default function BrowseTab() {
                   if (debouncedBand) exportParams.set('band', debouncedBand);
                   if (debouncedSector) exportParams.set('sector', debouncedSector);
                   exportParams.set('format', 'csv');
-                  window.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
+                  globalThis.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
                 }}
               >
                 <FileDown className="w-3.5 h-3.5" /> Export CSV
@@ -386,7 +398,7 @@ export default function BrowseTab() {
         {previewFrame && (
           <FramePreviewModal
             frame={previewFrame}
-            onClose={() => { setPreviewFrame(null); window.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
+            onClose={() => { setPreviewFrame(null); globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
             allFrames={framesData?.items}
             onNavigate={(f) => setPreviewFrame(f)}
           />

@@ -48,7 +48,7 @@ export default function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
+        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
       >
         <Bell className="w-4 h-4" />
@@ -60,8 +60,8 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-space-900 border border-subtle rounded-xl shadow-xl z-50 overflow-hidden dropdown-enter">
-          <div className="px-4 py-3 border-b border-subtle">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-space-900 border border-gray-200 dark:border-space-700/50 rounded-xl shadow-xl z-50 overflow-hidden dropdown-enter">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-space-700/50">
             <h3 className="text-sm font-semibold">Notifications</h3>
           </div>
           <div className="max-h-64 overflow-y-auto">
@@ -74,7 +74,7 @@ export default function NotificationBell() {
                   onClick={() => {
                     if (!n.read) markReadMutation.mutate(n.id);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:bg-space-800 transition-colors border-b border-subtle last:border-0 ${
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-space-800 transition-colors border-b border-gray-200 dark:border-space-700/50 last:border-0 ${
                     n.read ? 'opacity-60' : ''
                   }`}
                 >

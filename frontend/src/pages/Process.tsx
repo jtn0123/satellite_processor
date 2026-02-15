@@ -38,7 +38,7 @@ export default function ProcessPage() {
 
       {/* Empty state when no images */}
       {(images as unknown[]).length === 0 && (
-        <div className="bg-card border border-subtle rounded-xl p-8 text-center">
+        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-8 text-center">
           <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-slate-500" />
           <p className="text-gray-600 dark:text-slate-300 font-medium">No images yet</p>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Upload some satellite images to get started.</p>

@@ -58,23 +58,7 @@ html {
   }
 }
 
-/* Light mode overrides for card/border utilities */
-:not(.dark) .bg-card {
-  background-color: #ffffff;
-}
-:not(.dark) .bg-card-hover,
-:not(.dark) .hover\:bg-card-hover:hover {
-  background-color: #f8fafc;
-}
-:not(.dark) .border-subtle {
-  border-color: #e2e8f0;
-}
-:not(.dark) .bg-space-700 {
-  background-color: #e2e8f0;
-}
-:not(.dark) .bg-space-800 {
-  background-color: #f1f5f9;
-}
+/* Light mode overrides — consolidated (single :root:not(.dark) block below) */
 
 /* Dark theme scrollbar */
 ::-webkit-scrollbar {
@@ -321,16 +305,24 @@ header {
   background-color: #ffffff;
 }
 
-:root:not(.dark) .border-subtle {
-  border-color: #e5e7eb;
+:root:not(.dark) .bg-card-hover,
+:root:not(.dark) .hover\:bg-card-hover:hover {
+  background-color: #f8fafc;
 }
 
-:root:not(.dark) .bg-space-700,
-:root:not(.dark) .bg-space-800,
+:root:not(.dark) .border-subtle {
+  border-color: #e2e8f0;
+}
+
+:root:not(.dark) .bg-space-700 {
+  background-color: #e2e8f0;
+}
+
+:root:not(.dark) .bg-space-800 {
+  background-color: #f1f5f9;
+}
+
+:root:not(.dark) .bg-space-850,
 :root:not(.dark) .bg-space-900 {
   background-color: #f3f4f6;
-}
-
-:root:not(.dark) .bg-card-hover {
-  background-color: #f9fafb;
 }

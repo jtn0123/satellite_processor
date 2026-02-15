@@ -72,7 +72,7 @@ export default function CollectionsTab() {
     <div className="space-y-4">
       {/* Create new */}
       <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
-        <input aria-label="Newname" type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+        <input aria-label="New collection name" type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
           placeholder="New collection name"
           className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
           onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()} />
@@ -94,7 +94,7 @@ export default function CollectionsTab() {
             <div key={c.id} className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
-                  <input aria-label="Editname" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                  <input aria-label="Edit collection name" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
                     className="flex-1 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-2 py-1 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })} />
                   <button onClick={() => updateMutation.mutate({ id: c.id, name: editName })}
@@ -116,7 +116,7 @@ export default function CollectionsTab() {
                       <Play className="w-3 h-3 inline" /> {loadingAnimateId === c.id ? '...' : 'Animate'}
                     </button>
                     <button
-                      onClick={() => window.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
+                      onClick={() => globalThis.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
                     >

@@ -40,8 +40,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
       if (e.key === 'ArrowRight') goNext();
       if (e.key === 'ArrowLeft') goPrev();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [onClose, goNext, goPrev]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -78,8 +78,10 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+    <dialog
+      open
+      aria-label="Image viewer"
+      className="fixed inset-0 z-50 bg-black/90 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
@@ -138,6 +140,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
           </button>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }

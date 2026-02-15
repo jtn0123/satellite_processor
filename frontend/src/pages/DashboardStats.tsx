@@ -38,7 +38,7 @@ export default function DashboardStats({ stats, isLoading }: DashboardStatsProps
       {isLoading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["a","b","c","d"].map((k) => (
-            <div key={k} className="bg-card border border-subtle rounded-xl p-4 h-24 animate-pulse" />
+            <div key={k} className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 h-24 animate-pulse" />
           ))}
         </div>
       )}
@@ -46,7 +46,7 @@ export default function DashboardStats({ stats, isLoading }: DashboardStatsProps
         {statCards.map((s) => (
           <div
             key={s.label}
-            className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5"
+            className="glass-card border border-gray-200 dark:border-space-700/50 rounded-xl p-4 hover:bg-gray-50 dark:bg-space-800 transition-colors inset-shadow-sm dark:inset-shadow-white/5"
           >
             <div className="flex items-center justify-between">
               <s.icon className={`w-5 h-5 ${s.color}`} />
@@ -57,7 +57,7 @@ export default function DashboardStats({ stats, isLoading }: DashboardStatsProps
         ))}
 
         {/* Storage card */}
-        <div className="glass-card border border-subtle rounded-xl p-4 hover:bg-card-hover transition-colors inset-shadow-sm dark:inset-shadow-white/5">
+        <div className="glass-card border border-gray-200 dark:border-space-700/50 rounded-xl p-4 hover:bg-gray-50 dark:bg-space-800 transition-colors inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>

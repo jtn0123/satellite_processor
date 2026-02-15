@@ -21,6 +21,8 @@ from sqlalchemy.orm import relationship
 from ..utils import utcnow
 from .database import Base
 
+GOES_FRAMES_ID_FK = "goes_frames.id"
+
 
 def gen_uuid():
     return str(uuid.uuid4())
@@ -135,7 +137,7 @@ class CollectionFrame(Base):
         String(36), ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True
     )
     frame_id = Column(
-        String(36), ForeignKey("goes_frames.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True
     )
 
 
@@ -155,7 +157,7 @@ class FrameTag(Base):
     __tablename__ = "frame_tags"
 
     frame_id = Column(
-        String(36), ForeignKey("goes_frames.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True
     )
     tag_id = Column(
         String(36), ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
@@ -311,7 +313,7 @@ class ShareLink(Base):
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
     token = Column(String(64), unique=True, nullable=False, index=True)
-    frame_id = Column(String(36), ForeignKey("goes_frames.id"), nullable=False)
+    frame_id = Column(String(36), ForeignKey(GOES_FRAMES_ID_FK), nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=utcnow)
 

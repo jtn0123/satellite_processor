@@ -15,8 +15,8 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   useEffect(() => {
     const handler = () => onClose();
-    window.addEventListener('close-modal', handler);
-    return () => window.removeEventListener('close-modal', handler);
+    globalThis.addEventListener('close-modal', handler);
+    return () => globalThis.removeEventListener('close-modal', handler);
   }, [onClose]);
 
   const { data: tags } = useQuery<TagType[]>({

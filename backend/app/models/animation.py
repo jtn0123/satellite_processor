@@ -6,6 +6,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# Shared regex patterns for animation settings
+PATTERN_FORMAT = r"^(mp4|gif)$"
+PATTERN_QUALITY = r"^(low|medium|high)$"
+PATTERN_RESOLUTION = r"^(preview|full)$"
+PATTERN_LOOP_STYLE = r"^(forward|pingpong|hold)$"
+
 # --- Crop Preset schemas ---
 
 
@@ -71,10 +77,10 @@ class AnimationCreate(BaseModel):
     collection_id: str | None = None
     # Settings
     fps: int = Field(10, ge=1, le=30)
-    format: str = Field("mp4", pattern="^(mp4|gif)$")
-    quality: str = Field("medium", pattern="^(low|medium|high)$")
-    resolution: str = Field("full", pattern="^(preview|full)$")
-    loop_style: str = Field("forward", pattern="^(forward|pingpong|hold)$")
+    format: str = Field("mp4", pattern=PATTERN_FORMAT)
+    quality: str = Field("medium", pattern=PATTERN_QUALITY)
+    resolution: str = Field("full", pattern=PATTERN_RESOLUTION)
+    loop_style: str = Field("forward", pattern=PATTERN_LOOP_STYLE)
     overlay: OverlaySettings | None = None
     crop_preset_id: str | None = None
     false_color: bool = False
@@ -119,10 +125,10 @@ class AnimationFromRange(BaseModel):
     start_time: datetime
     end_time: datetime
     fps: int = Field(10, ge=1, le=30)
-    format: str = Field("mp4", pattern="^(mp4|gif)$")
-    quality: str = Field("medium", pattern="^(low|medium|high)$")
-    resolution: str = Field("full", pattern="^(preview|full)$")
-    loop_style: str = Field("forward", pattern="^(forward|pingpong|hold)$")
+    format: str = Field("mp4", pattern=PATTERN_FORMAT)
+    quality: str = Field("medium", pattern=PATTERN_QUALITY)
+    resolution: str = Field("full", pattern=PATTERN_RESOLUTION)
+    loop_style: str = Field("forward", pattern=PATTERN_LOOP_STYLE)
     overlay: OverlaySettings | None = None
 
 
@@ -134,10 +140,10 @@ class AnimationRecent(BaseModel):
     band: str
     hours: int = Field(6, ge=1, le=72)
     fps: int = Field(10, ge=1, le=30)
-    format: str = Field("mp4", pattern="^(mp4|gif)$")
-    quality: str = Field("medium", pattern="^(low|medium|high)$")
-    resolution: str = Field("full", pattern="^(preview|full)$")
-    loop_style: str = Field("forward", pattern="^(forward|pingpong|hold)$")
+    format: str = Field("mp4", pattern=PATTERN_FORMAT)
+    quality: str = Field("medium", pattern=PATTERN_QUALITY)
+    resolution: str = Field("full", pattern=PATTERN_RESOLUTION)
+    loop_style: str = Field("forward", pattern=PATTERN_LOOP_STYLE)
     overlay: OverlaySettings | None = None
 
 
@@ -150,10 +156,10 @@ class BatchAnimationItem(BaseModel):
     start_time: datetime
     end_time: datetime
     fps: int = Field(10, ge=1, le=30)
-    format: str = Field("mp4", pattern="^(mp4|gif)$")
-    quality: str = Field("medium", pattern="^(low|medium|high)$")
-    resolution: str = Field("full", pattern="^(preview|full)$")
-    loop_style: str = Field("forward", pattern="^(forward|pingpong|hold)$")
+    format: str = Field("mp4", pattern=PATTERN_FORMAT)
+    quality: str = Field("medium", pattern=PATTERN_QUALITY)
+    resolution: str = Field("full", pattern=PATTERN_RESOLUTION)
+    loop_style: str = Field("forward", pattern=PATTERN_LOOP_STYLE)
     overlay: OverlaySettings | None = None
 
 
@@ -189,10 +195,10 @@ class AnimationPresetCreate(BaseModel):
     sector: str | None = None
     band: str | None = None
     fps: int = Field(10, ge=1, le=30)
-    format: str = Field("mp4", pattern="^(mp4|gif)$")
-    quality: str = Field("medium", pattern="^(low|medium|high)$")
-    resolution: str = Field("full", pattern="^(preview|full)$")
-    loop_style: str = Field("forward", pattern="^(forward|pingpong|hold)$")
+    format: str = Field("mp4", pattern=PATTERN_FORMAT)
+    quality: str = Field("medium", pattern=PATTERN_QUALITY)
+    resolution: str = Field("full", pattern=PATTERN_RESOLUTION)
+    loop_style: str = Field("forward", pattern=PATTERN_LOOP_STYLE)
 
 
 class AnimationPresetUpdate(BaseModel):

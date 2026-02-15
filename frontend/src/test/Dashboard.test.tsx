@@ -80,7 +80,6 @@ describe('Dashboard', () => {
   it('job cards have dark-mode-compatible background classes', () => {
     const { container } = render(<Dashboard />, { wrapper });
     // JobList renders with role="button" cards
-    const jobCards = container.querySelectorAll('[role="button"]');
     // Even with empty jobs, the component should not have bg-card without dark variant
     // This test validates the fix is structurally present
     const jobListSection = container.querySelector('.space-y-2');

@@ -21,21 +21,21 @@ describe('ImageViewer', () => {
   it('calls onClose on Escape', () => {
     const onClose = vi.fn();
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={onClose} onNavigate={vi.fn()} />);
-    fireEvent.keyDown(globalThis, { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
 
   it('navigates to next frame on ArrowRight', () => {
     const onNavigate = vi.fn();
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={onNavigate} />);
-    fireEvent.keyDown(globalThis, { key: 'ArrowRight' });
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
     expect(onNavigate).toHaveBeenCalledWith(frames[1]);
   });
 
   it('navigates to prev frame on ArrowLeft (no-op at first)', () => {
     const onNavigate = vi.fn();
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={onNavigate} />);
-    fireEvent.keyDown(globalThis, { key: 'ArrowLeft' });
+    fireEvent.keyDown(document, { key: 'ArrowLeft' });
     expect(onNavigate).not.toHaveBeenCalled();
   });
 

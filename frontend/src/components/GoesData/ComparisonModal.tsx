@@ -147,20 +147,19 @@ export default function ComparisonModal({
                     className="w-full h-full object-contain" />
                 </div>
                 {/* Slider handle */}
-                <div
-                  className="absolute top-0 bottom-0 w-1 bg-white/80 cursor-col-resize z-10"
-                  style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
-                  role="slider"
-                  tabIndex={0}
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(sliderPos)}
+                  onChange={(e) => setSliderPos(Number(e.target.value))}
                   aria-label="Image comparison slider"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(sliderPos)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-col-resize z-20"
+                />
+                <div
+                  className="absolute top-0 bottom-0 w-1 bg-white/80 cursor-col-resize z-10 pointer-events-none"
+                  style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
                   onMouseDown={handleMouseDown}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowLeft') { e.preventDefault(); setSliderPos((p) => Math.max(0, p - 2)); }
-                    else if (e.key === 'ArrowRight') { e.preventDefault(); setSliderPos((p) => Math.min(100, p + 2)); }
-                  }}
                 >
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
                     <ArrowLeftRight className="w-4 h-4 text-slate-800" />

@@ -43,20 +43,25 @@ async def list_products():
     """List available GOES satellites, sectors, and bands."""
     cache_key = make_cache_key("products")
 
+    import asyncio
+
+    products = {
+        "satellites": list(SATELLITE_BUCKETS.keys()),
+        "satellite_availability": dict(SATELLITE_AVAILABILITY),
+        "sectors": [
+            {"id": k, "name": k, "product": v}
+            for k, v in SECTOR_PRODUCTS.items()
+        ],
+        "bands": [
+            {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
+            for band in VALID_BANDS
+        ],
+        "default_satellite": "GOES-19",
+    }
+
     async def _fetch():
-        return {
-            "satellites": list(SATELLITE_BUCKETS.keys()),
-            "satellite_availability": dict(SATELLITE_AVAILABILITY),
-            "sectors": [
-                {"id": k, "name": k, "product": v}
-                for k, v in SECTOR_PRODUCTS.items()
-            ],
-            "bands": [
-                {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
-                for band in VALID_BANDS
-            ],
-            "default_satellite": "GOES-19",
-        }
+        await asyncio.sleep(0)
+        return products
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
 

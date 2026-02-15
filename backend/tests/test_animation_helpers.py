@@ -125,11 +125,11 @@ class TestProcessSingleFrame:
 class TestRenderFramesToDir:
     @patch("app.tasks.animation_tasks._update_job_db")
     @patch("app.tasks.animation_tasks._publish_progress")
-    @patch("app.tasks.animation_tasks.cv2", create=True)
-    def test_skips_missing_file(self, mock_cv2, mock_pub, mock_upd, tmp_path):
+    def test_skips_missing_file(self, mock_pub, mock_upd, tmp_path):
         frame = SimpleNamespace(file_path="/nonexistent/img.png")
-        _render_frames_to_dir([frame], tmp_path, "j1", None, "full", "100%", None, "")
-        mock_cv2.imread.assert_not_called()
+        count = _render_frames_to_dir([frame], tmp_path, "j1", None, "full", "100%", None, "")
+        assert count == 0
+        assert list(tmp_path.glob("frame*.png")) == []
 
     @patch("app.tasks.animation_tasks._update_job_db")
     @patch("app.tasks.animation_tasks._publish_progress")

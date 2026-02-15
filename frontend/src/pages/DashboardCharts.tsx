@@ -25,7 +25,7 @@ export default function DashboardCharts({ goesStats, isLoading }: DashboardChart
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-subtle rounded-xl p-6 space-y-4 animate-pulse">
+      <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4 animate-pulse">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 bg-gray-200 dark:bg-space-700 rounded" />
           <div className="h-5 w-32 bg-gray-200 dark:bg-space-700 rounded" />
@@ -42,7 +42,7 @@ export default function DashboardCharts({ goesStats, isLoading }: DashboardChart
   if (!goesStats || totalGoesFrames === 0) return null;
 
   return (
-    <div className="bg-card border border-subtle rounded-xl p-6 space-y-4">
+    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Satellite className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-semibold">Satellite Data</h2>

@@ -99,7 +99,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {["a","b","c","d","e","f","g","h"].map((k) => (
-          <div key={k} className="aspect-square bg-card rounded-xl animate-pulse" />
+          <div key={k} className="aspect-square bg-white dark:bg-space-800/70 rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -147,7 +147,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 aria-label="Filter by satellite"
                 value={filterSatellite}
                 onChange={(e) => setFilterSatellite(e.target.value)}
-                className="bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+                className="bg-gray-100 dark:bg-space-800 border border-gray-200 dark:border-space-700/50 rounded-lg px-2 py-1 text-xs"
               >
                 <option value="">All Satellites</option>
                 {satellites.map((s) => (
@@ -160,7 +160,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 aria-label="Filter by channel"
                 value={filterChannel}
                 onChange={(e) => setFilterChannel(e.target.value)}
-                className="bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-2 py-1 text-xs"
+                className="bg-gray-100 dark:bg-space-800 border border-gray-200 dark:border-space-700/50 rounded-lg px-2 py-1 text-xs"
               >
                 <option value="">All Channels</option>
                 {channels.map((c) => (
@@ -178,8 +178,8 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             key={img.id}
             role="button"
             tabIndex={0}
-            className={`group relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-colors ${
-              selectable && selected?.has(img.id) ? 'border-primary' : 'border-subtle hover:border-space-600'
+            className={`group relative bg-white dark:bg-space-800/70 border rounded-xl overflow-hidden cursor-pointer transition-colors ${
+              selectable && selected?.has(img.id) ? 'border-primary' : 'border-gray-200 dark:border-space-700/50 hover:border-space-600'
             }`}
             onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (selectable && onToggle) { onToggle(img.id); } else { setPreview(img); } } }}
@@ -252,11 +252,11 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
         >
           <div
             role="document"
-            className="bg-space-850 border border-subtle rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
+            className="bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-subtle">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
               <button onClick={closePreview} aria-label="Close preview" className="focus-ring rounded-lg p-1">
                 <X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" />
@@ -286,7 +286,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 
 function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
+    <div className="bg-space-700/50 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2">
       <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase tracking-wider">{label}</p>
       <p className="font-medium text-sm mt-0.5">{value}</p>
     </div>

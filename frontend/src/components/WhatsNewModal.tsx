@@ -58,7 +58,7 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
         role="dialog"
         aria-label="What's New"
         aria-modal="true"
-        className="bg-space-850 border border-subtle rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
+        className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -66,7 +66,7 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
             <Sparkles className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">What&apos;s New</h2>
           </div>
-          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
+          <button onClick={close} className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>

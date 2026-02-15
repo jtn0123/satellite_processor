@@ -22,7 +22,7 @@ const STATUS_BADGE_CLASSES: Record<string, string> = {
   completed: 'bg-green-400/10 text-green-400',
   completed_partial: 'bg-amber-400/10 text-amber-400',
   failed: 'bg-red-400/10 text-red-400',
-  cancelled: 'bg-slate-400/10 text-slate-400',
+  cancelled: 'bg-gray-400/10 dark:bg-slate-400/10 text-gray-500 dark:text-slate-400',
   processing: 'bg-blue-400/10 text-blue-400',
 };
 
@@ -42,7 +42,7 @@ const TIMELINE_DOT_DONE_COLORS: Record<string, string> = {
 };
 
 function timelineDotColor(step: { label: string; done: boolean }): string {
-  if (!step.done) return 'bg-slate-600';
+  if (!step.done) return 'bg-gray-300 dark:bg-slate-600';
   return TIMELINE_DOT_DONE_COLORS[step.label] ?? 'bg-green-400';
 }
 
@@ -103,10 +103,10 @@ function fmtTime(iso: string): string {
 }
 
 const LOG_COLORS: Record<string, string> = {
-  info: 'text-slate-400',
-  warn: 'text-yellow-400',
-  error: 'text-red-400',
-  debug: 'text-slate-600',
+  info: 'text-gray-600 dark:text-slate-400',
+  warn: 'text-yellow-600 dark:text-yellow-400',
+  error: 'text-red-600 dark:text-red-400',
+  debug: 'text-gray-400 dark:text-slate-600',
 };
 
 /* ── Props ──────────────────────────────────────────────── */
@@ -137,7 +137,7 @@ function JobHeader({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-semibold font-mono break-all">{jobId}</h2>
-        <button onClick={onCopy} className="text-slate-400 hover:text-white" title="Copy Job ID">
+        <button onClick={onCopy} className="text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" title="Copy Job ID">
           {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
@@ -152,7 +152,7 @@ function JobHeader({
           {status}
         </span>
         {durationMs > 0 && (
-          <span className="text-xs text-slate-400">{formatDuration(durationMs)}</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">{formatDuration(durationMs)}</span>
         )}
       </div>
     </div>
@@ -201,13 +201,13 @@ function JobActions({
 
 function timelineConnectorClass(nextDone: boolean): string {
   if (nextDone) return 'w-16 sm:w-24 h-0.5 mx-1 bg-green-400/50';
-  return 'w-16 sm:w-24 h-0.5 mx-1 bg-slate-700';
+  return 'w-16 sm:w-24 h-0.5 mx-1 bg-gray-300 dark:bg-slate-700';
 }
 
 function logFilterButtonClass(lvl: string, logFilter: string | null): string {
   const isActive = (lvl === 'all' && !logFilter) || logFilter === lvl;
-  if (isActive) return 'px-1.5 py-0.5 rounded text-xs transition-colors bg-slate-600 text-white';
-  return 'px-1.5 py-0.5 rounded text-xs transition-colors text-slate-500 hover:text-slate-300';
+  if (isActive) return 'px-1.5 py-0.5 rounded text-xs transition-colors bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-white';
+  return 'px-1.5 py-0.5 rounded text-xs transition-colors text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300';
 }
 
 function formatParamValue(val: unknown): string {
@@ -233,12 +233,12 @@ function LogConsole({
   logRef: React.RefObject<HTMLDivElement | null>;
 }>) {
   return (
-    <div className="bg-card border border-subtle rounded-xl p-4">
+    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-slate-300">Logs</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Logs</h3>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 text-xs">
-            <Filter className="w-3 h-3 text-slate-500" />
+            <Filter className="w-3 h-3 text-gray-400 dark:text-slate-500" />
             {['all', 'info', 'warn', 'error', 'debug'].map((lvl) => (
               <button
                 key={lvl}
@@ -251,7 +251,7 @@ function LogConsole({
           </div>
           <button
             onClick={() => setAutoScroll((p: boolean) => !p)}
-            className={`p-1 rounded transition-colors ${autoScroll ? 'text-green-400' : 'text-slate-500'}`}
+            className={`p-1 rounded transition-colors ${autoScroll ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-slate-500'}`}
             title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
           >
             <ArrowDownToLine className="w-3.5 h-3.5" />
@@ -260,7 +260,7 @@ function LogConsole({
       </div>
       <div
         ref={logRef}
-        className="bg-slate-950 rounded-lg p-3 font-mono text-xs overflow-y-auto"
+        className="bg-gray-100 dark:bg-slate-950 rounded-lg p-3 font-mono text-xs overflow-y-auto"
         style={{ minHeight: '200px', maxHeight: '400px' }}
       >
         {filteredLogs.length === 0 ? (
@@ -268,8 +268,8 @@ function LogConsole({
         ) : (
           filteredLogs.map((entry, i) => (
             <div key={i} className={`${LOG_COLORS[entry.level] ?? 'text-slate-400'} leading-5`}>
-              <span className="text-slate-600">[{fmtTime(entry.timestamp)}]</span>{' '}
-              <span className="text-slate-500 uppercase w-12 inline-block">{entry.level}</span>{' '}
+              <span className="text-gray-400 dark:text-slate-600">[{fmtTime(entry.timestamp)}]</span>{' '}
+              <span className="text-gray-400 dark:text-slate-500 uppercase w-12 inline-block">{entry.level}</span>{' '}
               {entry.message}
             </div>
           ))
@@ -372,13 +372,13 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-slate-400 hover:text-white focus-ring rounded-lg px-1"
+        className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white focus-ring rounded-lg px-1"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Jobs
       </button>
 
       {/* ── Header card ────────────────────────────────── */}
-      <div className="bg-card border border-subtle rounded-xl p-6">
+      <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
         <JobHeader
           jobId={jobId}
           status={status}
@@ -391,10 +391,10 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
         {/* ── Progress ─────────────────────────────────── */}
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-300 truncate">{message}</span>
-            <span className="text-slate-400 ml-2">{progress}%</span>
+            <span className="text-gray-700 dark:text-slate-300 truncate">{message}</span>
+            <span className="text-gray-500 dark:text-slate-400 ml-2">{progress}%</span>
           </div>
-          <div className="w-full h-3 bg-space-700 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-300 ${progressBarColor(status)}`}
               style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
@@ -412,12 +412,12 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
       {/* ── Parameters ─────────────────────────────────── */}
       {paramEntries.length > 0 && (
-        <div className="bg-card border border-subtle rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">Job Parameters</h3>
+        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Job Parameters</h3>
           <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-3 gap-3 text-sm">
             {paramEntries.map(([key, val]) => (
-              <div key={key} className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-                <p className="text-[10px] text-slate-400 uppercase">{key.replaceAll('_', ' ')}</p>
+              <div key={key} className="bg-gray-100 dark:bg-space-700/50 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">{key.replaceAll('_', ' ')}</p>
                 <p className="font-medium truncate">{formatParamValue(val)}</p>
               </div>
             ))}
@@ -427,16 +427,16 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
       {/* ── Timeline ───────────────────────────────────── */}
       {timelineSteps.length > 0 && (
-        <div className="bg-card border border-subtle rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">Timeline</h3>
+        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Timeline</h3>
           <div className="flex items-center gap-0">
             {timelineSteps.map((step, i) => (
               <div key={step.label} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div className={`w-3 h-3 rounded-full ${timelineDotColor(step)}`} />
-                  <span className="text-[10px] text-slate-400 mt-1">{step.label}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">{step.label}</span>
                   {step.time && (
-                    <span className="text-[10px] text-slate-500">{fmtTime(step.time)}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500">{fmtTime(step.time)}</span>
                   )}
                 </div>
                 {i < timelineSteps.length - 1 && (

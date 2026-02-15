@@ -126,8 +126,8 @@ export default function Layout() {
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-subtle">
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-subtle">
+      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
+        <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-200 dark:border-space-700/50">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>
         </div>
@@ -141,7 +141,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-ring ${
                   isActive
                     ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 border border-transparent'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border border-transparent'
                 }`
               }
               aria-label={l.label}
@@ -157,7 +157,7 @@ export default function Layout() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="API Documentation (opens in new tab)"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 transition-colors focus-ring"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 transition-colors focus-ring"
           >
             <FileText className="w-5 h-5" />
             API Docs
@@ -165,21 +165,21 @@ export default function Layout() {
           {/* #9: Keyboard shortcut button */}
           <button
             onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 transition-colors focus-ring w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 transition-colors focus-ring w-full"
             aria-label="Keyboard shortcuts"
           >
             <HelpCircle className="w-5 h-5" />
             Shortcuts
           </button>
         </div>
-        <div className="px-6 py-4 border-t border-subtle space-y-2">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-space-700/50 space-y-2">
           <div className="flex items-center justify-between">
             <ConnectionStatus />
             <div className="flex items-center gap-1">
               <NotificationBell />
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
               >
@@ -192,7 +192,7 @@ export default function Layout() {
             <Cpu className="w-4 h-4" />
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-gray-600 dark:text-slate-300 transition-colors text-left"
+              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors text-left"
               aria-label="Show changelog"
             >
               Satellite Processor {versionInfo.display}
@@ -217,18 +217,18 @@ export default function Layout() {
         role="dialog"
         aria-label="Navigation menu"
         aria-modal="true"
-        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-subtle z-50 transform transition-transform duration-200 ease-out md:hidden ${
+        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform transition-transform duration-200 ease-out md:hidden ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-subtle">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-space-700/50">
           <div className="flex items-center gap-2">
             <Satellite className="w-5 h-5 text-primary" />
             <span className="font-bold">SatTracker</span>
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
+            className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -245,7 +245,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] active:bg-primary/5 ${
                   isActive
                     ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-space-800 border-l-2 border-transparent'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border-l-2 border-transparent'
                 }`
               }
               aria-label={l.label}
@@ -259,10 +259,10 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-subtle">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="p-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
+            className="p-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -275,7 +275,7 @@ export default function Layout() {
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -290,7 +290,7 @@ export default function Layout() {
           <footer className="md:hidden mt-8 pb-4 text-center text-sm text-gray-500 dark:text-slate-400">
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-gray-600 dark:text-slate-300 transition-colors"
+              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors"
               aria-label="Show changelog"
             >
               {versionInfo.display}

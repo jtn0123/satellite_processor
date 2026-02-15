@@ -41,7 +41,7 @@ export default function PresetsPage() {
         </div>
         <div className="space-y-2">
           {["a","b","c","d"].map((k) => (
-            <div key={k} className="h-16 bg-card rounded-lg animate-pulse" />
+            <div key={k} className="h-16 bg-white dark:bg-space-800/70 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function PresetsPage() {
           {presetList.map((p) => (
             <div
               key={p.id}
-              className="bg-card border border-subtle rounded-xl px-5 py-4 flex items-center gap-4 group hover:bg-card-hover transition-colors"
+              className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl px-5 py-4 flex items-center gap-4 group hover:bg-gray-50 dark:bg-space-800 transition-colors"
             >
               <BookOpen className="w-5 h-5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
@@ -81,7 +81,7 @@ export default function PresetsPage() {
                         if (e.key === 'Escape') setEditingName(null);
                       }}
                       autoFocus
-                      className="flex-1 bg-space-700 border border-subtle rounded-lg px-3 py-1.5 text-sm focus-ring"
+                      className="flex-1 bg-space-700 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-1.5 text-sm focus-ring"
                     />
                     <button
                       onClick={() => handleRename(p.name)}

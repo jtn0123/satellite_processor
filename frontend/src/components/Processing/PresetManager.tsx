@@ -44,7 +44,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
   };
 
   return (
-    <div className="bg-card border border-subtle rounded-xl p-4 space-y-4">
+    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 space-y-4">
       <div className="flex items-center gap-2">
         <BookOpen className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-semibold">Presets</h3>
@@ -58,7 +58,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
           value={saveName}
           onChange={(e) => setSaveName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-          className="flex-1 bg-gray-100 dark:bg-space-800 border border-subtle rounded-lg px-3 py-2 text-sm focus-ring"
+          className="flex-1 bg-gray-100 dark:bg-space-800 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2 text-sm focus-ring"
         />
         <button
           onClick={handleSave}
@@ -89,7 +89,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                       if (e.key === 'Escape') setEditingName(null);
                     }}
                     autoFocus
-                    className="flex-1 bg-space-700 border border-subtle rounded px-2 py-1 text-sm"
+                    className="flex-1 bg-space-700 border border-gray-200 dark:border-space-700/50 rounded px-2 py-1 text-sm"
                   />
                   <button
                     onClick={() => handleRename(p.name)}

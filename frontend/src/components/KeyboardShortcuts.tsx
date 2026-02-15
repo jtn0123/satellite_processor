@@ -62,7 +62,7 @@ export default function KeyboardShortcuts() {
     >
       <div
         role="document"
-        className="bg-space-850 border border-subtle rounded-2xl p-6 w-full max-w-md"
+        className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
@@ -71,7 +71,7 @@ export default function KeyboardShortcuts() {
             <Keyboard className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
           </div>
-          <button onClick={close} className="p-1 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400">
+          <button onClick={close} className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -83,7 +83,7 @@ export default function KeyboardShortcuts() {
                 {s.keys.split(' ').map((k) => (
                   <kbd
                     key={k}
-                    className="px-2 py-0.5 bg-space-700 border border-space-600 rounded text-xs font-mono text-gray-600 dark:text-slate-300"
+                    className="px-2 py-0.5 bg-gray-100 dark:bg-space-700 border border-gray-300 dark:border-space-600 rounded text-xs font-mono text-gray-600 dark:text-slate-300"
                   >
                     {k}
                   </kbd>

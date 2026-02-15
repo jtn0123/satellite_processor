@@ -18,7 +18,7 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
       onClick={(e) => onClick(frame, e)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(frame, e as unknown as React.MouseEvent); } }}
       aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
-      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all inset-shadow-sm dark:inset-shadow-white/5 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 ${
+      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all inset-shadow-sm dark:inset-shadow-white/5 hover:bg-gray-100 dark:hover:bg-slate-800 dark:bg-slate-700 ${
         isSelected ? 'border-primary ring-1 ring-primary glow-primary' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600'
       }`}
     >

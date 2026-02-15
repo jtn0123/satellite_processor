@@ -79,6 +79,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
 
   return (
     <div
+      role="dialog"
+      aria-label="Image viewer"
       className="fixed inset-0 z-50 bg-black/90 flex flex-col"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

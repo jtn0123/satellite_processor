@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { GoesFrame } from './types';
 
 interface CompareViewProps {
@@ -11,6 +11,7 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
   const [sliderPos, setSliderPos] = useState(50);
   const [mode, setMode] = useState<'slider' | 'side-by-side'>('side-by-side');
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleSliderMove = useCallback(
     (e: React.MouseEvent) => {
@@ -24,10 +25,30 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
 
   const [dragging, setDragging] = useState(false);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    // Focus first button
+    setTimeout(() => dialogRef.current?.querySelector<HTMLElement>('button')?.focus(), 0);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const formatTime = (t: string) => new Date(t).toLocaleString();
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white">
+    <div ref={dialogRef} role="dialog" aria-label="Compare frames" className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-4">

@@ -34,6 +34,7 @@ class TestLaunchScheduleJob:
         with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
             mock_task.delay = MagicMock()
             _launch_schedule_job(session, schedule, preset, now)
+            mock_task.delay.assert_called_once()
 
         session.add.assert_called_once()
         job = session.add.call_args[0][0]

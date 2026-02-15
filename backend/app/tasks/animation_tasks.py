@@ -49,6 +49,8 @@ def _apply_overlay(img, frame, overlay: dict, label_text: str):
 
 def _apply_loop_style(frames, loop_style: str, fps: int) -> list:
     """Apply loop style (pingpong/hold) to the frame list."""
+    if not frames:
+        return frames
     if loop_style == "pingpong":
         return list(frames) + list(reversed(frames[1:-1]))
     if loop_style == "hold":
@@ -121,6 +123,8 @@ def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution:
             _update_job_db(job_id, progress=pct_done,
                            status_message=f"Processed frame {i + 1}/{len(frames)}")
 
+    return output_idx
+
 
 def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path: Path):
     """Encode frames into GIF or MP4 using FFmpeg."""
@@ -131,10 +135,10 @@ def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path
         palette = str(work_dir / "palette.png")
         cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
                  "-vf", "palettegen", palette]
-        subprocess.run(cmd1, capture_output=True, check=True)
+        _run_ffmpeg(cmd1)
         cmd2 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
                  "-i", palette, "-lavfi", "paletteuse", str(output_path)]
-        subprocess.run(cmd2, capture_output=True, check=True)
+        _run_ffmpeg(cmd2)
     else:
         crf = QUALITY_CRF.get(quality, "23")
         cmd = [
@@ -143,13 +147,23 @@ def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path
             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             str(output_path),
         ]
-        subprocess.run(cmd, capture_output=True, check=True)
+        _run_ffmpeg(cmd)
+
+
+def _run_ffmpeg(cmd: list[str]):
+    """Run an FFmpeg command, capturing stderr for error reporting."""
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode != 0:
+        stderr = result.stderr.decode("utf-8", errors="replace")
+        logger.error("FFmpeg failed (rc=%d): %s", result.returncode, stderr)
+        raise subprocess.CalledProcessError(result.returncode, cmd, output=result.stdout, stderr=result.stderr)
 
 
 def _mark_animation_failed(session, animation_id: str, error: str):
     """Mark the animation record as failed in the database."""
     from ..db.models import Animation
     try:
+        logger.error("Marking animation %s as failed: %s", animation_id, error)
         anim = session.query(Animation).filter(Animation.id == animation_id).first()
         if anim:
             anim.status = "failed"
@@ -157,7 +171,7 @@ def _mark_animation_failed(session, animation_id: str, error: str):
             anim.completed_at = utcnow()
             session.commit()
     except Exception:
-        pass
+        logger.exception("Failed to mark animation %s as failed", animation_id)
 
 
 @celery_app.task(bind=True, name="generate_animation")

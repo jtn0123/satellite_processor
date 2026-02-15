@@ -47,6 +47,12 @@ class TestApplyLoopStyle:
         result = _apply_loop_style(frames, "hold", 5)
         assert result == [1, 2, 3] + [3] * 10  # fps*2 = 10
 
+    def test_empty_frames(self):
+        assert _apply_loop_style([], "hold", 10) == []
+
+    def test_empty_frames_pingpong(self):
+        assert _apply_loop_style([], "pingpong", 10) == []
+
     def test_unknown_style(self):
         assert _apply_loop_style([1, 2], "unknown", 10) == [1, 2]
 
@@ -148,6 +154,7 @@ class TestEncodeOutput:
     @patch("app.tasks.animation_tasks.subprocess.run")
     @patch("app.tasks.animation_tasks.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_gif_encoding(self, mock_which, mock_run, tmp_path):
+        mock_run.return_value = MagicMock(returncode=0)
         out = tmp_path / "out.gif"
         _encode_output("gif", 10, "medium", tmp_path, out)
         assert mock_run.call_count == 2  # palette + encode
@@ -155,6 +162,7 @@ class TestEncodeOutput:
     @patch("app.tasks.animation_tasks.subprocess.run")
     @patch("app.tasks.animation_tasks.shutil.which", return_value=None)
     def test_mp4_encoding(self, mock_which, mock_run, tmp_path):
+        mock_run.return_value = MagicMock(returncode=0)
         out = tmp_path / "out.mp4"
         _encode_output("mp4", 10, "high", tmp_path, out)
         assert mock_run.call_count == 1
@@ -166,6 +174,7 @@ class TestEncodeOutput:
     @patch("app.tasks.animation_tasks.subprocess.run")
     @patch("app.tasks.animation_tasks.shutil.which", return_value=None)
     def test_mp4_unknown_quality_defaults(self, mock_which, mock_run, tmp_path):
+        mock_run.return_value = MagicMock(returncode=0)
         _encode_output("mp4", 10, "ultra", tmp_path, tmp_path / "o.mp4")
         cmd = mock_run.call_args[0][0]
         idx = cmd.index("-crf")

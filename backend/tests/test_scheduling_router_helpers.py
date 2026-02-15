@@ -17,12 +17,6 @@ def _utcnow():
     return datetime.now(tz=UTC)
 
 
-def _make_async_db():
-    """Create an AsyncMock db where execute returns a regular MagicMock result."""
-    db = AsyncMock()
-    return db
-
-
 # ── _get_protected_ids ──────────────────────────────────
 
 class TestGetProtectedIds:
@@ -119,7 +113,7 @@ class TestCollectStorageDeletions:
 
         rule = SimpleNamespace(value=1)  # 1 GB limit
         result = await _collect_storage_deletions(db, rule, set())
-        assert "f1" in result
+        assert result == {"f1"}
 
     @pytest.mark.asyncio
     async def test_skips_protected_frames(self):

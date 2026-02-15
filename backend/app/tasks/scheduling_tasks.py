@@ -114,16 +114,28 @@ def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> 
     if total_bytes <= max_bytes:
         return []
 
-    frames = session.query(GoesFrame).order_by(GoesFrame.created_at.asc()).all()
     excess = total_bytes - max_bytes
     freed = 0
     result = []
-    for f in frames:
-        if freed >= excess:
+    batch_size = 500
+    offset = 0
+    while freed < excess:
+        batch = (
+            session.query(GoesFrame)
+            .order_by(GoesFrame.created_at.asc())
+            .offset(offset)
+            .limit(batch_size)
+            .all()
+        )
+        if not batch:
             break
-        if f.id not in protected_ids:
-            result.append(f)
-            freed += f.file_size or 0
+        for f in batch:
+            if freed >= excess:
+                break
+            if f.id not in protected_ids:
+                result.append(f)
+                freed += f.file_size or 0
+        offset += batch_size
     return result
 
 
@@ -134,7 +146,7 @@ def _delete_frame_files(frame):
             try:
                 os.remove(path)
             except OSError:
-                pass
+                logger.warning("Failed to delete frame file: %s", path, exc_info=True)
 
 
 @celery_app.task(bind=True, name="run_cleanup")
@@ -160,6 +172,7 @@ def run_cleanup(self):
             elif rule.rule_type == "max_storage_gb":
                 frames_to_delete = _collect_storage_based_deletions(session, rule, protected_ids)
             else:
+                logger.warning("Unknown cleanup rule_type: %s", rule.rule_type)
                 frames_to_delete = []
 
             for frame in frames_to_delete:

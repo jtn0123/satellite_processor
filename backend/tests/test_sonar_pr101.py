@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import math
-from unittest.mock import patch, MagicMock
 
 
 def test_goes_frames_id_fk_constant():
@@ -14,11 +13,12 @@ def test_goes_frames_id_fk_constant():
 def test_animation_pattern_constants():
     """Verify animation regex pattern constants exist and are valid."""
     import re
+
     from app.models.animation import (
         PATTERN_FORMAT,
+        PATTERN_LOOP_STYLE,
         PATTERN_QUALITY,
         PATTERN_RESOLUTION,
-        PATTERN_LOOP_STYLE,
     )
     assert re.match(PATTERN_FORMAT, "mp4")
     assert re.match(PATTERN_FORMAT, "gif")

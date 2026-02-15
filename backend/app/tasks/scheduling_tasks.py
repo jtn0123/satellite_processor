@@ -39,6 +39,8 @@ def _launch_schedule_job(session, schedule, preset, now):
     schedule.last_run_at = now
     schedule.next_run_at = now + timedelta(minutes=schedule.interval_minutes)
 
+    session.flush()  # ensure job row is visible before dispatching to Celery
+
     logger.info("Scheduled fetch: job=%s preset=%s schedule=%s", job_id, preset.name, schedule.name)
 
     from .goes_tasks import fetch_goes_data

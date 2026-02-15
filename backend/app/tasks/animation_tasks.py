@@ -94,6 +94,7 @@ def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution:
     """Read, transform, and write all frames to the working directory."""
     import cv2
 
+    output_idx = 0
     for i, frame in enumerate(frames):
         src = Path(frame.file_path)
         if not src.exists():
@@ -109,8 +110,9 @@ def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution:
         if overlay and (overlay.get("timestamp") or overlay.get("label")):
             img = _apply_overlay(img, frame, overlay, label_text)
 
-        dest = work_dir / f"frame{i:06d}.png"
+        dest = work_dir / f"frame{output_idx:06d}.png"
         cv2.imwrite(str(dest), img)
+        output_idx += 1
 
         pct_done = 10 + int((i + 1) / len(frames) * 60)
         if (i + 1) % max(1, len(frames) // 20) == 0:

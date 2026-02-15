@@ -211,8 +211,9 @@ function logFilterButtonClass(lvl: string, logFilter: string | null): string {
 }
 
 function formatParamValue(val: unknown): string {
-  if (val !== null && typeof val === 'object') return JSON.stringify(val);
-  return String(val ?? '');
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
 }
 
 function LogConsole({

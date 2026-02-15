@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('../api/client', () => ({
@@ -55,7 +55,7 @@ describe('BrowseTab', () => {
   it('renders filter toggle button for mobile', async () => {
     renderWithProviders(<BrowseTab />);
     await waitFor(() => {
-      const filterBtn = screen.queryByLabelText(/filter/i) || screen.queryByText(/Filters/i);
+      // Filter button may not render in test env
       // The filter toggle exists in the DOM
       expect(document.querySelector('[class*="SlidersHorizontal"], button')).toBeTruthy();
     });

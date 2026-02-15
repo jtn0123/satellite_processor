@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import WhatsNewModal from '../components/WhatsNewModal';
 
 vi.mock('../hooks/useFocusTrap', () => ({
-  useFocusTrap: (closeFn: () => void) => {
+  useFocusTrap: () => {
     // Return a simple ref callback
     const ref = { current: null };
     return ref;

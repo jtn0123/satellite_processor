@@ -125,10 +125,10 @@ def _handle_client_error_retry(exc: ClientError, attempt: int, max_retries: int,
     """Return True (and sleep) if a ClientError should be retried."""
     if not _is_retryable_client_error(exc):
         return False
-    return _should_retry_and_wait(attempt, max_retries, exc, f"throttled/timeout (code={error_code})")
+    return _should_retry_and_wait(attempt, max_retries, f"throttled/timeout (code={error_code})")
 
 
-def _should_retry_and_wait(attempt: int, max_retries: int, exc, label: str) -> bool:
+def _should_retry_and_wait(attempt: int, max_retries: int, label: str) -> bool:
     """If retries remain, log a warning, sleep with backoff, and return True."""
     if attempt >= max_retries:
         return False
@@ -151,21 +151,21 @@ def _check_circuit_breaker(operation: str) -> None:
         raise CircuitBreakerOpen("s3")
 
 
-def _handle_retry_exception(exc: Exception, attempt: int, max_retries: int, operation: str) -> bool:
+def _handle_retry_exception(exc: Exception, attempt: int, max_retries: int, operation: str) -> None:
     """Handle an exception from an S3 operation attempt.
 
-    Returns True if the operation should be retried.
+    Returns normally if the operation should be retried.
     Raises the exception if it is not retryable.
     """
     if isinstance(exc, ClientError):
         error_code = exc.response.get("Error", {}).get("Code", "")
         if _handle_client_error_retry(exc, attempt, max_retries, error_code):
-            return True
+            return
         _record_s3_failure(operation, error_code or "client_error")
         raise exc
     # Must be a _RETRYABLE_S3_ERRORS instance
-    if _should_retry_and_wait(attempt, max_retries, exc, "connection error"):
-        return True
+    if _should_retry_and_wait(attempt, max_retries, "connection error"):
+        return
     _record_s3_failure(operation, type(exc).__name__)
     raise exc
 
@@ -187,8 +187,7 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
             s3_circuit_breaker.record_success()
             return result
         except (*_RETRYABLE_S3_ERRORS, ClientError) as exc:
-            if _handle_retry_exception(exc, attempt, max_retries, operation):
-                continue
+            _handle_retry_exception(exc, attempt, max_retries, operation)
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:

@@ -211,8 +211,8 @@ function logFilterButtonClass(lvl: string, logFilter: string | null): string {
 }
 
 function formatParamValue(val: unknown): string {
-  if (typeof val === 'object') return JSON.stringify(val);
-  return String(val);
+  if (val !== null && typeof val === 'object') return JSON.stringify(val);
+  return String(val ?? '');
 }
 
 function LogConsole({
@@ -415,7 +415,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
           <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-3 gap-3 text-sm">
             {paramEntries.map(([key, val]) => (
               <div key={key} className="bg-space-700/50 border border-subtle rounded-lg px-3 py-2">
-                <p className="text-[10px] text-slate-400 uppercase">{key.replace(/_/g, ' ')}</p>
+                <p className="text-[10px] text-slate-400 uppercase">{key.replaceAll('_', ' ')}</p>
                 <p className="font-medium truncate">{formatParamValue(val)}</p>
               </div>
             ))}

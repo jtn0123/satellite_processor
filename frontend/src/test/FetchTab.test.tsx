@@ -72,7 +72,7 @@ describe('FetchTab', () => {
       satellite_availability: { 'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active' } },
     });
 
-    const { container } = render(
+    render(
       <QueryClientProvider client={qc}>
         <FetchTab />
       </QueryClientProvider>

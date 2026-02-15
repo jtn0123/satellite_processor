@@ -1,10 +1,10 @@
 """Tests for refactored goes_fetcher helpers: _read_cmi_data, _normalize_cmi_to_image, etc."""
 from __future__ import annotations
 
-import numpy as np
-import pytest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import patch
+
+import numpy as np
 
 
 class TestNormalizeCmiToImage:

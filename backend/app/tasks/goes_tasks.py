@@ -420,11 +420,10 @@ def _load_band_images(
     """Load grayscale band images from the database, returning a list of arrays or None."""
     import numpy as np
     from PIL import Image as PILImage
-
-    from ..db.models import GoesFrame
-
     from sqlalchemy import func as sa_func
     from sqlalchemy import select as sa_select
+
+    from ..db.models import GoesFrame
 
     band_images = []
     for band_name in bands[:3]:
@@ -452,7 +451,7 @@ def _load_band_images(
     return band_images
 
 
-def _normalize_band(band_array, ref_shape) -> "np.ndarray":
+def _normalize_band(band_array, ref_shape):
     """Normalize a single band array to uint8, resizing if needed."""
     import numpy as np
     from PIL import Image as PILImage
@@ -468,7 +467,7 @@ def _normalize_band(band_array, ref_shape) -> "np.ndarray":
     return np.zeros_like(band_array, dtype=np.uint8)
 
 
-def _compose_rgb(band_images: list) -> "PILImage.Image":
+def _compose_rgb(band_images: list):
     """Stack band images into an RGB PIL image."""
     import numpy as np
     from PIL import Image as PILImage

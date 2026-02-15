@@ -103,6 +103,32 @@ def _create_fetch_records(
         session.close()
 
 
+def _no_frames_message(
+    satellite: str, sector: str, band: str,
+    start_time: datetime, end_time: datetime,
+    total_available: int,
+) -> tuple[str, str]:
+    """Return status message when zero frames were fetched."""
+    if total_available > 0:
+        return f"All {total_available} frames failed to download", "failed"
+
+    from ..services.goes_fetcher import SATELLITE_AVAILABILITY
+
+    avail = SATELLITE_AVAILABILITY.get(satellite, {})
+    avail_hint = ""
+    if avail.get("available_to"):
+        avail_hint = (
+            f" {satellite} data is only available from "
+            f"{avail['available_from']} through {avail['available_to']}."
+        )
+    status_msg = (
+        f"No frames found on S3 for {satellite} {sector} {band} "
+        f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
+        f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
+    )
+    return status_msg, "failed"
+
+
 def _build_status_message(
     satellite: str,
     sector: str,
@@ -116,39 +142,20 @@ def _build_status_message(
     max_frames_limit: int,
 ) -> tuple[str, str]:
     """Return ``(status_message, final_status)`` for a fetch job."""
-    from ..services.goes_fetcher import SATELLITE_AVAILABILITY
-
-    beyond_cap = total_available - max_frames_limit if was_capped else 0
-
-    if fetched_count == 0 and total_available == 0:
-        avail = SATELLITE_AVAILABILITY.get(satellite, {})
-        avail_hint = ""
-        if avail.get("available_to"):
-            avail_hint = (
-                f" {satellite} data is only available from "
-                f"{avail['available_from']} through {avail['available_to']}."
-            )
-        status_msg = (
-            f"No frames found on S3 for {satellite} {sector} {band} "
-            f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
-            f"{end_time.strftime('%Y-%m-%d %H:%M')}.{avail_hint}"
-        )
-        return status_msg, "failed"
-
     if fetched_count == 0:
-        return f"All {total_available} frames failed to download", "failed"
+        return _no_frames_message(satellite, sector, band, start_time, end_time, total_available)
 
     if failed_downloads == 0 and not was_capped:
         return f"Fetched {fetched_count} frames", "completed"
 
     if failed_downloads == 0 and was_capped:
-        status_msg = (
+        return (
             f"Fetched {fetched_count} of {total_available} available frames "
             f"(frame limit: {max_frames_limit}). "
             f"Adjust limit in settings or narrow time range."
-        )
-        return status_msg, "completed_partial"
+        ), "completed_partial"
 
+    beyond_cap = total_available - max_frames_limit if was_capped else 0
     parts = [f"Fetched {fetched_count} frames"]
     if failed_downloads > 0:
         parts.append(f"{failed_downloads} failed to download")

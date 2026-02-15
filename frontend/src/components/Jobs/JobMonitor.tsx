@@ -18,13 +18,16 @@ import api from '../../api/client';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  completed: 'bg-green-400/10 text-green-400',
+  completed_partial: 'bg-amber-400/10 text-amber-400',
+  failed: 'bg-red-400/10 text-red-400',
+  cancelled: 'bg-slate-400/10 text-slate-400',
+  processing: 'bg-blue-400/10 text-blue-400',
+};
+
 function statusBadgeClass(status: string): string {
-  if (status === 'completed') return 'bg-green-400/10 text-green-400';
-  if (status === 'completed_partial') return 'bg-amber-400/10 text-amber-400';
-  if (status === 'failed') return 'bg-red-400/10 text-red-400';
-  if (status === 'cancelled') return 'bg-slate-400/10 text-slate-400';
-  if (status === 'processing') return 'bg-blue-400/10 text-blue-400';
-  return 'bg-yellow-400/10 text-yellow-400';
+  return STATUS_BADGE_CLASSES[status] ?? 'bg-yellow-400/10 text-yellow-400';
 }
 
 function progressBarColor(status: string): string {
@@ -33,11 +36,14 @@ function progressBarColor(status: string): string {
   return 'bg-primary';
 }
 
+const TIMELINE_DOT_DONE_COLORS: Record<string, string> = {
+  Failed: 'bg-red-400',
+  Partial: 'bg-amber-400',
+};
+
 function timelineDotColor(step: { label: string; done: boolean }): string {
   if (!step.done) return 'bg-slate-600';
-  if (step.label === 'Failed') return 'bg-red-400';
-  if (step.label === 'Partial') return 'bg-amber-400';
-  return 'bg-green-400';
+  return TIMELINE_DOT_DONE_COLORS[step.label] ?? 'bg-green-400';
 }
 
 function isTerminalStatus(status: string): boolean {
@@ -58,25 +64,26 @@ function computeDuration(
   return now - new Date(job.started_at ?? job.created_at).getTime();
 }
 
+const TERMINAL_STATUS_LABELS: Record<string, string> = {
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+  completed_partial: 'Partial',
+};
+
 function buildTimelineSteps(
   job: { created_at: string; started_at?: string; completed_at?: string } | null,
   status: string,
 ): Array<{ label: string; time: string | null; done: boolean }> {
   if (!job) return [];
-  const steps: Array<{ label: string; time: string | null; done: boolean }> = [
+  const terminalLabel = TERMINAL_STATUS_LABELS[status];
+  const finalStep = terminalLabel
+    ? { label: terminalLabel, time: job.completed_at ?? null, done: true }
+    : { label: 'Completed', time: job.completed_at ?? null, done: status === 'completed' };
+  return [
     { label: 'Created', time: job.created_at, done: true },
     { label: 'Started', time: job.started_at ?? null, done: !!job.started_at },
+    finalStep,
   ];
-  if (status === 'failed') {
-    steps.push({ label: 'Failed', time: job.completed_at ?? null, done: true });
-  } else if (status === 'cancelled') {
-    steps.push({ label: 'Cancelled', time: job.completed_at ?? null, done: true });
-  } else if (status === 'completed_partial') {
-    steps.push({ label: 'Partial', time: job.completed_at ?? null, done: true });
-  } else {
-    steps.push({ label: 'Completed', time: job.completed_at ?? null, done: status === 'completed' });
-  }
-  return steps;
 }
 
 function formatDuration(ms: number): string {

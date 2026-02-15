@@ -121,6 +121,26 @@ def _record_s3_failure(operation: str, error_type: str) -> None:
     S3_FETCH_ERRORS.labels(operation=operation, error_type=error_type).inc()
 
 
+def _handle_client_error_retry(exc: ClientError, attempt: int, max_retries: int, error_code: str) -> bool:
+    """Return True (and sleep) if a ClientError should be retried."""
+    if not _is_retryable_client_error(exc):
+        return False
+    return _should_retry_and_wait(attempt, max_retries, exc, f"throttled/timeout (code={error_code})")
+
+
+def _should_retry_and_wait(attempt: int, max_retries: int, exc, label: str) -> bool:
+    """If retries remain, log a warning, sleep with backoff, and return True."""
+    if attempt >= max_retries:
+        return False
+    delay = _s3_retry_delay(attempt)
+    logger.warning(
+        "S3 %s (attempt %d/%d), retrying in %.1fs",
+        label, attempt, max_retries, delay,
+    )
+    time.sleep(delay)
+    return True
+
+
 def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
     """Execute an S3 operation with exponential backoff retry and circuit breaker.
 
@@ -140,25 +160,13 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
             s3_circuit_breaker.record_success()
             return result
         except ClientError as exc:
-            if _is_retryable_client_error(exc) and attempt < max_retries:
-                delay = _s3_retry_delay(attempt)
-                error_code = exc.response.get("Error", {}).get("Code", "")
-                logger.warning(
-                    "S3 throttled/timeout (attempt %d/%d, code=%s), retrying in %.1fs",
-                    attempt, max_retries, error_code, delay,
-                )
-                time.sleep(delay)
+            error_code = exc.response.get("Error", {}).get("Code", "")
+            if _handle_client_error_retry(exc, attempt, max_retries, error_code):
                 continue
-            _record_s3_failure(operation, exc.response.get("Error", {}).get("Code", "") or "client_error")
+            _record_s3_failure(operation, error_code or "client_error")
             raise
         except _RETRYABLE_S3_ERRORS as exc:
-            if attempt < max_retries:
-                delay = _s3_retry_delay(attempt)
-                logger.warning(
-                    "S3 connection error (attempt %d/%d), retrying in %.1fs",
-                    attempt, max_retries, delay,
-                )
-                time.sleep(delay)
+            if _should_retry_and_wait(attempt, max_retries, exc, "connection error"):
                 continue
             _record_s3_failure(operation, type(exc).__name__)
             raise

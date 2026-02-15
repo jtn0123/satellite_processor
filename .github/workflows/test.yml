@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main, release]
 
+concurrency:
+  group: test-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   migrations:
     name: Alembic Migrations
@@ -81,18 +85,27 @@ jobs:
           pip install pip-audit
           pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
 
-      - name: Run backend tests
+      - name: Run backend tests with coverage
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           if [ "${{ matrix.shard }}" = "1" ]; then
-            pytest tests/test_[a-g]* -v --tb=short -q
+            pytest tests/test_[a-g]* --cov=app --cov-report= -v --tb=short -q
           elif [ "${{ matrix.shard }}" = "2" ]; then
-            pytest tests/test_[h-r]* -v --tb=short -q
+            pytest tests/test_[h-r]* --cov=app --cov-report= -v --tb=short -q
           else
-            pytest tests/test_[s-z]* -v --tb=short -q
+            pytest tests/test_[s-z]* --cov=app --cov-report= -v --tb=short -q
           fi
+          mv .coverage .coverage.shard${{ matrix.shard }}
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-shard${{ matrix.shard }}
+          path: backend/.coverage.shard${{ matrix.shard }}
+          retention-days: 1
 
       - name: Run core processor tests
         if: matrix.shard == 1
@@ -175,9 +188,16 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
-      - name: Unit Tests
+      - name: Unit Tests with coverage
         working-directory: frontend
-        run: npm test
+        run: npx vitest run --coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          retention-days: 1
 
       - name: Build
         working-directory: frontend
@@ -217,7 +237,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: frontend/playwright-report/

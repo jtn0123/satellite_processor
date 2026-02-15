@@ -279,23 +279,17 @@ function LogConsole({
 
 /* ── Main Component ─────────────────────────────────────── */
 
-export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
-  const { data: job, refetch } = useJob(jobId);
-  const { data: wsData, connected, logs: wsLogs } = useWebSocket(jobId);
-
-  const progress = wsData?.progress ?? job?.progress ?? 0;
-  const message = wsData?.message ?? job?.status_message ?? '';
-  const status = wsData?.status ?? job?.status ?? 'pending';
-
-  /* ── Clipboard ────────────────────────────────────────── */
+function useClipboard(jobId: string) {
   const [copied, setCopied] = useState(false);
   const copyId = useCallback(() => {
     void navigator.clipboard.writeText(jobId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [jobId]);
+  return { copied, copyId };
+}
 
-  /* ── Duration ticker ──────────────────────────────────── */
+function useDurationTicker(status: string) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (status === 'processing' || status === 'pending') {
@@ -303,10 +297,10 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       return () => clearInterval(t);
     }
   }, [status]);
+  return now;
+}
 
-  const durationMs = computeDuration(job, status, now);
-
-  /* ── Logs: fetch historical + merge WS ────────────────── */
+function useJobLogs(jobId: string, wsLogs: JobLogEntry[]) {
   const [historicalLogs, setHistoricalLogs] = useState<JobLogEntry[]>([]);
   const [logFilter, setLogFilter] = useState<string | null>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -328,6 +322,24 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
     }
   }, [filteredLogs.length, autoScroll]);
 
+  return { filteredLogs, logFilter, setLogFilter, autoScroll, setAutoScroll, logRef };
+}
+
+const HIDDEN_PARAM_KEYS = new Set(['image_paths', 'input_path', 'output_path']);
+
+export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
+  const { data: job, refetch } = useJob(jobId);
+  const { data: wsData, connected, logs: wsLogs } = useWebSocket(jobId);
+
+  const progress = wsData?.progress ?? job?.progress ?? 0;
+  const message = wsData?.message ?? job?.status_message ?? '';
+  const status = wsData?.status ?? job?.status ?? 'pending';
+
+  const { copied, copyId } = useClipboard(jobId);
+  const now = useDurationTicker(status);
+  const durationMs = computeDuration(job, status, now);
+  const { filteredLogs, logFilter, setLogFilter, autoScroll, setAutoScroll, logRef } = useJobLogs(jobId, wsLogs);
+
   /* ── Actions ──────────────────────────────────────────── */
   const handleDelete = useCallback(() => {
     void api.delete(`/jobs/${jobId}`).then(() => onBack());
@@ -346,9 +358,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
   /* ── Params display ───────────────────────────────────── */
   const params = job?.params ?? {};
-  const paramEntries = Object.entries(params).filter(
-    ([k]) => !['image_paths', 'input_path', 'output_path'].includes(k),
-  );
+  const paramEntries = Object.entries(params).filter(([k]) => !HIDDEN_PARAM_KEYS.has(k));
 
   /* ── Timeline steps ───────────────────────────────────── */
   const timelineSteps = buildTimelineSteps(job, status);

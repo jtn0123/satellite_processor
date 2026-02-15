@@ -141,17 +141,44 @@ def _should_retry_and_wait(attempt: int, max_retries: int, exc, label: str) -> b
     return True
 
 
+def _check_circuit_breaker(operation: str) -> None:
+    """Raise CircuitBreakerOpen if the S3 circuit breaker is tripped."""
+    from ..circuit_breaker import CircuitBreakerOpen, s3_circuit_breaker
+    from ..metrics import S3_FETCH_ERRORS
+
+    if not s3_circuit_breaker.allow_request():
+        S3_FETCH_ERRORS.labels(operation=operation, error_type="circuit_open").inc()
+        raise CircuitBreakerOpen("s3")
+
+
+def _handle_retry_exception(exc: Exception, attempt: int, max_retries: int, operation: str) -> bool:
+    """Handle an exception from an S3 operation attempt.
+
+    Returns True if the operation should be retried.
+    Raises the exception if it is not retryable.
+    """
+    if isinstance(exc, ClientError):
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        if _handle_client_error_retry(exc, attempt, max_retries, error_code):
+            return True
+        _record_s3_failure(operation, error_code or "client_error")
+        raise exc
+    # Must be a _RETRYABLE_S3_ERRORS instance
+    if _should_retry_and_wait(attempt, max_retries, exc, "connection error"):
+        return True
+    _record_s3_failure(operation, type(exc).__name__)
+    raise exc
+
+
 def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
     """Execute an S3 operation with exponential backoff retry and circuit breaker.
 
     Retries on transient errors: timeouts, throttling, connection issues.
     """
-    from ..circuit_breaker import CircuitBreakerOpen, s3_circuit_breaker
-    from ..metrics import S3_FETCH_COUNT, S3_FETCH_ERRORS
+    from ..circuit_breaker import s3_circuit_breaker
+    from ..metrics import S3_FETCH_COUNT
 
-    if not s3_circuit_breaker.allow_request():
-        S3_FETCH_ERRORS.labels(operation=operation, error_type="circuit_open").inc()
-        raise CircuitBreakerOpen("s3")
+    _check_circuit_breaker(operation)
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -159,17 +186,9 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
             S3_FETCH_COUNT.labels(operation=operation).inc()
             s3_circuit_breaker.record_success()
             return result
-        except ClientError as exc:
-            error_code = exc.response.get("Error", {}).get("Code", "")
-            if _handle_client_error_retry(exc, attempt, max_retries, error_code):
+        except (*_RETRYABLE_S3_ERRORS, ClientError) as exc:
+            if _handle_retry_exception(exc, attempt, max_retries, operation):
                 continue
-            _record_s3_failure(operation, error_code or "client_error")
-            raise
-        except _RETRYABLE_S3_ERRORS as exc:
-            if _should_retry_and_wait(attempt, max_retries, exc, "connection error"):
-                continue
-            _record_s3_failure(operation, type(exc).__name__)
-            raise
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
@@ -400,6 +419,32 @@ _FRAME_RETRY_ATTEMPTS = 2  # 1 retry = 2 total attempts
 _FRAME_RETRY_DELAY = 5.0   # seconds
 
 
+_FRAME_TRANSIENT_ERRORS = (
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    EndpointConnectionError,
+)
+
+
+def _download_nc_and_convert(
+    s3: Any, bucket: str, key: str, png_path: Path, sector: str,
+) -> dict[str, Any]:
+    """Download a NetCDF from S3 and convert to PNG. Returns on success, raises on error."""
+    tmp_nc_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
+            tmp_nc_path = Path(tmp_nc.name)
+            response = _retry_s3_operation(
+                s3.get_object, Bucket=bucket, Key=key, operation="get",
+            )
+            for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                tmp_nc.write(chunk)
+        _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
+    finally:
+        if tmp_nc_path:
+            tmp_nc_path.unlink(missing_ok=True)
+
+
 def _download_and_convert_frame(
     s3: Any,
     bucket: str,
@@ -418,29 +463,14 @@ def _download_and_convert_frame(
         OSError: On disk-space or other OS-level failures (should abort the job).
         Exception: On unexpected non-transient errors.
     """
-    _transient_errors = (
-        ConnectTimeoutError,
-        ReadTimeoutError,
-        EndpointConnectionError,
-    )
-
     scan_time: datetime = item["scan_time"]
     png_name = f"{satellite}_{sector}_{band}_{scan_time.strftime('%Y%m%dT%H%M%S')}.png"
     png_path = out / png_name
 
     last_exc = None
     for attempt in range(1, _FRAME_RETRY_ATTEMPTS + 1):
-        tmp_nc_path = None
         try:
-            with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
-                tmp_nc_path = Path(tmp_nc.name)
-                response = _retry_s3_operation(
-                    s3.get_object, Bucket=bucket, Key=item["key"], operation="get",
-                )
-                for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
-                    tmp_nc.write(chunk)
-
-            _netcdf_to_png_from_file(tmp_nc_path, png_path, sector=sector)
+            _download_nc_and_convert(s3, bucket, item["key"], png_path, sector)
             return {
                 "path": str(png_path),
                 "scan_time": scan_time,
@@ -448,7 +478,7 @@ def _download_and_convert_frame(
                 "band": band,
                 "sector": sector,
             }
-        except _transient_errors as exc:
+        except _FRAME_TRANSIENT_ERRORS as exc:
             last_exc = exc
             if attempt < _FRAME_RETRY_ATTEMPTS:
                 logger.warning(
@@ -456,9 +486,6 @@ def _download_and_convert_frame(
                     item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
                 )
                 time.sleep(_FRAME_RETRY_DELAY)
-        finally:
-            if tmp_nc_path:
-                tmp_nc_path.unlink(missing_ok=True)
 
     logger.warning("Failed to fetch %s after %d attempts: %s", item["key"], _FRAME_RETRY_ATTEMPTS, last_exc)
     return None

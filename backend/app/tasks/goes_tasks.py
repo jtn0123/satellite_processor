@@ -203,11 +203,67 @@ def _make_progress_callback(job_id: str, _log):
     return on_progress
 
 
+def _execute_goes_fetch(job_id: str, params: dict, _log) -> None:
+    """Run the core GOES fetch logic: list, download, store, and report."""
+    from ..services.goes_fetcher import fetch_frames, list_available
+
+    satellite, sector, band = params["satellite"], params["sector"], params["band"]
+    start_time = datetime.fromisoformat(params["start_time"])
+    end_time = datetime.fromisoformat(params["end_time"])
+    output_dir = str(Path(settings.output_dir) / f"goes_{job_id}")
+
+    _log_s3_prefixes(satellite, sector, band, start_time, end_time)
+
+    available = list_available(satellite, sector, band, start_time, end_time)
+    _log(f"Found {len(available)} available frames on S3")
+    logger.info(
+        "Found %d available frames for %s %s %s [%s → %s]",
+        len(available), satellite, sector, band,
+        start_time.isoformat(), end_time.isoformat(),
+    )
+
+    max_frames_limit = _read_max_frames_setting()
+    fetch_result = fetch_frames(
+        satellite=satellite, sector=sector, band=band,
+        start_time=start_time, end_time=end_time,
+        output_dir=output_dir,
+        on_progress=_make_progress_callback(job_id, _log),
+        max_frames=max_frames_limit,
+    )
+
+    results = fetch_result["frames"]
+    if results:
+        _create_fetch_records(job_id, sector, output_dir, results)
+
+    status_msg, final_status = _build_status_message(
+        satellite, sector, band, start_time, end_time,
+        len(results), fetch_result["total_available"],
+        fetch_result["capped"], fetch_result["failed_downloads"],
+        max_frames_limit,
+    )
+
+    _log(status_msg, level="info" if final_status == "completed" else "warning")
+    _update_job_db(
+        job_id, status=final_status, progress=100, output_path=output_dir,
+        completed_at=utcnow(), status_message=status_msg,
+    )
+    _publish_progress(job_id, 100, status_msg, final_status)
+
+
+def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
+    """Handle a failed GOES fetch job."""
+    logger.exception("GOES fetch job %s failed", job_id)
+    _log(f"GOES fetch failed: {error}", "error")
+    _update_job_db(
+        job_id, status="failed", error=str(error),
+        completed_at=utcnow(), status_message=f"Error: {error}",
+    )
+    _publish_progress(job_id, 0, f"Error: {error}", "failed")
+
+
 @celery_app.task(bind=True, name="fetch_goes_data")
 def fetch_goes_data(self, job_id: str, params: dict):
     """Download GOES frames for a time range and create Image records."""
-    from ..services.goes_fetcher import fetch_frames, list_available
-
     logger.info("Starting GOES fetch job %s", job_id)
     _update_job_db(
         job_id, status="processing", task_id=self.request.id,
@@ -219,56 +275,9 @@ def fetch_goes_data(self, job_id: str, params: dict):
     _log(f"GOES fetch started — {params.get('satellite')} {params.get('sector')} {params.get('band')}")
 
     try:
-        satellite, sector, band = params["satellite"], params["sector"], params["band"]
-        start_time = datetime.fromisoformat(params["start_time"])
-        end_time = datetime.fromisoformat(params["end_time"])
-        output_dir = str(Path(settings.output_dir) / f"goes_{job_id}")
-
-        _log_s3_prefixes(satellite, sector, band, start_time, end_time)
-
-        available = list_available(satellite, sector, band, start_time, end_time)
-        _log(f"Found {len(available)} available frames on S3")
-        logger.info(
-            "Found %d available frames for %s %s %s [%s → %s]",
-            len(available), satellite, sector, band,
-            start_time.isoformat(), end_time.isoformat(),
-        )
-
-        max_frames_limit = _read_max_frames_setting()
-        fetch_result = fetch_frames(
-            satellite=satellite, sector=sector, band=band,
-            start_time=start_time, end_time=end_time,
-            output_dir=output_dir,
-            on_progress=_make_progress_callback(job_id, _log),
-            max_frames=max_frames_limit,
-        )
-
-        results = fetch_result["frames"]
-        if results:
-            _create_fetch_records(job_id, sector, output_dir, results)
-
-        status_msg, final_status = _build_status_message(
-            satellite, sector, band, start_time, end_time,
-            len(results), fetch_result["total_available"],
-            fetch_result["capped"], fetch_result["failed_downloads"],
-            max_frames_limit,
-        )
-
-        _log(status_msg, level="info" if final_status == "completed" else "warning")
-        _update_job_db(
-            job_id, status=final_status, progress=100, output_path=output_dir,
-            completed_at=utcnow(), status_message=status_msg,
-        )
-        _publish_progress(job_id, 100, status_msg, final_status)
-
+        _execute_goes_fetch(job_id, params, _log)
     except Exception as e:
-        logger.exception("GOES fetch job %s failed", job_id)
-        _log(f"GOES fetch failed: {e}", "error")
-        _update_job_db(
-            job_id, status="failed", error=str(e),
-            completed_at=utcnow(), status_message=f"Error: {e}",
-        )
-        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        _handle_fetch_failure(job_id, e, _log)
         raise
 
 

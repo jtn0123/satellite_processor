@@ -91,11 +91,11 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           if [ "${{ matrix.shard }}" = "1" ]; then
-            pytest tests/test_[a-g]* --cov=app --cov-report= --cov-fail-under=0 -n auto -v --tb=short -q
+            pytest tests/test_[a-g]* --cov=app --cov-report= --cov-fail-under=0 -n auto --durations=10 --reruns 1 --durations=10 --reruns 1 -v --tb=short -q
           elif [ "${{ matrix.shard }}" = "2" ]; then
-            pytest tests/test_[h-r]* --cov=app --cov-report= --cov-fail-under=0 -n auto -v --tb=short -q
+            pytest tests/test_[h-r]* --cov=app --cov-report= --cov-fail-under=0 -n auto --durations=10 --reruns 1 --durations=10 --reruns 1 -v --tb=short -q
           else
-            pytest tests/test_[s-z]* --cov=app --cov-report= --cov-fail-under=0 -n auto -v --tb=short -q
+            pytest tests/test_[s-z]* --cov=app --cov-report= --cov-fail-under=0 -n auto --durations=10 --reruns 1 --durations=10 --reruns 1 -v --tb=short -q
           fi
           mv .coverage .coverage.shard${{ matrix.shard }}
 
@@ -111,7 +111,7 @@ jobs:
         if: matrix.shard == 1
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --durations=10 --reruns 1
 
   integration:
     name: Integration Tests (DB + Redis)
@@ -165,7 +165,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_sat
           REDIS_URL: redis://localhost:6379/0
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short -m integration tests/test_integration.py
+        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --reruns 1
 
   frontend:
     name: Frontend Build & Test
@@ -367,3 +367,16 @@ jobs:
                 body
               });
             }
+
+      - name: Check all jobs passed
+        if: always()
+        run: |
+          if [ "${{ needs.backend.result }}" != "success" ] || \
+             [ "${{ needs.frontend.result }}" != "success" ] || \
+             [ "${{ needs.integration.result }}" != "success" ] || \
+             [ "${{ needs.migrations.result }}" != "success" ] || \
+             [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "❌ One or more jobs failed"
+            exit 1
+          fi
+          echo "✅ All jobs passed"

@@ -49,18 +49,16 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
   }
 
   return (
-    <div className="@container space-y-2">
+    <div className="space-y-2">
       {displayed.map((job) => {
         const cfg = statusConfig[job.status] || statusConfig.pending;
         const Icon = cfg.icon;
         return (
-          <div
+          <button
+            type="button"
             key={job.id}
-            role="button"
-            tabIndex={0}
-            className="flex items-center gap-3 @max-[400px]:flex-wrap @max-[400px]:gap-2 bg-card border border-subtle rounded-lg px-4 py-3 @max-[400px]:px-3 @max-[400px]:py-2 hover:bg-card-hover cursor-pointer group transition-colors"
+            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700 rounded-lg px-4 py-3 sm:px-4 sm:py-3 hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer group transition-colors w-full text-left"
             onClick={() => onSelect?.(job.id)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(job.id); } }}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon
@@ -69,7 +67,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{job.job_type}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{job.job_type}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                   {job.status}
                 </span>
@@ -124,7 +122,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

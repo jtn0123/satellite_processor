@@ -242,3 +242,123 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
+
+  # Consolidate coverage from all shards + frontend and post PR summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, integration, migrations, e2e]
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Download backend coverage shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: backend-coverage-*
+          path: backend/
+          merge-multiple: true
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+      - name: Merge backend coverage
+        working-directory: backend
+        run: |
+          pip install coverage
+          coverage combine .coverage.shard* || true
+          coverage xml -o coverage.xml || true
+          coverage report --format=total > coverage-total.txt 2>/dev/null || echo "0" > coverage-total.txt
+          coverage report --show-missing --skip-covered > coverage-report.txt 2>/dev/null || true
+
+      - name: Upload merged coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-merged
+          path: backend/coverage.xml
+          retention-days: 1
+
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read backend coverage
+            let backendCov = 'N/A';
+            try {
+              backendCov = fs.readFileSync('backend/coverage-total.txt', 'utf8').trim() + '%';
+            } catch {}
+
+            // Read frontend coverage from lcov
+            let frontendCov = 'N/A';
+            try {
+              const lcov = fs.readFileSync('frontend/coverage/lcov.info', 'utf8');
+              const lf = (lcov.match(/^LF:(\d+)/gm) || []).reduce((s, l) => s + parseInt(l.split(':')[1]), 0);
+              const lh = (lcov.match(/^LH:(\d+)/gm) || []).reduce((s, l) => s + parseInt(l.split(':')[1]), 0);
+              frontendCov = lf > 0 ? (lh / lf * 100).toFixed(1) + '%' : 'N/A';
+            } catch {}
+
+            // Job results
+            const jobs = {
+              backend: '${{ needs.backend.result }}',
+              frontend: '${{ needs.frontend.result }}',
+              integration: '${{ needs.integration.result }}',
+              migrations: '${{ needs.migrations.result }}',
+              e2e: '${{ needs.e2e.result }}'
+            };
+
+            const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+
+            const body = `## 🤖 CI Summary
+
+            | Job | Status |
+            |-----|--------|
+            | Backend Tests (3 shards) | ${icon(jobs.backend)} ${jobs.backend} |
+            | Frontend Build & Test | ${icon(jobs.frontend)} ${jobs.frontend} |
+            | Integration Tests | ${icon(jobs.integration)} ${jobs.integration} |
+            | Alembic Migrations | ${icon(jobs.migrations)} ${jobs.migrations} |
+            | E2E Tests | ${icon(jobs.e2e)} ${jobs.e2e} |
+
+            ### 📊 Coverage
+            - **Backend:** ${backendCov}
+            - **Frontend:** ${frontendCov}
+
+            ---
+            *Updated: ${new Date().toISOString()}*`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('🤖 CI Summary')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }

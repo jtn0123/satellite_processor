@@ -48,4 +48,34 @@ describe('CompareView', () => {
     expect(screen.getByText(/GOES-16/)).toBeInTheDocument();
     expect(screen.getByText(/GOES-18/)).toBeInTheDocument();
   });
+
+  it('slider mode handles mouse interactions', () => {
+    const onClose = vi.fn();
+    render(<CompareView frameA={frameA as never} frameB={frameB as never} onClose={onClose} />);
+    fireEvent.click(screen.getByText('Slider'));
+    const container = document.querySelector('.cursor-col-resize');
+    expect(container).toBeTruthy();
+    if (container) {
+      fireEvent.mouseDown(container);
+      fireEvent.mouseMove(container, { clientX: 200 });
+      fireEvent.mouseUp(container);
+      fireEvent.mouseLeave(container);
+    }
+  });
+
+  it('renders frame images in side-by-side mode', () => {
+    const onClose = vi.fn();
+    render(<CompareView frameA={frameA as never} frameB={frameB as never} onClose={onClose} />);
+    const images = document.querySelectorAll('img');
+    expect(images.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders slider divider line in slider mode', () => {
+    const onClose = vi.fn();
+    render(<CompareView frameA={frameA as never} frameB={frameB as never} onClose={onClose} />);
+    fireEvent.click(screen.getByText('Slider'));
+    // The slider has a white divider line
+    const divider = document.querySelector('.bg-white');
+    expect(divider).toBeTruthy();
+  });
 });

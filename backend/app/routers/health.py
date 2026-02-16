@@ -5,7 +5,6 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -32,10 +31,10 @@ VERSION = _read_version()
 
 # --- Changelog parsing (cached) ---
 
-_changelog_cache: Optional[list] = None
+_changelog_cache: list | None = None
 
 
-def _find_changelog() -> Optional[Path]:
+def _find_changelog() -> Path | None:
     """Locate CHANGELOG.md next to VERSION file."""
     for candidate in [Path(__file__).resolve().parents[4] / "CHANGELOG.md", Path("CHANGELOG.md")]:
         if candidate.is_file():
@@ -65,7 +64,7 @@ def _parse_changelog(limit: int = 5) -> list:
 
     content = path.read_text(encoding="utf-8")
     releases: list = []
-    current: Optional[dict] = None
+    current: dict | None = None
 
     for line in content.splitlines():
         # Match ## [version](url) (date) or # version (date)

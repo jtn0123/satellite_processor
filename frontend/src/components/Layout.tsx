@@ -37,6 +37,7 @@ export default function Layout() {
   const [versionInfo, setVersionInfo] = useState({ version: '', commit: '', display: '' });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [hasNewVersion, setHasNewVersion] = useState(false);
   const drawerRef = useRef<HTMLDialogElement>(null);
 
   // #8: System theme detection - check preference on first load
@@ -75,13 +76,16 @@ export default function Layout() {
     fetch('/api/health/version')
       .then((r) => r.json())
       .then((d) => {
+        const version = d.version ?? '';
         const commit = d.commit ?? d.build ?? 'dev';
         const sha = commit && commit !== 'dev' ? ` (${commit.slice(0, 7)})` : '';
-        setVersionInfo({
-          version: d.version ?? '',
-          commit,
-          display: `v${d.version}${sha}`,
-        });
+        setVersionInfo({ version, commit, display: `v${version}${sha}` });
+        // Auto-open on new version
+        const lastSeen = localStorage.getItem('whatsNewLastSeen');
+        if (version && version !== lastSeen) {
+          setHasNewVersion(true);
+          setShowWhatsNew(true);
+        }
       })
       .catch(() => {});
   }, []);
@@ -192,10 +196,13 @@ export default function Layout() {
             <Cpu className="w-4 h-4" />
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors text-left"
+              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors text-left relative"
               aria-label="Show changelog"
             >
               Satellite Processor {versionInfo.display}
+              {hasNewVersion && (
+                <span className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" aria-label="New version available" />
+              )}
             </button>
           </div>
         </div>
@@ -290,17 +297,32 @@ export default function Layout() {
           <footer className="md:hidden mt-8 pb-4 text-center text-sm text-gray-500 dark:text-slate-400">
             <button
               onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors"
+              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors relative"
               aria-label="Show changelog"
             >
               {versionInfo.display}
+              {hasNewVersion && (
+                <span className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" aria-label="New version available" />
+              )}
             </button>
           </footer>
         </main>
       </div>
 
       {/* What's New Modal */}
-      {showWhatsNew && <WhatsNewModal onClose={() => setShowWhatsNew(false)} />}
+      {showWhatsNew && (
+        <WhatsNewModal
+          version={versionInfo.version}
+          commit={versionInfo.commit}
+          onClose={() => {
+            setShowWhatsNew(false);
+            setHasNewVersion(false);
+            if (versionInfo.version) {
+              localStorage.setItem('whatsNewLastSeen', versionInfo.version);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

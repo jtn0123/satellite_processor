@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { X, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface Release {
@@ -8,7 +8,15 @@ interface Release {
   changes: string[];
 }
 
-export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => void }>) {
+interface WhatsNewModalProps {
+  onClose: () => void;
+  version?: string;
+  commit?: string;
+}
+
+const GITHUB_RELEASES_BASE = 'https://github.com/jtn0123/satellite_processor/releases/tag';
+
+export default function WhatsNewModal({ onClose, version, commit }: Readonly<WhatsNewModalProps>) {
   const close = useCallback(() => onClose(), [onClose]);
   const dialogRef = useFocusTrap(close);
   const [releases, setReleases] = useState<Release[]>([]);
@@ -30,6 +38,9 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
     return () => { cancelled = true; };
   }, []);
 
+  const headerText = version ? `What's New — v${version}` : "What's New";
+  const commitSha = commit && commit !== 'dev' ? commit.slice(0, 7) : null;
+
   return (
     <dialog
       open
@@ -48,7 +59,12 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">What&apos;s New</h2>
+            <div>
+              <h2 className="text-lg font-semibold">{headerText}</h2>
+              {commitSha && (
+                <span className="text-xs text-gray-400 dark:text-slate-500">{commitSha}</span>
+              )}
+            </div>
           </div>
           <button onClick={close} className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
             <X className="w-5 h-5" />
@@ -65,10 +81,18 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
           )}
           {releases.map((release) => (
             <div key={release.version}>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-bold text-primary">v{release.version}</span>
                 <span className="text-xs text-gray-400 dark:text-slate-500">{release.date}</span>
               </div>
+              <a
+                href={`${GITHUB_RELEASES_BASE}/v${release.version}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors mb-2"
+              >
+                View on GitHub <ExternalLink className="w-3 h-3" />
+              </a>
               <ul className="space-y-1">
                 {release.changes.map((change) => (
                   <li key={change} className="text-sm text-gray-600 dark:text-slate-300 flex items-start gap-2">

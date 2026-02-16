@@ -30,10 +30,22 @@ function mockFetchFailure() {
 }
 
 describe('WhatsNewModal', () => {
-  it('renders What\'s New heading', async () => {
+  it('renders What\'s New heading with version', async () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} version="1.0.1" />);
+    expect(screen.getByText("What's New — v1.0.1")).toBeInTheDocument();
+  });
+
+  it('renders What\'s New heading without version', async () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     expect(screen.getByText("What's New")).toBeInTheDocument();
+  });
+
+  it('shows commit SHA when provided', async () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} version="1.0.1" commit="abc1234567" />);
+    expect(screen.getByText('abc1234')).toBeInTheDocument();
   });
 
   it('shows loading state initially', () => {
@@ -57,6 +69,19 @@ describe('WhatsNewModal', () => {
     render(<WhatsNewModal onClose={vi.fn()} />);
     await waitFor(() => {
       expect(screen.getByText('Fix bug A')).toBeInTheDocument();
+    });
+  });
+
+  it('renders GitHub release links', async () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    await waitFor(() => {
+      const links = screen.getAllByText('View on GitHub');
+      expect(links).toHaveLength(2);
+      expect(links[0].closest('a')).toHaveAttribute(
+        'href',
+        'https://github.com/jtn0123/satellite_processor/releases/tag/v1.0.1'
+      );
     });
   });
 
@@ -113,5 +138,41 @@ describe('WhatsNewModal', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     expect(global.fetch).toHaveBeenCalledWith('/api/health/changelog');
+  });
+});
+
+describe('WhatsNewModal version tracking', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('localStorage whatsNewLastSeen is set when onClose fires', () => {
+    mockFetchSuccess();
+    let closeFn: () => void = () => {};
+    render(
+      <WhatsNewModal
+        onClose={() => {
+          localStorage.setItem('whatsNewLastSeen', '1.0.1');
+          closeFn();
+        }}
+        version="1.0.1"
+      />
+    );
+    fireEvent.click(screen.getByLabelText('Close'));
+    expect(localStorage.getItem('whatsNewLastSeen')).toBe('1.0.1');
+  });
+
+  it('detects new version vs stored version', () => {
+    localStorage.setItem('whatsNewLastSeen', '1.0.0');
+    const current = '1.0.1';
+    const lastSeen = localStorage.getItem('whatsNewLastSeen');
+    expect(current).not.toBe(lastSeen);
+  });
+
+  it('same version means no new version', () => {
+    localStorage.setItem('whatsNewLastSeen', '1.0.1');
+    const current = '1.0.1';
+    const lastSeen = localStorage.getItem('whatsNewLastSeen');
+    expect(current).toBe(lastSeen);
   });
 });

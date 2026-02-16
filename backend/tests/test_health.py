@@ -3,7 +3,6 @@
 from unittest.mock import patch
 
 import pytest
-
 from app.routers.health import _parse_changelog, _strip_links
 
 

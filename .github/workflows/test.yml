@@ -140,7 +140,7 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Install system dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libgl1 libglib2.0-0 2>/dev/null || true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg libgl1 libglib2.0-0 2>/dev/null || true
 
       - name: Install Python dependencies
         run: |

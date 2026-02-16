@@ -54,7 +54,8 @@ export default function LiveTab() {
     if (products && !satellite) {
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
-  }, [products, satellite]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only set default once when products loads
+  }, [products]);
 
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],

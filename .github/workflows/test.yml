@@ -311,6 +311,73 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+  # ── Self-hosted benchmark mirrors ──────────────────────────────────
+  lint-audit-self-hosted:
+    name: Lint & Security Audit (Self-Hosted)
+    runs-on: [self-hosted, ci]
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv pip install --system -r backend/requirements.txt
+          uv pip install --system ruff pip-audit
+
+      - name: Lint with ruff
+        run: ruff check backend/
+
+      - name: Security audit (pip-audit)
+        run: pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
+
+  backend-self-hosted:
+    name: Backend Tests Self-Hosted (Shard 1/4)
+    runs-on: [self-hosted, ci]
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          for pkg in ffmpeg libgl1 libglib2.0-0; do
+            dpkg -s "$pkg" >/dev/null 2>&1 || NEED_INSTALL=1
+          done
+          if [ "${NEED_INSTALL:-}" = "1" ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg libgl1 libglib2.0-0
+          fi
+
+      - name: Install Python dependencies
+        run: |
+          pip install uv
+          uv pip install --system -r backend/requirements.txt
+
+      - name: Run backend tests (shard 1)
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest --splits 4 --group 1 \
+            --splitting-algorithm least_duration \
+            --cov=app --cov-report=xml:coverage-selfhosted.xml \
+            --cov-fail-under=0 -n auto --durations=10 --reruns 1 \
+            -v --tb=short -q \
+            tests/
+
+  # ── End benchmark mirrors ────────────────────────────────────────
+
   # Consolidate coverage from all shards + frontend and post PR summary
   pr-summary:
     name: PR Summary

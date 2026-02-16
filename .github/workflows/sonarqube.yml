@@ -89,9 +89,25 @@ jobs:
       - name: Merge backend coverage
         working-directory: backend
         run: |
-          pip install coverage
-          coverage combine .coverage.shard* || true
-          coverage xml -o coverage.xml || true
+          python3 -c "
+          import xml.etree.ElementTree as ET, glob, sys
+          files = sorted(glob.glob('coverage-shard*.xml'))
+          if not files:
+              print('No coverage files found'); sys.exit(0)
+          base = ET.parse(files[0])
+          root = base.getroot()
+          for f in files[1:]:
+              tree = ET.parse(f)
+              for pkg in tree.getroot().findall('.//package'):
+                  existing = root.find(f\".//package[@name='{pkg.get(\\\"name\\\")}']\" )
+                  if existing is not None:
+                      for cls in pkg.findall('classes/class'):
+                          existing.find('classes').append(cls)
+                  else:
+                      root.find('.//packages').append(pkg)
+          base.write('coverage.xml', xml_declaration=True)
+          print(f'Merged {len(files)} coverage files')
+          "
 
       - uses: sonarsource/sonarqube-scan-action@v7
         env:

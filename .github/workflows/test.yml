@@ -9,9 +9,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Detect which paths changed to skip irrelevant jobs
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'satellite_processor/**'
+              - 'requirements*.txt'
+              - 'backend/requirements.txt'
+            frontend:
+              - 'frontend/**'
+
   migrations:
     name: Alembic Migrations
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
     services:
       postgres:
         image: postgres:16
@@ -47,9 +70,38 @@ jobs:
           DATABASE_URL: postgresql+psycopg2://test:test@localhost:5432/test_sat
         run: alembic upgrade head
 
+  lint-audit:
+    name: Lint & Security Audit
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ruff pip-audit
+
+      - name: Lint with ruff
+        run: ruff check backend/
+
+      - name: Security audit (pip-audit)
+        run: pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
+
   backend:
     name: Backend Tests (Shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -64,43 +116,28 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg libgl1 libglib2.0-0
+      - name: Cache apt packages
+        uses: awalber/cache-apt-pkgs-action@latest
+        with:
+          packages: ffmpeg libgl1 libglib2.0-0
 
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           pip install -r backend/requirements.txt
-          pip install ruff
-
-      - name: Lint with ruff
-        if: matrix.shard == 1
-        run: ruff check backend/
-
-      - name: Security audit (pip-audit)
-        if: matrix.shard == 1
-        run: |
-          pip install pip-audit
-          pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
 
       - name: Run backend tests with coverage
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          SHARD=${{ matrix.shard }}
-          COMMON="--cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q"
-          if [ "$SHARD" = "1" ]; then
-            pytest tests/test_[a-e]* $COMMON
-          elif [ "$SHARD" = "2" ]; then
-            pytest tests/test_[f]* tests/test_goes_[a-d]* tests/test_gap* $COMMON
-          elif [ "$SHARD" = "3" ]; then
-            pytest tests/test_goes_[e-z]* $COMMON
-          else
-            pytest tests/test_[h-z]* $COMMON
-          fi
+          pytest --splits 4 --group ${{ matrix.shard }} \
+            --splitting-algorithm least_duration \
+            --cov=app --cov-report=xml:coverage-shard${{ matrix.shard }}.xml \
+            --cov-fail-under=0 -n auto --durations=10 --reruns 1 \
+            -v --tb=short -q \
+            --store-durations \
+            tests/
 
       - name: Upload coverage artifact
         if: always()
@@ -109,6 +146,14 @@ jobs:
           name: backend-coverage-shard${{ matrix.shard }}
           path: backend/coverage-shard${{ matrix.shard }}.xml
           retention-days: 1
+
+      - name: Upload test durations
+        if: always() && matrix.shard == 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-durations
+          path: backend/.test_durations
+          retention-days: 30
 
       - name: Run core processor tests
         if: matrix.shard == 1
@@ -119,6 +164,8 @@ jobs:
   integration:
     name: Integration Tests (DB + Redis)
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
     services:
       postgres:
         image: postgres:16
@@ -152,10 +199,10 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg libgl1 libglib2.0-0
+      - name: Cache apt packages
+        uses: awalber/cache-apt-pkgs-action@latest
+        with:
+          packages: ffmpeg libgl1 libglib2.0-0
 
       - name: Install Python dependencies
         run: |
@@ -173,6 +220,8 @@ jobs:
   frontend:
     name: Frontend Build & Test
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -206,9 +255,17 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 1
+
   e2e:
     name: E2E Tests (Shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
+    needs: [frontend]
     strategy:
       fail-fast: false
       matrix:
@@ -228,9 +285,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
 
       - name: Install Playwright Browsers
         working-directory: frontend
@@ -250,11 +309,19 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-shard${{ matrix.shard }}
+          path: frontend/test-results/
+          retention-days: 7
+
   # Consolidate coverage from all shards + frontend and post PR summary
   pr-summary:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [backend, frontend, integration, migrations, e2e]
+    needs: [changes, backend, frontend, integration, migrations, e2e, lint-audit]
     if: always() && github.event_name == 'pull_request'
     permissions:
       pull-requests: write
@@ -267,6 +334,7 @@ jobs:
           python-version: "3.11"
 
       - name: Download backend coverage shards
+        if: needs.backend.result == 'success'
         uses: actions/download-artifact@v4
         with:
           pattern: backend-coverage-*
@@ -274,25 +342,30 @@ jobs:
           merge-multiple: true
 
       - name: Download frontend coverage
+        if: needs.frontend.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: frontend-coverage
           path: frontend/coverage/
 
       - name: Merge backend coverage
-        working-directory: backend
         run: |
-          python3 ../scripts/merge_coverage.py
-          # Extract total coverage percentage
-          python3 -c "
+          if [ -f backend/coverage-shard1.xml ]; then
+            cd backend
+            python3 ../scripts/merge_coverage.py
+            python3 -c "
           import xml.etree.ElementTree as ET
           root = ET.parse('coverage.xml').getroot()
           rate = root.get('line-rate', '0')
           print(round(float(rate) * 100, 1))
           " > coverage-total.txt 2>/dev/null || echo "0" > coverage-total.txt
-          cat coverage-total.txt
+            cat coverage-total.txt
+          else
+            echo "N/A" > backend/coverage-total.txt
+          fi
 
       - name: Upload merged coverage
+        if: needs.backend.result == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage-merged
@@ -308,7 +381,8 @@ jobs:
             // Read backend coverage
             let backendCov = 'N/A';
             try {
-              backendCov = fs.readFileSync('backend/coverage-total.txt', 'utf8').trim() + '%';
+              backendCov = fs.readFileSync('backend/coverage-total.txt', 'utf8').trim();
+              if (backendCov !== 'N/A') backendCov += '%';
             } catch {}
 
             // Read frontend coverage from lcov
@@ -320,13 +394,14 @@ jobs:
               frontendCov = lf > 0 ? (lh / lf * 100).toFixed(1) + '%' : 'N/A';
             } catch {}
 
-            // Job results
+            // Job results — skipped jobs are OK when path-filtered
             const jobs = {
               backend: '${{ needs.backend.result }}',
               frontend: '${{ needs.frontend.result }}',
               integration: '${{ needs.integration.result }}',
               migrations: '${{ needs.migrations.result }}',
-              e2e: '${{ needs.e2e.result }}'
+              e2e: '${{ needs.e2e.result }}',
+              'lint-audit': '${{ needs.lint-audit.result }}'
             };
 
             const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
@@ -335,6 +410,7 @@ jobs:
 
             | Job | Status |
             |-----|--------|
+            | Lint & Audit | ${icon(jobs['lint-audit'])} ${jobs['lint-audit']} |
             | Backend Tests (4 shards) | ${icon(jobs.backend)} ${jobs.backend} |
             | Frontend Build & Test | ${icon(jobs.frontend)} ${jobs.frontend} |
             | Integration Tests | ${icon(jobs.integration)} ${jobs.integration} |
@@ -377,12 +453,25 @@ jobs:
       - name: Check all jobs passed
         if: always()
         run: |
-          if [ "${{ needs.backend.result }}" != "success" ] || \
-             [ "${{ needs.frontend.result }}" != "success" ] || \
-             [ "${{ needs.integration.result }}" != "success" ] || \
-             [ "${{ needs.migrations.result }}" != "success" ] || \
-             [ "${{ needs.e2e.result }}" != "success" ]; then
-            echo "❌ One or more jobs failed"
+          # Skipped jobs are OK (path-filtered), only fail on actual failures
+          check_job() {
+            local result="$1"
+            local name="$2"
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "❌ $name failed: $result"
+              return 1
+            fi
+          }
+
+          FAILED=0
+          check_job "${{ needs.backend.result }}" "backend" || FAILED=1
+          check_job "${{ needs.frontend.result }}" "frontend" || FAILED=1
+          check_job "${{ needs.integration.result }}" "integration" || FAILED=1
+          check_job "${{ needs.migrations.result }}" "migrations" || FAILED=1
+          check_job "${{ needs.e2e.result }}" "e2e" || FAILED=1
+          check_job "${{ needs.lint-audit.result }}" "lint-audit" || FAILED=1
+
+          if [ "$FAILED" = "1" ]; then
             exit 1
           fi
-          echo "✅ All jobs passed"
+          echo "✅ All jobs passed (or were skipped due to path filters)"

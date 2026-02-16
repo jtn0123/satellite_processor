@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Crop, Save } from 'lucide-react';
 import api from '../../api/client';
 import { formatBytes } from './utils';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import Modal from './Modal';
 import type { GoesFrame, CropPreset } from './types';
 import { extractArray } from '../../utils/safeData';
 
@@ -26,14 +26,6 @@ export default function FramePreviewModal({
   const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
-  const dialogRef = useFocusTrap(onClose);
-
-  // Listen for global close-modal event (Escape key)
-  useEffect(() => {
-    const handler = () => onClose();
-    globalThis.addEventListener('close-modal', handler);
-    return () => globalThis.removeEventListener('close-modal', handler);
-  }, [onClose]);
 
   // Keyboard navigation between frames
   useEffect(() => {
@@ -131,120 +123,116 @@ export default function FramePreviewModal({
   })() : undefined;
 
   return (
-    <dialog
-      open
-      className="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      
+    <Modal
+      onClose={onClose}
+      ariaLabel="Frame Preview"
+      overlayClassName="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
+      panelClassName="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col modal-panel"
     >
-      <button type="button" className="fixed inset-0 w-full h-full bg-transparent cursor-default" onClick={onClose} aria-label="Close modal" />
-      <div ref={dialogRef} aria-label="Frame Preview"
-        className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 w-full h-full sm:w-auto sm:h-auto sm:max-w-5xl sm:max-h-[90vh] overflow-hidden flex flex-col modal-panel"
-        aria-hidden="false">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
-          <div>
-            <h3 className="text-lg font-semibold">{frame.satellite} · {frame.band} · {frame.sector}</h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
-          </div>
-          <button onClick={onClose} aria-label="Close preview"><X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" /></button>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
+        <div>
+          <h3 className="text-lg font-semibold">{frame.satellite} · {frame.band} · {frame.sector}</h3>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}</p>
         </div>
+        <button onClick={onClose} aria-label="Close preview"><X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" /></button>
+      </div>
 
-        <div className="flex-1 overflow-auto p-4">
-          <div
-            ref={containerRef}
-            className="relative inline-block cursor-crosshair select-none"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            <img
-              ref={imgRef}
-              src={frame.thumbnail_path
-                ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`
-                : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
-              alt={`${frame.satellite} ${frame.band}`}
-              className="max-w-full max-h-[60vh] rounded"
-              loading="lazy"
-              draggable={false}
-              onLoad={handleImageLoad}
+      <div className="flex-1 overflow-auto p-4">
+        <div
+          ref={containerRef}
+          className="relative inline-block cursor-crosshair select-none"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <img
+            ref={imgRef}
+            src={frame.thumbnail_path
+              ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`
+              : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
+            alt={`${frame.satellite} ${frame.band}`}
+            className="max-w-full max-h-[60vh] rounded"
+            loading="lazy"
+            draggable={false}
+            onLoad={handleImageLoad}
+          />
+          {overlayStyle && (
+            <div
+              className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
+              style={{
+                left: overlayStyle.left,
+                top: overlayStyle.top,
+                width: overlayStyle.width,
+                height: overlayStyle.height,
+              }}
             />
-            {overlayStyle && (
-              <div
-                className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
-                style={{
-                  left: overlayStyle.left,
-                  top: overlayStyle.top,
-                  width: overlayStyle.width,
-                  height: overlayStyle.height,
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 space-y-3">
-          {cropRect && (
-            <div className="flex items-center gap-4 text-sm">
-              <Crop className="w-4 h-4 text-primary" />
-              <span className="text-gray-600 dark:text-slate-300">
-                X: <span className="text-gray-900 dark:text-white font-mono">{cropRect.x}</span> &nbsp;
-                Y: <span className="text-gray-900 dark:text-white font-mono">{cropRect.y}</span> &nbsp;
-                W: <span className="text-gray-900 dark:text-white font-mono">{cropRect.w}</span> &nbsp;
-                H: <span className="text-gray-900 dark:text-white font-mono">{cropRect.h}</span>
-              </span>
-              <button
-                onClick={() => setShowSavePreset(true)}
-                className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30"
-              >
-                <Save className="w-3 h-3" /> Save Preset
-              </button>
-              <button
-                onClick={() => setCropRect(null)}
-                className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-white"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-
-          {showSavePreset && cropRect && (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
-                placeholder="Preset name (e.g. San Diego)"
-                className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm"
-              />
-              <button
-                onClick={() => saveCropPresetMutation.mutate({
-                  name: presetName, x: cropRect.x, y: cropRect.y, width: cropRect.w, height: cropRect.h,
-                })}
-                disabled={!presetName || saveCropPresetMutation.isPending}
-                className="px-3 py-1.5 text-sm bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {saveCropPresetMutation.isPending ? 'Saving...' : 'Save'}
-              </button>
-              <button onClick={() => setShowSavePreset(false)} className="text-xs text-gray-500 dark:text-slate-400">Cancel</button>
-            </div>
-          )}
-
-          {cropPresets && cropPresets.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-400 dark:text-slate-500">Presets:</span>
-              {cropPresets.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => applyCropPreset(p)}
-                  className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors"
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
           )}
         </div>
       </div>
-    </dialog>
+
+      <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 space-y-3">
+        {cropRect && (
+          <div className="flex items-center gap-4 text-sm">
+            <Crop className="w-4 h-4 text-primary" />
+            <span className="text-gray-600 dark:text-slate-300">
+              X: <span className="text-gray-900 dark:text-white font-mono">{cropRect.x}</span> &nbsp;
+              Y: <span className="text-gray-900 dark:text-white font-mono">{cropRect.y}</span> &nbsp;
+              W: <span className="text-gray-900 dark:text-white font-mono">{cropRect.w}</span> &nbsp;
+              H: <span className="text-gray-900 dark:text-white font-mono">{cropRect.h}</span>
+            </span>
+            <button
+              onClick={() => setShowSavePreset(true)}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30"
+            >
+              <Save className="w-3 h-3" /> Save Preset
+            </button>
+            <button
+              onClick={() => setCropRect(null)}
+              className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-white"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {showSavePreset && cropRect && (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Preset name (e.g. San Diego)"
+              className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm"
+            />
+            <button
+              onClick={() => saveCropPresetMutation.mutate({
+                name: presetName, x: cropRect.x, y: cropRect.y, width: cropRect.w, height: cropRect.h,
+              })}
+              disabled={!presetName || saveCropPresetMutation.isPending}
+              className="px-3 py-1.5 text-sm bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {saveCropPresetMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => setShowSavePreset(false)} className="text-xs text-gray-500 dark:text-slate-400">Cancel</button>
+          </div>
+        )}
+
+        {cropPresets && cropPresets.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 dark:text-slate-500">Presets:</span>
+            {cropPresets.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => applyCropPreset(p)}
+                className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors"
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }

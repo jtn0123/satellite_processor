@@ -128,6 +128,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
 
         <div
           role="application"
+          tabIndex={0}
+          aria-label="Pan and zoom area"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           className="flex items-center justify-center"

@@ -6,6 +6,9 @@ import CompareView from '../components/GoesData/CompareView';
 import ImageViewer from '../components/GoesData/ImageViewer';
 import AddToCollectionModal from '../components/GoesData/AddToCollectionModal';
 import TagModal from '../components/GoesData/TagModal';
+import ComparisonModal from '../components/GoesData/ComparisonModal';
+import FramePreviewModal from '../components/GoesData/FramePreviewModal';
+import Modal from '../components/GoesData/Modal';
 
 // Mock API client
 vi.mock('../api/client', () => ({
@@ -59,7 +62,7 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
     render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />);
 
     const fieldsets = document.querySelectorAll('fieldset');
-    expect(fieldsets.length).toBe(4); // Speed Preset, Resolution, Quality, Overlays
+    expect(fieldsets.length).toBe(4);
 
     const legends = document.querySelectorAll('legend');
     expect(legends.length).toBe(4);
@@ -91,6 +94,44 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
   });
 });
 
+describe('Shared Modal component', () => {
+  it('renders dialog with backdrop button', () => {
+    render(<Modal onClose={() => {}} ariaLabel="Test Modal"><p>Content</p></Modal>);
+    expect(document.querySelector('dialog')).toBeTruthy();
+    expect(screen.getByLabelText('Close modal')).toBeTruthy();
+    expect(screen.getByText('Content')).toBeTruthy();
+  });
+
+  it('calls onClose when backdrop button is clicked', () => {
+    const onClose = vi.fn();
+    render(<Modal onClose={onClose} ariaLabel="Test Modal"><p>Hi</p></Modal>);
+    fireEvent.click(screen.getByLabelText('Close modal'));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('calls onClose on close-modal event', () => {
+    const onClose = vi.fn();
+    render(<Modal onClose={onClose} ariaLabel="Test Modal"><p>Hi</p></Modal>);
+    globalThis.dispatchEvent(new Event('close-modal'));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('applies custom overlay and panel classNames', () => {
+    render(
+      <Modal onClose={() => {}} ariaLabel="Custom" overlayClassName="custom-overlay" panelClassName="custom-panel">
+        <p>Custom</p>
+      </Modal>
+    );
+    expect(document.querySelector('.custom-overlay')).toBeTruthy();
+    expect(document.querySelector('.custom-panel')).toBeTruthy();
+  });
+
+  it('sets aria-label on the panel div', () => {
+    render(<Modal onClose={() => {}} ariaLabel="My Dialog"><p>X</p></Modal>);
+    expect(screen.getByLabelText('My Dialog')).toBeTruthy();
+  });
+});
+
 describe('Dialog modal rendering', () => {
   it('AddToCollectionModal renders as dialog element', () => {
     render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
@@ -103,21 +144,50 @@ describe('Dialog modal rendering', () => {
   });
 
   it('AddToCollectionModal closes on backdrop button click', () => {
-    let closed = false;
-    const handleClose = () => { closed = true; };
-    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={handleClose} />));
-    const backdrop = screen.getByLabelText('Close modal');
-    fireEvent.click(backdrop);
-    expect(closed).toBe(true);
+    const onClose = vi.fn();
+    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={onClose} />));
+    fireEvent.click(screen.getByLabelText('Close modal'));
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('TagModal closes on backdrop button click', () => {
-    let closed = false;
-    const handleClose = () => { closed = true; };
-    render(withQueryClient(<TagModal frameIds={['1']} onClose={handleClose} />));
-    const backdrop = screen.getByLabelText('Close modal');
-    fireEvent.click(backdrop);
-    expect(closed).toBe(true);
+    const onClose = vi.fn();
+    render(withQueryClient(<TagModal frameIds={['1']} onClose={onClose} />));
+    fireEvent.click(screen.getByLabelText('Close modal'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('ComparisonModal renders as dialog and closes on backdrop click', () => {
+    const onClose = vi.fn();
+    const frameA = makeFrame('a');
+    const frameB = makeFrame('b');
+    render(<ComparisonModal frameA={frameA} frameB={frameB} onClose={onClose} />);
+    expect(document.querySelector('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Close modal'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('FramePreviewModal renders as dialog and closes on backdrop click', () => {
+    const onClose = vi.fn();
+    const frame = makeFrame('1');
+    render(withQueryClient(<FramePreviewModal frame={frame} onClose={onClose} />));
+    expect(document.querySelector('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Close modal'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('ComparisonModal closes on close-modal event', () => {
+    const onClose = vi.fn();
+    render(<ComparisonModal frameA={makeFrame('a')} frameB={makeFrame('b')} onClose={onClose} />);
+    globalThis.dispatchEvent(new Event('close-modal'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('FramePreviewModal closes on close-modal event', () => {
+    const onClose = vi.fn();
+    render(withQueryClient(<FramePreviewModal frame={makeFrame('1')} onClose={onClose} />));
+    globalThis.dispatchEvent(new Event('close-modal'));
+    expect(onClose).toHaveBeenCalled();
   });
 });
 
@@ -139,15 +209,12 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
     const frameB = makeFrame('b');
     render(<CompareView frameA={frameA} frameB={frameB} onClose={() => {}} />);
 
-    // Switch to slider mode
     const sliderBtn = screen.getByText('Slider');
     fireEvent.click(sliderBtn);
 
     const rangeInput = document.querySelector('input[type="range"]');
     expect(rangeInput).toBeTruthy();
     expect(rangeInput?.getAttribute('aria-label')).toBe('Image comparison slider');
-
-    // No role="slider" on any div
     expect(document.querySelector('[role="slider"]')).toBeNull();
   });
 
@@ -180,5 +247,81 @@ describe('ImageViewer accessibility', () => {
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
     expect(dialog?.getAttribute('aria-label')).toBe('Image viewer');
+  });
+
+  it('pan area has role="application" with tabIndex and aria-label', () => {
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+
+    const panArea = document.querySelector('[role="application"]');
+    expect(panArea).toBeTruthy();
+    expect(panArea?.getAttribute('tabindex')).toBe('0');
+    expect(panArea?.getAttribute('aria-label')).toBe('Pan and zoom area');
+  });
+
+  it('getCursorStyle returns default when scale <= 1', () => {
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+
+    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    // At default scale=1, cursor should be 'default'
+    expect(img.style.cursor).toBe('default');
+  });
+
+  it('getCursorStyle returns grab when zoomed in', () => {
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+
+    // Click zoom in button
+    const zoomInBtn = screen.getByTitle('Zoom in');
+    fireEvent.click(zoomInBtn);
+
+    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    expect(img.style.cursor).toBe('grab');
+  });
+
+  it('navigates with arrow buttons when multiple frames', () => {
+    const frames = [makeFrame('1'), makeFrame('2'), makeFrame('3')];
+    const onNavigate = vi.fn();
+    render(<ImageViewer frame={frames[1]} frames={frames} onClose={() => {}} onNavigate={onNavigate} />);
+
+    // Both prev and next buttons should be visible for middle frame
+    const buttons = document.querySelectorAll('button');
+    expect(buttons.length).toBeGreaterThan(2);
+  });
+
+  it('closes on Escape key', () => {
+    const onClose = vi.fn();
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={onClose} onNavigate={() => {}} />);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('handles wheel zoom', () => {
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+
+    const panArea = document.querySelector('[role="application"]')!;
+    fireEvent.wheel(panArea, { deltaY: -100 });
+
+    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    // After zooming in, cursor should change to 'grab'
+    expect(img.style.cursor).toBe('grab');
+  });
+
+  it('reset zoom button works', () => {
+    const frame = makeFrame('1');
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+
+    // Zoom in first
+    fireEvent.click(screen.getByTitle('Zoom in'));
+    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    expect(img.style.cursor).toBe('grab');
+
+    // Reset
+    fireEvent.click(screen.getByTitle('Reset zoom'));
+    expect(img.style.cursor).toBe('default');
   });
 });

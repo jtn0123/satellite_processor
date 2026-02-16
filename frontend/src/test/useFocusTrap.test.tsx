@@ -36,6 +36,7 @@ describe('useFocusTrap', () => {
     fireEvent.keyDown(document, { key: 'Tab' });
     // Focus should wrap to first
     await act(() => new Promise((r) => setTimeout(r, 10)));
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('first');
   });
 
   it('wraps focus backward from first to last on Shift+Tab', async () => {
@@ -45,6 +46,8 @@ describe('useFocusTrap', () => {
     const first = getByTestId('first');
     first.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    await act(() => new Promise((r) => setTimeout(r, 10)));
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('third');
   });
 
   it('restores focus on unmount', async () => {

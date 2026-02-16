@@ -22,6 +22,7 @@ from ..utils import utcnow
 from .database import Base
 
 GOES_FRAMES_ID_FK = "goes_frames.id"
+JOBS_ID_FK = "jobs.id"
 
 
 def gen_uuid():
@@ -99,7 +100,7 @@ class GoesFrame(Base):
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
     thumbnail_path = Column(Text, nullable=True)
-    source_job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+    source_job_id = Column(String(36), ForeignKey(JOBS_ID_FK), nullable=True)
     created_at = Column(DateTime, default=utcnow)
 
     source_job = relationship("Job", foreign_keys=[source_job_id])
@@ -198,7 +199,7 @@ class Animation(Base):
     created_at = Column(DateTime, default=utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
     error = Column(Text, default="")
-    job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+    job_id = Column(String(36), ForeignKey(JOBS_ID_FK), nullable=True)
 
     crop_preset = relationship("CropPreset", foreign_keys=[crop_preset_id])
     job = relationship("Job", foreign_keys=[job_id])
@@ -270,7 +271,7 @@ class Composite(Base):
     file_size = Column(BigInteger, default=0)
     status = Column(String(20), default="pending", index=True)
     error = Column(Text, default="")
-    job_id = Column(String(36), ForeignKey("jobs.id"), nullable=True)
+    job_id = Column(String(36), ForeignKey(JOBS_ID_FK), nullable=True)
     created_at = Column(DateTime, default=utcnow)
 
     job = relationship("Job", foreign_keys=[job_id])
@@ -299,7 +300,7 @@ class JobLog(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     job_id = Column(
         String(36),
-        ForeignKey("jobs.id", ondelete="CASCADE"),
+        ForeignKey(JOBS_ID_FK, ondelete="CASCADE"),
         index=True,
         nullable=False,
     )

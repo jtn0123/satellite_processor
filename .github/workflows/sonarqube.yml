@@ -6,11 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: sonar-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sonarqube:
+    name: SonarQube Scan
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork == false
     runs-on: [self-hosted, sonar]
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -19,31 +24,74 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Backend coverage
+      # Wait for Test workflow to finish and find its run ID
+      - name: Wait for Test workflow
+        id: wait-test
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = context.payload.pull_request?.head?.ref || context.ref?.replace('refs/heads/', '');
+            const headSha = context.payload.pull_request?.head?.sha || context.sha;
+            // Look for runs created within last 10 minutes (same push)
+            const triggerTime = new Date(Date.now() - 600000).toISOString();
+            console.log(`Looking for Test workflow on branch=${branch} sha=${headSha} created after ~${triggerTime}`);
+
+            // Poll for up to 15 minutes
+            for (let i = 0; i < 30; i++) {
+              const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                owner, repo,
+                branch: branch,
+                head_sha: headSha,
+                event: 'pull_request',
+                status: 'completed',
+                per_page: 5,
+                created: `>=${triggerTime.split('T')[0]}`
+              });
+
+              // Find the most recent successful Test run matching exact commit
+              const testRun = runs.data.workflow_runs
+                .filter(r => r.name === 'Test' && r.status === 'completed' && r.head_sha === headSha)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+              if (testRun) {
+                core.setOutput('run_id', testRun.id);
+                console.log(`Found Test run: ${testRun.id} (created ${testRun.created_at})`);
+                return;
+              }
+
+              console.log(`Waiting for Test workflow... (attempt ${i + 1}/30)`);
+              await new Promise(r => setTimeout(r, 30000));
+            }
+            core.setFailed('Test workflow did not complete in time');
+
+      - name: Download backend coverage shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: backend-coverage-*
+          path: backend/
+          merge-multiple: true
+          run-id: ${{ steps.wait-test.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          run-id: ${{ steps.wait-test.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Install backend dependencies
-        run: pip install -r backend/requirements.txt
-      - name: Run backend tests with coverage
-        run: |
-          cd backend
-          python -m pytest tests/ --cov=app --cov-report=xml:coverage.xml -q
-        env:
-          DATABASE_URL: "sqlite+aiosqlite:///./test.db"
 
-      # Frontend coverage
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-      - name: Install frontend dependencies
-        run: cd frontend && npm ci
-      - name: Run frontend tests with coverage
-        run: cd frontend && npx vitest run --coverage
+      - name: Merge backend coverage
+        working-directory: backend
+        run: python3 ../scripts/merge_coverage.py
 
-      # SonarQube scan
       - uses: sonarsource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

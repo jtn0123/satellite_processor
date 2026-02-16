@@ -1,11 +1,22 @@
 """Shared test fixtures for backend API tests."""
 
+import pytest
 import pytest_asyncio
 from app.db.database import Base, get_db
 from app.main import app
 from app.rate_limit import limiter
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip integration tests unless explicitly requested with -m integration."""
+    if "integration" in (config.getoption("-m") or ""):
+        return
+    skip_integration = pytest.mark.skip(reason="integration test — run with -m integration")
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip_integration)
 
 # In-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

@@ -4,7 +4,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import app.main as main_module
-import pytest
 
 
 async def _slow_get_message(**kwargs):
@@ -26,8 +25,7 @@ def _mock_redis_client():
     return client
 
 
-@pytest.mark.asyncio
-async def test_job_websocket_connect(client):
+def test_job_websocket_connect():
     """WebSocket should accept connection and send connected message."""
     from starlette.testclient import TestClient
 
@@ -45,8 +43,7 @@ async def test_job_websocket_connect(client):
         main_module.get_redis_client = original
 
 
-@pytest.mark.asyncio
-async def test_events_websocket_connect(client):
+def test_events_websocket_connect():
     """Global events WebSocket should accept and send connected message."""
     from starlette.testclient import TestClient
 
@@ -63,8 +60,7 @@ async def test_events_websocket_connect(client):
         main_module.get_redis_client = original
 
 
-@pytest.mark.asyncio
-async def test_status_websocket_connect(client):
+def test_status_websocket_connect():
     """Status heartbeat WebSocket should accept and send connected message."""
     from starlette.testclient import TestClient
 

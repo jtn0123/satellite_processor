@@ -45,6 +45,7 @@ from ..services.cache import get_cached, invalidate, make_cache_key
 from ..utils.path_validation import validate_file_path
 
 _COLLECTION_NOT_FOUND = "Collection not found"
+_FRAME_NOT_FOUND = "Frame not found"
 
 router = APIRouter(prefix="/api/goes", tags=["goes-data"])
 
@@ -256,7 +257,7 @@ async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
     )
     frame = result.scalars().first()
     if not frame:
-        raise APIError(404, "not_found", "Frame not found")
+        raise APIError(404, "not_found", _FRAME_NOT_FOUND)
     return GoesFrameResponse.model_validate(frame)
 
 
@@ -679,7 +680,7 @@ async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()
     if not frame:
-        raise APIError(404, "not_found", "Frame not found")
+        raise APIError(404, "not_found", _FRAME_NOT_FOUND)
 
     raw_path = frame.file_path
     if not Path(raw_path).is_absolute():
@@ -712,7 +713,7 @@ async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db))
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()
     if not frame:
-        raise APIError(404, "not_found", "Frame not found")
+        raise APIError(404, "not_found", _FRAME_NOT_FOUND)
 
     thumb_path = frame.thumbnail_path
     if not thumb_path:

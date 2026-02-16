@@ -23,6 +23,10 @@ from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db
 
 logger = logging.getLogger(__name__)
 
+MSG_PROCESSING_COMPLETE = "Processing complete"
+MSG_PROCESSING_FAILED = "Processing failed"
+MSG_VIDEO_CREATION_COMPLETE = "Video creation complete"
+
 
 def _stage_image_paths(input_path: str, image_paths: list[str]) -> None:
     """Create staging directory with symlinks/copies for resolved image paths."""
@@ -48,12 +52,12 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
     """Update job DB and publish final status."""
     if success:
         _update_job_db(job_id, status="completed", progress=100, output_path=output_path,
-                       completed_at=utcnow(), status_message="Processing complete")
-        _publish_progress(job_id, 100, "Processing complete", "completed")
+                       completed_at=utcnow(), status_message=MSG_PROCESSING_COMPLETE)
+        _publish_progress(job_id, 100, MSG_PROCESSING_COMPLETE, "completed")
     else:
         _update_job_db(job_id, status="failed", error="Processing returned False",
-                       completed_at=utcnow(), status_message="Processing failed")
-        _publish_progress(job_id, 0, "Processing failed", "failed")
+                       completed_at=utcnow(), status_message=MSG_PROCESSING_FAILED)
+        _publish_progress(job_id, 0, MSG_PROCESSING_FAILED, "failed")
 
 
 @celery_app.task(bind=True, name="process_images")
@@ -105,7 +109,7 @@ def process_images_task(self, job_id: str, params: dict):
         processor.set_output_directory(output_path)
         result = processor.process()
         _finalize_job(job_id, result, output_path)
-        _log("Processing complete" if result else "Processing failed", "info" if result else "error")
+        _log(MSG_PROCESSING_COMPLETE if result else MSG_PROCESSING_FAILED, "info" if result else "error")
 
     except Exception as e:
         logger.exception("Job %s failed", job_id, extra={"job_id": job_id})
@@ -178,16 +182,16 @@ def create_video_task(self, job_id: str, params: dict):
         success = processor.create_video(input_files, output_path, video_options)
 
         if success:
-            _log("Video creation complete")
+            _log(MSG_VIDEO_CREATION_COMPLETE)
             _update_job_db(
                 job_id,
                 status="completed",
                 progress=100,
                 output_path=output_path,
                 completed_at=utcnow(),
-                status_message="Video creation complete",
+                status_message=MSG_VIDEO_CREATION_COMPLETE,
             )
-            _publish_progress(job_id, 100, "Video creation complete", "completed")
+            _publish_progress(job_id, 100, MSG_VIDEO_CREATION_COMPLETE, "completed")
         else:
             _log("Video creation failed", "error")
             _update_job_db(

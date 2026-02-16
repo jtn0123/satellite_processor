@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main, release]
 
+concurrency:
+  group: test-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   migrations:
     name: Alembic Migrations
@@ -44,8 +48,12 @@ jobs:
         run: alembic upgrade head
 
   backend:
-    name: Backend Tests
+    name: Backend Tests (Shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v6
 
@@ -68,23 +76,42 @@ jobs:
           pip install ruff
 
       - name: Lint with ruff
+        if: matrix.shard == 1
         run: ruff check backend/
 
       - name: Security audit (pip-audit)
+        if: matrix.shard == 1
         run: |
           pip install pip-audit
           pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
 
-      - name: Run backend tests
+      - name: Run backend tests with coverage
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
+        run: |
+          SHARD=${{ matrix.shard }}
+          if [ "$SHARD" = "1" ]; then
+            pytest tests/test_[a-g]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+          elif [ "$SHARD" = "2" ]; then
+            pytest tests/test_[h-r]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+          else
+            pytest tests/test_[s-z]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+          fi
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-shard${{ matrix.shard }}
+          path: backend/coverage-shard${{ matrix.shard }}.xml
+          retention-days: 1
 
       - name: Run core processor tests
+        if: matrix.shard == 1
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --durations=10 --reruns 1
 
   integration:
     name: Integration Tests (DB + Redis)
@@ -138,7 +165,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_sat
           REDIS_URL: redis://localhost:6379/0
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short -m integration tests/test_integration.py
+        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --reruns 1
 
   frontend:
     name: Frontend Build & Test
@@ -161,18 +188,30 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
-      - name: Unit Tests
+      - name: Unit Tests with coverage
         working-directory: frontend
-        run: npm test
+        run: npx vitest run --coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          retention-days: 1
 
       - name: Build
         working-directory: frontend
         run: npm run build
 
   e2e:
-    name: E2E Tests
+    name: E2E Tests (Shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        total: [2]
     steps:
       - uses: actions/checkout@v6
 
@@ -197,14 +236,164 @@ jobs:
 
       - name: Run E2E tests
         working-directory: frontend
-        run: npx playwright test
+        run: npx playwright test --shard=${{ matrix.shard }}/${{ matrix.total }}
         env:
           CI: true
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-shard${{ matrix.shard }}
           path: frontend/playwright-report/
           retention-days: 7
+
+  # Consolidate coverage from all shards + frontend and post PR summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, integration, migrations, e2e]
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Download backend coverage shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: backend-coverage-*
+          path: backend/
+          merge-multiple: true
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+      - name: Merge backend coverage
+        working-directory: backend
+        run: |
+          python3 ../scripts/merge_coverage.py
+          # Extract total coverage percentage
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          root = ET.parse('coverage.xml').getroot()
+          rate = root.get('line-rate', '0')
+          print(round(float(rate) * 100, 1))
+          " > coverage-total.txt 2>/dev/null || echo "0" > coverage-total.txt
+          cat coverage-total.txt
+
+      - name: Upload merged coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-merged
+          path: backend/coverage.xml
+          retention-days: 1
+
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read backend coverage
+            let backendCov = 'N/A';
+            try {
+              backendCov = fs.readFileSync('backend/coverage-total.txt', 'utf8').trim() + '%';
+            } catch {}
+
+            // Read frontend coverage from lcov
+            let frontendCov = 'N/A';
+            try {
+              const lcov = fs.readFileSync('frontend/coverage/lcov.info', 'utf8');
+              const lf = (lcov.match(/^LF:(\d+)/gm) || []).reduce((s, l) => s + parseInt(l.split(':')[1]), 0);
+              const lh = (lcov.match(/^LH:(\d+)/gm) || []).reduce((s, l) => s + parseInt(l.split(':')[1]), 0);
+              frontendCov = lf > 0 ? (lh / lf * 100).toFixed(1) + '%' : 'N/A';
+            } catch {}
+
+            // Job results
+            const jobs = {
+              backend: '${{ needs.backend.result }}',
+              frontend: '${{ needs.frontend.result }}',
+              integration: '${{ needs.integration.result }}',
+              migrations: '${{ needs.migrations.result }}',
+              e2e: '${{ needs.e2e.result }}'
+            };
+
+            const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+
+            const body = `## 🤖 CI Summary
+
+            | Job | Status |
+            |-----|--------|
+            | Backend Tests (3 shards) | ${icon(jobs.backend)} ${jobs.backend} |
+            | Frontend Build & Test | ${icon(jobs.frontend)} ${jobs.frontend} |
+            | Integration Tests | ${icon(jobs.integration)} ${jobs.integration} |
+            | Alembic Migrations | ${icon(jobs.migrations)} ${jobs.migrations} |
+            | E2E Tests | ${icon(jobs.e2e)} ${jobs.e2e} |
+
+            ### 📊 Coverage
+            - **Backend:** ${backendCov}
+            - **Frontend:** ${frontendCov}
+
+            ---
+            *Updated: ${new Date().toISOString()}*`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('🤖 CI Summary')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Check all jobs passed
+        if: always()
+        run: |
+          if [ "${{ needs.backend.result }}" != "success" ] || \
+             [ "${{ needs.frontend.result }}" != "success" ] || \
+             [ "${{ needs.integration.result }}" != "success" ] || \
+             [ "${{ needs.migrations.result }}" != "success" ] || \
+             [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "❌ One or more jobs failed"
+            exit 1
+          fi
+          echo "✅ All jobs passed"
+
+      - name: Check all jobs passed
+        if: always()
+        run: |
+          if [ "${{ needs.backend.result }}" != "success" ] || \
+             [ "${{ needs.frontend.result }}" != "success" ] || \
+             [ "${{ needs.integration.result }}" != "success" ] || \
+             [ "${{ needs.migrations.result }}" != "success" ] || \
+             [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "❌ One or more jobs failed"
+            exit 1
+          fi
+          echo "✅ All jobs passed"

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { extractArray } from '../../utils/safeData';
 
 interface CleanupRule {
   id: string;
@@ -42,7 +43,9 @@ export default function CleanupTab() {
 
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],
-    queryFn: () => api.get('/goes/cleanup-rules').then(r => r.data),
+    queryFn: () => api.get('/goes/cleanup-rules').then(r => {
+      return extractArray(r.data);
+    }),
   });
 
   const { data: stats } = useQuery<FrameStats>({
@@ -100,11 +103,11 @@ export default function CleanupTab() {
               <div className="text-sm text-gray-500 dark:text-slate-400">Total Storage</div>
             </div>
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-              <div className="text-2xl font-bold">{Object.keys(stats.by_satellite).length}</div>
+              <div className="text-2xl font-bold">{Object.keys(stats.by_satellite ?? {}).length}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Satellites</div>
             </div>
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-              <div className="text-2xl font-bold">{Object.keys(stats.by_band).length}</div>
+              <div className="text-2xl font-bold">{Object.keys(stats.by_band ?? {}).length}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Bands</div>
             </div>
           </div>

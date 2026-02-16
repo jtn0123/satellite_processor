@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import api from '../api/client';
+import { extractArray } from '../utils/safeData';
 
 interface Notification {
   id: string;
@@ -18,7 +19,9 @@ export default function NotificationBell() {
 
   const { data: notifications } = useQuery<Notification[]>({
     queryKey: ['notifications'],
-    queryFn: () => api.get('/notifications').then((r) => r.data).catch(() => []),
+    queryFn: () => api.get('/notifications').then((r) => {
+      return extractArray<Notification>(r.data);
+    }).catch((): Notification[] => []),
     refetchInterval: 30_000,
     staleTime: 15_000,
     retry: false,

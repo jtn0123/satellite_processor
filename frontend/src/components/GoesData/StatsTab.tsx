@@ -4,7 +4,7 @@ import { formatBytes } from './utils';
 import type { FrameStats } from './types';
 
 export default function StatsTab() {
-  const { data: stats, isLoading } = useQuery<FrameStats>({
+  const { data: stats, isLoading, isError } = useQuery<FrameStats>({
     queryKey: ['goes-frame-stats'],
     queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
   });
@@ -13,10 +13,13 @@ export default function StatsTab() {
     return <div className="text-sm text-gray-500 dark:text-slate-400">Loading stats...</div>;
   }
 
+  if (isError) return <div className="text-sm text-red-400">Failed to load statistics.</div>;
   if (!stats) return null;
 
-  const maxSatSize = Math.max(...Object.values(stats.by_satellite).map((s) => s.size), 1);
-  const maxBandCount = Math.max(...Object.values(stats.by_band).map((b) => b.count), 1);
+  const satValues = Object.values(stats.by_satellite ?? {});
+  const bandValues = Object.values(stats.by_band ?? {});
+  const maxSatSize = satValues.length > 0 ? Math.max(...satValues.map((s) => s.size), 1) : 1;
+  const maxBandCount = bandValues.length > 0 ? Math.max(...bandValues.map((b) => b.count), 1) : 1;
 
   return (
     <div className="space-y-6">
@@ -31,7 +34,7 @@ export default function StatsTab() {
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Total Storage</div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
-          <div className="text-3xl font-bold text-amber-400">{Object.keys(stats.by_satellite).length}</div>
+          <div className="text-3xl font-bold text-amber-400">{Object.keys(stats.by_satellite ?? {}).length}</div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Satellites</div>
         </div>
       </div>
@@ -40,7 +43,7 @@ export default function StatsTab() {
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Storage by Satellite</h3>
         <div className="space-y-3">
-          {Object.entries(stats.by_satellite).map(([sat, data]) => (
+          {Object.entries(stats.by_satellite ?? {}).map(([sat, data]) => (
             <div key={sat} className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-900 dark:text-white">{sat}</span>
@@ -59,7 +62,7 @@ export default function StatsTab() {
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Frames by Band</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {Object.entries(stats.by_band).map(([bandKey, data]) => (
+          {Object.entries(stats.by_band ?? {}).map(([bandKey, data]) => (
             <div key={bandKey} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
               <div className="text-sm font-medium text-gray-900 dark:text-white">{bandKey}</div>
               <div className="text-xl font-bold text-primary">{data.count}</div>

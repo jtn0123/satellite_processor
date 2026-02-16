@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AddToCollectionModal from '../components/GoesData/AddToCollectionModal';
 
@@ -65,5 +65,20 @@ describe('AddToCollectionModal', () => {
     renderWithQuery(<AddToCollectionModal frameIds={['f1']} onClose={onClose} />);
     globalThis.dispatchEvent(new CustomEvent('close-modal'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows add button when existing collection is selected', async () => {
+    const { default: mockedApi } = await import('../api/client');
+    vi.mocked(mockedApi.get).mockResolvedValue({
+      data: [{ id: 'c1', name: 'My Collection', frame_count: 5 }],
+    });
+    renderWithQuery(<AddToCollectionModal frameIds={['f1']} onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText(/My Collection/)).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'c1' } });
+    await waitFor(() => {
+      expect(screen.getByText('Add 1 frames')).toBeInTheDocument();
+    });
   });
 });

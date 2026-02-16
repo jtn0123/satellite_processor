@@ -7,6 +7,7 @@ import type { CollectionType, GoesFrame } from './types';
 import Skeleton from './Skeleton';
 import EmptyState from './EmptyState';
 import AnimationPlayer from './AnimationPlayer';
+import { extractArray } from '../../utils/safeData';
 
 export default function CollectionsTab() {
   const queryClient = useQueryClient();
@@ -16,9 +17,11 @@ export default function CollectionsTab() {
   const [animatingFrames, setAnimatingFrames] = useState<GoesFrame[] | null>(null);
   const [loadingAnimateId, setLoadingAnimateId] = useState<string | null>(null);
 
-  const { data: collections, isLoading } = useQuery<CollectionType[]>({
+  const { data: collections, isLoading, isError } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => r.data),
+    queryFn: () => api.get('/goes/collections').then((r) => {
+      return extractArray(r.data);
+    }),
   });
 
   const createMutation = useMutation({
@@ -55,7 +58,9 @@ export default function CollectionsTab() {
     setLoadingAnimateId(collectionId);
     try {
       const res = await api.get(`/goes/collections/${collectionId}/frames`);
-      const frames: GoesFrame[] = res.data;
+      const raw = res.data;
+      const itemsArray = Array.isArray(raw?.items) ? raw.items : [];
+      const frames: GoesFrame[] = Array.isArray(raw) ? raw : itemsArray;
       if (frames.length === 0) {
         showToast('error', 'Collection has no frames to animate');
         return;
@@ -82,15 +87,19 @@ export default function CollectionsTab() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={`coll-skel-${i}`} variant="card" />
           ))}
         </div>
-      ) : (
+      )}
+      {!isLoading && isError && (
+        <div className="text-sm text-red-400 text-center py-8">Failed to load collections. Please try again.</div>
+      )}
+      {!isLoading && !isError && (
         <div className="@container grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
-          {collections?.map((c) => (
+          {(collections ?? []).map((c) => (
             <div key={c.id} className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
@@ -109,7 +118,7 @@ export default function CollectionsTab() {
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
                     <button
                       onClick={() => handleAnimate(c.id)}
-                      disabled={loadingAnimateId === c.id || c.frame_count === 0}
+                      disabled={loadingAnimateId === c.id || !c.frame_count}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
                       aria-label={`Animate collection ${c.name}`}
                     >
@@ -128,13 +137,13 @@ export default function CollectionsTab() {
                 </div>
               )}
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
-                <span>{c.frame_count} frames</span>
+                <span>{c.frame_count ?? 0} frames</span>
                 <span>{new Date(c.created_at).toLocaleDateString()}</span>
               </div>
               {c.description && <p className="text-xs text-gray-400 dark:text-slate-500">{c.description}</p>}
             </div>
           ))}
-          {collections?.length === 0 && (
+          {(collections ?? []).length === 0 && (
             <div className="col-span-full">
               <EmptyState
                 icon={<Library className="w-8 h-8" />}

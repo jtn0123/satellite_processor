@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Play, Trash2, Edit2, Clock, Save, X } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { extractArray } from '../../utils/safeData';
 
 interface FetchPreset {
   id: string;
@@ -35,12 +36,16 @@ export default function PresetsTab() {
 
   const { data: presets = [] } = useQuery<FetchPreset[]>({
     queryKey: ['fetch-presets'],
-    queryFn: () => api.get('/goes/fetch-presets').then(r => r.data),
+    queryFn: () => api.get('/goes/fetch-presets').then(r => {
+      return extractArray(r.data);
+    }),
   });
 
   const { data: schedules = [] } = useQuery<FetchSchedule[]>({
     queryKey: ['fetch-schedules'],
-    queryFn: () => api.get('/goes/schedules').then(r => r.data),
+    queryFn: () => api.get('/goes/schedules').then(r => {
+      return extractArray(r.data);
+    }),
   });
 
   const createPreset = useMutation({

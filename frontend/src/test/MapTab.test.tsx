@@ -53,4 +53,47 @@ describe('MapTab', () => {
     // Should have at least one div for the map
     expect(container.querySelector('div')).toBeTruthy();
   });
+
+  it('renders satellite, sector, band selects and opacity slider', () => {
+    const { container } = renderWithProviders(<MapTab />);
+    expect(container.querySelector('#map-satellite')).toBeTruthy();
+    expect(container.querySelector('#map-sector')).toBeTruthy();
+    expect(container.querySelector('#map-band')).toBeTruthy();
+    expect(container.querySelector('#map-overlay-opacity')).toBeTruthy();
+  });
+
+  it('changes satellite select value', async () => {
+    const { default: mockedApi } = await import('../api/client');
+    const { fireEvent, waitFor } = await import('@testing-library/react');
+    vi.mocked(mockedApi.get).mockImplementation((url: string) => {
+      if (url.includes('products')) {
+        return Promise.resolve({
+          data: {
+            satellites: ['GOES-16', 'GOES-18'],
+            sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI' }],
+            bands: [{ id: 'C02', description: 'Red Visible' }],
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    const { container } = renderWithProviders(<MapTab />);
+    await waitFor(() => {
+      const satSelect = container.querySelector('#map-satellite') as HTMLSelectElement;
+      expect(satSelect.options.length).toBeGreaterThan(1);
+    });
+    const satSelect = container.querySelector('#map-satellite') as HTMLSelectElement;
+    fireEvent.change(satSelect, { target: { value: 'GOES-18' } });
+    expect(satSelect.value).toBe('GOES-18');
+  });
+
+  it('changes opacity slider', async () => {
+    const { container } = renderWithProviders(<MapTab />);
+    const slider = container.querySelector('#map-overlay-opacity') as HTMLInputElement;
+    if (slider) {
+      const { fireEvent } = await import('@testing-library/react');
+      fireEvent.change(slider, { target: { value: '0.5' } });
+      expect(slider.value).toBe('0.5');
+    }
+  });
 });

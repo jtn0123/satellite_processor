@@ -26,6 +26,7 @@ import TagModal from './TagModal';
 import ComparisonModal from './ComparisonModal';
 import EmptyState from './EmptyState';
 import FrameCard from './FrameCard';
+import { extractArray } from '../../utils/safeData';
 
 export default function BrowseTab() {
   const queryClient = useQueryClient();
@@ -55,12 +56,16 @@ export default function BrowseTab() {
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => r.data),
+    queryFn: () => api.get('/goes/collections').then((r) => {
+      return extractArray(r.data);
+    }),
   });
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => r.data),
+    queryFn: () => api.get('/goes/tags').then((r) => {
+      return extractArray(r.data);
+    }),
   });
 
   // Debounce filter values to prevent excessive API calls
@@ -123,16 +128,18 @@ export default function BrowseTab() {
     }
   }, []);
 
+  const frames = framesData?.items ?? [];
+
   const selectAll = () => {
     if (!framesData) return;
-    if (selectedIds.size === framesData.items.length) {
+    if (selectedIds.size === frames.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(framesData.items.map((f) => f.id)));
+      setSelectedIds(new Set(frames.map((f) => f.id)));
     }
   };
 
-  const totalPages = framesData ? Math.ceil(framesData.total / framesData.limit) : 0;
+  const totalPages = framesData ? Math.ceil((framesData.total ?? 0) / (framesData.limit || 50)) : 0;
 
   const renderFrameGrid = () => {
     if (isLoading) {
@@ -150,7 +157,7 @@ export default function BrowseTab() {
         </div>
       );
     }
-    if (!framesData || framesData.items.length === 0) {
+    if (!framesData || frames.length === 0) {
       return (
         <EmptyState
           icon={<Satellite className="w-8 h-8" />}
@@ -169,7 +176,7 @@ export default function BrowseTab() {
     if (viewMode === 'grid') {
       return (
         <div className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
-          {framesData?.items.map((frame) => (
+          {frames.map((frame) => (
             <div key={frame.id} className="cv-auto @container">
               <FrameCard frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="grid" />
             </div>
@@ -179,7 +186,7 @@ export default function BrowseTab() {
     }
     return (
       <div className="space-y-1">
-        {framesData?.items.map((frame) => (
+        {frames.map((frame) => (
           <div key={frame.id} className="cv-auto-list">
             <FrameCard frame={frame} isSelected={selectedIds.has(frame.id)} onClick={handleFrameClick} viewMode="list" />
           </div>
@@ -210,7 +217,7 @@ export default function BrowseTab() {
             <select id="browse-satellite" value={filterSat} onChange={(e) => { setFilterSat(e.target.value); setPage(1); }}
               className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
               <option value="">All</option>
-              {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+              {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
@@ -219,7 +226,7 @@ export default function BrowseTab() {
             <select id="browse-band" value={filterBand} onChange={(e) => { setFilterBand(e.target.value); setPage(1); }}
               className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
               <option value="">All</option>
-              {products?.bands.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
+              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
             </select>
           </div>
 
@@ -228,7 +235,7 @@ export default function BrowseTab() {
             <select id="browse-sector" value={filterSector} onChange={(e) => { setFilterSector(e.target.value); setPage(1); }}
               className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
               <option value="">All</option>
-              {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
@@ -237,7 +244,7 @@ export default function BrowseTab() {
             <select id="browse-collection" value={filterCollection} onChange={(e) => { setFilterCollection(e.target.value); setPage(1); }}
               className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
               <option value="">All</option>
-              {collections?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {(collections ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
@@ -246,7 +253,7 @@ export default function BrowseTab() {
             <select id="browse-tag" value={filterTag} onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
               className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
               <option value="">All</option>
-              {tags?.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+              {(tags ?? []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
           </div>
 
@@ -278,7 +285,7 @@ export default function BrowseTab() {
         <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 border border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <button onClick={selectAll} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              {selectedIds.size > 0 && framesData && selectedIds.size === framesData.items.length
+              {selectedIds.size > 0 && selectedIds.size === frames.length
                 ? 'Deselect All'
                 : 'Select All'}
             </button>
@@ -307,9 +314,9 @@ export default function BrowseTab() {
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors">
                   <Play className="w-3.5 h-3.5" /> Process
                 </button>
-                {selectedIds.size === 2 && framesData && (
+                {selectedIds.size === 2 && (
                   <button onClick={() => {
-                    const selected = framesData.items.filter((f) => selectedIds.has(f.id));
+                    const selected = frames.filter((f) => selectedIds.has(f.id));
                     if (selected.length === 2) setCompareFrames([selected[0], selected[1]]);
                   }}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors">
@@ -399,7 +406,7 @@ export default function BrowseTab() {
           <FramePreviewModal
             frame={previewFrame}
             onClose={() => { setPreviewFrame(null); globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
-            allFrames={framesData?.items}
+            allFrames={frames}
             onNavigate={(f) => setPreviewFrame(f)}
           />
         )}

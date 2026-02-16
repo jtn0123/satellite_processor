@@ -43,9 +43,9 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
           {new Date(frame.capture_time).toLocaleString()}
         </div>
         <div className="text-xs text-gray-400 dark:text-slate-600">{formatBytes(frame.file_size)}</div>
-        {frame.tags.length > 0 && (
+        {(frame.tags ?? []).length > 0 && (
           <div className="flex gap-1 flex-wrap @max-[280px]:hidden">
-            {frame.tags.map((t) => (
+            {(frame.tags ?? []).map((t) => (
               <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
                 style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
             ))}
@@ -88,7 +88,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
         <div className="text-xs text-gray-400 dark:text-slate-600">{frame.width}×{frame.height}</div>
       )}
       <div className="flex gap-1">
-        {frame.tags.map((t) => (
+        {(frame.tags ?? []).map((t) => (
           <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
             style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
         ))}

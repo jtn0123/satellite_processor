@@ -5,6 +5,7 @@ import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { TagType } from './types';
+import { extractArray } from '../../utils/safeData';
 
 export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
   const queryClient = useQueryClient();
@@ -21,7 +22,9 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => r.data),
+    queryFn: () => api.get('/goes/tags').then((r) => {
+      return extractArray(r.data);
+    }),
   });
 
   const tagMutation = useMutation({
@@ -59,7 +62,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {tags?.map((t) => (
+          {(tags ?? []).map((t) => (
             <button key={t.id} onClick={() => toggleTag(t.id)}
               className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                 selectedTags.includes(t.id)

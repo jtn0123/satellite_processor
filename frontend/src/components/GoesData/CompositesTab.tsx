@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layers, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { extractArray } from '../../utils/safeData';
 
 interface Product {
   satellites: string[];
@@ -61,7 +62,7 @@ export default function CompositesTab() {
 
   const { data: recipes } = useQuery<CompositeRecipe[]>({
     queryKey: ['composite-recipes'],
-    queryFn: () => api.get('/goes/composite-recipes').then((r) => r.data),
+    queryFn: () => api.get('/goes/composite-recipes').then((r) => extractArray<CompositeRecipe>(r.data)),
   });
 
   const { data: composites } = useQuery<{ items: CompositeItem[]; total: number }>({
@@ -93,7 +94,7 @@ export default function CompositesTab() {
           <Layers className="w-5 h-5 text-primary" /> Composite Recipes
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {recipes?.map((recipe) => (
+          {(recipes ?? []).map((recipe) => (
             <button
               key={recipe.id}
               onClick={() => setSelectedRecipe(recipe.id)}
@@ -128,14 +129,14 @@ export default function CompositesTab() {
               <label htmlFor="comp-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
               <select id="comp-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
                 className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-                {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+                {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="comp-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
               <select id="comp-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                 className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-                {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
@@ -167,9 +168,9 @@ export default function CompositesTab() {
       {/* History */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Generated Composites</h3>
-        {composites && composites.items.length > 0 ? (
+        {composites && (composites.items ?? []).length > 0 ? (
           <div className="space-y-3">
-            {composites.items.map((comp) => (
+            {(composites.items ?? []).map((comp) => (
               <div key={comp.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 {comp.file_path && comp.status === 'completed' && (
                   <div className="w-16 h-12 rounded overflow-hidden shrink-0">

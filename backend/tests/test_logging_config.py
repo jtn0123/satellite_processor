@@ -1,8 +1,7 @@
 """Tests for app.logging_config — setup_logging and RequestLoggingMiddleware."""
 
 import logging
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

@@ -154,7 +154,7 @@ jobs:
             const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
             const rating = (val) => ratingMap[val] || val || 'N/A';
             const num = (val) => val ?? 'N/A';
-            const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
+            const pct = (val) => val !== undefined && val !== null && val !== '' ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
 
             const body = [
               `## ${gateIcon} SonarQube Analysis`,

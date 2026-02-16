@@ -52,8 +52,11 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
       loop_style: 'forward' as const,
       overlays: { show_timestamp: true, show_label: true, show_colorbar: false },
       date_range: { start: '', end: '' },
+      start_date: '',
+      end_date: '',
+      name: '',
     };
-    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={vi.fn()} />);
+    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />);
 
     const fieldsets = document.querySelectorAll('fieldset');
     expect(fieldsets.length).toBe(4); // Speed Preset, Resolution, Quality, Overlays
@@ -75,8 +78,11 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
       quality: 'medium' as const, loop_style: 'forward' as const,
       overlays: { show_timestamp: true, show_label: true, show_colorbar: false },
       date_range: { start: '', end: '' },
+      start_date: '',
+      end_date: '',
+      name: '',
     };
-    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={vi.fn()} />);
+    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />);
 
     const fieldsets = document.querySelectorAll('fieldset');
     fieldsets.forEach((fs) => {
@@ -89,7 +95,7 @@ describe('Dialog backdrop click-to-close', () => {
   let onClose: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    onClose = vi.fn();
+    onClose = (() => {}) as () => void;
   });
 
   it('AddToCollectionModal closes on dialog backdrop click', () => {
@@ -174,7 +180,7 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
 describe('ImageViewer accessibility', () => {
   it('renders with role="application" for zoom/pan area', () => {
     const frame = makeFrame('1');
-    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={vi.fn()} />);
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
     const app = document.querySelector('[role="application"]');
     expect(app).toBeTruthy();
@@ -184,7 +190,7 @@ describe('ImageViewer accessibility', () => {
 
   it('dialog element renders with aria-label', () => {
     const frame = makeFrame('1');
-    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={vi.fn()} />);
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();

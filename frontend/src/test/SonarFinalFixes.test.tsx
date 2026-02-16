@@ -51,7 +51,7 @@ describe('SonarQube final fixes', () => {
       render(<WhatsNewModal onClose={() => {}} />);
       const dialog = document.querySelector('dialog');
       expect(dialog).toBeTruthy();
-      expect(dialog!.outerHTML).toContain('role="presentation"');
+      expect(dialog!.getAttribute('role')).toBe('presentation');
     });
 
     it('closes when backdrop is clicked', () => {
@@ -90,11 +90,10 @@ describe('SonarQube final fixes', () => {
     it('renders dialog with role="presentation" when opened via ? key', () => {
       render(<KeyboardShortcuts />);
       // The component listens for '?' key to open
-      fireEvent.keyDown(window, { key: '?' });
+      fireEvent.keyDown(document, { key: '?' });
       const dialog = document.querySelector('dialog');
-      if (dialog) {
-        expect(dialog.outerHTML).toContain('role="presentation"');
-      }
+      expect(dialog).not.toBeNull();
+      expect(dialog!.getAttribute('role')).toBe('presentation');
     });
   });
 });

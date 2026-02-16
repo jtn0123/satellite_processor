@@ -48,10 +48,11 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
       role="presentation"
       onClick={close}
       onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
-      aria-label="What's New dialog"
     >
       <div
         ref={dialogRef}
+        role="dialog"
+        aria-label="What's New dialog"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}

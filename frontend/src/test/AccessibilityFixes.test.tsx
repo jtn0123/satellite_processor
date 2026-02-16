@@ -53,7 +53,7 @@ describe('KeyboardShortcuts accessibility', () => {
     openModal();
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
-    expect(dialog!.outerHTML).toContain('role="presentation"');
+    expect(dialog!.getAttribute('role')).toBe('presentation');
   });
 
   it('panel click stops propagation (does not close)', () => {
@@ -73,10 +73,10 @@ describe('WhatsNewModal accessibility', () => {
     const { default: WhatsNewModal } = await import('../components/WhatsNewModal');
     render(<WhatsNewModal onClose={() => {}} />);
     const dialog = document.querySelector('dialog');
-    expect(dialog?.getAttribute('aria-label')).toBeTruthy();
-    // The inner div should NOT have aria-label="What's New"
-    const innerDivs = dialog?.querySelectorAll('div[aria-label="What\'s New"]');
-    expect(innerDivs?.length ?? 0).toBe(0);
+    // aria-label should be on inner div with role="dialog", not on outer dialog
+    expect(dialog?.getAttribute('aria-label')).toBeNull();
+    const innerDialog = document.querySelector('[role="dialog"]');
+    expect(innerDialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
   it('backdrop has role="presentation"', async () => {
@@ -111,19 +111,39 @@ describe('ImageViewer accessibility', () => {
     const { default: ImageViewer } = await import('../components/GoesData/ImageViewer');
     const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
     render(withQC(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />));
+    const appEl = document.querySelector('[role="application"]');
+    expect(appEl).toBeTruthy();
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
-    expect(dialog!.outerHTML).toContain('role="application"');
-    expect(dialog!.outerHTML).toContain('tabindex="0"');
+    expect(dialog!.getAttribute('tabindex')).toBe('0');
   });
+});
+
+vi.mock('../hooks/useApi', async () => {
+  const actual = await vi.importActual('../hooks/useApi');
+  return {
+    ...actual,
+    useImages: () => ({
+      data: [{ id: '1', original_name: 'test.png', url: '/test.png', thumbnail_url: '/thumb.png', uploaded_at: '2024-01-01T00:00:00Z', file_size: 1024 }],
+      isLoading: false,
+    }),
+    useDeleteImage: () => ({ mutate: vi.fn() }),
+  };
 });
 
 describe('ImageGallery no nested buttons', () => {
   it('lightbox modal content wrapper is a div, not a button', async () => {
     const { default: ImageGallery } = await import('../components/ImageGallery/ImageGallery');
     render(withQC(<ImageGallery />));
-    // We can't easily trigger the preview without API data, but we verify the component renders
-    expect(document.body).toBeTruthy();
+    // Click image to open lightbox
+    const img = document.querySelector('img');
+    if (img) {
+      fireEvent.click(img);
+      const modal = document.querySelector('[role="presentation"]');
+      if (modal) {
+        expect(modal.tagName).toBe('DIV');
+      }
+    }
   });
 });
 

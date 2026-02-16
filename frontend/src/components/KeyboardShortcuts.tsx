@@ -60,10 +60,10 @@ export default function KeyboardShortcuts() {
       role="presentation"
       onClick={close}
       onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
-      aria-label="Keyboard shortcuts dialog"
     >
       <div
         role="dialog"
+        aria-label="Keyboard shortcuts dialog"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md text-left cursor-default"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}

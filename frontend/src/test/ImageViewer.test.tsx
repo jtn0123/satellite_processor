@@ -6,7 +6,7 @@ const frame = { id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', ca
 const frames = [frame, { ...frame, id: 'f2' }, { ...frame, id: 'f3' }];
 
 describe('ImageViewer', () => {
-  it('renders dialog with aria-label', () => {
+  it('renders pan/zoom control with accessible name', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
     expect(screen.getByRole('application', { name: /pan and zoom/i })).toBeInTheDocument();
   });

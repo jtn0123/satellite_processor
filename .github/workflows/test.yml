@@ -117,7 +117,7 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Cache apt packages
-        uses: awalber/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ffmpeg libgl1 libglib2.0-0
 
@@ -200,7 +200,7 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Cache apt packages
-        uses: awalber/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ffmpeg libgl1 libglib2.0-0
 

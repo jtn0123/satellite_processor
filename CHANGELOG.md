@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/jtn0123/satellite_processor/compare/v1.0.0...v1.0.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* enable git credentials for semantic-release push ([d5da7b0](https://github.com/jtn0123/satellite_processor/commit/d5da7b04bca5169f7c3cf7c0500000cfbf451d56))
+
 # 1.0.0 (2026-02-16)
 
 

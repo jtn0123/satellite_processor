@@ -94,13 +94,34 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
 describe('Dialog modal rendering', () => {
   it('AddToCollectionModal renders without role="dialog"', () => {
     render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
-    // Should NOT use role="dialog" (native <dialog> or no role needed)
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('TagModal renders without role="dialog"', () => {
     render(withQueryClient(<TagModal frameIds={['1']} onClose={() => {}} />));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('AddToCollectionModal closes on dialog backdrop click', () => {
+    let closed = false;
+    const handleClose = () => { closed = true; };
+    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={handleClose} />));
+    const dialog = document.querySelector('dialog');
+    if (dialog) {
+      fireEvent.click(dialog);
+      expect(closed).toBe(true);
+    }
+  });
+
+  it('TagModal closes on dialog backdrop click', () => {
+    let closed = false;
+    const handleClose = () => { closed = true; };
+    render(withQueryClient(<TagModal frameIds={['1']} onClose={handleClose} />));
+    const dialog = document.querySelector('dialog');
+    if (dialog) {
+      fireEvent.click(dialog);
+      expect(closed).toBe(true);
+    }
   });
 });
 

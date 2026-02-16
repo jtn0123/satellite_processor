@@ -56,14 +56,11 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
     <dialog
       open
       className="fixed inset-0 bg-black/30 dark:bg-black/60 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div ref={dialogRef} aria-label="Tag Frames"
         className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-700 w-96 space-y-4 modal-panel"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="presentation">
+        aria-hidden="false">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Tag Frames</h3>
           <button onClick={onClose} aria-label="Close tag modal"><X className="w-5 h-5 text-gray-500 dark:text-slate-400" /></button>

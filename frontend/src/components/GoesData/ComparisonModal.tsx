@@ -77,14 +77,11 @@ export default function ComparisonModal({
     <dialog
       open
       className="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div ref={dialogRef} aria-label="Compare Frames"
         className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-panel"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="presentation">
+        aria-hidden="false">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
           <h3 className="text-lg font-semibold">Compare Frames</h3>

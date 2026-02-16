@@ -34,8 +34,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </h3>
 
       {/* Speed Presets */}
-      <div role="group" aria-label="Speed Preset">
-        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</span>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</legend>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(SPEED_LABELS) as SpeedPreset[]).map((preset) => (
             <button
@@ -48,7 +48,7 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
           ))}
         </div>
         <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Current: {config.fps} FPS</p>
-      </div>
+      </fieldset>
 
       {/* FPS Slider */}
       <div>
@@ -67,8 +67,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Resolution */}
-      <div role="group" aria-label="Resolution">
-        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</span>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</legend>
         <div className="flex gap-2">
           <button
             onClick={() => onChange({ resolution: 'preview' })}
@@ -91,7 +91,7 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             Full Quality
           </button>
         </div>
-      </div>
+      </fieldset>
 
       {/* Loop Style */}
       <div role="radiogroup" aria-label="Loop Style">
@@ -132,8 +132,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Quality */}
-      <div role="group" aria-label="Quality">
-        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</span>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</legend>
         <div className="flex gap-2">
           {(['low', 'medium', 'high'] as const).map((q) => (
             <button
@@ -149,11 +149,11 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             </button>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* Overlays */}
-      <div role="group" aria-label="Overlays">
-        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</span>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</legend>
         <div className="space-y-2">
           {([
             { key: 'show_timestamp', label: 'Show timestamp' },
@@ -175,7 +175,7 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

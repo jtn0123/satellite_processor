@@ -104,21 +104,20 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
           <div
             ref={containerRef}
             className="relative h-full w-full overflow-hidden cursor-col-resize select-none"
-            role="slider"
-            tabIndex={0}
-            aria-label="Image comparison slider"
-            aria-valuenow={Math.round(sliderPos)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowLeft') setSliderPos((p) => Math.max(0, p - 2));
-              else if (e.key === 'ArrowRight') setSliderPos((p) => Math.min(100, p + 2));
-            }}
             onMouseMove={dragging ? handleSliderMove : undefined}
             onMouseDown={() => setDragging(true)}
             onMouseUp={() => setDragging(false)}
             onMouseLeave={() => setDragging(false)}
           >
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(sliderPos)}
+              onChange={(e) => setSliderPos(Number(e.target.value))}
+              aria-label="Image comparison slider"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-col-resize z-20"
+            />
             {/* Frame B (full background) */}
             <img
               src={`/api/goes/frames/${frameB.id}/image`}

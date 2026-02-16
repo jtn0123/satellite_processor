@@ -4,6 +4,20 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const CHANGELOG = [
   {
+    version: '2.3.0',
+    date: '2026-02-16',
+    changes: [
+      'Defensive coding: 18 components hardened against unexpected API responses',
+      'Accessibility: native <dialog> modals, <fieldset> groups, keyboard navigation',
+      'Browse tab crash fix (paginated response handling)',
+      'Null frame_count UI bug fixed',
+      'SonarQube: 100 code quality issues resolved',
+      'Frontend test suite: 352 → 481 tests',
+      '8 dependency upgrades including security fix (python-multipart CVE)',
+      'Readonly props, globalThis, nested ternary cleanups',
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-02-15',
     changes: [

@@ -59,7 +59,7 @@ const progressBarColors: Record<ToastType, string> = {
   info: 'bg-blue-400',
 };
 
-function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: string) => void }) {
+function ToastItem({ toast, onDismiss }: Readonly<{ toast: ToastMessage; onDismiss: (id: string) => void }>) {
   const progressRef = useRef<HTMLDivElement>(null);
   const [dismissing, setDismissing] = useState(false);
 

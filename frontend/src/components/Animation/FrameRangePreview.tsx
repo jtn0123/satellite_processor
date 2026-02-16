@@ -16,7 +16,7 @@ function SkeletonCard() {
   );
 }
 
-export default function FrameRangePreview({ data, isLoading, isError }: Props) {
+export default function FrameRangePreview({ data, isLoading, isError }: Readonly<Props>) {
   if (isLoading) {
     return (
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">

@@ -48,12 +48,12 @@ jobs:
         run: alembic upgrade head
 
   backend:
-    name: Backend Tests (Shard ${{ matrix.shard }}/3)
+    name: Backend Tests (Shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v6
 
@@ -91,12 +91,15 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           SHARD=${{ matrix.shard }}
+          COMMON="--cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q"
           if [ "$SHARD" = "1" ]; then
-            pytest tests/test_[a-g]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+            pytest tests/test_[a-e]* $COMMON
           elif [ "$SHARD" = "2" ]; then
-            pytest tests/test_[h-r]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+            pytest tests/test_[f]* tests/test_goes_[a-d]* tests/test_gap* $COMMON
+          elif [ "$SHARD" = "3" ]; then
+            pytest tests/test_goes_[e-z]* $COMMON
           else
-            pytest tests/test_[s-z]* --cov=app --cov-report=xml:coverage-shard${SHARD}.xml --cov-fail-under=0 -n auto --durations=10 --reruns 1 -v --tb=short -q
+            pytest tests/test_[h-z]* $COMMON
           fi
 
       - name: Upload coverage artifact
@@ -206,7 +209,6 @@ jobs:
   e2e:
     name: E2E Tests (Shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
-    needs: frontend
     strategy:
       fail-fast: false
       matrix:
@@ -333,7 +335,7 @@ jobs:
 
             | Job | Status |
             |-----|--------|
-            | Backend Tests (3 shards) | ${icon(jobs.backend)} ${jobs.backend} |
+            | Backend Tests (4 shards) | ${icon(jobs.backend)} ${jobs.backend} |
             | Frontend Build & Test | ${icon(jobs.frontend)} ${jobs.frontend} |
             | Integration Tests | ${icon(jobs.integration)} ${jobs.integration} |
             | Alembic Migrations | ${icon(jobs.migrations)} ${jobs.migrations} |
@@ -371,19 +373,6 @@ jobs:
                 body
               });
             }
-
-      - name: Check all jobs passed
-        if: always()
-        run: |
-          if [ "${{ needs.backend.result }}" != "success" ] || \
-             [ "${{ needs.frontend.result }}" != "success" ] || \
-             [ "${{ needs.integration.result }}" != "success" ] || \
-             [ "${{ needs.migrations.result }}" != "success" ] || \
-             [ "${{ needs.e2e.result }}" != "success" ]; then
-            echo "❌ One or more jobs failed"
-            exit 1
-          fi
-          echo "✅ All jobs passed"
 
       - name: Check all jobs passed
         if: always()

@@ -40,7 +40,7 @@ describe('TagModal', () => {
   it('calls onClose on overlay click', () => {
     const onClose = vi.fn();
     renderWithQuery(<TagModal frameIds={['f1']} onClose={onClose} />);
-    fireEvent.click(document.querySelector('.modal-overlay')!);
+    fireEvent.click(screen.getByLabelText('Close modal'));
     expect(onClose).toHaveBeenCalled();
   });
 

@@ -67,10 +67,10 @@ class RequestBodyLimitMiddleware:
             return
 
         # Check content-length header
-        headers = dict(
-            (k.decode("latin-1"), v.decode("latin-1"))
+        headers = {
+            k.decode("latin-1"): v.decode("latin-1")
             for k, v in scope.get("headers", [])
-        )
+        }
         content_length = headers.get("content-length")
         if content_length and int(content_length) > MAX_REQUEST_BODY_BYTES:
             response = JSONResponse(

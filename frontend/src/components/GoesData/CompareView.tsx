@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { GoesFrame } from './types';
 
 interface CompareViewProps {
@@ -7,23 +7,10 @@ interface CompareViewProps {
   onClose: () => void;
 }
 
-export default function CompareView({ frameA, frameB, onClose }: CompareViewProps) {
+export default function CompareView({ frameA, frameB, onClose }: Readonly<CompareViewProps>) {
   const [sliderPos, setSliderPos] = useState(50);
   const [mode, setMode] = useState<'slider' | 'side-by-side'>('side-by-side');
-  const containerRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-
-  const handleSliderMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      setSliderPos(Math.max(0, Math.min(100, pct)));
-    },
-    [],
-  );
-
-  const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -54,19 +41,21 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold">Compare Frames</h2>
           <button
+            type="button"
             onClick={() => setMode('side-by-side')}
             className={`px-3 py-1 rounded text-sm ${mode === 'side-by-side' ? 'bg-primary text-black' : 'bg-white/10'}`}
           >
             Side by Side
           </button>
           <button
+            type="button"
             onClick={() => setMode('slider')}
             className={`px-3 py-1 rounded text-sm ${mode === 'slider' ? 'bg-primary text-black' : 'bg-white/10'}`}
           >
             Slider
           </button>
         </div>
-        <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg">
+        <button type="button" onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg">
           Close
         </button>
       </div>
@@ -102,13 +91,17 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
           </div>
         ) : (
           <div
-            ref={containerRef}
             className="relative h-full w-full overflow-hidden cursor-col-resize select-none"
-            onMouseMove={dragging ? handleSliderMove : undefined}
-            onMouseDown={() => setDragging(true)}
-            onMouseUp={() => setDragging(false)}
-            onMouseLeave={() => setDragging(false)}
           >
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(sliderPos)}
+              onChange={(e) => setSliderPos(Number(e.target.value))}
+              aria-label="Image comparison slider"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-col-resize z-20"
+            />
             {/* Frame B (full background) */}
             <img
               src={`/api/goes/frames/${frameB.id}/image`}

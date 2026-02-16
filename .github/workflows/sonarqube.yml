@@ -34,12 +34,11 @@ jobs:
             const repo = context.repo.repo;
             const branch = context.payload.pull_request?.head?.ref || context.ref?.replace('refs/heads/', '');
             const headSha = context.payload.pull_request?.head?.sha || context.sha;
-            // Look for runs created within last 10 minutes (same push)
             const triggerTime = new Date(Date.now() - 600000).toISOString();
-            console.log(`Looking for Test workflow on branch=${branch} sha=${headSha} created after ~${triggerTime}`);
+            console.log(`Looking for Test workflow on branch=${branch} sha=${headSha}`);
 
-            // Poll for up to 15 minutes
-            for (let i = 0; i < 30; i++) {
+            // Poll every 10s for up to 10 minutes
+            for (let i = 0; i < 60; i++) {
               const runs = await github.rest.actions.listWorkflowRunsForRepo({
                 owner, repo,
                 branch: branch,
@@ -50,7 +49,6 @@ jobs:
                 created: `>=${triggerTime.split('T')[0]}`
               });
 
-              // Find the most recent successful Test run matching exact commit
               const testRun = runs.data.workflow_runs
                 .filter(r => r.name === 'Test' && r.status === 'completed' && r.head_sha === headSha)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -61,8 +59,8 @@ jobs:
                 return;
               }
 
-              console.log(`Waiting for Test workflow... (attempt ${i + 1}/30)`);
-              await new Promise(r => setTimeout(r, 30000));
+              console.log(`Waiting for Test workflow... (attempt ${i + 1}/60)`);
+              await new Promise(r => setTimeout(r, 10000));
             }
             core.setFailed('Test workflow did not complete in time');
 

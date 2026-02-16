@@ -39,6 +39,41 @@ vi.mock('../hooks/useApi', () => ({
   }),
 }));
 
+vi.mock('../api/client', () => ({
+  default: {
+    get: vi.fn().mockResolvedValue({ data: {} }),
+  },
+}));
+
+const goesStatsWithJobs = {
+  total_frames: 100,
+  frames_by_satellite: { 'GOES-19': 100 },
+  last_fetch_time: '2026-01-01T00:00:00Z',
+  active_schedules: 2,
+  recent_jobs: [
+    { id: '1', status: 'completed', created_at: '2026-01-01T00:00:00Z', status_message: 'Done' },
+    { id: '2', status: 'running', created_at: '2026-01-01T01:00:00Z', status_message: 'In progress' },
+    { id: '3', status: 'failed', created_at: '2026-01-01T02:00:00Z', status_message: 'Error' },
+    { id: '4', status: 'pending', created_at: '2026-01-01T03:00:00Z', status_message: 'Waiting' },
+  ],
+  storage_by_satellite: { 'GOES-19': 1024 },
+  storage_by_band: { C02: 512 },
+};
+
+function makeWrapper(goesStats?: typeof goesStatsWithJobs) {
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    if (goesStats) {
+      qc.setQueryData(['goes-dashboard-stats'], goesStats);
+    }
+    return (
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+}
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
@@ -71,23 +106,41 @@ describe('Dashboard', () => {
   it('stat cards grid is not hidden when data is loaded', () => {
     const { getByText } = render(<Dashboard />, { wrapper });
     const totalImagesEl = getByText('Total Images');
-    // Walk up to the grid container
     const grid = totalImagesEl.closest('[class*="grid"]');
     expect(grid).toBeTruthy();
     expect(grid!.className).not.toContain('hidden');
   });
 
+  it('renders recent jobs with correct status color indicators', () => {
+    const W = makeWrapper(goesStatsWithJobs);
+    const { container } = render(<Dashboard />, { wrapper: W });
+    // Check that status dots are rendered with correct classes
+    const dots = container.querySelectorAll('[data-testid="recent-job-dot"]');
+    const dotClasses = Array.from(dots).map((d) => d.className);
+    // Should have emerald for completed, amber for running, red for failed, slate for pending
+    expect(dotClasses.some((c) => c.includes('bg-emerald-400'))).toBe(true);
+    expect(dotClasses.some((c) => c.includes('bg-amber-400'))).toBe(true);
+    expect(dotClasses.some((c) => c.includes('bg-red-400'))).toBe(true);
+    expect(dotClasses.some((c) => c.includes('bg-slate-400'))).toBe(true);
+  });
+
+  it('renders recent job status messages', () => {
+    const W = makeWrapper(goesStatsWithJobs);
+    const { container } = render(<Dashboard />, { wrapper: W });
+    const text = container.textContent || '';
+    expect(text).toContain('Done');
+    expect(text).toContain('In progress');
+    expect(text).toContain('Error');
+    expect(text).toContain('Waiting');
+  });
+
   it('job cards have dark-mode-compatible background classes', () => {
     const { container } = render(<Dashboard />, { wrapper });
-    // JobList renders with button elements
-    // Even with empty jobs, the component should not have bg-card without dark variant
-    // This test validates the fix is structurally present
     const jobListSection = container.querySelector('.space-y-2');
     if (jobListSection) {
       const cards = jobListSection.querySelectorAll('button');
       cards.forEach((card) => {
         const cls = card.className;
-        // Should have explicit dark:bg-* class, not just bg-card
         expect(cls).toMatch(/dark:bg-/);
       });
     }

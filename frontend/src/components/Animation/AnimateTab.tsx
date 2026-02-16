@@ -194,8 +194,8 @@ export default function AnimateTab() {
             </div>
 
             {/* Quick buttons */}
-            <div>
-              <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</label>
+            <fieldset className="border-0 p-0 m-0">
+              <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</legend>
               <div className="flex flex-wrap gap-2">
                 {QUICK_HOURS.map((h) => (
                   <button
@@ -208,7 +208,7 @@ export default function AnimateTab() {
                   </button>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
             {/* Date range */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

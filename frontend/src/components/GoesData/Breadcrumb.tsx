@@ -9,7 +9,7 @@ interface BreadcrumbProps {
   segments: BreadcrumbSegment[];
 }
 
-export default function Breadcrumb({ segments }: BreadcrumbProps) {
+export default function Breadcrumb({ segments }: Readonly<BreadcrumbProps>) {
   if (segments.length <= 1) return null;
 
   return (

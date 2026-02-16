@@ -22,7 +22,7 @@ function calcFps(preset: SpeedPreset, intervalMin: number): number {
   return Math.max(1, Math.min(30, Math.round(multiplier / (intervalMin / 60))));
 }
 
-export default function AnimationSettingsPanel({ config, captureIntervalMinutes, onChange }: Props) {
+export default function AnimationSettingsPanel({ config, captureIntervalMinutes, onChange }: Readonly<Props>) {
   const handleSpeedPreset = (preset: SpeedPreset) => {
     onChange({ fps: calcFps(preset, captureIntervalMinutes) });
   };
@@ -34,8 +34,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </h3>
 
       {/* Speed Presets */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</label>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</legend>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(SPEED_LABELS) as SpeedPreset[]).map((preset) => (
             <button
@@ -48,7 +48,7 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
           ))}
         </div>
         <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Current: {config.fps} FPS</p>
-      </div>
+      </fieldset>
 
       {/* FPS Slider */}
       <div>
@@ -67,8 +67,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Resolution */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</label>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</legend>
         <div className="flex gap-2">
           <button
             onClick={() => onChange({ resolution: 'preview' })}
@@ -91,11 +91,11 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             Full Quality
           </button>
         </div>
-      </div>
+      </fieldset>
 
       {/* Loop Style */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Loop Style</label>
+      <div role="radiogroup" aria-label="Loop Style">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Loop Style</span>
         <div className="flex gap-2 flex-wrap">
           {([
             { value: 'forward', label: 'Forward' },
@@ -132,8 +132,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Quality */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</label>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</legend>
         <div className="flex gap-2">
           {(['low', 'medium', 'high'] as const).map((q) => (
             <button
@@ -149,11 +149,11 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             </button>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* Overlays */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</label>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</legend>
         <div className="space-y-2">
           {([
             { key: 'show_timestamp', label: 'Show timestamp' },
@@ -175,7 +175,7 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

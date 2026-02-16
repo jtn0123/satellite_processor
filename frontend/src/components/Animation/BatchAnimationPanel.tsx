@@ -9,7 +9,7 @@ interface Props {
   currentConfig: AnimationConfig;
 }
 
-export default function BatchAnimationPanel({ currentConfig }: Props) {
+export default function BatchAnimationPanel({ currentConfig }: Readonly<Props>) {
   const [items, setItems] = useState<BatchItem[]>([]);
 
   const addItem = () => {

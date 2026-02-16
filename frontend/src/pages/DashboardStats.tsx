@@ -22,7 +22,7 @@ interface DashboardStatsProps {
   isLoading: boolean;
 }
 
-export default function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
+export default function DashboardStats({ stats, isLoading }: Readonly<DashboardStatsProps>) {
   const statCards = [
     { label: 'Total Images', value: stats?.total_images ?? 0, icon: Image, color: 'text-cyan-400' },
     { label: 'Total Jobs', value: stats?.total_jobs ?? 0, icon: ListTodo, color: 'text-violet-400' },

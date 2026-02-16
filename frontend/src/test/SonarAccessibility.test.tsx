@@ -249,14 +249,13 @@ describe('ImageViewer accessibility', () => {
     expect(dialog?.getAttribute('aria-label')).toBe('Image viewer');
   });
 
-  it('pan area has role="application" with tabIndex and aria-label', () => {
+  it('pan area is a button with aria-label', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const panArea = document.querySelector('[role="application"]');
+    const panArea = screen.getByLabelText('Pan and zoom area');
     expect(panArea).toBeTruthy();
-    expect(panArea?.getAttribute('tabindex')).toBe('0');
-    expect(panArea?.getAttribute('aria-label')).toBe('Pan and zoom area');
+    expect(panArea.tagName).toBe('BUTTON');
   });
 
   it('getCursorStyle returns default when scale <= 1', () => {
@@ -303,7 +302,7 @@ describe('ImageViewer accessibility', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const panArea = document.querySelector('[role="application"]')!;
+    const panArea = screen.getByLabelText('Pan and zoom area');
     fireEvent.wheel(panArea, { deltaY: -100 });
 
     const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;

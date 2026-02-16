@@ -126,13 +126,12 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
           </button>
         )}
 
-        <div
-          role="application"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label="Pan and zoom area"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
-          className="flex items-center justify-center"
+          className="flex items-center justify-center bg-transparent border-none p-0 m-0 outline-none"
         >
           <img
             src={`/api/goes/frames/${frame.id}/image`}
@@ -144,7 +143,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
             }}
             draggable={false}
           />
-        </div>
+        </button>
 
         {currentIndex < frames.length - 1 && (
           <button onClick={goNext} className="absolute right-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">

@@ -33,24 +33,26 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const branch = context.payload.pull_request?.head?.ref || context.ref?.replace('refs/heads/', '');
+            const headSha = context.payload.pull_request?.head?.sha || context.sha;
             // Look for runs created within last 10 minutes (same push)
             const triggerTime = new Date(Date.now() - 600000).toISOString();
-            console.log(`Looking for Test workflow on branch=${branch} created after ~${triggerTime}`);
+            console.log(`Looking for Test workflow on branch=${branch} sha=${headSha} created after ~${triggerTime}`);
 
             // Poll for up to 15 minutes
             for (let i = 0; i < 30; i++) {
               const runs = await github.rest.actions.listWorkflowRunsForRepo({
                 owner, repo,
                 branch: branch,
+                head_sha: headSha,
                 event: 'pull_request',
                 status: 'completed',
                 per_page: 5,
                 created: `>=${triggerTime.split('T')[0]}`
               });
 
-              // Find the most recent successful Test run
+              // Find the most recent successful Test run matching exact commit
               const testRun = runs.data.workflow_runs
-                .filter(r => r.name === 'Test' && r.conclusion === 'success')
+                .filter(r => r.name === 'Test' && r.conclusion === 'success' && r.head_sha === headSha)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
               if (testRun) {

@@ -148,7 +148,7 @@ describe('WhatsNewModal version tracking', () => {
 
   it('localStorage whatsNewLastSeen is set when onClose fires', () => {
     mockFetchSuccess();
-    let closeFn: () => void = () => {};
+    const closeFn: () => void = () => {};
     render(
       <WhatsNewModal
         onClose={() => {

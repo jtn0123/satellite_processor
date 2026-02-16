@@ -126,7 +126,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
           </button>
         )}
 
-        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}

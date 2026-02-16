@@ -1,54 +1,34 @@
-import { useCallback } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
-const CHANGELOG = [
-  {
-    version: '1.0.1',
-    date: '2026-02-16',
-    changes: [
-      'Defensive coding: 18 components hardened against unexpected API responses',
-      'Accessibility: native <dialog> modals, <fieldset> groups, keyboard navigation',
-      'Browse tab crash fix (paginated response handling)',
-      'SonarQube: 100+ code quality issues resolved (reliability C → A)',
-      'Frontend test suite: 352 → 614 tests',
-      '8 dependency upgrades including security fix (python-multipart CVE)',
-      'CI pipeline overhaul: ~60s wall-clock, sharded tests, path filters',
-      'Conventional Commits + semantic-release for automatic versioning',
-    ],
-  },
-  {
-    version: '1.0.0',
-    date: '2026-02-15',
-    changes: [
-      'Configurable frame fetch cap (default 200, adjustable in Settings)',
-      'New completed_partial status for capped or partially failed fetches',
-      'Per-frame S3 retry with circuit breaker for transient errors',
-      'Dashboard: empty states, dark mode contrast, GOES satellite stats',
-      'WebSocket graceful reconnect with exponential backoff',
-      'Quick fetch buttons (Last Hour, 6h, 12h, 24h)',
-      'Notification bell, keyboard shortcuts, frame preview navigation',
-      'Browse tab: export to CSV, bulk operations toolbar',
-      'System theme detection (prefers-color-scheme)',
-      'What\'s New changelog modal',
-    ],
-  },
-  {
-    version: '0.x',
-    date: '2026-01-15',
-    changes: [
-      'GOES Data manager with 10 tabs',
-      'Animation Studio for timelapse creation',
-      'Live View, Map Overlay, Band Composites, Comparison Mode',
-      'Collection & tag management, crop presets',
-      'React frontend with dark satellite theme',
-    ],
-  },
-];
+interface Release {
+  version: string;
+  date: string;
+  changes: string[];
+}
 
 export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const close = useCallback(() => onClose(), [onClose]);
   const dialogRef = useFocusTrap(close);
+  const [releases, setReleases] = useState<Release[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/health/changelog')
+      .then((r) => r.json())
+      .then((data: Release[]) => {
+        if (!cancelled) setReleases(data);
+      })
+      .catch(() => {
+        /* fallback to empty */
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <dialog
@@ -75,7 +55,15 @@ export default function WhatsNewModal({ onClose }: Readonly<{ onClose: () => voi
           </button>
         </div>
         <div className="space-y-6">
-          {CHANGELOG.map((release) => (
+          {loading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label="Loading changelog" />
+            </div>
+          )}
+          {!loading && releases.length === 0 && (
+            <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">No changelog entries available.</p>
+          )}
+          {releases.map((release) => (
             <div key={release.version}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm font-bold text-primary">v{release.version}</span>

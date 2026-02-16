@@ -1,27 +1,91 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WhatsNewModal from '../components/WhatsNewModal';
 
+const MOCK_CHANGELOG = [
+  {
+    version: '1.0.1',
+    date: '2026-02-16',
+    changes: ['Fix bug A', 'Fix bug B'],
+  },
+  {
+    version: '1.0.0',
+    date: '2026-02-15',
+    changes: ['Initial release', 'Feature X'],
+  },
+];
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+});
+
+function mockFetchSuccess(data = MOCK_CHANGELOG) {
+  global.fetch = vi.fn().mockResolvedValue({
+    json: () => Promise.resolve(data),
+  });
+}
+
+function mockFetchFailure() {
+  global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+}
+
 describe('WhatsNewModal', () => {
-  it('renders What\'s New heading', () => {
+  it('renders What\'s New heading', async () => {
+    mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     expect(screen.getByText("What's New")).toBeInTheDocument();
   });
 
-  it('renders changelog versions', () => {
+  it('shows loading state initially', () => {
+    // Never-resolving fetch
+    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
     render(<WhatsNewModal onClose={vi.fn()} />);
-    expect(screen.getByText('v2.3.0')).toBeInTheDocument();
-    expect(screen.getByText('v1.1.0')).toBeInTheDocument();
+    expect(screen.getByLabelText('Loading changelog')).toBeInTheDocument();
   });
 
-  it('calls onClose when close button clicked', () => {
+  it('renders changelog versions after fetch', async () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText('v1.0.1')).toBeInTheDocument();
+      expect(screen.getByText('v1.0.0')).toBeInTheDocument();
+    });
+  });
+
+  it('renders change items', async () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText('Fix bug A')).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty state on fetch failure', async () => {
+    mockFetchFailure();
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText('No changelog entries available.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty state when API returns empty array', async () => {
+    mockFetchSuccess([]);
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText('No changelog entries available.')).toBeInTheDocument();
+    });
+  });
+
+  it('calls onClose when close button clicked', async () => {
+    mockFetchSuccess();
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     fireEvent.click(screen.getByLabelText('Close'));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onClose on backdrop click', () => {
+  it('calls onClose on backdrop click', async () => {
+    mockFetchSuccess();
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     const dialog = document.querySelector('dialog')!;
@@ -29,7 +93,8 @@ describe('WhatsNewModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onClose on Escape', () => {
+  it('calls onClose on Escape', async () => {
+    mockFetchSuccess();
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     const dialog = document.querySelector('dialog')!;
@@ -38,14 +103,15 @@ describe('WhatsNewModal', () => {
   });
 
   it('has aria-label on dialog', () => {
+    mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     const dialog = document.querySelector('dialog');
     expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
-  it('renders changelog entries as list items', () => {
+  it('fetches from /api/health/changelog', () => {
+    mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
-    const items = screen.getAllByRole('listitem');
-    expect(items.length).toBeGreaterThan(10);
+    expect(global.fetch).toHaveBeenCalledWith('/api/health/changelog');
   });
 });

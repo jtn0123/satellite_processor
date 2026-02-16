@@ -1,9 +1,11 @@
 """Health check endpoints."""
 
 import os
+import re
 import shutil
 import time
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -27,6 +29,64 @@ def _read_version() -> str:
 
 
 VERSION = _read_version()
+
+# --- Changelog parsing (cached) ---
+
+_changelog_cache: Optional[list] = None
+
+
+def _find_changelog() -> Optional[Path]:
+    """Locate CHANGELOG.md next to VERSION file."""
+    for candidate in [Path(__file__).resolve().parents[4] / "CHANGELOG.md", Path("CHANGELOG.md")]:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _strip_links(text: str) -> str:
+    """Strip markdown links from change messages, keeping link text."""
+    # Remove ([#123](url)) and ([hash](url)) patterns
+    text = re.sub(r'\s*\(\[([^\]]*)\]\([^)]*\)\)', '', text)
+    # Remove closes references
+    text = re.sub(r',?\s*closes\s+\S+', '', text)
+    return text.strip()
+
+
+def _parse_changelog(limit: int = 5) -> list:
+    """Parse CHANGELOG.md into structured releases."""
+    global _changelog_cache  # noqa: PLW0603
+    if _changelog_cache is not None:
+        return _changelog_cache
+
+    path = _find_changelog()
+    if path is None:
+        _changelog_cache = []
+        return _changelog_cache
+
+    content = path.read_text(encoding="utf-8")
+    releases: list = []
+    current: Optional[dict] = None
+
+    for line in content.splitlines():
+        # Match ## [version](url) (date) or # version (date)
+        m = re.match(r'^##?\s+\[?(\d+\.\d+\.\d+)\]?(?:\([^)]*\))?\s+\((\d{4}-\d{2}-\d{2})\)', line)
+        if m:
+            if current:
+                releases.append(current)
+                if len(releases) >= limit:
+                    break
+            current = {"version": m.group(1), "date": m.group(2), "changes": []}
+            continue
+        if current and line.startswith('* '):
+            msg = _strip_links(line[2:])
+            if msg:
+                current["changes"].append(msg)
+
+    if current and len(releases) < limit:
+        releases.append(current)
+
+    _changelog_cache = releases
+    return _changelog_cache
 BUILD_COMMIT = os.environ.get("BUILD_COMMIT", "dev")
 BUILD_DATE = os.environ.get("BUILD_DATE", "")
 
@@ -127,6 +187,12 @@ def _derive_overall(checks: dict) -> str:
     if any(c.get("status") == "warning" for c in checks.values()):
         return "degraded"
     return "healthy"
+
+
+@router.get("/changelog")
+async def changelog():
+    """Return parsed CHANGELOG.md as structured JSON."""
+    return _parse_changelog()
 
 
 @router.get("/detailed")

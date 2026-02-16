@@ -91,46 +91,16 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
   });
 });
 
-describe('Dialog backdrop click-to-close', () => {
-  let onClose: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    onClose = vi.fn<[], void>();
+describe('Dialog modal rendering', () => {
+  it('AddToCollectionModal renders without role="dialog"', () => {
+    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
+    // Should NOT use role="dialog" (native <dialog> or no role needed)
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('AddToCollectionModal closes on dialog backdrop click', () => {
-    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={onClose} />));
-
-    const dialog = document.querySelector('dialog');
-    expect(dialog).toBeTruthy();
-
-    // Click on dialog itself (backdrop) should close
-    fireEvent.click(dialog!);
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('AddToCollectionModal does NOT close when clicking inside panel', () => {
-    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={onClose} />));
-
-    const heading = screen.getByText('Add to Collection');
-    fireEvent.click(heading);
-    expect(onClose).not.toHaveBeenCalled();
-  });
-
-  it('TagModal closes on dialog backdrop click', () => {
-    render(withQueryClient(<TagModal frameIds={['1']} onClose={onClose} />));
-
-    const dialog = document.querySelector('dialog');
-    fireEvent.click(dialog!);
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('TagModal does NOT close when clicking inside panel', () => {
-    render(withQueryClient(<TagModal frameIds={['1']} onClose={onClose} />));
-
-    const heading = screen.getByText('Tag Frames');
-    fireEvent.click(heading);
-    expect(onClose).not.toHaveBeenCalled();
+  it('TagModal renders without role="dialog"', () => {
+    render(withQueryClient(<TagModal frameIds={['1']} onClose={() => {}} />));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 });
 

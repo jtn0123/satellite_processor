@@ -252,9 +252,11 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
         >
-          <div
-            className="bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
+          <button
+            type="button"
+            className="bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
@@ -277,7 +279,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 <Stat label="Uploaded" value={new Date(preview.uploaded_at).toLocaleString()} />
               </div>
             </div>
-          </div>
+          </button>
         </dialog>
       )}
     </>

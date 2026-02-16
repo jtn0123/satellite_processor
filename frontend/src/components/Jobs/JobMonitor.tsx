@@ -144,7 +144,7 @@ function JobHeader({
       <div className="flex items-center gap-2 shrink-0">
         {connected && (
           <span className="flex items-center gap-1 text-xs text-green-400">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />{' '}
             Live
           </span>
         )}

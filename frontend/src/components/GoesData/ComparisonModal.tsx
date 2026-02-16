@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { X, ArrowLeftRight, Columns, SlidersHorizontal } from 'lucide-react';
 import Modal from './Modal';
 
@@ -34,37 +34,12 @@ export default function ComparisonModal({
   const [swapped, setSwapped] = useState(false);
   const [sliderPos, setSliderPos] = useState(50);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
 
   const left = swapped ? frameB : frameA;
   const right = swapped ? frameA : frameB;
 
   const getUrl = (frame: GoesFrame) =>
     `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`;
-
-  const handleSliderMove = useCallback((e: MouseEvent | React.MouseEvent) => {
-    if (!sliderRef.current) return;
-    const rect = sliderRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    setSliderPos((x / rect.width) * 100);
-  }, []);
-
-  const handleMouseDown = useCallback(() => {
-    isDragging.current = true;
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging.current) handleSliderMove(e);
-    };
-    const handleMouseUp = () => { isDragging.current = false; };
-    globalThis.addEventListener('mousemove', handleMouseMove);
-    globalThis.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      globalThis.removeEventListener('mousemove', handleMouseMove);
-      globalThis.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleSliderMove]);
 
   return (
     <Modal
@@ -131,7 +106,6 @@ export default function ComparisonModal({
               ref={sliderRef}
               className="relative bg-black rounded-lg overflow-hidden cursor-col-resize select-none"
               style={{ height: '60vh' }}
-              onClick={handleSliderMove}
             >
               {/* Right image (full) */}
               <img src={getUrl(right)} alt="Right" loading="lazy" decoding="async"
@@ -154,7 +128,6 @@ export default function ComparisonModal({
               <div
                 className="absolute top-0 bottom-0 w-1 bg-white/80 cursor-col-resize z-10 pointer-events-none"
                 style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
-                onMouseDown={handleMouseDown}
               >
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
                   <ArrowLeftRight className="w-4 h-4 text-slate-800" />

@@ -115,7 +115,7 @@ describe('Dashboard', () => {
     const W = makeWrapper(goesStatsWithJobs);
     const { container } = render(<Dashboard />, { wrapper: W });
     // Check that status dots are rendered with correct classes
-    const dots = container.querySelectorAll('.rounded-full');
+    const dots = container.querySelectorAll('[data-testid="recent-job-dot"]');
     const dotClasses = Array.from(dots).map((d) => d.className);
     // Should have emerald for completed, amber for running, red for failed, slate for pending
     expect(dotClasses.some((c) => c.includes('bg-emerald-400'))).toBe(true);

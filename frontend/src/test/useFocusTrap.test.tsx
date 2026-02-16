@@ -37,19 +37,22 @@ describe('useFocusTrap', () => {
     const onClose = vi.fn();
     const { getByTestId } = render(<TestComponent onClose={onClose} />);
     const third = getByTestId('third');
+    const first = getByTestId('first');
     third.focus();
     fireEvent.keyDown(document, { key: 'Tab' });
-    // Focus trap should handle wrapping without error
     expect(onClose).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(first);
   });
 
   it('handles Shift+Tab wrapping from first to last', () => {
     const onClose = vi.fn();
     const { getByTestId } = render(<TestComponent onClose={onClose} />);
     const first = getByTestId('first');
+    const third = getByTestId('third');
     first.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(onClose).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(third);
   });
 
   it('does not crash with no focusable elements', () => {

@@ -31,7 +31,8 @@ describe('WhatsNewModal', () => {
   it('calls onClose on Escape', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    fireEvent.keyDown(document, { key: 'Escape' });
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
 

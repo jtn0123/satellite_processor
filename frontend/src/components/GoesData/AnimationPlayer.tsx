@@ -97,6 +97,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
       } else if (e.key === 'ArrowLeft') {
         stepBack();
       } else if (e.key === 'Escape') {
+        e.preventDefault(); // prevent native dialog close, we handle it
         if (fullscreen) {
           setFullscreen(false);
         } else {
@@ -128,12 +129,26 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  // Open dialog as modal for proper focus trapping
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (typeof el.showModal === 'function' && !el.open) {
+      el.showModal();
+    } else if (!el.open) {
+      el.open = true;
+    }
+    return () => {
+      if (el.open) el.close();
+    };
+  }, []);
+
   if (frameCount === 0) {
     return (
       <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
         <div className="text-white text-center">
           <p>No frames to animate</p>
-          <button onClick={onClose} className="mt-4 px-4 py-2 bg-slate-700 rounded-lg min-h-[44px] min-w-[44px]">
+          <button type="button" onClick={onClose} className="mt-4 px-4 py-2 bg-slate-700 rounded-lg min-h-[44px] min-w-[44px]">
             Close
           </button>
         </div>
@@ -143,7 +158,6 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
 
   return (
     <dialog
-      open
       ref={containerRef}
       className={`fixed inset-0 z-50 bg-space-900 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0 ${
         fullscreen ? '' : 'bg-black/95'
@@ -162,7 +176,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             </span>
           )}
         </div>
-        <button
+        <button type="button"
           onClick={onClose}
           className="p-2 text-slate-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Close player"
@@ -201,7 +215,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
 
         {/* Button row */}
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          <button
+          <button type="button"
             onClick={stepBack}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label="Previous frame"
@@ -209,7 +223,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             <SkipBack className="w-5 h-5" />
           </button>
 
-          <button
+          <button type="button"
             onClick={togglePlay}
             className="p-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label={playing ? 'Pause' : 'Play'}
@@ -217,7 +231,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
           </button>
 
-          <button
+          <button type="button"
             onClick={stepForward}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label="Next frame"
@@ -228,7 +242,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           {/* Speed control */}
           <div className="flex items-center gap-1 ml-4">
             {SPEEDS.map((s) => (
-              <button
+              <button type="button"
                 key={s}
                 onClick={() => setSpeed(s)}
                 className={`px-2 py-1 text-xs rounded min-h-[44px] min-w-[44px] flex items-center justify-center ${
@@ -244,7 +258,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           </div>
 
           {/* Loop toggle */}
-          <button
+          <button type="button"
             onClick={() => setLoop((l) => !l)}
             className={`p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center ${
               loop
@@ -257,7 +271,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           </button>
 
           {/* Fullscreen */}
-          <button
+          <button type="button"
             onClick={toggleFullscreen}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}

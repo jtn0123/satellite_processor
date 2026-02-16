@@ -102,17 +102,17 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setScale((s) => Math.min(10, s + 0.5))} className="p-2 hover:bg-white/10 rounded-lg" title="Zoom in">
+          <button type="button" onClick={() => setScale((s) => Math.min(10, s + 0.5))} className="p-2 hover:bg-white/10 rounded-lg" title="Zoom in">
             <ZoomIn className="w-5 h-5" />
           </button>
-          <button onClick={() => setScale((s) => Math.max(0.5, s - 0.5))} className="p-2 hover:bg-white/10 rounded-lg" title="Zoom out">
+          <button type="button" onClick={() => setScale((s) => Math.max(0.5, s - 0.5))} className="p-2 hover:bg-white/10 rounded-lg" title="Zoom out">
             <ZoomOut className="w-5 h-5" />
           </button>
-          <button onClick={resetZoom} className="p-2 hover:bg-white/10 rounded-lg" title="Reset zoom">
+          <button type="button" onClick={resetZoom} className="p-2 hover:bg-white/10 rounded-lg" title="Reset zoom">
             <RotateCcw className="w-5 h-5" />
           </button>
           <span className="text-sm text-white/50 w-16 text-center">{Math.round(scale * 100)}%</span>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg" title="Close">
+          <button type="button" onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg" title="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -121,7 +121,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
       {/* Image area */}
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
         {currentIndex > 0 && (
-          <button onClick={goPrev} className="absolute left-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
+          <button type="button" onClick={goPrev} className="absolute left-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
             <ChevronLeft className="w-6 h-6" />
           </button>
         )}
@@ -146,7 +146,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         </button>
 
         {currentIndex < frames.length - 1 && (
-          <button onClick={goNext} className="absolute right-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
+          <button type="button" onClick={goNext} className="absolute right-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
             <ChevronRight className="w-6 h-6" />
           </button>
         )}

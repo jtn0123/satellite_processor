@@ -1,10 +1,7 @@
 """Tests for app.config — Settings model, path derivation, and validation."""
 
 import logging
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from app.config import Settings
 

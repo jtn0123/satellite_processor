@@ -26,6 +26,21 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.workflow_run.pull_requests?.[0];
+            if (pr) {
+              core.setOutput('is_pr', 'true');
+              core.setOutput('pr_number', pr.number.toString());
+              core.setOutput('pr_branch', '${{ github.event.workflow_run.head_branch }}');
+              core.setOutput('pr_base', pr.base.ref);
+            } else {
+              core.setOutput('is_pr', 'false');
+            }
+
       - name: Download backend coverage shards
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -74,6 +89,9 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            ${{ steps.pr-info.outputs.is_pr == 'true' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', steps.pr-info.outputs.pr_number, steps.pr-info.outputs.pr_branch, steps.pr-info.outputs.pr_base) || '' }}
 
       - name: SonarQube Quality Gate
         id: quality-gate
@@ -90,7 +108,17 @@ jobs:
           script: |
             const sha = '${{ github.event.workflow_run.head_sha }}';
             const gate = '${{ steps.quality-gate.outcome }}';
-            const state = gate === 'success' ? 'success' : 'failure';
+            let state, description;
+            if (gate === 'success') {
+              state = 'success';
+              description = 'Quality gate passed';
+            } else if (gate === 'failure') {
+              state = 'failure';
+              description = 'Quality gate failed';
+            } else {
+              state = 'error';
+              description = 'Quality gate check did not complete';
+            }
             const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
             await github.rest.repos.createCommitStatus({
@@ -99,6 +127,6 @@ jobs:
               sha: sha,
               state: state,
               target_url: runUrl,
-              description: gate === 'success' ? 'Quality gate passed' : 'Quality gate failed',
+              description: description,
               context: 'SonarQube Quality Gate'
             });

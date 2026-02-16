@@ -3,10 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Satellite, Maximize2, Minimize2, RefreshCw } from 'lucide-react';
 import api from '../../api/client';
 
+interface SatelliteAvailability {
+  status: string;
+  description: string;
+}
+
 interface Product {
   satellites: string[];
   sectors: { id: string; name: string; product: string }[];
   bands: { id: string; description: string }[];
+  default_satellite?: string;
+  satellite_availability?: Record<string, SatelliteAvailability>;
 }
 
 interface LatestFrame {
@@ -30,7 +37,7 @@ const REFRESH_INTERVALS = [
 ];
 
 export default function LiveTab() {
-  const [satellite, setSatellite] = useState('GOES-16');
+  const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
   const [refreshInterval, setRefreshInterval] = useState(300000);
@@ -42,10 +49,18 @@ export default function LiveTab() {
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
 
+  // Set default satellite from API response
+  useEffect(() => {
+    if (products && !satellite) {
+      setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
+    }
+  }, [products, satellite]);
+
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
+    enabled: !!satellite,
   });
 
   const toggleFullscreen = useCallback(() => {
@@ -77,7 +92,12 @@ export default function LiveTab() {
           <label htmlFor="live-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
           <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
-            {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+            {products?.satellites.map((s) => {
+              const avail = products.satellite_availability?.[s];
+              const status = avail?.status;
+              const label = status && status !== 'operational' ? `${s} (${status})` : s;
+              return <option key={s} value={s}>{label}</option>;
+            })}
           </select>
         </div>
         <div>

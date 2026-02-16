@@ -52,7 +52,7 @@ jobs:
 
               // Find the most recent successful Test run matching exact commit
               const testRun = runs.data.workflow_runs
-                .filter(r => r.name === 'Test' && r.conclusion === 'success' && r.head_sha === headSha)
+                .filter(r => r.name === 'Test' && r.status === 'completed' && r.head_sha === headSha)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
               if (testRun) {

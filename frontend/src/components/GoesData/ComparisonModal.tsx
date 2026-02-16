@@ -77,23 +77,23 @@ export default function ComparisonModal({
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
         <h3 className="text-lg font-semibold">Compare Frames</h3>
         <div className="flex items-center gap-2">
-          <button onClick={() => setMode('side-by-side')}
+          <button type="button" onClick={() => setMode('side-by-side')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
               mode === 'side-by-side' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
             }`}>
             <Columns className="w-4 h-4" /> Side by Side
           </button>
-          <button onClick={() => setMode('slider')}
+          <button type="button" onClick={() => setMode('slider')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
               mode === 'slider' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
             }`}>
             <SlidersHorizontal className="w-4 h-4" /> Slider
           </button>
-          <button onClick={() => setSwapped(!swapped)}
+          <button type="button" onClick={() => setSwapped(!swapped)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
             <ArrowLeftRight className="w-4 h-4" /> Swap
           </button>
-          <button onClick={onClose} aria-label="Close comparison">
+          <button type="button" onClick={onClose} aria-label="Close comparison">
             <X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" />
           </button>
         </div>

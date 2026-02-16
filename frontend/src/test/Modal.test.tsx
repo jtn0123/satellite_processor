@@ -19,9 +19,9 @@ describe('Modal', () => {
     expect(screen.getByText('Child content')).toBeInTheDocument();
   });
 
-  it('sets aria-label on the panel', () => {
+  it('sets aria-label on the dialog', () => {
     render(<Modal onClose={onClose} ariaLabel="My Aria Label"><p>Hi</p></Modal>);
-    expect(screen.getByLabelText('My Aria Label')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'My Aria Label');
   });
 
   it('calls onClose when backdrop button is clicked', () => {
@@ -55,8 +55,8 @@ describe('Modal', () => {
   });
 
   it('applies custom panelClassName', () => {
-    render(<Modal onClose={onClose} ariaLabel="Test" panelClassName="custom-panel"><p>Hi</p></Modal>);
-    expect(screen.getByLabelText('Test').className).toBe('custom-panel');
+    const { container } = render(<Modal onClose={onClose} ariaLabel="Test" panelClassName="custom-panel"><p>Hi</p></Modal>);
+    expect(container.querySelector('.custom-panel')).toBeInTheDocument();
   });
 
   it('applies custom overlayClassName', () => {
@@ -65,8 +65,8 @@ describe('Modal', () => {
   });
 
   it('uses default panelClassName when not provided', () => {
-    render(<Modal onClose={onClose} ariaLabel="Test"><p>Hi</p></Modal>);
-    expect(screen.getByLabelText('Test').className).toContain('modal-panel');
+    const { container } = render(<Modal onClose={onClose} ariaLabel="Test"><p>Hi</p></Modal>);
+    expect(container.querySelector('.modal-panel')).toBeInTheDocument();
   });
 
   it('uses default overlayClassName when not provided', () => {
@@ -75,7 +75,8 @@ describe('Modal', () => {
   });
 
   it('has aria-hidden false on panel', () => {
-    render(<Modal onClose={onClose} ariaLabel="Test"><p>Hi</p></Modal>);
-    expect(screen.getByLabelText('Test')).toHaveAttribute('aria-hidden', 'false');
+    const { container } = render(<Modal onClose={onClose} ariaLabel="Test"><p>Hi</p></Modal>);
+    const panel = container.querySelector('.modal-panel');
+    expect(panel).toHaveAttribute('aria-hidden', 'false');
   });
 });

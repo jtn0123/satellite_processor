@@ -95,7 +95,7 @@ jobs:
           if [ "$SHARD" = "1" ]; then
             pytest tests/test_[a-e]* $COMMON
           elif [ "$SHARD" = "2" ]; then
-            pytest tests/test_[f]* tests/test_goes_[a-d]* tests/test_gap* $COMMON
+            pytest tests/test_[f]* tests/test_g[!ao]* tests/test_goes_[a-d]* tests/test_gap* $COMMON
           elif [ "$SHARD" = "3" ]; then
             pytest tests/test_goes_[e-z]* $COMMON
           else

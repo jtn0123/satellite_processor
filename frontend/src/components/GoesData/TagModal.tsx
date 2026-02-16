@@ -49,12 +49,12 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
     <Modal onClose={onClose} ariaLabel="Tag Frames">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Tag Frames</h3>
-        <button onClick={onClose} aria-label="Close tag modal"><X className="w-5 h-5 text-gray-500 dark:text-slate-400" /></button>
+        <button type="button" onClick={onClose} aria-label="Close tag modal"><X className="w-5 h-5 text-gray-500 dark:text-slate-400" /></button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {(tags ?? []).map((t) => (
-          <button key={t.id} onClick={() => toggleTag(t.id)}
+          <button type="button" key={t.id} onClick={() => toggleTag(t.id)}
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               selectedTags.includes(t.id)
                 ? 'border-primary bg-primary/20 text-gray-900 dark:text-white'
@@ -67,7 +67,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
       </div>
 
       {selectedTags.length > 0 && (
-        <button onClick={() => tagMutation.mutate()} disabled={tagMutation.isPending}
+        <button type="button" onClick={() => tagMutation.mutate()} disabled={tagMutation.isPending}
           className="w-full px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
           {tagMutation.isPending ? 'Tagging...' : `Tag ${frameIds.length} frames`}
         </button>
@@ -80,7 +80,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
             className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-pointer" />
           <input aria-label="Newtagname" type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
             placeholder="Tag name" className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
-          <button onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}
+          <button type="button" onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}
             className="px-4 py-2 bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50">+</button>
         </div>
       </div>

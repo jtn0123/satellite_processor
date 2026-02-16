@@ -25,7 +25,7 @@ export default function Modal({
   }, [onClose]);
 
   return (
-    <dialog open className={overlayClassName}>
+    <dialog open className={overlayClassName} aria-label={ariaLabel}>
       <button
         type="button"
         className="fixed inset-0 w-full h-full bg-transparent cursor-default"
@@ -34,7 +34,6 @@ export default function Modal({
       />
       <div
         ref={dialogRef}
-        aria-label={ariaLabel}
         className={panelClassName}
         aria-hidden="false"
       >

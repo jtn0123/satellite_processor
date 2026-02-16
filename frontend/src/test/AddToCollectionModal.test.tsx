@@ -40,7 +40,7 @@ describe('AddToCollectionModal', () => {
   it('calls onClose when overlay clicked', () => {
     const onClose = vi.fn();
     renderWithQuery(<AddToCollectionModal frameIds={['f1']} onClose={onClose} />);
-    fireEvent.click(document.querySelector('.modal-overlay')!);
+    fireEvent.click(screen.getByLabelText('Close modal'));
     expect(onClose).toHaveBeenCalled();
   });
 

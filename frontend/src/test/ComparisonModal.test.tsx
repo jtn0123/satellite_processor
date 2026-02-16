@@ -21,7 +21,7 @@ describe('ComparisonModal', () => {
   it('calls onClose on close button', () => {
     const onClose = vi.fn();
     render(<ComparisonModal frameA={frame as never} frameB={{ ...frame, id: 'f2' } as never} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText(/close/i));
+    fireEvent.click(screen.getByLabelText('Close comparison'));
     expect(onClose).toHaveBeenCalled();
   });
 

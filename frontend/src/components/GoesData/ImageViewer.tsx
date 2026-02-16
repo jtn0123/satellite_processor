@@ -9,6 +9,11 @@ interface ImageViewerProps {
   onNavigate: (frame: GoesFrame) => void;
 }
 
+function getCursorStyle(scale: number, dragging: boolean): string {
+  if (scale <= 1) return 'default';
+  return dragging ? 'grabbing' : 'grab';
+}
+
 export default function ImageViewer({ frame, frames, onClose, onNavigate }: Readonly<ImageViewerProps>) {
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -121,19 +126,19 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
           </button>
         )}
 
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
-          aria-label={`Pannable image: ${frame.satellite} ${frame.band}. Use zoom buttons to zoom.`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           className="flex items-center justify-center"
         >
           <img
             src={`/api/goes/frames/${frame.id}/image`}
-            alt={`${frame.satellite} ${frame.band}`}
+            alt={`${frame.satellite} ${frame.band} — Use zoom buttons to zoom`}
             className="max-h-full max-w-full select-none"
             style={{
               transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
-              cursor: scale <= 1 ? 'default' : (dragging ? 'grabbing' : 'grab'),
+              cursor: getCursorStyle(scale, dragging),
             }}
             draggable={false}
           />

@@ -92,36 +92,32 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
 });
 
 describe('Dialog modal rendering', () => {
-  it('AddToCollectionModal renders with role="dialog"', () => {
+  it('AddToCollectionModal renders as dialog element', () => {
     render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
-    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(document.querySelector('dialog')).toBeTruthy();
   });
 
-  it('TagModal renders with role="dialog"', () => {
+  it('TagModal renders as dialog element', () => {
     render(withQueryClient(<TagModal frameIds={['1']} onClose={() => {}} />));
-    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(document.querySelector('dialog')).toBeTruthy();
   });
 
-  it('AddToCollectionModal closes on dialog backdrop click', () => {
+  it('AddToCollectionModal closes on backdrop button click', () => {
     let closed = false;
     const handleClose = () => { closed = true; };
     render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={handleClose} />));
-    const dialog = document.querySelector('dialog');
-    if (dialog) {
-      fireEvent.click(dialog);
-      expect(closed).toBe(true);
-    }
+    const backdrop = screen.getByLabelText('Close modal');
+    fireEvent.click(backdrop);
+    expect(closed).toBe(true);
   });
 
-  it('TagModal closes on dialog backdrop click', () => {
+  it('TagModal closes on backdrop button click', () => {
     let closed = false;
     const handleClose = () => { closed = true; };
     render(withQueryClient(<TagModal frameIds={['1']} onClose={handleClose} />));
-    const dialog = document.querySelector('dialog');
-    if (dialog) {
-      fireEvent.click(dialog);
-      expect(closed).toBe(true);
-    }
+    const backdrop = screen.getByLabelText('Close modal');
+    fireEvent.click(backdrop);
+    expect(closed).toBe(true);
   });
 });
 
@@ -169,12 +165,12 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
 });
 
 describe('ImageViewer accessibility', () => {
-  it('renders pannable image area with aria-label', () => {
+  it('renders image with descriptive alt text', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const area = document.querySelector('[aria-label*="Pannable image"]');
-    expect(area).toBeTruthy();
+    const img = screen.getByAltText(/Use zoom buttons to zoom/);
+    expect(img).toBeTruthy();
   });
 
   it('dialog element renders with aria-label', () => {

@@ -56,7 +56,7 @@ describe('FramePreviewModal', () => {
   it('calls onClose on overlay click', () => {
     const onClose = vi.fn();
     renderWithQuery(<FramePreviewModal frame={frame as never} onClose={onClose} />);
-    fireEvent.click(document.querySelector('.modal-overlay')!);
+    fireEvent.click(screen.getByLabelText('Close modal'));
     expect(onClose).toHaveBeenCalled();
   });
 

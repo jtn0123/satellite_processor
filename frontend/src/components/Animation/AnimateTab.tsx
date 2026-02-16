@@ -278,9 +278,9 @@ export default function AnimateTab() {
       {/* Animation History */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Animation History</h3>
-        {animations && animations.items.length > 0 ? (
+        {animations && (animations.items ?? []).length > 0 ? (
           <div className="space-y-3">
-            {animations.items.map((anim) => (
+            {(animations.items ?? []).map((anim) => (
               <div key={anim.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">{anim.name}</div>

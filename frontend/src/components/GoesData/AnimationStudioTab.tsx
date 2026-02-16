@@ -42,12 +42,22 @@ export default function AnimationStudioTab() {
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => r.data),
+    queryFn: () => api.get('/goes/collections').then((r) => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
-    queryFn: () => api.get('/goes/crop-presets').then((r) => r.data),
+    queryFn: () => api.get('/goes/crop-presets').then((r) => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   // Preview frames based on current filters
@@ -139,7 +149,7 @@ export default function AnimationStudioTab() {
                   <select id="anim-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
                     className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
-                    {products?.satellites.map((s) => <option key={s} value={s}>{s}</option>)}
+                    {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
@@ -147,7 +157,7 @@ export default function AnimationStudioTab() {
                   <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
                     className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
-                    {products?.bands.map((b) => {
+                    {(products?.bands ?? []).map((b) => {
                       const info = BAND_INFO[b.id];
                       return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : ''}</option>;
                     })}
@@ -158,7 +168,7 @@ export default function AnimationStudioTab() {
                   <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                     className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                     <option value="">All</option>
-                    {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -178,7 +188,7 @@ export default function AnimationStudioTab() {
                 <select id="anim-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
                   className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                   <option value="">Select collection...</option>
-                  {collections?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count} frames)</option>)}
+                  {(collections ?? []).map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count ?? 0} frames)</option>)}
                 </select>
               </div>
             )}
@@ -262,7 +272,7 @@ export default function AnimationStudioTab() {
               <select id="anim-crop-preset" value={cropPresetId} onChange={(e) => setCropPresetId(e.target.value)}
                 className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                 <option value="">None (full frame)</option>
-                {cropPresets?.map((p) => (
+                {(cropPresets ?? []).map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.width}×{p.height})</option>
                 ))}
               </select>
@@ -310,9 +320,9 @@ export default function AnimationStudioTab() {
       {/* Animation History */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
         <h3 className="text-lg font-semibold">Animation History</h3>
-        {animations && animations.items.length > 0 ? (
+        {animations && (animations.items ?? []).length > 0 ? (
           <div className="space-y-3">
-            {animations.items.map((anim) => (
+            {(animations.items ?? []).map((anim) => (
               <div key={anim.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">{anim.name}</div>

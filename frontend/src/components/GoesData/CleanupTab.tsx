@@ -42,7 +42,12 @@ export default function CleanupTab() {
 
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],
-    queryFn: () => api.get('/goes/cleanup-rules').then(r => r.data),
+    queryFn: () => api.get('/goes/cleanup-rules').then(r => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   const { data: stats } = useQuery<FrameStats>({
@@ -100,11 +105,11 @@ export default function CleanupTab() {
               <div className="text-sm text-gray-500 dark:text-slate-400">Total Storage</div>
             </div>
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-              <div className="text-2xl font-bold">{Object.keys(stats.by_satellite).length}</div>
+              <div className="text-2xl font-bold">{Object.keys(stats.by_satellite ?? {}).length}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Satellites</div>
             </div>
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-              <div className="text-2xl font-bold">{Object.keys(stats.by_band).length}</div>
+              <div className="text-2xl font-bold">{Object.keys(stats.by_band ?? {}).length}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Bands</div>
             </div>
           </div>

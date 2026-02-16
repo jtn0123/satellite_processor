@@ -21,7 +21,12 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => r.data),
+    queryFn: () => api.get('/goes/tags').then((r) => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   const tagMutation = useMutation({
@@ -59,7 +64,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {tags?.map((t) => (
+          {(tags ?? []).map((t) => (
             <button key={t.id} onClick={() => toggleTag(t.id)}
               className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                 selectedTags.includes(t.id)

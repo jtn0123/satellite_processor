@@ -35,12 +35,22 @@ export default function PresetsTab() {
 
   const { data: presets = [] } = useQuery<FetchPreset[]>({
     queryKey: ['fetch-presets'],
-    queryFn: () => api.get('/goes/fetch-presets').then(r => r.data),
+    queryFn: () => api.get('/goes/fetch-presets').then(r => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   const { data: schedules = [] } = useQuery<FetchSchedule[]>({
     queryKey: ['fetch-schedules'],
-    queryFn: () => api.get('/goes/schedules').then(r => r.data),
+    queryFn: () => api.get('/goes/schedules').then(r => {
+      const d = r.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.items)) return d.items;
+      return [];
+    }),
   });
 
   const createPreset = useMutation({

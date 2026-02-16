@@ -127,7 +127,7 @@ export default function FetchTab() {
           <label htmlFor="goes-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
           <select id="goes-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {products?.satellites.map((s) => {
+            {(products?.satellites ?? []).map((s) => {
               const avail = products.satellite_availability?.[s];
               const range = avail ? formatAvailRange(avail) : '';
               const active = avail?.status === 'active';
@@ -145,14 +145,14 @@ export default function FetchTab() {
           <label htmlFor="goes-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
           <select id="goes-sector" value={sector} onChange={(e) => setSector(e.target.value)}
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {products?.sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="goes-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
           <select id="goes-band" value={band} onChange={(e) => setBand(e.target.value)}
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {products?.bands.map((b) => {
+            {(products?.bands ?? []).map((b) => {
               const info = BAND_INFO[b.id];
               return <option key={b.id} value={b.id}>{b.id} — {info ? `${info.name} (${info.wavelength}) · ${info.category}` : b.description}</option>;
             })}

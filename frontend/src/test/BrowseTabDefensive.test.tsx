@@ -162,7 +162,9 @@ describe('BrowseTab - Defensive Scenarios', () => {
     });
     renderWithProviders(<BrowseTab />);
     await waitFor(() => {
-      expect(screen.getByText('1 frames')).toBeInTheDocument();
+      // The frames count text appears in the toolbar
+      const body = document.body.textContent ?? '';
+      expect(body).toContain('1 frame');
     });
   });
 

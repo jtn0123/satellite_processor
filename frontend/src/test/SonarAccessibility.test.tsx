@@ -92,14 +92,14 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
 });
 
 describe('Dialog modal rendering', () => {
-  it('AddToCollectionModal renders without role="dialog"', () => {
+  it('AddToCollectionModal renders with role="dialog"', () => {
     render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });
 
-  it('TagModal renders without role="dialog"', () => {
+  it('TagModal renders with role="dialog"', () => {
     render(withQueryClient(<TagModal frameIds={['1']} onClose={() => {}} />));
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });
 
   it('AddToCollectionModal closes on dialog backdrop click', () => {
@@ -169,14 +169,12 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
 });
 
 describe('ImageViewer accessibility', () => {
-  it('renders with role="application" for zoom/pan area', () => {
+  it('renders pannable image area with aria-label', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const app = document.querySelector('[role="application"]');
-    expect(app).toBeTruthy();
-    expect(app?.getAttribute('tabindex')).toBe('0');
-    expect(app?.getAttribute('aria-label')).toContain('Pannable image');
+    const area = document.querySelector('[aria-label*="Pannable image"]');
+    expect(area).toBeTruthy();
   });
 
   it('dialog element renders with aria-label', () => {

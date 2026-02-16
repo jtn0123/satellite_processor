@@ -127,6 +127,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         )}
 
         <div
+          role="application"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           className="flex items-center justify-center"

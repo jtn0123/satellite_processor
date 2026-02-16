@@ -13,9 +13,15 @@ class TestSetupLogging:
     """Tests for the setup_logging function."""
 
     def setup_method(self):
-        """Reset root logger between tests."""
+        """Reset root logger between tests, preserving pytest's own handlers."""
         root = logging.getLogger()
+        # Preserve pytest LogCaptureHandlers so we don't fight the framework
+        self._pytest_handlers = [
+            h for h in root.handlers
+            if type(h).__name__ == "LogCaptureHandler"
+        ]
         root.handlers.clear()
+        root.handlers.extend(self._pytest_handlers)
         root.setLevel(logging.WARNING)
 
     def test_debug_mode_sets_debug_level(self):
@@ -31,13 +37,15 @@ class TestSetupLogging:
     def test_debug_mode_uses_stream_handler(self):
         setup_logging(debug=True)
         root = logging.getLogger()
-        assert len(root.handlers) == 1
-        assert isinstance(root.handlers[0], logging.StreamHandler)
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        assert len(app_handlers) == 1
+        assert isinstance(app_handlers[0], logging.StreamHandler)
 
     def test_debug_format_contains_levelname(self):
         setup_logging(debug=True)
         root = logging.getLogger()
-        fmt = root.handlers[0].formatter._fmt
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        fmt = app_handlers[0].formatter._fmt
         assert "%(levelname)" in fmt
         assert "%(name)s" in fmt
 
@@ -45,15 +53,16 @@ class TestSetupLogging:
         root = logging.getLogger()
         root.addHandler(logging.StreamHandler())
         root.addHandler(logging.StreamHandler())
-        assert len(root.handlers) == 2
         setup_logging(debug=False)
-        assert len(root.handlers) == 1
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        assert len(app_handlers) == 1
 
     def test_debug_mode_clears_existing_handlers(self):
         root = logging.getLogger()
         root.addHandler(logging.StreamHandler())
         setup_logging(debug=True)
-        assert len(root.handlers) == 1
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        assert len(app_handlers) == 1
 
     def test_uvicorn_access_logger_quieted(self):
         setup_logging(debug=False)
@@ -74,7 +83,8 @@ class TestSetupLogging:
         """When pythonjsonlogger is available, prod uses JSON formatter."""
         setup_logging(debug=False)
         root = logging.getLogger()
-        handler = root.handlers[0]
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        handler = app_handlers[0]
         # Either JSON or fallback — both are valid; just ensure handler exists
         assert handler is not None
 
@@ -93,8 +103,9 @@ class TestSetupLogging:
             with patch("builtins.__import__", side_effect=mock_import):
                 setup_logging(debug=False)
                 root = logging.getLogger()
-                assert len(root.handlers) == 1
-                fmt = root.handlers[0].formatter._fmt
+                app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+                assert len(app_handlers) == 1
+                fmt = app_handlers[0].formatter._fmt
                 assert "%(levelname)" in fmt
 
     def test_default_debug_false(self):
@@ -107,7 +118,8 @@ class TestSetupLogging:
         setup_logging(debug=False)
         setup_logging(debug=True)
         root = logging.getLogger()
-        assert len(root.handlers) == 1
+        app_handlers = [h for h in root.handlers if type(h).__name__ != "LogCaptureHandler"]
+        assert len(app_handlers) == 1
 
 
 class TestRequestLoggingMiddleware:

@@ -150,11 +150,67 @@ jobs:
               console.log('Failed to fetch SonarQube data:', e.message);
             }
 
+            // Fetch issues for this PR
+            let issues = [];
+            try {
+              const issuesRes = await fetch(
+                `${sonarUrl}/api/issues/search?componentKeys=${projectKey}&pullRequest=${prNumber}&statuses=OPEN,CONFIRMED&ps=20&s=SEVERITY&asc=false`,
+                { headers }
+              );
+              if (issuesRes.ok) {
+                const issuesData = await issuesRes.json();
+                issues = issuesData.issues || [];
+              }
+            } catch (e) {
+              console.log('Failed to fetch issues:', e.message);
+            }
+
             const gateIcon = gateStatus === 'OK' ? '✅' : gateStatus === 'ERROR' ? '❌' : '⚠️';
             const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
             const rating = (val) => ratingMap[val] || val || 'N/A';
             const num = (val) => val ?? 'N/A';
             const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
+
+            // Issues section
+            let issuesSection = '';
+            if (issues.length > 0) {
+              const typeIcon = { BUG: '🐛', VULNERABILITY: '🔓', CODE_SMELL: '🧹', SECURITY_HOTSPOT: '🔥' };
+              const bugCount = issues.filter(i => i.type === 'BUG').length;
+              const vulnCount = issues.filter(i => i.type === 'VULNERABILITY').length;
+              const smellCount = issues.filter(i => i.type === 'CODE_SMELL').length;
+              const hotspotCount = issues.filter(i => i.type === 'SECURITY_HOTSPOT').length;
+
+              const summaryParts = [];
+              if (bugCount) summaryParts.push(`🐛 ${bugCount} Bug${bugCount > 1 ? 's' : ''}`);
+              if (vulnCount) summaryParts.push(`🔓 ${vulnCount} Vulnerabilit${vulnCount > 1 ? 'ies' : 'y'}`);
+              if (hotspotCount) summaryParts.push(`🔥 ${hotspotCount} Hotspot${hotspotCount > 1 ? 's' : ''}`);
+              if (smellCount) summaryParts.push(`🧹 ${smellCount} Code Smell${smellCount > 1 ? 's' : ''}`);
+
+              const totalIssues = issues.length;
+              const shownIssues = issues.slice(0, 20);
+
+              const rows = shownIssues.map(i => {
+                const component = (i.component || '').replace(`${projectKey}:`, '');
+                const loc = i.line ? `${component}:${i.line}` : component;
+                return `| ${typeIcon[i.type] || '❓'} | ${i.severity || 'N/A'} | \`${loc}\` | ${(i.message || '').substring(0, 100)} |`;
+              }).join('\n');
+
+              const moreText = totalIssues > 20 ? `\n\n*... and ${totalIssues - 20} more — [view all on SonarQube](${sonarUrl}/project/issues?id=${projectKey}&pullRequest=${prNumber})*` : '';
+
+              issuesSection = [
+                '',
+                `### Issues (${totalIssues} found)`,
+                `<details>`,
+                `<summary>${summaryParts.join(' · ')}</summary>`,
+                '',
+                '| Type | Severity | File | Description |',
+                '|------|----------|------|-------------|',
+                rows,
+                moreText,
+                '',
+                '</details>'
+              ].join('\n');
+            }
 
             const body = [
               `## ${gateIcon} SonarQube Analysis`,
@@ -175,6 +231,7 @@ jobs:
               `| | Reliability | Security | Maintainability |`,
               `|---|---|---|---|`,
               `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
+              issuesSection,
               '',
               `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
               '',

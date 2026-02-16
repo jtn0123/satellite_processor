@@ -30,6 +30,8 @@ const makeFrame = (id: string) => ({
   thumbnail_path: null,
   width: 1000,
   height: 1000,
+  tags: [],
+  collections: [],
 });
 
 function withQueryClient(ui: React.ReactElement) {

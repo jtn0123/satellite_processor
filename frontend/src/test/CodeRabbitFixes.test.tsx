@@ -44,7 +44,7 @@ describe('CodeRabbit button type fixes', () => {
 import FramePreviewModal from '../components/GoesData/FramePreviewModal';
 
 describe('FramePreviewModal crop area', () => {
-  const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, s3_key: 'test.nc', resolution: '1km', created_at: '2024-01-01' };
+  const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
 
   it('crop area is a button element', () => {
     render(withQC(<FramePreviewModal frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />));

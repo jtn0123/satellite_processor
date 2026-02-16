@@ -50,7 +50,6 @@ class ImageOperations:
         method: str = "Standard",
     ) -> bool:
         """Apply false color using Sanchez"""
-        temp_dir = None
         try:
             # Verify input files
             sanchez_exe = Path(sanchez_path)
@@ -114,10 +113,6 @@ class ImageOperations:
         except Exception as e:
             logger.error(f"Error in apply_false_color: {e}", exc_info=True)
             return False
-
-        finally:
-            # temp_dir is reserved for future use when Sanchez needs staging
-            pass
 
     @staticmethod
     def add_timestamp(

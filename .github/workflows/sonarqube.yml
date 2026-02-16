@@ -26,22 +26,50 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
-      - name: Download backend coverage shards
-        uses: actions/download-artifact@v4
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v7
         with:
-          pattern: backend-coverage-*
-          path: backend/
-          merge-multiple: true
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.workflow_run.pull_requests?.[0];
+            if (pr) {
+              core.setOutput('is_pr', 'true');
+              core.setOutput('pr_number', pr.number.toString());
+              core.setOutput('pr_branch', '${{ github.event.workflow_run.head_branch }}');
+              core.setOutput('pr_base', pr.base.ref);
+            } else {
+              core.setOutput('is_pr', 'false');
+            }
 
-      - name: Download frontend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-coverage
-          path: frontend/coverage/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download coverage artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=${{ github.event.workflow_run.id }}
+
+          # Download backend coverage shards
+          echo "Downloading backend coverage..."
+          gh run download "$RUN_ID" -p "backend-coverage-shard*" -D backend/ 2>/dev/null || echo "No backend coverage artifacts found"
+
+          # Download frontend coverage
+          echo "Downloading frontend coverage..."
+          mkdir -p frontend/coverage
+          gh run download "$RUN_ID" -n "frontend-coverage" -D frontend/coverage/ 2>/dev/null || echo "No frontend coverage artifact found"
+
+          # Create fallback files if missing
+          if ! ls backend/coverage-shard*.xml 1>/dev/null 2>&1; then
+            echo "Creating empty backend coverage..."
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > backend/coverage.xml
+          fi
+
+          if [ ! -f frontend/coverage/lcov.info ]; then
+            echo "Creating empty frontend coverage..."
+            echo "TN:" > frontend/coverage/lcov.info
+          fi
+
+          echo "Coverage files:"
+          ls -la backend/coverage*.xml 2>/dev/null || true
+          ls -la frontend/coverage/ 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -50,13 +78,22 @@ jobs:
 
       - name: Merge backend coverage
         working-directory: backend
-        run: python3 ../scripts/merge_coverage.py
+        run: |
+          if ls coverage-shard*.xml 1>/dev/null 2>&1; then
+            python3 ../scripts/merge_coverage.py
+          elif [ ! -f coverage.xml ]; then
+            echo "No coverage data available"
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > coverage.xml
+          fi
 
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            ${{ steps.pr-info.outputs.is_pr == 'true' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', steps.pr-info.outputs.pr_number, steps.pr-info.outputs.pr_branch, steps.pr-info.outputs.pr_base) || '' }}
 
       - name: SonarQube Quality Gate
         id: quality-gate
@@ -66,6 +103,112 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+      - name: Post SonarQube summary to PR
+        if: always() && steps.pr-info.outputs.is_pr == 'true'
+        uses: actions/github-script@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.pr-info.outputs.pr_number }}');
+            const sonarUrl = process.env.SONAR_HOST_URL;
+            const sonarToken = process.env.SONAR_TOKEN;
+            const projectKey = 'satellite_processor';
+
+            // Fetch PR measures from SonarQube
+            const auth = Buffer.from(sonarToken + ':').toString('base64');
+            const headers = { 'Authorization': `Basic ${auth}` };
+
+            let measures = {};
+            let gateStatus = 'UNKNOWN';
+
+            try {
+              // Get quality gate status
+              const gateRes = await fetch(`${sonarUrl}/api/qualitygates/project_status?projectKey=${projectKey}&pullRequest=${prNumber}`, { headers });
+              if (gateRes.ok) {
+                const gateData = await gateRes.json();
+                gateStatus = gateData.projectStatus?.status || 'UNKNOWN';
+              }
+
+              // Get measures
+              const metricsToFetch = [
+                'new_bugs', 'new_vulnerabilities', 'new_code_smells',
+                'new_coverage', 'new_duplicated_lines_density',
+                'new_security_hotspots', 'new_reliability_rating',
+                'new_security_rating', 'new_maintainability_rating'
+              ].join(',');
+
+              const measuresRes = await fetch(`${sonarUrl}/api/measures/component?component=${projectKey}&pullRequest=${prNumber}&metricKeys=${metricsToFetch}`, { headers });
+              if (measuresRes.ok) {
+                const measuresData = await measuresRes.json();
+                for (const m of (measuresData.component?.measures || [])) {
+                  measures[m.metric] = m.period?.value ?? m.value ?? 'N/A';
+                }
+              }
+            } catch (e) {
+              console.log('Failed to fetch SonarQube data:', e.message);
+            }
+
+            const gateIcon = gateStatus === 'OK' ? '✅' : gateStatus === 'ERROR' ? '❌' : '⚠️';
+            const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
+            const rating = (val) => ratingMap[val] || val || 'N/A';
+            const num = (val) => val ?? 'N/A';
+            const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
+
+            const body = [
+              `## ${gateIcon} SonarQube Analysis`,
+              '',
+              `**Quality Gate:** ${gateStatus === 'OK' ? 'Passed' : gateStatus === 'ERROR' ? 'Failed' : gateStatus}`,
+              '',
+              '### New Code',
+              `| Metric | Value |`,
+              `|--------|-------|`,
+              `| 🐛 Bugs | ${num(measures.new_bugs)} |`,
+              `| 🔓 Vulnerabilities | ${num(measures.new_vulnerabilities)} |`,
+              `| 🔥 Security Hotspots | ${num(measures.new_security_hotspots)} |`,
+              `| 🧹 Code Smells | ${num(measures.new_code_smells)} |`,
+              `| 📊 Coverage | ${pct(measures.new_coverage)} |`,
+              `| 📋 Duplication | ${pct(measures.new_duplicated_lines_density)} |`,
+              '',
+              '### Ratings',
+              `| | Reliability | Security | Maintainability |`,
+              `|---|---|---|---|`,
+              `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
+              '',
+              `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
+              '',
+              `---`,
+              `*SonarQube ${new Date().toISOString().split('T')[0]}*`
+            ].join('\n');
+
+            // Upsert comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('SonarQube Analysis')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+            }
+
       - name: Post commit status
         if: always()
         uses: actions/github-script@v7
@@ -73,7 +216,17 @@ jobs:
           script: |
             const sha = '${{ github.event.workflow_run.head_sha }}';
             const gate = '${{ steps.quality-gate.outcome }}';
-            const state = gate === 'success' ? 'success' : 'failure';
+            let state, description;
+            if (gate === 'success') {
+              state = 'success';
+              description = 'Quality gate passed';
+            } else if (gate === 'failure') {
+              state = 'failure';
+              description = 'Quality gate failed';
+            } else {
+              state = 'error';
+              description = 'Quality gate check did not complete';
+            }
             const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
             await github.rest.repos.createCommitStatus({
@@ -82,6 +235,6 @@ jobs:
               sha: sha,
               state: state,
               target_url: runUrl,
-              description: gate === 'success' ? 'Quality gate passed' : 'Quality gate failed',
+              description: description,
               context: 'SonarQube Quality Gate'
             });

@@ -95,7 +95,7 @@ describe('Dialog backdrop click-to-close', () => {
   let onClose: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    onClose = (() => {}) as () => void;
+    onClose = vi.fn<[], void>();
   });
 
   it('AddToCollectionModal closes on dialog backdrop click', () => {

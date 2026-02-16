@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install --prefix frontend
+      - name: Install semantic-release plugins
+        run: npm install --no-save @semantic-release/changelog @semantic-release/git @semantic-release/exec semantic-release
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

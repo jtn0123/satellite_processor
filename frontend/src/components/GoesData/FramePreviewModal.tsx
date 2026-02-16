@@ -138,11 +138,11 @@ export default function FramePreviewModal({
       </div>
 
       <div className="flex-1 overflow-auto p-4">
-        <div
+        <button
+          type="button"
           ref={containerRef}
-          role="application"
-          tabIndex={0}
-          className="relative inline-block cursor-crosshair select-none"
+          aria-label="Crop area — click and drag to select region, Escape to clear"
+          className="relative inline-block cursor-crosshair select-none bg-transparent border-none p-0 m-0 outline-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -173,7 +173,7 @@ export default function FramePreviewModal({
               }}
             />
           )}
-        </div>
+        </button>
       </div>
 
       <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 space-y-3">

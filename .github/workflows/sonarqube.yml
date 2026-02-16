@@ -28,6 +28,8 @@ jobs:
 
       - name: Download backend coverage shards
         uses: actions/download-artifact@v4
+        continue-on-error: true
+        id: backend-coverage
         with:
           pattern: backend-coverage-*
           path: backend/
@@ -37,6 +39,8 @@ jobs:
 
       - name: Download frontend coverage
         uses: actions/download-artifact@v4
+        continue-on-error: true
+        id: frontend-coverage
         with:
           name: frontend-coverage
           path: frontend/coverage/
@@ -50,7 +54,20 @@ jobs:
 
       - name: Merge backend coverage
         working-directory: backend
-        run: python3 ../scripts/merge_coverage.py
+        run: |
+          if ls coverage-shard*.xml 1>/dev/null 2>&1; then
+            python3 ../scripts/merge_coverage.py
+          else
+            echo "No backend coverage shards found, creating empty coverage"
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > coverage.xml
+          fi
+
+      - name: Ensure frontend coverage exists
+        run: |
+          mkdir -p frontend/coverage
+          if [ ! -f frontend/coverage/lcov.info ]; then
+            echo "TN:" > frontend/coverage/lcov.info
+          fi
 
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v7

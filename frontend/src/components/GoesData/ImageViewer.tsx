@@ -122,8 +122,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         )}
 
         <div
-          role="application"
-          tabIndex={0}
           aria-label={`Pannable image: ${frame.satellite} ${frame.band}. Use zoom buttons to zoom.`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -135,7 +133,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
             className="max-h-full max-w-full select-none"
             style={{
               transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
-              cursor: (() => { if (scale <= 1) return 'default'; return dragging ? 'grabbing' : 'grab'; })(),
+              cursor: scale <= 1 ? 'default' : (dragging ? 'grabbing' : 'grab'),
             }}
             draggable={false}
           />

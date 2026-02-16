@@ -55,7 +55,9 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
     <dialog
       open
       className="fixed inset-0 bg-black/30 dark:bg-black/60 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Escape") onClose(); }}
+      onClick={(e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div ref={dialogRef} aria-label="Add to Collection"
         className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-700 w-96 space-y-4 modal-panel"

@@ -108,7 +108,7 @@ function TabLoadingFallback() {
   );
 }
 
-function WelcomeCard({ onFetchClick }: { onFetchClick: () => void }) {
+function WelcomeCard({ onFetchClick }: Readonly<{ onFetchClick: () => void }>) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8">
       <div className="bg-gray-100/50 dark:bg-slate-800/50 rounded-full p-6 mb-6">

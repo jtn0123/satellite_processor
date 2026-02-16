@@ -228,9 +228,14 @@ export default function Dashboard() {
                   <div key={job.id} className="flex items-center justify-between bg-gray-100 dark:bg-space-800 rounded-lg px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
-                        job.status === 'completed' ? 'bg-emerald-400' :
-                        job.status === 'running' ? 'bg-amber-400 animate-pulse' :
-                        job.status === 'failed' ? 'bg-red-400' : 'bg-slate-400'
+                        (() => {
+                          const statusColors: Record<string, string> = {
+                            completed: 'bg-emerald-400',
+                            running: 'bg-amber-400 animate-pulse',
+                            failed: 'bg-red-400',
+                          };
+                          return statusColors[job.status] ?? 'bg-slate-400';
+                        })()
                       }`} />
                       <span className="text-gray-600 dark:text-slate-300 truncate max-w-[150px]">{job.status_message || job.status}</span>
                     </div>

@@ -7,7 +7,7 @@ interface CompareViewProps {
   onClose: () => void;
 }
 
-export default function CompareView({ frameA, frameB, onClose }: CompareViewProps) {
+export default function CompareView({ frameA, frameB, onClose }: Readonly<CompareViewProps>) {
   const [sliderPos, setSliderPos] = useState(50);
   const [mode, setMode] = useState<'slider' | 'side-by-side'>('side-by-side');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +104,16 @@ export default function CompareView({ frameA, frameB, onClose }: CompareViewProp
           <div
             ref={containerRef}
             className="relative h-full w-full overflow-hidden cursor-col-resize select-none"
+            role="slider"
+            tabIndex={0}
+            aria-label="Image comparison slider"
+            aria-valuenow={Math.round(sliderPos)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') setSliderPos((p) => Math.max(0, p - 2));
+              else if (e.key === 'ArrowRight') setSliderPos((p) => Math.min(100, p + 2));
+            }}
             onMouseMove={dragging ? handleSliderMove : undefined}
             onMouseDown={() => setDragging(true)}
             onMouseUp={() => setDragging(false)}

@@ -194,8 +194,8 @@ export default function AnimateTab() {
             </div>
 
             {/* Quick buttons */}
-            <div>
-              <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</label>
+            <div role="group" aria-label="Quick Range">
+              <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</span>
               <div className="flex flex-wrap gap-2">
                 {QUICK_HOURS.map((h) => (
                   <button

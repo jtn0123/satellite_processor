@@ -20,7 +20,7 @@ interface DashboardChartsProps {
   isLoading: boolean;
 }
 
-export default function DashboardCharts({ goesStats, isLoading }: DashboardChartsProps) {
+export default function DashboardCharts({ goesStats, isLoading }: Readonly<DashboardChartsProps>) {
   const totalGoesFrames = goesStats?.total_frames ?? 0;
 
   if (isLoading) {

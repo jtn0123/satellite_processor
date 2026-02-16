@@ -9,7 +9,7 @@ interface ImageViewerProps {
   onNavigate: (frame: GoesFrame) => void;
 }
 
-export default function ImageViewer({ frame, frames, onClose, onNavigate }: ImageViewerProps) {
+export default function ImageViewer({ frame, frames, onClose, onNavigate }: Readonly<ImageViewerProps>) {
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -121,18 +121,25 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Imag
           </button>
         )}
 
-        <img
-          src={`/api/goes/frames/${frame.id}/image`}
-          alt={`${frame.satellite} ${frame.band}`}
-          className="max-h-full max-w-full select-none"
-          style={{
-            transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
-            cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'default',
-          }}
-          draggable={false}
+        <div
+          role="application"
+          tabIndex={0}
+          aria-label={`Pannable image: ${frame.satellite} ${frame.band}. Use zoom buttons to zoom.`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
-        />
+          className="flex items-center justify-center"
+        >
+          <img
+            src={`/api/goes/frames/${frame.id}/image`}
+            alt={`${frame.satellite} ${frame.band}`}
+            className="max-h-full max-w-full select-none"
+            style={{
+              transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
+              cursor: (() => { if (scale <= 1) return 'default'; return dragging ? 'grabbing' : 'grab'; })(),
+            }}
+            draggable={false}
+          />
+        </div>
 
         {currentIndex < frames.length - 1 && (
           <button onClick={goNext} className="absolute right-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">

@@ -11,7 +11,7 @@ interface Props {
   onLoadPreset: (preset: AnimationPreset) => void;
 }
 
-export default function AnimationPresets({ config, onLoadPreset }: Props) {
+export default function AnimationPresets({ config, onLoadPreset }: Readonly<Props>) {
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);

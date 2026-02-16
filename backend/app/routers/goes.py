@@ -46,8 +46,8 @@ async def list_products():
     import asyncio
 
     products = {
-        "satellites": list(SATELLITE_BUCKETS.keys()),
-        "satellite_availability": dict(SATELLITE_AVAILABILITY),
+        "satellites": list(SATELLITE_BUCKETS),
+        "satellite_availability": {**SATELLITE_AVAILABILITY},
         "sectors": [
             {"id": k, "name": k, "product": v}
             for k, v in SECTOR_PRODUCTS.items()

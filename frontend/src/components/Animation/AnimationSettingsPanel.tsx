@@ -22,7 +22,7 @@ function calcFps(preset: SpeedPreset, intervalMin: number): number {
   return Math.max(1, Math.min(30, Math.round(multiplier / (intervalMin / 60))));
 }
 
-export default function AnimationSettingsPanel({ config, captureIntervalMinutes, onChange }: Props) {
+export default function AnimationSettingsPanel({ config, captureIntervalMinutes, onChange }: Readonly<Props>) {
   const handleSpeedPreset = (preset: SpeedPreset) => {
     onChange({ fps: calcFps(preset, captureIntervalMinutes) });
   };
@@ -34,8 +34,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </h3>
 
       {/* Speed Presets */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</label>
+      <div role="group" aria-label="Speed Preset">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Speed Preset</span>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(SPEED_LABELS) as SpeedPreset[]).map((preset) => (
             <button
@@ -67,8 +67,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Resolution */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</label>
+      <div role="group" aria-label="Resolution">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Resolution</span>
         <div className="flex gap-2">
           <button
             onClick={() => onChange({ resolution: 'preview' })}
@@ -94,8 +94,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Loop Style */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Loop Style</label>
+      <div role="radiogroup" aria-label="Loop Style">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Loop Style</span>
         <div className="flex gap-2 flex-wrap">
           {([
             { value: 'forward', label: 'Forward' },
@@ -132,8 +132,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Quality */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</label>
+      <div role="group" aria-label="Quality">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Quality</span>
         <div className="flex gap-2">
           {(['low', 'medium', 'high'] as const).map((q) => (
             <button
@@ -152,8 +152,8 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       </div>
 
       {/* Overlays */}
-      <div>
-        <label className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</label>
+      <div role="group" aria-label="Overlays">
+        <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</span>
         <div className="space-y-2">
           {([
             { key: 'show_timestamp', label: 'Show timestamp' },

@@ -32,6 +32,7 @@
 
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-size: 14px;
 }
 
 body {
@@ -40,9 +41,6 @@ body {
 }
 
 /* Responsive typography — smaller on mobile, larger on desktop */
-html {
-  font-size: 14px;
-}
 @media (min-width: 640px) {
   html { font-size: 15px; }
 }

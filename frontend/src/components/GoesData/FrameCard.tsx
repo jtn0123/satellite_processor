@@ -10,7 +10,7 @@ interface FrameCardProps {
   viewMode: 'grid' | 'list';
 }
 
-function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'viewMode'>) {
+function FrameCardGrid({ frame, isSelected, onClick }: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
   return (
     <button
       type="button"
@@ -61,7 +61,7 @@ function FrameCardGrid({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
   );
 }
 
-function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'viewMode'>) {
+function FrameCardList({ frame, isSelected, onClick }: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
   return (
     <button
       type="button"
@@ -97,7 +97,7 @@ function FrameCardList({ frame, isSelected, onClick }: Omit<FrameCardProps, 'vie
   );
 }
 
-const FrameCard = memo(function FrameCard({ frame, isSelected, onClick, viewMode }: FrameCardProps) {
+const FrameCard = memo(function FrameCard({ frame, isSelected, onClick, viewMode }: Readonly<FrameCardProps>) {
   if (viewMode === 'list') {
     return <FrameCardList frame={frame} isSelected={isSelected} onClick={onClick} />;
   }

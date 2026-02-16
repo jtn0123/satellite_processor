@@ -4,7 +4,7 @@ interface SkeletonProps {
   className?: string;
 }
 
-function SkeletonItem({ variant = 'text', className = '' }: Omit<SkeletonProps, 'count'>) {
+function SkeletonItem({ variant = 'text', className = '' }: Readonly<Omit<SkeletonProps, 'count'>>) {
   switch (variant) {
     case 'card':
       return (
@@ -28,7 +28,7 @@ function SkeletonItem({ variant = 'text', className = '' }: Omit<SkeletonProps, 
   }
 }
 
-export default function Skeleton({ variant = 'text', count = 1, className = '' }: SkeletonProps) {
+export default function Skeleton({ variant = 'text', count = 1, className = '' }: Readonly<SkeletonProps>) {
   if (count === 1) {
     return <SkeletonItem variant={variant} className={className} />;
   }

@@ -267,7 +267,7 @@ function LogConsole({
           <span className="text-slate-600">No logs yet…</span>
         ) : (
           filteredLogs.map((entry, i) => (
-            <div key={i} className={`${LOG_COLORS[entry.level] ?? 'text-slate-400'} leading-5`}>
+            <div key={`${entry.timestamp}-${i}`} className={`${LOG_COLORS[entry.level] ?? 'text-slate-400'} leading-5`}>
               <span className="text-gray-400 dark:text-slate-600">[{fmtTime(entry.timestamp)}]</span>{' '}
               <span className="text-gray-400 dark:text-slate-500 uppercase w-12 inline-block">{entry.level}</span>{' '}
               {entry.message}

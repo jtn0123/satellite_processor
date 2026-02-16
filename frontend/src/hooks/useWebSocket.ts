@@ -82,9 +82,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
           return;
         }
 
-        if (parsed.type === 'progress') {
-          setData(parsed);
-        } else if (parsed.type !== 'ping' && parsed.type !== 'connected') {
+        if (parsed.type !== 'ping' && parsed.type !== 'connected') {
           setData(parsed);
         }
 

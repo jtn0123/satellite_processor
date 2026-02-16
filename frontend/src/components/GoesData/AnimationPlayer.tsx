@@ -20,13 +20,13 @@ const SPEEDS = [0.5, 1, 2, 4];
 const PRELOAD_AHEAD = 5;
 const BASE_INTERVAL = 500; // ms at 1x
 
-export default function AnimationPlayer({ frames, onClose }: AnimationPlayerProps) {
+export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationPlayerProps>) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [loop, setLoop] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDialogElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const preloadedRef = useRef<Set<string>>(new Set());
 
@@ -142,12 +142,12 @@ export default function AnimationPlayer({ frames, onClose }: AnimationPlayerProp
   }
 
   return (
-    <div
+    <dialog
+      open
       ref={containerRef}
-      className={`fixed inset-0 z-50 bg-space-900 flex flex-col ${
+      className={`fixed inset-0 z-50 bg-space-900 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0 ${
         fullscreen ? '' : 'bg-black/95'
       }`}
-      role="dialog"
       aria-label="Animation Player"
     >
       {/* Header */}
@@ -266,6 +266,6 @@ export default function AnimationPlayer({ frames, onClose }: AnimationPlayerProp
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -101,7 +101,12 @@ export default function FetchTab() {
     onSuccess: (data) => showToast('success', `Fetch job created: ${data.job_id}`),
     onError: (err: unknown) => {
       const detail = (err as { response?: { data?: { detail?: Array<{ msg?: string }> | string } } })?.response?.data?.detail;
-      const msg = Array.isArray(detail) ? detail[0]?.msg ?? 'Validation error' : typeof detail === 'string' ? detail : 'Failed to create fetch job';
+      let msg = 'Failed to create fetch job';
+      if (Array.isArray(detail)) {
+        msg = detail[0]?.msg ?? 'Validation error';
+      } else if (typeof detail === 'string') {
+        msg = detail;
+      }
       showToast('error', msg.replace(/^Value error, /i, ''));
     },
   });

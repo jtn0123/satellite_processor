@@ -41,26 +41,35 @@ jobs:
               core.setOutput('is_pr', 'false');
             }
 
-      - name: Download backend coverage shards
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        id: backend-coverage
-        with:
-          pattern: backend-coverage-*
-          path: backend/
-          merge-multiple: true
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download coverage artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=${{ github.event.workflow_run.id }}
 
-      - name: Download frontend coverage
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        id: frontend-coverage
-        with:
-          name: frontend-coverage
-          path: frontend/coverage/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Download backend coverage shards
+          echo "Downloading backend coverage..."
+          gh run download "$RUN_ID" -p "backend-coverage-shard*" -D backend/ 2>/dev/null || echo "No backend coverage artifacts found"
+
+          # Download frontend coverage
+          echo "Downloading frontend coverage..."
+          mkdir -p frontend/coverage
+          gh run download "$RUN_ID" -n "frontend-coverage" -D frontend/coverage/ 2>/dev/null || echo "No frontend coverage artifact found"
+
+          # Create fallback files if missing
+          if ! ls backend/coverage-shard*.xml 1>/dev/null 2>&1; then
+            echo "Creating empty backend coverage..."
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > backend/coverage.xml
+          fi
+
+          if [ ! -f frontend/coverage/lcov.info ]; then
+            echo "Creating empty frontend coverage..."
+            echo "TN:" > frontend/coverage/lcov.info
+          fi
+
+          echo "Coverage files:"
+          ls -la backend/coverage*.xml 2>/dev/null || true
+          ls -la frontend/coverage/ 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -72,16 +81,9 @@ jobs:
         run: |
           if ls coverage-shard*.xml 1>/dev/null 2>&1; then
             python3 ../scripts/merge_coverage.py
-          else
-            echo "No backend coverage shards found, creating empty coverage"
+          elif [ ! -f coverage.xml ]; then
+            echo "No coverage data available"
             echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > coverage.xml
-          fi
-
-      - name: Ensure frontend coverage exists
-        run: |
-          mkdir -p frontend/coverage
-          if [ ! -f frontend/coverage/lcov.info ]; then
-            echo "TN:" > frontend/coverage/lcov.info
           fi
 
       - name: SonarQube Scan

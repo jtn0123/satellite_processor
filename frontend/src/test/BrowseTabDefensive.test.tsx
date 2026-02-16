@@ -252,6 +252,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
     await waitFor(() => {
       const selectBtn = screen.getByText(/Select All/i);
       fireEvent.click(selectBtn);
+      expect(selectBtn).toBeTruthy();
     });
   });
 

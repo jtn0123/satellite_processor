@@ -59,7 +59,8 @@ export default function CollectionsTab() {
     try {
       const res = await api.get(`/goes/collections/${collectionId}/frames`);
       const raw = res.data;
-      const frames: GoesFrame[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+      const itemsArray = Array.isArray(raw?.items) ? raw.items : [];
+      const frames: GoesFrame[] = Array.isArray(raw) ? raw : itemsArray;
       if (frames.length === 0) {
         showToast('error', 'Collection has no frames to animate');
         return;
@@ -86,15 +87,17 @@ export default function CollectionsTab() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={`coll-skel-${i}`} variant="card" />
           ))}
         </div>
-      ) : isError ? (
+      )}
+      {!isLoading && isError && (
         <div className="text-sm text-red-400 text-center py-8">Failed to load collections. Please try again.</div>
-      ) : (
+      )}
+      {!isLoading && !isError && (
         <div className="@container grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
           {(collections ?? []).map((c) => (
             <div key={c.id} className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">

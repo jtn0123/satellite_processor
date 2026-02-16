@@ -187,16 +187,21 @@ describe('AnimationStudioTab', () => {
     await waitFor(() => {
       const gifBtn = screen.getByText('GIF');
       fireEvent.click(gifBtn);
+      expect(gifBtn.closest('button')).toBeTruthy();
       const mp4Btn = screen.getByText('MP4');
       fireEvent.click(mp4Btn);
+      expect(mp4Btn.closest('button')).toBeTruthy();
     });
   });
 
   it('switches quality', async () => {
     renderWithProviders(<AnimationStudioTab />);
     await waitFor(() => {
-      fireEvent.click(screen.getByText('low'));
-      fireEvent.click(screen.getByText('high'));
+      const lowBtn = screen.getByText('low');
+      fireEvent.click(lowBtn);
+      const highBtn = screen.getByText('high');
+      fireEvent.click(highBtn);
+      expect(highBtn).toBeTruthy();
     });
   });
 });

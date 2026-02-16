@@ -102,6 +102,19 @@ describe('CompositesTab - Defensive Scenarios', () => {
     });
   });
 
+  it('handles recipes returned as object with items', async () => {
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === '/goes/composite-recipes') return Promise.resolve({ data: { items: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] } });
+      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI' }], bands: [] } });
+      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
+      return Promise.resolve({ data: {} });
+    });
+    renderWithProviders(<CompositesTab />);
+    await waitFor(() => {
+      expect(screen.getAllByText(/True Color/i).length).toBeGreaterThan(0);
+    });
+  });
+
   it('handles empty recipes list', async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/composite-recipes') return Promise.resolve({ data: [] });

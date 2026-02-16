@@ -236,35 +236,16 @@ jobs:
               `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
               '',
               `---`,
-              `*SonarQube ${new Date().toISOString().split('T')[0]}*`
+              `*SonarQube · \`${'${{ github.event.workflow_run.head_sha }}'.substring(0, 7)}\` · ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC*`
             ].join('\n');
 
-            // Upsert comment
-            const { data: comments } = await github.rest.issues.listComments({
+            // Always post a new comment so it's visible in the PR timeline
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: prNumber
+              issue_number: prNumber,
+              body
             });
-
-            const existing = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes('SonarQube Analysis')
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body
-              });
-            }
 
       - name: Post commit status
         if: always()

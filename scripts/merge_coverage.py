@@ -29,27 +29,20 @@ for f in files[1:]:
             if packages is not None:
                 packages.append(pkg)
 
-# Fix paths for SonarQube: filenames must be relative to repo root.
-# pytest-cov generates filenames like "app/tasks/foo.py" with <source> pointing
-# to the CI runner's absolute backend/ path. SonarQube runs on a different
-# machine, so absolute paths won't resolve. Fix: prepend "backend/" to filenames
-# and set <source> to "." (repo root).
-for cls in root.findall(".//class"):
-    filename = cls.get("filename", "")
-    if filename and not filename.startswith("backend/"):
-        cls.set("filename", f"backend/{filename}")
-
-# Point source to current working directory (repo root when run from there)
+# Fix source paths for SonarQube: replace absolute CI runner paths with
+# relative path from repo root. pytest-cov with --cov=app sets source to
+# an absolute path like /home/runner/.../backend/app. SonarQube runs on a
+# different machine, so we replace with "backend/app" (relative to repo root).
 sources = root.find(".//sources")
 if sources is not None:
     for source in sources.findall("source"):
         sources.remove(source)
     s = ET.SubElement(sources, "source")
-    s.text = "."
+    s.text = "backend/app"
 else:
     sources = ET.SubElement(root, "sources")
     s = ET.SubElement(sources, "source")
-    s.text = "."
+    s.text = "backend/app"
 
 base.write("coverage.xml", xml_declaration=True)
 print(f"Merged {len(files)} coverage files")

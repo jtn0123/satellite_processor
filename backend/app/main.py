@@ -260,7 +260,7 @@ async def _ws_ping(websocket: WebSocket) -> None:
         while True:
             await asyncio.sleep(WS_PING_INTERVAL)
             await websocket.send_json({"type": "ping"})
-    except Exception:
+    except WebSocketDisconnect:
         pass
 
 
@@ -362,5 +362,5 @@ async def status_websocket(websocket: WebSocket):
         while True:
             await asyncio.sleep(WS_PING_INTERVAL)
             await websocket.send_json({"type": "ping"})
-    except Exception:
+    except WebSocketDisconnect:
         pass

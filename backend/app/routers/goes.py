@@ -47,7 +47,7 @@ async def list_products():
 
     products = {
         "satellites": list(SATELLITE_BUCKETS),
-        "satellite_availability": {**SATELLITE_AVAILABILITY},
+        "satellite_availability": dict(SATELLITE_AVAILABILITY),
         "sectors": [
             {"id": k, "name": k, "product": v}
             for k, v in SECTOR_PRODUCTS.items()

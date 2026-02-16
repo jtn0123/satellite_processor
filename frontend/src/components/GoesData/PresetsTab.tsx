@@ -221,14 +221,14 @@ export default function PresetsTab() {
   );
 }
 
-function PresetForm({ form, setForm, onSubmit, onCancel, loading, title }: {
+function PresetForm({ form, setForm, onSubmit, onCancel, loading, title }: Readonly<{
   form: { name: string; satellite: string; sector: string; band: string; description: string };
   setForm: React.Dispatch<React.SetStateAction<typeof form>>;
   onSubmit: () => void;
   onCancel: () => void;
   loading: boolean;
   title: string;
-}) {
+}>) {
   return (
     <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
       <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">{title}</h3>

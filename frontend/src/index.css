@@ -33,19 +33,18 @@
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 14px;
+
+  @media (min-width: 640px) {
+    font-size: 15px;
+  }
+  @media (min-width: 1024px) {
+    font-size: 16px;
+  }
 }
 
 body {
   @apply bg-gray-50 dark:bg-space-950 text-gray-900 dark:text-gray-100 antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Responsive typography — smaller on mobile, larger on desktop */
-@media (min-width: 640px) {
-  html { font-size: 15px; }
-}
-@media (min-width: 1024px) {
-  html { font-size: 16px; }
 }
 
 /* Touch-friendly button targets on mobile (WCAG 2.5.5 — 44px minimum) */

@@ -55,12 +55,12 @@ export default function BrowseTab() {
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => r.data),
+    queryFn: () => api.get('/goes/collections').then((r) => r.data.items),
   });
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => r.data),
+    queryFn: () => api.get('/goes/tags').then((r) => r.data.items),
   });
 
   // Debounce filter values to prevent excessive API calls

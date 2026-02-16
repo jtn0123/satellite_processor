@@ -14,7 +14,7 @@ vi.mock('../api/client', () => ({
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 vi.mock('../components/GoesData/AnimationPlayer', () => ({
   default: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="animation-player"><button onClick={onClose}>Close</button></div>
+    <div data-testid="animation-player"><button type="button" onClick={onClose}>Close</button></div>
   ),
 }));
 
@@ -125,6 +125,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
     const { container } = renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(container.innerHTML).toContain('Null Count');
+      expect(screen.getByText('0 frames')).toBeInTheDocument();
     });
   });
 

@@ -19,9 +19,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Props) {
 
   const { data: presets } = useQuery<AnimationPreset[]>({
     queryKey: ['animation-presets'],
-    queryFn: () => api.get('/goes/animation-presets').then((r) => {
-      return extractArray(r.data);
-    }),
+    queryFn: () => api.get('/goes/animation-presets').then((r) => extractArray<AnimationPreset>(r.data)),
   });
 
   const saveMutation = useMutation({

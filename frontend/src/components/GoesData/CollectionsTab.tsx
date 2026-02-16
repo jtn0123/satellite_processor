@@ -118,7 +118,7 @@ export default function CollectionsTab() {
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
                     <button
                       onClick={() => handleAnimate(c.id)}
-                      disabled={loadingAnimateId === c.id || c.frame_count === 0}
+                      disabled={loadingAnimateId === c.id || !c.frame_count}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
                       aria-label={`Animate collection ${c.name}`}
                     >
@@ -137,7 +137,7 @@ export default function CollectionsTab() {
                 </div>
               )}
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
-                <span>{c.frame_count} frames</span>
+                <span>{c.frame_count ?? 0} frames</span>
                 <span>{new Date(c.created_at).toLocaleDateString()}</span>
               </div>
               {c.description && <p className="text-xs text-gray-400 dark:text-slate-500">{c.description}</p>}

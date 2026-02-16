@@ -90,7 +90,7 @@ describe('CleanupTab - Defensive Scenarios', () => {
       if (url === '/goes/cleanup-rules') return Promise.resolve({
         data: [
           { id: '1', name: 'Age Rule', rule_type: 'max_age_days', value: 30, protect_collections: true, is_active: true, created_at: '2024-06-01' },
-          { id: '2', name: 'Size Rule', rule_type: 'max_total_size_gb', value: 100, protect_collections: false, is_active: false, created_at: '2024-06-01' },
+          { id: '2', name: 'Size Rule', rule_type: 'max_storage_gb', value: 100, protect_collections: false, is_active: false, created_at: '2024-06-01' },
         ],
       });
       if (url === '/goes/frames/stats') return Promise.resolve({ data: { total_frames: 500, total_size_bytes: 50_000_000, by_satellite: {}, by_band: {} } });

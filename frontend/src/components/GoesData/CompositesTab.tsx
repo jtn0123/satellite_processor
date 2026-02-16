@@ -62,9 +62,7 @@ export default function CompositesTab() {
 
   const { data: recipes } = useQuery<CompositeRecipe[]>({
     queryKey: ['composite-recipes'],
-    queryFn: () => api.get('/goes/composite-recipes').then((r) => {
-      return extractArray(r.data);
-    }),
+    queryFn: () => api.get('/goes/composite-recipes').then((r) => extractArray<CompositeRecipe>(r.data)),
   });
 
   const { data: composites } = useQuery<{ items: CompositeItem[]; total: number }>({

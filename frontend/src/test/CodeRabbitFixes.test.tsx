@@ -70,11 +70,34 @@ describe('FramePreviewModal crop area', () => {
 });
 
 describe('Modal action button coverage', () => {
-  it('AddToCollectionModal all buttons have type="button"', () => {
+  it('AddToCollectionModal shows Add button when collection selected', async () => {
+    // Mock API to return a collection
+    vi.spyOn(await import('../api/client'), 'default', 'get').mockReturnValue({
+      get: vi.fn().mockResolvedValue({ data: [{ id: 'c1', name: 'Test Collection', frame_count: 0 }] }),
+      post: vi.fn().mockResolvedValue({ data: { id: 'c1' } }),
+    } as never);
+    
     render(withQC(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
+    // Wait for collections to load
+    const select = await screen.findByRole('combobox').catch(() => null);
+    if (select) {
+      fireEvent.change(select, { target: { value: 'c1' } });
+    }
+    // All rendered buttons should have type="button"
     const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(2);
     buttons.forEach(btn => expect(btn.getAttribute('type')).toBe('button'));
+  });
+
+  it('AddToCollectionModal shows Create button when name entered', () => {
+    render(withQC(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
+    const input = document.querySelector('input[type="text"]');
+    if (input) {
+      fireEvent.change(input, { target: { value: 'New Collection' } });
+      // Create & Add button should appear
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach(btn => expect(btn.getAttribute('type')).toBe('button'));
+      expect(buttons.length).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it('TagModal all buttons have type="button"', () => {

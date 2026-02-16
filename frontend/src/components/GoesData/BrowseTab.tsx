@@ -33,8 +33,7 @@ export default function BrowseTab() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_showProcessModal, setShowProcessModal] = useState(false);
+  const [, setShowProcessModal] = useState(false);
   const [showAddToCollection, setShowAddToCollection] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [previewFrame, setPreviewFrame] = useState<GoesFrame | null>(null);

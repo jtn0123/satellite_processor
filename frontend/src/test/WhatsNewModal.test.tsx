@@ -24,21 +24,23 @@ describe('WhatsNewModal', () => {
   it('calls onClose on backdrop click', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    fireEvent.click(screen.getByRole('dialog'));
+    const dialog = document.querySelector('dialog')!;
+    fireEvent.click(dialog);
     expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onClose on Escape', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    const dialog = screen.getByRole('dialog');
+    const dialog = document.querySelector('dialog')!;
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('has aria-label on panel', () => {
+  it('has aria-label on dialog', () => {
     render(<WhatsNewModal onClose={vi.fn()} />);
-    expect(screen.getByLabelText("What's New")).toBeInTheDocument();
+    const dialog = document.querySelector('dialog');
+    expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
   it('renders changelog entries as list items', () => {

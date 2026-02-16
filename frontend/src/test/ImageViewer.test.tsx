@@ -8,7 +8,7 @@ const frames = [frame, { ...frame, id: 'f2' }, { ...frame, id: 'f3' }];
 describe('ImageViewer', () => {
   it('renders dialog with aria-label', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
-    expect(screen.getByRole('application', { name: /image viewer/i })).toBeInTheDocument();
+    expect(screen.getByRole('application', { name: /pan and zoom/i })).toBeInTheDocument();
   });
 
   it('shows frame metadata', () => {

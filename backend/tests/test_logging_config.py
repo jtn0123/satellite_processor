@@ -4,7 +4,6 @@ import logging
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from app.logging_config import RequestLoggingMiddleware, setup_logging
 
 

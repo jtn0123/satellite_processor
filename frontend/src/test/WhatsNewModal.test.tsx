@@ -20,13 +20,13 @@ beforeEach(() => {
 });
 
 function mockFetchSuccess(data = MOCK_CHANGELOG) {
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     json: () => Promise.resolve(data),
   });
 }
 
 function mockFetchFailure() {
-  global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+  globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 }
 
 describe('WhatsNewModal', () => {
@@ -50,7 +50,7 @@ describe('WhatsNewModal', () => {
 
   it('shows loading state initially', () => {
     // Never-resolving fetch
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
     render(<WhatsNewModal onClose={vi.fn()} />);
     expect(screen.getByLabelText('Loading changelog')).toBeInTheDocument();
   });
@@ -137,7 +137,7 @@ describe('WhatsNewModal', () => {
   it('fetches from /api/health/changelog', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
-    expect(global.fetch).toHaveBeenCalledWith('/api/health/changelog');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/health/changelog');
   });
 });
 

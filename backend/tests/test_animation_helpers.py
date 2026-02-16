@@ -9,11 +9,13 @@ from app.tasks.animation_tasks import (
     PREVIEW_MAX_WIDTH,
     QUALITY_CRF,
     _apply_loop_style,
+    _apply_overlay,
     _build_overlay_label,
     _encode_output,
     _mark_animation_failed,
     _process_single_frame,
     _render_frames_to_dir,
+    _run_ffmpeg,
 )
 
 # ── Constants ────────────────────────────────────────────
@@ -209,3 +211,94 @@ class TestMarkAnimationFailed:
         session = MagicMock()
         session.query.side_effect = Exception("db down")
         _mark_animation_failed(session, "a1", "boom")  # should not raise
+
+
+# ── _apply_overlay ──────────────────────────────────────
+
+class TestApplyOverlay:
+    def _make_img(self, w=200, h=100):
+        import numpy as np
+        return np.zeros((h, w, 3), dtype=np.uint8)
+
+    def test_with_label_and_timestamp(self):
+        from datetime import datetime
+        frame = SimpleNamespace(capture_time=datetime(2024, 6, 15, 12, 30, 0))
+        overlay = {"label": True, "timestamp": True}
+        img = self._make_img()
+        result = _apply_overlay(img, frame, overlay, "G16 CONUS Band 02")
+        assert result.shape == img.shape
+
+    def test_with_label_only(self):
+        frame = SimpleNamespace(capture_time=None)
+        overlay = {"label": True, "timestamp": False}
+        img = self._make_img()
+        result = _apply_overlay(img, frame, overlay, "G16 CONUS Band 02")
+        assert result.shape == img.shape
+
+    def test_with_timestamp_only(self):
+        from datetime import datetime
+        frame = SimpleNamespace(capture_time=datetime(2024, 6, 15, 12, 30, 0))
+        overlay = {"label": False, "timestamp": True}
+        img = self._make_img()
+        result = _apply_overlay(img, frame, overlay, "")
+        assert result.shape == img.shape
+
+    def test_no_label_no_timestamp(self):
+        frame = SimpleNamespace(capture_time=None)
+        overlay = {"label": False, "timestamp": False}
+        img = self._make_img()
+        result = _apply_overlay(img, frame, overlay, "")
+        assert result.shape == img.shape
+
+    def test_timestamp_with_none_capture_time(self):
+        frame = SimpleNamespace(capture_time=None)
+        overlay = {"label": False, "timestamp": True}
+        img = self._make_img()
+        result = _apply_overlay(img, frame, overlay, "")
+        assert result.shape == img.shape
+
+
+# ── _run_ffmpeg ─────────────────────────────────────────
+
+class TestRunFfmpeg:
+    @patch("app.tasks.animation_tasks.subprocess.run")
+    def test_success(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0)
+        _run_ffmpeg(["ffmpeg", "-version"])
+        mock_run.assert_called_once()
+
+    @patch("app.tasks.animation_tasks.subprocess.run")
+    def test_failure_raises(self, mock_run):
+        import subprocess
+        mock_run.return_value = MagicMock(
+            returncode=1, stderr=b"error msg", stdout=b""
+        )
+        with pytest.raises(subprocess.CalledProcessError):
+            _run_ffmpeg(["ffmpeg", "-invalid"])
+
+
+# ── _render_frames_to_dir with overlay ──────────────────
+
+class TestRenderFramesWithOverlay:
+    @patch("app.tasks.animation_tasks._update_job_db")
+    @patch("app.tasks.animation_tasks._publish_progress")
+    def test_with_overlay(self, mock_pub, mock_upd, tmp_path):
+        import cv2
+        import numpy as np
+        from datetime import datetime
+
+        src = tmp_path / "src.png"
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        cv2.imwrite(str(src), img)
+
+        frame = SimpleNamespace(
+            file_path=str(src),
+            capture_time=datetime(2024, 1, 1, 12, 0, 0),
+            satellite="G16", sector="CONUS", band="C02"
+        )
+        work = tmp_path / "work"
+        work.mkdir()
+        overlay = {"label": True, "timestamp": True}
+        count = _render_frames_to_dir([frame], work, "j1", None, "full", "100%", overlay, "G16 CONUS Band 02")
+        assert count == 1
+        assert (work / "frame000000.png").exists()

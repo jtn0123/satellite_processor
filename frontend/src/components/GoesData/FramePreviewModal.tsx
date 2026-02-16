@@ -5,6 +5,7 @@ import api from '../../api/client';
 import { formatBytes } from './utils';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { GoesFrame, CropPreset } from './types';
+import { extractArray } from '../../utils/safeData';
 
 export default function FramePreviewModal({
   frame,
@@ -55,10 +56,7 @@ export default function FramePreviewModal({
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
     queryFn: () => api.get('/goes/crop-presets').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

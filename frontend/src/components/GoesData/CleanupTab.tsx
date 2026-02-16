@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { extractArray } from '../../utils/safeData';
 
 interface CleanupRule {
   id: string;
@@ -43,10 +44,7 @@ export default function CleanupTab() {
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],
     queryFn: () => api.get('/goes/cleanup-rules').then(r => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

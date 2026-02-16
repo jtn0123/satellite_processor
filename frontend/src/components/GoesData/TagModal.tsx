@@ -5,6 +5,7 @@ import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { TagType } from './types';
+import { extractArray } from '../../utils/safeData';
 
 export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
   const queryClient = useQueryClient();
@@ -22,10 +23,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
     queryFn: () => api.get('/goes/tags').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

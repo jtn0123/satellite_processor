@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layers, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { extractArray } from '../../utils/safeData';
 
 interface Product {
   satellites: string[];
@@ -62,10 +63,7 @@ export default function CompositesTab() {
   const { data: recipes } = useQuery<CompositeRecipe[]>({
     queryKey: ['composite-recipes'],
     queryFn: () => api.get('/goes/composite-recipes').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

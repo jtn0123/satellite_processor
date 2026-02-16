@@ -26,6 +26,7 @@ import TagModal from './TagModal';
 import ComparisonModal from './ComparisonModal';
 import EmptyState from './EmptyState';
 import FrameCard from './FrameCard';
+import { extractArray } from '../../utils/safeData';
 
 export default function BrowseTab() {
   const queryClient = useQueryClient();
@@ -56,20 +57,14 @@ export default function BrowseTab() {
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
     queryFn: () => api.get('/goes/collections').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
     queryFn: () => api.get('/goes/tags').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

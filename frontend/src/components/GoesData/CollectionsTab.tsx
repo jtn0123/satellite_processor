@@ -7,6 +7,7 @@ import type { CollectionType, GoesFrame } from './types';
 import Skeleton from './Skeleton';
 import EmptyState from './EmptyState';
 import AnimationPlayer from './AnimationPlayer';
+import { extractArray } from '../../utils/safeData';
 
 export default function CollectionsTab() {
   const queryClient = useQueryClient();
@@ -19,10 +20,7 @@ export default function CollectionsTab() {
   const { data: collections, isLoading, isError } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
     queryFn: () => api.get('/goes/collections').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 
@@ -61,7 +59,7 @@ export default function CollectionsTab() {
     try {
       const res = await api.get(`/goes/collections/${collectionId}/frames`);
       const raw = res.data;
-      const frames: GoesFrame[] = Array.isArray(raw) ? raw : (raw?.items ?? []);
+      const frames: GoesFrame[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
       if (frames.length === 0) {
         showToast('error', 'Collection has no frames to animate');
         return;

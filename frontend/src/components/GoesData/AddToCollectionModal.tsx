@@ -5,6 +5,7 @@ import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { CollectionType } from './types';
+import { extractArray } from '../../utils/safeData';
 
 export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
   const queryClient = useQueryClient();
@@ -21,10 +22,7 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
     queryFn: () => api.get('/goes/collections').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

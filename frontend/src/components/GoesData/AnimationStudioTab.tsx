@@ -13,6 +13,7 @@ import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { formatBytes } from './utils';
 import type { Product, CollectionType, PaginatedFrames, CropPreset, PaginatedAnimations } from './types';
+import { extractArray } from '../../utils/safeData';
 
 export default function AnimationStudioTab() {
   const queryClient = useQueryClient();
@@ -43,20 +44,14 @@ export default function AnimationStudioTab() {
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
     queryFn: () => api.get('/goes/collections').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
     queryFn: () => api.get('/goes/crop-presets').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

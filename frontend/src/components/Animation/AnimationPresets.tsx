@@ -4,6 +4,7 @@ import { Save, Trash2, Edit2, Check, X } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import type { AnimationConfig, AnimationPreset } from './types';
+import { extractArray } from '../../utils/safeData';
 
 interface Props {
   config: AnimationConfig;
@@ -19,10 +20,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Props) {
   const { data: presets } = useQuery<AnimationPreset[]>({
     queryKey: ['animation-presets'],
     queryFn: () => api.get('/goes/animation-presets').then((r) => {
-      const d = r.data;
-      if (Array.isArray(d)) return d;
-      if (d && Array.isArray(d.items)) return d.items;
-      return [];
+      return extractArray(r.data);
     }),
   });
 

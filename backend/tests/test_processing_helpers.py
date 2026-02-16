@@ -1,9 +1,7 @@
 """Tests for processing.py helper functions and constants."""
 from __future__ import annotations
 
-from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from app.tasks.processing import (
     MSG_PROCESSING_COMPLETE,
@@ -12,7 +10,6 @@ from app.tasks.processing import (
     _finalize_job,
     _stage_image_paths,
 )
-
 
 # ── _stage_image_paths ──────────────────────────────────
 

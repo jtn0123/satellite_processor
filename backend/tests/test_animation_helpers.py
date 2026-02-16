@@ -283,9 +283,10 @@ class TestRenderFramesWithOverlay:
     @patch("app.tasks.animation_tasks._update_job_db")
     @patch("app.tasks.animation_tasks._publish_progress")
     def test_with_overlay(self, mock_pub, mock_upd, tmp_path):
+        from datetime import datetime
+
         import cv2
         import numpy as np
-        from datetime import datetime
 
         src = tmp_path / "src.png"
         img = np.zeros((100, 100, 3), dtype=np.uint8)

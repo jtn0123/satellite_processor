@@ -101,6 +101,112 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+      - name: Post SonarQube summary to PR
+        if: always() && steps.pr-info.outputs.is_pr == 'true'
+        uses: actions/github-script@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.pr-info.outputs.pr_number }}');
+            const sonarUrl = process.env.SONAR_HOST_URL;
+            const sonarToken = process.env.SONAR_TOKEN;
+            const projectKey = 'satellite_processor';
+
+            // Fetch PR measures from SonarQube
+            const auth = Buffer.from(sonarToken + ':').toString('base64');
+            const headers = { 'Authorization': `Basic ${auth}` };
+
+            let measures = {};
+            let gateStatus = 'UNKNOWN';
+
+            try {
+              // Get quality gate status
+              const gateRes = await fetch(`${sonarUrl}/api/qualitygates/project_status?projectKey=${projectKey}&pullRequest=${prNumber}`, { headers });
+              if (gateRes.ok) {
+                const gateData = await gateRes.json();
+                gateStatus = gateData.projectStatus?.status || 'UNKNOWN';
+              }
+
+              // Get measures
+              const metricsToFetch = [
+                'new_bugs', 'new_vulnerabilities', 'new_code_smells',
+                'new_coverage', 'new_duplicated_lines_density',
+                'new_security_hotspots', 'new_reliability_rating',
+                'new_security_rating', 'new_maintainability_rating'
+              ].join(',');
+
+              const measuresRes = await fetch(`${sonarUrl}/api/measures/component?component=${projectKey}&pullRequest=${prNumber}&metricKeys=${metricsToFetch}`, { headers });
+              if (measuresRes.ok) {
+                const measuresData = await measuresRes.json();
+                for (const m of (measuresData.component?.measures || [])) {
+                  measures[m.metric] = m.period?.value ?? m.value ?? 'N/A';
+                }
+              }
+            } catch (e) {
+              console.log('Failed to fetch SonarQube data:', e.message);
+            }
+
+            const gateIcon = gateStatus === 'OK' ? '✅' : gateStatus === 'ERROR' ? '❌' : '⚠️';
+            const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
+            const rating = (val) => ratingMap[val] || val || 'N/A';
+            const num = (val) => val ?? 'N/A';
+            const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
+
+            const body = [
+              `## ${gateIcon} SonarQube Analysis`,
+              '',
+              `**Quality Gate:** ${gateStatus === 'OK' ? 'Passed' : gateStatus === 'ERROR' ? 'Failed' : gateStatus}`,
+              '',
+              '### New Code',
+              `| Metric | Value |`,
+              `|--------|-------|`,
+              `| 🐛 Bugs | ${num(measures.new_bugs)} |`,
+              `| 🔓 Vulnerabilities | ${num(measures.new_vulnerabilities)} |`,
+              `| 🔥 Security Hotspots | ${num(measures.new_security_hotspots)} |`,
+              `| 🧹 Code Smells | ${num(measures.new_code_smells)} |`,
+              `| 📊 Coverage | ${pct(measures.new_coverage)} |`,
+              `| 📋 Duplication | ${pct(measures.new_duplicated_lines_density)} |`,
+              '',
+              '### Ratings',
+              `| | Reliability | Security | Maintainability |`,
+              `|---|---|---|---|`,
+              `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
+              '',
+              `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
+              '',
+              `---`,
+              `*SonarQube ${new Date().toISOString().split('T')[0]}*`
+            ].join('\n');
+
+            // Upsert comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('SonarQube Analysis')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+            }
+
       - name: Post commit status
         if: always()
         uses: actions/github-script@v7

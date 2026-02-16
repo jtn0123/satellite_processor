@@ -39,7 +39,8 @@ describe('useFocusTrap', () => {
     const third = getByTestId('third');
     third.focus();
     fireEvent.keyDown(document, { key: 'Tab' });
-    // Focus trap should wrap
+    // Focus trap should handle wrapping without error
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('handles Shift+Tab wrapping from first to last', () => {
@@ -48,6 +49,7 @@ describe('useFocusTrap', () => {
     const first = getByTestId('first');
     first.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('does not crash with no focusable elements', () => {

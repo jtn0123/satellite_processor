@@ -128,12 +128,12 @@ describe('Dialog backdrop click-to-close', () => {
 
 describe('No role="presentation" on modal panels', () => {
   it('AddToCollectionModal inner div has no role="presentation"', () => {
-    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={vi.fn()} />));
+    render(withQueryClient(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
     expect(document.querySelector('[role="presentation"]')).toBeNull();
   });
 
   it('TagModal inner div has no role="presentation"', () => {
-    render(withQueryClient(<TagModal frameIds={['1']} onClose={vi.fn()} />));
+    render(withQueryClient(<TagModal frameIds={['1']} onClose={() => {}} />));
     expect(document.querySelector('[role="presentation"]')).toBeNull();
   });
 });
@@ -142,7 +142,7 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
   it('renders input type="range" in slider mode', () => {
     const frameA = makeFrame('a');
     const frameB = makeFrame('b');
-    render(<CompareView frameA={frameA} frameB={frameB} onClose={vi.fn()} />);
+    render(<CompareView frameA={frameA} frameB={frameB} onClose={() => {}} />);
 
     // Switch to slider mode
     const sliderBtn = screen.getByText('Slider');
@@ -159,7 +159,7 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
   it('range input controls slider position', () => {
     const frameA = makeFrame('a');
     const frameB = makeFrame('b');
-    render(<CompareView frameA={frameA} frameB={frameB} onClose={vi.fn()} />);
+    render(<CompareView frameA={frameA} frameB={frameB} onClose={() => {}} />);
 
     fireEvent.click(screen.getByText('Slider'));
 
@@ -172,7 +172,7 @@ describe('CompareView uses input[type="range"] instead of role="slider"', () => 
 describe('ImageViewer accessibility', () => {
   it('renders with role="application" for zoom/pan area', () => {
     const frame = makeFrame('1');
-    render(<ImageViewer frame={frame} frames={[frame]} onClose={vi.fn()} onNavigate={vi.fn()} />);
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={vi.fn()} />);
 
     const app = document.querySelector('[role="application"]');
     expect(app).toBeTruthy();
@@ -182,7 +182,7 @@ describe('ImageViewer accessibility', () => {
 
   it('dialog element renders with aria-label', () => {
     const frame = makeFrame('1');
-    render(<ImageViewer frame={frame} frames={[frame]} onClose={vi.fn()} onNavigate={vi.fn()} />);
+    render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={vi.fn()} />);
 
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();

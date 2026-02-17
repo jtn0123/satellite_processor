@@ -137,7 +137,11 @@ export default function GapsTab() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800">
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1">Coverage</div>
-              <div className={`text-3xl font-bold ${coverage.coverage_percent >= 95 ? 'text-emerald-400' : coverage.coverage_percent >= 80 ? 'text-amber-400' : 'text-red-400'}`}>
+              <div className={`text-3xl font-bold ${(() => {
+                if (coverage.coverage_percent >= 95) return 'text-emerald-400';
+                if (coverage.coverage_percent >= 80) return 'text-amber-400';
+                return 'text-red-400';
+              })()}`}>
                 {coverage.coverage_percent.toFixed(1)}%
               </div>
             </div>

@@ -219,7 +219,7 @@ export default function OverviewTab() {
             <span className="text-sm text-gray-500 dark:text-slate-400">Disk Usage</span>
           </div>
           <div className="text-3xl font-bold text-emerald-400">
-            {totalSizeBytes != null ? formatBytes(totalSizeBytes) : '—'}
+            {totalSizeBytes == null ? '—' : formatBytes(totalSizeBytes)}
           </div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">

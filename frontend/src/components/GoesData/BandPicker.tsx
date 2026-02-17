@@ -1,5 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ImageOff, Download } from 'lucide-react';
 import { BAND_INFO } from '../../constants/bands';
+import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 
 interface BandPickerProps {
   value: string;
@@ -24,8 +28,34 @@ const FILTERS: { label: string; bands: string[] }[] = [
   { label: 'Vegetation', bands: ['C02', 'C03', 'C05', 'C06'] },
 ];
 
-export default function BandPicker({ value, onChange, disabled }: Readonly<BandPickerProps>) {
+export default function BandPicker({ value, onChange, satellite, sector, disabled }: Readonly<BandPickerProps>) {
   const [filter, setFilter] = useState('All');
+  const [fetchingBand, setFetchingBand] = useState<string | null>(null);
+
+  // Check which bands have local data
+  const { data: bandCounts } = useQuery<Record<string, number>>({
+    queryKey: ['band-counts', satellite, sector],
+    queryFn: () =>
+      api.get('/goes/band-availability', { params: { satellite, sector } }).then((r) => r.data?.counts ?? {}),
+    enabled: !!satellite && !!sector,
+    staleTime: 60000,
+  });
+
+  const fetchSample = useCallback((bandId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!satellite || !sector) return;
+    setFetchingBand(bandId);
+    api.post('/goes/fetch', {
+      satellite,
+      sector,
+      band: bandId,
+      hours: 1,
+    }).then(() => {
+      showToast('success', `Fetching sample for ${bandId}`);
+    }).catch(() => {
+      showToast('error', `Failed to fetch ${bandId}`);
+    }).finally(() => setFetchingBand(null));
+  }, [satellite, sector]);
 
   const activeBands = useMemo(() => {
     const f = FILTERS.find((x) => x.label === filter);
@@ -97,6 +127,26 @@ export default function BandPicker({ value, onChange, disabled }: Readonly<BandP
                     <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 line-clamp-2">
                       {info.description}
                     </div>
+                    {bandCounts && !bandCounts[bandId] && (
+                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-200 dark:border-slate-700">
+                        <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-slate-500">
+                          <ImageOff className="w-3 h-3" />
+                          No data yet
+                        </span>
+                        {satellite && sector && (
+                          <button
+                            type="button"
+                            onClick={(e) => fetchSample(bandId, e)}
+                            disabled={fetchingBand === bandId}
+                            className="flex items-center gap-0.5 text-[10px] text-primary hover:text-primary/80 disabled:opacity-50"
+                            title={`Fetch sample for ${bandId}`}
+                          >
+                            <Download className="w-3 h-3" />
+                            Fetch
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </button>
                 );
               })}

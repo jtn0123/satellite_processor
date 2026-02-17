@@ -37,7 +37,12 @@ def validate_uuid(value: str, name: str = "id") -> str:
 
 
 def validate_safe_path(file_path: str, allowed_root: str) -> Path:
-    """Validate that a file path doesn't escape the allowed root directory."""
+    """Validate that a file path doesn't escape the allowed root directory.
+
+    Both paths are resolved to absolute before comparison, so relative
+    ``allowed_root`` (e.g. ``./data``) and absolute ``file_path``
+    (e.g. ``/app/data/...`` inside Docker) are handled correctly.
+    """
     root = Path(allowed_root).resolve()
     resolved = Path(file_path).resolve()
     if not str(resolved).startswith(str(root)):

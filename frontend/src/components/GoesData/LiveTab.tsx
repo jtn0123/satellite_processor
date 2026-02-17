@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Clock, Zap, Info, Columns2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useImageZoom } from '../../hooks/useImageZoom';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
+import StaleDataBanner from './StaleDataBanner';
+import CompareSlider from './CompareSlider';
+import InlineFetchProgress from './InlineFetchProgress';
 
 interface SatelliteAvailability {
   status: string;
@@ -75,7 +78,6 @@ export default function LiveTab() {
   const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
-  const compareContainerRef = useRef<HTMLDivElement>(null);
 
   const zoom = useImageZoom();
 
@@ -117,7 +119,6 @@ export default function LiveTab() {
     retry: 1,
   });
 
-  // Fetch latest frame (single)
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
@@ -127,7 +128,6 @@ export default function LiveTab() {
 
   refetchRef.current = refetch;
 
-  // Item 6: Fetch 2 most recent frames for compare mode
   const { data: recentFrames } = useQuery<LatestFrame[]>({
     queryKey: ['goes-frames-compare', satellite, sector, band],
     queryFn: () => api.get('/goes/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
@@ -135,7 +135,6 @@ export default function LiveTab() {
     enabled: !!satellite && compareMode,
   });
 
-  // Item 10: Catalog with loading/error states
   const { data: catalogLatest, isLoading: catalogLoading, isError: catalogError, refetch: refetchCatalog } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest-live', satellite, sector, band],
     queryFn: () => api.get('/goes/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
@@ -144,7 +143,6 @@ export default function LiveTab() {
     retry: 1,
   });
 
-  // Item 7: Track active fetch job for inline progress
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
@@ -154,7 +152,6 @@ export default function LiveTab() {
     refetchInterval: activeJobId ? 2000 : false,
   });
 
-  // Clear job tracking when complete
   useEffect(() => {
     if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
       const timer = setTimeout(() => {
@@ -165,7 +162,6 @@ export default function LiveTab() {
     }
   }, [activeJob, refetch]);
 
-  // Item 4: Trigger an immediate fetch from the Live tab
   const fetchNow = useCallback(() => {
     const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
     api.post('/goes/fetch', {
@@ -178,7 +174,6 @@ export default function LiveTab() {
     }).catch(() => showToast('error', 'Failed to start fetch'));
   }, [satellite, sector, band, catalogLatest]);
 
-  // Auto-fetch logic
   useEffect(() => {
     if (!autoFetch || !catalogLatest || !frame) return;
     const catalogTime = new Date(catalogLatest.scan_time).getTime();
@@ -228,30 +223,6 @@ export default function LiveTab() {
     ? `/api/download?path=${encodeURIComponent(prevFrame.thumbnail_path || prevFrame.file_path)}`
     : null;
 
-  // Compare slider drag
-  const handleCompareSlider = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    const container = compareContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const getX = (ev: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX;
-      return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-    };
-    const move = (ev: MouseEvent | TouchEvent) => setComparePosition(getX(ev));
-    const up = () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
-      document.removeEventListener('touchmove', move);
-      document.removeEventListener('touchend', up);
-    };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    document.addEventListener('touchmove', move);
-    document.addEventListener('touchend', up);
-    setComparePosition(getX(e.nativeEvent as MouseEvent | TouchEvent));
-  }, []);
-
-  // Freshness comparison
   const freshnessInfo = catalogLatest && frame ? (() => {
     const awsAge = timeAgo(catalogLatest.scan_time);
     const localAge = timeAgo(frame.capture_time);
@@ -325,131 +296,35 @@ export default function LiveTab() {
         </label>
       </div>
 
-      {/* Item 4: Stale data warning with color coding */}
-      {freshnessInfo && (() => {
-        const localMs = Date.now() - new Date(frame!.capture_time).getTime();
-        const staleLevel = localMs > 7200000 ? 'red' : localMs > 1800000 ? 'amber' : 'green';
-        const colors = {
-          green: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300',
-          amber: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300',
-          red: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-300',
-        };
-        const icons = { green: Clock, amber: Clock, red: AlertTriangle };
-        const Icon = icons[staleLevel];
-        return (staleLevel !== 'green' || freshnessInfo.behindMin > 0) ? (
-          <div className={`${colors[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
-            <Icon className="w-4 h-4 shrink-0" />
-            <span className="text-sm flex-1">
-              {staleLevel === 'red' && <strong>Data is stale! </strong>}
-              {freshnessInfo.behindMin > 0
-                ? <>AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is <strong>{freshnessInfo.localAge}</strong> ({freshnessInfo.behindMin} min behind)</>
-                : <>Your latest frame is <strong>{freshnessInfo.localAge}</strong></>}
-            </span>
-            <button
-              onClick={fetchNow}
-              disabled={!!activeJobId}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Fetch Now
-            </button>
-          </div>
-        ) : null;
-      })()}
+      {/* Stale data warning */}
+      {freshnessInfo && frame && (
+        <StaleDataBanner
+          freshnessInfo={freshnessInfo}
+          captureTime={frame.capture_time}
+          activeJobId={activeJobId}
+          onFetchNow={fetchNow}
+        />
+      )}
 
-      {/* Item 7: Inline fetch progress */}
+      {/* Inline fetch progress */}
       {activeJobId && activeJob && (
-        <div className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3">
-          {activeJob.status === 'completed' ? (
-            <span className="text-sm text-emerald-600 dark:text-emerald-300 font-medium">✓ Fetch complete</span>
-          ) : activeJob.status === 'failed' ? (
-            <span className="text-sm text-red-600 dark:text-red-300 font-medium">✗ Fetch failed</span>
-          ) : (
-            <>
-              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-slate-300 mb-1">
-                  <span>{activeJob.status_message || 'Fetching…'}</span>
-                  <span className="text-xs">{Math.round(activeJob.progress)}%</span>
-                </div>
-                <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${activeJob.progress}%` }} />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <InlineFetchProgress job={activeJob} />
       )}
 
       {/* Two-panel layout: Available Now + Your Latest */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Available Now — Item 10: loading/error states */}
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <Satellite className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Available Now</span>
-            </div>
-            {catalogLatest && (
-              <span className="text-xs text-gray-500 dark:text-slate-400">{timeAgo(catalogLatest.scan_time)}</span>
-            )}
-          </div>
-          <div className="p-6">
-            {catalogLoading ? (
-              <div className="space-y-3 animate-pulse py-4">
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
-                  <span className="text-sm text-gray-500 dark:text-slate-400">Checking AWS...</span>
-                </div>
-                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
-                <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
-                <div className="h-9 bg-gray-200 dark:bg-slate-700 rounded w-40 mt-2" />
-              </div>
-            ) : catalogError ? (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <span className="text-sm text-red-400">Failed to check AWS catalog</span>
-                <button
-                  onClick={() => refetchCatalog()}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Retry
-                </button>
-              </div>
-            ) : catalogLatest ? (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 dark:text-slate-300">
-                  <strong>{catalogLatest.satellite}</strong> · {catalogLatest.sector} · {catalogLatest.band}
-                </div>
-                <div className="text-xs text-gray-400 dark:text-slate-500">
-                  {new Date(catalogLatest.scan_time).toLocaleString()}
-                </div>
-                <button
-                  onClick={() => {
-                    globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
-                      detail: {
-                        satellite: catalogLatest?.satellite || satellite,
-                        sector: catalogLatest?.sector || sector,
-                        band: catalogLatest?.band || band,
-                      },
-                    }));
-                    globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Latest
-                </button>
-              </div>
-            ) : (
-              <div className="text-sm text-gray-400 dark:text-slate-500 py-8 text-center">
-                No catalog data available
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Available Now */}
+        <CatalogPanel
+          catalogLatest={catalogLatest ?? null}
+          catalogLoading={catalogLoading}
+          catalogError={catalogError}
+          satellite={satellite}
+          sector={sector}
+          band={band}
+          onRetry={() => refetchCatalog()}
+        />
 
-        {/* Your Latest — with zoom (Item 11), overlay toggle (Item 14), compare (Item 6) */}
+        {/* Your Latest */}
         <div ref={containerRef} className={`relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
           <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
             <div className="flex items-center gap-3">
@@ -502,43 +377,20 @@ export default function LiveTab() {
                 loading="lazy"
               />
             )}
-            {/* Item 6: Compare slider overlay */}
             {!isLoading && !isError && imageUrl && compareMode && (
-              <div
-                ref={compareContainerRef}
-                className="relative w-full h-full select-none"
-                onMouseDown={handleCompareSlider}
-                onTouchStart={handleCompareSlider}
-              >
-                {/* Previous (background) */}
-                {prevImageUrl ? (
-                  <img src={prevImageUrl} alt="Previous frame" className="absolute inset-0 w-full h-full object-contain" draggable={false} />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">No previous frame</div>
-                )}
-                {/* Current (clipped) */}
-                <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - comparePosition}% 0 0)` }}>
-                  <img src={imageUrl} alt="Current frame" className="absolute inset-0 w-full h-full object-contain" draggable={false} />
-                </div>
-                {/* Slider handle */}
-                <div className="absolute top-0 bottom-0" style={{ left: `${comparePosition}%`, transform: 'translateX(-50%)' }}>
-                  <div className="w-0.5 h-full bg-white/80" />
-                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center cursor-ew-resize">
-                    <Columns2 className="w-4 h-4 text-gray-800" />
-                  </div>
-                </div>
-                {/* Labels */}
-                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                  Previous{prevFrame ? ` · ${timeAgo(prevFrame.capture_time)}` : ''}
-                </div>
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                  Current · {frame ? timeAgo(frame.capture_time) : ''}
-                </div>
-              </div>
+              <CompareSlider
+                imageUrl={imageUrl}
+                prevImageUrl={prevImageUrl}
+                comparePosition={comparePosition}
+                onPositionChange={setComparePosition}
+                frameTime={frame?.capture_time ?? null}
+                prevFrameTime={prevFrame?.capture_time ?? null}
+                timeAgo={timeAgo}
+              />
             )}
           </div>
 
-          {/* Item 14: Toggleable metadata overlay */}
+          {/* Toggleable metadata overlay */}
           {frame && overlayVisible && (
             <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg text-shadow-overlay">
               {frame.satellite} · {frame.band} · {frame.sector} · {new Date(frame.capture_time).toLocaleString()}
@@ -565,6 +417,114 @@ export default function LiveTab() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* Extracted catalog panel to reduce LiveTab complexity */
+function CatalogPanel({ catalogLatest, catalogLoading, catalogError, satellite, sector, band, onRetry }: {
+  catalogLatest: CatalogLatest | null;
+  catalogLoading: boolean;
+  catalogError: boolean;
+  satellite: string;
+  sector: string;
+  band: string;
+  onRetry: () => void;
+}) {
+  const handleDownload = () => {
+    globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
+      detail: {
+        satellite: catalogLatest?.satellite || satellite,
+        sector: catalogLatest?.sector || sector,
+        band: catalogLatest?.band || band,
+      },
+    }));
+    globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+  };
+
+  return (
+    <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <Satellite className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-gray-900 dark:text-white">Available Now</span>
+        </div>
+        {catalogLatest && (
+          <span className="text-xs text-gray-500 dark:text-slate-400">{timeAgo(catalogLatest.scan_time)}</span>
+        )}
+      </div>
+      <div className="p-6">
+        <CatalogPanelContent
+          catalogLatest={catalogLatest}
+          catalogLoading={catalogLoading}
+          catalogError={catalogError}
+          onRetry={onRetry}
+          onDownload={handleDownload}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CatalogPanelContent({ catalogLatest, catalogLoading, catalogError, onRetry, onDownload }: {
+  catalogLatest: CatalogLatest | null;
+  catalogLoading: boolean;
+  catalogError: boolean;
+  onRetry: () => void;
+  onDownload: () => void;
+}) {
+  if (catalogLoading) {
+    return (
+      <div className="space-y-3 animate-pulse py-4">
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+          <span className="text-sm text-gray-500 dark:text-slate-400">Checking AWS...</span>
+        </div>
+        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
+        <div className="h-9 bg-gray-200 dark:bg-slate-700 rounded w-40 mt-2" />
+      </div>
+    );
+  }
+
+  if (catalogError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-8">
+        <span className="text-sm text-red-400">Failed to check AWS catalog</span>
+        <button
+          onClick={onRetry}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (catalogLatest) {
+    return (
+      <div className="space-y-3">
+        <div className="text-sm text-gray-600 dark:text-slate-300">
+          <strong>{catalogLatest.satellite}</strong> · {catalogLatest.sector} · {catalogLatest.band}
+        </div>
+        <div className="text-xs text-gray-400 dark:text-slate-500">
+          {new Date(catalogLatest.scan_time).toLocaleString()}
+        </div>
+        <button
+          onClick={onDownload}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Download Latest
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-sm text-gray-400 dark:text-slate-500 py-8 text-center">
+      No catalog data available
     </div>
   );
 }

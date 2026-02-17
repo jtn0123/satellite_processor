@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, ImageOverlay, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, ImageOverlay, LayersControl, useMap } from 'react-leaflet';
 import type { LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Satellite } from 'lucide-react';
+import { Satellite, Loader2, AlertTriangle } from 'lucide-react';
 import api from '../../api/client';
 
 interface Product {
@@ -43,6 +43,14 @@ const SECTOR_BOUNDS: Record<string, Record<string, LatLngBoundsExpression>> = {
   },
 };
 
+function MapUpdater({ bounds }: { bounds: LatLngBoundsExpression }) {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds(bounds);
+  }, [map, bounds]);
+  return null;
+}
+
 export default function MapTab() {
   const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('CONUS');
@@ -54,7 +62,7 @@ export default function MapTab() {
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
 
-  const { data: frame } = useQuery<LatestFrame>({
+  const { data: frame, isLoading: frameLoading, isError: frameError } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     retry: false,
@@ -114,13 +122,30 @@ export default function MapTab() {
       </div>
 
       {/* Map */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden" style={{ height: '600px' }}>
+      <div className="relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden" style={{ height: '600px' }}>
+        {frameLoading && (
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/30 pointer-events-none">
+            <div className="flex items-center gap-2 bg-gray-900/80 text-white px-4 py-2 rounded-lg">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading frame…
+            </div>
+          </div>
+        )}
+        {frameError && (
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/30 pointer-events-none">
+            <div className="flex items-center gap-2 bg-red-900/80 text-red-200 px-4 py-2 rounded-lg">
+              <AlertTriangle className="w-4 h-4" />
+              Failed to load frame data
+            </div>
+          </div>
+        )}
         <MapContainer
           center={center}
           zoom={sector === 'FullDisk' ? 2 : 4}
           className="h-full w-full"
           style={{ background: '#0a1628' }}
         >
+          <MapUpdater bounds={bounds} />
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="OpenStreetMap">
               <TileLayer

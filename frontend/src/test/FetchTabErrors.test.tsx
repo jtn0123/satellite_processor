@@ -14,19 +14,20 @@ vi.mock('../api/client', () => ({
         return Promise.resolve({
           data: {
             satellites: ['GOES-19'],
-            sectors: [{ id: 'FullDisk', name: 'Full Disk' }],
-            bands: [{ id: 'C02', description: 'Red Visible' }],
+            sectors: [{ id: 'FullDisk', name: 'FullDisk', cadence_minutes: 10, typical_file_size_kb: 12000 }],
+            bands: [{ id: 'C02', description: 'Red Visible', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' }],
             satellite_availability: {
-              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active' },
+              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active', description: 'GOES-East' },
             },
+            default_satellite: 'GOES-19',
           },
         });
       }
-      if (url === '/goes/frame-count') {
-        return Promise.resolve({ data: { count: 10 } });
+      if (url === '/goes/catalog') {
+        return Promise.resolve({ data: [] });
       }
-      if (url === '/settings') {
-        return Promise.resolve({ data: { max_frames_per_fetch: 200 } });
+      if (url === '/jobs') {
+        return Promise.resolve({ data: { items: [], total: 0 } });
       }
       return Promise.resolve({ data: {} });
     }),
@@ -45,23 +46,35 @@ function makeWrapper() {
   };
 }
 
-async function fillAndSubmit() {
-  // Wait for products to load
+async function navigateToStep3AndFill() {
+  // Wait for products to load (step 1)
   await waitFor(() => {
-    expect(screen.getByLabelText(/start time/i)).toBeInTheDocument();
+    expect(screen.getByText('Choose Satellite')).toBeInTheDocument();
   });
 
-  const startInput = screen.getByLabelText(/start time/i);
-  const endInput = screen.getByLabelText(/end time/i);
+  // Navigate to step 2
+  fireEvent.click(screen.getByText('Next'));
+  await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
+
+  // Navigate to step 3
+  fireEvent.click(screen.getByText('Next'));
+  await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
+
+  const startInput = screen.getByLabelText(/start/i);
+  const endInput = screen.getByLabelText(/end/i);
   fireEvent.change(startInput, { target: { value: '2026-01-01T00:00' } });
   fireEvent.change(endInput, { target: { value: '2026-01-01T01:00' } });
 
+  // Click Fetch to open confirmation
   await waitFor(() => {
-    const btn = screen.getByText('Fetch').closest('button');
+    const btn = screen.getByRole('button', { name: /^fetch$/i });
     expect(btn).not.toBeDisabled();
   });
+  fireEvent.click(screen.getByRole('button', { name: /^fetch$/i }));
 
-  fireEvent.click(screen.getByText('Fetch').closest('button')!);
+  // Confirm in modal
+  await waitFor(() => expect(screen.getByText('Confirm Fetch')).toBeInTheDocument());
+  fireEvent.click(screen.getByText('Confirm'));
 }
 
 describe('FetchTab error handling', () => {
@@ -73,7 +86,7 @@ describe('FetchTab error handling', () => {
   it('shows default error message when detail is absent', async () => {
     mockPost.mockRejectedValueOnce({ response: { data: {} } });
     render(<FetchTab />, { wrapper: makeWrapper() });
-    await fillAndSubmit();
+    await navigateToStep3AndFill();
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to create fetch job');
@@ -85,7 +98,7 @@ describe('FetchTab error handling', () => {
       response: { data: { detail: [{ msg: 'Value error, Date range too large' }] } },
     });
     render(<FetchTab />, { wrapper: makeWrapper() });
-    await fillAndSubmit();
+    await navigateToStep3AndFill();
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Date range too large');
@@ -97,7 +110,7 @@ describe('FetchTab error handling', () => {
       response: { data: { detail: 'Custom server error' } },
     });
     render(<FetchTab />, { wrapper: makeWrapper() });
-    await fillAndSubmit();
+    await navigateToStep3AndFill();
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Custom server error');
@@ -109,7 +122,7 @@ describe('FetchTab error handling', () => {
       response: { data: { detail: [{}] } },
     });
     render(<FetchTab />, { wrapper: makeWrapper() });
-    await fillAndSubmit();
+    await navigateToStep3AndFill();
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Validation error');
@@ -119,7 +132,7 @@ describe('FetchTab error handling', () => {
   it('handles completely missing response object', async () => {
     mockPost.mockRejectedValueOnce(new Error('Network error'));
     render(<FetchTab />, { wrapper: makeWrapper() });
-    await fillAndSubmit();
+    await navigateToStep3AndFill();
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to create fetch job');

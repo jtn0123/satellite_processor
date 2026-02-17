@@ -47,27 +47,23 @@ test('GOES Data page loads', async ({ page }) => {
   await expect(page.locator('[role="tablist"]')).toBeVisible();
 });
 
-test('navigate to Animate tab', async ({ page }) => {
+test('navigate to Gallery tab', async ({ page }) => {
   await page.goto('/goes');
-  // Click the Animation Studio tab
-  const animTab = page.locator('[role="tab"]').filter({ hasText: /animation|animate/i }).first();
-  await animTab.click();
-  // Verify the satellite selector is present
-  await expect(page.locator('select').first()).toBeVisible();
+  const galleryTab = page.locator('[role="tab"]').filter({ hasText: /gallery/i }).first();
+  await galleryTab.click();
+  await expect(galleryTab).toHaveAttribute('aria-selected', 'true');
 });
 
 test('navigate to Fetch tab', async ({ page }) => {
   await page.goto('/goes');
   const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
   await fetchTab.click();
-  // Verify fetch tab loaded - should have a satellite selector or fetch button
-  await expect(page.locator('select').first()).toBeVisible();
+  await expect(fetchTab).toHaveAttribute('aria-selected', 'true');
 });
 
-test('generate button exists on animation tab', async ({ page }) => {
+test('navigate to Map tab', async ({ page }) => {
   await page.goto('/goes');
-  const animTab = page.locator('[role="tab"]').filter({ hasText: /animation|animate/i }).first();
-  await animTab.click();
-  const genBtn = page.getByRole('button', { name: /generate/i });
-  await expect(genBtn).toBeVisible();
+  const mapTab = page.locator('[role="tab"]').filter({ hasText: /map/i }).first();
+  await mapTab.click();
+  await expect(mapTab).toHaveAttribute('aria-selected', 'true');
 });

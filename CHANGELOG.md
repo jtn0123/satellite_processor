@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/jtn0123/satellite_processor/compare/v1.2.0...v1.3.0) (2026-02-17)
+
+
+### Features
+
+* add Quick Compare floating bar, mobile bottom sheet filters, swipe tabs, and pull-to-refresh ([#125](https://github.com/jtn0123/satellite_processor/issues/125)) ([6232019](https://github.com/jtn0123/satellite_processor/commit/6232019cc198ac08a433790a355b00b4b8846f6c))
+
 # [1.2.0](https://github.com/jtn0123/satellite_processor/compare/v1.1.1...v1.2.0) (2026-02-17)
 
 

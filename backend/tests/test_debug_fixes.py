@@ -1,10 +1,10 @@
 """Tests for debug run bug fixes."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from app.db.models import Job, AppSetting
-from app.services.stale_jobs import mark_stale_pending_jobs, cleanup_all_stale
-from app.services.gap_detector import get_coverage_stats
+from app.db.models import Job
+from app.services.stale_jobs import cleanup_all_stale, mark_stale_pending_jobs
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ async def test_settings_put_and_get(client):
 @pytest.mark.asyncio
 async def test_cleanup_stale_pending_jobs(db):
     """Bug 2: Pending jobs with no task_id older than 1 hour should be failed."""
-    old_time = datetime.now(timezone.utc) - timedelta(hours=2)
+    old_time = datetime.now(UTC) - timedelta(hours=2)
     job = Job(
         id="stale-pending-test",
         status="pending",

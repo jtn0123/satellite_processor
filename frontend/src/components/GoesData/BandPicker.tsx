@@ -4,6 +4,8 @@ import { BAND_INFO } from '../../constants/bands';
 interface BandPickerProps {
   value: string;
   onChange: (band: string) => void;
+  satellite?: string;
+  sector?: string;
   disabled?: boolean;
 }
 

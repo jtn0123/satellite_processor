@@ -289,6 +289,7 @@ export default function FetchTab() {
               value={sector}
               onChange={setSector}
               sectors={products?.sectors ?? []}
+              satellite={satellite}
             />
           </div>
 
@@ -333,7 +334,7 @@ export default function FetchTab() {
           {imageType === 'single' && (
             <div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Band</h3>
-              <BandPicker value={band} onChange={setBand} />
+              <BandPicker value={band} onChange={setBand} satellite={satellite} sector={sector} />
             </div>
           )}
 

@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/jtn0123/satellite_processor/compare/v1.0.2...v1.1.0) (2026-02-17)
+
+
+### Features
+
+* GOES fetch overhaul — catalog API, 3-step wizard, band/sector pickers, progress bar ([#123](https://github.com/jtn0123/satellite_processor/issues/123)) ([0b5eaa0](https://github.com/jtn0123/satellite_processor/commit/0b5eaa08ba9134dd388ce91e8ac147d5a33a0f66))
+
 ## [1.0.2](https://github.com/jtn0123/satellite_processor/compare/v1.0.1...v1.0.2) (2026-02-17)
 
 

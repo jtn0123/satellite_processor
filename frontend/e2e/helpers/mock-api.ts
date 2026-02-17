@@ -53,6 +53,8 @@ export async function handleApiRoute(route: Route): Promise<void> {
         ],
       },
     }));
+  if (url.includes('/api/goes/stats'))
+    return void (await route.fulfill({ json: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } }));
   if (url.includes('/api/goes/frames/stats'))
     return void (await route.fulfill({ json: { total_frames: 50, total_size_bytes: 2500000, by_satellite: {}, by_band: {} } }));
   if (url.includes('/api/goes/frames/preview-range'))

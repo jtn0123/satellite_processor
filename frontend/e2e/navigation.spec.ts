@@ -32,10 +32,11 @@ test('shows 404 for unknown routes', async ({ page }) => {
 
 test('sidebar links work', async ({ page }) => {
   await page.goto('/');
-  await page.click('text=Upload');
+  const sidebar = page.locator('aside');
+  await sidebar.getByText('Upload').click();
   await expect(page).toHaveURL(/upload/);
-  await page.click('text=Jobs');
+  await sidebar.getByText('Jobs').click();
   await expect(page).toHaveURL(/jobs/);
-  await page.click('text=Dashboard');
+  await sidebar.getByText('Dashboard').click();
   await expect(page).toHaveURL('/');
 });

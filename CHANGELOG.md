@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/jtn0123/satellite_processor/compare/v1.1.0...v1.1.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* prevent crash from changelog endpoint IndexError in Docker ([2542c08](https://github.com/jtn0123/satellite_processor/commit/2542c08e3a9ebe892156e10e98ec1e9dc65d6689))
+
 # [1.1.0](https://github.com/jtn0123/satellite_processor/compare/v1.0.2...v1.1.0) (2026-02-17)
 
 

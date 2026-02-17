@@ -398,6 +398,7 @@ async def backfill_gaps(
     job_id = str(uuid.uuid4())
     job = Job(
         id=job_id,
+        name=f"{payload.satellite} {payload.sector} {payload.band} Backfill",
         status="pending",
         job_type="goes_backfill",
         params={
@@ -463,6 +464,26 @@ async def preview_frame(
         raise APIError(404, "not_found", "No frame found near the requested time")
 
     return Response(content=png_bytes, media_type="image/png")
+
+
+@router.get("/band-availability")
+@limiter.limit("30/minute")
+async def band_availability(
+    request: Request,
+    satellite: str = Query("GOES-16"),
+    sector: str = Query("CONUS"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return frame count per band for the given satellite/sector."""
+    from sqlalchemy import func
+
+    result = await db.execute(
+        select(GoesFrame.band, func.count())
+        .where(GoesFrame.satellite == satellite, GoesFrame.sector == sector)
+        .group_by(GoesFrame.band)
+    )
+    counts = {row[0]: row[1] for row in result.all()}
+    return {"counts": counts}
 
 
 @router.get("/latest")
@@ -539,7 +560,7 @@ async def create_composite(
     composite_id = str(uuid.uuid4())
     job_id = str(uuid.uuid4())
 
-    job = Job(id=job_id, status="pending", job_type="composite")
+    job = Job(id=job_id, name=f"{satellite} {sector} {recipe} Composite", status="pending", job_type="composite")
     db.add(job)
 
     composite = Composite(

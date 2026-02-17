@@ -48,8 +48,8 @@ from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 logger = logging.getLogger(__name__)
 
 # Paths that skip API key auth
-AUTH_SKIP_PATHS = {"/api/health", "/api/metrics", "/docs", "/redoc", "/openapi.json"}
-AUTH_SKIP_PREFIXES = ("/api/shared/",)
+AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
+AUTH_SKIP_PREFIXES = ("/api/shared/", "/api/health")
 
 
 async def _stale_job_checker():

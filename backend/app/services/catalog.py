@@ -87,7 +87,7 @@ def _is_newer_scan(scan_time: datetime, current_latest: dict[str, Any] | None) -
     """Check whether scan_time is newer than the current latest entry."""
     if current_latest is None:
         return True
-    existing = datetime.fromisoformat(current_latest["scan_time"]).replace(tzinfo=UTC)
+    existing = _normalize_date(datetime.fromisoformat(current_latest["scan_time"]))
     return scan_time > existing
 
 
@@ -111,7 +111,7 @@ def catalog_latest(
         try:
             entries = _collect_matching_entries(s3, bucket, prefix, sector, band)
             for entry in entries:
-                scan_time = datetime.fromisoformat(entry["scan_time"]).replace(tzinfo=UTC)
+                scan_time = _normalize_date(datetime.fromisoformat(entry["scan_time"]))
                 if _is_newer_scan(scan_time, latest):
                     latest = {
                         **entry,

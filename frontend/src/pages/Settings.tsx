@@ -24,8 +24,8 @@ function StorageSection() {
 
   if (!storage) return null;
 
-  const satEntries = Object.entries(storage.by_satellite);
-  const bandEntries = Object.entries(storage.by_band);
+  const satEntries = Object.entries(storage.by_satellite ?? {});
+  const bandEntries = Object.entries(storage.by_band ?? {});
   const maxSatSize = Math.max(...satEntries.map(([, v]) => v.size), 1);
   const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400', 'bg-pink-400'];
 

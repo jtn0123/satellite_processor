@@ -51,20 +51,8 @@ export default function UploadZone() {
 
   return (
     <div className="space-y-4">
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.multiple = true;
-            input.accept = '.png,.tif,.tiff,.jpg,.jpeg';
-            input.onchange = () => input.files && handleFiles(input.files);
-            input.click();
-          }
-        }}
+      <button
+        type="button"
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -83,7 +71,7 @@ export default function UploadZone() {
           input.onchange = () => input.files && handleFiles(input.files);
           input.click();
         }}
-        className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
+        className={`w-full border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
           dragging
             ? 'border-primary bg-primary/5'
             : 'border-gray-200 dark:border-slate-700 hover:border-slate-500 bg-gray-100/50 dark:bg-slate-800/50'
@@ -94,7 +82,7 @@ export default function UploadZone() {
           Drag & drop satellite images here, or click to browse
         </p>
         <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">PNG, TIFF, JPEG supported · Max file size: 500 MB</p>
-      </div>
+      </button>
 
       {uploads.length > 0 && (
         <div className="space-y-2">

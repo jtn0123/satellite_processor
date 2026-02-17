@@ -86,6 +86,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
     <dialog
       open
       aria-label="Image viewer"
+      tabIndex={0}
       className="fixed inset-0 z-50 bg-black/90 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -128,6 +129,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
 
         <button
           type="button"
+          role="application"
           aria-label="Pan and zoom area"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}

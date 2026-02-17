@@ -85,7 +85,7 @@ jobs:
   deploy:
     name: Deploy to Portainer
     needs: build-and-push
-    runs-on: [self-hosted, ci]
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/release'
 
     steps:

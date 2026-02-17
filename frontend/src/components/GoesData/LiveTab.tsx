@@ -66,12 +66,12 @@ export default function LiveTab() {
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
+    if (document.fullscreenElement) {
       document.exitFullscreen();
       setIsFullscreen(false);
+    } else {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
     }
   }, []);
 
@@ -155,25 +155,27 @@ export default function LiveTab() {
 
         {/* Image */}
         <div className={`flex items-center justify-center ${isFullscreen ? 'h-[calc(100vh-52px)]' : 'min-h-[400px]'} bg-black`}>
-          {isLoading ? (
+          {isLoading && (
             <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-slate-400">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               <span className="text-sm">Loading latest frame...</span>
             </div>
-          ) : isError ? (
+          )}
+          {!isLoading && isError && (
             <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500">
               <Satellite className="w-12 h-12" />
               <span className="text-sm">No frames available for this combination</span>
               <span className="text-xs text-gray-400 dark:text-slate-600">Try fetching data first from the Fetch tab</span>
             </div>
-          ) : imageUrl ? (
+          )}
+          {!isLoading && !isError && imageUrl && (
             <img
               src={imageUrl}
               alt={`${satellite} ${band} ${sector}`}
               className="max-w-full max-h-full object-contain"
               loading="lazy"
             />
-          ) : null}
+          )}
         </div>
 
         {/* Timestamp overlay */}

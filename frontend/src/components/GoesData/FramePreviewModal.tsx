@@ -181,9 +181,9 @@ export default function FramePreviewModal({
           <div className="flex items-center gap-4 text-sm">
             <Crop className="w-4 h-4 text-primary" />
             <span className="text-gray-600 dark:text-slate-300">
-              X: <span className="text-gray-900 dark:text-white font-mono">{cropRect.x}</span> &nbsp;
-              Y: <span className="text-gray-900 dark:text-white font-mono">{cropRect.y}</span> &nbsp;
-              W: <span className="text-gray-900 dark:text-white font-mono">{cropRect.w}</span> &nbsp;
+              X: <span className="text-gray-900 dark:text-white font-mono">{cropRect.x}</span>{' '}
+              Y: <span className="text-gray-900 dark:text-white font-mono">{cropRect.y}</span>{' '}
+              W: <span className="text-gray-900 dark:text-white font-mono">{cropRect.w}</span>{' '}
               H: <span className="text-gray-900 dark:text-white font-mono">{cropRect.h}</span>
             </span>
             <button type="button"

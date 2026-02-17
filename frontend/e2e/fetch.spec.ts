@@ -22,7 +22,7 @@ test('navigate to GOES fetch tab and see wizard', async ({ page }) => {
   // Wizard step indicators should be visible
   await expect(page.getByText('Source')).toBeVisible();
   await expect(page.getByText('What')).toBeVisible();
-  await expect(page.getByText('When')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'When' })).toBeVisible();
 });
 
 test('satellite cards are shown on step 1', async ({ page }) => {
@@ -49,7 +49,7 @@ test('navigate through wizard steps', async ({ page }) => {
   await expect(page.getByText('What to Fetch')).toBeVisible();
   // Step 2 → Step 3
   await page.getByText('Next').click();
-  await expect(page.getByText('When')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'When' })).toBeVisible();
 });
 
 test('image type toggle works', async ({ page }) => {

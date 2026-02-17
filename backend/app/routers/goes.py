@@ -2,7 +2,7 @@
 
 import asyncio
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import Response
@@ -19,7 +19,6 @@ from ..models.goes import (
     GoesBackfillRequest,
     GoesFetchRequest,
     GoesFetchResponse,
-    GoesProductsResponse,
 )
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter

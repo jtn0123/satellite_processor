@@ -619,7 +619,8 @@ def fetch_composite_data(self, job_id: str, params: dict):
 
                 session = _get_sync_db()
                 try:
-                    from ..db.models import Composite, Job as JobModel
+                    from ..db.models import Composite
+                    from ..db.models import Job as JobModel
                     comp_job = JobModel(id=comp_job_id, status="pending", job_type="composite")
                     session.add(comp_job)
                     from ..routers.goes import COMPOSITE_RECIPES

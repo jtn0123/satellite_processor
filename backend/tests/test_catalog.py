@@ -1,8 +1,8 @@
 """Tests for catalog API, enhanced products, and fetch-composite endpoints."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from datetime import datetime, UTC
 
 
 @pytest.mark.asyncio

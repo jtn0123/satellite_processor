@@ -7,8 +7,6 @@ from typing import Any
 
 from ..services.goes_fetcher import (
     SATELLITE_BUCKETS,
-    SECTOR_PRODUCTS,
-    VALID_BANDS,
     _build_s3_prefix,
     _get_s3_client,
     _matches_sector_and_band,

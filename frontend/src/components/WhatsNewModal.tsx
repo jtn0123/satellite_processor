@@ -25,9 +25,9 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
   useEffect(() => {
     let cancelled = false;
     fetch('/api/health/changelog')
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then((data: Release[]) => {
-        if (!cancelled) setReleases(data);
+        if (!cancelled && Array.isArray(data)) setReleases(data);
       })
       .catch(() => {
         /* fallback to empty */

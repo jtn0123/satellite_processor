@@ -21,7 +21,9 @@ def _read_version() -> str:
     env_ver = os.environ.get("BUILD_VERSION", "")
     if env_ver:
         return env_ver
-    for candidate in [Path(__file__).resolve().parents[4] / "VERSION", Path("VERSION")]:
+    parents = Path(__file__).resolve().parents
+    repo_root = parents[min(4, len(parents) - 1)]
+    for candidate in [repo_root / "VERSION", Path("VERSION")]:
         if candidate.is_file():
             return candidate.read_text().strip()
     return "0.0.0"
@@ -36,7 +38,9 @@ _changelog_cache: list | None = None
 
 def _find_changelog() -> Path | None:
     """Locate CHANGELOG.md next to VERSION file."""
-    for candidate in [Path(__file__).resolve().parents[4] / "CHANGELOG.md", Path("CHANGELOG.md")]:
+    parents = Path(__file__).resolve().parents
+    repo_root = parents[min(4, len(parents) - 1)]
+    for candidate in [repo_root / "CHANGELOG.md", Path("CHANGELOG.md")]:
         if candidate.is_file():
             return candidate
     return None

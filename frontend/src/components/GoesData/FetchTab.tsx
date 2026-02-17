@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   Zap,
   Satellite,
+  Save,
+  ChevronDown,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -15,6 +17,8 @@ import BandPicker from './BandPicker';
 import SectorPicker from './SectorPicker';
 import FetchProgressBar from './FetchProgressBar';
 import type { SatelliteAvailability } from './types';
+
+const PresetsTab = lazy(() => import('./PresetsTab'));
 
 type ImageType = 'single' | 'true_color' | 'natural_color';
 
@@ -61,6 +65,7 @@ export default function FetchTab() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<EnhancedProduct>({
     queryKey: ['goes-products'],
@@ -500,6 +505,27 @@ export default function FetchTab() {
 
       {/* Progress bar */}
       <FetchProgressBar />
+
+      {/* Saved Presets (collapsible) */}
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+        <button
+          onClick={() => setShowPresets((p) => !p)}
+          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Save className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Saved Presets</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showPresets ? 'rotate-180' : ''}`} />
+        </button>
+        {showPresets && (
+          <div className="px-6 pb-6 border-t border-gray-200 dark:border-slate-800">
+            <Suspense fallback={<div className="h-24 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse mt-4" />}>
+              <PresetsTab />
+            </Suspense>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,41 +1,29 @@
 import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   Satellite,
   Download,
   Grid3X3,
-  Trash2,
-  BarChart3,
-  Library,
-  Film,
-  Save,
   Radio,
   Map,
-  Layers,
   GalleryHorizontalEnd,
   Sparkles,
+  LayoutDashboard,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
 import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
 import Skeleton from '../components/GoesData/Skeleton';
 import Breadcrumb, { type BreadcrumbSegment } from '../components/GoesData/Breadcrumb';
-import api from '../api/client';
 
+const OverviewTab = lazy(() => import('../components/GoesData/OverviewTab'));
 const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
 const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
-const CollectionsTab = lazy(() => import('../components/GoesData/CollectionsTab'));
-const AnimationStudioTab = lazy(() => import('../components/GoesData/AnimationStudioTab'));
 const AnimateTab = lazy(() => import('../components/Animation/AnimateTab'));
-const StatsTab = lazy(() => import('../components/GoesData/StatsTab'));
-const PresetsTab = lazy(() => import('../components/GoesData/PresetsTab'));
-const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
 const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
 const MapTab = lazy(() => import('../components/GoesData/MapTab'));
-const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
 const FrameGallery = lazy(() => import('../components/GoesData/FrameGallery'));
 
-type TabId = 'fetch' | 'browse' | 'collections' | 'stats' | 'animation' | 'animate' | 'presets' | 'cleanup' | 'live' | 'map' | 'composites' | 'gallery';
+type TabId = 'overview' | 'browse' | 'gallery' | 'live' | 'fetch' | 'animate' | 'map';
 
 interface TabDef {
   id: TabId;
@@ -43,58 +31,18 @@ interface TabDef {
   icon: React.ReactNode;
 }
 
-interface TabGroup {
-  label: string;
-  tabs: TabDef[];
-}
-
-const tabGroups: TabGroup[] = [
-  {
-    label: 'Data',
-    tabs: [
-      { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
-      { id: 'gallery', label: 'Gallery', icon: <GalleryHorizontalEnd className="w-4 h-4" /> },
-      { id: 'live', label: 'Live', icon: <Radio className="w-4 h-4" /> },
-      { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
-      { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
-    ],
-  },
-  {
-    label: 'Tools',
-    tabs: [
-      { id: 'composites', label: 'Composites', icon: <Layers className="w-4 h-4" /> },
-      { id: 'animate', label: 'Animate', icon: <Sparkles className="w-4 h-4" /> },
-      { id: 'animation', label: 'Animation', icon: <Film className="w-4 h-4" /> },
-    ],
-  },
-  {
-    label: 'Manage',
-    tabs: [
-      { id: 'collections', label: 'Collections', icon: <Library className="w-4 h-4" /> },
-      { id: 'presets', label: 'Presets', icon: <Save className="w-4 h-4" /> },
-      { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
-      { id: 'cleanup', label: 'Cleanup', icon: <Trash2 className="w-4 h-4" /> },
-    ],
-  },
+const tabs: TabDef[] = [
+  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+  { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
+  { id: 'gallery', label: 'Gallery', icon: <GalleryHorizontalEnd className="w-4 h-4" /> },
+  { id: 'live', label: 'Live', icon: <Radio className="w-4 h-4" /> },
+  { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
+  { id: 'animate', label: 'Animate', icon: <Sparkles className="w-4 h-4" /> },
+  { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
 ];
 
-const tabLabels: Record<TabId, string> = {
-  fetch: 'Fetch',
-  browse: 'Browse',
-  collections: 'Collections',
-  animate: 'Animate',
-  animation: 'Animation',
-  presets: 'Presets',
-  stats: 'Stats',
-  cleanup: 'Cleanup',
-  gallery: 'Gallery',
-  live: 'Live',
-  map: 'Map',
-  composites: 'Composites',
-};
-
-// Flat list of all tab IDs in order for keyboard shortcut mapping
-const allTabIds: TabId[] = tabGroups.flatMap((g) => g.tabs.map((t) => t.id));
+const tabLabels: Record<TabId, string> = Object.fromEntries(tabs.map((t) => [t.id, t.label])) as Record<TabId, string>;
+const allTabIds: TabId[] = tabs.map((t) => t.id);
 
 function TabLoadingFallback() {
   return (
@@ -108,55 +56,16 @@ function TabLoadingFallback() {
   );
 }
 
-function WelcomeCard({ onFetchClick }: Readonly<{ onFetchClick: () => void }>) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-8">
-      <div className="bg-gray-100/50 dark:bg-slate-800/50 rounded-full p-6 mb-6">
-        <Satellite className="w-16 h-16 text-primary" />
-      </div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome to GOES Data Manager</h2>
-      <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-8">
-        Start by fetching your first satellite frames. You can download GOES-16 and GOES-18
-        imagery across multiple bands and sectors.
-      </p>
-      <button
-        onClick={onFetchClick}
-        className="flex items-center gap-2 px-6 py-3 btn-primary-mix text-gray-900 dark:text-white rounded-xl transition-colors font-medium text-lg shadow-lg shadow-primary/20 btn-interactive"
-      >
-        <Download className="w-5 h-5" />
-        Fetch Data
-      </button>
-      <div className="flex gap-6 mt-8 text-sm text-gray-400 dark:text-slate-500">
-        <span>16 spectral bands</span>
-        <span>·</span>
-        <span>Multiple sectors</span>
-        <span>·</span>
-        <span>Animation studio</span>
-      </div>
-    </div>
-  );
-}
-
 export default function GoesData() {
   usePageTitle('GOES Data');
-  const [activeTab, setActiveTab] = useState<TabId>('browse');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [subView, setSubView] = useState<string | null>(null);
 
-  // Check if any frames exist for smart landing
-  const { data: frameCheck, isLoading: frameCheckLoading } = useQuery<{ items: unknown[]; total: number }>({
-    queryKey: ['goes-frames-check'],
-    queryFn: () => api.get('/goes/frames', { params: { limit: 1 } }).then((r) => r.data),
-    staleTime: 60_000,
-  });
-
-  const hasFrames = frameCheck ? frameCheck.total > 0 : null;
-  const showWelcome = !frameCheckLoading && hasFrames === false && activeTab === 'browse';
-
-  // Keyboard shortcuts: 1-0 switch tabs
+  // Keyboard shortcuts: 1-7 switch tabs
   const shortcuts = useMemo(() => {
     const map: Record<string, () => void> = {};
     allTabIds.forEach((id, i) => {
-      const key = i < 9 ? String(i + 1) : '0';
+      const key = String(i + 1);
       map[key] = () => { setActiveTab(id); setSubView(null); };
     });
     return map;
@@ -203,18 +112,13 @@ export default function GoesData() {
 
   const renderTab = useCallback(() => {
     const tabMap: Record<TabId, { component: React.ReactNode; name: string }> = {
-      fetch: { component: <FetchTab />, name: 'Fetch' },
+      overview: { component: <OverviewTab />, name: 'Overview' },
       browse: { component: <BrowseTab />, name: 'Browse' },
       gallery: { component: <FrameGallery />, name: 'Gallery' },
-      collections: { component: <CollectionsTab />, name: 'Collections' },
-      animate: { component: <AnimateTab />, name: 'Animate' },
-      animation: { component: <AnimationStudioTab />, name: 'Animation Studio' },
-      presets: { component: <PresetsTab />, name: 'Presets' },
-      stats: { component: <StatsTab />, name: 'Stats' },
-      cleanup: { component: <CleanupTab />, name: 'Cleanup' },
       live: { component: <LiveTab />, name: 'Live' },
+      fetch: { component: <FetchTab />, name: 'Fetch' },
+      animate: { component: <AnimateTab />, name: 'Animate' },
       map: { component: <MapTab />, name: 'Map' },
-      composites: { component: <CompositesTab />, name: 'Composites' },
     };
 
     const tab = tabMap[activeTab];
@@ -239,40 +143,30 @@ export default function GoesData() {
         </div>
       </div>
 
-      {/* Tab bar - grouped with dividers */}
+      {/* Tab bar — flat, no groups */}
       <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
-        {tabGroups.map((group, gi) => (
-          <div key={group.label} className="flex items-center gap-1">
-            {gi > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1 shrink-0" />}
-            <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-slate-600 px-1 shrink-0">{group.label}</span>
-            {group.tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setSubView(null); }}
-                role="tab"
-                aria-label={`${tab.label} tab`}
-                aria-selected={activeTab === tab.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20 glow-primary'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setSubView(null); }}
+            role="tab"
+            aria-label={`${tab.label} tab`}
+            aria-selected={activeTab === tab.id}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+              activeTab === tab.id
+                ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20 glow-primary'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
         ))}
       </div>
 
       {/* Tab content */}
       <div key={activeTab} className="animate-fade-in">
-        {showWelcome ? (
-          <WelcomeCard onFetchClick={() => setActiveTab('fetch')} />
-        ) : (
-          renderTab()
-        )}
+        {renderTab()}
       </div>
     </div>
   );

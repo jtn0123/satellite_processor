@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -6,6 +6,8 @@ import SystemMonitor from '../components/System/SystemMonitor';
 import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive } from 'lucide-react';
 import api from '../api/client';
 import { formatBytes } from '../utils/format';
+
+const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
 
 interface StorageBreakdown {
   by_satellite: Record<string, { count: number; size: number }>;
@@ -237,6 +239,14 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
       </div>
 
       <StorageSection />
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Storage Management</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Configure cleanup rules to automatically manage disk space.</p>
+        <Suspense fallback={<div className="h-32 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />}>
+          <CleanupTab />
+        </Suspense>
+      </div>
 
       <div>
         <h2 className="text-lg font-semibold mb-4">System Resources</h2>

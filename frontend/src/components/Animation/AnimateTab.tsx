@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Play, Loader2, Clock, Trash2, Download } from 'lucide-react';
+import { Play, Loader2, Clock, Trash2, Download, Film, Sparkles } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { formatBytes } from '../GoesData/utils';
@@ -12,6 +12,8 @@ import type { AnimationConfig, AnimationPreset, PreviewRangeResponse } from './t
 import type { PaginatedAnimations } from '../GoesData/types';
 import { SATELLITES, SECTORS, BANDS, QUICK_HOURS } from './types';
 import { extractArray } from '../../utils/safeData';
+
+const AnimationStudioTab = lazy(() => import('../GoesData/AnimationStudioTab'));
 
 const DEFAULT_CONFIG: AnimationConfig = {
   satellite: 'GOES-16',
@@ -30,6 +32,7 @@ const DEFAULT_CONFIG: AnimationConfig = {
 
 export default function AnimateTab() {
   const queryClient = useQueryClient();
+  const [mode, setMode] = useState<'quick' | 'studio'>('quick');
   const [config, setConfig] = useState<AnimationConfig>({ ...DEFAULT_CONFIG });
 
   const updateConfig = useCallback((updates: Partial<AnimationConfig>) => {
@@ -120,8 +123,53 @@ export default function AnimateTab() {
   const captureInterval = previewData?.capture_interval_minutes ?? 10;
   const animationItems = extractArray<PaginatedAnimations['items'][number]>(animations);
 
+  if (mode === 'studio') {
+    return (
+      <div className="space-y-6">
+        {/* Mode Toggle */}
+        <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
+          <button
+            onClick={() => setMode('quick')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800"
+          >
+            <Sparkles className="w-4 h-4" />
+            Quick Animate
+          </button>
+          <button
+            onClick={() => setMode('studio')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20"
+          >
+            <Film className="w-4 h-4" />
+            Animation Studio
+          </button>
+        </div>
+        <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />}>
+          <AnimationStudioTab />
+        </Suspense>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Mode Toggle */}
+      <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
+        <button
+          onClick={() => setMode('quick')}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20"
+        >
+          <Sparkles className="w-4 h-4" />
+          Quick Animate
+        </button>
+        <button
+          onClick={() => setMode('studio')}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800"
+        >
+          <Film className="w-4 h-4" />
+          Animation Studio
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Selection & Preview */}
         <div className="lg:col-span-2 space-y-4">

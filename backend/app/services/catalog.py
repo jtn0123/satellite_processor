@@ -123,3 +123,37 @@ def catalog_latest(
             logger.warning("Failed listing %s/%s", bucket, prefix, exc_info=True)
 
     return latest
+
+
+def catalog_available(satellite: str) -> dict[str, Any]:
+    """Check which sectors have recent data (last 2 hours) on S3."""
+    from ..services.goes_fetcher import SECTOR_PRODUCTS as _SECTOR_PRODUCTS
+
+    bucket = SATELLITE_BUCKETS.get(satellite)
+    if not bucket:
+        raise ValueError(f"Unknown satellite: {satellite}")
+    s3 = _get_s3_client()
+    now = datetime.now(UTC)
+
+    available_sectors: list[str] = []
+    for sector in _SECTOR_PRODUCTS:
+        found = False
+        for hours_ago in range(2):
+            dt = now - timedelta(hours=hours_ago)
+            dt = dt.replace(minute=0, second=0, microsecond=0)
+            prefix = _build_s3_prefix(satellite, sector, "C02", dt)
+            try:
+                resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1)
+                if resp.get("Contents"):
+                    found = True
+                    break
+            except Exception:
+                logger.warning("Failed checking availability %s/%s", bucket, prefix, exc_info=True)
+        if found:
+            available_sectors.append(sector)
+
+    return {
+        "satellite": satellite,
+        "available_sectors": available_sectors,
+        "checked_at": now.isoformat(),
+    }

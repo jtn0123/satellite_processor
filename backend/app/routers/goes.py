@@ -162,6 +162,63 @@ async def catalog_latest(
     return result
 
 
+@router.get("/catalog/available")
+@limiter.limit("10/minute")
+async def catalog_available(
+    request: Request,
+    satellite: str = Query("GOES-19"),
+):
+    """Check which sectors have recent data (last 2 hours) on S3."""
+    from ..services.catalog import catalog_available as _catalog_available
+
+    cache_key = make_cache_key(f"catalog-available:{satellite}")
+
+    async def _fetch():
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: _catalog_available(satellite))
+
+    return await get_cached(cache_key, ttl=120, fetch_fn=_fetch)
+
+
+@router.get("/preview/band-samples")
+@limiter.limit("10/minute")
+async def band_sample_thumbnails(
+    request: Request,
+    satellite: str = Query("GOES-19"),
+    sector: str = Query("CONUS"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return thumbnail URLs for the latest frame of each band."""
+
+    cache_key = make_cache_key(f"band-samples:{satellite}:{sector}")
+
+    async def _fetch():
+        results = {}
+        for band_id in VALID_BANDS:
+            result = await db.execute(
+                select(GoesFrame.id, GoesFrame.thumbnail_path)
+                .where(
+                    GoesFrame.satellite == satellite,
+                    GoesFrame.sector == sector,
+                    GoesFrame.band == band_id,
+                )
+                .order_by(GoesFrame.capture_time.desc())
+                .limit(1)
+            )
+            row = result.first()
+            if row and row.thumbnail_path:
+                results[band_id] = f"/api/goes/frames/{row.id}/thumbnail"
+            else:
+                results[band_id] = None
+        return {
+            "satellite": satellite,
+            "sector": sector,
+            "thumbnails": results,
+        }
+
+    return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
+
+
 # ── Fetch composite endpoint ──────────────────────────────────────
 
 @router.post("/fetch-composite", response_model=GoesFetchResponse)

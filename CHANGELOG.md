@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/jtn0123/satellite_processor/compare/v1.0.1...v1.0.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* resolve all remaining SonarQube frontend issues ([#120](https://github.com/jtn0123/satellite_processor/issues/120)) ([a746bc2](https://github.com/jtn0123/satellite_processor/commit/a746bc208c3ab38087caef6c64847af696a92d0d))
+
 ## [1.0.1](https://github.com/jtn0123/satellite_processor/compare/v1.0.0...v1.0.1) (2026-02-16)
 
 

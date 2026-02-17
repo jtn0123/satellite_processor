@@ -21,6 +21,7 @@ beforeEach(() => {
 
 function mockFetchSuccess(data = MOCK_CHANGELOG) {
   globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
     json: () => Promise.resolve(data),
   });
 }

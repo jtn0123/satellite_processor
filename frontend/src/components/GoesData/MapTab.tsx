@@ -44,7 +44,7 @@ const SECTOR_BOUNDS: Record<string, Record<string, LatLngBoundsExpression>> = {
 };
 
 export default function MapTab() {
-  const [satellite, setSatellite] = useState('GOES-16');
+  const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
   const [opacity, setOpacity] = useState(0.7);

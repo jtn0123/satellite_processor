@@ -92,6 +92,15 @@ export default function LiveTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only set default once when products loads
   }, [products]);
 
+  // Dynamic sector availability
+  const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
+    queryKey: ['goes-available', satellite],
+    queryFn: () => api.get('/goes/catalog/available', { params: { satellite } }).then((r) => r.data),
+    enabled: !!satellite,
+    staleTime: 120000,
+    retry: 1,
+  });
+
   // Your Latest (local frame)
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
@@ -119,9 +128,9 @@ export default function LiveTab() {
     if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time) {
       lastAutoFetchTime.current = catalogLatest.scan_time;
       api.post('/goes/fetch', {
-        satellite: catalogLatest.satellite || satellite,
-        sector: catalogLatest.sector || sector,
-        band: catalogLatest.band || band,
+        satellite: satellite || catalogLatest.satellite,
+        sector: sector || catalogLatest.sector,
+        band: band || catalogLatest.band,
         start_date: catalogLatest.scan_time,
         end_date: catalogLatest.scan_time,
       }).then(() => {
@@ -185,7 +194,10 @@ export default function LiveTab() {
           <label htmlFor="live-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
           <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)}
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors">
-            {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {(products?.sectors ?? []).map((s) => {
+              const unavailable = availability?.available_sectors && !availability.available_sectors.includes(s.id);
+              return <option key={s.id} value={s.id} disabled={!!unavailable}>{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
+            })}
           </select>
         </div>
         <div>
@@ -227,7 +239,7 @@ export default function LiveTab() {
       {freshnessInfo && freshnessInfo.behindMin > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-6 py-3 flex items-center gap-3">
           <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-sm text-amber-300">
+          <span className="text-sm text-amber-600 dark:text-amber-300">
             AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is <strong>{freshnessInfo.localAge}</strong>
             {freshnessInfo.behindMin > 0 && ` (${freshnessInfo.behindMin} min behind)`}
           </span>
@@ -258,8 +270,14 @@ export default function LiveTab() {
                 </div>
                 <button
                   onClick={() => {
-                    const switchTab = new CustomEvent('switch-tab', { detail: 'fetch' });
-                    globalThis.dispatchEvent(switchTab);
+                    globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
+                      detail: {
+                        satellite: catalogLatest?.satellite || satellite,
+                        sector: catalogLatest?.sector || sector,
+                        band: catalogLatest?.band || band,
+                      },
+                    }));
+                    globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
                 >
@@ -276,7 +294,7 @@ export default function LiveTab() {
         </div>
 
         {/* Your Latest */}
-        <div ref={containerRef} className={`bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
+        <div ref={containerRef} className={`relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
           <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -289,12 +307,12 @@ export default function LiveTab() {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => refetch()}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
               </button>
               <button onClick={toggleFullscreen}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>

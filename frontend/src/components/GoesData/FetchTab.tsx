@@ -2,16 +2,35 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
-  Search,
   AlertTriangle,
-  CheckCircle,
-  Clock,
   Info,
+  ChevronRight,
+  ChevronLeft,
+  Zap,
+  Satellite,
 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
-import { BAND_INFO } from '../../constants/bands';
-import type { Product, CoverageStats, SatelliteAvailability } from './types';
+import BandPicker from './BandPicker';
+import SectorPicker from './SectorPicker';
+import FetchProgressBar from './FetchProgressBar';
+import type { SatelliteAvailability } from './types';
+
+type ImageType = 'single' | 'true_color' | 'natural_color';
+
+interface EnhancedProduct {
+  satellites: string[];
+  satellite_availability: Record<string, SatelliteAvailability>;
+  sectors: Array<{ id: string; name: string; product: string; cadence_minutes?: number; typical_file_size_kb?: number }>;
+  bands: Array<{ id: string; description: string; wavelength_um?: number; common_name?: string; category?: string; use_case?: string }>;
+  default_satellite: string;
+}
+
+interface CatalogEntry {
+  scan_time: string;
+  size: number;
+  key: string;
+}
 
 function formatAvailRange(avail: SatelliteAvailability): string {
   const from = new Date(avail.available_from);
@@ -31,294 +50,456 @@ function isDateInRange(dateStr: string, avail: SatelliteAvailability): boolean {
   return true;
 }
 
+const STEPS = ['Source', 'What', 'When'] as const;
+
 export default function FetchTab() {
+  const [step, setStep] = useState(0);
   const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('FullDisk');
   const [band, setBand] = useState('C02');
+  const [imageType, setImageType] = useState<ImageType>('single');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const { data: products, isLoading: productsLoading, isError: productsError } = useQuery<Product>({
+  const { data: products, isLoading: productsLoading } = useQuery<EnhancedProduct>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
 
   const currentAvail = products?.satellite_availability?.[satellite];
+  const dateStr = startTime ? startTime.slice(0, 10) : undefined;
+
+  // Catalog query for Step 3
+  const { data: catalogData, isFetching: catalogFetching } = useQuery<CatalogEntry[]>({
+    queryKey: ['goes-catalog', satellite, sector, band, dateStr],
+    queryFn: () =>
+      api.get('/goes/catalog', { params: { satellite, sector, band, date: dateStr } }).then((r) => r.data),
+    enabled: step === 2 && !!dateStr,
+    staleTime: 300000,
+  });
 
   const dateWarning = useMemo(() => {
     if (!currentAvail) return null;
-    if (startTime && !isDateInRange(startTime, currentAvail)) {
+    if (startTime && !isDateInRange(startTime, currentAvail))
       return `Start time is outside ${satellite} availability (${formatAvailRange(currentAvail)})`;
-    }
-    if (endTime && !isDateInRange(endTime, currentAvail)) {
+    if (endTime && !isDateInRange(endTime, currentAvail))
       return `End time is outside ${satellite} availability (${formatAvailRange(currentAvail)})`;
-    }
     return null;
   }, [startTime, endTime, currentAvail, satellite]);
 
-  const {
-    data: gaps,
-    refetch: refetchGaps,
-    isFetching: gapsFetching,
-  } = useQuery<CoverageStats>({
-    queryKey: ['goes-gaps', satellite, band],
-    queryFn: () =>
-      api.get('/goes/gaps', { params: { satellite, band, expected_interval: 10 } }).then((r) => r.data),
-    enabled: false,
-  });
+  // Estimate
+  const sectorInfo = products?.sectors?.find((s) => s.id === sector);
+  const cadence = sectorInfo?.cadence_minutes ?? 10;
+  const fileSizeKb = sectorInfo?.typical_file_size_kb ?? 4000;
+  const bandCount = imageType === 'single' ? 1 : 3;
 
-  // Estimate frame count and fetch limit from settings
-  const { data: frameEstimate } = useQuery<{ count: number }>({
-    queryKey: ['frame-count', satellite, sector, band, startTime, endTime],
-    queryFn: () =>
-      api.get('/goes/frame-count', {
-        params: {
-          satellite, sector, band,
-          start_time: startTime.includes('Z') || startTime.includes('+') ? startTime : startTime + 'Z',
-          end_time: endTime.includes('Z') || endTime.includes('+') ? endTime : endTime + 'Z',
-        },
-      }).then((r) => r.data),
-    enabled: !!startTime && !!endTime && !dateWarning,
-    staleTime: 30_000,
-    retry: 1,
-  });
+  const estimate = useMemo(() => {
+    if (!startTime || !endTime) return null;
+    const startMs = new Date(startTime).getTime();
+    const endMs = new Date(endTime).getTime();
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+    const durationMin = (endMs - startMs) / 60000;
+    if (durationMin <= 0) return null;
+    const frames = Math.ceil(durationMin / cadence) * bandCount;
+    const sizeMb = ((frames * fileSizeKb) / 1000).toFixed(0);
+    return { frames, sizeMb };
+  }, [startTime, endTime, cadence, fileSizeKb, bandCount]);
 
-  const { data: appSettings } = useQuery<Record<string, unknown>>({
-    queryKey: ['settings'],
-    queryFn: () => api.get('/settings').then((r) => r.data),
-    staleTime: 60_000,
-  });
-
-  const frameLimit = Number(appSettings?.max_frames_per_fetch) || 200;
-
+  // Fetch mutations
   const fetchMutation = useMutation({
-    mutationFn: () =>
-      api.post('/goes/fetch', {
+    mutationFn: () => {
+      const ts = (v: string) => (v.includes('Z') || v.includes('+') ? v : v + 'Z');
+      if (imageType !== 'single') {
+        return api.post('/goes/fetch-composite', {
+          satellite, sector, recipe: imageType,
+          start_time: ts(startTime), end_time: ts(endTime),
+        }).then((r) => r.data);
+      }
+      return api.post('/goes/fetch', {
         satellite, sector, band,
-        start_time: startTime.includes('Z') || startTime.includes('+') ? startTime : startTime + 'Z',
-        end_time: endTime.includes('Z') || endTime.includes('+') ? endTime : endTime + 'Z',
-      }).then((r) => r.data),
-    onSuccess: (data) => showToast('success', `Fetch job created: ${data.job_id}`),
+        start_time: ts(startTime), end_time: ts(endTime),
+      }).then((r) => r.data);
+    },
+    onSuccess: (data) => {
+      showToast('success', `Fetch job created: ${data.job_id}`);
+      setShowConfirm(false);
+    },
     onError: (err: unknown) => {
       const detail = (err as { response?: { data?: { detail?: Array<{ msg?: string }> | string } } })?.response?.data?.detail;
       let msg = 'Failed to create fetch job';
-      if (Array.isArray(detail)) {
-        msg = detail[0]?.msg ?? 'Validation error';
-      } else if (typeof detail === 'string') {
-        msg = detail;
-      }
+      if (Array.isArray(detail)) msg = detail[0]?.msg ?? 'Validation error';
+      else if (typeof detail === 'string') msg = detail;
       showToast('error', msg.replace(/^Value error, /i, ''));
+      setShowConfirm(false);
     },
   });
 
-  const backfillMutation = useMutation({
-    mutationFn: () => api.post('/goes/backfill', { satellite, band, sector }).then((r) => r.data),
-    onSuccess: (data) => showToast('success', `Backfill job created: ${data.job_id}`),
-    onError: () => showToast('error', 'Failed to create backfill job'),
+  // Fetch latest
+  const fetchLatestMutation = useMutation({
+    mutationFn: () => {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 3600000);
+      if (imageType !== 'single') {
+        return api.post('/goes/fetch-composite', {
+          satellite, sector, recipe: imageType,
+          start_time: oneHourAgo.toISOString(), end_time: now.toISOString(),
+        }).then((r) => r.data);
+      }
+      return api.post('/goes/fetch', {
+        satellite, sector, band,
+        start_time: oneHourAgo.toISOString(), end_time: now.toISOString(),
+      }).then((r) => r.data);
+    },
+    onSuccess: (data) => showToast('success', `Fetching latest: ${data.job_id}`),
+    onError: () => showToast('error', 'Failed to fetch latest'),
   });
 
+  if (productsLoading) {
+    return (
+      <div className="space-y-4">
+        {['skel-source', 'skel-what', 'skel-when'].map((id) => (
+          <div key={id} className="h-24 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {productsLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={`prod-skel-${i}`} className="h-10 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-lg" />
-          ))}
+    <div className="space-y-4 pb-16">
+      {/* Fetch Latest button — always visible */}
+      <button
+        type="button"
+        onClick={() => fetchLatestMutation.mutate()}
+        disabled={fetchLatestMutation.isPending}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary rounded-xl transition-colors"
+      >
+        <Zap className="w-4 h-4" />
+        {fetchLatestMutation.isPending ? 'Fetching...' : 'Fetch Latest'}
+      </button>
+
+      {/* Step indicators */}
+      <div className="flex items-center justify-center gap-2 px-4">
+        {STEPS.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setStep(i)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              (() => {
+                if (i === step) return 'bg-primary/20 text-primary border border-primary/30';
+                if (i < step) return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                return 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700';
+              })()
+            }`}
+          >
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-current/10 text-[10px]">
+              {i < step ? '✓' : i + 1}
+            </span>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Step 1: Satellite */}
+      {step === 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Choose Satellite</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(products?.satellites ?? []).map((sat) => {
+              const avail = products?.satellite_availability?.[sat];
+              const selected = satellite === sat;
+              const isActive = avail?.status === 'active';
+              return (
+                <button
+                  key={sat}
+                  type="button"
+                  onClick={() => setSatellite(sat)}
+                  className={`text-left p-4 rounded-xl border transition-all ${
+                    selected
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                      : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Satellite className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+                      <span className="font-semibold text-gray-900 dark:text-white">{sat}</span>
+                    </div>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        isActive
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {isActive ? 'Active' : 'Historical'}
+                    </span>
+                  </div>
+                  {avail && (
+                    <>
+                      <div className="text-xs text-gray-500 dark:text-slate-400">{avail.description}</div>
+                      <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                        {formatAvailRange(avail)}
+                      </div>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
-      {productsError && <div className="text-sm text-red-400">Failed to load satellite products</div>}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
-        <div>
-          <label htmlFor="goes-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
-          <select id="goes-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {(products?.satellites ?? []).map((s) => {
-              const avail = products?.satellite_availability?.[s];
-              const range = avail ? formatAvailRange(avail) : '';
-              const active = avail?.status === 'active';
-              return <option key={s} value={s}>{s} ({range}){active ? ' ✓' : ''}</option>;
-            })}
-          </select>
-          {currentAvail?.status === 'historical' && (
-            <div className="mt-1 flex items-center gap-1 text-xs text-amber-400">
-              <Clock className="w-3 h-3" />
-              Historical — no new data
-            </div>
-          )}
-        </div>
-        <div>
-          <label htmlFor="goes-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
-          <select id="goes-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="goes-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
-          <select id="goes-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {(products?.bands ?? []).map((b) => {
-              const info = BAND_INFO[b.id];
-              return <option key={b.id} value={b.id}>{b.id} — {info ? `${info.name} (${info.wavelength}) · ${info.category}` : b.description}</option>;
-            })}
-          </select>
-        </div>
-      </div>
 
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-        <h2 className="text-lg font-semibold">Fetch Frames</h2>
-        <p className="text-xs text-gray-400 dark:text-slate-500">Maximum time range: 24 hours</p>
+      {/* Step 2: What to fetch */}
+      {step === 1 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">What to Fetch</h2>
 
-        {/* Quick Fetch Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Last Hour', hours: 1 },
-            { label: 'Last 6 Hours', hours: 6 },
-            { label: 'Last 12 Hours', hours: 12 },
-            { label: 'Last 24 Hours', hours: 24 },
-          ].map((preset) => (
-            <button
-              key={preset.label}
-              onClick={() => {
-                const now = new Date();
-                const start = new Date(now.getTime() - preset.hours * 60 * 60 * 1000);
-                const fmt = (d: Date) => d.toISOString().slice(0, 16);
-                setStartTime(fmt(start));
-                setEndTime(fmt(now));
-              }}
-              className="px-4 py-1.5 text-sm rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary border border-gray-200 dark:border-slate-700 hover:border-primary/30 transition-colors"
-              aria-label={`Quick fetch: ${preset.label}`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        {currentAvail && (
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
-            <Info className="w-3.5 h-3.5 shrink-0" />
-            <span>{satellite} data available: <span className="text-gray-900 dark:text-white font-medium">{formatAvailRange(currentAvail)}</span></span>
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Sector picker */}
           <div>
-            <label htmlFor="goes-start" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Start Time</label>
-            <input type="datetime-local" id="goes-start" value={startTime} onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
+            <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Sector</h3>
+            <SectorPicker
+              value={sector}
+              onChange={setSector}
+              sectors={products?.sectors ?? []}
+            />
           </div>
-          <div>
-            <label htmlFor="goes-end" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">End Time</label>
-            <input type="datetime-local" id="goes-end" value={endTime} onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
-          </div>
-        </div>
-        {dateWarning && (
-          <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {dateWarning}
-          </div>
-        )}
-        {frameEstimate && frameEstimate.count > frameLimit && (
-          <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            This range has ~{frameEstimate.count} frames. Current limit is {frameLimit}. The first {frameLimit} will be fetched.
-          </div>
-        )}
-        <div className="flex gap-3">
-          <button onClick={() => fetchMutation.mutate()} disabled={!startTime || !endTime || fetchMutation.isPending || !!dateWarning}
-            className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors">
-            <Download className="w-4 h-4" />
-            {fetchMutation.isPending ? 'Fetching...' : 'Fetch'}
-          </button>
-        </div>
-        {fetchMutation.isSuccess && (
-          <div className="text-sm text-emerald-400 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Job created: {fetchMutation.data.job_id}
-          </div>
-        )}
-        {fetchMutation.isError && (
-          <div className="text-sm text-red-400">
-            Failed to create fetch job
-            {fetchMutation.error instanceof Error && `: ${fetchMutation.error.message}`}
-          </div>
-        )}
-      </div>
 
-      {/* Gap Detection */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Coverage & Gaps</h2>
-          <button onClick={() => refetchGaps()} disabled={gapsFetching}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 transition-colors">
-            <Search className="w-4 h-4" />
-            {gapsFetching ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </div>
-        {gaps && (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { val: `${gaps.coverage_percent}%`, label: 'Coverage', color: 'text-primary' },
-                { val: gaps.gap_count, label: 'Gaps', color: 'text-amber-400' },
-                { val: gaps.total_frames, label: 'Total Frames', color: 'text-gray-900 dark:text-white' },
-                { val: gaps.expected_frames, label: 'Expected', color: 'text-gray-500 dark:text-slate-400' },
-              ].map((s) => (
-                <div key={s.label} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4">
-                  <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
-                  <div className="text-sm text-gray-500 dark:text-slate-400">{s.label}</div>
-                </div>
+          {/* Image type toggle */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Image Type</h3>
+            <div className="flex gap-2">
+              {([
+                { value: 'single' as const, label: 'Single Band' },
+                { value: 'true_color' as const, label: 'True Color' },
+                { value: 'natural_color' as const, label: 'Natural Color' },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setImageType(opt.value)}
+                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    imageType === opt.value
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-primary/30'
+                  }`}
+                >
+                  {opt.label}
+                </button>
               ))}
             </div>
-            {gaps.gaps.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400">Gap Timeline</h3>
-                <div className="h-8 bg-gray-100 dark:bg-slate-800 rounded-lg overflow-hidden flex relative">
-                  {gaps.time_range && (() => {
-                    const rangeStart = new Date(gaps.time_range.start).getTime();
-                    const rangeEnd = new Date(gaps.time_range.end).getTime();
-                    const totalMs = rangeEnd - rangeStart;
-                    if (totalMs <= 0) return null;
-                    return gaps.gaps.map((gap) => {
-                      const gapStart = new Date(gap.start).getTime();
-                      const gapEnd = new Date(gap.end).getTime();
-                      const left = ((gapStart - rangeStart) / totalMs) * 100;
-                      const width = ((gapEnd - gapStart) / totalMs) * 100;
-                      return (
-                        <div key={gap.start} className="absolute inset-y-0 bg-red-500/60"
-                          style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
-                          title={`${gap.duration_minutes}min gap (${gap.expected_frames} missing frames)`} />
-                      );
-                    });
-                  })()}
-                  {gaps.coverage_percent > 0 && <div className="absolute inset-0 bg-emerald-500/20" />}
-                </div>
-                <div className="max-h-48 overflow-y-auto space-y-1">
-                  {gaps.gaps.map((gap) => (
-                    <div key={gap.start} className="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-slate-800/50 rounded px-3 py-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="text-gray-600 dark:text-slate-300">
-                        {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}
-                      </span>
-                      <span className="text-gray-400 dark:text-slate-500 ml-auto">{gap.duration_minutes}min · {gap.expected_frames} frames</span>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-gray-900 dark:text-white rounded-lg hover:bg-amber-500 disabled:opacity-50 transition-colors">
-                  <Download className="w-4 h-4" />
-                  {backfillMutation.isPending ? 'Filling...' : 'Fill Gaps'}
-                </button>
-                {backfillMutation.isSuccess && (
-                  <div className="text-sm text-emerald-400 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Backfill job created: {backfillMutation.data.job_id}
-                  </div>
-                )}
+            {imageType === 'true_color' && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+                <Info className="w-3.5 h-3.5 shrink-0" />
+                Fetches bands C01 + C02 + C03 and composites automatically
               </div>
             )}
-          </>
-        )}
-      </div>
+            {imageType === 'natural_color' && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+                <Info className="w-3.5 h-3.5 shrink-0" />
+                Fetches bands C02 + C06 + C07 and composites automatically
+              </div>
+            )}
+          </div>
+
+          {/* Band picker — only for single band */}
+          {imageType === 'single' && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Band</h3>
+              <BandPicker value={band} onChange={setBand} />
+            </div>
+          )}
+
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: When */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">When</h2>
+
+          {currentAvail && (
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              {satellite} available: <span className="text-gray-900 dark:text-white font-medium">{formatAvailRange(currentAvail)}</span>
+            </div>
+          )}
+
+          {/* Quick presets */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Last Hour', hours: 1 },
+              { label: 'Last 6h', hours: 6 },
+              { label: 'Last 12h', hours: 12 },
+              { label: 'Last 24h', hours: 24 },
+            ].map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const start = new Date(now.getTime() - preset.hours * 3600000);
+                  const fmt = (d: Date) => d.toISOString().slice(0, 16);
+                  setStartTime(fmt(start));
+                  setEndTime(fmt(now));
+                }}
+                className="px-4 py-1.5 text-sm rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary border border-gray-200 dark:border-slate-700 hover:border-primary/30 transition-colors"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="goes-start" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Start</label>
+              <input type="datetime-local" id="goes-start" value={startTime} onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
+            </div>
+            <div>
+              <label htmlFor="goes-end" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">End</label>
+              <input type="datetime-local" id="goes-end" value={endTime} onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
+            </div>
+          </div>
+
+          {dateWarning && (
+            <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {dateWarning}
+            </div>
+          )}
+
+          {/* Catalog timeline */}
+          {catalogFetching && (
+            <div className="text-xs text-gray-400 animate-pulse">Loading available frames...</div>
+          )}
+          {catalogData && catalogData.length > 0 && (
+            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <div className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                {catalogData.length} frames available on S3
+              </div>
+              <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                {catalogData.slice(0, 100).map((entry) => (
+                  <div
+                    key={entry.key || entry.scan_time}
+                    className="h-full bg-emerald-500/60 border-r border-gray-200 dark:border-slate-700"
+                    style={{ width: `${100 / Math.min(catalogData.length, 100)}%` }}
+                    title={new Date(entry.scan_time).toLocaleTimeString()}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Estimate */}
+          {estimate && (
+            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 flex items-center justify-between">
+              <div className="text-sm text-gray-600 dark:text-slate-300">
+                ~{estimate.frames} frames · ~{estimate.sizeMb} MB
+              </div>
+              {estimate.frames > 150 && (
+                <span className="text-xs text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Large fetch
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirm(true)}
+              disabled={!startTime || !endTime || !!dateWarning}
+              className="flex items-center gap-2 px-6 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
+            >
+              <Download className="w-4 h-4" />
+              Fetch
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation modal */}
+      {showConfirm && (
+        <dialog
+          open
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 m-0 w-full h-full max-w-none max-h-none [&::backdrop]{bg-black/50}"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+          onClose={() => setShowConfirm(false)}
+          aria-labelledby="confirm-title"
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
+            <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300">
+              <div><span className="text-gray-400">Satellite:</span> {satellite}</div>
+              <div><span className="text-gray-400">Sector:</span> {sector}</div>
+              <div><span className="text-gray-400">Type:</span> {imageType === 'single' ? `Single Band (${band})` : imageType.replace('_', ' ')}</div>
+              {estimate && (
+                <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 mt-2">
+                  <div className="font-medium">~{estimate.frames} frames · ~{estimate.sizeMb} MB</div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 px-4 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => fetchMutation.mutate()}
+                disabled={fetchMutation.isPending}
+                className="flex-1 px-4 py-2 text-sm btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors"
+              >
+                {fetchMutation.isPending ? 'Starting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
+
+      {/* Progress bar */}
+      <FetchProgressBar />
     </div>
   );
 }

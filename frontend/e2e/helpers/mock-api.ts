@@ -37,20 +37,32 @@ export async function handleApiRoute(route: Route): Promise<void> {
     return void (await route.fulfill({ json: { video_fps: 24, max_frames_per_fetch: 200 } }));
 
   // GOES endpoints
+  if (url.includes('/api/goes/catalog/latest'))
+    return void (await route.fulfill({ json: { scan_time: '2025-01-01T12:00:00Z', size: 12345, key: 'test.nc', satellite: 'GOES-19', sector: 'CONUS', band: 'C02' } }));
+  if (url.includes('/api/goes/catalog'))
+    return void (await route.fulfill({ json: [] }));
+  if (url.includes('/api/goes/fetch-composite'))
+    return void (await route.fulfill({ json: { job_id: 'composite-job-1', status: 'pending', message: 'ok' } }));
   if (url.includes('/api/goes/frame-count'))
     return void (await route.fulfill({ json: { estimate: 0 } }));
   if (url.includes('/api/goes/products'))
     return void (await route.fulfill({
       json: {
-        satellites: ['GOES-16', 'GOES-18'],
+        satellites: ['GOES-19', 'GOES-18', 'GOES-16'],
+        satellite_availability: {
+          'GOES-19': { available_from: '2024-01-01', available_to: null, status: 'active', description: 'GOES-East (active)' },
+          'GOES-18': { available_from: '2022-01-01', available_to: null, status: 'active', description: 'GOES-West (active)' },
+          'GOES-16': { available_from: '2017-01-01', available_to: '2025-04-07', status: 'historical', description: 'GOES-East (historical)' },
+        },
         sectors: [
-          { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' },
-          { id: 'FullDisk', name: 'Full Disk', product: 'ABI-L2-CMIPF' },
+          { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPC', cadence_minutes: 5, typical_file_size_kb: 4000 },
+          { id: 'FullDisk', name: 'FullDisk', product: 'ABI-L2-CMIPF', cadence_minutes: 10, typical_file_size_kb: 12000 },
         ],
         bands: [
-          { id: 'C02', description: 'Red (0.64µm)' },
-          { id: 'C13', description: 'IR (10.3µm)' },
+          { id: 'C02', description: 'Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' },
+          { id: 'C13', description: 'IR (10.3µm)', wavelength_um: 10.3, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
         ],
+        default_satellite: 'GOES-19',
       },
     }));
   if (url.includes('/api/goes/stats'))

@@ -203,7 +203,7 @@ def _make_progress_callback(job_id: str, _log):
     return on_progress
 
 
-def _execute_goes_fetch(job_id: str, params: dict, _log) -> None:
+def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: bool = False) -> None:
     """Run the core GOES fetch logic: list, download, store, and report."""
     from ..services.goes_fetcher import fetch_frames, list_available
 
@@ -243,11 +243,12 @@ def _execute_goes_fetch(job_id: str, params: dict, _log) -> None:
     )
 
     _log(status_msg, level="info" if final_status == "completed" else "warning")
-    _update_job_db(
-        job_id, status=final_status, progress=100, output_path=output_dir,
-        completed_at=utcnow(), status_message=status_msg,
-    )
-    _publish_progress(job_id, 100, status_msg, final_status)
+    if not defer_final_update:
+        _update_job_db(
+            job_id, status=final_status, progress=100, output_path=output_dir,
+            completed_at=utcnow(), status_message=status_msg,
+        )
+        _publish_progress(job_id, 100, status_msg, final_status)
 
 
 def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
@@ -564,6 +565,101 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
     except Exception as e:
         logger.exception("Composite generation %s failed", composite_id)
         _mark_composite_failed(composite_id, str(e))
+        _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow())
+        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        raise
+
+
+@celery_app.task(bind=True, name="fetch_composite_data")
+def fetch_composite_data(self, job_id: str, params: dict):
+    """Fetch multiple bands sequentially, then auto-queue composite generation."""
+    _log = _make_job_logger(job_id)
+    _log(f"Starting composite fetch: {params.get('recipe')}")
+
+    _update_job_db(job_id, status="processing", started_at=utcnow())
+    _publish_progress(job_id, 0, "Starting composite fetch", "processing")
+
+    try:
+        satellite = params["satellite"]
+        sector = params["sector"]
+        bands = params["bands"]
+        recipe = params["recipe"]
+        start_time_str = params["start_time"]
+        end_time_str = params["end_time"]
+
+        total_bands = len(bands)
+
+        for i, band in enumerate(bands):
+            band_progress = int((i / total_bands) * 80)
+            _publish_progress(job_id, band_progress, f"Fetching band {band} ({i + 1}/{total_bands})", "processing")
+            _update_job_db(job_id, progress=band_progress, status_message=f"Fetching band {band}")
+
+            band_params = {
+                "satellite": satellite,
+                "sector": sector,
+                "band": band,
+                "start_time": start_time_str,
+                "end_time": end_time_str,
+            }
+            _execute_goes_fetch(job_id, band_params, _log, defer_final_update=True)
+
+        _publish_progress(job_id, 90, "All bands fetched, queuing composites", "processing")
+        _update_job_db(job_id, progress=90, status_message="Queuing composite generation")
+
+        # Auto-queue composite for fetched captures
+        start_time = datetime.fromisoformat(start_time_str)
+        end_time = datetime.fromisoformat(end_time_str)
+        from ..db.models import Composite
+        from ..db.models import Job as JobModel
+        from ..routers.goes import COMPOSITE_RECIPES
+        from ..services.goes_fetcher import list_available
+
+        available = list_available(satellite, sector, bands[0], start_time, end_time)
+        if available:
+            composite_tasks = []
+            session = _get_sync_db()
+            try:
+                for frame_info in available[:50]:
+                    scan_t = frame_info["scan_time"]
+                    capture_time = scan_t.isoformat() if isinstance(scan_t, datetime) else scan_t
+                    composite_id = str(uuid.uuid4())
+                    comp_job_id = str(uuid.uuid4())
+
+                    comp_job = JobModel(id=comp_job_id, status="pending", job_type="composite")
+                    session.add(comp_job)
+                    comp = Composite(
+                        id=composite_id,
+                        name=COMPOSITE_RECIPES.get(recipe, {}).get("name", recipe),
+                        recipe=recipe,
+                        satellite=satellite,
+                        sector=sector,
+                        capture_time=scan_t if isinstance(scan_t, datetime) else datetime.fromisoformat(capture_time),
+                        status="pending",
+                        job_id=comp_job_id,
+                    )
+                    session.add(comp)
+                    composite_tasks.append((composite_id, comp_job_id, capture_time))
+                session.commit()
+            finally:
+                session.close()
+
+            for composite_id, comp_job_id, capture_time in composite_tasks:
+                generate_composite.delay(composite_id, comp_job_id, {
+                    "recipe": recipe,
+                    "satellite": satellite,
+                    "sector": sector,
+                    "capture_time": capture_time,
+                    "bands": bands,
+                })
+
+        _update_job_db(
+            job_id, status="completed", progress=100,
+            completed_at=utcnow(), status_message="Composite fetch completed",
+        )
+        _publish_progress(job_id, 100, "Composite fetch completed", "completed")
+
+    except Exception as e:
+        logger.exception("Composite fetch %s failed", job_id)
         _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow())
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

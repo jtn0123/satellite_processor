@@ -76,7 +76,7 @@ export default function FetchTab() {
     queryFn: () =>
       api.get('/goes/catalog', { params: { satellite, sector, band, date: dateStr } }).then((r) => r.data),
     enabled: step === 2 && !!dateStr,
-    staleTime: 300_000,
+    staleTime: 300000,
   });
 
   const dateWarning = useMemo(() => {
@@ -139,7 +139,7 @@ export default function FetchTab() {
   const fetchLatestMutation = useMutation({
     mutationFn: () => {
       const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 3600_000);
+      const oneHourAgo = new Date(now.getTime() - 3600000);
       if (imageType !== 'single') {
         return api.post('/goes/fetch-composite', {
           satellite, sector, recipe: imageType,
@@ -158,8 +158,8 @@ export default function FetchTab() {
   if (productsLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={`skel-${i}`} className="h-24 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-xl" />
+        {['skel-source', 'skel-what', 'skel-when'].map((id) => (
+          <div key={id} className="h-24 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-xl" />
         ))}
       </div>
     );
@@ -186,11 +186,11 @@ export default function FetchTab() {
             type="button"
             onClick={() => setStep(i)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              i === step
-                ? 'bg-primary/20 text-primary border border-primary/30'
-                : i < step
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700'
+              (() => {
+                if (i === step) return 'bg-primary/20 text-primary border border-primary/30';
+                if (i < step) return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                return 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700';
+              })()
             }`}
           >
             <span className="w-4 h-4 flex items-center justify-center rounded-full bg-current/10 text-[10px]">
@@ -364,7 +364,7 @@ export default function FetchTab() {
                 type="button"
                 onClick={() => {
                   const now = new Date();
-                  const start = new Date(now.getTime() - preset.hours * 3600_000);
+                  const start = new Date(now.getTime() - preset.hours * 3600000);
                   const fmt = (d: Date) => d.toISOString().slice(0, 16);
                   setStartTime(fmt(start));
                   setEndTime(fmt(now));
@@ -455,17 +455,15 @@ export default function FetchTab() {
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setShowConfirm(false)}
-          onKeyDown={(e) => e.key === 'Escape' && setShowConfirm(false)}
-          role="presentation"
+        <dialog
+          open
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 m-0 w-full h-full max-w-none max-h-none [&::backdrop]{bg-black/50}"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+          onClose={() => setShowConfirm(false)}
+          aria-labelledby="confirm-title"
         >
           <div
-            className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
+            className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
@@ -497,7 +495,7 @@ export default function FetchTab() {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {/* Progress bar */}

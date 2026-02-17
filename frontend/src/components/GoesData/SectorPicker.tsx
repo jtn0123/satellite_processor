@@ -19,7 +19,7 @@ function formatSize(kb: number): string {
   return kb >= 1000 ? `~${(kb / 1000).toFixed(0)} MB` : `~${kb} KB`;
 }
 
-export default function SectorPicker({ value, onChange, sectors, disabled }: SectorPickerProps) {
+export default function SectorPicker({ value, onChange, sectors, disabled }: Readonly<SectorPickerProps>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {sectors.map((s) => {

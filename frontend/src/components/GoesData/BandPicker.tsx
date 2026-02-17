@@ -22,7 +22,7 @@ const FILTERS: { label: string; bands: string[] }[] = [
   { label: 'Vegetation', bands: ['C02', 'C03', 'C05', 'C06'] },
 ];
 
-export default function BandPicker({ value, onChange, disabled }: BandPickerProps) {
+export default function BandPicker({ value, onChange, disabled }: Readonly<BandPickerProps>) {
   const [filter, setFilter] = useState('All');
 
   const activeBands = useMemo(() => {

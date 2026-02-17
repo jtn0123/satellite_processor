@@ -37,17 +37,10 @@ export default function FetchProgressBar() {
     <div className="fixed bottom-0 left-0 right-0 z-50">
       <div className="bg-gray-900/95 dark:bg-slate-900/95 backdrop-blur border-t border-gray-700 dark:border-slate-700">
         {/* Main bar */}
-        <div
-          role="button"
-          tabIndex={0}
-          className="flex items-center gap-3 px-4 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+        <button
+          type="button"
+          className="w-full flex items-center gap-3 px-4 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 bg-transparent border-none text-left"
           onClick={() => setExpanded(!expanded)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setExpanded(!expanded);
-            }
-          }}
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse job list' : 'Expand job list'}
         >
@@ -83,7 +76,7 @@ export default function FetchProgressBar() {
           ) : (
             <ChevronDown className="w-4 h-4 text-gray-400" />
           )}
-        </div>
+        </button>
 
         {/* Expanded job list */}
         {expanded && (

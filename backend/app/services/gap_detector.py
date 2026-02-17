@@ -168,8 +168,13 @@ async def get_coverage_stats(
         }
 
     total_minutes = (max_time - min_time).total_seconds() / 60.0
+
+    # Subtract gap durations from the covered time to get actual coverage
+    gap_minutes = sum(g["duration_minutes"] for g in gaps)
+    covered_minutes = total_minutes - gap_minutes
     expected_frames = int(total_minutes / expected_interval) + 1 if expected_interval > 0 else total_frames
-    coverage = min(100.0, (total_frames / expected_frames * 100.0)) if expected_frames > 0 else 100.0
+    coverage = (covered_minutes / total_minutes * 100.0) if total_minutes > 0 else 100.0
+    coverage = max(0.0, min(100.0, coverage))
 
     return {
         "coverage_percent": round(coverage, 1),

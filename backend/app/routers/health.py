@@ -37,12 +37,18 @@ _changelog_cache: list | None = None
 
 
 def _find_changelog() -> Path | None:
-    """Locate CHANGELOG.md next to VERSION file."""
-    parents = Path(__file__).resolve().parents
-    repo_root = parents[min(4, len(parents) - 1)]
-    for candidate in [repo_root / "CHANGELOG.md", Path("CHANGELOG.md")]:
+    """Locate CHANGELOG.md by searching parent directories."""
+    # Search upward from this file
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        candidate = current / "CHANGELOG.md"
         if candidate.is_file():
             return candidate
+        current = current.parent
+    # Also check CWD and /app (Docker default)
+    for fallback in [Path("CHANGELOG.md"), Path("/app/CHANGELOG.md")]:
+        if fallback.is_file():
+            return fallback
     return None
 
 
@@ -195,6 +201,10 @@ def _derive_overall(checks: dict) -> str:
 @router.get("/changelog")
 async def changelog():
     """Return parsed CHANGELOG.md as structured JSON."""
+    global _changelog_cache  # noqa: PLW0603
+    # Clear cache to allow detecting newly available CHANGELOG.md
+    if _changelog_cache is not None and len(_changelog_cache) == 0:
+        _changelog_cache = None
     return _parse_changelog()
 
 

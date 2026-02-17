@@ -90,7 +90,11 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
 
 @router.get("")
 async def get_settings(db: AsyncSession = Depends(get_db)):
-    return await _load_from_db(db)
+    try:
+        return await _load_from_db(db)
+    except Exception:
+        logger.exception("Failed to load settings from DB, returning defaults")
+        return _load_file_defaults()
 
 
 @router.put("")

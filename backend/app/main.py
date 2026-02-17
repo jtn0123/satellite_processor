@@ -54,15 +54,15 @@ AUTH_SKIP_PREFIXES = ("/api/shared/",)
 async def _stale_job_checker():
     """Periodically check for stale jobs every 5 minutes."""
     from .db.database import async_session
-    from .services.stale_jobs import mark_stale_jobs
+    from .services.stale_jobs import cleanup_all_stale
 
     while True:
         await asyncio.sleep(300)  # 5 minutes
         try:
             async with async_session() as db:
-                count = await mark_stale_jobs(db)
-                if count:
-                    logger.info("Marked %d stale jobs as failed", count)
+                result = await cleanup_all_stale(db)
+                if result["total"]:
+                    logger.info("Stale job cleanup: %s", result)
         except Exception:
             logger.debug("Stale job check failed", exc_info=True)
 
@@ -76,12 +76,12 @@ async def lifespan(app: FastAPI):
     # Check for stale jobs on startup
     try:
         from .db.database import async_session
-        from .services.stale_jobs import mark_stale_jobs
+        from .services.stale_jobs import cleanup_all_stale
 
         async with async_session() as db:
-            count = await mark_stale_jobs(db)
-            if count:
-                logger.info("Startup: marked %d stale jobs as failed", count)
+            result = await cleanup_all_stale(db)
+            if result["total"]:
+                logger.info("Startup stale job cleanup: %s", result)
     except Exception:
         logger.debug("Startup stale job check failed", exc_info=True)
 

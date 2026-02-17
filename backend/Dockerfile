@@ -19,8 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy VERSION file
+# Copy VERSION and CHANGELOG files
 COPY VERSION /app/VERSION
+COPY CHANGELOG.md /app/CHANGELOG.md
 
 # Copy core processor module
 COPY satellite_processor /app/satellite_processor

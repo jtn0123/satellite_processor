@@ -145,15 +145,16 @@ async def catalog_latest(
     request: Request,
     satellite: str = Query("GOES-19"),
     sector: str = Query("CONUS"),
+    band: str = Query("C02"),
 ):
     """Return the most recent available frame on S3 (checks last 2 hours)."""
     from ..services.catalog import catalog_latest as _catalog_latest
 
-    cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}")
+    cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}:{band}")
 
     async def _fetch():
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: _catalog_latest(satellite, sector))
+        return await loop.run_in_executor(None, lambda: _catalog_latest(satellite, sector, band))
 
     result = await get_cached(cache_key, ttl=60, fetch_fn=_fetch)
     if not result:

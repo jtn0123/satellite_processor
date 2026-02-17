@@ -94,9 +94,9 @@ def _is_newer_scan(scan_time: datetime, current_latest: dict[str, Any] | None) -
 def catalog_latest(
     satellite: str,
     sector: str,
+    band: str = "C02",
 ) -> dict[str, Any] | None:
-    """Find the most recent available frame (checks last 2 hours, all bands C02 default)."""
-    band = "C02"
+    """Find the most recent available frame (checks last 2 hours)."""
     validate_params(satellite, sector, band)
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()

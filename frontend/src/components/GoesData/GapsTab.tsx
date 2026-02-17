@@ -4,12 +4,6 @@ import { Search, AlertTriangle, Play, PlayCircle, Loader2, CheckCircle2, Clock }
 import api from '../../api/client';
 import type { CoverageStats, Gap } from './types';
 
-interface GapDetectParams {
-  satellite: string;
-  band: string;
-  expected_interval: number;
-}
-
 interface BackfillPayload {
   satellite?: string;
   band?: string;

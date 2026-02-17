@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import api from '../../api/client';
 import { formatBytes } from './utils';
-import type { FrameStats } from './types';
 
 interface CatalogLatest {
   scan_time: string;
@@ -27,17 +26,19 @@ interface CatalogLatest {
   band: string;
 }
 
-interface Job {
-  id: string;
-  name: string;
-  status: string;
-  created_at: string;
-  completed_at: string | null;
-}
-
-interface JobsResponse {
-  items: Job[];
-  total: number;
+interface DashboardStats {
+  total_frames: number;
+  frames_by_satellite: Record<string, number>;
+  last_fetch_time: string | null;
+  active_schedules: number;
+  storage_by_satellite: Record<string, number>;
+  storage_by_band: Record<string, number>;
+  recent_jobs: {
+    id: string;
+    status: string;
+    created_at: string | null;
+    status_message: string;
+  }[];
 }
 
 function timeAgo(dateStr: string): string {
@@ -69,6 +70,7 @@ function statusBadge(status: string) {
 }
 
 export default function OverviewTab() {
+  // AWS catalog latest — not available in dashboard-stats
   const { data: catalogLatest, isLoading: catalogLoading, isError: catalogError } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest'],
     queryFn: () => api.get('/goes/catalog/latest').then((r) => r.data),
@@ -76,27 +78,40 @@ export default function OverviewTab() {
     retry: 1,
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery<FrameStats>({
-    queryKey: ['goes-frame-stats'],
-    queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
-    staleTime: 60_000,
-  });
-
-  const { data: jobs, isLoading: jobsLoading } = useQuery<JobsResponse>({
-    queryKey: ['goes-recent-jobs'],
-    queryFn: () => api.get('/jobs', { params: { limit: 5 } }).then((r) => r.data),
+  // Unified dashboard stats (replaces /goes/frames/stats + /jobs?limit=5)
+  const { data: dashboard, isLoading: dashboardLoading } = useQuery<DashboardStats>({
+    queryKey: ['goes-dashboard-stats'],
+    queryFn: () => api.get('/goes/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
   });
 
+  // Derived values
+  const totalFrames = dashboard?.total_frames ?? null;
+  const totalSizeBytes = dashboard
+    ? Object.values(dashboard.storage_by_satellite).reduce((a, b) => a + b, 0)
+    : null;
+  const satelliteCount = dashboard ? Object.keys(dashboard.frames_by_satellite).length : null;
+
+  const bySatellite = dashboard
+    ? Object.fromEntries(
+        Object.entries(dashboard.frames_by_satellite).map(([sat, count]) => [
+          sat,
+          { count, size: dashboard.storage_by_satellite[sat] ?? 0 },
+        ]),
+      )
+    : {};
+
+  const storageBands = dashboard?.storage_by_band ?? {};
+  const recentJobs = dashboard?.recent_jobs ?? [];
+
+  const satValues = Object.values(bySatellite);
+  const bandSizes = Object.values(storageBands);
+  const maxSatSize = satValues.length > 0 ? Math.max(...satValues.map((s) => s.size), 1) : 1;
+  const maxBandSize = bandSizes.length > 0 ? Math.max(...bandSizes, 1) : 1;
+
   // Global 'switch-tab' event pattern is used across the app (GoesData.tsx listens)
-  // to allow child tab components to trigger tab navigation without prop drilling.
   const switchTab = (tabId: string) => {
     globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: tabId }));
-  };
-
-  const prefillAndSwitch = (params: Record<string, string | number>) => {
-    globalThis.dispatchEvent(new CustomEvent('fetch-prefill', { detail: params }));
-    switchTab('fetch');
   };
 
   const quickActions = [
@@ -105,21 +120,31 @@ export default function OverviewTab() {
       description: 'Pre-fill fetch wizard for CONUS imagery',
       icon: <Download className="w-5 h-5" />,
       color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30',
-      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 }),
+      onClick: () => {
+        globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
+          detail: { satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours_back: 1 },
+        }));
+        switchTab('fetch');
+      },
     },
     {
       label: 'Fetch Latest FullDisk',
       description: 'One-click full hemisphere download',
       icon: <Zap className="w-5 h-5" />,
       color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',
-      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'FullDisk', band: 'C02', hours: 1 }),
+      onClick: () => {
+        globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
+          detail: { satellite: 'GOES-19', sector: 'FullDisk', band: 'C02' },
+        }));
+        switchTab('fetch');
+      },
     },
     {
       label: 'True Color Now',
       description: 'Fetch & composite true color image',
       icon: <Palette className="w-5 h-5" />,
       color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30',
-      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 }),
+      onClick: () => switchTab('fetch'),
     },
     {
       label: 'View Gallery',
@@ -130,11 +155,6 @@ export default function OverviewTab() {
     },
   ];
 
-  const satValues = stats ? Object.values(stats.by_satellite ?? {}) : [];
-  const bandValues = stats ? Object.values(stats.by_band ?? {}) : [];
-  const maxSatSize = satValues.length > 0 ? Math.max(...satValues.map((s) => s.size), 1) : 1;
-  const maxBandCount = bandValues.length > 0 ? Math.max(...bandValues.map((b) => b.count), 1) : 1;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -144,7 +164,7 @@ export default function OverviewTab() {
       </div>
 
       {/* Loading state */}
-      {(catalogLoading || statsLoading || jobsLoading) && (
+      {(catalogLoading || dashboardLoading) && (
         <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500">
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading overview data...
@@ -190,7 +210,7 @@ export default function OverviewTab() {
             <span className="text-sm text-gray-500 dark:text-slate-400">Total Frames</span>
           </div>
           <div className="text-3xl font-bold text-primary">
-            {stats?.total_frames?.toLocaleString() ?? '—'}
+            {totalFrames?.toLocaleString() ?? '—'}
           </div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
@@ -199,7 +219,7 @@ export default function OverviewTab() {
             <span className="text-sm text-gray-500 dark:text-slate-400">Disk Usage</span>
           </div>
           <div className="text-3xl font-bold text-emerald-400">
-            {stats ? formatBytes(stats.total_size_bytes) : '—'}
+            {totalSizeBytes != null ? formatBytes(totalSizeBytes) : '—'}
           </div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
@@ -208,7 +228,7 @@ export default function OverviewTab() {
             <span className="text-sm text-gray-500 dark:text-slate-400">Satellites</span>
           </div>
           <div className="text-3xl font-bold text-amber-400">
-            {stats ? Object.keys(stats.by_satellite ?? {}).length : '—'}
+            {satelliteCount ?? '—'}
           </div>
         </div>
       </div>
@@ -235,18 +255,18 @@ export default function OverviewTab() {
       </div>
 
       {/* Recent Activity */}
-      {jobs && jobs.items.length > 0 && (
+      {recentJobs.length > 0 && (
         <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
           </div>
           <div className="space-y-3">
-            {jobs.items.map((job) => (
+            {recentJobs.map((job) => (
               <div key={job.id} className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
                 <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{job.name || 'Fetch Job'}</div>
-                  <div className="text-xs text-gray-400 dark:text-slate-500">{timeAgo(job.created_at)}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{job.status_message || 'Fetch Job'}</div>
+                  <div className="text-xs text-gray-400 dark:text-slate-500">{job.created_at ? timeAgo(job.created_at) : '—'}</div>
                 </div>
                 {statusBadge(job.status)}
               </div>
@@ -255,8 +275,8 @@ export default function OverviewTab() {
         </div>
       )}
 
-      {/* Stats Section (moved from StatsTab) */}
-      {stats && (Object.keys(stats.by_satellite ?? {}).length > 0 || Object.keys(stats.by_band ?? {}).length > 0) && (
+      {/* Stats Section */}
+      {dashboard && (Object.keys(bySatellite).length > 0 || Object.keys(storageBands).length > 0) && (
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
@@ -264,11 +284,11 @@ export default function OverviewTab() {
           </div>
 
           {/* Storage by Satellite */}
-          {Object.keys(stats.by_satellite ?? {}).length > 0 && (
+          {Object.keys(bySatellite).length > 0 && (
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
               <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Storage by Satellite</h4>
               <div className="space-y-3">
-                {Object.entries(stats.by_satellite).map(([sat, data]) => (
+                {Object.entries(bySatellite).map(([sat, data]) => (
                   <div key={sat} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-900 dark:text-white">{sat}</span>
@@ -284,19 +304,18 @@ export default function OverviewTab() {
             </div>
           )}
 
-          {/* Frames by Band */}
-          {Object.keys(stats.by_band ?? {}).length > 0 && (
+          {/* Storage by Band */}
+          {Object.keys(storageBands).length > 0 && (
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Frames by Band</h4>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Storage by Band</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {Object.entries(stats.by_band).map(([bandKey, data]) => (
+                {Object.entries(storageBands).map(([bandKey, size]) => (
                   <div key={bandKey} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">{bandKey}</div>
-                    <div className="text-xl font-bold text-primary">{data.count}</div>
-                    <div className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(data.size)}</div>
+                    <div className="text-xl font-bold text-primary">{formatBytes(size)}</div>
                     <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div className="h-full bg-primary/60 rounded-full"
-                        style={{ width: `${(data.count / maxBandCount) * 100}%` }} />
+                        style={{ width: `${(size / maxBandSize) * 100}%` }} />
                     </div>
                   </div>
                 ))}

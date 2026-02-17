@@ -12,6 +12,7 @@ interface SectorPickerProps {
   value: string;
   onChange: (sector: string) => void;
   sectors: Array<{ id: string; name: string; cadence_minutes?: number; typical_file_size_kb?: number }>;
+  satellite?: string;
   disabled?: boolean;
 }
 

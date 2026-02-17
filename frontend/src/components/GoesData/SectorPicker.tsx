@@ -34,6 +34,7 @@ export default function SectorPicker({ value, onChange, sectors, disabled }: Sec
         return (
           <button
             key={s.id}
+            type="button"
             onClick={() => onChange(s.id)}
             disabled={disabled}
             className={`text-left p-4 rounded-xl border transition-all ${

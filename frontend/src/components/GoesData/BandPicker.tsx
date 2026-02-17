@@ -10,9 +10,9 @@ interface BandPickerProps {
 const BAND_IDS = Object.keys(BAND_INFO);
 
 const GROUPS: { label: string; category: string; bands: string[] }[] = [
-  { label: 'Visible', category: 'Visible', bands: ['C01', 'C02', 'C03', 'C04', 'C05', 'C06'] },
-  { label: 'Near-IR', category: 'Near-IR', bands: ['C07'] },
-  { label: 'Infrared', category: 'IR', bands: ['C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16'] },
+  { label: 'Visible', category: 'Visible', bands: ['C01', 'C02'] },
+  { label: 'Near-IR', category: 'Near-IR', bands: ['C03', 'C04', 'C05', 'C06'] },
+  { label: 'Infrared', category: 'IR', bands: ['C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16'] },
 ];
 
 const FILTERS: { label: string; bands: string[] }[] = [
@@ -37,6 +37,7 @@ export default function BandPicker({ value, onChange, disabled }: BandPickerProp
         {FILTERS.map((f) => (
           <button
             key={f.label}
+            type="button"
             onClick={() => setFilter(f.label)}
             disabled={disabled}
             className={`px-3 py-1 text-xs rounded-full border transition-colors ${
@@ -67,6 +68,7 @@ export default function BandPicker({ value, onChange, disabled }: BandPickerProp
                 return (
                   <button
                     key={bandId}
+                    type="button"
                     onClick={() => onChange(bandId)}
                     disabled={disabled}
                     className={`text-left p-3 rounded-lg border transition-all ${

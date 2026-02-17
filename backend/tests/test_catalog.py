@@ -71,7 +71,7 @@ async def test_fetch_composite_bad_recipe(client):
         "start_time": "2025-01-01T00:00:00Z",
         "end_time": "2025-01-01T01:00:00Z",
     })
-    assert resp.status_code == 400
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio

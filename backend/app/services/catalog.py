@@ -30,13 +30,17 @@ def catalog_list(
     validate_params(satellite, sector, band)
     if date is None:
         date = datetime.now(UTC)
+    elif date.tzinfo is not None:
+        date = date.astimezone(UTC)
+    else:
+        date = date.replace(tzinfo=UTC)
 
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     results: list[dict[str, Any]] = []
 
     # Iterate all 24 hours of the given date
-    base = date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=UTC)
+    base = date.replace(hour=0, minute=0, second=0, microsecond=0)
     for hour in range(24):
         dt = base + timedelta(hours=hour)
         # Don't query future hours
@@ -77,7 +81,7 @@ def catalog_latest(
     now = datetime.now(UTC)
     latest: dict[str, Any] | None = None
 
-    for hours_ago in range(2):
+    for hours_ago in range(3):
         dt = now - timedelta(hours=hours_ago)
         dt = dt.replace(minute=0, second=0, microsecond=0)
         prefix = _build_s3_prefix(satellite, sector, band, dt)

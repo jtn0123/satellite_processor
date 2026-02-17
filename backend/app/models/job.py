@@ -96,10 +96,11 @@ class JobResponse(BaseModel):
 
     def model_post_init(self, __context):
         """Derive frames_completed/frames_total from params and progress."""
-        if self.frames_completed is None and self.params:
+        if self.params:
             total = self.params.get("frames_total")
-            if total:
+            if total and self.frames_total is None:
                 self.frames_total = total
+            if self.frames_completed is None and total:
                 self.frames_completed = int((self.progress / 100) * total) if self.progress else 0
 
 

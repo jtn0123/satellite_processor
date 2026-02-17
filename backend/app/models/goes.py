@@ -140,6 +140,14 @@ class FetchCompositeRequest(BaseModel):
             raise ValueError(f"Invalid sector. Must be one of: {valid}")
         return v
 
+    @field_validator("recipe")
+    @classmethod
+    def validate_recipe(cls, v: str) -> str:
+        valid = {"true_color", "natural_color"}
+        if v not in valid:
+            raise ValueError(f"Invalid recipe. Must be one of: {valid}")
+        return v
+
     @field_validator("end_time")
     @classmethod
     def validate_time_range(cls, v: datetime, info) -> datetime:

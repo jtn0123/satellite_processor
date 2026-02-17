@@ -129,7 +129,8 @@ async def catalog(
         except ValueError:
             raise APIError(400, "invalid_date", "Date must be in YYYY-MM-DD format")
 
-    cache_key = make_cache_key(f"catalog:{satellite}:{sector}:{band}:{date or 'today'}")
+    effective_date = date or datetime.now(UTC).strftime("%Y-%m-%d")
+    cache_key = make_cache_key(f"catalog:{satellite}:{sector}:{band}:{effective_date}")
 
     async def _fetch():
         loop = asyncio.get_event_loop()
@@ -177,6 +178,24 @@ async def fetch_composite(
     bands = recipe_bands.get(payload.recipe)
     if not bands:
         raise APIError(400, "bad_request", f"Unknown recipe: {payload.recipe}. Valid: {list(recipe_bands)}")
+
+    # Validate time range against satellite availability
+    avail = SATELLITE_AVAILABILITY.get(payload.satellite)
+    if avail:
+        avail_from = datetime.fromisoformat(avail["available_from"])
+        avail_to = datetime.fromisoformat(avail["available_to"]) if avail["available_to"] else None
+        if avail_to and payload.start_time.replace(tzinfo=None) > avail_to:
+            suggestion = "GOES-19" if payload.satellite == "GOES-16" else "GOES-18"
+            raise APIError(
+                422, "out_of_range",
+                f"{payload.satellite} data is only available through {avail['available_to'][:7]}. "
+                f"Use {suggestion} for current data.",
+            )
+        if payload.end_time.replace(tzinfo=None) < avail_from:
+            raise APIError(
+                422, "out_of_range",
+                f"{payload.satellite} data is only available from {avail['available_from'][:7]}.",
+            )
 
     # Estimate frame count
     interval = SECTOR_INTERVALS.get(payload.sector, 10)

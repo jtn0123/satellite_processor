@@ -96,7 +96,10 @@ export default function FetchTab() {
 
   const estimate = useMemo(() => {
     if (!startTime || !endTime) return null;
-    const durationMin = (new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000;
+    const startMs = new Date(startTime).getTime();
+    const endMs = new Date(endTime).getTime();
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+    const durationMin = (endMs - startMs) / 60000;
     if (durationMin <= 0) return null;
     const frames = Math.ceil(durationMin / cadence) * bandCount;
     const sizeMb = ((frames * fileSizeKb) / 1000).toFixed(0);
@@ -166,6 +169,7 @@ export default function FetchTab() {
     <div className="space-y-4 pb-16">
       {/* Fetch Latest button — always visible */}
       <button
+        type="button"
         onClick={() => fetchLatestMutation.mutate()}
         disabled={fetchLatestMutation.isPending}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary rounded-xl transition-colors"
@@ -179,6 +183,7 @@ export default function FetchTab() {
         {STEPS.map((label, i) => (
           <button
             key={label}
+            type="button"
             onClick={() => setStep(i)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               i === step
@@ -208,6 +213,7 @@ export default function FetchTab() {
               return (
                 <button
                   key={sat}
+                  type="button"
                   onClick={() => setSatellite(sat)}
                   className={`text-left p-4 rounded-xl border transition-all ${
                     selected
@@ -244,6 +250,7 @@ export default function FetchTab() {
           </div>
           <div className="flex justify-end">
             <button
+              type="button"
               onClick={() => setStep(1)}
               className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
             >
@@ -279,6 +286,7 @@ export default function FetchTab() {
               ]).map((opt) => (
                 <button
                   key={opt.value}
+                  type="button"
                   onClick={() => setImageType(opt.value)}
                   className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
                     imageType === opt.value
@@ -314,12 +322,14 @@ export default function FetchTab() {
 
           <div className="flex justify-between">
             <button
+              type="button"
               onClick={() => setStep(0)}
               className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <button
+              type="button"
               onClick={() => setStep(2)}
               className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
             >
@@ -351,6 +361,7 @@ export default function FetchTab() {
             ].map((preset) => (
               <button
                 key={preset.label}
+                type="button"
                 onClick={() => {
                   const now = new Date();
                   const start = new Date(now.getTime() - preset.hours * 3600_000);
@@ -395,9 +406,9 @@ export default function FetchTab() {
                 {catalogData.length} frames available on S3
               </div>
               <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
-                {catalogData.slice(0, 100).map((entry, i) => (
+                {catalogData.slice(0, 100).map((entry) => (
                   <div
-                    key={i}
+                    key={entry.key || entry.scan_time}
                     className="h-full bg-emerald-500/60 border-r border-gray-200 dark:border-slate-700"
                     style={{ width: `${100 / Math.min(catalogData.length, 100)}%` }}
                     title={new Date(entry.scan_time).toLocaleTimeString()}
@@ -423,12 +434,14 @@ export default function FetchTab() {
 
           <div className="flex justify-between items-center">
             <button
+              type="button"
               onClick={() => setStep(1)}
               className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <button
+              type="button"
               onClick={() => setShowConfirm(true)}
               disabled={!startTime || !endTime || !!dateWarning}
               className="flex items-center gap-2 px-6 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
@@ -442,9 +455,20 @@ export default function FetchTab() {
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowConfirm(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setShowConfirm(false)}
+          role="presentation"
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
             <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300">
               <div><span className="text-gray-400">Satellite:</span> {satellite}</div>
               <div><span className="text-gray-400">Sector:</span> {sector}</div>
@@ -457,12 +481,14 @@ export default function FetchTab() {
             </div>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowConfirm(false)}
                 className="flex-1 px-4 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => fetchMutation.mutate()}
                 disabled={fetchMutation.isPending}
                 className="flex-1 px-4 py-2 text-sm btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50 transition-colors"

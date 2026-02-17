@@ -48,7 +48,7 @@ describe('FetchTab', () => {
     expect(screen.getByText('Choose Satellite')).toBeInTheDocument();
   });
 
-  it('navigates to step 3 and shows time inputs', async () => {
+  it('navigates to When step (step 2) and shows time inputs', async () => {
     render(<FetchTab />, { wrapper });
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));

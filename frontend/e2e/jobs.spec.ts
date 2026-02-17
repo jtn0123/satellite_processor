@@ -23,7 +23,7 @@ test.describe('Jobs page - empty state', () => {
   if (url.includes('/api/goes/animations/recent')) return route.fulfill({ json: { id: 'mock-2', status: 'pending' } });
   if (url.includes('/api/goes/animations/batch')) return route.fulfill({ json: { ids: [], status: 'queued' } });
   if (url.includes('/api/goes/animation-presets')) return route.fulfill({ json: [] });
-      return route.continue();
+      return route.fulfill({ json: {} });
     });
   });
 
@@ -74,7 +74,7 @@ test.describe('Jobs page - with data', () => {
   if (url.includes('/api/goes/animations/recent')) return route.fulfill({ json: { id: 'mock-2', status: 'pending' } });
   if (url.includes('/api/goes/animations/batch')) return route.fulfill({ json: { ids: [], status: 'queued' } });
   if (url.includes('/api/goes/animation-presets')) return route.fulfill({ json: [] });
-      return route.continue();
+      return route.fulfill({ json: {} });
     });
   });
 

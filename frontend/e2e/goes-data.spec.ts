@@ -68,7 +68,7 @@ const mockApiHandler = async (route: unknown) => {
   if (url.includes('/api/settings')) return route.fulfill({ json: { video_fps: 24, video_codec: 'h264' } });
     if (url.includes('/api/notifications')) return route.fulfill({ json: [] });
   if (url.includes('/api/presets')) return route.fulfill({ json: [] });
-  return route.continue();
+  return route.fulfill({ json: {} });
 };
 
 test.beforeEach(async ({ page }) => {

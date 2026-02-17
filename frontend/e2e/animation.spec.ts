@@ -9,7 +9,7 @@ test('GOES Data page loads with 7 tabs', async ({ page }) => {
   await page.goto('/goes');
   await expect(page.locator('[role="tablist"]')).toBeVisible();
   const tabs = page.locator('[role="tab"]');
-  await expect(tabs).toHaveCount(7);
+  await expect(tabs).toHaveCount(10);
 });
 
 test('Overview tab is default', async ({ page }) => {

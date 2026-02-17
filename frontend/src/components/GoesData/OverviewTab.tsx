@@ -94,27 +94,32 @@ export default function OverviewTab() {
     globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: tabId }));
   };
 
+  const prefillAndSwitch = (params: Record<string, string | number>) => {
+    globalThis.dispatchEvent(new CustomEvent('fetch-prefill', { detail: params }));
+    switchTab('fetch');
+  };
+
   const quickActions = [
     {
       label: 'Fetch Last Hour CONUS',
       description: 'Pre-fill fetch wizard for CONUS imagery',
       icon: <Download className="w-5 h-5" />,
       color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30',
-      onClick: () => switchTab('fetch'),
+      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 }),
     },
     {
       label: 'Fetch Latest FullDisk',
       description: 'One-click full hemisphere download',
       icon: <Zap className="w-5 h-5" />,
       color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',
-      onClick: () => switchTab('fetch'),
+      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'FullDisk', band: 'C02', hours: 1 }),
     },
     {
       label: 'True Color Now',
       description: 'Fetch & composite true color image',
       icon: <Palette className="w-5 h-5" />,
       color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30',
-      onClick: () => switchTab('fetch'),
+      onClick: () => prefillAndSwitch({ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 }),
     },
     {
       label: 'View Gallery',

@@ -8,6 +8,9 @@ import {
   GalleryHorizontalEnd,
   Sparkles,
   LayoutDashboard,
+  FolderHeart,
+  Layers,
+  Trash2,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -23,8 +26,11 @@ const AnimateTab = lazy(() => import('../components/Animation/AnimateTab'));
 const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
 const MapTab = lazy(() => import('../components/GoesData/MapTab'));
 const FrameGallery = lazy(() => import('../components/GoesData/FrameGallery'));
+const CollectionsTab = lazy(() => import('../components/GoesData/CollectionsTab'));
+const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
+const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
 
-type TabId = 'overview' | 'browse' | 'gallery' | 'live' | 'fetch' | 'animate' | 'map';
+type TabId = 'overview' | 'browse' | 'gallery' | 'live' | 'fetch' | 'animate' | 'map' | 'collections' | 'composites' | 'cleanup';
 
 interface TabDef {
   id: TabId;
@@ -40,6 +46,9 @@ const tabs: TabDef[] = [
   { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
   { id: 'animate', label: 'Animate', icon: <Sparkles className="w-4 h-4" /> },
   { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
+  { id: 'collections', label: 'Collections', icon: <FolderHeart className="w-4 h-4" /> },
+  { id: 'composites', label: 'Composites', icon: <Layers className="w-4 h-4" /> },
+  { id: 'cleanup', label: 'Cleanup', icon: <Trash2 className="w-4 h-4" /> },
 ];
 
 const tabLabels: Record<TabId, string> = Object.fromEntries(tabs.map((t) => [t.id, t.label])) as Record<TabId, string>;
@@ -131,6 +140,9 @@ export default function GoesData() {
       fetch: { component: <FetchTab />, name: 'Fetch' },
       animate: { component: <AnimateTab />, name: 'Animate' },
       map: { component: <MapTab />, name: 'Map' },
+      collections: { component: <CollectionsTab />, name: 'Collections' },
+      composites: { component: <CompositesTab />, name: 'Composites' },
+      cleanup: { component: <CleanupTab />, name: 'Cleanup' },
     };
 
     const tab = tabMap[activeTab];

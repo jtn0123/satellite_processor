@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/jtn0123/satellite_processor/compare/v1.4.0...v1.4.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* Debug run bugs — settings, stale jobs, gaps, rate limiting, pagination, partial status ([#128](https://github.com/jtn0123/satellite_processor/issues/128)) ([c040d13](https://github.com/jtn0123/satellite_processor/commit/c040d13dd8153c209fb0c2631e3b93e071ebb037))
+
 # [1.4.0](https://github.com/jtn0123/satellite_processor/compare/v1.3.0...v1.4.0) (2026-02-17)
 
 

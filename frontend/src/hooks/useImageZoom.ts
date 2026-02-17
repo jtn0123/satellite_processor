@@ -126,7 +126,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     transformOrigin: 'center center',
     cursor: state.scale > 1 ? 'grab' : 'default',
     touchAction: state.scale > 1 ? 'none' : 'auto',
-    transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+    transition: 'transform 0.1s ease-out',
   };
 
   return {

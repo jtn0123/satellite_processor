@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Clock, Zap, Info, Columns2 } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Clock, Zap, Info, Columns2, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
@@ -144,6 +144,40 @@ export default function LiveTab() {
     retry: 1,
   });
 
+  // Item 7: Track active fetch job for inline progress
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
+    queryKey: ['live-job', activeJobId],
+    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
+    enabled: !!activeJobId,
+    refetchInterval: activeJobId ? 2000 : false,
+  });
+
+  // Clear job tracking when complete
+  useEffect(() => {
+    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
+      const timer = setTimeout(() => {
+        setActiveJobId(null);
+        refetch();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeJob, refetch]);
+
+  // Item 4: Trigger an immediate fetch from the Live tab
+  const fetchNow = useCallback(() => {
+    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
+    api.post('/goes/fetch', {
+      satellite, sector, band,
+      start_date: startDate,
+      end_date: startDate,
+    }).then((res) => {
+      setActiveJobId(res.data.job_id);
+      showToast('success', 'Fetching latest frame…');
+    }).catch(() => showToast('error', 'Failed to start fetch'));
+  }, [satellite, sector, band, catalogLatest]);
+
   // Auto-fetch logic
   useEffect(() => {
     if (!autoFetch || !catalogLatest || !frame) return;
@@ -157,7 +191,8 @@ export default function LiveTab() {
         band: band || catalogLatest.band,
         start_date: catalogLatest.scan_time,
         end_date: catalogLatest.scan_time,
-      }).then(() => {
+      }).then((res) => {
+        setActiveJobId(res.data.job_id);
         showToast('success', 'Auto-fetching new frame from AWS');
       }).catch(() => {});
     }
@@ -290,14 +325,59 @@ export default function LiveTab() {
         </label>
       </div>
 
-      {/* Freshness Comparison */}
-      {freshnessInfo && freshnessInfo.behindMin > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-6 py-3 flex items-center gap-3">
-          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-sm text-amber-600 dark:text-amber-300">
-            AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is <strong>{freshnessInfo.localAge}</strong>
-            {freshnessInfo.behindMin > 0 && ` (${freshnessInfo.behindMin} min behind)`}
-          </span>
+      {/* Item 4: Stale data warning with color coding */}
+      {freshnessInfo && (() => {
+        const localMs = Date.now() - new Date(frame!.capture_time).getTime();
+        const staleLevel = localMs > 7200000 ? 'red' : localMs > 1800000 ? 'amber' : 'green';
+        const colors = {
+          green: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300',
+          amber: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300',
+          red: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-300',
+        };
+        const icons = { green: Clock, amber: Clock, red: AlertTriangle };
+        const Icon = icons[staleLevel];
+        return (staleLevel !== 'green' || freshnessInfo.behindMin > 0) ? (
+          <div className={`${colors[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
+            <Icon className="w-4 h-4 shrink-0" />
+            <span className="text-sm flex-1">
+              {staleLevel === 'red' && <strong>Data is stale! </strong>}
+              {freshnessInfo.behindMin > 0
+                ? <>AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is <strong>{freshnessInfo.localAge}</strong> ({freshnessInfo.behindMin} min behind)</>
+                : <>Your latest frame is <strong>{freshnessInfo.localAge}</strong></>}
+            </span>
+            <button
+              onClick={fetchNow}
+              disabled={!!activeJobId}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Fetch Now
+            </button>
+          </div>
+        ) : null;
+      })()}
+
+      {/* Item 7: Inline fetch progress */}
+      {activeJobId && activeJob && (
+        <div className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3">
+          {activeJob.status === 'completed' ? (
+            <span className="text-sm text-emerald-600 dark:text-emerald-300 font-medium">✓ Fetch complete</span>
+          ) : activeJob.status === 'failed' ? (
+            <span className="text-sm text-red-600 dark:text-red-300 font-medium">✗ Fetch failed</span>
+          ) : (
+            <>
+              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-slate-300 mb-1">
+                  <span>{activeJob.status_message || 'Fetching…'}</span>
+                  <span className="text-xs">{Math.round(activeJob.progress)}%</span>
+                </div>
+                <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${activeJob.progress}%` }} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

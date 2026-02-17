@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/jtn0123/satellite_processor/compare/v1.1.1...v1.2.0) (2026-02-17)
+
+
+### Features
+
+* Tab Consolidation (12→7) + Overview Dashboard + Live Tab Enhancement ([#124](https://github.com/jtn0123/satellite_processor/issues/124)) ([c91486b](https://github.com/jtn0123/satellite_processor/commit/c91486b228a631d68737d0038c08b90b7bdb0336))
+
 ## [1.1.1](https://github.com/jtn0123/satellite_processor/compare/v1.1.0...v1.1.1) (2026-02-17)
 
 

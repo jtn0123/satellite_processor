@@ -244,9 +244,11 @@ def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: 
 
     _log(status_msg, level="info" if final_status == "completed" else "warning")
     if not defer_final_update:
+        error_value = status_msg if final_status == "completed_partial" else None
         _update_job_db(
             job_id, status=final_status, progress=100, output_path=output_dir,
             completed_at=utcnow(), status_message=status_msg,
+            **({"error": error_value} if error_value else {}),
         )
         _publish_progress(job_id, 100, status_msg, final_status)
 

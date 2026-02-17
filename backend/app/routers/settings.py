@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Literal
 
+import sqlalchemy.exc
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -90,7 +91,11 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
 
 @router.get("")
 async def get_settings(db: AsyncSession = Depends(get_db)):
-    return await _load_from_db(db)
+    try:
+        return await _load_from_db(db)
+    except sqlalchemy.exc.SQLAlchemyError:
+        logger.exception("Failed to load settings from DB, returning defaults")
+        return _load_file_defaults()
 
 
 @router.put("")

@@ -134,7 +134,8 @@ async def catalog(
 
     async def _fetch():
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: catalog_list(satellite, sector, band, dt))
+        items = await loop.run_in_executor(None, lambda: catalog_list(satellite, sector, band, dt))
+        return {"items": items, "total": len(items)}
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
 

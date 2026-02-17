@@ -548,12 +548,12 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
-@router.get("/collections/{collection_id}/frames")
+@router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
 async def list_collection_frames(
     collection_id: str,
     db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
 ):
     """Return ordered frames for a collection with pagination."""
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
@@ -566,6 +566,7 @@ async def list_collection_frames(
     )
     total = count_result.scalar() or 0
 
+    offset = (page - 1) * limit
     frame_result = await db.execute(
         select(GoesFrame)
         .join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id)
@@ -576,12 +577,12 @@ async def list_collection_frames(
         .limit(limit)
     )
     frames = frame_result.scalars().all()
-    return {
-        "items": [GoesFrameResponse.model_validate(f) for f in frames],
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
+    return PaginatedResponse(
+        items=[GoesFrameResponse.model_validate(f) for f in frames],
+        total=total,
+        page=page,
+        limit=limit,
+    )
 
 
 @router.get("/collections/{collection_id}/export")

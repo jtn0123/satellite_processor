@@ -408,3 +408,12 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
 
     first = files[0]
     return FileResponse(os.path.join(output_path, first), filename=first)
+
+
+@router.post("/cleanup-stale")
+async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
+    """Mark stale processing and pending jobs as failed."""
+    from ..services.stale_jobs import cleanup_all_stale
+
+    result = await cleanup_all_stale(db)
+    return result

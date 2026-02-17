@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Clock, Zap } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+import PullToRefreshIndicator from './PullToRefreshIndicator';
 
 interface SatelliteAvailability {
   status: string;
@@ -66,6 +68,17 @@ export default function LiveTab() {
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
 
+  const handlePullRefresh = useCallback(async () => {
+    await refetchRef.current?.();
+  }, []);
+
+  const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
+    onRefresh: handlePullRefresh,
+  });
+
+  // Store refetch in a ref so the pull-to-refresh callback stays stable
+  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
+
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
@@ -86,6 +99,8 @@ export default function LiveTab() {
     refetchInterval: refreshInterval,
     enabled: !!satellite,
   });
+
+  refetchRef.current = refetch;
 
   // Available Now (from AWS catalog)
   const { data: catalogLatest } = useQuery<CatalogLatest>({
@@ -150,7 +165,8 @@ export default function LiveTab() {
   })() : null;
 
   return (
-    <div className="space-y-6">
+    <div ref={pullContainerRef} className="space-y-6">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
+import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
 import Skeleton from '../components/GoesData/Skeleton';
 import Breadcrumb, { type BreadcrumbSegment } from '../components/GoesData/Breadcrumb';
@@ -72,6 +73,17 @@ export default function GoesData() {
   }, []);
 
   useHotkeys(shortcuts);
+
+  const handleSwipe = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    setSubView(null);
+  }, []);
+
+  const swipeRef = useSwipeTabs({
+    tabs: allTabIds,
+    activeTab,
+    onSwipe: handleSwipe,
+  });
 
   // Listen for switch-tab events from child components
   useEffect(() => {
@@ -165,8 +177,8 @@ export default function GoesData() {
         ))}
       </div>
 
-      {/* Tab content */}
-      <div key={activeTab} className="animate-fade-in">
+      {/* Tab content — swipeable on mobile */}
+      <div ref={swipeRef} key={activeTab} className="animate-fade-in touch-pan-y">
         {renderTab()}
       </div>
     </div>

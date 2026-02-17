@@ -1,5 +1,8 @@
 import { Page, Route } from '@playwright/test';
 
+/** Version used in mocks — must match localStorage to keep WhatsNewModal closed */
+const MOCK_VERSION = '0.0.0-test';
+
 const PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
   'base64',
@@ -19,7 +22,7 @@ export async function handleApiRoute(route: Route): Promise<void> {
 
   // Health
   if (url.includes('/api/health/version'))
-    return void (await route.fulfill({ json: { version: '2.2.0', build: 'test' } }));
+    return void (await route.fulfill({ json: { version: MOCK_VERSION, build: 'test' } }));
   if (url.includes('/api/health/changelog'))
     return void (await route.fulfill({ json: [] }));
   if (url.includes('/api/health'))
@@ -91,7 +94,7 @@ export async function handleApiRoute(route: Route): Promise<void> {
  */
 export async function setupMockApi(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('whatsNewLastSeen', '99.99.99');
+    localStorage.setItem('whatsNewLastSeen', '0.0.0-test');
   });
   await page.route('**/api/**', handleApiRoute);
 }

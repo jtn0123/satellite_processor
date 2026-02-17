@@ -51,7 +51,7 @@ const RECIPE_DESCRIPTIONS: Record<string, string> = {
 export default function CompositesTab() {
   const queryClient = useQueryClient();
   const [selectedRecipe, setSelectedRecipe] = useState('');
-  const [satellite, setSatellite] = useState('GOES-16');
+  const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('CONUS');
   const [captureTime, setCaptureTime] = useState('');
 
@@ -101,7 +101,7 @@ export default function CompositesTab() {
               className={`text-left p-4 rounded-xl border transition-all ${
                 selectedRecipe === recipe.id
                   ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                  : 'border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
+                  : 'border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-700 dark:bg-slate-800'
               }`}
             >
               <div className="font-medium text-gray-900 dark:text-white text-sm">{recipe.name}</div>

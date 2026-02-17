@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
+  // Dismiss WhatsNew modal
+  await page.addInitScript(() => { localStorage.setItem("whatsNewLastSeen", "99.99.99"); });
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
     if (url.match(/\/api\/goes\/frames\/[^/]+\/image/) || url.match(/\/api\/goes\/frames\/[^/]+\/thumbnail/)) { return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64') }); }

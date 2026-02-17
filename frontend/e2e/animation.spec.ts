@@ -3,10 +3,13 @@ import { test, expect } from '@playwright/test';
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
 test.beforeEach(async ({ page }) => {
+  // Dismiss WhatsNew modal
+  await page.addInitScript(() => { localStorage.setItem("whatsNewLastSeen", "99.99.99"); });
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
     if (url.match(/\/api\/goes\/frames\/[^/]+\/(image|thumbnail)/)) return route.fulfill({ contentType: 'image/png', body: PIXEL });
     if (url.includes('/api/health/version')) return route.fulfill({ json: { version: '2.2.0', build: 'test' } });
+    if (url.includes('/api/health/changelog')) return route.fulfill({ json: [] });
     if (url.includes('/api/health')) return route.fulfill({ json: { status: 'ok' } });
     if (url.includes('/api/stats')) return route.fulfill({ json: { total_images: 10, total_jobs: 5, active_jobs: 0, storage_used_mb: 256 } });
     if (url.includes('/api/notifications')) return route.fulfill({ json: [] });

@@ -72,6 +72,8 @@ const mockApiHandler = async (route: unknown) => {
 };
 
 test.beforeEach(async ({ page }) => {
+  // Dismiss WhatsNew modal
+  await page.addInitScript(() => { localStorage.setItem("whatsNewLastSeen", "99.99.99"); });
   await page.route('**/api/**', mockApiHandler);
 });
 

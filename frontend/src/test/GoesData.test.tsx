@@ -79,11 +79,10 @@ describe('GoesData page', () => {
     });
   });
 
-  it('shows welcome card when no frames exist', async () => {
+  it('shows overview tab by default', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByText(/Welcome to GOES Data Manager/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Fetch Data/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Overview/i })).toHaveAttribute('aria-selected', 'true');
     });
   });
 });

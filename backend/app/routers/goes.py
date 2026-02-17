@@ -1,7 +1,8 @@
 """GOES satellite data endpoints."""
 
+import asyncio
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import Response
@@ -14,6 +15,7 @@ from ..errors import APIError, validate_uuid
 from ..models.goes import (
     CompositeCreateRequest,
     CompositeResponse,
+    FetchCompositeRequest,
     GoesBackfillRequest,
     GoesFetchRequest,
     GoesFetchResponse,
@@ -23,7 +25,13 @@ from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.cache import get_cached, invalidate, make_cache_key
 from ..services.gap_detector import get_coverage_stats
-from ..services.goes_fetcher import SATELLITE_AVAILABILITY, SATELLITE_BUCKETS, SECTOR_PRODUCTS, VALID_BANDS
+from ..services.goes_fetcher import (
+    SATELLITE_AVAILABILITY,
+    SATELLITE_BUCKETS,
+    SECTOR_INTERVALS,
+    SECTOR_PRODUCTS,
+    VALID_BANDS,
+)
 
 router = APIRouter(prefix="/api/goes", tags=["goes"])
 
@@ -37,23 +45,58 @@ BAND_DESCRIPTIONS = {
     "C15": "Dirty IR (12.3µm)", "C16": "CO2 (13.3µm)",
 }
 
+# Enhanced band metadata
+BAND_METADATA = {
+    "C01": {"wavelength_um": 0.47, "common_name": "Blue", "category": "visible", "use_case": "Daytime aerosol & smoke detection"},
+    "C02": {"wavelength_um": 0.64, "common_name": "Red", "category": "visible", "use_case": "Primary visible — clouds & surface features"},
+    "C03": {"wavelength_um": 0.86, "common_name": "Veggie", "category": "near_ir", "use_case": "Vegetation health, burn scars"},
+    "C04": {"wavelength_um": 1.37, "common_name": "Cirrus", "category": "near_ir", "use_case": "Cirrus cloud detection"},
+    "C05": {"wavelength_um": 1.61, "common_name": "Snow/Ice", "category": "near_ir", "use_case": "Snow/ice discrimination, cloud phase"},
+    "C06": {"wavelength_um": 2.24, "common_name": "Cloud Particle", "category": "near_ir", "use_case": "Cloud particle size, snow detection"},
+    "C07": {"wavelength_um": 3.9, "common_name": "Shortwave IR", "category": "infrared", "use_case": "Fire/hotspot detection, nighttime fog"},
+    "C08": {"wavelength_um": 6.2, "common_name": "Upper Tropo WV", "category": "infrared", "use_case": "Upper-level water vapor, jet streams"},
+    "C09": {"wavelength_um": 6.9, "common_name": "Mid Tropo WV", "category": "infrared", "use_case": "Mid-level water vapor tracking"},
+    "C10": {"wavelength_um": 7.3, "common_name": "Lower Tropo WV", "category": "infrared", "use_case": "Lower-level water vapor, SO₂ detection"},
+    "C11": {"wavelength_um": 8.4, "common_name": "Cloud-Top Phase", "category": "infrared", "use_case": "Cloud-top phase, dust detection"},
+    "C12": {"wavelength_um": 9.6, "common_name": "Ozone", "category": "infrared", "use_case": "Total column ozone, turbulence"},
+    "C13": {"wavelength_um": 10.3, "common_name": "Clean IR", "category": "infrared", "use_case": "Clean IR window — clouds & SST"},
+    "C14": {"wavelength_um": 11.2, "common_name": "IR Longwave", "category": "infrared", "use_case": "Cloud-top temperature, general IR"},
+    "C15": {"wavelength_um": 12.3, "common_name": "Dirty IR", "category": "infrared", "use_case": "Dirty IR window — volcanic ash"},
+    "C16": {"wavelength_um": 13.3, "common_name": "CO₂ Longwave", "category": "infrared", "use_case": "Cloud-top height estimation"},
+}
 
-@router.get("/products", response_model=GoesProductsResponse)
+SECTOR_FILE_SIZES_KB = {
+    "FullDisk": 12000,
+    "CONUS": 4000,
+    "Mesoscale1": 500,
+    "Mesoscale2": 500,
+}
+
+
+@router.get("/products")
 async def list_products():
-    """List available GOES satellites, sectors, and bands."""
+    """List available GOES satellites, sectors, and bands with enhanced metadata."""
     cache_key = make_cache_key("products")
-
-    import asyncio
 
     products = {
         "satellites": list(SATELLITE_BUCKETS),
         "satellite_availability": dict(SATELLITE_AVAILABILITY),
         "sectors": [
-            {"id": k, "name": k, "product": v}
+            {
+                "id": k,
+                "name": k,
+                "product": v,
+                "cadence_minutes": SECTOR_INTERVALS.get(k, 10),
+                "typical_file_size_kb": SECTOR_FILE_SIZES_KB.get(k, 4000),
+            }
             for k, v in SECTOR_PRODUCTS.items()
         ],
         "bands": [
-            {"id": band, "description": BAND_DESCRIPTIONS.get(band, band)}
+            {
+                "id": band,
+                "description": BAND_DESCRIPTIONS.get(band, band),
+                **(BAND_METADATA.get(band, {})),
+            }
             for band in VALID_BANDS
         ],
         "default_satellite": "GOES-19",
@@ -64,6 +107,122 @@ async def list_products():
         return products
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
+
+
+# ── Catalog endpoints ─────────────────────────────────────────────
+
+@router.get("/catalog")
+@limiter.limit("20/minute")
+async def catalog(
+    request: Request,
+    satellite: str = Query("GOES-19"),
+    sector: str = Query("CONUS"),
+    band: str = Query("C02"),
+    date: str | None = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
+):
+    """Query NOAA S3 for available GOES captures."""
+    from ..services.catalog import catalog_list
+
+    dt = None
+    if date:
+        try:
+            dt = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=UTC)
+        except ValueError:
+            raise APIError(400, "invalid_date", "Date must be in YYYY-MM-DD format")
+
+    cache_key = make_cache_key(f"catalog:{satellite}:{sector}:{band}:{date or 'today'}")
+
+    async def _fetch():
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: catalog_list(satellite, sector, band, dt))
+
+    return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
+
+
+@router.get("/catalog/latest")
+@limiter.limit("30/minute")
+async def catalog_latest(
+    request: Request,
+    satellite: str = Query("GOES-19"),
+    sector: str = Query("CONUS"),
+):
+    """Return the most recent available frame on S3 (checks last 2 hours)."""
+    from ..services.catalog import catalog_latest as _catalog_latest
+
+    cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}")
+
+    async def _fetch():
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: _catalog_latest(satellite, sector))
+
+    result = await get_cached(cache_key, ttl=60, fetch_fn=_fetch)
+    if not result:
+        raise APIError(404, "not_found", "No recent frames found")
+    return result
+
+
+# ── Fetch composite endpoint ──────────────────────────────────────
+
+@router.post("/fetch-composite", response_model=GoesFetchResponse)
+@limiter.limit("3/minute")
+async def fetch_composite(
+    request: Request,
+    payload: FetchCompositeRequest = Body(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Fetch multiple bands and auto-composite. Max 50 frames per request."""
+    recipe_bands = {
+        "true_color": ["C01", "C02", "C03"],
+        "natural_color": ["C02", "C06", "C07"],
+    }
+    bands = recipe_bands.get(payload.recipe)
+    if not bands:
+        raise APIError(400, "bad_request", f"Unknown recipe: {payload.recipe}. Valid: {list(recipe_bands)}")
+
+    # Estimate frame count
+    interval = SECTOR_INTERVALS.get(payload.sector, 10)
+    duration_min = (payload.end_time - payload.start_time).total_seconds() / 60
+    estimated_frames = int(duration_min / interval) * len(bands)
+    if estimated_frames > 50 * len(bands):
+        raise APIError(
+            422, "too_many_frames",
+            f"Estimated {estimated_frames} frames exceeds limit of {50 * len(bands)}. "
+            "Reduce time range.",
+        )
+
+    job_id = str(uuid.uuid4())
+    hours_diff = max(1, round((payload.end_time - payload.start_time).total_seconds() / 3600))
+    time_label = f"{hours_diff}hr" if hours_diff < 24 else f"{hours_diff // 24}d"
+    job_name = f"{payload.satellite} {payload.sector} {payload.recipe} ({time_label})"
+    job = Job(
+        id=job_id,
+        name=job_name,
+        status="pending",
+        job_type="goes_fetch_composite",
+        params={
+            "satellite": payload.satellite,
+            "sector": payload.sector,
+            "recipe": payload.recipe,
+            "bands": bands,
+            "start_time": payload.start_time.isoformat(),
+            "end_time": payload.end_time.isoformat(),
+        },
+    )
+    db.add(job)
+    await db.commit()
+
+    from ..tasks.goes_tasks import fetch_composite_data
+    result = fetch_composite_data.delay(job_id, job.params)
+    job.task_id = str(result.id)
+    await db.commit()
+
+    await invalidate("cache:dashboard-stats*")
+
+    return GoesFetchResponse(
+        job_id=job_id,
+        status="pending",
+        message=f"Composite fetch job created ({payload.recipe}, {len(bands)} bands)",
+    )
 
 
 @router.post("/fetch", response_model=GoesFetchResponse)

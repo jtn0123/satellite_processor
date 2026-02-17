@@ -89,8 +89,18 @@ class JobResponse(BaseModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     updated_at: datetime | None = None
+    frames_completed: int | None = None
+    frames_total: int | None = None
 
     model_config = {"from_attributes": True}
+
+    def model_post_init(self, __context):
+        """Derive frames_completed/frames_total from params and progress."""
+        if self.frames_completed is None and self.params:
+            total = self.params.get("frames_total")
+            if total:
+                self.frames_total = total
+                self.frames_completed = int((self.progress / 100) * total) if self.progress else 0
 
 
 class JobUpdate(BaseModel):

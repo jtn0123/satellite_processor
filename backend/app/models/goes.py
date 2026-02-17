@@ -115,6 +115,42 @@ class CompositeResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FetchCompositeRequest(BaseModel):
+    """Request schema for fetching composite imagery (multi-band + auto-composite)."""
+
+    satellite: str = Field(..., description="Satellite name (GOES-16, GOES-18, GOES-19)")
+    sector: str = Field(..., description="Sector (FullDisk, CONUS, Mesoscale1, Mesoscale2)")
+    recipe: str = Field(..., description="Composite recipe (true_color, natural_color)")
+    start_time: datetime = Field(..., description="Start time (ISO format)")
+    end_time: datetime = Field(..., description="End time (ISO format)")
+
+    @field_validator("satellite")
+    @classmethod
+    def validate_satellite(cls, v: str) -> str:
+        valid = {"GOES-16", "GOES-18", "GOES-19"}
+        if v not in valid:
+            raise ValueError(f"Invalid satellite. Must be one of: {valid}")
+        return v
+
+    @field_validator("sector")
+    @classmethod
+    def validate_sector(cls, v: str) -> str:
+        valid = {"FullDisk", "CONUS", "Mesoscale1", "Mesoscale2"}
+        if v not in valid:
+            raise ValueError(f"Invalid sector. Must be one of: {valid}")
+        return v
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_time_range(cls, v: datetime, info) -> datetime:
+        start = info.data.get("start_time")
+        if start and v <= start:
+            raise ValueError("end_time must be after start_time")
+        if start and (v - start) > timedelta(hours=24):
+            raise ValueError("Time range must not exceed 24 hours")
+        return v
+
+
 class GoesFetchResponse(BaseModel):
     job_id: str
     status: str

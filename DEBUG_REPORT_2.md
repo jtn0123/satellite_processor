@@ -1,7 +1,7 @@
 # Debug Report #2 — Deep Dive on Live Site
 
 **Date:** 2026-02-17  
-**API:** `http://10.27.27.99:8001` | **Frontend:** `http://10.27.27.99:3001`
+**API:** `<API_URL>` | **Frontend:** `<FRONTEND_URL>`
 
 ---
 
@@ -15,7 +15,7 @@ Jobs created **3+ days ago** are stuck in `pending` with `started_at=None`:
 These will never complete. No timeout/cleanup mechanism exists. The job with `name=None` suggests a creation bug where name wasn't set.
 
 ```bash
-curl -s -H "X-API-Key: $KEY" "http://10.27.27.99:8001/api/jobs?limit=20" | python3 -c "
+curl -s -H "X-API-Key: $KEY" "<API_URL>/api/jobs?limit=20" | python3 -c "
 import sys,json
 for j in json.load(sys.stdin)['items']:
     if j['status']=='pending': print(j['id'], j['name'], j['created_at'])
@@ -26,7 +26,7 @@ for j in json.load(sys.stdin)['items']:
 Job `86c3c6b7...` failed with `[Errno 13] Permission denied: '/app/data/output/goes_86c3c6b7-...'`. The container's data directory has permission issues that can cause job failures.
 
 ```bash
-curl -s -H "X-API-Key: $KEY" "http://10.27.27.99:8001/api/jobs/86c3c6b7-0893-4801-967f-bdc8d85e8394"
+curl -s -H "X-API-Key: $KEY" "<API_URL>/api/jobs/86c3c6b7-0893-4801-967f-bdc8d85e8394"
 # → error: "[Errno 13] Permission denied: '/app/data/output/goes_86c3c6b7-...'"
 ```
 
@@ -52,7 +52,7 @@ curl -s -H "X-API-Key: $KEY" "http://10.27.27.99:8001/api/jobs/86c3c6b7-0893-480
 ```bash
 for i in $(seq 1 10); do
   curl -s -o /dev/null -w "req$i: %{http_code} %{time_total}s\n" -H "X-API-Key: $KEY" \
-    "http://10.27.27.99:8001/api/goes/frames?limit=1"
+    "<API_URL>/api/goes/frames?limit=1"
 done
 # All returned 200 in ~5ms
 ```
@@ -60,7 +60,7 @@ done
 ### 5. DELETE Frame Returns 405 Method Not Allowed
 ```bash
 curl -s -w "HTTP %{http_code}" -H "X-API-Key: $KEY" -X DELETE \
-  "http://10.27.27.99:8001/api/goes/frames/35721f72-bc94-4680-b572-ccfd22659832"
+  "<API_URL>/api/goes/frames/35721f72-bc94-4680-b572-ccfd22659832"
 # → HTTP 405
 ```
 No way to delete individual frames via API. Only bulk operations or no delete at all.
@@ -84,18 +84,20 @@ The collection frames endpoint also uses `offset` instead of `page`, inconsisten
 
 ### 7. `localhost` Reference in Frontend JS Bundle
 The built JS bundle contains `localhost` references:
-```
+
+```text
 "http://localhost" — used as fallback in URL construction
 ```
 While it appears to be a safe fallback (only used when `window.location` is unavailable), it could cause issues in SSR or non-browser contexts.
 
 ```bash
-curl -s "http://10.27.27.99:3001/assets/index-DNRV7hqa.js" | grep -oE '.{0,40}localhost.{0,40}'
+curl -s "<FRONTEND_URL>/assets/index-DNRV7hqa.js" | grep -oE '.{0,40}localhost.{0,40}'
 ```
 
 ### 8. Failed Job Has Empty Error + "failed" Status (Misleading)
 Job `29d08075...` status is `failed` but `error` field is empty string. The actual error info is only in `status_message`:
-```
+
+```text
 status=failed, error="", status_message="Fetched 94 of 143 frames (49 failed to download)"
 ```
 This is a partial success that got marked as failed. Should be a distinct status like `partial` or populate the `error` field.
@@ -109,7 +111,7 @@ The original test plan assumed a `count` parameter, but the API requires `start_
 ```bash
 curl -s -H "X-API-Key: $KEY" -H "Content-Type: application/json" -X POST \
   -d '{"satellite":"GOES-19","band":"02","sector":"CONUS","count":999999}' \
-  "http://10.27.27.99:8001/api/goes/fetch"
+  "<API_URL>/api/goes/fetch"
 # → 422: missing start_time, end_time; also band must be "C02" not "02"
 ```
 

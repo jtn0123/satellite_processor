@@ -6,11 +6,15 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 # Use Redis for persistent rate-limit storage when available (survives restarts).
-_redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
-_storage_uri = _redis_url if _redis_url else "memory://"
+_redis_url = os.getenv("REDIS_URL")
 
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["60/minute"],
-    storage_uri=_storage_uri,
-)
+_limiter_kwargs: dict = {
+    "key_func": get_remote_address,
+    "default_limits": ["60/minute"],
+    "in_memory_fallback_enabled": True,
+    "swallow_errors": True,
+}
+if _redis_url:
+    _limiter_kwargs["storage_uri"] = _redis_url
+
+limiter = Limiter(**_limiter_kwargs)

@@ -1,10 +1,11 @@
 """Tests for debug run bug fixes."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from app.db.models import Job
 from app.services.stale_jobs import cleanup_all_stale, mark_stale_pending_jobs
+from app.utils import utcnow
 
 
 @pytest.mark.asyncio
@@ -13,7 +14,7 @@ async def test_settings_returns_defaults(client):
     resp = await client.get("/api/settings")
     assert resp.status_code == 200
     data = resp.json()
-    assert "timestamp_enabled" in data or isinstance(data, dict)
+    assert isinstance(data, dict) and "timestamp_enabled" in data
 
 
 @pytest.mark.asyncio
@@ -28,7 +29,7 @@ async def test_settings_put_and_get(client):
 @pytest.mark.asyncio
 async def test_cleanup_stale_pending_jobs(db):
     """Bug 2: Pending jobs with no task_id older than 1 hour should be failed."""
-    old_time = datetime.now(UTC) - timedelta(hours=2)
+    old_time = utcnow() - timedelta(hours=2)
     job = Job(
         id="stale-pending-test",
         status="pending",

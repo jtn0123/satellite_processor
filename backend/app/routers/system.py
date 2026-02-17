@@ -60,8 +60,11 @@ async def system_info():
     try:
         from ..celery_app import celery_app
 
-        inspector = celery_app.control.inspect(timeout=2)
-        active = inspector.active()
+        def _check_celery():
+            inspector = celery_app.control.inspect(timeout=2)
+            return inspector.active()
+
+        active = await asyncio.to_thread(_check_celery)
         worker_status = "online" if active else "offline"
     except Exception:
         worker_status = "offline"

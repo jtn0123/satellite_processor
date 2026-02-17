@@ -548,7 +548,7 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
-@router.get("/collections/{collection_id}/frames")
+@router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
 async def list_collection_frames(
     collection_id: str,
     db: AsyncSession = Depends(get_db),

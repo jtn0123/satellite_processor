@@ -1,8 +1,8 @@
 # Sat-Tracker Debug Report
 
 **Date:** 2026-02-17 15:30 UTC  
-**Frontend:** http://10.27.27.99:3001  
-**Backend:** http://10.27.27.99:8001  
+**Frontend:** <FRONTEND_URL>  
+**Backend:** <API_URL>  
 **Version:** 1.2.0 (commit 6232019)
 
 ## Overall Health: 🟡 MOSTLY HEALTHY
@@ -92,7 +92,7 @@ Job `86c3c6b7` failed with `Permission denied: '/app/data/output/goes_86c3c6b7'`
 ## CORS
 
 CORS headers are properly configured:
-- `access-control-allow-origin: http://10.27.27.99:3001` ✅
+- `access-control-allow-origin: <FRONTEND_URL>` ✅
 - `access-control-allow-credentials: true` ✅
 - `access-control-expose-headers: X-Request-ID` ✅
 

@@ -147,6 +147,7 @@ export default function GoesData() {
       <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
         {tabs.map((tab) => (
           <button
+            type="button"
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setSubView(null); }}
             role="tab"
@@ -155,7 +156,7 @@ export default function GoesData() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
               activeTab === tab.id
                 ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20 glow-primary'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-slate-800'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
             }`}
           >
             {tab.icon}

@@ -509,7 +509,10 @@ export default function FetchTab() {
       {/* Saved Presets (collapsible) */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
         <button
+          type="button"
           onClick={() => setShowPresets((p) => !p)}
+          aria-expanded={showPresets}
+          aria-controls="presets-panel"
           className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
         >
           <div className="flex items-center gap-2">
@@ -519,7 +522,7 @@ export default function FetchTab() {
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showPresets ? 'rotate-180' : ''}`} />
         </button>
         {showPresets && (
-          <div className="px-6 pb-6 border-t border-gray-200 dark:border-slate-800">
+          <div id="presets-panel" className="px-6 pb-6 border-t border-gray-200 dark:border-slate-800">
             <Suspense fallback={<div className="h-24 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse mt-4" />}>
               <PresetsTab />
             </Suspense>

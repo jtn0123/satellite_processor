@@ -64,6 +64,7 @@ export default function LiveTab() {
   const [autoFetch, setAutoFetch] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastAutoFetchTime = useRef<string | null>(null);
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
@@ -95,12 +96,13 @@ export default function LiveTab() {
     retry: 1,
   });
 
-  // Auto-fetch logic
+  // Auto-fetch logic — guard prevents duplicate requests for the same scan_time
   useEffect(() => {
     if (!autoFetch || !catalogLatest || !frame) return;
     const catalogTime = new Date(catalogLatest.scan_time).getTime();
     const localTime = new Date(frame.capture_time).getTime();
-    if (catalogTime > localTime) {
+    if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time) {
+      lastAutoFetchTime.current = catalogLatest.scan_time;
       api.post('/goes/fetch', {
         satellite: catalogLatest.satellite || satellite,
         sector: catalogLatest.sector || sector,
@@ -246,7 +248,7 @@ export default function LiveTab() {
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  Fetch This Frame
+                  Download Latest
                 </button>
               </div>
             ) : (

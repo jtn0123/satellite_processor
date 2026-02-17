@@ -30,6 +30,38 @@ const DEFAULT_CONFIG: AnimationConfig = {
   name: '',
 };
 
+/** Reusable toggle between Quick Animate and Animation Studio modes */
+function ModeToggle({ mode, setMode }: { mode: 'quick' | 'studio'; setMode: (m: 'quick' | 'studio') => void }) {
+  return (
+    <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
+      <button
+        type="button"
+        onClick={() => setMode('quick')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          mode === 'quick'
+            ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
+            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
+        }`}
+      >
+        <Sparkles className="w-4 h-4" />
+        Quick Animate
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode('studio')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          mode === 'studio'
+            ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
+            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
+        }`}
+      >
+        <Film className="w-4 h-4" />
+        Animation Studio
+      </button>
+    </div>
+  );
+}
+
 export default function AnimateTab() {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'quick' | 'studio'>('quick');
@@ -126,23 +158,7 @@ export default function AnimateTab() {
   if (mode === 'studio') {
     return (
       <div className="space-y-6">
-        {/* Mode Toggle */}
-        <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
-          <button
-            onClick={() => setMode('quick')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800"
-          >
-            <Sparkles className="w-4 h-4" />
-            Quick Animate
-          </button>
-          <button
-            onClick={() => setMode('studio')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20"
-          >
-            <Film className="w-4 h-4" />
-            Animation Studio
-          </button>
-        </div>
+        <ModeToggle mode={mode} setMode={setMode} />
         <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />}>
           <AnimationStudioTab />
         </Suspense>
@@ -152,23 +168,7 @@ export default function AnimateTab() {
 
   return (
     <div className="space-y-6">
-      {/* Mode Toggle */}
-      <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
-        <button
-          onClick={() => setMode('quick')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20"
-        >
-          <Sparkles className="w-4 h-4" />
-          Quick Animate
-        </button>
-        <button
-          onClick={() => setMode('studio')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800"
-        >
-          <Film className="w-4 h-4" />
-          Animation Studio
-        </button>
-      </div>
+      <ModeToggle mode={mode} setMode={setMode} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Selection & Preview */}

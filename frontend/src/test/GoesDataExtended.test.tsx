@@ -66,7 +66,7 @@ describe('GoesData page extended', () => {
     });
   });
 
-  it('shows overview tab by default with quick actions', async () => {
+  it('shows overview tab selected by default', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Overview/i })).toHaveAttribute('aria-selected', 'true');

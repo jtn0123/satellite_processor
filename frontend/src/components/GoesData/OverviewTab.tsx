@@ -41,7 +41,9 @@ interface JobsResponse {
 }
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const ts = new Date(dateStr).getTime();
+  if (Number.isNaN(ts)) return 'unknown';
+  const diff = Date.now() - ts;
   const min = Math.floor(diff / 60000);
   if (min < 1) return 'just now';
   if (min < 60) return `${min} min ago`;
@@ -67,25 +69,27 @@ function statusBadge(status: string) {
 }
 
 export default function OverviewTab() {
-  const { data: catalogLatest } = useQuery<CatalogLatest>({
+  const { data: catalogLatest, isLoading: catalogLoading, isError: catalogError } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest'],
     queryFn: () => api.get('/goes/catalog/latest').then((r) => r.data),
     staleTime: 120_000,
     retry: 1,
   });
 
-  const { data: stats } = useQuery<FrameStats>({
+  const { data: stats, isLoading: statsLoading } = useQuery<FrameStats>({
     queryKey: ['goes-frame-stats'],
     queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
     staleTime: 60_000,
   });
 
-  const { data: jobs } = useQuery<JobsResponse>({
+  const { data: jobs, isLoading: jobsLoading } = useQuery<JobsResponse>({
     queryKey: ['goes-recent-jobs'],
     queryFn: () => api.get('/jobs', { params: { limit: 5 } }).then((r) => r.data),
     staleTime: 30_000,
   });
 
+  // Global 'switch-tab' event pattern is used across the app (GoesData.tsx listens)
+  // to allow child tab components to trigger tab navigation without prop drilling.
   const switchTab = (tabId: string) => {
     globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: tabId }));
   };
@@ -133,6 +137,21 @@ export default function OverviewTab() {
         <LayoutDashboard className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Overview</h2>
       </div>
+
+      {/* Loading state */}
+      {(catalogLoading || statsLoading || jobsLoading) && (
+        <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading overview data...
+        </div>
+      )}
+
+      {/* Error state */}
+      {catalogError && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-6 py-3 text-sm text-red-400">
+          Failed to load latest catalog data. The API may be unavailable.
+        </div>
+      )}
 
       {/* Latest from AWS */}
       {catalogLatest && (
@@ -195,6 +214,7 @@ export default function OverviewTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActions.map((action) => (
             <button
+              type="button"
               key={action.label}
               onClick={action.onClick}
               className={`flex items-start gap-3 p-4 rounded-xl border bg-gradient-to-br ${action.color} hover:scale-[1.02] transition-all text-left`}

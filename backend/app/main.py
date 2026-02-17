@@ -29,6 +29,7 @@ from .redis_pool import close_redis_pool, get_redis_client
 from .routers import (
     animations,
     download,
+    file_download,
     goes,
     goes_data,
     health,
@@ -160,6 +161,7 @@ app.include_router(download.router)
 app.include_router(scheduling.router)
 app.include_router(notifications.router)
 app.include_router(share.router)
+app.include_router(file_download.router)
 
 
 # ── Metrics endpoint ──────────────────────────────────────────────

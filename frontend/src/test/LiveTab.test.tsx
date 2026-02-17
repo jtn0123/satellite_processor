@@ -53,7 +53,7 @@ describe('LiveTab', () => {
   it('renders without crashing', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Live View')).toBeInTheDocument();
+      expect(screen.getByText('Your Latest')).toBeInTheDocument();
     });
   });
 
@@ -117,7 +117,7 @@ describe('LiveTab', () => {
     });
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText(/No frames available/i)).toBeInTheDocument();
+      expect(screen.getByText(/No local frames available/i)).toBeInTheDocument();
     });
   });
 

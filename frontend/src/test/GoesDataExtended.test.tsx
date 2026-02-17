@@ -66,36 +66,18 @@ describe('GoesData page extended', () => {
     });
   });
 
-  it('shows satellite product info when frames exist', async () => {
-    // Override to return frames so browse tab shows instead of welcome
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') {
-        return Promise.resolve({
-          data: {
-            satellites: ['GOES-16', 'GOES-18'],
-            sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
-            bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
-          },
-        });
-      }
-      if (url.includes('/frames')) {
-        return Promise.resolve({ data: { items: [{ id: '1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1000, tags: [] }], total: 1, page: 1, limit: 50 } });
-      }
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url === '/goes/tags') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+  it('shows overview tab by default with quick actions', async () => {
     renderPage();
     await waitFor(() => {
-      const selects = document.querySelectorAll('select');
-      expect(selects.length).toBeGreaterThan(0);
+      expect(screen.getByRole('tab', { name: /Overview/i })).toHaveAttribute('aria-selected', 'true');
     });
   });
 
-  it('renders welcome card when no frames', async () => {
+  it('renders 7 tabs in consolidated layout', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/Welcome to GOES Data Manager/i)).toBeInTheDocument();
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs).toHaveLength(7);
     });
   });
 

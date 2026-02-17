@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/jtn0123/satellite_processor/compare/v1.4.2...v1.5.0) (2026-02-17)
+
+
+### Features
+
+* GOES tabs polish — hidden tabs, MapTab fixes, dashboard optimization, GapsTab backfill ([#131](https://github.com/jtn0123/satellite_processor/issues/131)) ([3be3557](https://github.com/jtn0123/satellite_processor/commit/3be3557b9e09253a28a2ad92dba44becb60d40b5))
+
 ## [1.4.2](https://github.com/jtn0123/satellite_processor/compare/v1.4.1...v1.4.2) (2026-02-17)
 
 

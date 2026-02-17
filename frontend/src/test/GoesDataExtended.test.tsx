@@ -77,7 +77,7 @@ describe('GoesData page extended', () => {
     renderPage();
     await waitFor(() => {
       const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(7);
+      expect(tabs).toHaveLength(10);
     });
   });
 

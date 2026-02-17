@@ -22,11 +22,6 @@ function getStaleLevel(captureTime: string): StaleLevel {
   return 'green';
 }
 
-function getIcon(level: StaleLevel) {
-  if (level === 'red') return AlertTriangle;
-  return Clock;
-}
-
 export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobId, onFetchNow }: StaleDataBannerProps) {
   const staleLevel = getStaleLevel(captureTime);
 
@@ -34,11 +29,11 @@ export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobI
     return null;
   }
 
-  const Icon = getIcon(staleLevel);
-
   return (
     <div className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
-      <Icon className="w-4 h-4 shrink-0" />
+      {staleLevel === 'red'
+        ? <AlertTriangle className="w-4 h-4 shrink-0" />
+        : <Clock className="w-4 h-4 shrink-0" />}
       <span className="text-sm flex-1">
         {staleLevel === 'red' && <strong>Data is stale! </strong>}
         {freshnessInfo.behindMin > 0

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FetchTab from '../components/GoesData/FetchTab';
-import { fireEvent } from '@testing-library/react';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -11,20 +10,17 @@ vi.mock('../api/client', () => ({
         return Promise.resolve({
           data: {
             satellites: ['GOES-19'],
-            sectors: ['FullDisk'],
-            bands: ['C02'],
             satellite_availability: {
-              'GOES-19': { available_from: '2025-01-01', available_to: null },
+              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active', description: 'GOES-East' },
             },
+            sectors: [{ id: 'FullDisk', name: 'FullDisk', cadence_minutes: 10, typical_file_size_kb: 12000 }],
+            bands: [{ id: 'C02', description: 'Red Visible', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary' }],
+            default_satellite: 'GOES-19',
           },
         });
       }
-      if (url === '/goes/frame-count') {
-        return Promise.resolve({ data: { count: 500 } });
-      }
-      if (url === '/settings') {
-        return Promise.resolve({ data: { max_frames_per_fetch: 200 } });
-      }
+      if (url === '/goes/catalog') return Promise.resolve({ data: [] });
+      if (url === '/jobs') return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     }),
     post: vi.fn().mockResolvedValue({ data: { job_id: 'test-job' } }),
@@ -41,54 +37,36 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('FetchTab', () => {
-  it('renders the Fetch button', () => {
+  it('renders the Fetch Latest button', async () => {
     render(<FetchTab />, { wrapper });
-    expect(screen.getByText('Fetch')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Fetch Latest')).toBeInTheDocument());
   });
 
-  it('renders start/end time inputs', () => {
+  it('renders satellite cards on initial step', async () => {
     render(<FetchTab />, { wrapper });
-    expect(screen.getByLabelText(/start time/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('GOES-19')).toBeInTheDocument());
+    expect(screen.getByText('Choose Satellite')).toBeInTheDocument();
   });
 
-  it('disables Fetch when no times are set', () => {
+  it('navigates to step 3 and shows time inputs', async () => {
     render(<FetchTab />, { wrapper });
-    const btn = screen.getByText('Fetch').closest('button');
-    expect(btn).toBeDisabled();
+    await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
   });
 
-  it('shows frame limit warning when estimate exceeds limit', async () => {
-    // Pre-seed the query cache with frame estimate > limit
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const sat = 'GOES-19', sector = 'FullDisk', band = 'C02';
-    const start = '2026-01-01T00:00';
-    const end = '2026-01-01T23:00';
-    qc.setQueryData(['frame-count', sat, sector, band, start, end], { count: 500 });
-    qc.setQueryData(['settings'], { max_frames_per_fetch: 200 });
-    qc.setQueryData(['goes-products'], {
-      satellites: ['GOES-19'],
-      sectors: [{ id: 'FullDisk', name: 'Full Disk' }],
-      bands: [{ id: 'C02', description: 'Red Visible' }],
-      satellite_availability: { 'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active' } },
-    });
-
-    render(
-      <QueryClientProvider client={qc}>
-        <FetchTab />
-      </QueryClientProvider>
-    );
-
-    // Set start/end times via inputs to trigger the query
-    const startInput = screen.getByLabelText(/start time/i);
-    const endInput = screen.getByLabelText(/end time/i);
-    fireEvent.change(startInput, { target: { value: start } });
-    fireEvent.change(endInput, { target: { value: end } });
-
-    // The warning should appear since cache has count 500 > limit 200
-    // Give it a moment
-    await new Promise((r) => setTimeout(r, 100));
-    // At minimum, verify the inputs are set
-    expect((startInput as HTMLInputElement).value).toBe(start);
-    expect((endInput as HTMLInputElement).value).toBe(end);
+  it('disables Fetch button when no times set', async () => {
+    render(<FetchTab />, { wrapper });
+    await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
+    // Navigate to step 3
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
+    // Fetch button should be disabled without times
+    const fetchBtn = screen.getByRole('button', { name: /^fetch$/i });
+    expect(fetchBtn).toBeDisabled();
   });
 });

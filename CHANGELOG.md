@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/jtn0123/satellite_processor/compare/v1.4.1...v1.4.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* add /api/download endpoint for serving data files (images, thumbnails) ([#130](https://github.com/jtn0123/satellite_processor/issues/130)) ([5c2f75a](https://github.com/jtn0123/satellite_processor/commit/5c2f75a711fb102663d6c1613489e4ec8c286017))
+
 ## [1.4.1](https://github.com/jtn0123/satellite_processor/compare/v1.4.0...v1.4.1) (2026-02-17)
 
 

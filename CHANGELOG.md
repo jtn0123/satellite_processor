@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/jtn0123/satellite_processor/compare/v1.3.0...v1.4.0) (2026-02-17)
+
+
+### Bug Fixes
+
+* critical bugs + Live tab polish ([#126](https://github.com/jtn0123/satellite_processor/issues/126)) ([91a4c67](https://github.com/jtn0123/satellite_processor/commit/91a4c67a547a8b5e10bcb297f1c6da5458c0c4bd))
+
+
+### Features
+
+* Dynamic Availability + Preview Thumbnails + Medium Polish ([#127](https://github.com/jtn0123/satellite_processor/issues/127)) ([b342a3c](https://github.com/jtn0123/satellite_processor/commit/b342a3c337cc2666d754becb4b4c0b3e0b116f9e))
+
 # [1.3.0](https://github.com/jtn0123/satellite_processor/compare/v1.2.0...v1.3.0) (2026-02-17)
 
 

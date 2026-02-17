@@ -3,8 +3,6 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
   AlertTriangle,
-  CheckCircle,
-  Clock,
   Info,
   ChevronRight,
   ChevronLeft,

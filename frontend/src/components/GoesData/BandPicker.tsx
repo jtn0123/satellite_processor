@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { BAND_INFO, type BandInfo } from '../../constants/bands';
+import { BAND_INFO } from '../../constants/bands';
 
 interface BandPickerProps {
   value: string;

@@ -1,12 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
 
-interface SectorInfo {
-  id: string;
-  name: string;
-  description: string;
-  cadence_minutes: number;
-  typical_file_size_kb: number;
-}
 
 const SECTOR_DETAILS: Record<string, { description: string }> = {
   FullDisk: { description: 'Entire hemisphere view' },

@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
@@ -66,6 +66,18 @@ export default function FetchTab() {
   const [endTime, setEndTime] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+
+  // Listen for prefill events from other tabs (e.g. LiveTab "Download Latest")
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { satellite?: string; sector?: string; band?: string };
+      if (detail.satellite) setSatellite(detail.satellite);
+      if (detail.sector) setSector(detail.sector);
+      if (detail.band) setBand(detail.band);
+    };
+    globalThis.addEventListener('fetch-prefill', handler);
+    return () => globalThis.removeEventListener('fetch-prefill', handler);
+  }, []);
 
   const { data: products, isLoading: productsLoading } = useQuery<EnhancedProduct>({
     queryKey: ['goes-products'],
@@ -277,6 +289,7 @@ export default function FetchTab() {
               value={sector}
               onChange={setSector}
               sectors={products?.sectors ?? []}
+              satellite={satellite}
             />
           </div>
 
@@ -321,7 +334,7 @@ export default function FetchTab() {
           {imageType === 'single' && (
             <div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Band</h3>
-              <BandPicker value={band} onChange={setBand} />
+              <BandPicker value={band} onChange={setBand} satellite={satellite} sector={sector} />
             </div>
           )}
 

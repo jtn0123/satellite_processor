@@ -442,7 +442,11 @@ export default function BrowseTab() {
 
         {/* Hint */}
         <div className="text-xs text-gray-400 dark:text-slate-500">
-          {totalFrames > 0 ? `${totalFrames} frames · Showing ${frames.length}` : (isLoading ? <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" /> : '0 frames')} · Click to preview, Shift+Click to select
+          {(() => {
+            if (totalFrames > 0) return `${totalFrames} frames · Showing ${frames.length}`;
+            if (isLoading) return <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />;
+            return '0 frames';
+          })()} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}

@@ -244,7 +244,7 @@ export default function LiveTab() {
       <div
         ref={containerRef}
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
-        {...(!compareMode ? zoom.handlers : {})}
+        {...(compareMode ? {} : zoom.handlers)}
       >
         <ImagePanelContent
           isLoading={isLoading}

@@ -6,7 +6,7 @@ function mockIO(triggerImmediately = false) {
   const disconnect = vi.fn();
   const observe = vi.fn();
   let storedCb: IntersectionObserverCallback | null = null;
-  let instance: MockIO | null = null;
+  const instances: MockIO[] = [];
 
   class MockIO {
     observe = observe;
@@ -14,13 +14,14 @@ function mockIO(triggerImmediately = false) {
     unobserve = vi.fn();
     constructor(cb: IntersectionObserverCallback) {
       storedCb = cb;
-      instance = this;
+      instances.push(this);
     }
   }
 
   vi.stubGlobal('IntersectionObserver', MockIO);
 
   function trigger() {
+    const instance = instances[instances.length - 1] ?? null;
     if (storedCb && instance) {
       act(() => {
         storedCb!([{ isIntersecting: true } as IntersectionObserverEntry], instance as unknown as IntersectionObserver);

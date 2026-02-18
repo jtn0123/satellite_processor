@@ -50,6 +50,8 @@ jobs:
           # Download backend coverage shards
           echo "Downloading backend coverage..."
           gh run download "$RUN_ID" -p "backend-coverage-shard*" -D backend/ 2>/dev/null || echo "No backend coverage artifacts found"
+          # Flatten: artifact downloads create subdirs, move XMLs to root
+          find backend/ -mindepth 2 -name "*.xml" -exec mv {} backend/ \; 2>/dev/null || true
 
           # Download frontend coverage shards and merge
           echo "Downloading frontend coverage..."
@@ -154,6 +156,21 @@ jobs:
               console.log('Failed to fetch SonarQube data:', e.message);
             }
 
+            // Fetch OVERALL project measures (not PR-scoped)
+            let overallMeasures = {};
+            try {
+              const overallMetrics = ['coverage', 'ncloc', 'bugs', 'vulnerabilities', 'code_smells', 'duplicated_lines_density'].join(',');
+              const overallRes = await fetch(`${sonarUrl}/api/measures/component?component=${projectKey}&metricKeys=${overallMetrics}`, { headers });
+              if (overallRes.ok) {
+                const overallData = await overallRes.json();
+                for (const m of (overallData.component?.measures || [])) {
+                  overallMeasures[m.metric] = m.value ?? 'N/A';
+                }
+              }
+            } catch (e) {
+              console.log('Failed to fetch overall metrics:', e.message);
+            }
+
             // Fetch issues for this PR
             let issues = [];
             try {
@@ -235,6 +252,16 @@ jobs:
               `| | Reliability | Security | Maintainability |`,
               `|---|---|---|---|`,
               `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
+              '',
+              '### Overall Project',
+              `| Metric | Value |`,
+              `|--------|-------|`,
+              `| 📊 Coverage | ${pct(overallMeasures.coverage)} |`,
+              `| 📏 Lines of Code | ${num(overallMeasures.ncloc)} |`,
+              `| 🐛 Bugs | ${num(overallMeasures.bugs)} |`,
+              `| 🔓 Vulnerabilities | ${num(overallMeasures.vulnerabilities)} |`,
+              `| 🧹 Code Smells | ${num(overallMeasures.code_smells)} |`,
+              `| 📋 Duplication | ${pct(overallMeasures.duplicated_lines_density)} |`,
               issuesSection,
               '',
               `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,

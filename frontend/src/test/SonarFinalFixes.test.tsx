@@ -29,21 +29,25 @@ describe('SonarQube final fixes', () => {
       expect(panZoom!.tagName).toBe('BUTTON');
     });
 
-    it('dialog has tabIndex={0} for keyboard accessibility', () => {
+    it('dialog does not have tabIndex on non-interactive element', () => {
       const frame = makeFrame('1');
       render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
       const dialog = document.querySelector('dialog');
-      expect(dialog?.getAttribute('tabindex')).toBe('0');
+      expect(dialog).toBeTruthy();
+      expect(dialog?.hasAttribute('tabindex')).toBe(false);
     });
 
-    it('handles mouseMove and mouseUp on dialog', () => {
+    it('handles mouseMove and mouseUp on dialog without errors', () => {
       const frame = makeFrame('1');
       render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
       const dialog = document.querySelector('dialog')!;
-      // Should not throw
+      expect(dialog).toBeTruthy();
       fireEvent.mouseMove(dialog, { clientX: 100, clientY: 100 });
       fireEvent.mouseUp(dialog);
-      expect(dialog).toBeInTheDocument();
+      // Verify dialog and image remain rendered after mouse interactions
+      const img = dialog.querySelector('img');
+      expect(img).toBeTruthy();
+      expect(img!.getAttribute('alt')).toContain('GOES-18');
     });
   });
 

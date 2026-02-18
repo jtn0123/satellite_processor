@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+/* stylelint-disable-next-line at-rule-no-unknown -- Tailwind v4 syntax */
 @custom-variant dark (&:is(.dark *));
 
 @theme {

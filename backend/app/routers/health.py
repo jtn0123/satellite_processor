@@ -61,6 +61,16 @@ def _strip_links(text: str) -> str:
     return text.strip()
 
 
+def _try_append_release(
+    current: dict | None, releases: list, limit: int
+) -> bool:
+    """Append current release to list. Return True if limit reached."""
+    if current:
+        releases.append(current)
+        return len(releases) >= limit
+    return False
+
+
 def _parse_changelog(limit: int = 5) -> list:
     """Parse CHANGELOG.md into structured releases."""
     global _changelog_cache  # noqa: PLW0603
@@ -72,18 +82,17 @@ def _parse_changelog(limit: int = 5) -> list:
         _changelog_cache = []
         return _changelog_cache
 
-    content = path.read_text(encoding="utf-8")
     releases: list = []
     current: dict | None = None
 
-    for line in content.splitlines():
-        # Match ## [version](url) (date) or # version (date)
-        m = re.match(r'^##?\s+\[?(\d+\.\d+\.\d+)\]?(?:\([^)]*\))?\s+\((\d{4}-\d{2}-\d{2})\)', line)
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(
+            r'^##?\s+\[?(\d+\.\d+\.\d+)\]?(?:\([^)]*\))?\s+\((\d{4}-\d{2}-\d{2})\)',
+            line,
+        )
         if m:
-            if current:
-                releases.append(current)
-                if len(releases) >= limit:
-                    break
+            if _try_append_release(current, releases, limit):
+                break
             current = {"version": m.group(1), "date": m.group(2), "changes": []}
             continue
         if current and line.startswith('* '):

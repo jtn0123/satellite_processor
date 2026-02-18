@@ -16,13 +16,25 @@ test.beforeEach(async ({ page }) => {
       },
     });
   });
+  // Dashboard needs goes/dashboard-stats endpoint
+  await page.route('**/api/goes/dashboard-stats', async (route) => {
+    await route.fulfill({
+      json: {
+        total_frames: 0,
+        frames_by_satellite: {},
+        last_fetch_time: null,
+        active_schedules: 0,
+        recent_jobs: [],
+        storage_by_satellite: {},
+        storage_by_band: {},
+      },
+    });
+  });
 });
 
 test.describe('Settings page flow', () => {
   test('settings page loads without crash', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'networkidle' });
-    // Either shows Settings heading or an error boundary
-    // At minimum the page should render something
     await expect(page.locator('body')).not.toBeEmpty();
   });
 

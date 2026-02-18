@@ -65,6 +65,8 @@ export async function handleApiRoute(route: Route): Promise<void> {
         default_satellite: 'GOES-19',
       },
     }));
+  if (url.includes('/api/goes/dashboard-stats'))
+    return void (await route.fulfill({ json: { total_frames: 50, frames_by_satellite: {}, last_fetch_time: null, active_schedules: 0, recent_jobs: [], storage_by_satellite: {}, storage_by_band: {} } }));
   if (url.includes('/api/goes/stats'))
     return void (await route.fulfill({ json: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } }));
   if (url.includes('/api/goes/frames/stats'))
@@ -97,6 +99,10 @@ export async function handleApiRoute(route: Route): Promise<void> {
     return void (await route.fulfill({
       json: { cpu_percent: 10, memory: { total: 16e9, available: 12e9, percent: 25 }, disk: { total: 500e9, free: 400e9, percent: 20 } },
     }));
+
+  // Download endpoint (thumbnails, images) → 1×1 transparent PNG
+  if (url.includes('/api/download'))
+    return void (await route.fulfill({ contentType: 'image/png', body: PIXEL }));
 
   // Catch-all: safe empty response (never forward to non-existent backend)
   return void (await route.fulfill({ json: {} }));

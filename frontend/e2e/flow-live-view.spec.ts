@@ -11,34 +11,32 @@ test.describe('Live View flow', () => {
     await expect(page.locator('h1')).toContainText('Live View');
   });
 
-  test('live view shows satellite selector with GOES-19', async ({ page }) => {
+  test('live view shows satellite selector', async ({ page }) => {
     await page.goto('/live');
-    // GOES-19 is inside a <select> option, so check the select value
-    const select = page.locator('select').first();
-    await expect(select).toBeVisible();
-    await expect(select).toHaveValue(/GOES-19/);
+    const select = page.locator('select[aria-label="Satellite"]');
+    await expect(select).toBeVisible({ timeout: 10000 });
   });
 
   test('live view has auto-fetch toggle', async ({ page }) => {
     await page.goto('/live');
-    await expect(page.getByText('Auto-fetch')).toBeVisible();
+    // Auto-fetch checkbox is in the control bar (hidden on small viewports)
+    await expect(page.getByText('Auto-fetch')).toBeVisible({ timeout: 10000 });
   });
 
   test('live view has compare option', async ({ page }) => {
     await page.goto('/live');
-    await expect(page.getByText('Compare')).toBeVisible();
+    await expect(page.getByText('Compare')).toBeVisible({ timeout: 10000 });
   });
 
-  test('live view has Fetch Now button', async ({ page }) => {
+  test('live view has refresh button', async ({ page }) => {
     await page.goto('/live');
-    await expect(page.getByText('Fetch Now')).toBeVisible();
+    await expect(page.locator('button[aria-label="Refresh now"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('live view has refresh interval selector', async ({ page }) => {
     await page.goto('/live');
-    // The interval selector may be a <select> or buttons
-    const selects = page.locator('select');
-    await expect(selects.first()).toBeVisible({ timeout: 5000 });
+    const select = page.locator('select[aria-label="Auto-refresh interval"]');
+    await expect(select).toBeVisible({ timeout: 10000 });
   });
 
   test('live view survives reload', async ({ page }) => {

@@ -253,3 +253,4 @@ async def health_detailed():
         "commit": BUILD_COMMIT,
     }
 
+# Verify rich SonarQube comment

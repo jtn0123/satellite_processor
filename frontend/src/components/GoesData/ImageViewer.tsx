@@ -116,12 +116,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         </div>
       </div>
 
-      {/* Image area — mouse events required for pan/zoom interaction */}
-      <div // NOSONAR — interactive pan/zoom container requires mouse event listeners
-        className="flex-1 relative overflow-hidden flex items-center justify-center"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      >
+      {/* Image area */}
+      <div className="flex-1 relative overflow-hidden flex items-center justify-center">
         {currentIndex > 0 && (
           <button type="button" onClick={goPrev} className="absolute left-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
             <ChevronLeft className="w-6 h-6" />
@@ -133,6 +129,8 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
           aria-label="Pan and zoom area — use mouse wheel to zoom, drag to pan"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
           className="flex items-center justify-center bg-transparent border-none p-0 m-0 outline-none"
         >
           <img

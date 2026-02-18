@@ -176,9 +176,9 @@ export default function LiveTab() {
   const fetchNow = useCallback(() => {
     const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
     api.post('/goes/fetch', {
-      satellite, sector, band,
-      start_date: startDate,
-      end_date: startDate,
+      satellite: satellite.toUpperCase(), sector, band,
+      start_time: startDate,
+      end_time: startDate,
     }).then((res) => {
       setActiveJobId(res.data.job_id);
       showToast('success', 'Fetching latest frame…');
@@ -192,11 +192,11 @@ export default function LiveTab() {
     if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time) {
       lastAutoFetchTime.current = catalogLatest.scan_time;
       api.post('/goes/fetch', {
-        satellite: satellite || catalogLatest.satellite,
+        satellite: (satellite || catalogLatest.satellite).toUpperCase(),
         sector: sector || catalogLatest.sector,
         band: band || catalogLatest.band,
-        start_date: catalogLatest.scan_time,
-        end_date: catalogLatest.scan_time,
+        start_time: catalogLatest.scan_time,
+        end_time: catalogLatest.scan_time,
       }).then((res) => {
         setActiveJobId(res.data.job_id);
         showToast('success', 'Auto-fetching new frame from AWS');
@@ -237,7 +237,7 @@ export default function LiveTab() {
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
-    <div ref={pullContainerRef} className="relative h-[calc(100vh-4rem)] flex flex-col bg-black">
+    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] flex flex-col bg-black">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}

@@ -79,6 +79,27 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     });
   });
 
+  it('auto-fetch sends start_time/end_time (not start_date/end_date) with uppercase satellite', async () => {
+    renderLiveTab();
+    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
+
+    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    await act(async () => { fireEvent.click(checkbox); });
+
+    await waitFor(() => {
+      expect(mockedApi.post).toHaveBeenCalled();
+    });
+
+    const call = mockedApi.post.mock.calls.find((c: unknown[]) => c[0] === '/goes/fetch');
+    expect(call).toBeDefined();
+    const payload = call![1];
+    expect(payload).toHaveProperty('start_time');
+    expect(payload).toHaveProperty('end_time');
+    expect(payload).not.toHaveProperty('start_date');
+    expect(payload).not.toHaveProperty('end_date');
+    expect(payload.satellite).toMatch(/^[A-Z0-9-]+$/);
+  });
+
   it('activeJob completion clears jobId after timeout', async () => {
     // Set up job that completes
     let jobStatus = 'running';

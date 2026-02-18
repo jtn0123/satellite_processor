@@ -354,40 +354,22 @@ export default function LiveTab() {
             className={`flex items-center justify-center ${isFullscreen ? 'h-[calc(100vh-52px)]' : 'min-h-[300px]'} bg-black overflow-hidden`}
             {...(isFullscreen && !compareMode ? zoom.handlers : {})}
           >
-            {isLoading && (
-              <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-slate-400">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                <span className="text-sm">Loading latest frame...</span>
-              </div>
-            )}
-            {!isLoading && isError && (
-              <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500">
-                <Satellite className="w-12 h-12" />
-                <span className="text-sm">No local frames available</span>
-                <span className="text-xs text-gray-400 dark:text-slate-600">Fetch data first from the Fetch tab</span>
-              </div>
-            )}
-            {!isLoading && !isError && imageUrl && !compareMode && (
-              <img
-                src={imageUrl}
-                alt={`${satellite} ${band} ${sector}`}
-                className="max-w-full max-h-full object-contain select-none"
-                style={isFullscreen ? zoom.style : undefined}
-                draggable={false}
-                loading="lazy"
-              />
-            )}
-            {!isLoading && !isError && imageUrl && compareMode && (
-              <CompareSlider
-                imageUrl={imageUrl}
-                prevImageUrl={prevImageUrl}
-                comparePosition={comparePosition}
-                onPositionChange={setComparePosition}
-                frameTime={frame?.capture_time ?? null}
-                prevFrameTime={prevFrame?.capture_time ?? null}
-                timeAgo={timeAgo}
-              />
-            )}
+            <ImagePanelContent
+              isLoading={isLoading}
+              isError={isError}
+              imageUrl={imageUrl}
+              compareMode={compareMode}
+              satellite={satellite}
+              band={band}
+              sector={sector}
+              isFullscreen={isFullscreen}
+              zoomStyle={zoom.style}
+              prevImageUrl={prevImageUrl}
+              comparePosition={comparePosition}
+              onPositionChange={setComparePosition}
+              frameTime={frame?.capture_time ?? null}
+              prevFrameTime={prevFrame?.capture_time ?? null}
+            />
           </div>
 
           {/* Toggleable metadata overlay */}
@@ -421,8 +403,70 @@ export default function LiveTab() {
   );
 }
 
+/* Extracted image panel content to reduce LiveTab cognitive complexity */
+interface ImagePanelContentProps {
+  isLoading: boolean;
+  isError: boolean;
+  imageUrl: string | null;
+  compareMode: boolean;
+  satellite: string;
+  band: string;
+  sector: string;
+  isFullscreen: boolean;
+  zoomStyle: React.CSSProperties;
+  prevImageUrl: string | null;
+  comparePosition: number;
+  onPositionChange: (pos: number) => void;
+  frameTime: string | null;
+  prevFrameTime: string | null;
+}
+
+function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-slate-400">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <span className="text-sm">Loading latest frame...</span>
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500">
+        <Satellite className="w-12 h-12" />
+        <span className="text-sm">No local frames available</span>
+        <span className="text-xs text-gray-400 dark:text-slate-600">Fetch data first from the Fetch tab</span>
+      </div>
+    );
+  }
+  if (!imageUrl) return null;
+  if (compareMode) {
+    return (
+      <CompareSlider
+        imageUrl={imageUrl}
+        prevImageUrl={prevImageUrl}
+        comparePosition={comparePosition}
+        onPositionChange={onPositionChange}
+        frameTime={frameTime}
+        prevFrameTime={prevFrameTime}
+        timeAgo={timeAgo}
+      />
+    );
+  }
+  return (
+    <img
+      src={imageUrl}
+      alt={`${satellite} ${band} ${sector}`}
+      className="max-w-full max-h-full object-contain select-none"
+      style={isFullscreen ? zoomStyle : undefined}
+      draggable={false}
+      loading="lazy"
+    />
+  );
+}
+
 /* Extracted catalog panel to reduce LiveTab complexity */
-function CatalogPanel({ catalogLatest, catalogLoading, catalogError, satellite, sector, band, onRetry }: {
+function CatalogPanel({ catalogLatest, catalogLoading, catalogError, satellite, sector, band, onRetry }: Readonly<{
   catalogLatest: CatalogLatest | null;
   catalogLoading: boolean;
   catalogError: boolean;
@@ -430,7 +474,7 @@ function CatalogPanel({ catalogLatest, catalogLoading, catalogError, satellite, 
   sector: string;
   band: string;
   onRetry: () => void;
-}) {
+}>) {
   const handleDownload = () => {
     globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
       detail: {
@@ -466,13 +510,13 @@ function CatalogPanel({ catalogLatest, catalogLoading, catalogError, satellite, 
   );
 }
 
-function CatalogPanelContent({ catalogLatest, catalogLoading, catalogError, onRetry, onDownload }: {
+function CatalogPanelContent({ catalogLatest, catalogLoading, catalogError, onRetry, onDownload }: Readonly<{
   catalogLatest: CatalogLatest | null;
   catalogLoading: boolean;
   catalogError: boolean;
   onRetry: () => void;
   onDownload: () => void;
-}) {
+}>) {
   if (catalogLoading) {
     return (
       <div className="space-y-3 animate-pulse py-4">

@@ -68,11 +68,11 @@ describe('CompareSlider', () => {
     expect(onChange).toHaveBeenCalledWith(100);
   });
 
-  it('has correct aria attributes', () => {
+  it('has correct slider attributes', () => {
     render(<CompareSlider {...baseProps} comparePosition={65} />);
     const slider = screen.getByRole('slider');
-    expect(slider).toHaveAttribute('aria-valuenow', '65');
-    expect(slider).toHaveAttribute('aria-valuemin', '0');
-    expect(slider).toHaveAttribute('aria-valuemax', '100');
+    expect(slider).toHaveAttribute('min', '0');
+    expect(slider).toHaveAttribute('max', '100');
+    expect(slider).toHaveValue('65');
   });
 });

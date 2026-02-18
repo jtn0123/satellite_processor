@@ -22,7 +22,7 @@ function getStaleLevel(captureTime: string): StaleLevel {
   return 'green';
 }
 
-export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobId, onFetchNow }: StaleDataBannerProps) {
+export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobId, onFetchNow }: Readonly<StaleDataBannerProps>) {
   const staleLevel = getStaleLevel(captureTime);
 
   if (staleLevel === 'green' && freshnessInfo.behindMin <= 0) {

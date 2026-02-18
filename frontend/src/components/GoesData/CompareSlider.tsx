@@ -14,7 +14,7 @@ interface CompareSliderProps {
 export default function CompareSlider({
   imageUrl, prevImageUrl, comparePosition, onPositionChange,
   frameTime, prevFrameTime, timeAgo,
-}: CompareSliderProps) {
+}: Readonly<CompareSliderProps>) {
   const compareContainerRef = useRef<HTMLDivElement>(null);
 
   const handleCompareSlider = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -22,7 +22,7 @@ export default function CompareSlider({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const getX = (ev: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX;
+      const clientX = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
       return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
     };
     const move = (ev: MouseEvent | TouchEvent) => onPositionChange(getX(ev));
@@ -51,15 +51,8 @@ export default function CompareSlider({
     <div
       ref={compareContainerRef}
       className="relative w-full h-full select-none"
-      role="slider"
-      tabIndex={0}
-      aria-label="Compare frames slider"
-      aria-valuenow={Math.round(comparePosition)}
-      aria-valuemin={0}
-      aria-valuemax={100}
       onMouseDown={handleCompareSlider}
       onTouchStart={handleCompareSlider}
-      onKeyDown={handleKeyDown}
     >
       {/* Previous (background) */}
       {prevImageUrl ? (
@@ -71,18 +64,29 @@ export default function CompareSlider({
       <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - comparePosition}% 0 0)` }}>
         <img src={imageUrl} alt="Current frame" className="absolute inset-0 w-full h-full object-contain" draggable={false} />
       </div>
-      {/* Slider handle */}
-      <div className="absolute top-0 bottom-0" style={{ left: `${comparePosition}%`, transform: 'translateX(-50%)' }}>
+      {/* Native range input for accessibility */}
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(comparePosition)}
+        onChange={(e) => onPositionChange(Number(e.target.value))}
+        onKeyDown={handleKeyDown}
+        aria-label="Compare frames slider"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10"
+      />
+      {/* Slider handle (visual only) */}
+      <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${comparePosition}%`, transform: 'translateX(-50%)' }}>
         <div className="w-0.5 h-full bg-white/80" />
-        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center cursor-ew-resize">
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
           <Columns2 className="w-4 h-4 text-gray-800" />
         </div>
       </div>
       {/* Labels */}
-      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
         Previous{prevFrameTime ? ` · ${timeAgo(prevFrameTime)}` : ''}
       </div>
-      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
         Current · {frameTime ? timeAgo(frameTime) : ''}
       </div>
     </div>

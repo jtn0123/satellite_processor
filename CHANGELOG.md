@@ -1,3 +1,15 @@
+# [1.10.0](https://github.com/jtn0123/satellite_processor/compare/v1.9.0...v1.10.0) (2026-02-18)
+
+
+### Bug Fixes
+
+* use self-hosted runner for Portainer deploy and remove [skip ci] from release commits ([#151](https://github.com/jtn0123/satellite_processor/issues/151)) ([b27ddbe](https://github.com/jtn0123/satellite_processor/commit/b27ddbef57cf8eee615c6e3b968ba51d769e744f))
+
+
+### Features
+
+* progressive disclosure — frame actions, lazy loading, batch bar ([#156](https://github.com/jtn0123/satellite_processor/issues/156)) ([3c02af3](https://github.com/jtn0123/satellite_processor/commit/3c02af317b8ce2365814d17ffcca4046f8d7cc23))
+
 # [1.9.0](https://github.com/jtn0123/satellite_processor/compare/v1.8.0...v1.9.0) (2026-02-18)
 
 

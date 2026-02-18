@@ -54,9 +54,15 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+async function expandAdvanced() {
+  const toggle = await screen.findByTestId('advanced-fetch-toggle');
+  fireEvent.click(toggle);
+}
+
 describe('FetchFlowComplete', () => {
   it('step 0: satellite selection renders all options', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => {
       expect(screen.getByText('Choose Satellite')).toBeInTheDocument();
       expect(screen.getByText('GOES-16')).toBeInTheDocument();
@@ -66,6 +72,7 @@ describe('FetchFlowComplete', () => {
 
   it('step 0: shows active/historical status badges', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => {
       expect(screen.getByText('Active')).toBeInTheDocument();
       expect(screen.getByText('Historical')).toBeInTheDocument();
@@ -74,6 +81,7 @@ describe('FetchFlowComplete', () => {
 
   it('step 1: sector selection shows available sectors', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => {
@@ -84,6 +92,7 @@ describe('FetchFlowComplete', () => {
 
   it('step 1: image type toggle works', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('Image Type'));
@@ -93,6 +102,7 @@ describe('FetchFlowComplete', () => {
 
   it('step 2: time range selection renders inputs', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -105,6 +115,7 @@ describe('FetchFlowComplete', () => {
 
   it('validation: fetch button disabled without times', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -117,6 +128,7 @@ describe('FetchFlowComplete', () => {
 
   it('quick hours buttons set correct time range', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -131,6 +143,7 @@ describe('FetchFlowComplete', () => {
 
   it('quick 6h button sets correct range', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -143,6 +156,7 @@ describe('FetchFlowComplete', () => {
 
   it('estimate display shows frame count and size', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -157,6 +171,7 @@ describe('FetchFlowComplete', () => {
 
   it('confirm dialog appears on submit', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -176,6 +191,7 @@ describe('FetchFlowComplete', () => {
 
   it('confirm dialog submit calls API and shows toast', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -195,6 +211,7 @@ describe('FetchFlowComplete', () => {
   it('error handling when fetch API fails', async () => {
     mockedApi.post.mockRejectedValueOnce({ response: { data: { detail: 'Rate limited' } } });
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
@@ -212,8 +229,8 @@ describe('FetchFlowComplete', () => {
 
   it('step navigation via step indicators', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
-    // Click on "When" step indicator
     fireEvent.click(screen.getByText('When'));
     await waitFor(() => {
       expect(screen.getByLabelText(/start/i)).toBeInTheDocument();
@@ -222,6 +239,7 @@ describe('FetchFlowComplete', () => {
 
   it('back button navigates to previous step', async () => {
     renderFetch();
+    await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));

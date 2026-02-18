@@ -13,12 +13,30 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/jobs**', async (route) => {
     await route.fulfill({ json: { items: [], total: 0 } });
   });
+  await page.route('**/api/goes/fetch-presets', async (route) => {
+    await route.fulfill({ json: [] });
+  });
 });
 
-test('navigate to GOES fetch tab and see wizard', async ({ page }) => {
+/** Helper: navigate to Fetch tab and expand the Advanced wizard */
+async function openAdvancedWizard(page: import('@playwright/test').Page) {
   await page.goto('/goes');
   const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
   await fetchTab.click();
+  const advancedBtn = page.getByTestId('advanced-fetch-toggle');
+  await advancedBtn.waitFor({ state: 'visible', timeout: 5000 });
+  await advancedBtn.click();
+}
+
+test('quick fetch chips are visible on Fetch tab', async ({ page }) => {
+  await page.goto('/goes');
+  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
+  await fetchTab.click();
+  await expect(page.getByText('CONUS Last Hour')).toBeVisible();
+});
+
+test('navigate to GOES fetch tab and see wizard', async ({ page }) => {
+  await openAdvancedWizard(page);
   // Wizard step indicators should be visible
   await expect(page.getByText('Source')).toBeVisible();
   await expect(page.getByText('What')).toBeVisible();
@@ -26,24 +44,13 @@ test('navigate to GOES fetch tab and see wizard', async ({ page }) => {
 });
 
 test('satellite cards are shown on step 1', async ({ page }) => {
-  await page.goto('/goes');
-  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
-  await fetchTab.click();
+  await openAdvancedWizard(page);
   await expect(page.getByText('GOES-19')).toBeVisible();
   await expect(page.getByText('Choose Satellite')).toBeVisible();
 });
 
-test('Fetch Latest button is visible', async ({ page }) => {
-  await page.goto('/goes');
-  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
-  await fetchTab.click();
-  await expect(page.getByText('Fetch Latest')).toBeVisible();
-});
-
 test('navigate through wizard steps', async ({ page }) => {
-  await page.goto('/goes');
-  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
-  await fetchTab.click();
+  await openAdvancedWizard(page);
   // Step 1 → Step 2
   await page.getByText('Next').click();
   await expect(page.getByText('What to Fetch')).toBeVisible();
@@ -53,9 +60,7 @@ test('navigate through wizard steps', async ({ page }) => {
 });
 
 test('image type toggle works', async ({ page }) => {
-  await page.goto('/goes');
-  const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
-  await fetchTab.click();
+  await openAdvancedWizard(page);
   await page.getByText('Next').click();
   await expect(page.getByText('Single Band')).toBeVisible();
   await expect(page.getByText('True Color')).toBeVisible();

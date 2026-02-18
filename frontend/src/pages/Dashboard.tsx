@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useStats, useHealthDetailed } from '../hooks/useApi';
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import { formatBytes } from '../utils/format';
+import { showToast } from '../utils/toast';
 import api from '../api/client';
 
 function storageBarColor(percent: number): string {
@@ -82,6 +84,27 @@ export default function Dashboard() {
 
   const totalGoesFrames = goesStats?.total_frames ?? 0;
   const showOnboarding = !statsLoading && (stats?.total_images === 0) && totalGoesFrames === 0;
+
+  const [fetchingLatest, setFetchingLatest] = useState(false);
+  const handleFetchLatest = async () => {
+    setFetchingLatest(true);
+    try {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 3600000);
+      const res = await api.post('/goes/fetch', {
+        satellite: 'GOES-19',
+        sector: 'CONUS',
+        band: 'C02',
+        start_time: oneHourAgo.toISOString(),
+        end_time: now.toISOString(),
+      });
+      showToast('success', `Fetching latest CONUS imagery... (Job ${res.data.job_id})`);
+    } catch {
+      showToast('error', 'Failed to fetch latest imagery');
+    } finally {
+      setFetchingLatest(false);
+    }
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-6xl">
@@ -159,6 +182,16 @@ export default function Dashboard() {
           <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
           <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
           <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Fetch GOES data to see stats here</p>
+          <button
+            type="button"
+            onClick={handleFetchLatest}
+            disabled={fetchingLatest}
+            data-testid="dashboard-fetch-latest"
+            className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <Satellite className="w-5 h-5" />
+            {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
+          </button>
         </div>
       )}
 
@@ -200,6 +233,18 @@ export default function Dashboard() {
               <p className="text-xs text-gray-500 dark:text-slate-400">Active Schedules</p>
             </div>
           </div>
+
+          {/* Fetch Latest CTA */}
+          <button
+            type="button"
+            onClick={handleFetchLatest}
+            disabled={fetchingLatest}
+            data-testid="dashboard-fetch-latest"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <Satellite className="w-5 h-5" />
+            {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
+          </button>
 
           {/* Storage breakdown bar */}
           {goesStats.storage_by_satellite && Object.keys(goesStats.storage_by_satellite).length > 0 && (
@@ -292,13 +337,23 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={handleFetchLatest}
+              disabled={fetchingLatest}
+              data-testid="dashboard-fetch-latest"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              <Satellite className="w-5 h-5" />
+              {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
+            </button>
             <button
               onClick={() => navigate('/goes')}
               className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
               aria-label="Fetch satellite data now"
             >
-              <Download className="w-4 h-4" /> Fetch Now
+              <Download className="w-4 h-4" /> Advanced Fetch
             </button>
           </div>
         </div>

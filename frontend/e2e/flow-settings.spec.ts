@@ -22,8 +22,6 @@ test.describe('Settings page flow', () => {
   test('settings page loads without crash', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'networkidle' });
     // Either shows Settings heading or an error boundary
-    const heading = page.locator('h1');
-    const errorBoundary = page.getByText('Something went wrong');
     // At minimum the page should render something
     await expect(page.locator('body')).not.toBeEmpty();
   });

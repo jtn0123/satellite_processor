@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2 } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { useMonitorWebSocket } from '../../hooks/useMonitorWebSocket';
+import MonitorSettingsPanel, { type MonitorPreset } from './MonitorSettingsPanel';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useImageZoom } from '../../hooks/useImageZoom';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
@@ -77,7 +79,11 @@ function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame
   return { awsAge, localAge, behindMin };
 }
 
-export default function LiveTab() {
+interface LiveTabProps {
+  onMonitorChange?: (active: boolean) => void;
+}
+
+export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
@@ -87,10 +93,62 @@ export default function LiveTab() {
   const [compareMode, setCompareMode] = useState(false);
   const [comparePosition, setComparePosition] = useState(50);
   const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
+  const [monitoring, setMonitoring] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
 
   const zoom = useImageZoom();
+
+  // Monitor mode: WebSocket for frame ingestion push notifications
+  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
+
+  // When WS notifies of a new frame, refetch the latest
+  useEffect(() => {
+    if (wsLastEvent && monitoring) {
+      refetchRef.current?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsLastEvent]);
+
+  const toggleMonitor = useCallback(() => {
+    setMonitoring((v) => {
+      const next = !v;
+      if (next) {
+        setAutoFetch(true);
+        showToast('success', 'Monitor mode activated');
+      } else {
+        setAutoFetch(false);
+        showToast('info', 'Monitor mode stopped');
+      }
+      onMonitorChange?.(next);
+      return next;
+    });
+  }, [onMonitorChange]);
+
+  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
+    setSatellite(config.satellite);
+    setSector(config.sector);
+    setBand(config.band);
+    setRefreshInterval(config.interval);
+    setAutoFetch(true);
+    setMonitoring(true);
+    onMonitorChange?.(true);
+    showToast('success', 'Monitor mode activated');
+  }, [onMonitorChange]);
+
+  const stopMonitor = useCallback(() => {
+    setMonitoring(false);
+    setAutoFetch(false);
+    onMonitorChange?.(false);
+    showToast('info', 'Monitor mode stopped');
+  }, [onMonitorChange]);
+
+  const applyPreset = useCallback((preset: MonitorPreset) => {
+    if (preset.satellite) setSatellite(preset.satellite);
+    setSector(preset.sector);
+    if (preset.band) setBand(preset.band);
+    setRefreshInterval(preset.interval);
+  }, []);
 
   const toggleOverlay = useCallback(() => {
     setOverlayVisible((v) => {
@@ -294,6 +352,20 @@ export default function LiveTab() {
             </select>
 
             <div className="hidden sm:flex items-center gap-2 ml-2">
+              <button
+                onClick={toggleMonitor}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  monitoring
+                    ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
+                    : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
+                }`}
+                title={monitoring ? 'Stop watching' : 'Start watching'}
+                aria-label={monitoring ? 'Stop watching' : 'Start watching'}
+                data-testid="watch-toggle-btn"
+              >
+                {monitoring ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {monitoring ? 'Stop Watch' : 'Watch'}
+              </button>
               <label className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer hover:text-white transition-colors">
                 <input type="checkbox" checked={autoFetch} onChange={(e) => setAutoFetch(e.target.checked)} className="rounded" />
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -307,6 +379,19 @@ export default function LiveTab() {
             </div>
 
             <div className="ml-auto flex items-center gap-1">
+              <MonitorSettingsPanel
+                isMonitoring={monitoring}
+                interval={refreshInterval}
+                satellite={satellite}
+                sector={sector}
+                band={band}
+                onStart={startMonitor}
+                onStop={stopMonitor}
+                onApplyPreset={applyPreset}
+                satellites={products?.satellites ?? []}
+                sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
+                bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
+              />
               <button onClick={() => refetch()}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors"
                 title="Refresh now" aria-label="Refresh now">
@@ -377,10 +462,12 @@ export default function LiveTab() {
           </div>
         </div>
 
-        {/* Live indicator */}
-        <div className="absolute top-16 left-4 z-10 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-white/70 font-medium">LIVE</span>
+        {/* Live / Monitoring indicator */}
+        <div className="absolute top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
+          <div className={`w-2 h-2 rounded-full ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
+          <span className="text-xs text-white/70 font-medium">
+            {monitoring ? 'MONITORING' : 'LIVE'}
+          </span>
         </div>
 
         {/* Zoom reset hint */}

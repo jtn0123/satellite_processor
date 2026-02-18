@@ -1,6 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import FrameCard from '../components/GoesData/FrameCard';
+
+beforeEach(() => {
+  const mockObserver = vi.fn().mockImplementation((callback: IntersectionObserverCallback) => {
+    callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    return { observe: vi.fn(), disconnect: vi.fn(), unobserve: vi.fn() };
+  });
+  vi.stubGlobal('IntersectionObserver', mockObserver);
+});
 
 const frame = {
   id: 'f1',
@@ -18,38 +26,42 @@ const frame = {
 };
 
 describe('FrameCard', () => {
-  it('renders in grid mode with button element', () => {
+  it('renders in grid mode with clickable area', () => {
     const onClick = vi.fn();
     render(<FrameCard frame={frame as never} isSelected={false} onClick={onClick} viewMode="grid" />);
-    const btn = screen.getByRole('button');
-    expect(btn).toBeInTheDocument();
-    expect(btn).toHaveAttribute('aria-label');
+    const btns = screen.getAllByRole('button');
+    expect(btns.length).toBeGreaterThan(0);
+    expect(btns.some(b => b.getAttribute('aria-label')?.includes('GOES-16'))).toBe(true);
   });
 
-  it('renders in list mode with button element', () => {
-    const onClick = vi.fn();
-    render(<FrameCard frame={frame as never} isSelected={false} onClick={onClick} viewMode="list" />);
-    const btn = screen.getByRole('button');
-    expect(btn).toBeInTheDocument();
+  it('renders in list mode', () => {
+    render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="list" />);
+    const btns = screen.getAllByRole('button');
+    expect(btns.length).toBeGreaterThan(0);
   });
 
-  it('calls onClick when clicked', () => {
+  it('calls onClick when card clicked', () => {
     const onClick = vi.fn();
     render(<FrameCard frame={frame as never} isSelected={false} onClick={onClick} viewMode="grid" />);
-    fireEvent.click(screen.getByRole('button'));
+    const mainBtn = screen.getAllByRole('button').find(b => b.getAttribute('aria-label')?.includes('GOES-16'));
+    if (mainBtn) fireEvent.click(mainBtn);
     expect(onClick).toHaveBeenCalledWith(frame, expect.any(Object));
   });
 
   it('shows selected indicator when isSelected', () => {
     render(<FrameCard frame={frame as never} isSelected={true} onClick={vi.fn()} viewMode="grid" />);
-    // Selected state adds a checkmark
     expect(document.querySelector('[class*="bg-primary"]')).toBeTruthy();
   });
 
-  it('displays frame metadata', () => {
+  it('displays capture time prominently', () => {
     render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="grid" />);
-    expect(screen.getByText(/GOES-16/)).toBeInTheDocument();
-    expect(screen.getByText(/C02/)).toBeInTheDocument();
+    expect(screen.getByText(/12:00/)).toBeInTheDocument();
+  });
+
+  it('shows satellite and band as badges', () => {
+    render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="grid" />);
+    expect(screen.getByText('GOES-16')).toBeInTheDocument();
+    expect(screen.getByText('C02')).toBeInTheDocument();
   });
 
   it('shows tags', () => {
@@ -60,5 +72,15 @@ describe('FrameCard', () => {
   it('displays file size in list mode', () => {
     render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="list" />);
     expect(screen.getByText(/1.*MB/i)).toBeInTheDocument();
+  });
+
+  it('displays sector badge', () => {
+    render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="grid" />);
+    expect(screen.getByText('CONUS')).toBeInTheDocument();
+  });
+
+  it('shows dimensions in list mode', () => {
+    render(<FrameCard frame={frame as never} isSelected={false} onClick={vi.fn()} viewMode="list" />);
+    expect(screen.getByText('1920×1080')).toBeInTheDocument();
   });
 });

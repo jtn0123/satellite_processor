@@ -177,7 +177,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
     });
   });
 
-  it('renders pagination when multiple pages exist', async () => {
+  it('renders Load More button when multiple pages exist', async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url.includes('/goes/frames')) {
         return Promise.resolve({
@@ -195,8 +195,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
     });
     renderWithProviders(<BrowseTab />);
     await waitFor(() => {
-      expect(screen.getByText('Page 1 of 4')).toBeInTheDocument();
-      expect(screen.getByLabelText('Next page')).toBeInTheDocument();
+      expect(screen.getByText('Load More')).toBeInTheDocument();
     });
   });
 

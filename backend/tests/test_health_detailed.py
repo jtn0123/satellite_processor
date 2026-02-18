@@ -34,6 +34,7 @@ async def test_health_detailed(client):
 async def test_health_detailed_has_version(client):
     """Detailed health should include version info."""
     resp = await client.get("/api/health/detailed")
+    assert resp.status_code == 200
     data = resp.json()
     assert "version" in data
     assert "commit" in data

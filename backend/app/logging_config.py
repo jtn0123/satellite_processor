@@ -71,21 +71,16 @@ class RequestLoggingMiddleware:
         await self.app(scope, receive, send_wrapper)
         duration_ms = (time.perf_counter() - start) * 1000
 
-        from .middleware.correlation import request_id_ctx
-        rid = request_id_ctx.get("")
-
         logger.info(
-            "%s %s %d %.1fms [%s]",
+            "%s %s %d %.1fms",
             scope.get("method", "?"),
             scope.get("path", "?"),
             status_code,
             duration_ms,
-            rid,
             extra={
                 "method": scope.get("method", "?"),
                 "path": scope.get("path", "?"),
                 "status": status_code,
                 "duration_ms": round(duration_ms, 1),
-                "request_id": rid,
             },
         )

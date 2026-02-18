@@ -23,3 +23,18 @@ async def test_generated_id_is_unique(client):
     r1 = await client.get("/api/health")
     r2 = await client.get("/api/health")
     assert r1.headers["x-request-id"] != r2.headers["x-request-id"]
+
+
+async def test_empty_request_id_generates_new(client):
+    """Empty X-Request-ID header should trigger generation of a new ID."""
+    resp = await client.get("/api/health", headers={"X-Request-ID": ""})
+    rid = resp.headers["x-request-id"]
+    assert len(rid) >= 8
+
+
+async def test_whitespace_request_id_generates_new(client):
+    """Whitespace-only X-Request-ID should trigger generation of a new ID."""
+    resp = await client.get("/api/health", headers={"X-Request-ID": "   "})
+    rid = resp.headers["x-request-id"]
+    assert rid.strip() != ""
+    assert len(rid) >= 8

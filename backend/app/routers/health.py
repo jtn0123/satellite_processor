@@ -233,7 +233,7 @@ async def _check_worker() -> dict:
             return {"status": "ok", "workers": worker_count}
         return {"status": "down", "workers": 0}
     except Exception as exc:
-        return {"status": "unknown", "error": str(exc)}
+        return {"status": "unknown", "workers": 0, "error": str(exc)}
 
 
 @router.get("/detailed")

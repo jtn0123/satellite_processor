@@ -3,14 +3,8 @@ import {
   Satellite,
   Download,
   Grid3X3,
-  Radio,
   Map,
-  GalleryHorizontalEnd,
-  Sparkles,
-  LayoutDashboard,
-  FolderHeart,
-  Layers,
-  Trash2,
+  BarChart3,
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -19,18 +13,13 @@ import TabErrorBoundary from '../components/GoesData/TabErrorBoundary';
 import Skeleton from '../components/GoesData/Skeleton';
 import Breadcrumb, { type BreadcrumbSegment } from '../components/GoesData/Breadcrumb';
 
-const OverviewTab = lazy(() => import('../components/GoesData/OverviewTab'));
 const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
 const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
-const AnimateTab = lazy(() => import('../components/Animation/AnimateTab'));
-const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
 const MapTab = lazy(() => import('../components/GoesData/MapTab'));
-const FrameGallery = lazy(() => import('../components/GoesData/FrameGallery'));
-const CollectionsTab = lazy(() => import('../components/GoesData/CollectionsTab'));
-const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
-const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
+const StatsTab = lazy(() => import('../components/GoesData/StatsTab'));
+const GapsTab = lazy(() => import('../components/GoesData/GapsTab'));
 
-type TabId = 'overview' | 'browse' | 'gallery' | 'live' | 'fetch' | 'animate' | 'map' | 'collections' | 'composites' | 'cleanup';
+type TabId = 'browse' | 'fetch' | 'map' | 'stats';
 
 interface TabDef {
   id: TabId;
@@ -39,16 +28,10 @@ interface TabDef {
 }
 
 const tabs: TabDef[] = [
-  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
   { id: 'browse', label: 'Browse', icon: <Grid3X3 className="w-4 h-4" /> },
-  { id: 'gallery', label: 'Gallery', icon: <GalleryHorizontalEnd className="w-4 h-4" /> },
-  { id: 'live', label: 'Live', icon: <Radio className="w-4 h-4" /> },
   { id: 'fetch', label: 'Fetch', icon: <Download className="w-4 h-4" /> },
-  { id: 'animate', label: 'Animate', icon: <Sparkles className="w-4 h-4" /> },
   { id: 'map', label: 'Map', icon: <Map className="w-4 h-4" /> },
-  { id: 'collections', label: 'Collections', icon: <FolderHeart className="w-4 h-4" /> },
-  { id: 'composites', label: 'Composites', icon: <Layers className="w-4 h-4" /> },
-  { id: 'cleanup', label: 'Cleanup', icon: <Trash2 className="w-4 h-4" /> },
+  { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 const tabLabels: Record<TabId, string> = Object.fromEntries(tabs.map((t) => [t.id, t.label])) as Record<TabId, string>;
@@ -66,12 +49,29 @@ function TabLoadingFallback() {
   );
 }
 
+/** Combined Stats + Gaps view */
+function CombinedStatsTab() {
+  return (
+    <div className="space-y-8">
+      <Suspense fallback={<TabLoadingFallback />}>
+        <StatsTab />
+      </Suspense>
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Coverage Gaps</h2>
+        <Suspense fallback={<TabLoadingFallback />}>
+          <GapsTab />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
 export default function GoesData() {
-  usePageTitle('GOES Data');
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  usePageTitle('Browse & Fetch');
+  const [activeTab, setActiveTab] = useState<TabId>('browse');
   const [subView, setSubView] = useState<string | null>(null);
 
-  // Keyboard shortcuts: 1-7 switch tabs
+  // Keyboard shortcuts: 1-4 switch tabs
   const shortcuts = useMemo(() => {
     const map: Record<string, () => void> = {};
     allTabIds.forEach((id, i) => {
@@ -119,7 +119,7 @@ export default function GoesData() {
   // Build breadcrumb segments
   const breadcrumbSegments = useMemo<BreadcrumbSegment[]>(() => {
     const segments: BreadcrumbSegment[] = [
-      { label: 'GOES Data' },
+      { label: 'Browse & Fetch' },
       {
         label: tabLabels[activeTab],
         onClick: subView ? () => setSubView(null) : undefined,
@@ -132,20 +132,23 @@ export default function GoesData() {
   }, [activeTab, subView]);
 
   const renderTab = useCallback(() => {
-    const tabMap: Record<TabId, { component: React.ReactNode; name: string }> = {
-      overview: { component: <OverviewTab />, name: 'Overview' },
+    if (activeTab === 'stats') {
+      return (
+        <TabErrorBoundary tabName="Stats" key="stats">
+          <div className="content-fade-in">
+            <CombinedStatsTab />
+          </div>
+        </TabErrorBoundary>
+      );
+    }
+
+    const tabMap: Record<Exclude<TabId, 'stats'>, { component: React.ReactNode; name: string }> = {
       browse: { component: <BrowseTab />, name: 'Browse' },
-      gallery: { component: <FrameGallery />, name: 'Gallery' },
-      live: { component: <LiveTab />, name: 'Live' },
       fetch: { component: <FetchTab />, name: 'Fetch' },
-      animate: { component: <AnimateTab />, name: 'Animate' },
       map: { component: <MapTab />, name: 'Map' },
-      collections: { component: <CollectionsTab />, name: 'Collections' },
-      composites: { component: <CompositesTab />, name: 'Composites' },
-      cleanup: { component: <CleanupTab />, name: 'Cleanup' },
     };
 
-    const tab = tabMap[activeTab];
+    const tab = tabMap[activeTab as Exclude<TabId, 'stats'>];
     return (
       <TabErrorBoundary tabName={tab.name} key={activeTab}>
         <Suspense fallback={<TabLoadingFallback />}>
@@ -162,12 +165,12 @@ export default function GoesData() {
       <div className="flex items-center gap-3">
         <Satellite className="w-7 h-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">GOES Data</h1>
+          <h1 className="text-2xl font-bold">Browse & Fetch</h1>
           <Breadcrumb segments={breadcrumbSegments} />
         </div>
       </div>
 
-      {/* Tab bar — flat, no groups */}
+      {/* Tab bar */}
       <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="GOES Data tabs">
         {tabs.map((tab) => (
           <button
@@ -189,7 +192,7 @@ export default function GoesData() {
         ))}
       </div>
 
-      {/* Tab content — swipeable on mobile */}
+      {/* Tab content */}
       <div ref={swipeRef} key={activeTab} className="animate-fade-in touch-pan-y">
         {renderTab()}
       </div>

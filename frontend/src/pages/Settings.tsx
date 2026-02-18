@@ -3,17 +3,50 @@ import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
-import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive, ChevronDown, ChevronRight, Upload, Layers, Trash2, FlaskConical } from 'lucide-react';
 import api from '../api/client';
 import { formatBytes } from '../utils/format';
 
 const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
+const CompositesTab = lazy(() => import('../components/GoesData/CompositesTab'));
+const UploadZone = lazy(() => import('../components/Upload/UploadZone'));
+const ProcessingForm = lazy(() => import('../components/Processing/ProcessingForm'));
 
 interface StorageBreakdown {
   by_satellite: Record<string, { count: number; size: number }>;
   by_band: Record<string, { count: number; size: number }>;
   total_size: number;
   total_frames: number;
+}
+
+function CollapsibleSection({ title, icon, children, defaultOpen = false }: Readonly<{
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}>) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden inset-shadow-sm dark:inset-shadow-white/5">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-3 w-full px-6 py-4 text-left hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+        aria-expanded={open}
+      >
+        {icon}
+        <span className="text-lg font-semibold flex-1">{title}</span>
+        {open ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
+      </button>
+      {open && (
+        <div className="px-6 pb-6">
+          <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse" />}>
+            {children}
+          </Suspense>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function StorageSection() {
@@ -240,13 +273,35 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
 
       <StorageSection />
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Storage Management</h2>
-        <p className="text-sm text-gray-500 dark:text-slate-400">Configure cleanup rules to automatically manage disk space.</p>
-        <Suspense fallback={<div className="h-32 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />}>
-          <CleanupTab />
-        </Suspense>
-      </div>
+      {/* Collapsible sections for promoted content */}
+      <CollapsibleSection
+        title="Cleanup Rules"
+        icon={<Trash2 className="w-5 h-5 text-red-400" />}
+        defaultOpen
+      >
+        <CleanupTab />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Composites"
+        icon={<Layers className="w-5 h-5 text-violet-400" />}
+      >
+        <CompositesTab />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Manual Upload"
+        icon={<Upload className="w-5 h-5 text-sky-400" />}
+      >
+        <UploadZone />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Processing"
+        icon={<FlaskConical className="w-5 h-5 text-amber-400" />}
+      >
+        <ProcessingForm selectedImages={[]} />
+      </CollapsibleSection>
 
       <div>
         <h2 className="text-lg font-semibold mb-4">System Resources</h2>
@@ -298,6 +353,5 @@ export default function SettingsPage() {
     );
   }
 
-  // key={JSON.stringify(settings)} remounts the form when settings change from server
   return <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />;
 }

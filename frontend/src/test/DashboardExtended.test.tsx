@@ -71,21 +71,21 @@ describe('Dashboard extended', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/goes');
   });
 
-  it('navigates to /upload on Upload Images click', () => {
+  it('navigates to /goes on Browse & Fetch click', () => {
     renderDashboard();
-    fireEvent.click(screen.getByText('Upload Images'));
-    expect(mockNavigate).toHaveBeenCalledWith('/upload');
+    fireEvent.click(screen.getByText('Browse & Fetch'));
+    expect(mockNavigate).toHaveBeenCalledWith('/goes');
   });
 
-  it('navigates to /process on New Job click', () => {
+  it('navigates to /animate on Create Animation click', () => {
     renderDashboard();
-    fireEvent.click(screen.getByText('New Job'));
-    expect(mockNavigate).toHaveBeenCalledWith('/process');
+    fireEvent.click(screen.getByText('Create Animation'));
+    expect(mockNavigate).toHaveBeenCalledWith('/animate');
   });
 
   it('shows stat cards', () => {
     renderDashboard();
-    expect(screen.getByText('Total Images')).toBeInTheDocument();
+    expect(screen.getByText('GOES Frames')).toBeInTheDocument();
     expect(screen.getByText('Total Jobs')).toBeInTheDocument();
     expect(screen.getByText('Active Jobs')).toBeInTheDocument();
   });
@@ -115,5 +115,10 @@ describe('Dashboard extended', () => {
     expect(screen.getByText('Database')).toBeInTheDocument();
     expect(screen.getByText('Redis')).toBeInTheDocument();
     expect(screen.getByText('Disk')).toBeInTheDocument();
+  });
+
+  it('renders View Live quick-link', () => {
+    renderDashboard();
+    expect(screen.getByText('View Live')).toBeInTheDocument();
   });
 });

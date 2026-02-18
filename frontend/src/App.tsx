@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import Layout from './components/Layout';
@@ -6,12 +6,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const UploadPage = lazy(() => import('./pages/Upload'));
-const ProcessPage = lazy(() => import('./pages/Process'));
 const JobsPage = lazy(() => import('./pages/Jobs'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
 const GoesData = lazy(() => import('./pages/GoesData'));
-const PresetsPage = lazy(() => import('./pages/Presets'));
+const LiveView = lazy(() => import('./pages/LiveView'));
+const Animate = lazy(() => import('./pages/Animate'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const SharedFrame = lazy(() => import('./pages/SharedFrame'));
 
@@ -42,12 +41,15 @@ export default function App() {
             <Route path="shared/:token" element={<ErrorBoundary><SharedFrame /></ErrorBoundary>} />
             <Route element={<Layout />}>
               <Route index element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
-              <Route path="upload" element={<ErrorBoundary><UploadPage /></ErrorBoundary>} />
-              <Route path="process" element={<ErrorBoundary><ProcessPage /></ErrorBoundary>} />
-              <Route path="jobs" element={<ErrorBoundary><JobsPage /></ErrorBoundary>} />
+              <Route path="live" element={<ErrorBoundary><LiveView /></ErrorBoundary>} />
+              <Route path="animate" element={<ErrorBoundary><Animate /></ErrorBoundary>} />
               <Route path="goes" element={<ErrorBoundary><GoesData /></ErrorBoundary>} />
-              <Route path="presets" element={<ErrorBoundary><PresetsPage /></ErrorBoundary>} />
+              <Route path="jobs" element={<ErrorBoundary><JobsPage /></ErrorBoundary>} />
               <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+              {/* Legacy redirects */}
+              <Route path="upload" element={<Navigate to="/settings" replace />} />
+              <Route path="process" element={<Navigate to="/settings" replace />} />
+              <Route path="presets" element={<Navigate to="/settings" replace />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

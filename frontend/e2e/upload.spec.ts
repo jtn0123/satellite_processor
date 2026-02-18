@@ -5,18 +5,20 @@ test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
 });
 
-test('upload page renders drop zone', async ({ page }) => {
+test('upload route redirects to settings', async ({ page }) => {
   await page.goto('/upload');
-  // The UploadZone component should be visible
-  await expect(page.locator('h1:has-text("Upload Images")')).toBeVisible();
+  await expect(page).toHaveURL(/\/settings/);
 });
 
-test('shows Image Library section', async ({ page }) => {
-  await page.goto('/upload');
-  await expect(page.locator('text=Image Library')).toBeVisible();
+test('settings page has Manual Upload section', async ({ page }) => {
+  await page.goto('/settings');
+  await expect(page.getByText('Manual Upload')).toBeVisible();
 });
 
-test('drop zone has upload text', async ({ page }) => {
-  await page.goto('/upload');
-  await expect(page.locator('text=Drag & drop satellite images here').first()).toBeVisible();
+test('upload section is expandable', async ({ page }) => {
+  await page.goto('/settings');
+  const section = page.getByText('Manual Upload');
+  await section.click();
+  // After expanding, upload-related content should be visible
+  await expect(page.getByText(/drag|drop|upload/i).first()).toBeVisible();
 });

@@ -40,10 +40,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('View frame details', () => {
-  test('gallery tab shows frame cards', async ({ page }) => {
+  test('browse tab shows frame cards', async ({ page }) => {
     await page.goto('/goes');
-    const galleryTab = page.locator('[role="tab"]').filter({ hasText: /gallery/i }).first();
-    await galleryTab.click();
+    const browseTab = page.locator('main [role="tab"]').filter({ hasText: /browse/i }).first();
+    await browseTab.click();
     await expect(page.locator('text=GOES-19').first()).toBeAttached({ timeout: 5000 });
   });
 

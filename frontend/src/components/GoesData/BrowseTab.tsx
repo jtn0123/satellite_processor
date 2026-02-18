@@ -24,14 +24,14 @@ import FramePreviewModal from './FramePreviewModal';
 import AddToCollectionModal from './AddToCollectionModal';
 import TagModal from './TagModal';
 import ComparisonModal from './ComparisonModal';
-import FloatingCompareBar from './FloatingCompareBar';
+import FloatingBatchBar from './FloatingBatchBar';
 import BottomSheet from './BottomSheet';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
 import EmptyState from './EmptyState';
 import FrameCard from './FrameCard';
 import { extractArray } from '../../utils/safeData';
 
-const PAGE_SIZE = 50;
+const PAGE_LIMIT = 50;
 
 export default function BrowseTab() {
   const queryClient = useQueryClient();
@@ -55,8 +55,6 @@ export default function BrowseTab() {
   const [sortBy, setSortBy] = useState('capture_time');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
@@ -79,15 +77,16 @@ export default function BrowseTab() {
   const debouncedTag = useDebounce(filterTag, 300);
 
   const filterParams = useMemo(() => {
-    const p: Record<string, string> = {};
+    const p: Record<string, string> = { sort: sortBy, order: sortOrder };
     if (debouncedSat) p.satellite = debouncedSat;
     if (debouncedBand) p.band = debouncedBand;
     if (debouncedSector) p.sector = debouncedSector;
     if (debouncedCollection) p.collection_id = debouncedCollection;
     if (debouncedTag) p.tag = debouncedTag;
     return p;
-  }, [debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag]);
+  }, [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag]);
 
+  // Infinite query
   const {
     data: infiniteData,
     isLoading,
@@ -95,33 +94,27 @@ export default function BrowseTab() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery<PaginatedFrames>({
-    queryKey: ['goes-frames', filterParams, sortBy, sortOrder],
+    queryKey: ['goes-frames', filterParams],
     queryFn: ({ pageParam }) =>
-      api.get('/goes/frames', {
-        params: { page: pageParam, limit: PAGE_SIZE, sort: sortBy, order: sortOrder, ...filterParams },
-      }).then((r) => r.data),
+      api.get('/goes/frames', { params: { ...filterParams, page: pageParam, limit: PAGE_LIMIT } }).then((r) => r.data),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const total = lastPage?.total ?? 0;
-      const currentPage = lastPage?.page ?? 1;
-      const limit = lastPage?.limit || PAGE_SIZE;
-      const totalPages = Math.ceil(total / limit);
-      return currentPage < totalPages ? currentPage + 1 : undefined;
+      const totalPages = Math.ceil((lastPage.total ?? 0) / (lastPage.limit || PAGE_LIMIT));
+      return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
     },
   });
 
-  // Flatten all pages into a single frames array
   const frames = useMemo(
-    () => infiniteData?.pages.flatMap((p) => p?.items ?? []) ?? [],
+    () => infiniteData?.pages.flatMap((p) => p.items) ?? [],
     [infiniteData],
   );
   const totalFrames = infiniteData?.pages[0]?.total ?? 0;
 
-  // Intersection Observer for infinite scroll "Load More" trigger
+  // Infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = loadMoreRef.current;
+    const el = sentinelRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -130,7 +123,6 @@ export default function BrowseTab() {
       },
       { rootMargin: '400px' },
     );
-
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -156,9 +148,7 @@ export default function BrowseTab() {
   const processMutation = useMutation({
     mutationFn: (frameIds: string[]) =>
       api.post('/goes/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
-    onSuccess: (data) => {
-      showToast('success', `Processing job created: ${data.job_id}`);
-    },
+    onSuccess: (data) => showToast('success', `Processing job created: ${data.job_id}`),
     onError: () => showToast('error', 'Failed to create processing job'),
   });
 
@@ -180,7 +170,37 @@ export default function BrowseTab() {
     }
   }, [toggleSelect]);
 
-  /* Individual frame actions removed — handled via toolbar selection */
+  const handleView = useCallback((frame: GoesFrame) => {
+    setPreviewFrame(frame);
+    globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: 'Frame Preview' }));
+  }, []);
+
+  const handleDownload = useCallback((frame: GoesFrame) => {
+    const url = `/api/download?path=${encodeURIComponent(frame.file_path)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = frame.file_path.split('/').pop() ?? 'frame';
+    a.click();
+  }, []);
+
+  const handleSingleTag = useCallback((frame: GoesFrame) => {
+    setTagFrameIds([frame.id]);
+    setShowTagModal(true);
+  }, []);
+
+  const handleSingleCollection = useCallback((frame: GoesFrame) => {
+    setCollectionFrameIds([frame.id]);
+    setShowAddToCollection(true);
+  }, []);
+
+  const handleSingleDelete = useCallback((frame: GoesFrame) => {
+    deleteMutation.mutate([frame.id]);
+  }, [deleteMutation]);
+
+  const handleSingleCompare = useCallback((frame: GoesFrame) => {
+    toggleSelect(frame.id);
+    showToast('info', 'Select one more frame to compare');
+  }, [toggleSelect]);
 
   const selectAll = () => {
     if (selectedIds.size === frames.length) {
@@ -189,8 +209,6 @@ export default function BrowseTab() {
       setSelectedIds(new Set(frames.map((f) => f.id)));
     }
   };
-
-  /* Batch actions kept inline in toolbar JSX */
 
   const renderFrameGrid = () => {
     if (isLoading) {
@@ -216,9 +234,7 @@ export default function BrowseTab() {
           description="Fetch satellite data to start browsing frames. Head over to the Fetch tab to download GOES imagery."
           action={{
             label: 'Go to Fetch Tab',
-            onClick: () => {
-              globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
-            },
+            onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
           }}
         />
       );
@@ -232,6 +248,12 @@ export default function BrowseTab() {
                 frame={frame}
                 isSelected={selectedIds.has(frame.id)}
                 onClick={handleFrameClick}
+                onView={handleView}
+                onDownload={handleDownload}
+                onCompare={handleSingleCompare}
+                onTag={handleSingleTag}
+                onAddToCollection={handleSingleCollection}
+                onDelete={handleSingleDelete}
                 viewMode="grid"
               />
             </div>
@@ -247,6 +269,12 @@ export default function BrowseTab() {
               frame={frame}
               isSelected={selectedIds.has(frame.id)}
               onClick={handleFrameClick}
+              onView={handleView}
+              onDownload={handleDownload}
+              onCompare={handleSingleCompare}
+              onTag={handleSingleTag}
+              onAddToCollection={handleSingleCollection}
+              onDelete={handleSingleDelete}
               viewMode="list"
             />
           </div>
@@ -354,7 +382,7 @@ export default function BrowseTab() {
         {/* Toolbar */}
         <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 border border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <button onClick={selectAll} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors min-h-[44px]">
+            <button onClick={selectAll} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors min-h-[44px] px-2">
               {selectedIds.size > 0 && selectedIds.size === frames.length
                 ? 'Deselect All'
                 : 'Select All'}
@@ -368,20 +396,20 @@ export default function BrowseTab() {
             {selectedIds.size > 0 && (
               <>
                 <button onClick={() => deleteMutation.mutate([...selectedIds])} aria-label="Delete selected frames"
-                  className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors min-h-[44px]">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
                 <button onClick={() => { setCollectionFrameIds([...selectedIds]); setShowAddToCollection(true); }} aria-label="Add to collection"
-                  className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors min-h-[44px]">
                   <FolderPlus className="w-3.5 h-3.5" /> Collection
                 </button>
                 <button onClick={() => { setTagFrameIds([...selectedIds]); setShowTagModal(true); }} aria-label="Tag selected frames"
-                  className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors min-h-[44px]">
                   <Tag className="w-3.5 h-3.5" /> Tag
                 </button>
                 <button onClick={() => processMutation.mutate([...selectedIds])}
                   disabled={processMutation.isPending}
-                  className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors">
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors min-h-[44px]">
                   <Play className="w-3.5 h-3.5" /> Process
                 </button>
                 {selectedIds.size === 2 && (
@@ -389,7 +417,7 @@ export default function BrowseTab() {
                     const selected = frames.filter((f) => selectedIds.has(f.id));
                     if (selected.length === 2) setCompareFrames([selected[0], selected[1]]);
                   }}
-                    className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors">
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors min-h-[44px]">
                     <GitCompare className="w-3.5 h-3.5" /> Compare
                   </button>
                 )}
@@ -405,7 +433,7 @@ export default function BrowseTab() {
                       showToast('error', 'Failed to create share link');
                     }
                   }}
-                    className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-emerald-600/20 text-emerald-400 rounded-lg hover:bg-emerald-600/30 transition-colors">
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600/20 text-emerald-400 rounded-lg hover:bg-emerald-600/30 transition-colors min-h-[44px]">
                     <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
                 )}
@@ -413,7 +441,7 @@ export default function BrowseTab() {
             )}
             {/* Export button */}
             <button
-              className="flex items-center gap-1 px-3 min-h-[44px] text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors min-h-[44px]"
               aria-label="Export frames"
               onClick={() => {
                 const exportParams = new URLSearchParams();
@@ -429,11 +457,11 @@ export default function BrowseTab() {
 
             <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden ml-2">
               <button onClick={() => setViewMode('grid')} aria-label="Grid view"
-                className={`p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
+                className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button onClick={() => setViewMode('list')} aria-label="List view"
-                className={`p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
+                className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
                 <List className="w-4 h-4" />
               </button>
             </div>
@@ -442,28 +470,21 @@ export default function BrowseTab() {
 
         {/* Hint */}
         <div className="text-xs text-gray-400 dark:text-slate-500">
-          {(() => {
-            if (totalFrames > 0) return `${totalFrames} frames · Showing ${frames.length}`;
-            if (isLoading) return <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />;
-            return '0 frames';
-          })()} · Click to preview, Shift+Click to select
+          {infiniteData ? `${totalFrames} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}
         {renderFrameGrid()}
 
-        {/* Load More / Infinite scroll sentinel */}
+        {/* Infinite scroll sentinel + load more fallback */}
         {hasNextPage && (
-          <div ref={loadMoreRef} className="flex items-center justify-center py-6" data-testid="load-more-sentinel">
+          <div ref={sentinelRef} className="flex justify-center py-6">
             {isFetchingNextPage ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading more frames…
-              </div>
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400 dark:text-slate-500" />
             ) : (
               <button
                 onClick={() => fetchNextPage()}
-                className="px-6 min-h-[44px] text-sm bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors border border-gray-200 dark:border-slate-700"
+                className="px-6 py-3 text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
               >
                 Load More
               </button>
@@ -499,7 +520,7 @@ export default function BrowseTab() {
       </div>
 
       {/* Floating batch action bar */}
-      <FloatingCompareBar
+      <FloatingBatchBar
         selectedFrames={frames.filter((f) => selectedIds.has(f.id))}
         onCompare={() => {
           const selected = frames.filter((f) => selectedIds.has(f.id));
@@ -509,6 +530,12 @@ export default function BrowseTab() {
           const ids = [...selectedIds];
           globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'animate' }));
           globalThis.dispatchEvent(new CustomEvent('animate-frames', { detail: ids }));
+        }}
+        onTag={() => { setTagFrameIds([...selectedIds]); setShowTagModal(true); }}
+        onAddToCollection={() => { setCollectionFrameIds([...selectedIds]); setShowAddToCollection(true); }}
+        onDelete={() => deleteMutation.mutate([...selectedIds])}
+        onDownload={() => {
+          frames.filter((f) => selectedIds.has(f.id)).forEach((f) => handleDownload(f));
         }}
         onClear={() => setSelectedIds(new Set())}
       />

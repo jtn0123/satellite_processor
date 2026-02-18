@@ -14,3 +14,15 @@ vi.stubGlobal('fetch', mockFetch);
 afterEach(() => {
   mockFetch.mockClear();
 });
+
+// Mock IntersectionObserver for components using lazy loading / infinite scroll
+// Uses a regular function so it can be called with `new`
+function MockIntersectionObserver() {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+    takeRecords: vi.fn(() => []),
+  };
+}
+vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);

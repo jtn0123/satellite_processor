@@ -1,37 +1,41 @@
 import { test, expect } from '@playwright/test';
 import { setupMockApi } from './helpers/mock-api';
 
+const MOCK_FRAMES_RESPONSE = {
+  items: [
+    {
+      id: 'frame-001',
+      satellite: 'GOES-19',
+      band: 'C02',
+      sector: 'CONUS',
+      capture_time: '2026-01-15T12:00:00Z',
+      file_size: 4000000,
+      resolution: '2km',
+      filename: 'frame-001.nc',
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 50,
+};
+
 test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
-  // Mock frames endpoint with data for browse/gallery
+
+  // Override frames endpoints with test data.
+  // Must use a URL-checking callback to avoid catching /frames/stats
+  // and /frames/:id/* which would break the component.
   await page.route('**/api/goes/frames**', async (route) => {
     const url = route.request().url();
-    if (url.includes('/image') || url.includes('/thumbnail')) {
-      const pixel = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        'base64',
-      );
-      return route.fulfill({ contentType: 'image/png', body: pixel });
+    const path = new URL(url).pathname;
+
+    // Let /frames/stats fall through to the next handler (setupMockApi)
+    // Let /frames/:id/image and /frames/:id/thumbnail fall through too
+    if (path !== '/api/goes/frames') {
+      return route.fallback();
     }
-    await route.fulfill({
-      json: {
-        items: [
-          {
-            id: 'frame-001',
-            satellite: 'GOES-19',
-            band: 'C02',
-            sector: 'CONUS',
-            capture_time: '2026-01-15T12:00:00Z',
-            file_size: 4000000,
-            resolution: '2km',
-            filename: 'frame-001.nc',
-          },
-        ],
-        total: 1,
-        page: 1,
-        limit: 50,
-      },
-    });
+
+    await route.fulfill({ json: MOCK_FRAMES_RESPONSE });
   });
 });
 
@@ -40,7 +44,6 @@ test.describe('View frame details', () => {
     await page.goto('/goes');
     const galleryTab = page.locator('[role="tab"]').filter({ hasText: /gallery/i }).first();
     await galleryTab.click();
-    // Frame data should be visible
     await expect(page.locator('text=GOES-19').first()).toBeVisible({ timeout: 5000 });
   });
 

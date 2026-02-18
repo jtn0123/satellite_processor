@@ -21,7 +21,7 @@ function getStatusContent(job: Job) {
   return null;
 }
 
-export default function InlineFetchProgress({ job }: InlineFetchProgressProps) {
+export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgressProps>) {
   const statusContent = getStatusContent(job);
 
   return (

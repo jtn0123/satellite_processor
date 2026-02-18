@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/jtn0123/satellite_processor/compare/v1.6.2...v1.7.0) (2026-02-18)
+
+
+### Features
+
+* Phase 3 — production hardening ([#137](https://github.com/jtn0123/satellite_processor/issues/137)) ([2b03e7d](https://github.com/jtn0123/satellite_processor/commit/2b03e7d2e6b1efbedebd1a6ee3c4c7f4b42746ff))
+
 ## [1.6.2](https://github.com/jtn0123/satellite_processor/compare/v1.6.1...v1.6.2) (2026-02-18)
 
 

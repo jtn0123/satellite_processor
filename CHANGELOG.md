@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/jtn0123/satellite_processor/compare/v1.8.0...v1.9.0) (2026-02-18)
+
+
+### Features
+
+* mobile bottom nav + responsive polish ([#147](https://github.com/jtn0123/satellite_processor/issues/147)) ([1b11f6c](https://github.com/jtn0123/satellite_processor/commit/1b11f6cb3ac776e87e7aead7684da809812a93ec))
+
 # [1.8.0](https://github.com/jtn0123/satellite_processor/compare/v1.7.2...v1.8.0) (2026-02-18)
 
 

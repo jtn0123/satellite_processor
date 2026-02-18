@@ -21,6 +21,7 @@ vi.mock('../api/client', () => ({
       }
       if (url === '/goes/catalog') return Promise.resolve({ data: [] });
       if (url === '/jobs') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     }),
     post: vi.fn().mockResolvedValue({ data: { job_id: 'test-job' } }),
@@ -36,20 +37,28 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
+async function expandAdvanced() {
+  const toggle = await screen.findByTestId('advanced-fetch-toggle');
+  fireEvent.click(toggle);
+}
+
 describe('FetchTab', () => {
-  it('renders the Fetch Latest button', async () => {
+  it('renders quick fetch chips by default', async () => {
     render(<FetchTab />, { wrapper });
-    await waitFor(() => expect(screen.getByText('Fetch Latest')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Quick Fetch')).toBeInTheDocument());
+    expect(screen.getByText('CONUS Last Hour')).toBeInTheDocument();
   });
 
-  it('renders satellite cards on initial step', async () => {
+  it('renders satellite cards after expanding advanced', async () => {
     render(<FetchTab />, { wrapper });
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('GOES-19')).toBeInTheDocument());
     expect(screen.getByText('Choose Satellite')).toBeInTheDocument();
   });
 
   it('navigates to When step (step 2) and shows time inputs', async () => {
     render(<FetchTab />, { wrapper });
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
@@ -59,13 +68,12 @@ describe('FetchTab', () => {
 
   it('disables Fetch button when no times set', async () => {
     render(<FetchTab />, { wrapper });
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
-    // Navigate to step 3
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
-    // Fetch button should be disabled without times
     const fetchBtn = screen.getByRole('button', { name: /^fetch$/i });
     expect(fetchBtn).toBeDisabled();
   });

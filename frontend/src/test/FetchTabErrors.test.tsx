@@ -29,6 +29,7 @@ vi.mock('../api/client', () => ({
       if (url === '/jobs') {
         return Promise.resolve({ data: { items: [], total: 0 } });
       }
+      if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     }),
     post: (...args: unknown[]) => mockPost(...args),
@@ -46,7 +47,15 @@ function makeWrapper() {
   };
 }
 
+async function expandAdvanced() {
+  const toggle = await screen.findByTestId('advanced-fetch-toggle');
+  fireEvent.click(toggle);
+}
+
 async function navigateToStep3AndFill() {
+  // Expand advanced wizard first
+  await expandAdvanced();
+
   // Wait for products to load (step 1)
   await waitFor(() => {
     expect(screen.getByText('Choose Satellite')).toBeInTheDocument();

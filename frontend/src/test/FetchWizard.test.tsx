@@ -47,21 +47,29 @@ function renderWithQuery(ui: React.ReactElement) {
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
+// Helper: expand advanced section before testing wizard
+async function expandAdvanced() {
+  const toggle = await screen.findByTestId('advanced-fetch-toggle');
+  fireEvent.click(toggle);
+}
+
 describe('FetchTab Wizard', () => {
   it('renders step indicators', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Source')).toBeInTheDocument());
     expect(screen.getByText('What')).toBeInTheDocument();
     expect(screen.getByText('When')).toBeInTheDocument();
   });
 
-  it('shows Fetch Latest button', async () => {
+  it('shows quick fetch chips by default', async () => {
     renderWithQuery(<FetchTab />);
-    await waitFor(() => expect(screen.getByText('Fetch Latest')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('CONUS Last Hour')).toBeInTheDocument());
   });
 
-  it('shows satellite cards on step 1', async () => {
+  it('shows satellite cards on step 1 (after expanding advanced)', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('GOES-19')).toBeInTheDocument());
     expect(screen.getByText('GOES-18')).toBeInTheDocument();
     expect(screen.getByText('GOES-16')).toBeInTheDocument();
@@ -69,6 +77,7 @@ describe('FetchTab Wizard', () => {
 
   it('shows active/historical badges', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('GOES-19')).toBeInTheDocument());
     const badges = screen.getAllByText('Active');
     expect(badges.length).toBeGreaterThanOrEqual(1);
@@ -77,6 +86,7 @@ describe('FetchTab Wizard', () => {
 
   it('navigates to step 2 on Next', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
@@ -84,6 +94,7 @@ describe('FetchTab Wizard', () => {
 
   it('shows image type toggle on step 2', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('Single Band')).toBeInTheDocument());
@@ -93,6 +104,7 @@ describe('FetchTab Wizard', () => {
 
   it('hides band picker when True Color selected', async () => {
     renderWithQuery(<FetchTab />);
+    await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('True Color')).toBeInTheDocument());

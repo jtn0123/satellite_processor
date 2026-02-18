@@ -61,7 +61,7 @@ describe('ProcessPage', () => {
         { id: 'img2', filename: 'test2.nc', thumbnail: null, created_at: '2024-01-02' },
       ],
       isLoading: false,
-    } as any);
+    } as ReturnType<typeof useImages>);
     renderPage();
     expect(screen.getByText(/Select Images/)).toBeInTheDocument();
     expect(screen.getByText('(0 selected)')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('ProcessPage', () => {
         { id: 'img1', filename: 'test1.nc', thumbnail: null, created_at: '2024-01-01' },
       ],
       isLoading: false,
-    } as any);
+    } as ReturnType<typeof useImages>);
     renderPage();
     // The gallery renders image cards — look for selectable elements
     expect(screen.getByText(/Select Images/)).toBeInTheDocument();

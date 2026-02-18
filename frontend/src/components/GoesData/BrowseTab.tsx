@@ -37,7 +37,6 @@ export default function BrowseTab() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [, setShowProcessModal] = useState(false);
   const [showAddToCollection, setShowAddToCollection] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [previewFrame, setPreviewFrame] = useState<GoesFrame | null>(null);
@@ -117,7 +116,6 @@ export default function BrowseTab() {
     mutationFn: (frameIds: string[]) =>
       api.post('/goes/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
     onSuccess: (data) => {
-      setShowProcessModal(false);
       showToast('success', `Processing job created: ${data.job_id}`);
     },
     onError: () => showToast('error', 'Failed to create processing job'),

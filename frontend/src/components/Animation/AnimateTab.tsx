@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Play, Loader2, Clock, Trash2, Download, Film, Sparkles } from 'lucide-react';
+import { Play, Loader2, Clock, Trash2, Download, Sliders, X, Film } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { formatBytes } from '../GoesData/utils';
@@ -9,11 +9,9 @@ import AnimationSettingsPanel from './AnimationSettingsPanel';
 import BatchAnimationPanel from './BatchAnimationPanel';
 import AnimationPresets from './AnimationPresets';
 import type { AnimationConfig, AnimationPreset, PreviewRangeResponse } from './types';
-import type { PaginatedAnimations } from '../GoesData/types';
+import type { PaginatedAnimations, CollectionType } from '../GoesData/types';
 import { SATELLITES, SECTORS, BANDS, QUICK_HOURS } from './types';
 import { extractArray } from '../../utils/safeData';
-
-const AnimationStudioTab = lazy(() => import('../GoesData/AnimationStudioTab'));
 
 const DEFAULT_CONFIG: AnimationConfig = {
   satellite: 'GOES-16',
@@ -30,51 +28,46 @@ const DEFAULT_CONFIG: AnimationConfig = {
   name: '',
 };
 
-/** Reusable toggle between Quick Animate and Animation Studio modes */
-function ModeToggle({ mode, setMode }: Readonly<{ mode: 'quick' | 'studio'; setMode: (m: 'quick' | 'studio') => void }>) {
+/** Quick-start preset chips for common animation scenarios */
+function QuickStartChips({ onApply }: Readonly<{ onApply: (updates: Partial<AnimationConfig> & { hours?: number }) => void }>) {
+  const chips = [
+    { label: '🌀 Hurricane Watch', satellite: 'GOES-16', sector: 'CONUS', band: 'C13', hours: 24, quality: 'high' as const },
+    { label: '🌅 Visible Timelapse', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', hours: 12, quality: 'medium' as const },
+    { label: '⚡ Storm Cell', satellite: 'GOES-16', sector: 'Meso1', band: 'C13', hours: 3, quality: 'high' as const },
+    { label: '🌍 Full Disk', satellite: 'GOES-16', sector: 'FullDisk', band: 'C13', hours: 6, quality: 'medium' as const },
+    { label: '🔥 Fire Watch', satellite: 'GOES-16', sector: 'CONUS', band: 'C07', hours: 6, quality: 'high' as const },
+  ];
+
   return (
-    <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
-      <button
-        type="button"
-        onClick={() => setMode('quick')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-          mode === 'quick'
-            ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
-            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
-        }`}
-      >
-        <Sparkles className="w-4 h-4" />
-        Quick Animate
-      </button>
-      <button
-        type="button"
-        onClick={() => setMode('studio')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-          mode === 'studio'
-            ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20'
-            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
-        }`}
-      >
-        <Film className="w-4 h-4" />
-        Animation Studio
-      </button>
+    <div className="flex flex-wrap gap-2">
+      {chips.map((chip) => (
+        <button
+          key={chip.label}
+          type="button"
+          onClick={() => onApply({ satellite: chip.satellite, sector: chip.sector, band: chip.band, quality: chip.quality, hours: chip.hours })}
+          className="min-h-[44px] px-4 py-2 text-sm rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-all border border-gray-200 dark:border-slate-700 hover:border-primary/40"
+        >
+          {chip.label}
+        </button>
+      ))}
     </div>
   );
 }
 
 export default function AnimateTab() {
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<'quick' | 'studio'>('quick');
   const [config, setConfig] = useState<AnimationConfig>({ ...DEFAULT_CONFIG });
+  const [sourceMode, setSourceMode] = useState<'filters' | 'collection'>('filters');
+  const [collectionId, setCollectionId] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const updateConfig = useCallback((updates: Partial<AnimationConfig>) => {
     setConfig((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  const handleQuickHours = useCallback((hours: number) => {
+  const setDateRange = useCallback((hours: number) => {
     const end = new Date();
     const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
-    // Format for datetime-local input
     const fmt = (d: Date) => {
       const pad = (n: number) => String(n).padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -82,13 +75,35 @@ export default function AnimateTab() {
     setConfig((prev) => ({ ...prev, start_date: fmt(start), end_date: fmt(end) }));
   }, []);
 
+  const handleQuickHours = useCallback((hours: number) => {
+    setDateRange(hours);
+  }, [setDateRange]);
+
+  const handleQuickStartChip = useCallback((updates: Partial<AnimationConfig> & { hours?: number }) => {
+    const { hours, ...configUpdates } = updates;
+    setSourceMode('filters');
+    setConfig((prev) => ({ ...prev, ...configUpdates }));
+    if (hours) {
+      setDateRange(hours);
+    }
+  }, [setDateRange]);
+
   const handleLoadPreset = useCallback((preset: AnimationPreset) => {
     setConfig((prev) => ({ ...prev, ...preset.config }));
     showToast('success', `Loaded preset: ${preset.name}`);
   }, []);
 
+  // Collections query for collection source mode
+  const { data: collections } = useQuery<CollectionType[]>({
+    queryKey: ['goes-collections'],
+    queryFn: () => api.get('/goes/collections').then((r) => extractArray(r.data)),
+  });
+
   // Preview query
-  const previewEnabled = !!(config.satellite && config.sector && config.band && config.start_date && config.end_date);
+  const previewEnabled = sourceMode === 'collection'
+    ? !!collectionId
+    : !!(config.satellite && config.sector && config.band && config.start_date && config.end_date);
+
   const previewParams = useMemo(
     () => ({
       satellite: config.satellite,
@@ -107,12 +122,25 @@ export default function AnimateTab() {
   } = useQuery<PreviewRangeResponse>({
     queryKey: ['frame-preview-range', previewParams],
     queryFn: () => api.get('/goes/frames/preview-range', { params: previewParams }).then((r) => r.data),
-    enabled: previewEnabled,
+    enabled: sourceMode === 'filters' && previewEnabled,
   });
 
   // Generate animation
   const generateMutation = useMutation({
     mutationFn: () => {
+      if (sourceMode === 'collection' && collectionId) {
+        const payload: Record<string, unknown> = {
+          name: config.name || `Collection Animation ${new Date().toLocaleString()}`,
+          collection_id: collectionId,
+          fps: config.fps,
+          format: config.format,
+          quality: config.quality,
+          resolution: config.resolution,
+          loop_style: config.loop_style,
+          overlays: config.overlays,
+        };
+        return api.post('/goes/animations', payload).then((r) => r.data);
+      }
       const payload = {
         name: config.name || `${config.satellite} ${config.band} ${config.sector}`,
         satellite: config.satellite,
@@ -155,27 +183,31 @@ export default function AnimateTab() {
   const captureInterval = previewData?.capture_interval_minutes ?? 10;
   const animationItems = extractArray<PaginatedAnimations['items'][number]>(animations);
 
-  if (mode === 'studio') {
-    return (
-      <div className="space-y-6">
-        <ModeToggle mode={mode} setMode={setMode} />
-        <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />}>
-          <AnimationStudioTab />
-        </Suspense>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <ModeToggle mode={mode} setMode={setMode} />
+      {/* Quick-start chips */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400">Quick Start</h3>
+        <QuickStartChips onApply={handleQuickStartChip} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Selection & Preview */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Satellite/Sector/Band selectors */}
           <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-            <h3 className="text-lg font-semibold">Create Animation</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" /> Create Animation
+              </h3>
+              {/* Mobile settings toggle */}
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="lg:hidden min-h-[44px] flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300"
+              >
+                <Sliders className="w-4 h-4" /> Settings
+              </button>
+            </div>
 
             {/* Animation Name */}
             <div>
@@ -192,103 +224,139 @@ export default function AnimateTab() {
               />
             </div>
 
-            {/* Selectors */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="animate-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
-                  Satellite
-                </label>
-                <select
-                  id="animate-satellite"
-                  value={config.satellite}
-                  onChange={(e) => updateConfig({ satellite: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                >
-                  {SATELLITES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="animate-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
-                  Sector
-                </label>
-                <select
-                  id="animate-sector"
-                  value={config.sector}
-                  onChange={(e) => updateConfig({ sector: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                >
-                  {SECTORS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="animate-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
-                  Band
-                </label>
-                <select
-                  id="animate-band"
-                  value={config.band}
-                  onChange={(e) => updateConfig({ band: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                >
-                  {BANDS.map((b) => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Source mode toggle */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSourceMode('filters')}
+                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  sourceMode === 'filters'
+                    ? 'bg-primary text-gray-900 dark:text-white'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                By Filters
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourceMode('collection')}
+                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  sourceMode === 'collection'
+                    ? 'bg-primary text-gray-900 dark:text-white'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                From Collection
+              </button>
             </div>
 
-            {/* Quick buttons */}
-            <fieldset className="border-0 p-0 m-0">
-              <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</legend>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_HOURS.map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => handleQuickHours(h)}
-                    className="min-h-[44px] px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-colors flex items-center gap-1.5"
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    Last {h}h
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            {sourceMode === 'filters' ? (
+              <>
+                {/* Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label htmlFor="animate-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
+                    <select
+                      id="animate-satellite"
+                      value={config.satellite}
+                      onChange={(e) => updateConfig({ satellite: e.target.value })}
+                      className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                    >
+                      {SATELLITES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="animate-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
+                    <select
+                      id="animate-sector"
+                      value={config.sector}
+                      onChange={(e) => updateConfig({ sector: e.target.value })}
+                      className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                    >
+                      {SECTORS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="animate-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
+                    <select
+                      id="animate-band"
+                      value={config.band}
+                      onChange={(e) => updateConfig({ band: e.target.value })}
+                      className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                    >
+                      {BANDS.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            {/* Date range */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Quick range buttons */}
+                <fieldset className="border-0 p-0 m-0">
+                  <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_HOURS.map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => handleQuickHours(h)}
+                        className="min-h-[44px] px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-colors flex items-center gap-1.5"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        Last {h}h
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {/* Date range */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="animate-start" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Start Date/Time</label>
+                    <input
+                      id="animate-start"
+                      type="datetime-local"
+                      value={config.start_date}
+                      onChange={(e) => updateConfig({ start_date: e.target.value })}
+                      className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="animate-end" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">End Date/Time</label>
+                    <input
+                      id="animate-end"
+                      type="datetime-local"
+                      value={config.end_date}
+                      onChange={(e) => updateConfig({ end_date: e.target.value })}
+                      className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
               <div>
-                <label htmlFor="animate-start" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
-                  Start Date/Time
-                </label>
-                <input
-                  id="animate-start"
-                  type="datetime-local"
-                  value={config.start_date}
-                  onChange={(e) => updateConfig({ start_date: e.target.value })}
+                <label htmlFor="animate-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
+                <select
+                  id="animate-collection"
+                  value={collectionId}
+                  onChange={(e) => setCollectionId(e.target.value)}
                   className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                />
+                >
+                  <option value="">Select collection...</option>
+                  {(collections ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.frame_count ?? 0} frames)</option>
+                  ))}
+                </select>
               </div>
-              <div>
-                <label htmlFor="animate-end" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
-                  End Date/Time
-                </label>
-                <input
-                  id="animate-end"
-                  type="datetime-local"
-                  value={config.end_date}
-                  onChange={(e) => updateConfig({ end_date: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                />
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Frame Range Preview */}
-          {previewEnabled && (
+          {/* Frame Range Preview (filter mode only) */}
+          {sourceMode === 'filters' && previewEnabled && (
             <FrameRangePreview
               data={previewData}
               isLoading={previewLoading}
@@ -296,10 +364,34 @@ export default function AnimateTab() {
             />
           )}
 
+          {/* Inline animation preview for completed animations */}
+          {animationItems.length > 0 && animationItems[0].status === 'completed' && animationItems[0].output_path && (
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">Latest Animation</h4>
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                {animationItems[0].format === 'gif' ? (
+                  <img
+                    src={`/api/download?path=${encodeURIComponent(animationItems[0].output_path)}`}
+                    alt={animationItems[0].name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <video
+                    src={`/api/download?path=${encodeURIComponent(animationItems[0].output_path)}`}
+                    controls
+                    loop
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Generate Button */}
           <button
+            type="button"
             onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending || !previewEnabled || (previewData?.total_count === 0)}
+            disabled={generateMutation.isPending || !previewEnabled || (sourceMode === 'filters' && previewData?.total_count === 0)}
             className="w-full min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 btn-primary-mix text-gray-900 dark:text-white rounded-xl disabled:opacity-50 transition-colors font-medium text-base"
           >
             {generateMutation.isPending ? (
@@ -314,8 +406,8 @@ export default function AnimateTab() {
           <BatchAnimationPanel currentConfig={config} />
         </div>
 
-        {/* Right: Settings & Presets */}
-        <div className="space-y-4">
+        {/* Right: Settings & Presets (desktop) */}
+        <div className="hidden lg:block space-y-4">
           <AnimationSettingsPanel
             config={config}
             captureIntervalMinutes={captureInterval}
@@ -324,6 +416,45 @@ export default function AnimateTab() {
           <AnimationPresets config={config} onLoadPreset={handleLoadPreset} />
         </div>
       </div>
+
+      {/* Mobile settings slide-up panel */}
+      {settingsOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSettingsOpen(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setSettingsOpen(false)}
+            role="button"
+            tabIndex={0}
+            aria-label="Close settings"
+          />
+          {/* Panel */}
+          <div className="relative bg-white dark:bg-slate-950 rounded-t-2xl max-h-[85vh] overflow-y-auto animate-slide-up shadow-2xl">
+            <div className="sticky top-0 bg-white dark:bg-slate-950 px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between z-10">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-primary" /> Settings
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                aria-label="Close settings"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <AnimationSettingsPanel
+                config={config}
+                captureIntervalMinutes={captureInterval}
+                onChange={updateConfig}
+              />
+              <AnimationPresets config={config} onLoadPreset={handleLoadPreset} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Animation History */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
@@ -364,6 +495,7 @@ export default function AnimateTab() {
                     <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={anim.error}>Failed</span>
                   )}
                   <button
+                    type="button"
                     onClick={() => deleteMutation.mutate(anim.id)}
                     className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
                   >

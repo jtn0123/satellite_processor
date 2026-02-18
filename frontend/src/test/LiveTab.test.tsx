@@ -53,35 +53,35 @@ describe('LiveTab', () => {
   it('renders without crashing', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Your Latest')).toBeInTheDocument();
+      expect(screen.getByText('LIVE')).toBeInTheDocument();
     });
   });
 
   it('renders satellite selector', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Satellite')).toBeInTheDocument();
+      expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
     });
   });
 
   it('renders band selector', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Band')).toBeInTheDocument();
+      expect(screen.getByLabelText('Band')).toBeInTheDocument();
     });
   });
 
   it('renders sector selector', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Sector')).toBeInTheDocument();
+      expect(screen.getByLabelText('Sector')).toBeInTheDocument();
     });
   });
 
   it('renders auto-refresh selector', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
     });
   });
 

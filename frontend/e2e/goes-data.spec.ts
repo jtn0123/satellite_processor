@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('GOES data page loads', async ({ page }) => {
   await page.goto('/goes');
-  await expect(page.locator('text=/GOES/i').first()).toBeVisible();
+  await expect(page.locator('h1:has-text("Browse & Fetch")')).toBeVisible();
 });
 
 test('navigate to GOES data from sidebar', async ({ page }) => {

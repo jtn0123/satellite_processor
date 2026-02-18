@@ -66,7 +66,7 @@ function getOverlayPref(): boolean {
   try { return localStorage.getItem('live-overlay-visible') !== 'false'; } catch { return true; }
 }
 
-function computeFreshness(catalogLatest: CatalogLatest | undefined, frame: LatestFrame | undefined) {
+function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame: LatestFrame | null | undefined) {
   if (!catalogLatest || !frame) return null;
   const awsAge = timeAgo(catalogLatest.scan_time);
   const localAge = timeAgo(frame.capture_time);
@@ -435,10 +435,22 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   }
   if (isError) {
     return (
-      <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500">
+      <div className="flex flex-col items-center gap-4 text-gray-400 dark:text-slate-500 py-8">
         <Satellite className="w-12 h-12" />
-        <span className="text-sm">No local frames available</span>
-        <span className="text-xs text-gray-400 dark:text-slate-600">Fetch data first from the Fetch tab</span>
+        <span className="text-sm font-medium">No local frames available</span>
+        <span className="text-xs text-gray-400 dark:text-slate-600">Fetch your first image to see it here</span>
+        <button
+          onClick={() => {
+            globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
+              detail: { satellite, sector, band },
+            }));
+            globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Fetch your first image
+        </button>
       </div>
     );
   }

@@ -15,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -284,7 +285,7 @@ function LogConsole({
 function useClipboard(jobId: string) {
   const [copied, setCopied] = useState(false);
   const copyId = useCallback(() => {
-    navigator.clipboard.writeText(jobId).catch(() => {});
+    navigator.clipboard.writeText(jobId).catch(() => showToast('error', 'Failed to copy job ID to clipboard'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [jobId]);
@@ -312,7 +313,7 @@ function useJobLogs(jobId: string, wsLogs: JobLogEntry[]) {
     api
       .get(`/jobs/${jobId}/logs`, { params: { limit: 500 } })
       .then((r) => setHistoricalLogs(r.data as JobLogEntry[]))
-      .catch(() => {});
+      .catch(() => showToast('error', 'Failed to load job logs'));
   }, [jobId]);
 
   const allLogs = [...historicalLogs, ...wsLogs];
@@ -344,18 +345,18 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
   /* ── Actions ──────────────────────────────────────────── */
   const handleDelete = useCallback(() => {
-    api.delete(`/jobs/${jobId}`).then(() => onBack()).catch(() => {});
+    api.delete(`/jobs/${jobId}`).then(() => onBack()).catch(() => showToast('error', 'Failed to delete job'));
   }, [jobId, onBack]);
 
   const handleCancel = useCallback(() => {
-    api.delete(`/jobs/${jobId}`).then(() => refetch()).catch(() => {});
+    api.delete(`/jobs/${jobId}`).then(() => refetch()).catch(() => showToast('error', 'Failed to cancel job'));
   }, [jobId, refetch]);
 
   const handleRetry = useCallback(() => {
     if (!job) return;
     api
       .post('/jobs', { job_type: job.job_type, params: job.params, input_path: job.input_path })
-      .then(() => onBack()).catch(() => {});
+      .then(() => onBack()).catch(() => showToast('error', 'Failed to retry job'));
   }, [job, onBack]);
 
   /* ── Params display ───────────────────────────────────── */

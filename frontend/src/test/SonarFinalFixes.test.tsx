@@ -43,6 +43,7 @@ describe('SonarQube final fixes', () => {
       // Should not throw
       fireEvent.mouseMove(dialog, { clientX: 100, clientY: 100 });
       fireEvent.mouseUp(dialog);
+      expect(dialog).toBeInTheDocument();
     });
   });
 

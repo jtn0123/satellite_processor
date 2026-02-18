@@ -51,10 +51,14 @@ jobs:
           echo "Downloading backend coverage..."
           gh run download "$RUN_ID" -p "backend-coverage-shard*" -D backend/ 2>/dev/null || echo "No backend coverage artifacts found"
 
-          # Download frontend coverage
+          # Download frontend coverage shards and merge
           echo "Downloading frontend coverage..."
-          mkdir -p frontend/coverage
-          gh run download "$RUN_ID" -n "frontend-coverage" -D frontend/coverage/ 2>/dev/null || echo "No frontend coverage artifact found"
+          mkdir -p frontend/coverage frontend/coverage-shard1 frontend/coverage-shard2
+          gh run download "$RUN_ID" -n "frontend-coverage-shard1" -D frontend/coverage-shard1/ 2>/dev/null || echo "No frontend coverage shard 1"
+          gh run download "$RUN_ID" -n "frontend-coverage-shard2" -D frontend/coverage-shard2/ 2>/dev/null || echo "No frontend coverage shard 2"
+
+          # Merge lcov files from both shards
+          cat frontend/coverage-shard1/lcov.info frontend/coverage-shard2/lcov.info > frontend/coverage/lcov.info 2>/dev/null || true
 
           # Create fallback files if missing
           if ! ls backend/coverage-shard*.xml 1>/dev/null 2>&1; then

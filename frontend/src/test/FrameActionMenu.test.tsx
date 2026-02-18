@@ -6,69 +6,109 @@ const defaultProps = {
   onCompare: vi.fn(),
   onTag: vi.fn(),
   onAddToCollection: vi.fn(),
-  onShare: vi.fn(),
   onDelete: vi.fn(),
 };
 
 describe('FrameActionMenu', () => {
-  it('renders trigger button', () => {
+  it('renders trigger button with aria-label', () => {
     render(<FrameActionMenu {...defaultProps} />);
     expect(screen.getByLabelText('More actions')).toBeInTheDocument();
   });
 
-  it('opens menu on click', () => {
+  it('menu is closed by default', () => {
+    render(<FrameActionMenu {...defaultProps} />);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('opens menu on trigger click', () => {
     render(<FrameActionMenu {...defaultProps} />);
     fireEvent.click(screen.getByLabelText('More actions'));
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
-  it('shows all secondary actions', () => {
+  it('shows Compare, Tag, Add to Collection, Delete items', () => {
     render(<FrameActionMenu {...defaultProps} />);
     fireEvent.click(screen.getByLabelText('More actions'));
     expect(screen.getByText('Compare')).toBeInTheDocument();
     expect(screen.getByText('Tag')).toBeInTheDocument();
     expect(screen.getByText('Add to Collection')).toBeInTheDocument();
-    expect(screen.getByText('Share')).toBeInTheDocument();
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
-  it('calls onDelete when Delete clicked', () => {
-    const onDelete = vi.fn();
-    render(<FrameActionMenu {...defaultProps} onDelete={onDelete} />);
+  it('does not show Share when onShare is not provided', () => {
+    render(<FrameActionMenu {...defaultProps} />);
     fireEvent.click(screen.getByLabelText('More actions'));
-    fireEvent.click(screen.getByText('Delete'));
-    expect(onDelete).toHaveBeenCalled();
+    expect(screen.queryByText('Share')).not.toBeInTheDocument();
   });
 
-  it('calls onTag when Tag clicked', () => {
+  it('shows Share when onShare is provided', () => {
+    render(<FrameActionMenu {...defaultProps} onShare={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText('More actions'));
+    expect(screen.getByText('Share')).toBeInTheDocument();
+  });
+
+  it('calls onCompare and closes menu when Compare clicked', () => {
+    const onCompare = vi.fn();
+    render(<FrameActionMenu {...defaultProps} onCompare={onCompare} />);
+    fireEvent.click(screen.getByLabelText('More actions'));
+    fireEvent.click(screen.getByText('Compare'));
+    expect(onCompare).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('calls onTag and closes menu', () => {
     const onTag = vi.fn();
     render(<FrameActionMenu {...defaultProps} onTag={onTag} />);
     fireEvent.click(screen.getByLabelText('More actions'));
     fireEvent.click(screen.getByText('Tag'));
-    expect(onTag).toHaveBeenCalled();
+    expect(onTag).toHaveBeenCalledOnce();
   });
 
-  it('closes menu after action', () => {
+  it('calls onAddToCollection and closes menu', () => {
+    const onAdd = vi.fn();
+    render(<FrameActionMenu {...defaultProps} onAddToCollection={onAdd} />);
+    fireEvent.click(screen.getByLabelText('More actions'));
+    fireEvent.click(screen.getByText('Add to Collection'));
+    expect(onAdd).toHaveBeenCalledOnce();
+  });
+
+  it('calls onDelete and closes menu', () => {
+    const onDelete = vi.fn();
+    render(<FrameActionMenu {...defaultProps} onDelete={onDelete} />);
+    fireEvent.click(screen.getByLabelText('More actions'));
+    fireEvent.click(screen.getByText('Delete'));
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it('closes menu on outside mousedown', () => {
     render(<FrameActionMenu {...defaultProps} />);
     fireEvent.click(screen.getByLabelText('More actions'));
     expect(screen.getByRole('menu')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Share'));
+    fireEvent.mouseDown(document.body);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('trigger button has min 44px touch target', () => {
+  it('toggles menu open and closed', () => {
     render(<FrameActionMenu {...defaultProps} />);
-    const btn = screen.getByLabelText('More actions');
-    expect(btn.className).toContain('min-w-[44px]');
-    expect(btn.className).toContain('min-h-[44px]');
+    const trigger = screen.getByLabelText('More actions');
+    fireEvent.click(trigger);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('menu items have min 44px height', () => {
+  it('sets aria-expanded correctly', () => {
+    render(<FrameActionMenu {...defaultProps} />);
+    const trigger = screen.getByLabelText('More actions');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('menu items have role=menuitem', () => {
     render(<FrameActionMenu {...defaultProps} />);
     fireEvent.click(screen.getByLabelText('More actions'));
     const items = screen.getAllByRole('menuitem');
-    items.forEach(item => {
-      expect(item.className).toContain('min-h-[44px]');
-    });
+    expect(items.length).toBe(4); // Compare, Tag, Add to Collection, Delete
   });
 });

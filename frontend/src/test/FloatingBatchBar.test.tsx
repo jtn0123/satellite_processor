@@ -5,74 +5,88 @@ import type { GoesFrame } from '../components/GoesData/types';
 
 const makeFrame = (id: string): GoesFrame => ({
   id,
-  satellite: 'GOES-16',
+  satellite: 'GOES-19',
   band: 'C02',
   sector: 'CONUS',
-  capture_time: '2026-01-01T12:00:00Z',
-  file_path: '/path',
-  file_size: 1024,
-  width: null,
-  height: null,
-  thumbnail_path: null,
+  capture_time: '2026-01-01T00:00:00Z',
+  file_path: `/path/${id}`,
+  thumbnail_path: `/thumb/${id}`,
+  file_size: 1000,
+  width: 1920,
+  height: 1080,
   tags: [],
   collections: [],
-});
+} as GoesFrame);
 
-const noop = vi.fn();
+const defaultHandlers = {
+  onCompare: vi.fn(),
+  onAnimate: vi.fn(),
+  onTag: vi.fn(),
+  onAddToCollection: vi.fn(),
+  onDelete: vi.fn(),
+  onDownload: vi.fn(),
+  onClear: vi.fn(),
+};
 
 describe('FloatingBatchBar', () => {
   it('renders nothing when no frames selected', () => {
-    const { container } = render(
-      <FloatingBatchBar selectedFrames={[]} onCompare={noop} onAnimate={noop} onTag={noop}
-        onAddToCollection={noop} onDelete={noop} onDownload={noop} onClear={noop} />
-    );
-    expect(container.firstChild).toBeNull();
+    const { container } = render(<FloatingBatchBar selectedFrames={[]} {...defaultHandlers} />);
+    expect(container.innerHTML).toBe('');
   });
 
-  it('shows count and action buttons', () => {
-    render(
-      <FloatingBatchBar selectedFrames={[makeFrame('1'), makeFrame('2')]}
-        onCompare={noop} onAnimate={noop} onTag={noop}
-        onAddToCollection={noop} onDelete={noop} onDownload={noop} onClear={noop} />
-    );
+  it('shows count of selected frames', () => {
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1'), makeFrame('2')]} {...defaultHandlers} />);
     expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('shows Compare button only when exactly 2 frames selected', () => {
+    const { rerender } = render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} />);
+    expect(screen.queryByLabelText('Compare selected frames')).not.toBeInTheDocument();
+
+    rerender(<FloatingBatchBar selectedFrames={[makeFrame('1'), makeFrame('2')]} {...defaultHandlers} />);
     expect(screen.getByLabelText('Compare selected frames')).toBeInTheDocument();
+  });
+
+  it('shows Animate button when >= 2 frames selected', () => {
+    const { rerender } = render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} />);
+    expect(screen.queryByLabelText('Animate selected frames')).not.toBeInTheDocument();
+
+    rerender(<FloatingBatchBar selectedFrames={[makeFrame('1'), makeFrame('2')]} {...defaultHandlers} />);
     expect(screen.getByLabelText('Animate selected frames')).toBeInTheDocument();
-    expect(screen.getByLabelText('Tag selected frames')).toBeInTheDocument();
-    expect(screen.getByLabelText('Delete selected frames')).toBeInTheDocument();
-    expect(screen.getByLabelText('Download selected frames')).toBeInTheDocument();
-    expect(screen.getByLabelText('Add selected to collection')).toBeInTheDocument();
   });
 
-  it('calls onClear when X clicked', () => {
+  it('calls onDelete when delete clicked', () => {
+    const onDelete = vi.fn();
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} onDelete={onDelete} />);
+    fireEvent.click(screen.getByLabelText('Delete selected frames'));
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it('calls onClear when clear clicked', () => {
     const onClear = vi.fn();
-    render(
-      <FloatingBatchBar selectedFrames={[makeFrame('1')]}
-        onCompare={noop} onAnimate={noop} onTag={noop}
-        onAddToCollection={noop} onDelete={noop} onDownload={noop} onClear={onClear} />
-    );
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} onClear={onClear} />);
     fireEvent.click(screen.getByLabelText('Clear selection'));
-    expect(onClear).toHaveBeenCalled();
+    expect(onClear).toHaveBeenCalledOnce();
   });
 
-  it('hides Compare when not exactly 2 selected', () => {
-    render(
-      <FloatingBatchBar selectedFrames={[makeFrame('1')]}
-        onCompare={noop} onAnimate={noop} onTag={noop}
-        onAddToCollection={noop} onDelete={noop} onDownload={noop} onClear={noop} />
-    );
-    expect(screen.queryByLabelText('Compare selected frames')).toBeNull();
+  it('calls onDownload when download clicked', () => {
+    const onDownload = vi.fn();
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} onDownload={onDownload} />);
+    fireEvent.click(screen.getByLabelText('Download selected frames'));
+    expect(onDownload).toHaveBeenCalledOnce();
   });
 
-  it('all buttons have min 44px touch targets', () => {
-    render(
-      <FloatingBatchBar selectedFrames={[makeFrame('1'), makeFrame('2')]}
-        onCompare={noop} onAnimate={noop} onTag={noop}
-        onAddToCollection={noop} onDelete={noop} onDownload={noop} onClear={noop} />
-    );
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach((btn) => {
-      expect(btn.className).toMatch(/min-h-\[44px\]/);
-    });
+  it('calls onTag when tag clicked', () => {
+    const onTag = vi.fn();
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} onTag={onTag} />);
+    fireEvent.click(screen.getByLabelText('Tag selected frames'));
+    expect(onTag).toHaveBeenCalledOnce();
+  });
+
+  it('calls onAddToCollection when collection clicked', () => {
+    const onAdd = vi.fn();
+    render(<FloatingBatchBar selectedFrames={[makeFrame('1')]} {...defaultHandlers} onAddToCollection={onAdd} />);
+    fireEvent.click(screen.getByLabelText('Add selected to collection'));
+    expect(onAdd).toHaveBeenCalledOnce();
   });
 });

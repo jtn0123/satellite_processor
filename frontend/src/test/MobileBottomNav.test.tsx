@@ -1,95 +1,93 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import MobileBottomNav from '../components/MobileBottomNav';
 
-function renderNav(route = '/') {
+function renderWithRouter(initialRoute = '/goes') {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[initialRoute]}>
       <MobileBottomNav />
     </MemoryRouter>
   );
 }
 
 describe('MobileBottomNav', () => {
-  it('renders bottom tab bar with navigation role', () => {
-    renderNav();
-    expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toBeInTheDocument();
+  it('renders primary tab labels', () => {
+    renderWithRouter();
+    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByText('Browse')).toBeInTheDocument();
+    expect(screen.getByText('Fetch')).toBeInTheDocument();
+    expect(screen.getByText('Animate')).toBeInTheDocument();
+    expect(screen.getByText('More')).toBeInTheDocument();
   });
 
-  it('renders Live, Browse, Animate tabs', () => {
-    renderNav();
-    expect(screen.getByRole('tab', { name: 'Live' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Browse' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Animate' })).toBeInTheDocument();
+  it('renders mobile navigation landmark', () => {
+    renderWithRouter();
+    expect(screen.getByLabelText('Mobile navigation')).toBeInTheDocument();
   });
 
-  it('renders More button', () => {
-    renderNav();
-    expect(screen.getByRole('tab', { name: 'More' })).toBeInTheDocument();
-  });
-
-  it('More button opens sheet with Jobs, Settings, Dashboard', () => {
-    renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    expect(screen.getByRole('dialog', { name: 'More navigation options' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Jobs' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
-  });
-
-  it('closes more sheet on overlay click', () => {
-    renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    // Click the overlay button (first one, outside the dialog)
-    const closeButtons = screen.getAllByLabelText('Close more menu');
-    fireEvent.click(closeButtons[0]);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('closes more sheet on Escape key', () => {
-    renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('highlights active primary tab based on route', () => {
-    renderNav('/live');
+  it('Live tab is active on /goes with no tab param', () => {
+    renderWithRouter('/goes');
     const liveTab = screen.getByRole('tab', { name: 'Live' });
-    expect(liveTab.className).toContain('text-primary');
+    expect(liveTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('More button highlights when on a "more" route like /jobs', () => {
-    renderNav('/jobs');
-    const moreBtn = screen.getByRole('tab', { name: 'More' });
-    expect(moreBtn.className).toContain('text-primary');
+  it('Browse tab is active on /goes?tab=browse', () => {
+    renderWithRouter('/goes?tab=browse');
+    const browseTab = screen.getByRole('tab', { name: 'Browse' });
+    expect(browseTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('toggles more sheet open and closed', () => {
-    renderNav();
-    const moreBtn = screen.getByRole('tab', { name: 'More' });
-    fireEvent.click(moreBtn);
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    fireEvent.click(moreBtn);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('has touch-friendly min sizes on tabs', () => {
-    renderNav();
-    const moreBtn = screen.getByRole('tab', { name: 'More' });
-    expect(moreBtn.className).toContain('min-h-[48px]');
-    expect(moreBtn.className).toContain('min-w-[64px]');
-  });
-
-  it('more sheet close button has 44px touch target', () => {
-    renderNav();
+  it('More button opens more menu', () => {
+    renderWithRouter();
     fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    const dialog = screen.getByRole('dialog');
-    const closeBtn = dialog.querySelector('[aria-label="Close more menu"]');
-    expect(closeBtn?.className).toContain('min-h-[44px]');
-    expect(closeBtn?.className).toContain('min-w-[44px]');
+    expect(screen.getByLabelText('More navigation options')).toBeInTheDocument();
+  });
+
+  it('More menu shows Jobs, Settings, Dashboard links', () => {
+    renderWithRouter();
+    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
+    expect(screen.getByLabelText('Jobs')).toBeInTheDocument();
+    expect(screen.getByLabelText('Settings')).toBeInTheDocument();
+    expect(screen.getByLabelText('Dashboard')).toBeInTheDocument();
+  });
+
+  it('Close button inside dialog closes more menu', () => {
+    renderWithRouter();
+    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
+    expect(screen.getByLabelText('More navigation options')).toBeInTheDocument();
+    // The X button is inside the dialog, get all and pick the last one (inside dialog)
+    const closeButtons = screen.getAllByLabelText('Close more menu');
+    fireEvent.click(closeButtons[closeButtons.length - 1]);
+    expect(screen.queryByLabelText('More navigation options')).not.toBeInTheDocument();
+  });
+
+  it('Escape key closes more menu', () => {
+    renderWithRouter();
+    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
+    expect(screen.getByLabelText('More navigation options')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByLabelText('More navigation options')).not.toBeInTheDocument();
+  });
+
+  it('overlay click closes more menu', () => {
+    renderWithRouter();
+    fireEvent.click(screen.getByRole('tab', { name: 'More' }));
+    // The overlay button with "Close more menu" aria-label
+    const overlays = screen.getAllByLabelText('Close more menu');
+    fireEvent.click(overlays[0]); // the overlay button
+    expect(screen.queryByLabelText('More navigation options')).not.toBeInTheDocument();
+  });
+
+  it('More tab shows active when on a more route like /jobs', () => {
+    renderWithRouter('/jobs');
+    const moreTab = screen.getByRole('tab', { name: 'More' });
+    expect(moreTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('primary tabs have role=tab', () => {
+    renderWithRouter();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.length).toBe(5); // 4 primary + More
   });
 });

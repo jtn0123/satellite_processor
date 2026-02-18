@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/jtn0123/satellite_processor/compare/v1.7.1...v1.7.2) (2026-02-18)
+
+
+### Bug Fixes
+
+* Live View polish + comprehensive fetch/live testing ([#143](https://github.com/jtn0123/satellite_processor/issues/143)) ([148eab4](https://github.com/jtn0123/satellite_processor/commit/148eab4966f5523ae2c60a9f738b25ff8be51864))
+
 ## [1.7.1](https://github.com/jtn0123/satellite_processor/compare/v1.7.0...v1.7.1) (2026-02-18)
 
 

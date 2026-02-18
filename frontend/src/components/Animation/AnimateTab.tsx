@@ -381,7 +381,9 @@ export default function AnimateTab() {
                     controls
                     loop
                     className="w-full h-full object-contain"
-                  />
+                  >
+                    <track kind="captions" />
+                  </video>
                 )}
               </div>
             </div>
@@ -421,12 +423,10 @@ export default function AnimateTab() {
       {settingsOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
           {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
             onClick={() => setSettingsOpen(false)}
-            onKeyDown={(e) => e.key === 'Escape' && setSettingsOpen(false)}
-            role="button"
-            tabIndex={0}
             aria-label="Close settings"
           />
           {/* Panel */}

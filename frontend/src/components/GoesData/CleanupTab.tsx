@@ -113,8 +113,8 @@ export default function CleanupTab() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={`stat-skel-${i}`} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
+            {['frames', 'storage', 'satellites', 'bands'].map((stat) => (
+              <div key={`stat-skel-${stat}`} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
                 <div className="h-8 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
                 <div className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
               </div>

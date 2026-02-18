@@ -131,8 +131,8 @@ describe('WhatsNewModal', () => {
   it('has aria-label on dialog', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
-    const innerDialog = document.querySelector('[role="dialog"]');
-    expect(innerDialog?.getAttribute('aria-label')).toBe("What's New dialog");
+    const dialog = document.querySelector('dialog');
+    expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
   it('fetches from /api/health/changelog', () => {

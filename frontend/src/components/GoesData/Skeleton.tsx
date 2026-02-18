@@ -34,8 +34,8 @@ export default function Skeleton({ variant = 'text', count = 1, className = '' }
   }
   return (
     <div className="space-y-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <SkeletonItem key={`skel-${i}`} variant={variant} className={className} />
+      {Array.from({ length: count }, (_, i) => `skel-${variant}-${i}`).map((key) => (
+        <SkeletonItem key={key} variant={variant} className={className} />
       ))}
     </div>
   );

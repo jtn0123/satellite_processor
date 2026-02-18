@@ -31,7 +31,7 @@ const DEFAULT_CONFIG: AnimationConfig = {
 };
 
 /** Reusable toggle between Quick Animate and Animation Studio modes */
-function ModeToggle({ mode, setMode }: { mode: 'quick' | 'studio'; setMode: (m: 'quick' | 'studio') => void }) {
+function ModeToggle({ mode, setMode }: Readonly<{ mode: 'quick' | 'studio'; setMode: (m: 'quick' | 'studio') => void }>) {
   return (
     <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 w-fit">
       <button

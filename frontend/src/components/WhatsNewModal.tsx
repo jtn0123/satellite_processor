@@ -25,15 +25,24 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
   useEffect(() => {
     let cancelled = false;
     fetch('/api/health/changelog')
-      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(r.statusText);
+        }
+        return r.json();
+      })
       .then((data: Release[]) => {
-        if (!cancelled && Array.isArray(data)) setReleases(data);
+        if (!cancelled && Array.isArray(data)) {
+          setReleases(data);
+        }
       })
       .catch(() => {
         /* fallback to empty */
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       });
     return () => { cancelled = true; };
   }, []);
@@ -45,14 +54,13 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
     <dialog
       open
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      role="presentation"
       onClick={close}
       onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+      aria-label="What's New dialog"
     >
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-label="What's New dialog"
+        role="document"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}

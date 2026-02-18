@@ -87,8 +87,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
       open
       aria-label="Image viewer"
       className="fixed inset-0 z-50 bg-black/90 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
       {/* Top bar */}
       <div className="flex items-center justify-between p-4 text-white">
@@ -119,7 +117,12 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
       </div>
 
       {/* Image area */}
-      <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+      <div
+        className="flex-1 relative overflow-hidden flex items-center justify-center"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        role="presentation"
+      >
         {currentIndex > 0 && (
           <button type="button" onClick={goPrev} className="absolute left-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">
             <ChevronLeft className="w-6 h-6" />
@@ -128,8 +131,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
 
         <button
           type="button"
-          role="application"
-          aria-label="Pan and zoom area"
+          aria-label="Pan and zoom area — use mouse wheel to zoom, drag to pan"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           className="flex items-center justify-center bg-transparent border-none p-0 m-0 outline-none"

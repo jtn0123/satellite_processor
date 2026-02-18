@@ -58,8 +58,8 @@ function TabLoadingFallback() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={`tab-skel-${i}`} variant="card" />
+        {Array.from({ length: 8 }, (_, i) => `tab-skel-${i}`).map((key) => (
+          <Skeleton key={key} variant="card" />
         ))}
       </div>
     </div>

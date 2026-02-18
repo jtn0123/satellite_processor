@@ -72,6 +72,14 @@ def _try_append_release(
     return False
 
 
+def _collect_change(current: dict | None, line: str) -> None:
+    """Extract and append a change entry from a bullet line."""
+    if current and line.startswith("* "):
+        msg = _strip_links(line[2:])
+        if msg:
+            current["changes"].append(msg)
+
+
 def _parse_changelog(limit: int = 5) -> list:
     """Parse CHANGELOG.md into structured releases."""
     global _changelog_cache  # noqa: PLW0603
@@ -96,10 +104,7 @@ def _parse_changelog(limit: int = 5) -> list:
                 break
             current = {"version": m.group(1), "date": m.group(2), "changes": []}
             continue
-        if current and line.startswith('* '):
-            msg = _strip_links(line[2:])
-            if msg:
-                current["changes"].append(msg)
+        _collect_change(current, line)
 
     if current and len(releases) < limit:
         releases.append(current)

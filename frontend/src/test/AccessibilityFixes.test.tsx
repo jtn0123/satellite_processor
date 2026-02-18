@@ -28,7 +28,7 @@ describe('KeyboardShortcuts accessibility', () => {
 
   it('inner panel is a div, not a button', () => {
     openModal();
-    // With role="presentation" on dialog, the inner panel div serves as the dialog content
+    // The inner panel div with role="document" serves as the dialog content
     const dialog = document.querySelector('dialog');
     if (dialog) {
       const innerDiv = dialog.querySelector('div');
@@ -49,11 +49,12 @@ describe('KeyboardShortcuts accessibility', () => {
     }
   });
 
-  it('backdrop has role="presentation"', () => {
+  it('backdrop dialog does not have role="presentation"', () => {
     openModal();
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
-    expect(dialog!.getAttribute('role')).toBe('presentation');
+    // Native <dialog> should not override its implicit role
+    expect(dialog!.getAttribute('role')).toBeNull();
   });
 
   it('panel click stops propagation (does not close)', () => {
@@ -69,21 +70,18 @@ describe('KeyboardShortcuts accessibility', () => {
 });
 
 describe('WhatsNewModal accessibility', () => {
-  it('inner content div does not have redundant aria-label', async () => {
+  it('aria-label is on dialog element', async () => {
     const { default: WhatsNewModal } = await import('../components/WhatsNewModal');
     render(<WhatsNewModal onClose={() => {}} />);
     const dialog = document.querySelector('dialog');
-    // aria-label should be on inner div with role="dialog", not on outer dialog
-    expect(dialog?.getAttribute('aria-label')).toBeNull();
-    const innerDialog = document.querySelector('[role="dialog"]');
-    expect(innerDialog?.getAttribute('aria-label')).toBe("What's New dialog");
+    expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
-  it('backdrop has role="presentation"', async () => {
+  it('inner content div uses role="document"', async () => {
     const { default: WhatsNewModal } = await import('../components/WhatsNewModal');
     render(<WhatsNewModal onClose={() => {}} />);
-    const dialog = document.querySelector('dialog');
-    expect(dialog?.getAttribute('role')).toBe('presentation');
+    const doc = document.querySelector('[role="document"]');
+    expect(doc).toBeTruthy();
   });
 
   it('close button calls onClose', async () => {
@@ -107,15 +105,13 @@ describe('WhatsNewModal accessibility', () => {
 });
 
 describe('ImageViewer accessibility', () => {
-  it('dialog has role="application" and tabIndex for pan/zoom canvas', async () => {
+  it('pan/zoom button has accessible label and no conflicting role', async () => {
     const { default: ImageViewer } = await import('../components/GoesData/ImageViewer');
     const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
     render(withQC(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />));
-    const appEl = document.querySelector('[role="application"]');
-    expect(appEl).toBeTruthy();
-    const dialog = document.querySelector('dialog');
-    expect(dialog).toBeTruthy();
-    expect(dialog!.hasAttribute('tabindex')).toBe(false);
+    const panBtn = document.querySelector('button[aria-label*="Pan and zoom"]');
+    expect(panBtn).toBeTruthy();
+    expect(panBtn!.getAttribute('role')).toBeNull();
   });
 });
 
@@ -139,7 +135,7 @@ describe('ImageGallery no nested buttons', () => {
     const img = document.querySelector('img');
     if (img) {
       fireEvent.click(img);
-      const modal = document.querySelector('[role="presentation"]');
+      const modal = document.querySelector('[role="document"]');
       if (modal) {
         expect(modal.tagName).toBe('DIV');
       }

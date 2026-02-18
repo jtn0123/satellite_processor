@@ -40,14 +40,14 @@ describe('SonarQube final fixes', () => {
     it('handles mouseMove and mouseUp on image area without errors', () => {
       const frame = makeFrame('1');
       render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
-      const imageArea = document.querySelector('[role="presentation"]')!;
+      // Image area is the flex container div holding nav buttons and the image
+      const img = document.querySelector('img[alt*="GOES-18"]')!;
+      expect(img).toBeTruthy();
+      const imageArea = img.closest('.flex-1')!;
       expect(imageArea).toBeTruthy();
       fireEvent.mouseMove(imageArea, { clientX: 100, clientY: 100 });
       fireEvent.mouseUp(imageArea);
-      // Verify dialog and image remain rendered after mouse interactions
-      const img = imageArea.querySelector('img');
       expect(img).toBeTruthy();
-      expect(img!.getAttribute('alt')).toContain('GOES-18');
     });
   });
 

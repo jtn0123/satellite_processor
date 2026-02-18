@@ -482,10 +482,7 @@ export default function FetchTab() {
           aria-labelledby="confirm-title"
         >
           <div
-            role="document"
             className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
             <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300">

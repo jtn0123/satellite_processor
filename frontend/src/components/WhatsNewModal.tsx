@@ -54,16 +54,13 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
     <dialog
       open
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      onClick={close}
+      onClick={(e) => { if (e.target === e.currentTarget) close(); }}
       onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
       aria-label="What's New dialog"
     >
       <div
         ref={dialogRef}
-        role="document"
         className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

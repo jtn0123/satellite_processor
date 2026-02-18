@@ -77,11 +77,13 @@ describe('WhatsNewModal accessibility', () => {
     expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
-  it('inner content div uses role="document"', async () => {
+  it('inner content div exists inside dialog', async () => {
     const { default: WhatsNewModal } = await import('../components/WhatsNewModal');
     render(<WhatsNewModal onClose={() => {}} />);
-    const doc = document.querySelector('[role="document"]');
-    expect(doc).toBeTruthy();
+    const dialog = document.querySelector('dialog');
+    expect(dialog).toBeTruthy();
+    const innerDiv = dialog!.querySelector('div');
+    expect(innerDiv).toBeTruthy();
   });
 
   it('close button calls onClose', async () => {
@@ -135,9 +137,11 @@ describe('ImageGallery no nested buttons', () => {
     const img = document.querySelector('img');
     if (img) {
       fireEvent.click(img);
-      const modal = document.querySelector('[role="document"]');
-      if (modal) {
-        expect(modal.tagName).toBe('DIV');
+      const dialog = document.querySelector('dialog');
+      if (dialog) {
+        const innerDiv = dialog.querySelector('div');
+        expect(innerDiv).toBeTruthy();
+        expect(innerDiv!.tagName).toBe('DIV');
       }
     }
   });

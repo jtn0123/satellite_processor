@@ -121,7 +121,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         className="flex-1 relative overflow-hidden flex items-center justify-center"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        role="presentation"
       >
         {currentIndex > 0 && (
           <button type="button" onClick={goPrev} className="absolute left-4 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white">

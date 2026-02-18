@@ -284,7 +284,7 @@ function LogConsole({
 function useClipboard(jobId: string) {
   const [copied, setCopied] = useState(false);
   const copyId = useCallback(() => {
-    void navigator.clipboard.writeText(jobId);
+    navigator.clipboard.writeText(jobId).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [jobId]);
@@ -344,18 +344,18 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
   /* ── Actions ──────────────────────────────────────────── */
   const handleDelete = useCallback(() => {
-    void api.delete(`/jobs/${jobId}`).then(() => onBack());
+    api.delete(`/jobs/${jobId}`).then(() => onBack()).catch(() => {});
   }, [jobId, onBack]);
 
   const handleCancel = useCallback(() => {
-    void api.delete(`/jobs/${jobId}`).then(() => refetch());
+    api.delete(`/jobs/${jobId}`).then(() => refetch()).catch(() => {});
   }, [jobId, refetch]);
 
   const handleRetry = useCallback(() => {
     if (!job) return;
-    void api
+    api
       .post('/jobs', { job_type: job.job_type, params: job.params, input_path: job.input_path })
-      .then(() => onBack());
+      .then(() => onBack()).catch(() => {});
   }, [job, onBack]);
 
   /* ── Params display ───────────────────────────────────── */

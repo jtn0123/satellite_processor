@@ -115,7 +115,7 @@ describe('ImageViewer accessibility', () => {
     expect(appEl).toBeTruthy();
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
-    expect(dialog!.getAttribute('tabindex')).toBe('0');
+    expect(dialog!.hasAttribute('tabindex')).toBe(false);
   });
 });
 

@@ -13,7 +13,7 @@ interface BottomSheetProps {
  * Slides up from the bottom with drag-to-dismiss.
  */
 export default function BottomSheet({ open, onClose, title, children }: Readonly<BottomSheetProps>) {
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDialogElement>(null);
   const [translateY, setTranslateY] = useState(0);
   const dragStart = useRef<number | null>(null);
 
@@ -49,17 +49,17 @@ export default function BottomSheet({ open, onClose, title, children }: Readonly
   return (
     <div className="fixed inset-0 z-50 md:hidden">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} role="presentation" />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Sheet */}
-      <div
+      <dialog
+        open
         ref={sheetRef}
-        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-2xl max-h-[80vh] overflow-y-auto shadow-xl transition-transform"
+        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-2xl max-h-[80vh] overflow-y-auto shadow-xl transition-transform border-none p-0 m-0 w-full"
         style={{ transform: `translateY(${translateY}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        role="dialog"
         aria-label={title}
       >
         {/* Drag handle */}
@@ -79,7 +79,7 @@ export default function BottomSheet({ open, onClose, title, children }: Readonly
         <div className="p-4">
           {children}
         </div>
-      </div>
+      </dialog>
     </div>
   );
 }

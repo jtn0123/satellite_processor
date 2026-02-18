@@ -19,7 +19,7 @@ export default function PullToRefreshIndicator({
   return (
     <div
       className="flex justify-center overflow-hidden transition-all"
-      style={{ height: isRefreshing ? 40 : pullDistance > 0 ? pullDistance * 0.5 : 0 }}
+      style={{ height: isRefreshing ? 40 : Math.max(pullDistance * 0.5, 0) }}
     >
       <div className="flex items-center justify-center">
         <RefreshCw

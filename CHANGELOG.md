@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/jtn0123/satellite_processor/compare/v1.7.0...v1.7.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* resolve all SonarQube issues + inline sonar pipeline ([#141](https://github.com/jtn0123/satellite_processor/issues/141)) ([4d71953](https://github.com/jtn0123/satellite_processor/commit/4d71953accd5cfcf972a1a703a8be8507864b0e0))
+
 # [1.7.0](https://github.com/jtn0123/satellite_processor/compare/v1.6.2...v1.7.0) (2026-02-18)
 
 

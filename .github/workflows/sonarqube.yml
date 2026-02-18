@@ -121,28 +121,47 @@ jobs:
             const sonarUrl = process.env.SONAR_HOST_URL;
             const sonarToken = process.env.SONAR_TOKEN;
             const projectKey = 'satellite_processor';
+            const commitSha = '${{ github.event.workflow_run.head_sha }}';
 
-            // Fetch PR measures from SonarQube
             const auth = Buffer.from(sonarToken + ':').toString('base64');
             const headers = { 'Authorization': `Basic ${auth}` };
 
+            // --- Helpers ---
+            const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
+            const rating = (val) => ratingMap[val] || val || 'N/A';
+            const num = (val) => val ?? 'N/A';
+            const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
+
+            function formatDebt(minutes) {
+              if (!minutes || minutes === 'N/A') return 'N/A';
+              const m = parseInt(minutes);
+              if (isNaN(m)) return 'N/A';
+              if (m < 60) return `${m}m`;
+              const h = Math.floor(m / 60);
+              const rem = m % 60;
+              if (h < 24) return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+              const d = Math.floor(h / 24);
+              const remH = h % 24;
+              return remH > 0 ? `${d}d ${remH}h` : `${d}d`;
+            }
+
+            // --- Fetch PR quality gate & measures ---
             let measures = {};
             let gateStatus = 'UNKNOWN';
 
             try {
-              // Get quality gate status
               const gateRes = await fetch(`${sonarUrl}/api/qualitygates/project_status?projectKey=${projectKey}&pullRequest=${prNumber}`, { headers });
               if (gateRes.ok) {
                 const gateData = await gateRes.json();
                 gateStatus = gateData.projectStatus?.status || 'UNKNOWN';
               }
 
-              // Get measures
               const metricsToFetch = [
                 'new_bugs', 'new_vulnerabilities', 'new_code_smells',
                 'new_coverage', 'new_duplicated_lines_density',
                 'new_security_hotspots', 'new_reliability_rating',
-                'new_security_rating', 'new_maintainability_rating'
+                'new_security_rating', 'new_maintainability_rating',
+                'new_technical_debt'
               ].join(',');
 
               const measuresRes = await fetch(`${sonarUrl}/api/measures/component?component=${projectKey}&pullRequest=${prNumber}&metricKeys=${metricsToFetch}`, { headers });
@@ -156,10 +175,10 @@ jobs:
               console.log('Failed to fetch SonarQube data:', e.message);
             }
 
-            // Fetch OVERALL project measures (not PR-scoped)
+            // --- Fetch OVERALL project measures (including sqale_index for tech debt) ---
             let overallMeasures = {};
             try {
-              const overallMetrics = ['coverage', 'ncloc', 'bugs', 'vulnerabilities', 'code_smells', 'duplicated_lines_density'].join(',');
+              const overallMetrics = ['coverage', 'ncloc', 'bugs', 'vulnerabilities', 'code_smells', 'duplicated_lines_density', 'sqale_index'].join(',');
               const overallRes = await fetch(`${sonarUrl}/api/measures/component?component=${projectKey}&metricKeys=${overallMetrics}`, { headers });
               if (overallRes.ok) {
                 const overallData = await overallRes.json();
@@ -171,11 +190,31 @@ jobs:
               console.log('Failed to fetch overall metrics:', e.message);
             }
 
-            // Fetch issues for this PR
+            // --- Enhancement 4: Coverage trend ---
+            let coverageTrend = '';
+            try {
+              const historyRes = await fetch(`${sonarUrl}/api/measures/search_history?component=${projectKey}&metrics=coverage&ps=5`, { headers });
+              if (historyRes.ok) {
+                const histData = await historyRes.json();
+                const values = histData.measures?.[0]?.history || [];
+                if (values.length >= 2) {
+                  const current = parseFloat(values[values.length - 1].value);
+                  const previous = parseFloat(values[values.length - 2].value);
+                  const delta = current - previous;
+                  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+                  const sign = delta > 0 ? '+' : '';
+                  coverageTrend = ` (${arrow} ${sign}${delta.toFixed(1)}% from previous)`;
+                }
+              }
+            } catch (e) {
+              console.log('Coverage history failed:', e.message);
+            }
+
+            // --- Fetch PR issues ---
             let issues = [];
             try {
               const issuesRes = await fetch(
-                `${sonarUrl}/api/issues/search?componentKeys=${projectKey}&pullRequest=${prNumber}&statuses=OPEN,CONFIRMED&ps=20&s=SEVERITY&asc=false`,
+                `${sonarUrl}/api/issues/search?componentKeys=${projectKey}&pullRequest=${prNumber}&statuses=OPEN,CONFIRMED&ps=50&s=SEVERITY&asc=false`,
                 { headers }
               );
               if (issuesRes.ok) {
@@ -186,7 +225,22 @@ jobs:
               console.log('Failed to fetch issues:', e.message);
             }
 
-            // Get changed files in PR
+            // --- Enhancement 1: Overall issues breakdown ---
+            let overallIssues = [];
+            try {
+              const oiRes = await fetch(
+                `${sonarUrl}/api/issues/search?componentKeys=${projectKey}&statuses=OPEN&ps=50&s=SEVERITY&asc=false`,
+                { headers }
+              );
+              if (oiRes.ok) {
+                const oiData = await oiRes.json();
+                overallIssues = oiData.issues || [];
+              }
+            } catch (e) {
+              console.log('Failed to fetch overall issues:', e.message);
+            }
+
+            // --- Get changed files ---
             let changedFiles = [];
             try {
               const filesRes = await github.rest.pulls.listFiles({
@@ -200,7 +254,7 @@ jobs:
               console.log('Failed to fetch PR files:', e.message);
             }
 
-            // Fetch per-file coverage from SonarQube
+            // --- Fetch per-file coverage ---
             let fileMetrics = [];
             if (changedFiles.length > 0) {
               try {
@@ -211,10 +265,8 @@ jobs:
                 if (componentTree.ok) {
                   const treeData = await componentTree.json();
                   const components = treeData.components || [];
-
                   for (const comp of components) {
                     const sonarPath = comp.path || comp.key.replace(`${projectKey}:`, '');
-                    // Skip test files and config files
                     if (/\/(tests?|__tests__|spec|__mocks__)\//i.test(sonarPath) || /\.(config|spec|test)\.[jt]sx?$/.test(sonarPath)) continue;
                     if (changedFiles.some(f => sonarPath.endsWith(f) || f.endsWith(sonarPath))) {
                       const cov = comp.measures?.find(m => m.metric === 'coverage');
@@ -234,15 +286,10 @@ jobs:
               }
             }
 
-            // Build per-file coverage section
+            // --- Build per-file coverage section ---
             let filesSection = '';
             if (fileMetrics.length > 0) {
-              fileMetrics.sort((a, b) => {
-                const ca = parseFloat(a.coverage) || 0;
-                const cb = parseFloat(b.coverage) || 0;
-                return ca - cb;
-              });
-
+              fileMetrics.sort((a, b) => (parseFloat(a.coverage) || 0) - (parseFloat(b.coverage) || 0));
               const fileRows = fileMetrics.map(f => {
                 const covVal = f.coverage !== 'N/A' ? parseFloat(f.coverage).toFixed(1) + '%' : 'N/A';
                 const icon = f.coverage !== 'N/A' ? (parseFloat(f.coverage) >= 80 ? '✅' : parseFloat(f.coverage) >= 50 ? '⚠️' : '❌') : '❓';
@@ -251,8 +298,7 @@ jobs:
               }).join('\n');
 
               filesSection = [
-                '',
-                '### Files Changed',
+                '', '### Files Changed',
                 '| | File | Coverage | Lines |',
                 '|---|------|----------|-------|',
                 fileRows,
@@ -260,12 +306,24 @@ jobs:
             }
 
             const gateIcon = gateStatus === 'OK' ? '✅' : gateStatus === 'ERROR' ? '❌' : '⚠️';
-            const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
-            const rating = (val) => ratingMap[val] || val || 'N/A';
-            const num = (val) => val ?? 'N/A';
-            const pct = (val) => val ? `${parseFloat(val).toFixed(1)}%` : 'N/A';
 
-            // Issues section
+            // --- Enhancement 3: Badge URLs ---
+            const covVal = overallMeasures.coverage ? parseFloat(overallMeasures.coverage).toFixed(1) : '0';
+            const covColor = parseFloat(covVal) >= 80 ? 'green' : parseFloat(covVal) >= 50 ? 'yellow' : 'red';
+            const bugsVal = overallMeasures.bugs || '0';
+            const bugsColor = parseInt(bugsVal) === 0 ? 'green' : parseInt(bugsVal) > 5 ? 'red' : 'orange';
+            const smellsVal = overallMeasures.code_smells || '0';
+            const gateColor = gateStatus === 'OK' ? 'green' : 'red';
+            const gateLabel = gateStatus === 'OK' ? 'passed' : gateStatus === 'ERROR' ? 'failed' : gateStatus.toLowerCase();
+
+            const badges = [
+              `![Coverage](https://img.shields.io/badge/coverage-${encodeURIComponent(covVal + '%')}-${covColor})`,
+              `![Bugs](https://img.shields.io/badge/bugs-${encodeURIComponent(bugsVal)}-${bugsColor})`,
+              `![Smells](https://img.shields.io/badge/smells-${encodeURIComponent(smellsVal)}-yellow)`,
+              `![Gate](https://img.shields.io/badge/gate-${encodeURIComponent(gateLabel)}-${gateColor})`,
+            ].join(' ');
+
+            // --- PR Issues section ---
             let issuesSection = '';
             if (issues.length > 0) {
               const typeIcon = { BUG: '🐛', VULNERABILITY: '🔓', CODE_SMELL: '🧹', SECURITY_HOTSPOT: '🔥' };
@@ -282,7 +340,6 @@ jobs:
 
               const totalIssues = issues.length;
               const shownIssues = issues.slice(0, 20);
-
               const rows = shownIssues.map(i => {
                 const component = (i.component || '').replace(`${projectKey}:`, '');
                 const loc = i.line ? `${component}:${i.line}` : component;
@@ -292,65 +349,139 @@ jobs:
               const moreText = totalIssues > 20 ? `\n\n*... and ${totalIssues - 20} more — [view all on SonarQube](${sonarUrl}/project/issues?id=${projectKey}&pullRequest=${prNumber})*` : '';
 
               issuesSection = [
-                '',
-                `### Issues (${totalIssues} found)`,
-                `<details>`,
+                '', `### Issues (${totalIssues} found)`,
+                '<details>',
                 `<summary>${summaryParts.join(' · ')}</summary>`,
                 '',
                 '| Type | Severity | File | Description |',
                 '|------|----------|------|-------------|',
-                rows,
-                moreText,
-                '',
-                '</details>'
+                rows, moreText, '', '</details>'
               ].join('\n');
             }
 
+            // --- Enhancement 1: Overall issues breakdown section ---
+            let overallIssuesSection = '';
+            if (overallIssues.length > 0) {
+              const bugs = overallIssues.filter(i => i.type === 'BUG');
+              const smells = overallIssues.filter(i => i.type === 'CODE_SMELL');
+              const vulns = overallIssues.filter(i => i.type === 'VULNERABILITY');
+
+              const totalOpen = overallIssues.length;
+              const summaryLine = `> 🐛 ${bugs.length} Bug${bugs.length !== 1 ? 's' : ''} · 🧹 ${smells.length} Code Smell${smells.length !== 1 ? 's' : ''} · 🔓 ${vulns.length} Vulnerabilit${vulns.length !== 1 ? 'ies' : 'y'}`;
+
+              function issueTable(items, label, icon, cap = 15) {
+                if (items.length === 0) return '';
+                const shown = items.slice(0, cap);
+                const showingNote = items.length > cap ? ` (showing top ${cap})` : '';
+                const rows = shown.map(i => {
+                  const component = (i.component || '').replace(`${projectKey}:`, '');
+                  const loc = i.line ? `${component}:${i.line}` : component;
+                  return `| ${i.severity || 'N/A'} | \`${loc}\` | ${(i.message || '').substring(0, 80)} |`;
+                }).join('\n');
+                const viewAll = items.length > cap ? `\n\n[View all on SonarQube](${sonarUrl}/project/issues?id=${projectKey}&types=${items[0].type}&statuses=OPEN)` : '';
+                return [
+                  '<details>',
+                  `<summary>${icon} ${items.length} ${label}${showingNote}</summary>`,
+                  '',
+                  '| Severity | File | Description |',
+                  '|----------|------|-------------|',
+                  rows,
+                  viewAll,
+                  '', '</details>'
+                ].join('\n');
+              }
+
+              overallIssuesSection = [
+                '', `### Overall Issues (${totalOpen} open)`,
+                summaryLine, '',
+                issueTable(bugs, 'Bugs', '🐛'),
+                issueTable(smells, 'Code Smells', '🧹'),
+                issueTable(vulns, 'Vulnerabilities', '🔓'),
+              ].filter(Boolean).join('\n');
+            }
+
+            // --- Build final comment body ---
             const body = [
               `## ${gateIcon} SonarQube Analysis`,
+              '',
+              badges,
               '',
               `**Quality Gate:** ${gateStatus === 'OK' ? 'Passed' : gateStatus === 'ERROR' ? 'Failed' : gateStatus}`,
               '',
               '### New Code',
-              `| Metric | Value |`,
-              `|--------|-------|`,
+              '| Metric | Value |',
+              '|--------|-------|',
               `| 🐛 Bugs | ${num(measures.new_bugs)} |`,
               `| 🔓 Vulnerabilities | ${num(measures.new_vulnerabilities)} |`,
               `| 🔥 Security Hotspots | ${num(measures.new_security_hotspots)} |`,
               `| 🧹 Code Smells | ${num(measures.new_code_smells)} |`,
               `| 📊 Coverage | ${pct(measures.new_coverage)} |`,
               `| 📋 Duplication | ${pct(measures.new_duplicated_lines_density)} |`,
+              `| 🕐 New Debt | ${measures.new_technical_debt && measures.new_technical_debt !== 'N/A' ? '+' + formatDebt(measures.new_technical_debt) : 'N/A'} |`,
               '',
               '### Ratings',
-              `| | Reliability | Security | Maintainability |`,
-              `|---|---|---|---|`,
+              '| | Reliability | Security | Maintainability |',
+              '|---|---|---|---|',
               `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
               filesSection,
+              issuesSection,
               '',
               '### Overall Project',
-              `| Metric | Value |`,
-              `|--------|-------|`,
-              `| 📊 Coverage | ${pct(overallMeasures.coverage)} |`,
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| 📊 Coverage | ${pct(overallMeasures.coverage)}${coverageTrend} |`,
+              `| 🕐 Technical Debt | ${formatDebt(overallMeasures.sqale_index)} |`,
               `| 📏 Lines of Code | ${num(overallMeasures.ncloc)} |`,
               `| 🐛 Bugs | ${num(overallMeasures.bugs)} |`,
               `| 🔓 Vulnerabilities | ${num(overallMeasures.vulnerabilities)} |`,
               `| 🧹 Code Smells | ${num(overallMeasures.code_smells)} |`,
               `| 📋 Duplication | ${pct(overallMeasures.duplicated_lines_density)} |`,
-              issuesSection,
+              overallIssuesSection,
               '',
               `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
               '',
-              `---`,
-              `*SonarQube · \`${'${{ github.event.workflow_run.head_sha }}'.substring(0, 7)}\` · ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC*`
+              '---',
+              `*SonarQube · \`${commitSha.substring(0, 7)}\` · ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC*`
             ].join('\n');
 
-            // Always post a new comment so it's visible in the PR timeline
+            // Post the summary comment
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
               body
             });
+
+            // --- Enhancement 2: Inline PR review annotations ---
+            // Separate try/catch so comment still posts even if annotations fail
+            try {
+              const prIssues = issues.filter(i => i.line && i.component);
+              let annotated = 0;
+              for (const issue of prIssues) {
+                try {
+                  const typeIcon = { BUG: '🐛', VULNERABILITY: '🔓', CODE_SMELL: '🧹', SECURITY_HOTSPOT: '🔥' };
+                  const icon = typeIcon[issue.type] || '❓';
+                  await github.rest.pulls.createReviewComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    body: `${icon} **SonarQube ${issue.severity}**: ${issue.message}\n\n[View in SonarQube](${sonarUrl}/project/issues?id=${projectKey}&open=${issue.key})`,
+                    commit_id: commitSha,
+                    path: issue.component.replace(`${projectKey}:`, ''),
+                    line: issue.line,
+                  });
+                  annotated++;
+                } catch (e) {
+                  // Line not in diff or other error — skip silently
+                  console.log(`Skipped annotation for ${issue.key}: ${e.message}`);
+                }
+              }
+              if (annotated > 0) {
+                console.log(`Posted ${annotated} inline review annotations`);
+              }
+            } catch (e) {
+              console.log('Inline annotations failed:', e.message);
+            }
 
       - name: Post commit status
         if: always()

@@ -10,9 +10,14 @@ test('navigates to dashboard', async ({ page }) => {
   await expect(page.locator('text=Dashboard').first()).toBeVisible();
 });
 
-test('navigates to upload page', async ({ page }) => {
-  await page.goto('/upload');
-  await expect(page).toHaveURL(/upload/);
+test('navigates to live view page', async ({ page }) => {
+  await page.goto('/live');
+  await expect(page).toHaveURL(/live/);
+});
+
+test('navigates to animate page', async ({ page }) => {
+  await page.goto('/animate');
+  await expect(page).toHaveURL(/animate/);
 });
 
 test('navigates to jobs page', async ({ page }) => {
@@ -25,6 +30,21 @@ test('navigates to settings page', async ({ page }) => {
   await expect(page).toHaveURL(/settings/);
 });
 
+test('legacy /upload redirects to /settings', async ({ page }) => {
+  await page.goto('/upload');
+  await expect(page).toHaveURL(/settings/);
+});
+
+test('legacy /process redirects to /settings', async ({ page }) => {
+  await page.goto('/process');
+  await expect(page).toHaveURL(/settings/);
+});
+
+test('legacy /presets redirects to /settings', async ({ page }) => {
+  await page.goto('/presets');
+  await expect(page).toHaveURL(/settings/);
+});
+
 test('shows 404 for unknown routes', async ({ page }) => {
   await page.goto('/unknown-page');
   await expect(page.locator('text=404')).toBeVisible();
@@ -33,8 +53,8 @@ test('shows 404 for unknown routes', async ({ page }) => {
 test('sidebar links work', async ({ page }) => {
   await page.goto('/');
   const sidebar = page.locator('aside');
-  await sidebar.getByText('Upload').click();
-  await expect(page).toHaveURL(/upload/);
+  await sidebar.getByText('Live View').click();
+  await expect(page).toHaveURL(/live/);
   await sidebar.getByText('Jobs').click();
   await expect(page).toHaveURL(/jobs/);
   await sidebar.getByText('Dashboard').click();

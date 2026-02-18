@@ -36,7 +36,6 @@ function renderWithProviders(ui: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Default mock responses
   mockedApi.get.mockImplementation((url: string) => {
     if (url === '/goes/products') {
       return Promise.resolve({
@@ -67,22 +66,38 @@ describe('GoesData page', () => {
   it('renders without crashing', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'GOES Data' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Browse & Fetch' })).toBeInTheDocument();
     });
   });
 
-  it('renders tab navigation', async () => {
+  it('renders tab navigation with 4 tabs', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Browse/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Fetch/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Map/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Stats/i })).toBeInTheDocument();
     });
   });
 
-  it('shows overview tab by default', async () => {
+  it('shows browse tab by default', async () => {
     renderWithProviders(<GoesData />);
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Overview/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: /Browse/i })).toHaveAttribute('aria-selected', 'true');
     });
+  });
+
+  it('does not render old tabs (Overview, Gallery, Live, Animate, Collections, Composites, Cleanup)', async () => {
+    renderWithProviders(<GoesData />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Browse & Fetch' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('tab', { name: /Overview/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Gallery/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Live/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Animate/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Collections/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Composites/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Cleanup/i })).not.toBeInTheDocument();
   });
 });

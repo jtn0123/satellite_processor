@@ -96,17 +96,17 @@ describe('Dashboard', () => {
     expect(text).toContain('10');
   });
 
-  it('renders stat cards section (Total Images, Total Jobs, Active Jobs)', () => {
+  it('renders stat cards section (GOES Frames, Total Jobs, Active Jobs)', () => {
     const { getByText } = render(<Dashboard />, { wrapper });
-    expect(getByText('Total Images')).toBeTruthy();
+    expect(getByText('GOES Frames')).toBeTruthy();
     expect(getByText('Total Jobs')).toBeTruthy();
     expect(getByText('Active Jobs')).toBeTruthy();
   });
 
   it('stat cards grid is not hidden when data is loaded', () => {
     const { getByText } = render(<Dashboard />, { wrapper });
-    const totalImagesEl = getByText('Total Images');
-    const grid = totalImagesEl.closest('[class*="grid"]');
+    const goesFramesEl = getByText('GOES Frames');
+    const grid = goesFramesEl.closest('[class*="grid"]');
     expect(grid).toBeTruthy();
     expect(grid!.className).not.toContain('hidden');
   });

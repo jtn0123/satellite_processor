@@ -40,8 +40,8 @@ async def test_health_detailed_has_version(client):
     assert "commit" in data
 
 
-def test_health_basic_returns_ok(client):
+async def test_health_basic_returns_ok(client):
     """Verify basic health endpoint returns ok status."""
-    resp = client.get("/api/health")
+    resp = await client.get("/api/health")
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"

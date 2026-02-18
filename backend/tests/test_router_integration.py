@@ -5,15 +5,13 @@ Only external services (Redis, Celery, S3, filesystem) are mocked.
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from app.db.models import (
     Animation,
     AnimationPreset,
-    AppSetting,
     CleanupRule,
     Collection,
     CollectionFrame,
@@ -21,18 +19,12 @@ from app.db.models import (
     CropPreset,
     FetchPreset,
     FetchSchedule,
-    FrameTag,
     GoesFrame,
-    Image,
     Job,
     JobLog,
-    Notification,
     Preset,
-    ShareLink,
     Tag,
 )
-from app.utils import utcnow
-
 
 # ── Factory helpers ──────────────────────────────────────────
 
@@ -507,7 +499,7 @@ class TestGoesFrames:
 
     @pytest.mark.asyncio
     async def test_list_frames_pagination(self, client, db):
-        for i in range(5):
+        for _ in range(5):
             make_frame(db)
         await db.commit()
 

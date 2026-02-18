@@ -49,20 +49,18 @@ export default function MobileBottomNav() {
 
   const toggleMore = useCallback(() => setMoreOpen((o) => !o), []);
 
-  // Close on Escape
+  // Close more menu on route change and Escape key
   useEffect(() => {
-    if (!moreOpen) return;
-    const handler = (e: KeyboardEvent) => {
+    const handleKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMoreOpen(false);
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    if (moreOpen) {
+      document.addEventListener('keydown', handleKeydown);
+      return () => document.removeEventListener('keydown', handleKeydown);
+    }
   }, [moreOpen]);
 
-  // Close on route change
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [location.pathname]);
+  // Close more menu on navigation — handled by NavLink onClick handlers below
 
   return (
     <>
@@ -100,6 +98,7 @@ export default function MobileBottomNav() {
                 key={l.to}
                 to={l.to}
                 end={l.to === '/'}
+                onClick={() => setMoreOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-colors ${
                     isActive

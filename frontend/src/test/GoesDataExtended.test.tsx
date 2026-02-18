@@ -58,33 +58,34 @@ beforeEach(() => {
 });
 
 describe('GoesData page extended', () => {
-  it('renders multiple tab buttons', async () => {
+  it('renders 4 tab buttons', async () => {
     renderPage();
     await waitFor(() => {
       const tabs = screen.getAllByRole('tab');
-      expect(tabs.length).toBeGreaterThanOrEqual(3);
+      expect(tabs).toHaveLength(4);
     });
   });
 
-  it('shows overview tab selected by default', async () => {
+  it('shows browse tab selected by default', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Overview/i })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: /Browse/i })).toHaveAttribute('aria-selected', 'true');
     });
   });
 
-  it('renders 7 tabs in consolidated layout', async () => {
+  it('has Browse, Fetch, Map, Stats tabs', async () => {
     renderPage();
     await waitFor(() => {
-      const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(10);
+      expect(screen.getByRole('tab', { name: /Browse/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Fetch/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Map/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Stats/i })).toBeInTheDocument();
     });
   });
 
   it('handles empty frame list gracefully', async () => {
     renderPage();
     await waitFor(() => {
-      // Should render without crashing even with empty data
       expect(document.body.textContent).toBeTruthy();
     });
   });
@@ -94,7 +95,6 @@ describe('GoesData page extended', () => {
     await waitFor(() => {
       const buttons = screen.getAllByRole('button');
       buttons.forEach(btn => {
-        // Each button should have some content (text or aria-label)
         const hasContent = btn.textContent || btn.getAttribute('aria-label') || btn.querySelector('svg');
         expect(hasContent).toBeTruthy();
       });

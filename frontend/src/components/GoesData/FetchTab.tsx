@@ -476,13 +476,13 @@ export default function FetchTab() {
         <dialog
           open
           className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 m-0 w-full h-full max-w-none max-h-none [&::backdrop]{bg-black/50}"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowConfirm(false); }}
+          onCancel={() => setShowConfirm(false)}
           onClose={() => setShowConfirm(false)}
           aria-labelledby="confirm-title"
         >
+          <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={() => setShowConfirm(false)} aria-label="Close dialog" tabIndex={-1} />
           <div
-            className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
+            className="relative bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
           >
             <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
             <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300">

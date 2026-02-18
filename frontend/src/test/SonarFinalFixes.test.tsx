@@ -62,16 +62,16 @@ describe('SonarQube final fixes', () => {
     it('closes when backdrop is clicked', () => {
       const onClose = vi.fn();
       render(<WhatsNewModal onClose={onClose} />);
-      const dialog = document.querySelector('dialog')!;
-      fireEvent.click(dialog);
+      const backdropBtn = document.querySelector('dialog > button[aria-label="Close dialog"]')!;
+      fireEvent.click(backdropBtn);
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('closes on Escape keydown', () => {
+    it('closes on Escape via cancel event', () => {
       const onClose = vi.fn();
       render(<WhatsNewModal onClose={onClose} />);
       const dialog = document.querySelector('dialog')!;
-      fireEvent.keyDown(dialog, { key: 'Escape' });
+      fireEvent(dialog, new Event('cancel', { bubbles: false }));
       expect(onClose).toHaveBeenCalled();
     });
 

@@ -119,6 +119,9 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
       {/* Image area */}
       <div
         className="flex-1 relative overflow-hidden flex items-center justify-center"
+        role="application"
+        tabIndex={0}
+        aria-label="Image viewer"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >

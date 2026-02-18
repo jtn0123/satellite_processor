@@ -247,13 +247,13 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
         <dialog
           open
           className="fixed inset-0 bg-black/40 dark:bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
-          onClick={(e) => { if (e.target === e.currentTarget) closePreview(); }}
-          onKeyDown={(e) => { if (e.key === 'Escape') closePreview(); }}
+          onCancel={closePreview}
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
         >
+          <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={closePreview} aria-label="Close preview" tabIndex={-1} />
           <div
-            className="bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default"
+            className="relative bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default"
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>

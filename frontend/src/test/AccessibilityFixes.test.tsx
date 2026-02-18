@@ -90,9 +90,9 @@ describe('WhatsNewModal accessibility', () => {
     const { default: WhatsNewModal } = await import('../components/WhatsNewModal');
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    // Click backdrop
-    const dialog = document.querySelector('dialog');
-    fireEvent.click(dialog!);
+    // Click backdrop button
+    const backdropBtn = document.querySelector('dialog > button[aria-label="Close dialog"]')!;
+    fireEvent.click(backdropBtn);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -101,7 +101,7 @@ describe('WhatsNewModal accessibility', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     const dialog = document.querySelector('dialog');
-    fireEvent.keyDown(dialog!, { key: 'Escape' });
+    fireEvent(dialog!, new Event('cancel', { bubbles: false }));
     expect(onClose).toHaveBeenCalled();
   });
 });

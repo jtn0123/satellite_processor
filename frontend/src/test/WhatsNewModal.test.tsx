@@ -114,8 +114,8 @@ describe('WhatsNewModal', () => {
     mockFetchSuccess();
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    const dialog = document.querySelector('dialog')!;
-    fireEvent.click(dialog);
+    const backdropBtn = document.querySelector('dialog > button[aria-label="Close dialog"]')!;
+    fireEvent.click(backdropBtn);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -124,7 +124,7 @@ describe('WhatsNewModal', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     const dialog = document.querySelector('dialog')!;
-    fireEvent.keyDown(dialog, { key: 'Escape' });
+    fireEvent(dialog, new Event('cancel', { bubbles: false }));
     expect(onClose).toHaveBeenCalled();
   });
 

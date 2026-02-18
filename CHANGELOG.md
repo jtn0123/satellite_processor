@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/jtn0123/satellite_processor/compare/v1.7.2...v1.8.0) (2026-02-18)
+
+
+### Features
+
+* one-click Fetch Latest + simplified quick fetch mode ([#144](https://github.com/jtn0123/satellite_processor/issues/144)) ([47aa8d9](https://github.com/jtn0123/satellite_processor/commit/47aa8d989e729e6ae495fcbffb5b124ac1c7f7e1))
+
 ## [1.7.2](https://github.com/jtn0123/satellite_processor/compare/v1.7.1...v1.7.2) (2026-02-18)
 
 

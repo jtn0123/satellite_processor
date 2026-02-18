@@ -17,7 +17,6 @@ from .config import settings as app_settings
 from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
-from .middleware.correlation import CorrelationMiddleware
 from .metrics import (
     DISK_FREE_BYTES,
     DISK_USED_BYTES,
@@ -25,6 +24,7 @@ from .metrics import (
     PrometheusMiddleware,
     get_metrics_response,
 )
+from .middleware.correlation import CorrelationMiddleware
 from .rate_limit import limiter
 from .redis_pool import close_redis_pool, get_redis_client
 from .routers import (

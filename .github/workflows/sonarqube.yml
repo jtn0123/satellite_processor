@@ -186,6 +186,79 @@ jobs:
               console.log('Failed to fetch issues:', e.message);
             }
 
+            // Get changed files in PR
+            let changedFiles = [];
+            try {
+              const filesRes = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                per_page: 100,
+              });
+              changedFiles = filesRes.data.map(f => f.filename);
+            } catch (e) {
+              console.log('Failed to fetch PR files:', e.message);
+            }
+
+            // Fetch per-file coverage from SonarQube
+            let fileMetrics = [];
+            if (changedFiles.length > 0) {
+              try {
+                const componentTree = await fetch(
+                  `${sonarUrl}/api/measures/component_tree?component=${projectKey}&pullRequest=${prNumber}&metricKeys=coverage,ncloc&ps=100&strategy=leaves`,
+                  { headers }
+                );
+                if (componentTree.ok) {
+                  const treeData = await componentTree.json();
+                  const components = treeData.components || [];
+
+                  for (const comp of components) {
+                    const sonarPath = comp.path || comp.key.replace(`${projectKey}:`, '');
+                    // Skip test files and config files
+                    if (/\/(tests?|__tests__|spec|__mocks__)\//i.test(sonarPath) || /\.(config|spec|test)\.[jt]sx?$/.test(sonarPath)) continue;
+                    if (changedFiles.some(f => sonarPath.endsWith(f) || f.endsWith(sonarPath))) {
+                      const cov = comp.measures?.find(m => m.metric === 'coverage');
+                      const lines = comp.measures?.find(m => m.metric === 'ncloc');
+                      if (cov || lines) {
+                        fileMetrics.push({
+                          file: sonarPath,
+                          coverage: cov?.value ?? 'N/A',
+                          lines: lines?.value ?? 'N/A',
+                        });
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.log('Failed to fetch file metrics:', e.message);
+              }
+            }
+
+            // Build per-file coverage section
+            let filesSection = '';
+            if (fileMetrics.length > 0) {
+              fileMetrics.sort((a, b) => {
+                const ca = parseFloat(a.coverage) || 0;
+                const cb = parseFloat(b.coverage) || 0;
+                return ca - cb;
+              });
+
+              const fileRows = fileMetrics.map(f => {
+                const covVal = f.coverage !== 'N/A' ? parseFloat(f.coverage).toFixed(1) + '%' : 'N/A';
+                const icon = f.coverage !== 'N/A' ? (parseFloat(f.coverage) >= 80 ? '✅' : parseFloat(f.coverage) >= 50 ? '⚠️' : '❌') : '❓';
+                const shortPath = f.file.length > 60 ? '...' + f.file.slice(-57) : f.file;
+                return `| ${icon} | \`${shortPath}\` | ${covVal} | ${f.lines} |`;
+              }).join('\n');
+
+              filesSection = [
+                '',
+                '### Files Changed',
+                '| | File | Coverage | Lines |',
+                '|---|------|----------|-------|',
+                fileRows,
+              ].join('\n');
+            }
+
             const gateIcon = gateStatus === 'OK' ? '✅' : gateStatus === 'ERROR' ? '❌' : '⚠️';
             const ratingMap = { '1.0': 'A', '2.0': 'B', '3.0': 'C', '4.0': 'D', '5.0': 'E' };
             const rating = (val) => ratingMap[val] || val || 'N/A';
@@ -252,6 +325,7 @@ jobs:
               `| | Reliability | Security | Maintainability |`,
               `|---|---|---|---|`,
               `| Grade | ${rating(measures.new_reliability_rating)} | ${rating(measures.new_security_rating)} | ${rating(measures.new_maintainability_rating)} |`,
+              filesSection,
               '',
               '### Overall Project',
               `| Metric | Value |`,

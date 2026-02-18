@@ -57,16 +57,12 @@ export default function KeyboardShortcuts() {
     <dialog
       open
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
-      role="presentation"
-      onClick={close}
-      onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+      onCancel={close}
+      aria-label="Keyboard shortcuts dialog"
     >
+      <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={close} aria-label="Close dialog" tabIndex={-1} />
       <div
-        role="dialog"
-        aria-label="Keyboard shortcuts dialog"
-        className="bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md text-left cursor-default"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md text-left cursor-default"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

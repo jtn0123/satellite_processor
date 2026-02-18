@@ -114,8 +114,8 @@ describe('WhatsNewModal', () => {
     mockFetchSuccess();
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
-    const dialog = document.querySelector('dialog')!;
-    fireEvent.click(dialog);
+    const backdropBtn = document.querySelector('dialog > button[aria-label="Close dialog"]')!;
+    fireEvent.click(backdropBtn);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -124,15 +124,15 @@ describe('WhatsNewModal', () => {
     const onClose = vi.fn();
     render(<WhatsNewModal onClose={onClose} />);
     const dialog = document.querySelector('dialog')!;
-    fireEvent.keyDown(dialog, { key: 'Escape' });
+    fireEvent(dialog, new Event('cancel', { bubbles: false }));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('has aria-label on dialog', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
-    const innerDialog = document.querySelector('[role="dialog"]');
-    expect(innerDialog?.getAttribute('aria-label')).toBe("What's New dialog");
+    const dialog = document.querySelector('dialog');
+    expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
   it('fetches from /api/health/changelog', () => {

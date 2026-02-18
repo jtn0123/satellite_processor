@@ -102,7 +102,7 @@ export default function FrameGallery() {
       {isLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={`skel-${i}`} className="aspect-square bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" /> // NOSONAR
+            <div key={`skel-${i}`} className="aspect-square bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
       )}

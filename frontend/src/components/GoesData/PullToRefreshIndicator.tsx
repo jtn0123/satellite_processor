@@ -11,25 +11,27 @@ export default function PullToRefreshIndicator({
   isRefreshing,
   threshold = 80,
 }: Readonly<PullToRefreshIndicatorProps>) {
-  if (pullDistance <= 0 && !isRefreshing) return null;
+  if (pullDistance > 0 || isRefreshing) {
+    const progress = Math.min(pullDistance / threshold, 1);
+    const rotation = progress * 360;
 
-  const progress = Math.min(pullDistance / threshold, 1);
-  const rotation = progress * 360;
-
-  return (
-    <div
-      className="flex justify-center overflow-hidden transition-all"
-      style={{ height: isRefreshing ? 40 : Math.max(pullDistance * 0.5, 0) }}
-    >
-      <div className="flex items-center justify-center">
-        <RefreshCw
-          className={`w-5 h-5 text-primary ${isRefreshing ? 'animate-spin' : ''}`}
-          style={!isRefreshing ? { transform: `rotate(${rotation}deg)` } : undefined}
-        />
-        {isRefreshing && (
-          <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">Refreshing...</span>
-        )}
+    return (
+      <div
+        className="flex justify-center overflow-hidden transition-all"
+        style={{ height: isRefreshing ? 40 : Math.max(pullDistance * 0.5, 0) }}
+      >
+        <div className="flex items-center justify-center">
+          <RefreshCw
+            className={`w-5 h-5 text-primary ${isRefreshing ? 'animate-spin' : ''}`}
+            style={!isRefreshing ? { transform: `rotate(${rotation}deg)` } : undefined}
+          />
+          {isRefreshing && (
+            <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">Refreshing...</span>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

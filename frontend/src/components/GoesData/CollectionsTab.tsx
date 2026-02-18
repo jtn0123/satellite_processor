@@ -89,8 +89,8 @@ export default function CollectionsTab() {
 
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={`coll-skel-${i}`} variant="card" />
+          {Array.from({ length: 6 }, (_, i) => `coll-skel-${i}`).map((key) => (
+            <Skeleton key={key} variant="card" />
           ))}
         </div>
       )}

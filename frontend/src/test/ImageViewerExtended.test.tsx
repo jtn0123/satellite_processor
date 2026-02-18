@@ -92,7 +92,7 @@ describe('ImageViewer extended', () => {
 
   it('handles wheel zoom in', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
-    const panArea = screen.getByLabelText('Pan and zoom area');
+    const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: -100 });
     // Should increase from 100%
     expect(screen.getByText('120%')).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('ImageViewer extended', () => {
 
   it('handles wheel zoom out', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
-    const panArea = screen.getByLabelText('Pan and zoom area');
+    const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: 100 });
     expect(screen.getByText('80%')).toBeInTheDocument();
   });

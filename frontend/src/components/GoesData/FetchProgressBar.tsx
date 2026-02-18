@@ -68,7 +68,7 @@ export default function FetchProgressBar() {
           ) : (
             <>
               <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              <span className="text-sm text-gray-300">{pendingCount} job{pendingCount !== 1 ? 's' : ''} queued</span>
+              <span className="text-sm text-gray-300">{pendingCount} job{pendingCount === 1 ? '' : 's'} queued</span>
             </>
           )}
           {expanded ? (

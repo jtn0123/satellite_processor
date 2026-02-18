@@ -87,8 +87,6 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
       open
       aria-label="Image viewer"
       className="fixed inset-0 z-50 bg-black/90 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
       {/* Top bar */}
       <div className="flex items-center justify-between p-4 text-white">
@@ -128,10 +126,11 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
 
         <button
           type="button"
-          role="application"
-          aria-label="Pan and zoom area"
+          aria-label="Pan and zoom area — use mouse wheel to zoom, drag to pan"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
           className="flex items-center justify-center bg-transparent border-none p-0 m-0 outline-none"
         >
           <img

@@ -1,3 +1,11 @@
+# [1.6.0](https://github.com/jtn0123/satellite_processor/compare/v1.5.0...v1.6.0) (2026-02-18)
+
+
+### Features
+
+* Live View Polish — Batch A (stale warnings, job names, fetch progress, band availability) ([#133](https://github.com/jtn0123/satellite_processor/issues/133)) ([3f8c045](https://github.com/jtn0123/satellite_processor/commit/3f8c0459ce9e28ecc5552fc3d3e6d981401737f2))
+* **live:** frame comparison, catalog loading, pinch-to-zoom, metadata toggle ([#132](https://github.com/jtn0123/satellite_processor/issues/132)) ([a88d1c0](https://github.com/jtn0123/satellite_processor/commit/a88d1c0e9722d4080fcdb82c2e0b1dd097e1ac5e))
+
 # [1.5.0](https://github.com/jtn0123/satellite_processor/compare/v1.4.2...v1.5.0) (2026-02-17)
 
 

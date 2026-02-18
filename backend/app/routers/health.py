@@ -252,3 +252,4 @@ async def health_detailed():
         "version": VERSION,
         "commit": BUILD_COMMIT,
     }
+

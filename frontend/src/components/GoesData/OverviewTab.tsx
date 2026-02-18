@@ -119,7 +119,7 @@ export default function OverviewTab() {
       label: 'Fetch Last Hour CONUS',
       description: 'Pre-fill fetch wizard for CONUS imagery',
       icon: <Download className="w-5 h-5" />,
-      color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30',
+      color: 'from-sky-500/20 to-blue-500/20 border-sky-500/30',
       onClick: () => {
         globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
           detail: { satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours_back: 1 },

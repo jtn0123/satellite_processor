@@ -4,9 +4,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-primary: #06b6d4;
-  --color-primary-dark: #0891b2;
-  --color-primary-light: #22d3ee;
+  /* Deep Space palette — primary: teal-blue, accent: amber/gold */
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
+  --color-primary-light: #38bdf8;
+
+  --color-accent: #f59e0b;
+  --color-accent-dark: #d97706;
+  --color-accent-light: #fbbf24;
+
+  --color-success: #22c55e;
+  --color-success-muted: #16a34a;
+  --color-error: #ef4444;
+  --color-error-muted: #dc2626;
 
   --color-space-500: #2d6094;
   --color-space-600: #254d7a;
@@ -15,12 +25,12 @@
   --color-space-800: #132240;
   --color-space-850: #0f1d32;
   --color-space-900: #0a1628;
-  --color-space-950: #020617;
+  --color-space-950: #060d1b;
 
-  --color-accent-cyan: #22d3ee;
+  --color-accent-cyan: #38bdf8;
   --color-accent-blue: #3b82f6;
   --color-accent-indigo: #6366f1;
-  --color-accent-glow: #06b6d4;
+  --color-accent-glow: #0ea5e9;
 
   --background-color-card: #0f1d32;
   --background-color-card-hover: #132240;
@@ -44,8 +54,14 @@ html {
 }
 
 body {
-  @apply bg-gray-50 dark:bg-space-950 text-gray-900 dark:text-gray-100 antialiased;
+  @apply bg-gray-50 text-gray-900 dark:text-gray-100 antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Deep Space gradient background (dark mode) */
+.dark body {
+  background: linear-gradient(180deg, #060d1b 0%, #0a1628 100%);
+  background-attachment: fixed;
 }
 
 /* Touch-friendly button targets on mobile (WCAG 2.5.5 — 44px minimum) */
@@ -260,14 +276,39 @@ header {
 
 /* Glassmorphism for stat cards */
 .glass-card {
-  background: color-mix(in srgb, var(--color-space-800) 70%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--color-space-800) 65%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-space-600) 40%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 5%, transparent),
+    transparent 60%
+  );
 }
 
 /* Light mode glass */
 :root:not(.dark) .glass-card {
-  background: color-mix(in srgb, white 75%, transparent);
+  background: color-mix(in srgb, white 80%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, #94a3b8 25%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, #0ea5e9 8%, transparent);
+}
+
+/* Hero card — more visual weight for live image & stats */
+.glass-card-hero {
+  background: color-mix(in srgb, var(--color-space-800) 65%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow: 0 0 20px 2px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+:root:not(.dark) .glass-card-hero {
+  background: white;
+  border: 1px solid color-mix(in srgb, #0ea5e9 20%, transparent);
+  box-shadow: 0 2px 12px color-mix(in srgb, #0ea5e9 12%, transparent);
 }
 
 /* Primary button with color-mix hover */
@@ -281,11 +322,24 @@ header {
 
 /* Subtle glow for active/selected elements */
 .glow-primary {
-  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .glow-primary-strong {
-  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--color-primary) 50%, transparent);
+  box-shadow: 0 0 16px 3px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+/* Accent (amber) glow for CTAs */
+.glow-accent {
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+/* Thumbnail hover effect */
+.thumb-hover {
+  @apply rounded-lg transition-shadow duration-200;
+}
+.thumb-hover:hover {
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 /* Field sizing for auto-sizing inputs */

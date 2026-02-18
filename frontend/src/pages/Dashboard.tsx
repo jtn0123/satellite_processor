@@ -71,7 +71,7 @@ export default function Dashboard() {
   });
 
   const statCards = [
-    { label: 'Total Images', value: stats?.total_images ?? 0, icon: Image, color: 'text-cyan-400' },
+    { label: 'Total Images', value: stats?.total_images ?? 0, icon: Image, color: 'text-sky-400' },
     { label: 'Total Jobs', value: stats?.total_jobs ?? 0, icon: ListTodo, color: 'text-violet-400' },
     { label: 'Active Jobs', value: stats?.active_jobs ?? 0, icon: Activity, color: 'text-amber-400' },
   ];
@@ -253,7 +253,7 @@ export default function Dashboard() {
               {(() => {
                 const entries = Object.entries(goesStats.storage_by_satellite);
                 const maxVal = Math.max(...entries.map(([, v]) => v), 1);
-                const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
+                const colors = ['bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
                 return entries.map(([sat, size], i) => (
                   <div key={sat} className="flex items-center gap-3">
                     <span className="text-xs text-gray-500 dark:text-slate-400 w-20 truncate">{sat}</span>

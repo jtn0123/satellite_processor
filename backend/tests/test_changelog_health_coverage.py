@@ -1,8 +1,8 @@
 """Tests for changelog parsing and health helper functions."""
 
+
 import pytest
-from unittest.mock import patch
-from app.routers.health import _parse_changelog, _strip_links, _derive_overall, _try_append_release, _collect_change
+from app.routers.health import _collect_change, _strip_links, _try_append_release
 
 pytestmark = pytest.mark.anyio
 

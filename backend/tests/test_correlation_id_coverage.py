@@ -3,7 +3,6 @@
 import pytest
 from app.middleware.correlation import REQUEST_ID_PATTERN, CorrelationMiddleware, RequestIdFilter, request_id_ctx
 
-
 pytestmark = pytest.mark.anyio
 
 

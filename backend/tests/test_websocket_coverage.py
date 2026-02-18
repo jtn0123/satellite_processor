@@ -1,11 +1,10 @@
 """Tests for WebSocket endpoints — connection, message flow, auth, connection limits."""
 
 import asyncio
-import json
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import app.main as main_module
+import pytest
 
 
 def _mock_redis_client():
@@ -82,8 +81,8 @@ def test_ws_auth_required():
     main_module.app_settings.api_key = "secret-key"
     try:
         with TestClient(main_module.app) as c:
-            with pytest.raises(Exception):
-                with c.websocket_connect("/ws/jobs/test-123") as ws:
+            with pytest.raises(Exception):  # noqa: B017
+                with c.websocket_connect("/ws/jobs/test-123") as _ws:
                     pass
     finally:
         main_module.app_settings.api_key = orig_key

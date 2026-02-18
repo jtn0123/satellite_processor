@@ -1,9 +1,10 @@
 """Tests for structured logging — JSON format, correlation ID inclusion."""
 
 import logging
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from app.logging_config import setup_logging, RequestLoggingMiddleware
+from app.logging_config import RequestLoggingMiddleware, setup_logging
 from app.middleware.correlation import request_id_ctx
 
 
@@ -74,8 +75,6 @@ def test_setup_logging_json_fallback():
 @pytest.mark.anyio
 async def test_request_logging_middleware_logs_request():
     """Middleware logs method, path, status, duration."""
-    logged = []
-
     async def fake_app(scope, receive, send):
         await send({"type": "http.response.start", "status": 200, "headers": []})
         await send({"type": "http.response.body", "body": b""})

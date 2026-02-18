@@ -1,7 +1,8 @@
 """Tests for worker health check endpoint — Celery inspect, healthy/unhealthy states, timeout."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 pytestmark = pytest.mark.anyio
 

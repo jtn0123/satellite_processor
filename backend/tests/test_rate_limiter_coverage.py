@@ -1,7 +1,7 @@
 """Tests for rate limiter — Redis-backed + in-memory fallback, limit enforcement."""
 
-import pytest
 from unittest.mock import patch
+
 from app.rate_limit import limiter
 
 
@@ -43,6 +43,7 @@ def test_limiter_with_redis_url():
     """With REDIS_URL set, storage_uri should be configured."""
     with patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}):
         from importlib import reload
+
         import app.rate_limit as rl_mod
         reload(rl_mod)
         # After reload, the limiter should have been created with storage_uri

@@ -1,8 +1,9 @@
 """Tests for system info endpoint — caching, disk/memory/CPU stats."""
 
 import time
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 pytestmark = pytest.mark.anyio
 

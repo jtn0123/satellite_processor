@@ -1,7 +1,7 @@
 """Tests for GOES catalog/download endpoints — products listing, error handling."""
 
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 pytestmark = pytest.mark.anyio
 

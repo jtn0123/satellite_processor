@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/jtn0123/satellite_processor/compare/v1.6.0...v1.6.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* phase 1 quick wins — coverage upload, npm audit, test assertions, system info cache, API memory limit ([#134](https://github.com/jtn0123/satellite_processor/issues/134)) ([2e5d7eb](https://github.com/jtn0123/satellite_processor/commit/2e5d7eb938e67c4880d17a5601c638983d5bb902))
+
 # [1.6.0](https://github.com/jtn0123/satellite_processor/compare/v1.5.0...v1.6.0) (2026-02-18)
 
 

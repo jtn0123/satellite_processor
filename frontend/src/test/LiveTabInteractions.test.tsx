@@ -228,7 +228,6 @@ describe('LiveTab - Interactions', () => {
     renderLiveTab();
     // StaleDataBanner should appear when behind > threshold
     await waitFor(() => {
-      const el = document.querySelector('[class*="bg-amber"]') || document.querySelector('[class*="amber"]');
       // At minimum, component should render without error
       expect(document.body.textContent).toBeTruthy();
     });

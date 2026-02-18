@@ -102,7 +102,7 @@ describe('useImageZoom', () => {
     ];
     act(() => result.current.handlers.onTouchMove(makeTouchEvent(moveTouches)));
     // Now pinch in
-    act(() => result.current.handlers.onTouchEnd());
+    act(() => result.current.handlers.onTouchEnd({} as React.TouchEvent));
     // Start a new pinch from close together
     const closeTouches = [
       { clientX: 140, clientY: 140 },
@@ -137,7 +137,7 @@ describe('useImageZoom', () => {
 
   it('touch end clears pinch and pan refs', () => {
     const { result } = renderHook(() => useImageZoom());
-    act(() => result.current.handlers.onTouchEnd());
+    act(() => result.current.handlers.onTouchEnd({} as React.TouchEvent));
     // Should not throw
     expect(result.current.isZoomed).toBe(false);
   });

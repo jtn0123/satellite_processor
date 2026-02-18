@@ -23,10 +23,9 @@ async function openAdvancedWizard(page: import('@playwright/test').Page) {
   await page.goto('/goes');
   const fetchTab = page.locator('[role="tab"]').filter({ hasText: /fetch/i }).first();
   await fetchTab.click();
-  const advancedBtn = page.getByRole('button', { name: /advanced/i });
-  if (await advancedBtn.isVisible()) {
-    await advancedBtn.click();
-  }
+  const advancedBtn = page.getByTestId('advanced-fetch-toggle');
+  await advancedBtn.waitFor({ state: 'visible', timeout: 5000 });
+  await advancedBtn.click();
 }
 
 test('quick fetch chips are visible on Fetch tab', async ({ page }) => {

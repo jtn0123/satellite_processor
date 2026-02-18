@@ -21,6 +21,7 @@ import KeyboardShortcuts from './KeyboardShortcuts';
 import ConnectionStatus from './ConnectionStatus';
 import NotificationBell from './NotificationBell';
 import WhatsNewModal from './WhatsNewModal';
+import MobileBottomNav from './MobileBottomNav';
 import { useJobToasts } from '../hooks/useJobToasts';
 
 const links = [
@@ -290,7 +291,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
@@ -308,6 +309,9 @@ export default function Layout() {
           </footer>
         </main>
       </div>
+
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav />
 
       {/* What's New Modal */}
       {showWhatsNew && (

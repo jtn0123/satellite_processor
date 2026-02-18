@@ -8,8 +8,9 @@ test.beforeEach(async ({ page }) => {
 test.describe('Browse satellite data', () => {
   test('GOES page renders all tabs', async ({ page }) => {
     await page.goto('/goes');
-    await expect(page.locator('[role="tablist"]')).toBeVisible();
-    const tabs = page.locator('[role="tab"]');
+    const tablist = page.locator('main [role="tablist"]').first();
+    await expect(tablist).toBeVisible();
+    const tabs = tablist.locator('[role="tab"]');
     await expect(tabs).toHaveCount(10);
   });
 

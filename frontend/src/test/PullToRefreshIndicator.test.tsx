@@ -3,31 +3,29 @@ import { render, screen } from '@testing-library/react';
 import PullToRefreshIndicator from '../components/GoesData/PullToRefreshIndicator';
 
 describe('PullToRefreshIndicator', () => {
-  it('renders nothing when pullDistance is 0 and not refreshing', () => {
-    const { container } = render(
-      <PullToRefreshIndicator pullDistance={0} isRefreshing={false} />
-    );
+  it('renders nothing when pullDistance=0 and not refreshing', () => {
+    const { container } = render(<PullToRefreshIndicator pullDistance={0} isRefreshing={false} />);
     expect(container.innerHTML).toBe('');
   });
 
-  it('shows indicator when pulling', () => {
-    const { container } = render(
-      <PullToRefreshIndicator pullDistance={40} isRefreshing={false} />
-    );
+  it('renders indicator when pullDistance > 0', () => {
+    const { container } = render(<PullToRefreshIndicator pullDistance={40} isRefreshing={false} />);
     expect(container.querySelector('svg')).toBeTruthy();
   });
 
-  it('shows refreshing text when refreshing', () => {
-    render(
-      <PullToRefreshIndicator pullDistance={0} isRefreshing={true} />
-    );
+  it('shows "Refreshing..." text when isRefreshing', () => {
+    render(<PullToRefreshIndicator pullDistance={0} isRefreshing={true} />);
     expect(screen.getByText('Refreshing...')).toBeInTheDocument();
   });
 
-  it('applies spin animation when refreshing', () => {
-    const { container } = render(
-      <PullToRefreshIndicator pullDistance={0} isRefreshing={true} />
-    );
+  it('applies animate-spin when refreshing', () => {
+    const { container } = render(<PullToRefreshIndicator pullDistance={0} isRefreshing={true} />);
     expect(container.querySelector('.animate-spin')).toBeTruthy();
+  });
+
+  it('applies rotation transform based on pullDistance', () => {
+    const { container } = render(<PullToRefreshIndicator pullDistance={40} isRefreshing={false} threshold={80} />);
+    const svg = container.querySelector('svg');
+    expect(svg?.style.transform).toBe('rotate(180deg)');
   });
 });

@@ -1,65 +1,95 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import LazyImage from '../components/GoesData/LazyImage';
 
-function mockIO(triggerImmediately = false) {
-  const disconnect = vi.fn();
-  const observe = vi.fn();
-  let storedCb: IntersectionObserverCallback | null = null;
-  const instances: MockIO[] = [];
+// The setup.ts stubs IntersectionObserver globally. We override it per-test.
+let observerCallback: IntersectionObserverCallback;
+let observerInstance: ReturnType<typeof createMockObserver>;
 
-  class MockIO {
-    observe = observe;
-    disconnect = disconnect;
-    unobserve = vi.fn();
-    constructor(cb: IntersectionObserverCallback) {
-      storedCb = cb;
-      instances.push(this);
-    }
+function createMockObserver() {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+    takeRecords: vi.fn(() => [] as IntersectionObserverEntry[]),
+  };
+}
+
+beforeEach(() => {
+  observerInstance = createMockObserver();
+  // Override the global stub from setup.ts — must be callable with `new`
+  function MockIO(this: Record<string, unknown>, cb: IntersectionObserverCallback) {
+    observerCallback = cb;
+    Object.assign(this, observerInstance);
   }
+  globalThis.IntersectionObserver = MockIO as unknown as typeof IntersectionObserver;
+});
 
-  vi.stubGlobal('IntersectionObserver', MockIO);
-
-  function trigger() {
-    const instance = instances[instances.length - 1] ?? null;
-    if (storedCb && instance) {
-      act(() => {
-        storedCb!([{ isIntersecting: true } as IntersectionObserverEntry], instance as unknown as IntersectionObserver);
-      });
-    }
-  }
-
-  return { disconnect, observe, trigger, shouldTrigger: triggerImmediately };
+function triggerIntersection(isIntersecting: boolean) {
+  act(() => {
+    observerCallback(
+      [{ isIntersecting } as IntersectionObserverEntry],
+      {} as IntersectionObserver
+    );
+  });
 }
 
 describe('LazyImage', () => {
-  beforeEach(() => vi.restoreAllMocks());
-
-  it('shows placeholder when not yet visible', () => {
-    mockIO(false);
-    render(<LazyImage src="/test.jpg" alt="test" className="w-full" />);
-    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  it('renders wrapper with data-testid', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
     expect(screen.getByTestId('lazy-image-wrapper')).toBeInTheDocument();
   });
 
-  it('loads image when intersection observer triggers', () => {
-    const io = mockIO();
-    render(<LazyImage src="/test.jpg" alt="test image" className="w-full" />);
-    io.trigger();
-    expect(screen.getByRole('img')).toBeInTheDocument();
-    expect(screen.getByRole('img')).toHaveAttribute('src', '/test.jpg');
+  it('shows default placeholder before intersection', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByTestId('lazy-image-wrapper').querySelector('.animate-pulse')).toBeTruthy();
   });
 
-  it('renders custom placeholder', () => {
-    mockIO(false);
-    render(<LazyImage src="/test.jpg" alt="test" className="w-full" placeholder={<span data-testid="custom-ph">Loading</span>} />);
+  it('shows custom placeholder before intersection', () => {
+    render(<LazyImage src="/img.png" alt="test" placeholder={<span data-testid="custom-ph">Loading...</span>} />);
     expect(screen.getByTestId('custom-ph')).toBeInTheDocument();
   });
 
-  it('disconnects observer on unmount', () => {
-    const { disconnect } = mockIO(false);
-    const { unmount } = render(<LazyImage src="/test.jpg" alt="test" className="w-full" />);
-    unmount();
-    expect(disconnect).toHaveBeenCalled();
+  it('renders img after intersection is triggered', () => {
+    render(<LazyImage src="/img.png" alt="test image" />);
+    triggerIntersection(true);
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/img.png');
+    expect(img).toHaveAttribute('alt', 'test image');
+  });
+
+  it('applies opacity-0 before load, opacity-100 after onLoad', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
+    triggerIntersection(true);
+    const img = screen.getByRole('img');
+    expect(img.className).toContain('opacity-0');
+    fireEvent.load(img);
+    expect(img.className).toContain('opacity-100');
+  });
+
+  it('disconnects observer after becoming visible', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
+    triggerIntersection(true);
+    expect(observerInstance.disconnect).toHaveBeenCalled();
+  });
+
+  it('does not render img if not intersecting', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
+    triggerIntersection(false);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('applies custom className to wrapper', () => {
+    render(<LazyImage src="/img.png" alt="test" className="my-class" />);
+    expect(screen.getByTestId('lazy-image-wrapper')).toHaveClass('my-class');
+  });
+
+  it('sets loading=lazy and decoding=async on img', () => {
+    render(<LazyImage src="/img.png" alt="test" />);
+    triggerIntersection(true);
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
   });
 });

@@ -5,7 +5,7 @@ interface FrameActionMenuProps {
   onCompare: () => void;
   onTag: () => void;
   onAddToCollection: () => void;
-  onShare: () => void;
+  onShare?: () => void;
   onDelete: () => void;
 }
 
@@ -38,7 +38,7 @@ export default function FrameActionMenu({
     { icon: GitCompare, label: 'Compare', action: onCompare },
     { icon: Tag, label: 'Tag', action: onTag },
     { icon: FolderPlus, label: 'Add to Collection', action: onAddToCollection },
-    { icon: Share2, label: 'Share', action: onShare },
+    ...(onShare ? [{ icon: Share2, label: 'Share', action: onShare }] : []),
     { icon: Trash2, label: 'Delete', action: onDelete, danger: true },
   ];
 

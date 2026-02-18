@@ -1,3 +1,4 @@
+// eslint-disable @typescript-eslint/no-explicit-any
 /**
  * Coverage boost tests for low-coverage components:
  * PresetsTab, TagModal, Process, ProcessingForm, JobList, GoesData, ImageGallery
@@ -12,7 +13,7 @@ import { MemoryRouter } from 'react-router-dom';
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useNavigate: () => mockNavigate, Link: ({ children, to, ...props }: unknown) => <a href={to} {...props}>{children}</a> };
+  return { ...actual, useNavigate: () => mockNavigate, Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a> };
 });
 
 vi.mock('../api/client', () => ({
@@ -44,10 +45,10 @@ import api from '../api/client';
 import { showToast } from '../utils/toast';
 import { useImages, useJobs, useDeleteJob } from '../hooks/useApi';
 
-const mockedApi = api as unknown;
-const mockedUseImages = useImages as unknown;
-const mockedUseJobs = useJobs as unknown;
-const mockedUseDeleteJob = useDeleteJob as unknown;
+const mockedApi = api as any;
+const mockedUseImages = useImages as any;
+const mockedUseJobs = useJobs as any;
+const mockedUseDeleteJob = useDeleteJob as any;
 
 function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
@@ -67,7 +68,7 @@ beforeEach(() => {
 
 // ===================== PresetsTab =====================
 describe('PresetsTab – full coverage', () => {
-  let PresetsTab: unknown;
+  let PresetsTab: any;
 
   beforeEach(async () => {
     PresetsTab = (await import('../components/GoesData/PresetsTab')).default;
@@ -374,7 +375,7 @@ describe('PresetsTab – full coverage', () => {
 
 // ===================== TagModal =====================
 describe('TagModal – full coverage', () => {
-  let TagModal: unknown;
+  let TagModal: any;
 
   beforeEach(async () => {
     TagModal = (await import('../components/GoesData/TagModal')).default;
@@ -472,7 +473,7 @@ describe('TagModal – full coverage', () => {
 
 // ===================== ProcessingForm =====================
 describe('ProcessingForm – full coverage', () => {
-  let ProcessingForm: unknown;
+  let ProcessingForm: any;
 
   beforeEach(async () => {
     ProcessingForm = (await import('../components/Processing/ProcessingForm')).default;
@@ -632,7 +633,7 @@ describe('ProcessingForm – full coverage', () => {
 
 // ===================== Process Page =====================
 describe('Process page – full coverage', () => {
-  let ProcessPage: unknown;
+  let ProcessPage: any;
 
   beforeEach(async () => {
     ProcessPage = (await import('../pages/Process')).default;
@@ -658,7 +659,7 @@ describe('Process page – full coverage', () => {
 
 // ===================== JobList =====================
 describe('JobList – full coverage', () => {
-  let JobList: unknown;
+  let JobList: any;
 
   beforeEach(async () => {
     JobList = (await import('../components/Jobs/JobList')).default;
@@ -788,7 +789,7 @@ describe('JobList – full coverage', () => {
 
 // ===================== GoesData =====================
 describe('GoesData page – full coverage', () => {
-  let GoesData: unknown;
+  let GoesData: any;
 
   beforeEach(async () => {
     GoesData = (await import('../pages/GoesData')).default;

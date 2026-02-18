@@ -24,6 +24,7 @@ from .metrics import (
     PrometheusMiddleware,
     get_metrics_response,
 )
+from .middleware.correlation import CorrelationMiddleware
 from .rate_limit import limiter
 from .redis_pool import close_redis_pool, get_redis_client
 from .routers import (
@@ -134,6 +135,7 @@ async def api_key_auth(request: Request, call_next):
 # Middleware stack (order matters — outermost first)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestBodyLimitMiddleware)
+app.add_middleware(CorrelationMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(

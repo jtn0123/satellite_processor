@@ -38,9 +38,16 @@ async def system_status():
     }
 
 
+_system_info_cache: dict = {"data": None, "expires": 0.0}
+
+
 @router.get("/info")
 async def system_info():
     """Get system information: Python version, uptime, disk, memory, worker status."""
+    now = time.time()
+    if _system_info_cache["data"] is not None and now < _system_info_cache["expires"]:
+        return _system_info_cache["data"]
+
     from ..config import settings
 
     mem = psutil.virtual_memory()
@@ -71,7 +78,7 @@ async def system_info():
 
     uptime_seconds = time.time() - _start_time
 
-    return {
+    result = {
         "python_version": sys.version,
         "platform": platform.platform(),
         "uptime_seconds": round(uptime_seconds, 1),
@@ -83,3 +90,7 @@ async def system_info():
         "disk": disk_info,
         "worker_status": worker_status,
     }
+
+    _system_info_cache["data"] = result
+    _system_info_cache["expires"] = time.time() + 30  # 30s TTL
+    return result

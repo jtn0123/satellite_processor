@@ -14,7 +14,7 @@ function renderNav(route = '/') {
 describe('MobileBottomNav', () => {
   it('renders bottom tab bar with navigation role', () => {
     renderNav();
-    expect(screen.getByRole('tablist', { name: 'Mobile navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toBeInTheDocument();
   });
 
   it('renders Live, Browse, Animate tabs', () => {

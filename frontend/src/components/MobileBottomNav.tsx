@@ -25,13 +25,13 @@ const moreLinks = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
 ];
 
-const moreRoutes = ['/', '/jobs', '/settings', '/upload', '/process', '/presets'];
+const moreRoutes = new Set(['/', '/jobs', '/settings', '/upload', '/process', '/presets']);
 
 export default function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
 
-  const isMoreActive = moreRoutes.includes(location.pathname);
+  const isMoreActive = moreRoutes.has(location.pathname);
 
   const isTabActive = (label: string) => {
     const path = location.pathname;
@@ -76,11 +76,10 @@ export default function MobileBottomNav() {
 
       {/* More sheet */}
       {moreOpen && (
-        <div
-          role="dialog"
+        <dialog
+          open
           aria-label="More navigation options"
-          aria-modal="true"
-          className="fixed bottom-[64px] left-0 right-0 z-50 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 rounded-t-2xl shadow-xl p-4 animate-slide-up"
+          className="fixed bottom-[64px] left-0 right-0 z-50 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 rounded-t-2xl shadow-xl p-4 animate-slide-up m-0 w-full max-w-full border-none"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">More</span>
@@ -113,12 +112,11 @@ export default function MobileBottomNav() {
               </NavLink>
             ))}
           </nav>
-        </div>
+        </dialog>
       )}
 
       {/* Bottom tab bar */}
       <nav
-        role="tablist"
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 flex items-center justify-around safe-bottom"
       >

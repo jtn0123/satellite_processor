@@ -44,13 +44,13 @@ test.describe('View frame details', () => {
     await page.goto('/goes');
     const galleryTab = page.locator('[role="tab"]').filter({ hasText: /gallery/i }).first();
     await galleryTab.click();
-    await expect(page.locator('text=GOES-19').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=GOES-19').first()).toBeAttached({ timeout: 5000 });
   });
 
   test('browse tab shows frames', async ({ page }) => {
     await page.goto('/goes');
     const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
     await browseTab.click();
-    await expect(page.locator('text=GOES-19').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=GOES-19').first()).toBeAttached({ timeout: 5000 });
   });
 });

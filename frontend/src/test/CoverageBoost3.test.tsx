@@ -1,4 +1,4 @@
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Coverage boost tests for low-coverage components:
  * PresetsTab, TagModal, Process, ProcessingForm, JobList, GoesData, ImageGallery

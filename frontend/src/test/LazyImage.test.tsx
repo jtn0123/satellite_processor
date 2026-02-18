@@ -18,7 +18,7 @@ function createMockObserver() {
 beforeEach(() => {
   observerInstance = createMockObserver();
   // Override the global stub from setup.ts — must be callable with `new`
-  function MockIO(this: any, cb: IntersectionObserverCallback) {
+  function MockIO(this: Record<string, unknown>, cb: IntersectionObserverCallback) {
     observerCallback = cb;
     Object.assign(this, observerInstance);
   }

@@ -1,10 +1,9 @@
 """Tests for system info endpoint — caching, disk/memory/CPU stats."""
 
 import time
-from unittest.mock import patch
 
-import pytest
 import app.routers.system as sys_mod
+import pytest
 
 pytestmark = pytest.mark.anyio
 

@@ -1,6 +1,6 @@
 """Tests for worker health check and detailed health endpoint logic."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from app.routers.health import _check_worker, _derive_overall
@@ -23,7 +23,7 @@ async def test_worker_healthy():
          patch.dict("sys.modules", {"app.celery_app": MagicMock(celery_app=mock_celery)}):
         # Patch the import inside _check_worker
         import app.routers.health as h
-        original = h.__dict__.get("celery_app")
+        _original = h.__dict__.get("celery_app")
         try:
             # We need to mock the dynamic import inside the function
             with patch("app.celery_app.celery_app", mock_celery):

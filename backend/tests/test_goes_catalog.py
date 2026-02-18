@@ -5,11 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.services.catalog import (
-    _collect_matching_entries,
     _is_newer_scan,
     _normalize_date,
-    catalog_available,
-    catalog_latest,
     catalog_list,
 )
 
@@ -57,11 +54,11 @@ class TestIsNewerScan:
 
 class TestCatalogList:
     def test_invalid_satellite_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             catalog_list("GOES-99", "CONUS", "C02")
 
     def test_invalid_band_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             catalog_list("GOES-19", "CONUS", "C99")
 
     @patch("app.services.catalog._get_s3_client")

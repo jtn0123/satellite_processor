@@ -6,11 +6,10 @@ to avoid event-loop conflicts with the async test fixtures.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import app.main as main_module
 from app.main import WS_MAX_CONNECTIONS_PER_IP, _ws_track
-
 
 # ── Connection tracking (pure unit tests) ─────────────────────────
 
@@ -64,7 +63,6 @@ class TestWsAuthenticate:
 
     def test_no_api_key_always_passes(self):
         """When api_key is empty, auth should always pass."""
-        import asyncio
 
         ws = AsyncMock()
         with patch.object(main_module.app_settings, "api_key", ""):
@@ -75,7 +73,6 @@ class TestWsAuthenticate:
 
     def test_correct_key_via_query_param(self):
         """Correct API key in query params should pass."""
-        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {"api_key": "secret"}
@@ -88,7 +85,6 @@ class TestWsAuthenticate:
 
     def test_correct_key_via_header(self):
         """Correct API key in x-api-key header should pass."""
-        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {}
@@ -101,7 +97,6 @@ class TestWsAuthenticate:
 
     def test_wrong_key_fails(self):
         """Wrong API key should return False and close connection."""
-        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {"api_key": "wrong"}

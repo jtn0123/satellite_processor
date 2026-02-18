@@ -45,6 +45,7 @@ class TestLimiterRedisConfig:
         with patch.dict(os.environ, {}, clear=False):
             # Just verify the limiter was created without errors
             from importlib import reload
+
             import app.rate_limit as rl
             original_limiter = rl.limiter
             try:
@@ -58,6 +59,7 @@ class TestLimiterRedisConfig:
         """With REDIS_URL set, limiter should configure Redis storage."""
         with patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379/0"}):
             from importlib import reload
+
             import app.rate_limit as rl
             original_limiter = rl.limiter
             try:

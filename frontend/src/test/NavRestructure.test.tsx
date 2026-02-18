@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -73,7 +73,6 @@ describe('Navigation Restructure', () => {
 
     it('has exactly 6 nav items in sidebar', () => {
       renderWithRouter();
-      const tablist = screen.getAllByRole('navigation')[0] || document.querySelector('nav');
       // Both desktop and mobile have links, so we check desktop sidebar links
       const navLinks = document.querySelectorAll('aside nav a');
       expect(navLinks.length).toBe(6);

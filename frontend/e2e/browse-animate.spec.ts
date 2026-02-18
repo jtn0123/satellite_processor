@@ -8,6 +8,10 @@ const PIXEL = Buffer.from(
 
 /** Provide frames for browse tests */
 function mockFrames(page: Page) {
+  // Mock thumbnail download endpoint
+  page.route('**/api/download*', async (route: Route) => {
+    return route.fulfill({ contentType: 'image/png', body: PIXEL });
+  });
   return page.route('**/api/goes/frames*', async (route: Route) => {
     const url = route.request().url();
     // Image/thumbnail endpoints
@@ -29,6 +33,7 @@ function mockFrames(page: Page) {
       file_size: 4000,
       width: 1000,
       height: 800,
+      thumbnail_path: `/data/frames/goes19_conus_c02_${i}_thumb.png`,
     }));
     return route.fulfill({ json: { items, total: 50, page: 1, limit: 50 } });
   });
@@ -52,12 +57,12 @@ test.describe('Browse flow', () => {
   test('clicking a frame opens detail view', async ({ page }) => {
     await mockFrames(page);
     await page.goto('/goes');
-    // Wait for frames then click first one
-    const firstCard = page.locator('[class*="card"], [class*="Card"], [class*="frame"], [class*="Frame"]').first();
+    // Wait for frame cards then click first one
+    const firstCard = page.locator('button[aria-label*="GOES"]').first();
     if (await firstCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await firstCard.click();
       // Should show detail - dialog, drawer, or expanded view
-      await expect(page.locator('[role="dialog"], [class*="detail"], [class*="Detail"], [class*="drawer"]').first())
+      await expect(page.locator('[role="dialog"], [class*="detail"], [class*="Detail"], [class*="viewer"]').first())
         .toBeVisible({ timeout: 5000 })
         .catch(() => {
           // May navigate instead

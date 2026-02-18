@@ -12,5 +12,5 @@ test('process route redirects to settings', async ({ page }) => {
 
 test('settings page has Processing section', async ({ page }) => {
   await page.goto('/settings');
-  await expect(page.getByText('Processing')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Processing Defaults' })).toBeVisible();
 });

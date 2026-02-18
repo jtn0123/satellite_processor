@@ -174,9 +174,9 @@ def make_animation_preset(db, **kw):
 @pytest.fixture(autouse=True)
 def mock_redis():
     """Mock Redis to avoid connection errors in tests."""
-    import fakeredis.aioredis
+    from fakeredis import FakeAsyncRedis
 
-    fake = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    fake = FakeAsyncRedis(decode_responses=True)
     with patch("app.services.cache.get_redis_client", return_value=fake), \
          patch("app.redis_pool.get_redis_client", return_value=fake):
         yield fake
@@ -575,7 +575,8 @@ class TestGoesFrames:
 class TestGoesFrameExport:
     """Note: /api/goes/frames/export is shadowed by /api/goes/frames/{frame_id}
     due to route ordering. 'export' gets matched as frame_id and fails UUID validation.
-    These tests document the current (broken) behavior."""
+    These tests document the current (broken) behavior.
+    TODO: Fix route ordering — place /api/goes/frames/export before /{frame_id} in the router."""
 
     @pytest.mark.asyncio
     async def test_export_shadowed_by_frame_id_route(self, client, db):

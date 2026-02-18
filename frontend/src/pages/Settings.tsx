@@ -19,12 +19,12 @@ interface StorageBreakdown {
   total_frames: number;
 }
 
-function CollapsibleSection({ title, icon, children, defaultOpen = false }: {
+function CollapsibleSection({ title, icon, children, defaultOpen = false }: Readonly<{
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   defaultOpen?: boolean;
-}) {
+}>) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden inset-shadow-sm dark:inset-shadow-white/5">

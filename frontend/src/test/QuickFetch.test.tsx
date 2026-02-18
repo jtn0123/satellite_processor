@@ -145,7 +145,7 @@ describe('Dashboard Fetch Latest', () => {
 
 describe('FetchTab Quick Fetch', () => {
   beforeEach(() => {
-    mockApi.get.mockImplementation((url: string) => {
+    (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
       if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
@@ -211,7 +211,7 @@ describe('FetchTab Quick Fetch', () => {
   });
 
   it('shows error toast on quick fetch failure', async () => {
-    mockApi.post.mockRejectedValueOnce(new Error('fail'));
+    (mockApi.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
     wrap(<FetchTab />);
     const chip = await screen.findByText('CONUS Last Hour');
     fireEvent.click(chip);
@@ -234,7 +234,7 @@ describe('FetchTab Quick Fetch', () => {
   });
 
   it('renders preset chips when presets exist', async () => {
-    mockApi.get.mockImplementation((url: string) => {
+    (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
       if (url === '/goes/fetch-presets') return Promise.resolve({ data: [{ id: 1, name: 'My CONUS Preset' }, { id: 2, name: 'Night Watch' }] });
       return Promise.resolve({ data: {} });
@@ -245,7 +245,7 @@ describe('FetchTab Quick Fetch', () => {
   });
 
   it('clicking a preset chip calls the preset run endpoint', async () => {
-    mockApi.get.mockImplementation((url: string) => {
+    (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
       if (url === '/goes/fetch-presets') return Promise.resolve({ data: [{ id: 42, name: 'Storm Watch' }] });
       return Promise.resolve({ data: {} });

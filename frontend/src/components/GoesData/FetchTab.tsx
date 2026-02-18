@@ -159,26 +159,6 @@ export default function FetchTab() {
     },
   });
 
-  // Fetch latest
-  const fetchLatestMutation = useMutation({
-    mutationFn: () => {
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 3600000);
-      if (imageType !== 'single') {
-        return api.post('/goes/fetch-composite', {
-          satellite, sector, recipe: imageType,
-          start_time: oneHourAgo.toISOString(), end_time: now.toISOString(),
-        }).then((r) => r.data);
-      }
-      return api.post('/goes/fetch', {
-        satellite, sector, band,
-        start_time: oneHourAgo.toISOString(), end_time: now.toISOString(),
-      }).then((r) => r.data);
-    },
-    onSuccess: (data) => showToast('success', `Fetching latest: ${data.job_id}`),
-    onError: () => showToast('error', 'Failed to fetch latest'),
-  });
-
   // Fetch presets
   const { data: fetchPresets } = useQuery<FetchPreset[]>({
     queryKey: ['fetch-presets'],

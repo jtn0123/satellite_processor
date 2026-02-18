@@ -49,7 +49,7 @@ describe('LiveTab - Defensive Scenarios', () => {
     });
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Your Latest')).toBeInTheDocument();
+      expect(screen.getByText('LIVE')).toBeInTheDocument();
     });
   });
 

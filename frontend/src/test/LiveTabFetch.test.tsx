@@ -63,10 +63,10 @@ afterEach(() => {
 describe('LiveTab - Fetch & Auto-fetch', () => {
   it('auto-fetch triggers when enabled and catalog is newer than local', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch new frames')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
 
     // Enable auto-fetch
-    const checkbox = screen.getByText('Auto-fetch new frames').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     // Wait for the auto-fetch effect to fire
@@ -91,10 +91,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     });
 
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch new frames')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
 
     // Enable auto-fetch to trigger job
-    const checkbox = screen.getByText('Auto-fetch new frames').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
@@ -127,7 +127,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
   it('fetchNow posts to /goes/fetch', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Your Latest')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('LIVE')).toBeInTheDocument());
 
     // Try to find and click "Fetch now" if stale banner is visible
     await waitFor(() => {
@@ -144,10 +144,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
   it('fetchNow error shows error toast', async () => {
     mockedApi.post.mockRejectedValue(new Error('fail'));
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Your Latest')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('LIVE')).toBeInTheDocument());
 
     // Enable auto-fetch which will trigger fetchNow
-    const checkbox = screen.getByText('Auto-fetch new frames').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     // Should not crash even on error
@@ -164,10 +164,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     });
 
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch new frames')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
 
     // Enable auto-fetch
-    const checkbox = screen.getByText('Auto-fetch new frames').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());

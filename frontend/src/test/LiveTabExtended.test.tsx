@@ -65,10 +65,10 @@ describe('LiveTab extended', () => {
   it('has four control sections', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('Satellite')).toBeInTheDocument();
-      expect(screen.getByText('Sector')).toBeInTheDocument();
-      expect(screen.getByText('Band')).toBeInTheDocument();
-      expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
+      expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
+      expect(screen.getByLabelText('Sector')).toBeInTheDocument();
+      expect(screen.getByLabelText('Band')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
     });
   });
 

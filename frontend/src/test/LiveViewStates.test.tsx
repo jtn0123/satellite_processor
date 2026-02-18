@@ -186,9 +186,9 @@ describe('LiveViewStates', () => {
     setupMocks({ frames });
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText('Compare frames')).toBeInTheDocument();
+      expect(screen.getByText('Compare')).toBeInTheDocument();
     });
-    const checkbox = screen.getByText('Compare frames').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input')!;
     fireEvent.click(checkbox);
     await waitFor(() => {
       expect(screen.getByTestId('compare-slider')).toBeInTheDocument();
@@ -198,9 +198,9 @@ describe('LiveViewStates', () => {
   it('auto-refresh interval selector works', async () => {
     renderLive();
     await waitFor(() => {
-      expect(screen.getByLabelText('Auto-refresh')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
     });
-    const select = screen.getByLabelText('Auto-refresh') as HTMLSelectElement;
+    const select = screen.getByLabelText('Auto-refresh interval') as HTMLSelectElement;
     fireEvent.change(select, { target: { value: '60000' } });
     expect(select.value).toBe('60000');
   });
@@ -265,10 +265,10 @@ describe('LiveViewStates', () => {
     });
   });
 
-  it('renders Available Now catalog panel', async () => {
+  it('renders AWS Latest info in bottom overlay', async () => {
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText('Available Now')).toBeInTheDocument();
+      expect(screen.getByText('AWS Latest')).toBeInTheDocument();
     });
   });
 });

@@ -35,12 +35,17 @@ function FrameCardGrid({ frame, isSelected, onClick }: Readonly<Omit<FrameCardPr
         </div>
       </div>
       {/* Compact layout for narrow containers, expanded for wide */}
-      <div className="p-2 space-y-1 @max-[280px]:p-1.5 @max-[280px]:space-y-0.5">
-        <div className="text-xs font-medium text-gray-900 dark:text-white truncate text-shadow-overlay">
-          {frame.satellite} · {frame.band} · {frame.sector}
+      <div className="p-2 space-y-1.5 @max-[280px]:p-1.5 @max-[280px]:space-y-0.5">
+        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate text-shadow-overlay">
+          {new Date(frame.capture_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <span className="text-xs font-normal text-gray-400 dark:text-slate-500 ml-1.5">
+            {new Date(frame.capture_time).toLocaleDateString()}
+          </span>
         </div>
-        <div className="text-xs text-gray-400 dark:text-slate-500 @max-[280px]:hidden text-shadow-overlay">
-          {new Date(frame.capture_time).toLocaleString()}
+        <div className="flex gap-1 flex-wrap">
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] font-medium">{frame.satellite}</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium">{frame.band}</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[10px] font-medium">{frame.sector}</span>
         </div>
         <div className="text-xs text-gray-400 dark:text-slate-600">{formatBytes(frame.file_size)}</div>
         {(frame.tags ?? []).length > 0 && (

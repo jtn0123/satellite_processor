@@ -1,5 +1,6 @@
 """Health check endpoints."""
 
+import asyncio
 import os
 import re
 import shutil
@@ -217,6 +218,24 @@ async def changelog():
     return _parse_changelog()
 
 
+async def _check_worker() -> dict:
+    """Check Celery worker connectivity."""
+    try:
+        from ..celery_app import celery_app
+
+        def _inspect():
+            inspector = celery_app.control.inspect(timeout=2)
+            return inspector.active()
+
+        active = await asyncio.to_thread(_inspect)
+        if active:
+            worker_count = len(active)
+            return {"status": "ok", "workers": worker_count}
+        return {"status": "down", "workers": 0}
+    except Exception as exc:
+        return {"status": "unknown", "error": str(exc)}
+
+
 @router.get("/detailed")
 async def health_detailed():
     """Detailed health check with dependency status."""
@@ -225,6 +244,7 @@ async def health_detailed():
         "redis": await _check_redis(),
         "disk": _check_disk(),
         "storage": _check_storage_dirs(),
+        "worker": await _check_worker(),
     }
     return {
         "status": _derive_overall(checks),

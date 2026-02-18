@@ -17,6 +17,7 @@ from .config import settings as app_settings
 from .db.database import init_db
 from .errors import APIError, api_error_handler
 from .logging_config import RequestLoggingMiddleware, setup_logging
+from .middleware.correlation import CorrelationMiddleware
 from .metrics import (
     DISK_FREE_BYTES,
     DISK_USED_BYTES,
@@ -134,6 +135,7 @@ async def api_key_auth(request: Request, call_next):
 # Middleware stack (order matters — outermost first)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestBodyLimitMiddleware)
+app.add_middleware(CorrelationMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(

@@ -4,7 +4,8 @@ import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Column
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useMonitorWebSocket } from '../../hooks/useMonitorWebSocket';
-import MonitorSettingsPanel, { type MonitorPreset } from './MonitorSettingsPanel';
+import MonitorSettingsPanel from './MonitorSettingsPanel';
+import type { MonitorPreset } from './monitorPresets';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useImageZoom } from '../../hooks/useImageZoom';
 import PullToRefreshIndicator from './PullToRefreshIndicator';

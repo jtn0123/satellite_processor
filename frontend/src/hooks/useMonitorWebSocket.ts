@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { buildWsUrl } from '../api/ws';
 import { showToast } from '../utils/toast';
 
@@ -23,77 +23,79 @@ export function useMonitorWebSocket(
 ) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<FrameIngestEvent | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const filterRef = useRef(filter);
-  filterRef.current = filter;
   const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const cleanup = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setConnected(false);
-  }, []);
-
-  const connect = useCallback(() => {
-    if (!enabledRef.current) return;
-    cleanup();
-
-    const ws = new WebSocket(buildWsUrl('/ws/frames'));
-    wsRef.current = ws;
-
-    ws.onopen = () => setConnected(true);
-
-    ws.onclose = () => {
-      setConnected(false);
-      wsRef.current = null;
-      if (enabledRef.current) {
-        timerRef.current = setTimeout(connect, RECONNECT_DELAY);
-      }
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        if (parsed.type === 'frame_ingested') {
-          const f = filterRef.current;
-          const matches =
-            (!f?.satellite || f.satellite === parsed.satellite) &&
-            (!f?.sector || f.sector === parsed.sector) &&
-            (!f?.band || f.band === parsed.band);
-          if (matches) {
-            setLastEvent(parsed as FrameIngestEvent);
-            showToast(
-              'info',
-              `New frame: ${parsed.satellite} ${parsed.sector} ${parsed.band}`,
-            );
-          }
-        }
-      } catch {
-        // ignore parse errors
-      }
-    };
-  }, [cleanup]);
 
   useEffect(() => {
-    if (enabled) {
-      connect();
-    } else {
-      cleanup();
+    filterRef.current = filter;
+  }, [filter]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    let ws: WebSocket | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
+
+    function openConnection() {
+      if (disposed) return;
+
+      ws = new WebSocket(buildWsUrl('/ws/frames'));
+
+      ws.onopen = () => {
+        if (!disposed) setConnected(true);
+      };
+
+      ws.onclose = () => {
+        if (!disposed) {
+          setConnected(false);
+          ws = null;
+          if (enabledRef.current) {
+            timer = setTimeout(openConnection, RECONNECT_DELAY);
+          }
+        }
+      };
+
+      ws.onerror = () => {
+        ws?.close();
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed.type === 'frame_ingested') {
+            const f = filterRef.current;
+            const matches =
+              (!f?.satellite || f.satellite === parsed.satellite) &&
+              (!f?.sector || f.sector === parsed.sector) &&
+              (!f?.band || f.band === parsed.band);
+            if (matches) {
+              setLastEvent(parsed as FrameIngestEvent);
+              showToast(
+                'info',
+                `New frame: ${parsed.satellite} ${parsed.sector} ${parsed.band}`,
+              );
+            }
+          }
+        } catch {
+          // ignore parse errors
+        }
+      };
     }
-    return cleanup;
-  }, [enabled, connect, cleanup]);
+
+    openConnection();
+
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      if (ws) ws.close();
+      setConnected(false);
+    };
+  }, [enabled]);
 
   return { connected, lastEvent };
 }

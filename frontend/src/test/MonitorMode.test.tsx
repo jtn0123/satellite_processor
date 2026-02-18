@@ -7,7 +7,8 @@ vi.mock('../hooks/useMonitorWebSocket', () => ({
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
-import MonitorSettingsPanel, { MONITOR_PRESETS } from '../components/GoesData/MonitorSettingsPanel';
+import MonitorSettingsPanel from '../components/GoesData/MonitorSettingsPanel';
+import { MONITOR_PRESETS } from '../components/GoesData/monitorPresets';
 
 const defaultProps = {
   isMonitoring: false,

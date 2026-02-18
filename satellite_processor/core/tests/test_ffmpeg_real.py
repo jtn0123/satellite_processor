@@ -108,8 +108,7 @@ class TestFindFfmpeg:
     def test_found_in_path(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
         result = find_ffmpeg(testing=False)
-        # May find it in PATH or return None depending on env
-        # At minimum, should not raise
+        assert result is None or isinstance(result, Path)
 
 
 class TestWriteConcatFile:
@@ -155,7 +154,7 @@ class TestBuildFfmpegCommand:
         output = tmp_path / "out.mp4"
         cmd, temp_dir = build_ffmpeg_command("ffmpeg", tmp_path, output, {"fps": 30})
         assert cmd[0] == "ffmpeg"
-        assert str(output) in cmd[-1] or "out.mp4" in cmd[-1]
+        assert cmd[-1] == str(output)
 
     def test_with_metadata(self, tmp_path):
         for i in range(2):

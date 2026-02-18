@@ -45,7 +45,8 @@ class TestAddTimestamp:
         assert result is not None
         assert result.shape == sample_image.shape
         # Should not modify original
-        assert not np.array_equal(result, sample_image) or True  # small image may not show text
+        # Result should be a new array (copy), not the same object
+        assert result is not sample_image
 
     def test_with_filename(self, sample_image):
         result = ImageOperations.add_timestamp(sample_image, "20230615T143022Z.png")

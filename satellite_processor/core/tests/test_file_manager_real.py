@@ -1,6 +1,5 @@
 """Real tests for file_manager.py — uses tmp_path, minimal mocking."""
 
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -71,6 +70,7 @@ class TestFileManagerTempDir:
         td = fm.create_temp_dir()
         assert td.exists()
         fm.cleanup()
+        assert not td.exists()
 
 
 class TestFileManagerOutputPath:

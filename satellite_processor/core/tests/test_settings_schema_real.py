@@ -1,7 +1,5 @@
 """Real tests for settings_schema.py — no mocking."""
 
-import pytest
-
 from satellite_processor.core.settings_schema import (
     _crf_to_quality,
     from_core_settings,

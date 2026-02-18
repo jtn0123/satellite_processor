@@ -1,8 +1,5 @@
 """Real tests for settings_manager.py — uses tmp_path, no mocking."""
 
-import json
-import os
-
 import pytest
 
 from satellite_processor.core.settings_manager import SettingsManager

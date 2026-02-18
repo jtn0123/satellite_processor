@@ -2,8 +2,6 @@
 
 import time
 
-import pytest
-
 from satellite_processor.core.resource_monitor import ResourceMonitor
 
 

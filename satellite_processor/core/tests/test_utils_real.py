@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-import pytest
-
 from satellite_processor.core.utils import is_closing, parse_satellite_timestamp
 
 

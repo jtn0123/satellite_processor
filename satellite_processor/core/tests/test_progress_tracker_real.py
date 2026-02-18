@@ -1,7 +1,5 @@
 """Real tests for progress_tracker.py — no mocking."""
 
-import pytest
-
 from satellite_processor.core.progress_tracker import ProgressTracker
 
 
@@ -69,10 +67,18 @@ class TestProgressTracker:
         pt.update_progress("op", 50)
         assert msgs == []
 
-    def test_error_callback(self):
+    def test_error_callback_invoked(self):
         pt = ProgressTracker()
-        assert pt.on_error is None
+        errors = []
+        pt.on_error = lambda e: errors.append(e)
+        # Verify callback is set and callable
+        pt.on_error("test error")
+        assert errors == ["test error"]
 
-    def test_finished_callback(self):
+    def test_finished_callback_invoked(self):
         pt = ProgressTracker()
-        assert pt.on_finished is None
+        finished = []
+        pt.on_finished = lambda: finished.append(True)
+        # Verify callback is set and callable
+        pt.on_finished()
+        assert finished == [True]

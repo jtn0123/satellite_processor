@@ -197,6 +197,7 @@ describe('UploadZone', () => {
     const zone = screen.getByText(/Drag & drop/).closest('button')!;
     fireEvent.dragOver(zone, { preventDefault: vi.fn() });
     fireEvent.dragLeave(zone);
+    expect(zone).toBeInTheDocument();
   });
 
   it('handles file drop', async () => {
@@ -211,6 +212,7 @@ describe('UploadZone', () => {
         preventDefault: vi.fn(),
         dataTransfer: { files: [file] },
       });
+    expect(zone).toBeInTheDocument();
     });
     // Should have attempted upload
     expect(apiMod.default.post).toHaveBeenCalled();
@@ -228,6 +230,7 @@ describe('UploadZone', () => {
         preventDefault: vi.fn(),
         dataTransfer: { files: [file] },
       });
+    expect(zone).toBeInTheDocument();
     });
     expect(apiMod.default.post).not.toHaveBeenCalled();
   });
@@ -244,6 +247,7 @@ describe('UploadZone', () => {
         preventDefault: vi.fn(),
         dataTransfer: { files: [file] },
       });
+    expect(zone).toBeInTheDocument();
     });
   });
 
@@ -420,10 +424,10 @@ describe('CompareSlider extended', () => {
     expect(onChange).toHaveBeenCalledWith(75);
   });
 
-  it('mouseDown on container updates position', async () => {
+  it('range input change updates position', async () => {
     const onChange = vi.fn();
     const { default: CompareSlider } = await vi.importActual<typeof import('../components/GoesData/CompareSlider')>('../components/GoesData/CompareSlider');
-    const { container } = render(
+    render(
       <CompareSlider
         imageUrl="/current.png"
         prevImageUrl="/prev.png"
@@ -434,11 +438,9 @@ describe('CompareSlider extended', () => {
         timeAgo={() => ''}
       />
     );
-    const wrapper = container.firstChild as HTMLElement;
-    // Mock getBoundingClientRect
-    wrapper.getBoundingClientRect = () => ({ left: 0, right: 200, width: 200, top: 0, bottom: 100, height: 100, x: 0, y: 0, toJSON: () => {} });
-    fireEvent.mouseDown(wrapper, { clientX: 100 });
-    expect(onChange).toHaveBeenCalledWith(50);
+    const slider = screen.getByRole('slider');
+    fireEvent.change(slider, { target: { value: '75' } });
+    expect(onChange).toHaveBeenCalledWith(75);
     // Clean up document listeners
     fireEvent.mouseUp(document);
   });

@@ -66,6 +66,17 @@ function getOverlayPref(): boolean {
   try { return localStorage.getItem('live-overlay-visible') !== 'false'; } catch { return true; }
 }
 
+function computeFreshness(catalogLatest: CatalogLatest | undefined, frame: LatestFrame | undefined) {
+  if (!catalogLatest || !frame) return null;
+  const awsAge = timeAgo(catalogLatest.scan_time);
+  const localAge = timeAgo(frame.capture_time);
+  const awsMs = Date.now() - new Date(catalogLatest.scan_time).getTime();
+  const localMs = Date.now() - new Date(frame.capture_time).getTime();
+  const behind = localMs - awsMs;
+  const behindMin = Math.floor(behind / 60000);
+  return { awsAge, localAge, behindMin };
+}
+
 export default function LiveTab() {
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
@@ -223,15 +234,7 @@ export default function LiveTab() {
     ? `/api/download?path=${encodeURIComponent(prevFrame.thumbnail_path || prevFrame.file_path)}`
     : null;
 
-  const freshnessInfo = catalogLatest && frame ? (() => {
-    const awsAge = timeAgo(catalogLatest.scan_time);
-    const localAge = timeAgo(frame.capture_time);
-    const awsMs = Date.now() - new Date(catalogLatest.scan_time).getTime();
-    const localMs = Date.now() - new Date(frame.capture_time).getTime();
-    const behind = localMs - awsMs;
-    const behindMin = Math.floor(behind / 60000);
-    return { awsAge, localAge, behindMin };
-  })() : null;
+  const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
     <div ref={pullContainerRef} className="space-y-6">

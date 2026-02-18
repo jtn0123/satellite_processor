@@ -17,28 +17,6 @@ export default function CompareSlider({
 }: Readonly<CompareSliderProps>) {
   const compareContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleCompareSlider = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    const container = compareContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const getX = (ev: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
-      return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-    };
-    const move = (ev: MouseEvent | TouchEvent) => onPositionChange(getX(ev));
-    const up = () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
-      document.removeEventListener('touchmove', move);
-      document.removeEventListener('touchend', up);
-    };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    document.addEventListener('touchmove', move);
-    document.addEventListener('touchend', up);
-    onPositionChange(getX(e.nativeEvent));
-  }, [onPositionChange]);
-
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') {
       onPositionChange(Math.max(0, comparePosition - 1));
@@ -51,8 +29,6 @@ export default function CompareSlider({
     <div
       ref={compareContainerRef}
       className="relative w-full h-full select-none"
-      onMouseDown={handleCompareSlider}
-      onTouchStart={handleCompareSlider}
     >
       {/* Previous (background) */}
       {prevImageUrl ? (

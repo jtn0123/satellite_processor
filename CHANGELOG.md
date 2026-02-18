@@ -1,3 +1,15 @@
+# [1.11.0](https://github.com/jtn0123/satellite_processor/compare/v1.10.0...v1.11.0) (2026-02-18)
+
+
+### Bug Fixes
+
+* correct Live View fetch field names and mobile layout ([#158](https://github.com/jtn0123/satellite_processor/issues/158)) ([72875d2](https://github.com/jtn0123/satellite_processor/commit/72875d2666ad2319884d4841e9c2d2fdc30af7e9))
+
+
+### Features
+
+* monitor mode + smart fetch ([#157](https://github.com/jtn0123/satellite_processor/issues/157)) ([052d160](https://github.com/jtn0123/satellite_processor/commit/052d16011b7c1acbd9d45b278d360f84205e4bc6))
+
 # [1.10.0](https://github.com/jtn0123/satellite_processor/compare/v1.9.0...v1.10.0) (2026-02-18)
 
 

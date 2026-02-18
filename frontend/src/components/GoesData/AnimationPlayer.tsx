@@ -209,7 +209,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             setCurrentIndex(Number(e.target.value));
             setPlaying(false);
           }}
-          className="w-full h-2 accent-cyan-500 cursor-pointer"
+          className="w-full h-2 accent-sky-500 cursor-pointer"
           aria-label="Frame scrubber"
         />
 

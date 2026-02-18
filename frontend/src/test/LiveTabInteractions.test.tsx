@@ -291,7 +291,7 @@ describe('LiveTab - Interactions', () => {
     const mockRequestFullscreen = vi.fn().mockResolvedValue(undefined);
     const container = document.querySelector('[class*="relative bg-gray"]');
     if (container) {
-      (container as any).requestFullscreen = mockRequestFullscreen;
+      (container as unknown as Record<string, unknown>).requestFullscreen = mockRequestFullscreen;
     }
     fireEvent.click(screen.getByLabelText('Enter fullscreen'));
     expect(mockRequestFullscreen).toHaveBeenCalled();

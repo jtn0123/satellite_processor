@@ -55,9 +55,19 @@ describe('Layout - mobile drawer', () => {
     expect(showChangelog.length).toBeGreaterThan(0);
   });
 
-  it('renders Presets nav link', () => {
+  it('renders Live View nav link', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText('Presets').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Live View').length).toBeGreaterThan(0);
+  });
+
+  it('renders Animate nav link', () => {
+    render(<Layout />, { wrapper });
+    expect(screen.getAllByText('Animate').length).toBeGreaterThan(0);
+  });
+
+  it('renders Browse & Fetch nav link', () => {
+    render(<Layout />, { wrapper });
+    expect(screen.getAllByText('Browse & Fetch').length).toBeGreaterThan(0);
   });
 
   it('renders API Docs link', () => {

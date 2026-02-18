@@ -2,16 +2,15 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Upload,
   Cog,
   ListTodo,
   Cpu,
   Satellite,
-  FlaskConical,
+  Radio,
+  Sparkles,
   FileText,
   Menu,
   X,
-  BookOpen,
   Sun,
   Moon,
   HelpCircle,
@@ -25,11 +24,10 @@ import { useJobToasts } from '../hooks/useJobToasts';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/upload', icon: Upload, label: 'Upload' },
-  { to: '/process', icon: FlaskConical, label: 'Process' },
+  { to: '/live', icon: Radio, label: 'Live View' },
+  { to: '/goes', icon: Satellite, label: 'Browse & Fetch' },
+  { to: '/animate', icon: Sparkles, label: 'Animate' },
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },
-  { to: '/goes', icon: Satellite, label: 'GOES Data' },
-  { to: '/presets', icon: BookOpen, label: 'Presets' },
   { to: '/settings', icon: Cog, label: 'Settings' },
 ];
 

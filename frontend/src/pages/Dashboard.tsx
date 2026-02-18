@@ -4,9 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useStats, useHealthDetailed } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
-  Upload,
-  FlaskConical,
-  Image,
   ListTodo,
   Activity,
   HardDrive,
@@ -20,6 +17,7 @@ import {
   Satellite,
   Clock,
   Calendar,
+  Radio,
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import { formatBytes } from '../utils/format';
@@ -70,12 +68,6 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  const statCards = [
-    { label: 'Total Images', value: stats?.total_images ?? 0, icon: Image, color: 'text-sky-400' },
-    { label: 'Total Jobs', value: stats?.total_jobs ?? 0, icon: ListTodo, color: 'text-violet-400' },
-    { label: 'Active Jobs', value: stats?.active_jobs ?? 0, icon: Activity, color: 'text-amber-400' },
-  ];
-
   const storageUsed = stats?.storage?.used ?? 0;
   const storageTotal = stats?.storage?.total ?? 1;
   const storagePercent = Math.round((storageUsed / storageTotal) * 100);
@@ -84,6 +76,12 @@ export default function Dashboard() {
 
   const totalGoesFrames = goesStats?.total_frames ?? 0;
   const showOnboarding = !statsLoading && (stats?.total_images === 0) && totalGoesFrames === 0;
+
+  const statCards = [
+    { label: 'GOES Frames', value: totalGoesFrames, icon: Satellite, color: 'text-sky-400' },
+    { label: 'Total Jobs', value: stats?.total_jobs ?? 0, icon: ListTodo, color: 'text-violet-400' },
+    { label: 'Active Jobs', value: stats?.active_jobs ?? 0, icon: Activity, color: 'text-amber-400' },
+  ];
 
   const [fetchingLatest, setFetchingLatest] = useState(false);
   const handleFetchLatest = async () => {
@@ -364,25 +362,25 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-space-800/70 border border-primary/20 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Rocket className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Getting Started with Processing</h2>
+            <h2 className="text-lg font-semibold">Getting Started</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
-            <Link to="/upload" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+            <Link to="/live" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                <Upload className="w-5 h-5 text-primary" />
+                <Radio className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">1. Upload satellite images</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Upload PNG, TIFF, or JPEG satellite imagery</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">1. Watch live imagery</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">See real-time GOES satellite feeds</p>
               </div>
             </Link>
-            <Link to="/process" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
+            <Link to="/goes" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
               <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                <FlaskConical className="w-5 h-5 text-violet-400" />
+                <Satellite className="w-5 h-5 text-violet-400" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">2. Create a processing job</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Select images and configure processing parameters</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">2. Browse & fetch frames</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Download and explore satellite imagery</p>
               </div>
             </Link>
             <Link to="/jobs" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
@@ -390,27 +388,41 @@ export default function Dashboard() {
                 <Download className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">3. Download results</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Monitor jobs and download processed outputs</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">3. Monitor jobs</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Track fetch and processing jobs</p>
               </div>
             </Link>
           </div>
         </div>
       )}
 
+      {/* View Live quick-link */}
+      <Link
+        to="/live"
+        className="flex items-center gap-4 p-5 bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl hover:bg-gray-50 dark:hover:bg-space-700 transition-colors group"
+      >
+        <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+          <Radio className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900 dark:text-white">View Live</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Watch real-time satellite imagery</p>
+        </div>
+      </Link>
+
       {/* Quick actions */}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <button
-          onClick={() => navigate('/upload')}
+          onClick={() => navigate('/goes')}
           className="flex items-center gap-2 px-5 py-2.5 min-h-11 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >
-          <Upload className="w-4 h-4" /> Upload Images
+          <Download className="w-4 h-4" /> Browse & Fetch
         </button>
         <button
-          onClick={() => navigate('/process')}
+          onClick={() => navigate('/animate')}
           className="flex items-center gap-2 px-5 py-2.5 min-h-11 bg-space-700 hover:bg-space-600 border border-gray-200 dark:border-space-700/50 rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >
-          <FlaskConical className="w-4 h-4" /> New Job
+          <Satellite className="w-4 h-4" /> Create Animation
         </button>
       </div>
 

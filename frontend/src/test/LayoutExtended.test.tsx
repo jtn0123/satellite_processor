@@ -14,14 +14,14 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('Layout extended', () => {
-  it('renders GOES Data nav link', () => {
+  it('renders Browse & Fetch nav link', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText(/GOES/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Browse & Fetch/i).length).toBeGreaterThan(0);
   });
 
-  it('renders Process nav link', () => {
+  it('renders Live View nav link', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText(/Process/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Live View/i).length).toBeGreaterThan(0);
   });
 
   it('has theme toggle button', () => {

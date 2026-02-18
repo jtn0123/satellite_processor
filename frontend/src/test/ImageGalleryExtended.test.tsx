@@ -43,7 +43,9 @@ describe('ImageGallery - lightbox', () => {
   it('closes lightbox on close button click', () => {
     render(<ImageGallery />, { wrapper });
     fireEvent.click(screen.getByText('test.png'));
-    fireEvent.click(screen.getByLabelText('Close preview'));
+    // There are two "Close preview" buttons - the visible X button and the backdrop button
+    const closeButtons = screen.getAllByLabelText('Close preview');
+    fireEvent.click(closeButtons[closeButtons.length - 1]); // Click the visible close button
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -51,14 +53,15 @@ describe('ImageGallery - lightbox', () => {
     render(<ImageGallery />, { wrapper });
     fireEvent.click(screen.getByText('test.png'));
     const dialog = screen.getByRole('dialog');
-    fireEvent.keyDown(dialog, { key: 'Escape' });
+    fireEvent(dialog, new Event('cancel', { bubbles: false }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('closes lightbox on overlay click', () => {
     render(<ImageGallery />, { wrapper });
     fireEvent.click(screen.getByText('test.png'));
-    fireEvent.click(screen.getByRole('dialog'));
+    const backdropBtn = document.querySelector('dialog > button[aria-label="Close preview"]')!;
+    fireEvent.click(backdropBtn);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

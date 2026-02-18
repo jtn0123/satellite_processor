@@ -20,13 +20,13 @@ const makeFrame = (id: string) => ({
 });
 
 describe('SonarQube final fixes', () => {
-  describe('ImageViewer - role="application" and tabIndex', () => {
-    it('pan/zoom button has role="application"', () => {
+  describe('ImageViewer - pan/zoom button accessibility', () => {
+    it('pan/zoom button has no conflicting role', () => {
       const frame = makeFrame('1');
       render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
-      const panZoom = document.querySelector('[role="application"]');
-      expect(panZoom).toBeTruthy();
-      expect(panZoom!.tagName).toBe('BUTTON');
+      const panBtn = document.querySelector('button[aria-label*="Pan and zoom"]');
+      expect(panBtn).toBeTruthy();
+      expect(panBtn!.getAttribute('role')).toBeNull();
     });
 
     it('dialog does not have tabIndex on non-interactive element', () => {
@@ -37,41 +37,41 @@ describe('SonarQube final fixes', () => {
       expect(dialog?.hasAttribute('tabindex')).toBe(false);
     });
 
-    it('handles mouseMove and mouseUp on dialog without errors', () => {
+    it('handles mouseMove and mouseUp on image area without errors', () => {
       const frame = makeFrame('1');
       render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
-      const dialog = document.querySelector('dialog')!;
-      expect(dialog).toBeTruthy();
-      fireEvent.mouseMove(dialog, { clientX: 100, clientY: 100 });
-      fireEvent.mouseUp(dialog);
-      // Verify dialog and image remain rendered after mouse interactions
-      const img = dialog.querySelector('img');
+      // Image area is the flex container div holding nav buttons and the image
+      const img = document.querySelector('img[alt*="GOES-18"]')!;
       expect(img).toBeTruthy();
-      expect(img!.getAttribute('alt')).toContain('GOES-18');
+      const imageArea = img.closest('.flex-1')!;
+      expect(imageArea).toBeTruthy();
+      fireEvent.mouseMove(imageArea, { clientX: 100, clientY: 100 });
+      fireEvent.mouseUp(imageArea);
+      expect(img).toBeTruthy();
     });
   });
 
-  describe('WhatsNewModal - role="presentation" on backdrop', () => {
-    it('dialog has role="presentation" for backdrop overlay', () => {
+  describe('WhatsNewModal - native dialog usage', () => {
+    it('dialog has aria-label for accessibility', () => {
       render(<WhatsNewModal onClose={() => {}} />);
       const dialog = document.querySelector('dialog');
       expect(dialog).toBeTruthy();
-      expect(dialog!.getAttribute('role')).toBe('presentation');
+      expect(dialog!.getAttribute('aria-label')).toBe("What's New dialog");
     });
 
     it('closes when backdrop is clicked', () => {
       const onClose = vi.fn();
       render(<WhatsNewModal onClose={onClose} />);
-      const dialog = document.querySelector('dialog')!;
-      fireEvent.click(dialog);
+      const backdropBtn = document.querySelector('dialog > button[aria-label="Close dialog"]')!;
+      fireEvent.click(backdropBtn);
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('closes on Escape keydown', () => {
+    it('closes on Escape via cancel event', () => {
       const onClose = vi.fn();
       render(<WhatsNewModal onClose={onClose} />);
       const dialog = document.querySelector('dialog')!;
-      fireEvent.keyDown(dialog, { key: 'Escape' });
+      fireEvent(dialog, new Event('cancel', { bubbles: false }));
       expect(onClose).toHaveBeenCalled();
     });
 
@@ -92,13 +92,13 @@ describe('SonarQube final fixes', () => {
       expect(document.querySelector('dialog')).toBeNull();
     });
 
-    it('renders dialog with role="presentation" when opened via ? key', () => {
+    it('renders native dialog when opened via ? key', () => {
       render(<KeyboardShortcuts />);
       // The component listens for '?' key to open
       fireEvent.keyDown(document, { key: '?' });
       const dialog = document.querySelector('dialog');
       expect(dialog).not.toBeNull();
-      expect(dialog!.getAttribute('role')).toBe('presentation');
+      expect(dialog!.getAttribute('aria-label')).toBe('Keyboard shortcuts dialog');
     });
   });
 });

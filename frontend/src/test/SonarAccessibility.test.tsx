@@ -253,7 +253,7 @@ describe('ImageViewer accessibility', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const panArea = screen.getByLabelText('Pan and zoom area');
+    const panArea = screen.getByLabelText(/pan and zoom/i);
     expect(panArea).toBeTruthy();
     expect(panArea.tagName).toBe('BUTTON');
   });
@@ -302,7 +302,7 @@ describe('ImageViewer accessibility', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const panArea = screen.getByLabelText('Pan and zoom area');
+    const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: -100 });
 
     const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;

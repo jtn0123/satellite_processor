@@ -11,7 +11,9 @@ export default function PullToRefreshIndicator({
   isRefreshing,
   threshold = 80,
 }: Readonly<PullToRefreshIndicatorProps>) {
-  if (pullDistance <= 0 && !isRefreshing) return null;
+  if (pullDistance <= 0 && !isRefreshing) {
+    return null;
+  }
 
   const progress = Math.min(pullDistance / threshold, 1);
   const rotation = progress * 360;
@@ -24,7 +26,7 @@ export default function PullToRefreshIndicator({
       <div className="flex items-center justify-center">
         <RefreshCw
           className={`w-5 h-5 text-primary ${isRefreshing ? 'animate-spin' : ''}`}
-          style={!isRefreshing ? { transform: `rotate(${rotation}deg)` } : undefined}
+          style={isRefreshing ? undefined : { transform: `rotate(${rotation}deg)` }}
         />
         {isRefreshing && (
           <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">Refreshing...</span>

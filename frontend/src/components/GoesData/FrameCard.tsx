@@ -1,112 +1,218 @@
 import { memo } from 'react';
-import { Satellite, CheckCircle, Search } from 'lucide-react';
+import { Satellite, CheckCircle, Eye, Download } from 'lucide-react';
 import { formatBytes } from './utils';
 import type { GoesFrame } from './types';
+import LazyImage from './LazyImage';
+import FrameActionMenu from './FrameActionMenu';
 
-interface FrameCardProps {
+export interface FrameCardProps {
   frame: GoesFrame;
   isSelected: boolean;
   onClick: (frame: GoesFrame, e: React.MouseEvent) => void;
+  onView?: (frame: GoesFrame) => void;
+  onDownload?: (frame: GoesFrame) => void;
+  onCompare?: (frame: GoesFrame) => void;
+  onTag?: (frame: GoesFrame) => void;
+  onAddToCollection?: (frame: GoesFrame) => void;
+  onDelete?: (frame: GoesFrame) => void;
   viewMode: 'grid' | 'list';
 }
 
-function FrameCardGrid({ frame, isSelected, onClick }: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
+function formatCaptureTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = diffMs / 3600000;
+
+  if (diffH < 24) {
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function FrameCardGrid({
+  frame, isSelected, onClick, onView, onDownload, onCompare, onTag, onAddToCollection, onDelete,
+}: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
   return (
-    <button
-      type="button"
-      onClick={(e) => onClick(frame, e)}
-      aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
-      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden cursor-pointer transition-all inset-shadow-sm dark:inset-shadow-white/5 hover:bg-gray-100 dark:hover:bg-slate-800 dark:bg-slate-700 text-left w-full ${
-        isSelected ? 'border-primary ring-1 ring-primary glow-primary' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-gray-300 dark:border-slate-600'
+    <div
+      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden transition-all inset-shadow-sm dark:inset-shadow-white/5 ${
+        isSelected ? 'border-primary ring-1 ring-primary glow-primary' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
       }`}
     >
-      <div className="aspect-video bg-gray-100 dark:bg-slate-800 flex items-center justify-center relative group/img">
+      {/* Thumbnail area — clickable */}
+      <button
+        type="button"
+        onClick={(e) => onClick(frame, e)}
+        aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
+        className="w-full aspect-video bg-gray-100 dark:bg-slate-800 flex items-center justify-center relative group/img cursor-pointer"
+      >
         {frame.thumbnail_path ? (
-          <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+          <LazyImage
+            src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
             alt={`${frame.satellite} ${frame.band}`}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover" />
+            className="w-full h-full"
+          />
         ) : (
           <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-600" />
         )}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-          <Search className="w-6 h-6 text-gray-900 dark:text-white" />
-        </div>
-      </div>
-      {/* Compact layout for narrow containers, expanded for wide */}
-      <div className="p-2 space-y-1.5 @max-[280px]:p-1.5 @max-[280px]:space-y-0.5">
-        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate text-shadow-overlay">
-          {new Date(frame.capture_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          <span className="text-xs font-normal text-gray-400 dark:text-slate-500 ml-1.5">
-            {new Date(frame.capture_time).toLocaleDateString()}
+        {/* Selection indicator */}
+        {isSelected && (
+          <div className="absolute top-2 left-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+            <CheckCircle className="w-4 h-4 text-gray-900 dark:text-white" />
+          </div>
+        )}
+        {/* Satellite + Band badges overlaid on thumbnail */}
+        <div className="absolute bottom-2 left-2 flex gap-1">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white backdrop-blur-sm">
+            {frame.satellite}
+          </span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white backdrop-blur-sm">
+            {frame.band}
           </span>
         </div>
-        <div className="flex gap-1 flex-wrap">
-          <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] font-medium">{frame.satellite}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium">{frame.band}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[10px] font-medium">{frame.sector}</span>
+      </button>
+
+      {/* Card body */}
+      <div className="p-2.5 space-y-2">
+        {/* Capture time — prominent */}
+        <div className="text-sm font-medium text-gray-900 dark:text-white">
+          {formatCaptureTime(frame.capture_time)}
         </div>
-        <div className="text-xs text-gray-400 dark:text-slate-600">{formatBytes(frame.file_size)}</div>
+        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
+          <span>{frame.sector}</span>
+          <span>·</span>
+          <span>{formatBytes(frame.file_size)}</span>
+        </div>
+
+        {/* Tags */}
         {(frame.tags ?? []).length > 0 && (
-          <div className="flex gap-1 flex-wrap @max-[280px]:hidden">
+          <div className="flex gap-1 flex-wrap">
             {(frame.tags ?? []).map((t) => (
               <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
                 style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
             ))}
           </div>
         )}
-      </div>
-      {isSelected && (
-        <div className="absolute top-2 left-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-          <CheckCircle className="w-3.5 h-3.5 text-gray-900 dark:text-white" />
+
+        {/* Action row: primary visible, secondary in overflow */}
+        <div className="flex items-center justify-between pt-1 border-t border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-1">
+            {/* View — primary */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onView?.(frame); }}
+              className="flex items-center gap-1 px-2.5 py-1.5 min-h-[44px] text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="View frame"
+            >
+              <Eye className="w-3.5 h-3.5" /> View
+            </button>
+            {/* Download — primary */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDownload?.(frame); }}
+              className="flex items-center gap-1 px-2.5 py-1.5 min-h-[44px] text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Download frame"
+            >
+              <Download className="w-3.5 h-3.5" /> Download
+            </button>
+          </div>
+          {/* Overflow menu — secondary actions */}
+          <FrameActionMenu
+            onCompare={() => onCompare?.(frame)}
+            onTag={() => onTag?.(frame)}
+            onAddToCollection={() => onAddToCollection?.(frame)}
+            onDelete={() => onDelete?.(frame)}
+          />
         </div>
-      )}
-    </button>
+      </div>
+    </div>
   );
 }
 
-function FrameCardList({ frame, isSelected, onClick }: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
+function FrameCardList({
+  frame, isSelected, onClick, onView, onDownload, onCompare, onTag, onAddToCollection, onDelete,
+}: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
   return (
-    <button
-      type="button"
-      onClick={(e) => onClick(frame, e)}
-      aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
-      className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-colors min-h-[44px] text-left w-full ${
-        isSelected ? 'bg-primary/10 border border-primary/30 glow-primary' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:bg-slate-800/50'
+    <div
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors min-h-[44px] ${
+        isSelected ? 'bg-primary/10 border border-primary/30 glow-primary' : 'bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100/50 dark:hover:bg-slate-800/50'
       }`}
     >
-      <div className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
+      {/* Thumbnail */}
+      <button
+        type="button"
+        onClick={(e) => onClick(frame, e)}
+        className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer min-w-[44px] min-h-[44px]"
+        aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
+      >
         {frame.thumbnail_path ? (
-          <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-            alt={`${frame.satellite} ${frame.band} thumbnail`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          <LazyImage
+            src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+            alt={`${frame.satellite} ${frame.band} thumbnail`}
+            className="w-full h-full"
+          />
         ) : (
           <Satellite className="w-4 h-4 text-gray-400 dark:text-slate-600" />
         )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-gray-900 dark:text-white">{frame.satellite} · {frame.band} · {frame.sector}</div>
-        <div className="text-xs text-gray-400 dark:text-slate-500">{new Date(frame.capture_time).toLocaleString()}</div>
-      </div>
-      <div className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(frame.file_size)}</div>
-      {frame.width && frame.height && (
-        <div className="text-xs text-gray-400 dark:text-slate-600">{frame.width}×{frame.height}</div>
-      )}
-      <div className="flex gap-1">
+      </button>
+
+      {/* Info */}
+      <button type="button" onClick={(e) => onClick(frame, e)} className="flex-1 min-w-0 text-left cursor-pointer">
+        <div className="text-sm font-medium text-gray-900 dark:text-white">
+          {formatCaptureTime(frame.capture_time)}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500">
+          <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-slate-700 text-[10px] font-semibold">{frame.satellite}</span>
+          <span className="px-1 py-0.5 rounded bg-gray-200 dark:bg-slate-700 text-[10px] font-semibold">{frame.band}</span>
+          <span>{frame.sector}</span>
+          <span>·</span>
+          <span>{formatBytes(frame.file_size)}</span>
+        </div>
+      </button>
+
+      {/* Tags */}
+      <div className="hidden sm:flex gap-1">
         {(frame.tags ?? []).map((t) => (
           <span key={t.id} className="px-1.5 py-0.5 rounded text-[10px] text-gray-900 dark:text-white"
             style={{ backgroundColor: t.color + '40' }}>{t.name}</span>
         ))}
       </div>
-    </button>
+
+      {/* Primary actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button type="button" onClick={(e) => { e.stopPropagation(); onView?.(frame); }}
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-500 dark:text-slate-400"
+          aria-label="View frame">
+          <Eye className="w-4 h-4" />
+        </button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onDownload?.(frame); }}
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-500 dark:text-slate-400"
+          aria-label="Download frame">
+          <Download className="w-4 h-4" />
+        </button>
+        <FrameActionMenu
+          onCompare={() => onCompare?.(frame)}
+          onTag={() => onTag?.(frame)}
+          onAddToCollection={() => onAddToCollection?.(frame)}
+          onDelete={() => onDelete?.(frame)}
+        />
+      </div>
+
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center shrink-0">
+          <CheckCircle className="w-3.5 h-3.5 text-gray-900 dark:text-white" />
+        </div>
+      )}
+    </div>
   );
 }
 
-const FrameCard = memo(function FrameCard({ frame, isSelected, onClick, viewMode }: Readonly<FrameCardProps>) {
-  if (viewMode === 'list') {
-    return <FrameCardList frame={frame} isSelected={isSelected} onClick={onClick} />;
+const FrameCard = memo(function FrameCard(props: Readonly<FrameCardProps>) {
+  if (props.viewMode === 'list') {
+    return <FrameCardList {...props} />;
   }
-  return <FrameCardGrid frame={frame} isSelected={isSelected} onClick={onClick} />;
+  return <FrameCardGrid {...props} />;
 });
 
 export default FrameCard;

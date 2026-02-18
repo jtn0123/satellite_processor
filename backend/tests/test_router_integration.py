@@ -9,6 +9,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from app.db.models import (
     Animation,
     AnimationPreset,
@@ -167,31 +168,6 @@ def make_animation_preset(db, **kw):
     p = AnimationPreset(**defaults)
     db.add(p)
     return p
-
-
-# ── Fixtures for Redis/Celery mocking ───────────────────────
-
-@pytest.fixture(autouse=True)
-def mock_redis():
-    """Mock Redis to avoid connection errors in tests."""
-    from fakeredis import FakeAsyncRedis
-
-    fake = FakeAsyncRedis(decode_responses=True)
-    with patch("app.services.cache.get_redis_client", return_value=fake), \
-         patch("app.redis_pool.get_redis_client", return_value=fake):
-        yield fake
-
-
-@pytest.fixture(autouse=True)
-def mock_celery():
-    """Mock Celery task dispatch."""
-    mock_result = MagicMock()
-    mock_result.id = "fake-task-id"
-
-    with patch("app.celery_app.celery_app") as mock_app:
-        mock_app.send_task.return_value = mock_result
-        mock_app.control.revoke = MagicMock()
-        yield mock_app
 
 
 # ════════════════════════════════════════════════════════════

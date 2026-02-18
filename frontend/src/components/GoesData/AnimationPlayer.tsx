@@ -225,7 +225,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
 
           <button type="button"
             onClick={togglePlay}
-            className="p-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-3 bg-sky-600 hover:bg-sky-500 text-white rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label={playing ? 'Pause' : 'Play'}
           >
             {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
@@ -247,7 +247,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
                 onClick={() => setSpeed(s)}
                 className={`px-2 py-1 text-xs rounded min-h-[44px] min-w-[44px] flex items-center justify-center ${
                   speed === s
-                    ? 'bg-cyan-600 text-white'
+                    ? 'bg-sky-600 text-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
                 aria-label={`Speed ${s}x`}
@@ -262,7 +262,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             onClick={() => setLoop((l) => !l)}
             className={`p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center ${
               loop
-                ? 'text-cyan-400 bg-cyan-900/30'
+                ? 'text-sky-400 bg-sky-900/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700'
             }`}
             aria-label={loop ? 'Disable loop' : 'Enable loop'}

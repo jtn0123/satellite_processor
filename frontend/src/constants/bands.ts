@@ -11,7 +11,7 @@ export const BAND_INFO: Record<string, BandInfo> = {
   C02: { name: "Red", wavelength: "0.64μm", category: "Visible", color: "#ef4444", description: "Primary visible band, clouds & surface" },
   C03: { name: "Veggie", wavelength: "0.86μm", category: "Near-IR", color: "#22c55e", description: "Vegetation, burn scars, aerosols" },
   C04: { name: "Cirrus", wavelength: "1.37μm", category: "Near-IR", color: "#a855f7", description: "Cirrus cloud detection" },
-  C05: { name: "Snow/Ice", wavelength: "1.61μm", category: "Near-IR", color: "#06b6d4", description: "Snow/ice discrimination, cloud phase" },
+  C05: { name: "Snow/Ice", wavelength: "1.61μm", category: "Near-IR", color: "#0ea5e9", description: "Snow/ice discrimination, cloud phase" },
   C06: { name: "Cloud Particle", wavelength: "2.24μm", category: "Near-IR", color: "#f97316", description: "Cloud particle size, snow" },
   C07: { name: "Shortwave IR", wavelength: "3.9μm", category: "IR", color: "#dc2626", description: "Fire detection, fog at night" },
   C08: { name: "Upper Tropo WV", wavelength: "6.2μm", category: "IR", color: "#6366f1", description: "Upper-level water vapor, jets" },

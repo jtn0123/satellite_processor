@@ -86,7 +86,7 @@ export default function DashboardCharts({ goesStats, isLoading }: Readonly<Dashb
           {(() => {
             const entries = Object.entries(goesStats.storage_by_satellite);
             const maxVal = Math.max(...entries.map(([, v]) => v), 1);
-            const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
+            const colors = ['bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
             return entries.map(([sat, size], i) => (
               <div key={sat} className="flex items-center gap-3">
                 <span className="text-xs text-gray-500 dark:text-slate-400 w-20 truncate">{sat}</span>

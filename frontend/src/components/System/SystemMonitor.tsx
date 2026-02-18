@@ -10,7 +10,7 @@ export default function SystemMonitor() {
       label: 'CPU',
       value: status?.cpu_percent ?? 0,
       icon: Cpu,
-      color: '#06b6d4',
+      color: '#0ea5e9',
     },
     {
       label: 'RAM',

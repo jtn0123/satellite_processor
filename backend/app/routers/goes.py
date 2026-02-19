@@ -1,6 +1,7 @@
 """GOES satellite data endpoints."""
 
 import asyncio
+import atexit
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -38,6 +39,7 @@ router = APIRouter(prefix="/api/goes", tags=["goes"])
 
 # Bug #18: Dedicated thread pool for S3 operations
 _s3_executor = ThreadPoolExecutor(max_workers=4)
+atexit.register(_s3_executor.shutdown, wait=False)
 
 BAND_DESCRIPTIONS = {
     "C01": "Blue (0.47µm)", "C02": "Red (0.64µm)", "C03": "Veggie (0.86µm)",
@@ -679,17 +681,12 @@ async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_
 
     import mimetypes
 
-    from fastapi.responses import StreamingResponse
+    from starlette.responses import FileResponse
 
     media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
 
-    def _iter():
-        with open(file_path, "rb") as f:
-            while chunk := f.read(65536):
-                yield chunk
-
-    return StreamingResponse(
-        _iter(),
+    return FileResponse(
+        str(file_path),
         media_type=media_type,
         headers={"Cache-Control": "public, max-age=86400"},
     )

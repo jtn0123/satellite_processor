@@ -68,7 +68,13 @@ async def _load_from_db(db: AsyncSession) -> dict:
     rows = result.scalars().all()
 
     if rows:
-        return {row.key: row.value for row in rows}
+        data: dict = {}
+        for row in rows:
+            try:
+                data[row.key] = json.loads(row.value)
+            except (json.JSONDecodeError, TypeError):
+                data[row.key] = row.value
+        return data
 
     # DB empty — seed from file defaults (backward compat)
     defaults = _load_file_defaults()

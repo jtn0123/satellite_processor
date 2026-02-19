@@ -83,10 +83,10 @@ function StorageSection() {
               <div className="flex-1 h-3 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${colors[i % colors.length]}`}
-                  style={{ width: `${(info.size / maxSatSize) * 100}%` }}
+                  style={{ width: `${((info?.size ?? 0) / maxSatSize) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-gray-400 dark:text-slate-500 w-24 text-right">{formatBytes(info.size)} ({info.count})</span>
+              <span className="text-xs text-gray-400 dark:text-slate-500 w-24 text-right">{formatBytes(info?.size ?? 0)} ({info?.count ?? 0})</span>
             </div>
           ))}
         </div>
@@ -108,8 +108,8 @@ function StorageSection() {
                 {bandEntries.map(([band, info]) => (
                   <tr key={band} className="border-b border-gray-200 dark:border-slate-700/50">
                     <td className="py-1.5 pr-4 text-gray-600 dark:text-slate-300">{band}</td>
-                    <td className="py-1.5 pr-4 text-gray-500 dark:text-slate-400">{info.count.toLocaleString()}</td>
-                    <td className="py-1.5 text-gray-500 dark:text-slate-400">{formatBytes(info.size)}</td>
+                    <td className="py-1.5 pr-4 text-gray-500 dark:text-slate-400">{(info?.count ?? 0).toLocaleString()}</td>
+                    <td className="py-1.5 text-gray-500 dark:text-slate-400">{formatBytes(info?.size ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>

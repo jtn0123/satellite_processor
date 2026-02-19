@@ -173,7 +173,15 @@ jobs:
       - name: Run core processor tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --durations=10 --reruns 1 --cov-fail-under=0
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --reruns 1 --cov-fail-under=0
+
+      - name: Upload core coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage
+          path: core-coverage.xml
+          retention-days: 1
 
   frontend:
     name: Frontend Tests (Shard ${{ matrix.shard }}/2)
@@ -332,6 +340,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download backend coverage shards
+        id: dl-backend
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -343,6 +352,7 @@ jobs:
           find backend/ -mindepth 2 -name "*.xml" -exec mv {} backend/ \; 2>/dev/null || true
 
       - name: Download frontend coverage shards
+        id: dl-frontend
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -357,6 +367,14 @@ jobs:
             echo "TN:" > frontend/coverage/lcov.info
           fi
 
+      - name: Download core coverage
+        id: dl-core
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: core-coverage
+          path: .
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -369,6 +387,40 @@ jobs:
             python3 ../scripts/merge_coverage.py
           elif [ ! -f coverage.xml ]; then
             echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > coverage.xml
+          fi
+
+      - name: Cache backend coverage
+        uses: actions/cache@v4
+        with:
+          path: backend/coverage.xml
+          key: coverage-backend-${{ github.sha }}
+          restore-keys: coverage-backend-
+
+      - name: Cache frontend coverage
+        uses: actions/cache@v4
+        with:
+          path: frontend/coverage/lcov.info
+          key: coverage-frontend-${{ github.sha }}
+          restore-keys: coverage-frontend-
+
+      - name: Cache core coverage
+        uses: actions/cache@v4
+        with:
+          path: core-coverage.xml
+          key: coverage-core-${{ github.sha }}
+          restore-keys: coverage-core-
+
+      - name: Ensure coverage files exist (fallback placeholders)
+        run: |
+          if [ ! -f backend/coverage.xml ]; then
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > backend/coverage.xml
+          fi
+          if [ ! -f frontend/coverage/lcov.info ]; then
+            mkdir -p frontend/coverage
+            echo "TN:" > frontend/coverage/lcov.info
+          fi
+          if [ ! -f core-coverage.xml ]; then
+            echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>satellite_processor/core</source></sources><packages></packages></coverage>' > core-coverage.xml
           fi
 
       - name: SonarQube Scan

@@ -71,21 +71,11 @@ export default function GoesData() {
   usePageTitle('Browse & Fetch');
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabId | null;
-  const [activeTab, setActiveTab] = useState<TabId>(
-    tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse'
-  );
+  const activeTab: TabId = tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse';
   const [subView, setSubView] = useState<string | null>(null);
-
-  // Sync tab from URL on mount and URL changes
-  useEffect(() => {
-    if (tabFromUrl && allTabIds.includes(tabFromUrl)) {
-      setActiveTab((prev) => tabFromUrl !== prev ? tabFromUrl : prev);
-    }
-  }, [tabFromUrl]);
 
   // Wrap changeTab to also update URL
   const changeTab = useCallback((tab: TabId) => {
-    setActiveTab(tab);
     setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
   }, [setSearchParams]);
 

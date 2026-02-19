@@ -1,4 +1,4 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { buildWsUrl } from '../api/ws';
 
 type Status = 'connected' | 'reconnecting' | 'disconnected';
@@ -89,9 +89,9 @@ export default function ConnectionStatus() {
   const [hasConnected, setHasConnected] = useState(false);
   const cfg = statusConfig[status];
 
-  useEffect(() => {
-    if (status === 'connected') setHasConnected(true);
-  }, [status]);
+  if (status === 'connected' && !hasConnected) {
+    setHasConnected(true);
+  }
 
   // Before first successful connection, hide disconnected state
   if (status === 'disconnected' && !hasConnected) return null;

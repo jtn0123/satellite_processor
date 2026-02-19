@@ -5,12 +5,10 @@ They are placed in a separate module and only test pure-sync / unit logic
 to avoid event-loop conflicts with the async test fixtures.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 import app.main as main_module
+import pytest
 from app.main import WS_MAX_CONNECTIONS_PER_IP, _ws_track
 
 # ── Connection tracking (async unit tests) ─────────────────────────

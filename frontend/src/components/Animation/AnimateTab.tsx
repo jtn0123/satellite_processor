@@ -73,9 +73,9 @@ export default function AnimateTab() {
   // Set initial satellite from products API
   useEffect(() => {
     if (productsData?.default_satellite) {
-      setConfig((prev) => ({ ...prev, satellite: productsData.default_satellite! }));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default init
+      setConfig((prev) => prev.satellite === DEFAULT_CONFIG.satellite ? { ...prev, satellite: productsData.default_satellite! } : prev);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsData]);
 
   const updateConfig = useCallback((updates: Partial<AnimationConfig>) => {

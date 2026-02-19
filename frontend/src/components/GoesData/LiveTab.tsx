@@ -179,6 +179,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useEffect(() => {
     if (products && !satellite) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default init
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
   }, [products, satellite]);
@@ -198,7 +199,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     enabled: !!satellite,
   });
 
-  refetchRef.current = refetch;
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
 
   const { data: recentFrames } = useQuery<LatestFrame[]>({
     queryKey: ['goes-frames-compare', satellite, sector, band],
@@ -272,14 +275,14 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       try {
         document.exitFullscreen();
       } catch {
-        (document as any).webkitExitFullscreen?.();
+        (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
       }
       setIsFullscreen(false);
     } else {
       try {
         containerRef.current.requestFullscreen();
       } catch {
-        (containerRef.current as any).webkitRequestFullscreen?.();
+        (containerRef.current as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
       }
       setIsFullscreen(true);
     }

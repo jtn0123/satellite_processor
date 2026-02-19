@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type CSSProperties, type TouchEvent, type WheelEvent, type MouseEvent } from 'react';
+import { useState, useCallback, useRef, useEffect, type CSSProperties, type TouchEvent, type WheelEvent, type MouseEvent } from 'react';
 
 interface ZoomState {
   scale: number;
@@ -40,7 +40,9 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const isDragging = useRef(false);
 
   // Keep stateRef in sync
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const clampScale = useCallback((s: number) => Math.min(maxScale, Math.max(minScale, s)), [minScale, maxScale]);
 

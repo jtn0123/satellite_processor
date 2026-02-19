@@ -408,9 +408,17 @@ jobs:
       - name: Merge backend coverage
         working-directory: backend
         run: |
-          if ls coverage-shard*.xml 1>/dev/null 2>&1; then
+          echo "DEBUG: pwd=$(pwd)"
+          echo "DEBUG: ls *.xml:" && ls -la *.xml 2>&1 || true
+          echo "DEBUG: ls coverage-shard*.xml:" && ls -la coverage-shard*.xml 2>&1 || true
+          SHARDS=$(find . -maxdepth 1 -name "coverage-shard*.xml" 2>/dev/null | wc -l)
+          echo "DEBUG: Found $SHARDS shard files"
+          if [ "$SHARDS" -gt 0 ]; then
+            echo "Running merge_coverage.py..."
             python3 ../scripts/merge_coverage.py
+            echo "DEBUG: coverage.xml size: $(wc -c < coverage.xml 2>/dev/null || echo 'missing')"
           elif [ ! -f coverage.xml ]; then
+            echo "No shards and no coverage.xml — writing empty placeholder"
             echo '<?xml version="1.0" ?><coverage version="6" lines-valid="0" lines-covered="0" line-rate="0" branches-covered="0" branches-valid="0" branch-rate="0" timestamp="0" complexity="0"><sources><source>backend/app</source></sources><packages></packages></coverage>' > coverage.xml
           fi
 

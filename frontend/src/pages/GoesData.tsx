@@ -71,22 +71,11 @@ export default function GoesData() {
   usePageTitle('Browse & Fetch');
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabId | null;
-  const [activeTab, setActiveTab] = useState<TabId>(
-    tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse'
-  );
+  const activeTab: TabId = tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse';
   const [subView, setSubView] = useState<string | null>(null);
-
-  // Sync tab from URL on mount and URL changes
-  useEffect(() => {
-    if (tabFromUrl && allTabIds.includes(tabFromUrl) && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabFromUrl]);
 
   // Wrap changeTab to also update URL
   const changeTab = useCallback((tab: TabId) => {
-    setActiveTab(tab);
     setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
   }, [setSearchParams]);
 
@@ -98,14 +87,14 @@ export default function GoesData() {
       map[key] = () => { changeTab(id); setSubView(null); };
     });
     return map;
-  }, []);
+  }, [changeTab]);
 
   useHotkeys(shortcuts);
 
   const handleSwipe = useCallback((tab: TabId) => {
     changeTab(tab);
     setSubView(null);
-  }, []);
+  }, [changeTab]);
 
   const swipeRef = useSwipeTabs({
     tabs: allTabIds,
@@ -124,7 +113,7 @@ export default function GoesData() {
     };
     globalThis.addEventListener('switch-tab', handler);
     return () => globalThis.removeEventListener('switch-tab', handler);
-  }, []);
+  }, [changeTab]);
 
   // Listen for breadcrumb sub-view changes from child components
   useEffect(() => {

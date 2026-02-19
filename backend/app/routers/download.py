@@ -24,10 +24,14 @@ MAX_ZIP_FILES = 1000
 
 
 def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
-    """Stream zip creation without buffering entire archive in memory.
+    """Stream zip creation for job output downloads.
 
     Each tuple is (absolute_path, archive_name).
     Uses ZIP_STORED (no compression) so bytes can be yielded incrementally.
+
+    NOTE: This still buffers via BytesIO internally. For truly streaming ZIP
+    creation (needed for very large exports), consider migrating to zipstream-ng.
+    TODO: Replace with zipstream-ng for true streaming without memory buffering.
     """
     import io
 

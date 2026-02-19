@@ -66,7 +66,7 @@ async def _stale_job_checker():
                 if result["total"]:
                     logger.info("Stale job cleanup: %s", result)
         except Exception:
-            logger.debug("Stale job check failed", exc_info=True)
+            logger.warning("Stale job check failed", exc_info=True)
 
 
 @asynccontextmanager
@@ -85,7 +85,7 @@ async def lifespan(app: FastAPI):
             if result["total"]:
                 logger.info("Startup stale job cleanup: %s", result)
     except Exception:
-        logger.debug("Startup stale job check failed", exc_info=True)
+        logger.warning("Startup stale job check failed", exc_info=True)
 
     # Start periodic checker
     checker_task = asyncio.create_task(_stale_job_checker())
@@ -210,17 +210,19 @@ async def openapi_json():
 WS_PING_INTERVAL = 30  # seconds
 WS_MAX_CONNECTIONS_PER_IP = 10
 _ws_connections: dict[str, int] = {}  # ip -> count
+_ws_lock = asyncio.Lock()
 
 
-def _ws_track(ip: str, delta: int) -> bool:
+async def _ws_track(ip: str, delta: int) -> bool:
     """Track WS connections per IP. Returns False if limit exceeded on connect."""
-    count = _ws_connections.get(ip, 0) + delta
-    if delta > 0 and count > WS_MAX_CONNECTIONS_PER_IP:
-        return False
-    _ws_connections[ip] = max(0, count)
-    if _ws_connections[ip] == 0:
-        _ws_connections.pop(ip, None)
-    return True
+    async with _ws_lock:
+        count = _ws_connections.get(ip, 0) + delta
+        if delta > 0 and count > WS_MAX_CONNECTIONS_PER_IP:
+            return False
+        _ws_connections[ip] = max(0, count)
+        if _ws_connections[ip] == 0:
+            _ws_connections.pop(ip, None)
+        return True
 
 
 async def _ws_authenticate(websocket: WebSocket) -> bool:
@@ -275,7 +277,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         return
 
     client_ip = websocket.client.host if websocket.client else "unknown"
-    if not _ws_track(client_ip, 1):
+    if not await _ws_track(client_ip, 1):
         await websocket.close(code=4429, reason="Too many connections")
         return
 
@@ -299,7 +301,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     except WebSocketDisconnect:
         pass
     finally:
-        _ws_track(client_ip, -1)
+        await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(f"job:{job_id}")
         await pubsub.close()
 
@@ -313,6 +315,11 @@ GLOBAL_EVENT_CHANNEL = "sat_processor:events"
 async def global_events_websocket(websocket: WebSocket):
     """WebSocket for global events: new frames, schedule completions, etc."""
     if not await _ws_authenticate(websocket):
+        return
+
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    if not await _ws_track(client_ip, 1):
+        await websocket.close(code=4429, reason="Too many connections")
         return
 
     await websocket.accept()
@@ -346,6 +353,7 @@ async def global_events_websocket(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
     finally:
+        await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(GLOBAL_EVENT_CHANNEL)
         await pubsub.close()
 
@@ -359,6 +367,11 @@ async def status_websocket(websocket: WebSocket):
     if not await _ws_authenticate(websocket):
         return
 
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    if not await _ws_track(client_ip, 1):
+        await websocket.close(code=4429, reason="Too many connections")
+        return
+
     await websocket.accept()
     try:
         await websocket.send_json({"type": "connected"})
@@ -368,3 +381,5 @@ async def status_websocket(websocket: WebSocket):
             await websocket.send_json({"type": "ping"})
     except WebSocketDisconnect:
         pass
+    finally:
+        await _ws_track(client_ip, -1)

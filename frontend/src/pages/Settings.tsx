@@ -132,10 +132,31 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
     return () => clearTimeout(timer);
   }, [toast]);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = () => {
+    setSaveError(null);
+
+    // Validate bounds before saving
+    const fps = Number(form.video_fps ?? 24);
+    const crf = Number(form.video_quality ?? 23);
+    const maxFrames = Number(form.max_frames_per_fetch ?? 200);
+    if (fps < 1 || fps > 120 || !Number.isFinite(fps)) {
+      setSaveError('Video FPS must be between 1 and 120.');
+      return;
+    }
+    if (crf < 0 || crf > 51 || !Number.isFinite(crf)) {
+      setSaveError('Video Quality (CRF) must be between 0 and 51.');
+      return;
+    }
+    if (maxFrames < 50 || maxFrames > 1000 || !Number.isFinite(maxFrames)) {
+      setSaveError('Max Frames per Fetch must be between 50 and 1000.');
+      return;
+    }
+
     updateSettings.mutate(form, {
       onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
-      onError: () => setToast({ type: 'error', message: 'Failed to save settings.' }),
+      onError: () => setSaveError('Failed to save settings. Please try again.'),
     });
   };
 
@@ -258,6 +279,12 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
               )}
               Save Settings
             </button>
+            {saveError && (
+              <output className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-red-400/10 text-red-400">
+                <AlertCircle className="w-4 h-4" />
+                {saveError}
+              </output>
+            )}
             {toast && (
               <output
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2, Clock, Trash2, Download, Sliders, X, Film } from 'lucide-react';
 import api from '../../api/client';
@@ -14,7 +14,7 @@ import { SATELLITES, SECTORS, BANDS, QUICK_HOURS } from './types';
 import { extractArray } from '../../utils/safeData';
 
 const DEFAULT_CONFIG: AnimationConfig = {
-  satellite: 'GOES-16',
+  satellite: SATELLITES[0],
   sector: 'CONUS',
   band: 'C02',
   start_date: '',
@@ -29,13 +29,14 @@ const DEFAULT_CONFIG: AnimationConfig = {
 };
 
 /** Quick-start preset chips for common animation scenarios */
-function QuickStartChips({ onApply }: Readonly<{ onApply: (updates: Partial<AnimationConfig> & { hours?: number }) => void }>) {
+function QuickStartChips({ onApply, defaultSatellite }: Readonly<{ onApply: (updates: Partial<AnimationConfig> & { hours?: number }) => void; defaultSatellite: string }>) {
+  const sat = defaultSatellite || 'GOES-19';
   const chips = [
-    { label: '🌀 Hurricane Watch', satellite: 'GOES-16', sector: 'CONUS', band: 'C13', hours: 24, quality: 'high' as const },
-    { label: '🌅 Visible Timelapse', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', hours: 12, quality: 'medium' as const },
-    { label: '⚡ Storm Cell', satellite: 'GOES-16', sector: 'Meso1', band: 'C13', hours: 3, quality: 'high' as const },
-    { label: '🌍 Full Disk', satellite: 'GOES-16', sector: 'FullDisk', band: 'C13', hours: 6, quality: 'medium' as const },
-    { label: '🔥 Fire Watch', satellite: 'GOES-16', sector: 'CONUS', band: 'C07', hours: 6, quality: 'high' as const },
+    { label: '🌀 Hurricane Watch', satellite: sat, sector: 'CONUS', band: 'C13', hours: 24, quality: 'high' as const },
+    { label: '🌅 Visible Timelapse', satellite: sat, sector: 'CONUS', band: 'C02', hours: 12, quality: 'medium' as const },
+    { label: '⚡ Storm Cell', satellite: sat, sector: 'Meso1', band: 'C13', hours: 3, quality: 'high' as const },
+    { label: '🌍 Full Disk', satellite: sat, sector: 'FullDisk', band: 'C13', hours: 6, quality: 'medium' as const },
+    { label: '🔥 Fire Watch', satellite: sat, sector: 'CONUS', band: 'C07', hours: 6, quality: 'high' as const },
   ];
 
   return (
@@ -60,6 +61,22 @@ export default function AnimateTab() {
   const [sourceMode, setSourceMode] = useState<'filters' | 'collection'>('filters');
   const [collectionId, setCollectionId] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Fetch products to get default satellite
+  const { data: productsData } = useQuery<{ default_satellite?: string }>({
+    queryKey: ['goes-products'],
+    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    staleTime: 300_000,
+  });
+  const defaultSatellite = productsData?.default_satellite ?? 'GOES-19';
+
+  // Set initial satellite from products API
+  useEffect(() => {
+    if (productsData?.default_satellite) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default init
+      setConfig((prev) => prev.satellite === DEFAULT_CONFIG.satellite ? { ...prev, satellite: productsData.default_satellite! } : prev);
+    }
+  }, [productsData]);
 
   const updateConfig = useCallback((updates: Partial<AnimationConfig>) => {
     setConfig((prev) => ({ ...prev, ...updates }));
@@ -188,7 +205,7 @@ export default function AnimateTab() {
       {/* Quick-start chips */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400">Quick Start</h3>
-        <QuickStartChips onApply={handleQuickStartChip} />
+        <QuickStartChips onApply={handleQuickStartChip} defaultSatellite={defaultSatellite} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

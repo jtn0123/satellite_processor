@@ -284,16 +284,20 @@ export default function BrowseTab() {
   };
 
   return (
+    <div className="space-y-2">
+      {/* Mobile filter toggle — own row above the main flex layout */}
+      <div className="md:hidden flex justify-end">
+        <button
+          onClick={() => setShowBottomSheet(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-medium text-gray-600 dark:text-slate-300 min-h-[44px]"
+          aria-label="Toggle filters"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filters
+        </button>
+      </div>
+
     <div className="flex gap-6">
-      {/* Mobile filter toggle */}
-      <button
-        onClick={() => setShowBottomSheet(true)}
-        className="md:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-medium text-gray-600 dark:text-slate-300 mb-2 ml-auto min-h-[44px]"
-        aria-label="Toggle filters"
-      >
-        <SlidersHorizontal className="w-4 h-4" />
-        Filters
-      </button>
 
       {/* Desktop filter toggle (hidden) */}
       <button
@@ -593,6 +597,7 @@ export default function BrowseTab() {
           </button>
         </div>
       </BottomSheet>
+    </div>
     </div>
   );
 }

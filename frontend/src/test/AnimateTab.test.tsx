@@ -71,6 +71,9 @@ function setupDefaultMocks(animations: unknown[] = []) {
     if (url === '/goes/frames/preview-range') {
       return Promise.resolve({ data: { frames: [], total_count: 10, capture_interval_minutes: 10 } });
     }
+    if (url === '/goes/products') {
+      return Promise.resolve({ data: { satellites: ['GOES-16', 'GOES-18', 'GOES-19'], default_satellite: 'GOES-19' } });
+    }
     return Promise.resolve({ data: {} });
   });
   mockPost.mockResolvedValue({ data: { id: 'new-anim', status: 'pending' } });
@@ -85,7 +88,7 @@ describe('AnimateTab (Unified)', () => {
 
   it('renders satellite selector', () => {
     renderWithProviders(<AnimateTab />);
-    expect(screen.getByText(/GOES-16/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
   });
 
   it('renders quick hour buttons', () => {
@@ -315,7 +318,6 @@ describe('AnimateTab (Unified)', () => {
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith('/goes/animations/from-range', expect.objectContaining({
-        satellite: 'GOES-16',
         sector: 'CONUS',
         band: 'C02',
         fps: 10,

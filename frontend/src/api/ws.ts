@@ -1,5 +1,10 @@
 /**
  * Build a WebSocket URL with optional API key authentication.
+ *
+ * NOTE: The API key is passed as a query parameter here, which is visible in
+ * browser dev tools and server logs. This is acceptable for local development
+ * only. In production, Nginx injects the API key via header so VITE_API_KEY
+ * is not set and the key never appears in the URL.
  */
 export function buildWsUrl(path: string): string {
   const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';

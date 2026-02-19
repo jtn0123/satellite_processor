@@ -121,6 +121,9 @@ def catalog_latest(
                     }
         except Exception:
             logger.warning("Failed listing %s/%s", bucket, prefix, exc_info=True)
+        # Early exit: if we found results in this hour, no need to check older hours
+        if latest is not None:
+            break
 
     return latest
 

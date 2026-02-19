@@ -13,6 +13,7 @@ import PullToRefreshIndicator from './PullToRefreshIndicator';
 import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
+import { extractArray } from '../../utils/safeData';
 
 interface SatelliteAvailability {
   status: string;
@@ -81,6 +82,44 @@ function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame
   return { awsAge, localAge, behindMin };
 }
 
+function exitFullscreenSafe() {
+  try {
+    document.exitFullscreen();
+  } catch {
+    (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
+  }
+}
+
+function enterFullscreenSafe(el: HTMLElement) {
+  try {
+    el.requestFullscreen();
+  } catch {
+    (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
+  }
+}
+
+function shouldAutoFetch(
+  autoFetch: boolean,
+  catalogLatest: CatalogLatest | null | undefined,
+  frame: LatestFrame | null | undefined,
+  lastAutoFetchTime: string | null,
+  lastAutoFetchMs: number,
+): boolean {
+  if (!autoFetch || !catalogLatest || !frame) return false;
+  const catalogTime = new Date(catalogLatest.scan_time).getTime();
+  const localTime = new Date(frame.capture_time).getTime();
+  return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
+}
+
+function getSatelliteLabel(s: string, satelliteAvailability?: Record<string, SatelliteAvailability>): string {
+  const status = satelliteAvailability?.[s]?.status;
+  return status && status !== 'operational' ? `${s} (${status})` : s;
+}
+
+function isSectorUnavailable(sectorId: string, availableSectors?: string[]): boolean {
+  return !!availableSectors && !availableSectors.includes(sectorId);
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -99,8 +138,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const [monitoring, setMonitoring] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
+  const lastAutoFetchMs = useRef<number>(0);
 
   const zoom = useImageZoom();
+
+  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
 
   // Monitor mode: WebSocket for frame ingestion push notifications
   const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
@@ -110,19 +152,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     if (wsLastEvent && monitoring) {
       refetchRef.current?.();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsLastEvent]);
+  }, [wsLastEvent, monitoring]);
 
   const toggleMonitor = useCallback(() => {
     setMonitoring((v) => {
       const next = !v;
-      if (next) {
-        setAutoFetch(true);
-        showToast('success', 'Monitor mode activated');
-      } else {
-        setAutoFetch(false);
-        showToast('info', 'Monitor mode stopped');
-      }
+      setAutoFetch(next);
+      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
       onMonitorChange?.(next);
       return next;
     });
@@ -169,8 +205,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     onRefresh: handlePullRefresh,
   });
 
-  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
-
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
@@ -178,10 +212,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useEffect(() => {
     if (products && !satellite) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default init
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products]);
+  }, [products, satellite]);
 
   const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
     queryKey: ['goes-available', satellite],
@@ -198,7 +232,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     enabled: !!satellite,
   });
 
-  refetchRef.current = refetch;
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
 
   const { data: recentFrames } = useQuery<LatestFrame[]>({
     queryKey: ['goes-frames-compare', satellite, sector, band],
@@ -247,33 +283,30 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, catalogLatest]);
 
   useEffect(() => {
-    if (!autoFetch || !catalogLatest || !frame) return;
-    const catalogTime = new Date(catalogLatest.scan_time).getTime();
-    const localTime = new Date(frame.capture_time).getTime();
-    if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time) {
-      lastAutoFetchTime.current = catalogLatest.scan_time;
-      api.post('/goes/fetch', {
-        satellite: (satellite || catalogLatest.satellite).toUpperCase(),
-        sector: sector || catalogLatest.sector,
-        band: band || catalogLatest.band,
-        start_time: catalogLatest.scan_time,
-        end_time: catalogLatest.scan_time,
-      }).then((res) => {
-        setActiveJobId(res.data.job_id);
-        showToast('success', 'Auto-fetching new frame from AWS');
-      }).catch(() => {});
-    }
+    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTime.current, lastAutoFetchMs.current)) return;
+    lastAutoFetchTime.current = catalogLatest!.scan_time;
+    lastAutoFetchMs.current = Date.now();
+    api.post('/goes/fetch', {
+      satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+      sector: sector || catalogLatest!.sector,
+      band: band || catalogLatest!.band,
+      start_time: catalogLatest!.scan_time,
+      end_time: catalogLatest!.scan_time,
+    }).then((res) => {
+      setActiveJobId(res.data.job_id);
+      showToast('success', 'Auto-fetching new frame from AWS');
+    }).catch(() => {});
   }, [autoFetch, catalogLatest, frame, satellite, sector, band]);
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+    const isCurrentlyFullscreen = !!document.fullscreenElement;
+    if (isCurrentlyFullscreen) {
+      exitFullscreenSafe();
     } else {
-      containerRef.current.requestFullscreen();
-      setIsFullscreen(true);
+      enterFullscreenSafe(containerRef.current);
     }
+    setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 
   useEffect(() => {
@@ -286,11 +319,17 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [zoom]);
 
+  // Reset zoom when satellite/sector/band changes
+  useEffect(() => {
+    zoom.reset();
+  }, [satellite, sector, band, zoom]);
+
   const imageUrl = frame?.file_path
     ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`
     : null;
 
-  const prevFrame = recentFrames?.[1];
+  const recentFramesList = extractArray<LatestFrame>(recentFrames);
+  const prevFrame = recentFramesList?.[1];
   const prevImageUrl = prevFrame?.file_path
     ? `/api/download?path=${encodeURIComponent(prevFrame.thumbnail_path || prevFrame.file_path)}`
     : null;
@@ -330,18 +369,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           <div className="pointer-events-auto flex flex-wrap items-center gap-2 px-4 py-3">
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.satellites ?? []).map((s) => {
-                const avail = products?.satellite_availability?.[s];
-                const status = avail?.status;
-                const label = status && status !== 'operational' ? `${s} (${status})` : s;
-                return <option key={s} value={s} className="bg-space-900 text-white">{label}</option>;
-              })}
+              {(products?.satellites ?? []).map((s) => (
+                <option key={s} value={s} className="bg-space-900 text-white">{getSatelliteLabel(s, products?.satellite_availability)}</option>
+              ))}
             </select>
             <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Sector"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.sectors ?? []).map((s) => {
-                const unavailable = availability?.available_sectors && !availability.available_sectors.includes(s.id);
-                return <option key={s.id} value={s.id} disabled={!!unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
+                const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
+                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
               })}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
@@ -537,7 +573,22 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
       </div>
     );
   }
-  if (!imageUrl) return null;
+  if (!imageUrl) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-gray-400 dark:text-slate-500 py-8">
+        <Satellite className="w-12 h-12" />
+        <span className="text-sm font-medium">No frames loaded yet</span>
+        <span className="text-xs text-gray-400 dark:text-slate-600">Select a satellite, sector, and band above, then fetch imagery</span>
+        <button
+          onClick={() => onNavigateToFetch?.()}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Go to Fetch
+        </button>
+      </div>
+    );
+  }
   if (compareMode) {
     return (
       <CompareSlider

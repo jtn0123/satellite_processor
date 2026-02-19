@@ -242,7 +242,7 @@ def generate_animation(self, job_id: str, animation_id: str):
         anim.status = "completed"
         anim.output_path = str(output_path)
         anim.file_size = file_size
-        anim.duration_seconds = int(duration_seconds)
+        anim.duration_seconds = round(duration_seconds, 1)
         anim.completed_at = utcnow()
         session.commit()
 
@@ -255,10 +255,9 @@ def generate_animation(self, job_id: str, animation_id: str):
         _publish_progress(job_id, 100,
                           f"Animation complete: {len(frames)} frames", "completed")
 
-        shutil.rmtree(work_dir, ignore_errors=True)
-
     except Exception as e:
         logger.exception("Animation job %s failed", job_id)
+        session.rollback()
         _mark_animation_failed(session, animation_id, str(e))
         _update_job_db(
             job_id, status="failed", error=str(e),
@@ -268,3 +267,5 @@ def generate_animation(self, job_id: str, animation_id: str):
         raise
     finally:
         session.close()
+        if work_dir.exists():
+            shutil.rmtree(work_dir, ignore_errors=True)

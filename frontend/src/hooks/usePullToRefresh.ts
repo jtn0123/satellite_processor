@@ -33,6 +33,7 @@ export function usePullToRefresh({
     if (touchStartY.current === null) return;
     const dy = e.touches[0].clientY - touchStartY.current;
     if (dy > 0) {
+      e.preventDefault();
       setPullDistance(Math.min(dy * 0.5, threshold * 1.5));
     }
   }, [threshold]);
@@ -56,7 +57,7 @@ export function usePullToRefresh({
     const el = containerRef.current;
     if (!el) return;
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchmove', handleTouchMove, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
     el.addEventListener('touchend', handleTouchEnd, { passive: true });
     return () => {
       el.removeEventListener('touchstart', handleTouchStart);

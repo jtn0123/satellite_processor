@@ -128,7 +128,7 @@ describe('Settings - form interactions', () => {
     const saveBtn = await screen.findByText('Save Settings', {}, { timeout: 3000 });
     fireEvent.click(saveBtn);
     await waitFor(() => {
-      expect(screen.getByText('Failed to save settings.')).toBeInTheDocument();
+      expect(screen.getByText('Failed to save settings. Please try again.')).toBeInTheDocument();
     });
   });
 });

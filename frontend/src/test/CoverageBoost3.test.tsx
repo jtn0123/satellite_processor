@@ -587,47 +587,50 @@ describe('ProcessingForm – full coverage', () => {
     wrap(<ProcessingForm selectedImages={['img1']} />);
     // Enable crop
     const toggleButtons = document.querySelectorAll('button[class*="rounded-full"]');
-    if (toggleButtons[0]) fireEvent.click(toggleButtons[0]);
+    expect(toggleButtons.length).toBeGreaterThan(0);
+    fireEvent.click(toggleButtons[0]);
 
     // Change crop X
     const inputs = screen.getAllByRole('spinbutton');
-    if (inputs.length > 0) {
-      fireEvent.change(inputs[0], { target: { value: '100' } });
-    }
+    expect(inputs.length).toBeGreaterThan(0);
+    fireEvent.change(inputs[0], { target: { value: '100' } });
+    expect(inputs[0]).toHaveValue(100);
   });
 
   it('changes false color method', () => {
     wrap(<ProcessingForm selectedImages={['img1']} />);
     // Enable false color
     const toggleButtons = document.querySelectorAll('button[class*="rounded-full"]');
-    if (toggleButtons[1]) fireEvent.click(toggleButtons[1]);
+    expect(toggleButtons.length).toBeGreaterThan(0);
+    fireEvent.click(toggleButtons[1]);
 
     // The select for false color method
     const selects = document.querySelectorAll('select');
-    if (selects.length > 0) {
-      fireEvent.change(selects[0], { target: { value: 'fire' } });
-    }
+    expect(selects.length).toBeGreaterThan(0);
+    fireEvent.change(selects[0], { target: { value: 'fire' } });
+    expect(selects[0]).toBeDefined();
   });
 
   it('changes timestamp position', () => {
     wrap(<ProcessingForm selectedImages={['img1']} />);
     // Timestamp is enabled by default
     const selects = document.querySelectorAll('select');
-    if (selects.length > 0) {
-      fireEvent.change(selects[0], { target: { value: 'top-right' } });
-    }
+    expect(selects.length).toBeGreaterThan(0);
+    fireEvent.change(selects[0], { target: { value: 'top-right' } });
+    expect(selects[0]).toBeDefined();
   });
 
   it('changes scale factor', () => {
     wrap(<ProcessingForm selectedImages={['img1']} />);
     // Enable scale
     const toggleButtons = document.querySelectorAll('button[class*="rounded-full"]');
-    if (toggleButtons[3]) fireEvent.click(toggleButtons[3]);
+    expect(toggleButtons.length).toBeGreaterThan(0);
+    fireEvent.click(toggleButtons[3]);
 
     const rangeInputs = document.querySelectorAll('input[type="range"]');
-    if (rangeInputs.length > 0) {
-      fireEvent.change(rangeInputs[0], { target: { value: '2' } });
-    }
+    expect(rangeInputs.length).toBeGreaterThan(0);
+    fireEvent.change(rangeInputs[0], { target: { value: '2' } });
+    expect(rangeInputs[0]).toBeDefined();
   });
 });
 

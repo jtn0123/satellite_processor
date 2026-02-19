@@ -362,7 +362,7 @@ def test_create_backfill_image_records(mock_db, tmp_path):
         "band": "C02",
         "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
     }])
-    session.add.assert_called_once()
+    assert session.add.call_count == 2  # Image + GoesFrame
     session.commit.assert_called_once()
     session.close.assert_called_once()
 

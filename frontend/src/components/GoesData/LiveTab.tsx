@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -85,6 +86,7 @@ interface LiveTabProps {
 }
 
 export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
+  const navigateFn = useNavigate();
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
@@ -296,7 +298,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
-    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] flex flex-col bg-black">
+    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-8rem)] flex flex-col bg-black">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
@@ -320,6 +322,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onPositionChange={setComparePosition}
           frameTime={frame?.capture_time ?? null}
           prevFrameTime={prevFrame?.capture_time ?? null}
+          onNavigateToFetch={() => navigateFn('/goes?tab=fetch')}
         />
 
         {/* Top controls overlay */}
@@ -501,9 +504,10 @@ interface ImagePanelContentProps {
   onPositionChange: (pos: number) => void;
   frameTime: string | null;
   prevFrameTime: string | null;
+  onNavigateToFetch?: () => void;
 }
 
-function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
+function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, onNavigateToFetch }: Readonly<ImagePanelContentProps>) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-slate-400">
@@ -523,7 +527,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
             globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
               detail: { satellite, sector, band },
             }));
-            globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+            onNavigateToFetch?.();
           }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
         >

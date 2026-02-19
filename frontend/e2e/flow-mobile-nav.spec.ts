@@ -44,7 +44,7 @@ test.describe('Mobile navigation', () => {
     await page.goto('/');
     const nav = page.locator('nav[aria-label="Mobile navigation"]');
     await nav.getByText('Live').click();
-    await expect(page).toHaveURL(/goes\?tab=live/);
+    await expect(page).toHaveURL(/\/live/);
   });
 
   test('mobile pages do not have horizontal overflow', async ({ page }) => {

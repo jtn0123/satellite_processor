@@ -550,7 +550,7 @@ export default function FetchTab() {
       {showConfirm && (
         <dialog
           open
-          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 m-0 w-full h-full max-w-none max-h-none [&::backdrop]{bg-black/50}"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 m-0 w-full h-full max-w-none max-h-none backdrop:bg-black/50"
           onCancel={() => setShowConfirm(false)}
           onClose={() => setShowConfirm(false)}
           aria-labelledby="confirm-title"

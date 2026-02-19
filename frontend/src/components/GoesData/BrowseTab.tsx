@@ -288,7 +288,7 @@ export default function BrowseTab() {
       {/* Mobile filter toggle */}
       <button
         onClick={() => setShowBottomSheet(true)}
-        className="md:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-medium text-gray-600 dark:text-slate-300 mb-2 absolute right-4 top-0 z-10 min-h-[44px]"
+        className="md:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-medium text-gray-600 dark:text-slate-300 mb-2 ml-auto min-h-[44px]"
         aria-label="Toggle filters"
       >
         <SlidersHorizontal className="w-4 h-4" />

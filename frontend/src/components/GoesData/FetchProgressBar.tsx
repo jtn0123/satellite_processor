@@ -34,7 +34,7 @@ export default function FetchProgressBar() {
   if (jobs.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-0 md:bottom-0 left-0 right-0 z-50 mb-[env(safe-area-inset-bottom)] max-md:bottom-16">
       <div className="bg-gray-900/95 dark:bg-slate-900/95 backdrop-blur border-t border-gray-700 dark:border-slate-700">
         {/* Main bar */}
         <button

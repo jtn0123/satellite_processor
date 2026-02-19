@@ -17,8 +17,13 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.getByRole('tab', { name: 'Fetch' })).toBeInTheDocument();
   });
 
-  it('Live tab is active on /goes with no tab param', () => {
+  it('Browse tab is active on /goes with no tab param', () => {
     renderNav('/goes');
+    expect(screen.getByRole('tab', { name: 'Browse' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Live tab is active on /live', () => {
+    renderNav('/live');
     expect(screen.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -32,8 +37,8 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.getByRole('tab', { name: 'Fetch' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Animate tab active on /goes?tab=animate', () => {
-    renderNav('/goes?tab=animate');
+  it('Animate tab active on /animate', () => {
+    renderNav('/animate');
     expect(screen.getByRole('tab', { name: 'Animate' })).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -81,7 +86,6 @@ describe('MobileBottomNav — extended', () => {
     renderNav();
     fireEvent.click(screen.getByRole('tab', { name: 'More' }));
     const closeButtons = screen.getAllByLabelText('Close more menu');
-    // The last one is the X button inside dialog
     fireEvent.click(closeButtons[closeButtons.length - 1]);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });

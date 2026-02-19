@@ -37,9 +37,9 @@ app.dependency_overrides[get_db] = override_get_db
 limiter.enabled = False
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_redis():
-    """Mock Redis globally to avoid connection errors in all tests."""
+    """Mock Redis to avoid connection errors (opt-in per test/class)."""
     from fakeredis import FakeAsyncRedis
 
     fake = FakeAsyncRedis(decode_responses=True)
@@ -51,9 +51,9 @@ def mock_redis():
         yield fake
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_celery():
-    """Mock Celery globally to avoid broker connection errors in all tests."""
+    """Mock Celery to avoid broker connection errors (opt-in per test/class)."""
     mock_result = MagicMock()
     mock_result.id = "fake-task-id"
 

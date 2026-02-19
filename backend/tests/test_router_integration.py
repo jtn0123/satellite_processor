@@ -9,7 +9,6 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.db.models import (
     Animation,
     AnimationPreset,
@@ -26,6 +25,8 @@ from app.db.models import (
     Preset,
     Tag,
 )
+
+pytestmark = pytest.mark.usefixtures("mock_redis", "mock_celery")
 
 # ── Factory helpers ──────────────────────────────────────────
 

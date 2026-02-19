@@ -346,10 +346,23 @@ jobs:
         with:
           pattern: backend-coverage-shard*
           path: backend/
+          merge-multiple: true
 
-      - name: Flatten backend coverage
+      - name: Debug backend coverage after download
+        run: |
+          echo "=== backend/ contents after download ==="
+          find backend/ -name "*.xml" -type f 2>/dev/null || echo "No XML files found"
+          ls -la backend/*.xml 2>/dev/null || echo "No XML files directly in backend/"
+
+      - name: Flatten backend coverage (fallback)
         run: |
           find backend/ -mindepth 2 -name "*.xml" -exec mv {} backend/ \; 2>/dev/null || true
+
+      - name: Debug backend coverage after flatten
+        run: |
+          echo "=== backend/ contents after flatten ==="
+          ls -la backend/*.xml 2>/dev/null || echo "No XML files in backend/"
+          ls -la backend/coverage-shard*.xml 2>/dev/null || echo "No coverage-shard*.xml in backend/"
 
       - name: Download frontend coverage shards
         id: dl-frontend
@@ -374,6 +387,18 @@ jobs:
         with:
           name: core-coverage
           path: .
+
+      - name: Debug all coverage files
+        run: |
+          echo "=== All coverage files ==="
+          echo "--- backend/ ---"
+          ls -la backend/coverage*.xml 2>/dev/null || echo "No coverage XML in backend/"
+          echo "--- core ---"
+          ls -la core-coverage.xml 2>/dev/null || echo "No core-coverage.xml at repo root"
+          echo "--- frontend ---"
+          ls -la frontend/coverage/lcov.info 2>/dev/null || echo "No frontend lcov.info"
+          echo "--- Full tree ---"
+          find . -name "coverage*" -not -path "./.git/*" -not -path "*/node_modules/*" 2>/dev/null
 
       - name: Set up Python
         uses: actions/setup-python@v6

@@ -232,9 +232,9 @@ class TestLatest:
         assert "2024-06" in data["capture_time"]
 
     async def test_latest_defaults(self, client, db):
-        _make_frame(db, satellite="GOES-16", sector="CONUS", band="C02")
+        _make_frame(db, satellite="GOES-19", sector="CONUS", band="C02")
         await db.commit()
-        # Defaults: satellite=GOES-16, sector=CONUS, band=C02
+        # Defaults: satellite=GOES-19, sector=CONUS, band=C02
         resp = await client.get("/api/goes/latest")
         assert resp.status_code == 200
 

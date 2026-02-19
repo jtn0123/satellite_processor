@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import DEFAULT_BAND, DEFAULT_SATELLITE, DEFAULT_SECTOR
+from ..config import DEFAULT_SATELLITE
 from ..db.database import get_db
 from ..db.models import Composite, GoesFrame, Job
 from ..errors import APIError, validate_uuid

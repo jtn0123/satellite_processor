@@ -217,7 +217,7 @@ jobs:
       POSTGRES_USER: sat
       POSTGRES_DB: satellite_processor
       API_KEY: test-api-key
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: '["http://localhost:3000"]'
     steps:
       - uses: actions/checkout@v6
 

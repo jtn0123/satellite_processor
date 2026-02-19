@@ -43,3 +43,4 @@ class TestIsClosing:
 
     def test_none_window(self):
         assert is_closing(None) is False
+# Coverage validation

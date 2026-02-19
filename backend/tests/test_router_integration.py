@@ -1639,3 +1639,4 @@ class TestHealth:
         resp = await client.get("/api/health/detailed")
         # May return 200 or 503 depending on services
         assert resp.status_code in (200, 503)
+# Coverage validation

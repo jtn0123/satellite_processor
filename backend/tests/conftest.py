@@ -1,5 +1,7 @@
 """Shared test fixtures for backend API tests."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 import pytest_asyncio
 from app.db.database import Base, get_db
@@ -33,6 +35,34 @@ app.dependency_overrides[get_db] = override_get_db
 
 # Disable rate limiting in tests
 limiter.enabled = False
+
+
+@pytest.fixture
+def mock_redis():
+    """Mock Redis to avoid connection errors (opt-in per test/class)."""
+    from fakeredis import FakeAsyncRedis
+
+    fake = FakeAsyncRedis(decode_responses=True)
+    with patch("app.redis_pool.get_redis_client", return_value=fake), \
+         patch("app.redis_pool.get_redis_pool", return_value=MagicMock()), \
+         patch("app.services.cache.get_redis_client", return_value=fake), \
+         patch("app.routers.health.get_redis_client", return_value=fake), \
+         patch("app.main.get_redis_client", return_value=fake):
+        yield fake
+
+
+@pytest.fixture
+def mock_celery():
+    """Mock Celery to avoid broker connection errors (opt-in per test/class)."""
+    mock_result = MagicMock()
+    mock_result.id = "fake-task-id"
+
+    with patch("app.routers.jobs.celery_app") as mock_app:
+        mock_app.send_task.return_value = mock_result
+        mock_app.control.revoke = MagicMock()
+        mock_app.control.inspect.return_value = MagicMock()
+        mock_app.conf = MagicMock()
+        yield mock_app
 
 
 @pytest_asyncio.fixture(autouse=True)

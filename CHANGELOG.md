@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/jtn0123/satellite_processor/compare/v1.11.1...v1.11.2) (2026-02-19)
+
+
+### Bug Fixes
+
+* **ci:** holistic SonarQube coverage pipeline fix ([#167](https://github.com/jtn0123/satellite_processor/issues/167)) ([24f3885](https://github.com/jtn0123/satellite_processor/commit/24f38854512ab4aff6e98fd03cd4cf8dcb933520))
+
 ## [1.11.1](https://github.com/jtn0123/satellite_processor/compare/v1.11.0...v1.11.1) (2026-02-19)
 
 

@@ -1,13 +1,6 @@
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi } from "vitest";
+import { renderHook } from '@testing-library/react';
 import { usePullToRefresh } from '../usePullToRefresh';
-
-function createTouchEvent(type: string, clientY: number): TouchEvent {
-  return new TouchEvent(type, {
-    touches: [{ clientX: 0, clientY, identifier: 0, target: document.body } as Touch],
-    bubbles: true,
-    cancelable: true,
-  });
-}
 
 describe('usePullToRefresh', () => {
   it('returns initial state', () => {

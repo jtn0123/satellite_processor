@@ -58,11 +58,10 @@ async def test_settings_write_roundtrip(client: AsyncClient):
 @pytest.mark.anyio
 async def test_jobs_accepts_goes_fetch_type(client: AsyncClient):
     """Bug #7 regression: goes_fetch should be an accepted job type."""
-    mock_task = MagicMock()
-    mock_task.delay.return_value = MagicMock(id="fake-task-id")
+    mock_send = MagicMock(return_value=MagicMock(id="fake-task-id"))
 
-    with patch("app.routers.jobs.process_image_task", mock_task), \
-         patch("app.routers.jobs.create_video_task", mock_task):
+    with patch("app.routers.jobs.celery_app") as mock_celery:
+        mock_celery.send_task = mock_send
         resp = await client.post(
             "/api/jobs",
             json={"name": "test-fetch", "job_type": "goes_fetch", "params": {}},

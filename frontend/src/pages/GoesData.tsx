@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Satellite,
   Download,
@@ -68,8 +69,26 @@ function CombinedStatsTab() {
 
 export default function GoesData() {
   usePageTitle('Browse & Fetch');
-  const [activeTab, setActiveTab] = useState<TabId>('browse');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTabState] = useState<TabId>(
+    tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse'
+  );
   const [subView, setSubView] = useState<string | null>(null);
+
+  // Sync tab from URL on mount and URL changes
+  useEffect(() => {
+    if (tabFromUrl && allTabIds.includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTabState(tabFromUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabFromUrl]);
+
+  // Wrap setActiveTab to also update URL
+  const setActiveTab = useCallback((tab: TabId) => {
+    setActiveTabState(tab);
+    setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
+  }, [setSearchParams]);
 
   // Keyboard shortcuts: 1-4 switch tabs
   const shortcuts = useMemo(() => {

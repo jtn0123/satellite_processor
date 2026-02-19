@@ -44,7 +44,7 @@ export function useMonitorWebSocket(
     function openConnection() {
       if (disposed) return;
 
-      ws = new WebSocket(buildWsUrl('/ws/frames'));
+      ws = new WebSocket(buildWsUrl('/ws/events'));
 
       ws.onopen = () => {
         if (!disposed) setConnected(true);
@@ -80,6 +80,16 @@ export function useMonitorWebSocket(
                 `New frame: ${parsed.satellite} ${parsed.sector} ${parsed.band}`,
               );
             }
+          } else if (parsed.type === 'job_completed') {
+            // A job completed — trigger refetch to pick up new frames
+            setLastEvent({
+              type: 'frame_ingested',
+              satellite: '',
+              sector: '',
+              band: '',
+              capture_time: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+            });
           }
         } catch {
           // ignore parse errors

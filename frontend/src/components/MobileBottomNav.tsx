@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Radio,
   Grid3X3,
@@ -13,10 +13,10 @@ import {
 } from 'lucide-react';
 
 const primaryTabs = [
-  { to: '/goes?tab=live', match: ['/goes'], label: 'Live', icon: Radio, tabParam: 'live' },
-  { to: '/goes?tab=browse', match: [], label: 'Browse', icon: Grid3X3, tabParam: 'browse' },
-  { to: '/goes?tab=fetch', match: [], label: 'Fetch', icon: Download, tabParam: 'fetch' },
-  { to: '/goes?tab=animate', match: [], label: 'Animate', icon: Sparkles, tabParam: 'animate' },
+  { to: '/live', label: 'Live', icon: Radio },
+  { to: '/goes', label: 'Browse', icon: Grid3X3 },
+  { to: '/goes?tab=fetch', label: 'Fetch', icon: Download },
+  { to: '/animate', label: 'Animate', icon: Sparkles },
 ];
 
 const moreLinks = [
@@ -30,20 +30,23 @@ const moreRoutes = new Set(['/', '/jobs', '/settings', '/upload', '/process', '/
 export default function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isMoreActive = moreRoutes.has(location.pathname);
 
-  const isTabActive = (label: string) => {
+  const isTabActive = (tab: typeof primaryTabs[number]) => {
     const path = location.pathname;
     const search = location.search;
     const tabParam = new URLSearchParams(search).get('tab');
-    // Match /goes with appropriate tab param, or direct route like /live
-    if (path === '/goes' && tabParam) {
-      return tabParam === label.toLowerCase();
-    }
-    if (path === `/${label.toLowerCase()}`) return true;
-    // Default: Live is active when on /goes with no tab param
-    if (path === '/goes' && !tabParam && label === 'Live') return true;
+
+    // Live tab: active on /live
+    if (tab.to === '/live') return path === '/live';
+    // Animate tab: active on /animate
+    if (tab.to === '/animate') return path === '/animate';
+    // Fetch tab: active on /goes with tab=fetch
+    if (tab.label === 'Fetch') return path === '/goes' && tabParam === 'fetch';
+    // Browse tab: active on /goes without tab param or with tab=browse
+    if (tab.label === 'Browse') return path === '/goes' && tabParam !== 'fetch';
     return false;
   };
 
@@ -121,15 +124,27 @@ export default function MobileBottomNav() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 flex items-center justify-around safe-bottom"
       >
         {primaryTabs.map((tab) => {
-          const active = isTabActive(tab.label);
+          const active = isTabActive(tab);
           return (
-            <NavLink
+            <button
               key={tab.label}
-              to={tab.to}
+              type="button"
               role="tab"
               aria-label={tab.label}
               aria-selected={active}
-              className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors ${
+              onClick={() => {
+                setMoreOpen(false);
+                // For fetch tab, navigate to /goes and dispatch switch-tab event
+                if (tab.label === 'Fetch') {
+                  navigate('/goes');
+                  setTimeout(() => {
+                    globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
+                  }, 0);
+                } else {
+                  navigate(tab.to);
+                }
+              }}
+              className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors border-none bg-transparent ${
                 active
                   ? 'text-primary'
                   : 'text-gray-500 dark:text-slate-400'
@@ -137,17 +152,17 @@ export default function MobileBottomNav() {
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
-            </NavLink>
+            </button>
           );
         })}
         <button
           type="button"
           role="tab"
           aria-label="More"
-          aria-selected={isMoreActive && !primaryTabs.some((t) => isTabActive(t.label))}
+          aria-selected={isMoreActive && !primaryTabs.some((t) => isTabActive(t))}
           onClick={toggleMore}
           className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors ${
-            isMoreActive && !primaryTabs.some((t) => isTabActive(t.label))
+            isMoreActive && !primaryTabs.some((t) => isTabActive(t))
               ? 'text-primary'
               : 'text-gray-500 dark:text-slate-400'
           }`}

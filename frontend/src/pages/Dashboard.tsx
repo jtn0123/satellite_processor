@@ -18,6 +18,7 @@ import {
   Clock,
   Calendar,
   Radio,
+  Loader2,
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import { formatBytes } from '../utils/format';
@@ -187,7 +188,7 @@ export default function Dashboard() {
             data-testid="dashboard-fetch-latest"
             className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            <Satellite className="w-5 h-5" />
+            {fetchingLatest ? <Loader2 className="w-5 h-5 animate-spin" /> : <Satellite className="w-5 h-5" />}
             {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
           </button>
         </div>
@@ -240,7 +241,7 @@ export default function Dashboard() {
             data-testid="dashboard-fetch-latest"
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            <Satellite className="w-5 h-5" />
+            {fetchingLatest ? <Loader2 className="w-5 h-5 animate-spin" /> : <Satellite className="w-5 h-5" />}
             {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
           </button>
 
@@ -343,7 +344,7 @@ export default function Dashboard() {
               data-testid="dashboard-fetch-latest"
               className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              <Satellite className="w-5 h-5" />
+              {fetchingLatest ? <Loader2 className="w-5 h-5 animate-spin" /> : <Satellite className="w-5 h-5" />}
               {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
             </button>
             <button

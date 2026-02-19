@@ -63,7 +63,7 @@ const STEPS = ['Source', 'What', 'When'] as const;
 
 export default function FetchTab() {
   const [step, setStep] = useState(0);
-  const [satellite, setSatellite] = useState('GOES-19');
+  const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('FullDisk');
   const [band, setBand] = useState('C02');
   const [imageType, setImageType] = useState<ImageType>('single');
@@ -90,6 +90,15 @@ export default function FetchTab() {
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
+
+  const defaultSat = products?.default_satellite ?? 'GOES-19';
+
+  useEffect(() => {
+    if (products && !satellite) {
+      setSatellite(defaultSat);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   const currentAvail = products?.satellite_availability?.[satellite];
   const dateStr = startTime ? startTime.slice(0, 10) : undefined;
@@ -202,13 +211,13 @@ export default function FetchTab() {
   };
 
   const quickChips = [
-    { label: 'CONUS Last Hour', fetches: [{ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 }] },
-    { label: 'CONUS Last 6hr', fetches: [{ satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 6 }] },
-    { label: 'Full Disk Latest', fetches: [{ satellite: 'GOES-19', sector: 'FullDisk', band: 'C02', hours: 1 }] },
+    { label: 'CONUS Last Hour', fetches: [{ satellite: defaultSat, sector: 'CONUS', band: 'C02', hours: 1 }] },
+    { label: 'CONUS Last 6hr', fetches: [{ satellite: defaultSat, sector: 'CONUS', band: 'C02', hours: 6 }] },
+    { label: 'Full Disk Latest', fetches: [{ satellite: defaultSat, sector: 'FullDisk', band: 'C02', hours: 1 }] },
     { label: 'All Bands 1hr', fetches: [
-      { satellite: 'GOES-19', sector: 'CONUS', band: 'C01', hours: 1 },
-      { satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours: 1 },
-      { satellite: 'GOES-19', sector: 'CONUS', band: 'C03', hours: 1 },
+      { satellite: defaultSat, sector: 'CONUS', band: 'C01', hours: 1 },
+      { satellite: defaultSat, sector: 'CONUS', band: 'C02', hours: 1 },
+      { satellite: defaultSat, sector: 'CONUS', band: 'C03', hours: 1 },
     ]},
   ];
 

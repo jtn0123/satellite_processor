@@ -98,14 +98,14 @@ export default function GoesData() {
       map[key] = () => { changeTab(id); setSubView(null); };
     });
     return map;
-  }, []);
+  }, [changeTab]);
 
   useHotkeys(shortcuts);
 
   const handleSwipe = useCallback((tab: TabId) => {
     changeTab(tab);
     setSubView(null);
-  }, []);
+  }, [changeTab]);
 
   const swipeRef = useSwipeTabs({
     tabs: allTabIds,
@@ -124,7 +124,7 @@ export default function GoesData() {
     };
     globalThis.addEventListener('switch-tab', handler);
     return () => globalThis.removeEventListener('switch-tab', handler);
-  }, []);
+  }, [changeTab]);
 
   // Listen for breadcrumb sub-view changes from child components
   useEffect(() => {

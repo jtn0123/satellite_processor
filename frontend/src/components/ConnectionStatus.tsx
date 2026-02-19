@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { buildWsUrl } from '../api/ws';
 
 type Status = 'connected' | 'reconnecting' | 'disconnected';
@@ -86,16 +86,20 @@ function getSnapshot() {
 
 export default function ConnectionStatus() {
   const status = useSyncExternalStore(subscribe, getSnapshot);
+  const [hasConnected, setHasConnected] = useState(false);
   const cfg = statusConfig[status];
 
-  // Don't show persistent "Reconnecting" or "Disconnected" — only show when connected
-  // This prevents the UI from showing a scary status when WS endpoint isn't available
-  if (status === 'disconnected') return null;
+  useEffect(() => {
+    if (status === 'connected') setHasConnected(true);
+  }, [status]);
+
+  // Before first successful connection, hide disconnected state
+  if (status === 'disconnected' && !hasConnected) return null;
 
   return (
     <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
       <span className={`w-2 h-2 rounded-full ${cfg.color} ${status === 'reconnecting' ? 'animate-pulse' : ''}`} />
-      {cfg.label}
+      {status === 'disconnected' ? 'Offline' : cfg.label}
     </div>
   );
 }

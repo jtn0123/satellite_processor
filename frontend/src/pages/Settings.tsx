@@ -132,10 +132,13 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
     return () => clearTimeout(timer);
   }, [toast]);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = () => {
+    setSaveError(null);
     updateSettings.mutate(form, {
       onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
-      onError: () => setToast({ type: 'error', message: 'Failed to save settings.' }),
+      onError: () => setSaveError('Failed to save settings. Please try again.'),
     });
   };
 
@@ -258,6 +261,12 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
               )}
               Save Settings
             </button>
+            {saveError && (
+              <output className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-red-400/10 text-red-400">
+                <AlertCircle className="w-4 h-4" />
+                {saveError}
+              </output>
+            )}
             {toast && (
               <output
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${

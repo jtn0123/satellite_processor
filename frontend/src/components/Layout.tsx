@@ -59,6 +59,7 @@ export default function Layout() {
       root.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
+    document.documentElement.style.transition = 'background-color 200ms, color 200ms';
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
@@ -81,7 +82,8 @@ export default function Layout() {
         setVersionInfo({ version, commit, display: `v${version}${sha}` });
         // Auto-open on new version
         const lastSeen = localStorage.getItem('whatsNewLastSeen');
-        if (version && version !== lastSeen) {
+        const toMajorMinor = (v: string) => v.split('.').slice(0, 2).join('.');
+        if (version && toMajorMinor(version) !== toMajorMinor(lastSeen ?? '')) {
           setHasNewVersion(true);
           setShowWhatsNew(true);
         }
@@ -218,50 +220,50 @@ export default function Layout() {
       )}
 
       {/* Mobile slide-out drawer */}
-      <dialog
-        ref={drawerRef}
-        open={drawerOpen}
-        aria-label="Navigation menu"
-        aria-modal="true"
-        className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform transition-transform duration-200 ease-out md:hidden p-0 m-0 max-h-none h-full ${
-          drawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-space-700/50">
-          <div className="flex items-center gap-2">
-            <Satellite className="w-5 h-5 text-primary" />
-            <span className="font-bold">SatTracker</span>
-          </div>
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <nav className="px-3 py-4 space-y-1">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.to === '/'}
-              onClick={closeDrawer}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] active:bg-primary/5 ${
-                  isActive
-                    ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border-l-2 border-transparent'
-                }`
-              }
-              aria-label={l.label}
+      {drawerOpen && (
+        <dialog
+          ref={drawerRef}
+          open
+          aria-label="Navigation menu"
+          aria-modal="true"
+          className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform translate-x-0 transition-transform duration-200 ease-out md:hidden p-0 m-0 max-h-none h-full"
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-space-700/50">
+            <div className="flex items-center gap-2">
+              <Satellite className="w-5 h-5 text-primary" />
+              <span className="font-bold">SatTracker</span>
+            </div>
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
+              aria-label="Close menu"
             >
-              <l.icon className="w-5 h-5" />
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
-      </dialog>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <nav className="px-3 py-4 space-y-1">
+            {links.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.to === '/'}
+                onClick={closeDrawer}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] active:bg-primary/5 ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border-l-2 border-transparent'
+                  }`
+                }
+                aria-label={l.label}
+              >
+                <l.icon className="w-5 h-5" />
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
+        </dialog>
+      )}
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">

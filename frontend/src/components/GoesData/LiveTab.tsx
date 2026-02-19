@@ -13,6 +13,7 @@ import PullToRefreshIndicator from './PullToRefreshIndicator';
 import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
+import { extractArray } from '../../utils/safeData';
 
 interface SatelliteAvailability {
   status: string;
@@ -99,6 +100,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const [monitoring, setMonitoring] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
+  const lastAutoFetchMs = useRef<number>(0);
 
   const zoom = useImageZoom();
 
@@ -250,8 +252,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     if (!autoFetch || !catalogLatest || !frame) return;
     const catalogTime = new Date(catalogLatest.scan_time).getTime();
     const localTime = new Date(frame.capture_time).getTime();
-    if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time) {
+    if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs.current > 30000) {
       lastAutoFetchTime.current = catalogLatest.scan_time;
+      lastAutoFetchMs.current = Date.now();
       api.post('/goes/fetch', {
         satellite: (satellite || catalogLatest.satellite).toUpperCase(),
         sector: sector || catalogLatest.sector,
@@ -268,10 +271,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
     if (document.fullscreenElement) {
-      document.exitFullscreen();
+      try {
+        document.exitFullscreen();
+      } catch {
+        (document as any).webkitExitFullscreen?.();
+      }
       setIsFullscreen(false);
     } else {
-      containerRef.current.requestFullscreen();
+      try {
+        containerRef.current.requestFullscreen();
+      } catch {
+        (containerRef.current as any).webkitRequestFullscreen?.();
+      }
       setIsFullscreen(true);
     }
   }, []);
@@ -286,11 +297,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [zoom]);
 
+  // Reset zoom when satellite/sector/band changes
+  useEffect(() => {
+    zoom.reset();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [satellite, sector, band]);
+
   const imageUrl = frame?.file_path
     ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`
     : null;
 
-  const prevFrame = recentFrames?.[1];
+  const recentFramesList = extractArray<LatestFrame>(recentFrames);
+  const prevFrame = recentFramesList?.[1];
   const prevImageUrl = prevFrame?.file_path
     ? `/api/download?path=${encodeURIComponent(prevFrame.thumbnail_path || prevFrame.file_path)}`
     : null;
@@ -537,7 +555,22 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
       </div>
     );
   }
-  if (!imageUrl) return null;
+  if (!imageUrl) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-gray-400 dark:text-slate-500 py-8">
+        <Satellite className="w-12 h-12" />
+        <span className="text-sm font-medium">No frames loaded yet</span>
+        <span className="text-xs text-gray-400 dark:text-slate-600">Select a satellite, sector, and band above, then fetch imagery</span>
+        <button
+          onClick={() => onNavigateToFetch?.()}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Go to Fetch
+        </button>
+      </div>
+    );
+  }
   if (compareMode) {
     return (
       <CompareSlider

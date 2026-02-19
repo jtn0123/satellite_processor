@@ -1,3 +1,10 @@
+## [1.11.3](https://github.com/jtn0123/satellite_processor/compare/v1.11.2...v1.11.3) (2026-02-19)
+
+
+### Bug Fixes
+
+* bug sweep — mobile nav, live view, fetch, and 10+ fixes ([#168](https://github.com/jtn0123/satellite_processor/issues/168)) ([ab585a0](https://github.com/jtn0123/satellite_processor/commit/ab585a0cc60b87f28278eaab1505df68810cfdff))
+
 ## [1.11.2](https://github.com/jtn0123/satellite_processor/compare/v1.11.1...v1.11.2) (2026-02-19)
 
 

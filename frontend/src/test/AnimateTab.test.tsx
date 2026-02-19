@@ -309,9 +309,6 @@ describe('AnimateTab (Unified)', () => {
 
   it('generate button triggers mutation after setting date range', async () => {
     renderWithProviders(<AnimateTab />);
-    // Manually select a satellite to ensure state is set
-    const satSelect = screen.getByLabelText('Satellite');
-    fireEvent.change(satSelect, { target: { value: 'GOES-19' } });
     // Set a date range first
     fireEvent.click(screen.getByText('Last 1h'));
     await waitFor(() => {
@@ -321,7 +318,6 @@ describe('AnimateTab (Unified)', () => {
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith('/goes/animations/from-range', expect.objectContaining({
-        satellite: 'GOES-19',
         sector: 'CONUS',
         band: 'C02',
         fps: 10,

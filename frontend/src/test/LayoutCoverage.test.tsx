@@ -7,10 +7,10 @@ vi.mock('../hooks/useWebSocket', () => ({ default: vi.fn(() => null) }));
 vi.mock('../hooks/useJobToasts', () => ({ useJobToasts: vi.fn() }));
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
-const mockGet = vi.fn(() => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
+const mockGet = vi.fn((_url?: string) => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
 vi.mock('../api/client', () => ({
   default: {
-    get: () => mockGet(),
+    get: (url: string) => mockGet(url),
   },
 }));
 

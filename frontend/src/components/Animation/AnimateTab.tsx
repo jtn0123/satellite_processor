@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: AnimationConfig = {
 
 /** Quick-start preset chips for common animation scenarios */
 function QuickStartChips({ onApply, defaultSatellite }: Readonly<{ onApply: (updates: Partial<AnimationConfig> & { hours?: number }) => void; defaultSatellite: string }>) {
-  const sat = defaultSatellite;
+  const sat = defaultSatellite || 'GOES-19';
   const chips = [
     { label: '🌀 Hurricane Watch', satellite: sat, sector: 'CONUS', band: 'C13', hours: 24, quality: 'high' as const },
     { label: '🌅 Visible Timelapse', satellite: sat, sector: 'CONUS', band: 'C02', hours: 12, quality: 'medium' as const },
@@ -72,10 +72,11 @@ export default function AnimateTab() {
 
   // Set initial satellite from products API
   useEffect(() => {
-    if (productsData?.default_satellite && !config.satellite) {
-      setConfig((prev) => ({ ...prev, satellite: prev.satellite || productsData.default_satellite! }));
+    if (productsData?.default_satellite) {
+      setConfig((prev) => ({ ...prev, satellite: productsData.default_satellite! }));
     }
-  }, [productsData, config.satellite]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsData]);
 
   const updateConfig = useCallback((updates: Partial<AnimationConfig>) => {
     setConfig((prev) => ({ ...prev, ...updates }));

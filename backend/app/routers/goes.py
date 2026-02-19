@@ -681,12 +681,7 @@ async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_
 
     import mimetypes
 
-    from starlette.responses import FileResponse
-
-    media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
-
-    return FileResponse(
-        str(file_path),
+atexit.register(_s3_executor.shutdown, wait=False)
         media_type=media_type,
         headers={"Cache-Control": "public, max-age=86400"},
     )

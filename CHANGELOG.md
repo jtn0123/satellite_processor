@@ -1,3 +1,10 @@
+## [1.11.5](https://github.com/jtn0123/satellite_processor/compare/v1.11.4...v1.11.5) (2026-02-19)
+
+
+### Bug Fixes
+
+* 10 production bugs + API contract validation ([#170](https://github.com/jtn0123/satellite_processor/issues/170)) ([ab7aa2a](https://github.com/jtn0123/satellite_processor/commit/ab7aa2a6b73d7bcbf1381ee2be78e0afbab3f15c))
+
 ## [1.11.4](https://github.com/jtn0123/satellite_processor/compare/v1.11.3...v1.11.4) (2026-02-19)
 
 

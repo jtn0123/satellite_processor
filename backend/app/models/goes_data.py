@@ -18,15 +18,24 @@ class GoesFrameResponse(BaseModel):
     sector: str
     band: str
     capture_time: datetime
-    file_path: str
     file_size: int
     width: int | None = None
     height: int | None = None
-    thumbnail_path: str | None = None
+    image_url: str | None = None
+    thumbnail_url: str | None = None
     source_job_id: str | None = None
     created_at: datetime | None = None
     tags: list[TagResponse] = []
     collections: list[CollectionBrief] = []
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """Override to inject image/thumbnail URLs from the ORM object."""
+        instance = super().model_validate(obj, **kwargs)
+        if instance.id:
+            instance.image_url = f"/api/goes/frames/{instance.id}/image"
+            instance.thumbnail_url = f"/api/goes/frames/{instance.id}/thumbnail"
+        return instance
 
 
 class FrameStatsResponse(BaseModel):

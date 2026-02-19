@@ -68,7 +68,13 @@ async def _load_from_db(db: AsyncSession) -> dict:
     rows = result.scalars().all()
 
     if rows:
-        return {row.key: row.value for row in rows}
+        data: dict = {}
+        for row in rows:
+            try:
+                data[row.key] = json.loads(row.value)
+            except (json.JSONDecodeError, TypeError):
+                data[row.key] = row.value
+        return data
 
     # DB empty — seed from file defaults (backward compat)
     defaults = _load_file_defaults()
@@ -81,6 +87,10 @@ async def _load_from_db(db: AsyncSession) -> dict:
 async def _save_to_db(db: AsyncSession, data: dict) -> None:
     """Upsert settings into the database."""
     for key, value in data.items():
+        # Bug #1: Ensure all values are JSON-serializable primitives.
+        # Dict/list values must be serialized to JSON strings for the text column.
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value)
         existing = (
             await db.execute(select(AppSetting).where(AppSetting.key == key))
         ).scalars().first()

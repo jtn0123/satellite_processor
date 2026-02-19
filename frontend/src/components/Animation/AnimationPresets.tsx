@@ -27,7 +27,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { start_date: _s, end_date: _e, name: _n, ...presetConfig } = config;
       return api
-        .post('/goes/animation-presets', { name: newName || 'Untitled Preset', config: presetConfig })
+        .post('/goes/animation-presets', { name: newName || 'Untitled Preset', ...presetConfig })
         .then((r) => r.data);
     },
     onSuccess: () => {

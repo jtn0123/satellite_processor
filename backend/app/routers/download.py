@@ -43,20 +43,15 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
             f"Requested {len(files)} files.",
         )
 
+    # Bug #7: Build entire ZIP in memory then yield once.
+    # The previous seek/truncate approach corrupted ZIP central directory offsets.
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
         for abs_path, arc_name in files:
             zf.write(abs_path, arc_name)
-            # Yield bytes written so far and reset buffer
-            data = buf.getvalue()
-            if data:
-                yield data
-            buf.seek(0)
-            buf.truncate(0)
-    # Final central directory bytes
-    remaining = buf.getvalue()
-    if remaining:
-        yield remaining
+    buf.seek(0)
+    while chunk := buf.read(65536):
+        yield chunk
 
 
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:

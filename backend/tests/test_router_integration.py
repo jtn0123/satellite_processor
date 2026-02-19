@@ -561,8 +561,8 @@ class TestGoesFrameExport:
         make_frame(db)
         await db.commit()
         resp = await client.get("/api/goes/frames/export?format=json")
-        # This returns 404 because 'export' is treated as an invalid frame_id
-        assert resp.status_code == 404
+        # Route ordering is now fixed — export route is reachable
+        assert resp.status_code == 200
 
 
 class TestGoesCollections:

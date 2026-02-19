@@ -1,7 +1,9 @@
 """GOES satellite data endpoints."""
 
 import asyncio
+import atexit
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Body, Depends, Query, Request
@@ -34,6 +36,10 @@ from ..services.goes_fetcher import (
 )
 
 router = APIRouter(prefix="/api/goes", tags=["goes"])
+
+# Bug #18: Dedicated thread pool for S3 operations
+_s3_executor = ThreadPoolExecutor(max_workers=4)
+atexit.register(_s3_executor.shutdown, wait=False)
 
 BAND_DESCRIPTIONS = {
     "C01": "Blue (0.47µm)", "C02": "Red (0.64µm)", "C03": "Veggie (0.86µm)",
@@ -135,7 +141,7 @@ async def catalog(
 
     async def _fetch():
         loop = asyncio.get_event_loop()
-        items = await loop.run_in_executor(None, lambda: catalog_list(satellite, sector, band, dt))
+        items = await loop.run_in_executor(_s3_executor, lambda: catalog_list(satellite, sector, band, dt))
         return {"items": items, "total": len(items)}
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
@@ -156,7 +162,7 @@ async def catalog_latest(
 
     async def _fetch():
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: _catalog_latest(satellite, sector, band))
+        return await loop.run_in_executor(_s3_executor, lambda: _catalog_latest(satellite, sector, band))
 
     result = await get_cached(cache_key, ttl=60, fetch_fn=_fetch)
     if not result:
@@ -177,7 +183,7 @@ async def catalog_available(
 
     async def _fetch():
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: _catalog_available(satellite))
+        return await loop.run_in_executor(_s3_executor, lambda: _catalog_available(satellite))
 
     return await get_cached(cache_key, ttl=120, fetch_fn=_fetch)
 
@@ -375,6 +381,7 @@ async def detect_gaps(
     request: Request,
     satellite: str | None = Query(None),
     band: str | None = Query(None),
+    sector: str | None = Query(None),
     expected_interval: float = Query(10.0, ge=0.5, le=60.0),
     db: AsyncSession = Depends(get_db),
 ):
@@ -383,6 +390,7 @@ async def detect_gaps(
         db,
         satellite=satellite,
         band=band,
+        sector=sector,
         expected_interval=expected_interval,
     )
     return stats
@@ -443,7 +451,7 @@ async def estimate_frame_count(
 
     loop = asyncio.get_event_loop()
     available = await loop.run_in_executor(
-        None, lambda: list_available(satellite, sector, band, start_time, end_time)
+        _s3_executor, lambda: list_available(satellite, sector, band, start_time, end_time)
     )
     return {"count": len(available)}
 
@@ -514,11 +522,11 @@ async def get_latest_frame(
         "sector": frame.sector,
         "band": frame.band,
         "capture_time": frame.capture_time.isoformat() if frame.capture_time else None,
-        "file_path": frame.file_path,
         "file_size": frame.file_size,
         "width": frame.width,
         "height": frame.height,
-        "thumbnail_path": frame.thumbnail_path,
+        "image_url": f"/api/goes/frames/{frame.id}/image",
+        "thumbnail_url": f"/api/goes/frames/{frame.id}/thumbnail",
     }
 
 
@@ -618,11 +626,12 @@ async def list_composites(
             satellite=c.satellite,
             sector=c.sector,
             capture_time=c.capture_time.isoformat() if c.capture_time else None,
-            file_path=c.file_path,
+            file_path=None,
             file_size=c.file_size,
             status=c.status,
             error=c.error,
             created_at=c.created_at.isoformat() if c.created_at else None,
+            image_url=f"/api/goes/composites/{c.id}/image" if c.file_path else None,
         )
         for c in composites
     ]
@@ -644,9 +653,40 @@ async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
         "satellite": c.satellite,
         "sector": c.sector,
         "capture_time": c.capture_time.isoformat() if c.capture_time else None,
-        "file_path": c.file_path,
         "file_size": c.file_size,
         "status": c.status,
         "error": c.error,
         "created_at": c.created_at.isoformat() if c.created_at else None,
+        "image_url": f"/api/goes/composites/{c.id}/image" if c.file_path else None,
     }
+
+
+# Bug #11: Dedicated composite image endpoint
+@router.get("/composites/{composite_id}/image")
+async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_db)):
+    """Serve the composite image file."""
+    validate_uuid(composite_id, "composite_id")
+    result = await db.execute(select(Composite).where(Composite.id == composite_id))
+    c = result.scalars().first()
+    if not c:
+        raise APIError(404, "not_found", "Composite not found")
+    if not c.file_path:
+        raise APIError(404, "not_found", "Composite image not yet generated")
+
+    from pathlib import Path
+
+    file_path = Path(c.file_path)
+    if not file_path.exists():
+        raise APIError(404, "not_found", "Composite image file not found on disk")
+
+    import mimetypes
+
+    from starlette.responses import FileResponse
+
+    media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
+
+    return FileResponse(
+        str(file_path),
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

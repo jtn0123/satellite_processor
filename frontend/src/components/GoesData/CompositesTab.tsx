@@ -25,6 +25,7 @@ interface CompositeItem {
   sector: string;
   capture_time: string;
   file_path: string | null;
+  image_url: string | null;
   file_size: number;
   status: string;
   error: string;
@@ -172,10 +173,10 @@ export default function CompositesTab() {
           <div className="space-y-3">
             {(composites.items ?? []).map((comp) => (
               <div key={comp.id} className="flex items-center gap-4 bg-gray-100/50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
-                {comp.file_path && comp.status === 'completed' && (
+                {comp.image_url && comp.status === 'completed' && (
                   <div className="w-16 h-12 rounded overflow-hidden shrink-0">
                     <img
-                      src={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
+                      src={comp.image_url}
                       alt={comp.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -199,8 +200,8 @@ export default function CompositesTab() {
                   {comp.status === 'completed' && (
                     <>
                       <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded">Done</span>
-                      {comp.file_path && (
-                        <a href={`/api/download?path=${encodeURIComponent(comp.file_path)}`}
+                      {comp.image_url && (
+                        <a href={comp.image_url}
                           download className="p-1 text-primary hover:text-primary-light transition-colors">
                           <Download className="w-4 h-4" />
                         </a>

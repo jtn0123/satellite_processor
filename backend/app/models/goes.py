@@ -111,6 +111,7 @@ class CompositeResponse(BaseModel):
     status: str
     error: str | None = None
     created_at: str | None = None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 

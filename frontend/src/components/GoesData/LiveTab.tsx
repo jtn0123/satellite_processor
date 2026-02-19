@@ -111,6 +111,15 @@ function shouldAutoFetch(
   return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
 }
 
+function getSatelliteLabel(s: string, satelliteAvailability?: Record<string, SatelliteAvailability>): string {
+  const status = satelliteAvailability?.[s]?.status;
+  return status && status !== 'operational' ? `${s} (${status})` : s;
+}
+
+function isSectorUnavailable(sectorId: string, availableSectors?: string[]): boolean {
+  return !!availableSectors && !availableSectors.includes(sectorId);
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -148,13 +157,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const toggleMonitor = useCallback(() => {
     setMonitoring((v) => {
       const next = !v;
-      if (next) {
-        setAutoFetch(true);
-        showToast('success', 'Monitor mode activated');
-      } else {
-        setAutoFetch(false);
-        showToast('info', 'Monitor mode stopped');
-      }
+      setAutoFetch(next);
+      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
       onMonitorChange?.(next);
       return next;
     });
@@ -365,18 +369,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           <div className="pointer-events-auto flex flex-wrap items-center gap-2 px-4 py-3">
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.satellites ?? []).map((s) => {
-                const avail = products?.satellite_availability?.[s];
-                const status = avail?.status;
-                const label = status && status !== 'operational' ? `${s} (${status})` : s;
-                return <option key={s} value={s} className="bg-space-900 text-white">{label}</option>;
-              })}
+              {(products?.satellites ?? []).map((s) => (
+                <option key={s} value={s} className="bg-space-900 text-white">{getSatelliteLabel(s, products?.satellite_availability)}</option>
+              ))}
             </select>
             <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Sector"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.sectors ?? []).map((s) => {
-                const unavailable = availability?.available_sectors && !availability.available_sectors.includes(s.id);
-                return <option key={s.id} value={s.id} disabled={!!unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
+                const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
+                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
               })}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"

@@ -72,15 +72,15 @@ export default function MonitorSettingsPanel({
             </h3>
             {isMonitoring && (
               <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />{' '}
                 Active
               </span>
             )}
           </div>
 
           {/* Presets */}
-          <div className="space-y-1.5">
-            <span className="text-xs text-white/60 uppercase tracking-wider">Quick Presets</span>
+          <fieldset className="space-y-1.5 border-0 p-0 m-0">
+            <legend className="text-xs text-white/60 uppercase tracking-wider">Quick Presets</legend>
             {MONITOR_PRESETS.map((preset) => (
               <button
                 key={preset.label}
@@ -96,11 +96,11 @@ export default function MonitorSettingsPanel({
                 {preset.label}
               </button>
             ))}
-          </div>
+          </fieldset>
 
           {/* Custom config */}
-          <div className="space-y-2 border-t border-white/10 pt-3">
-            <span className="text-xs text-white/60 uppercase tracking-wider">Custom Configuration</span>
+          <fieldset className="space-y-2 border-0 border-t border-white/10 p-0 m-0 pt-3">
+            <legend className="text-xs text-white/60 uppercase tracking-wider">Custom Configuration</legend>
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={customSatellite}
@@ -143,7 +143,7 @@ export default function MonitorSettingsPanel({
                 ))}
               </select>
             </div>
-          </div>
+          </fieldset>
 
           {/* Start/Stop */}
           <div className="flex gap-2">

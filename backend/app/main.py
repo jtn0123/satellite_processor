@@ -243,11 +243,11 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     """Validate API key on WebSocket handshake. Returns False if auth fails."""
     if not app_settings.api_key:
         return True
+    # Bug #20: Removed cookie-based API key to prevent CSRF attacks
     key = (
         websocket.query_params.get("api_key", "")
         or websocket.headers.get("x-api-key", "")
         or websocket.headers.get("authorization", "").removeprefix("Bearer ")
-        or websocket.cookies.get("api_key", "")
     )
     if key != app_settings.api_key:
         await websocket.close(code=4401, reason="Invalid or missing API key")

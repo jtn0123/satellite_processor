@@ -363,8 +363,12 @@ async def _get_protected_ids(db: AsyncSession, protect_collections: bool) -> set
 async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
     """Find frame IDs older than max age that are not protected."""
     cutoff = utcnow() - timedelta(days=rule.value)
-    res = await db.execute(select(GoesFrame).where(GoesFrame.created_at < cutoff))
-    return {f.id for f in res.scalars().all() if f.id not in protected_ids}
+    # Bug #10: Select only IDs instead of full objects to avoid OOM
+    query = select(GoesFrame.id).where(GoesFrame.created_at < cutoff)
+    if protected_ids:
+        query = query.where(GoesFrame.id.notin_(protected_ids))
+    res = await db.execute(query)
+    return {r[0] for r in res.all()}
 
 
 async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
@@ -376,16 +380,19 @@ async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[
     if total_bytes <= max_bytes:
         return set()
 
-    res = await db.execute(select(GoesFrame).order_by(GoesFrame.created_at.asc()))
+    # Bug #10: Select only ID and file_size columns instead of full objects
+    query = select(GoesFrame.id, GoesFrame.file_size).order_by(GoesFrame.created_at.asc())
+    if protected_ids:
+        query = query.where(GoesFrame.id.notin_(protected_ids))
+    res = await db.execute(query)
     excess = total_bytes - max_bytes
     freed = 0
     ids: set[str] = set()
-    for frame in res.scalars().all():
+    for frame_id, file_size in res.all():
         if freed >= excess:
             break
-        if frame.id not in protected_ids:
-            ids.add(frame.id)
-            freed += frame.file_size or 0
+        ids.add(frame_id)
+        freed += file_size or 0
     return ids
 
 

@@ -132,6 +132,7 @@ async def get_coverage_stats(
     db: AsyncSession,
     satellite: str | None = None,
     band: str | None = None,
+    sector: str | None = None,
     expected_interval: float = 10.0,
     tolerance: float = 1.5,
 ) -> dict[str, Any]:
@@ -140,7 +141,8 @@ async def get_coverage_stats(
     Returns dict with 'coverage_percent', 'gap_count', 'total_frames',
     'expected_frames', 'time_range', 'gaps'.
     """
-    gaps = await find_gaps(db, satellite, band, expected_interval=expected_interval, tolerance=tolerance)
+    # Bug #5 & #24: Pass sector to find_gaps for accurate gap detection
+    gaps = await find_gaps(db, satellite, band, sector=sector, expected_interval=expected_interval, tolerance=tolerance)
 
     # Get time range
     query = select(
@@ -152,6 +154,8 @@ async def get_coverage_stats(
         query = query.where(GoesFrame.satellite == satellite)
     if band:
         query = query.where(GoesFrame.band == band)
+    if sector:
+        query = query.where(GoesFrame.sector == sector)
 
     result = await db.execute(query)
     row = result.one()

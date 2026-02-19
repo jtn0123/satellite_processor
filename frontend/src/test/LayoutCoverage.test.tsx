@@ -7,6 +7,13 @@ vi.mock('../hooks/useWebSocket', () => ({ default: vi.fn(() => null) }));
 vi.mock('../hooks/useJobToasts', () => ({ useJobToasts: vi.fn() }));
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
+const mockGet = vi.fn(() => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
+vi.mock('../api/client', () => ({
+  default: {
+    get: (...args: unknown[]) => mockGet(...args),
+  },
+}));
+
 import Layout from '../components/Layout';
 
 function renderLayout() {
@@ -22,16 +29,15 @@ function renderLayout() {
 
 describe('Layout coverage boost', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve({ version: '1.2.3', commit: 'abc1234def' }) }),
-    ));
+    mockGet.mockClear();
+    mockGet.mockImplementation(() => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
     localStorage.clear();
   });
 
   it('fetches version info and shows it', async () => {
     renderLayout();
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith('/api/health/version');
+      expect(mockGet).toHaveBeenCalledWith('/health/version');
     });
   });
 
@@ -39,7 +45,7 @@ describe('Layout coverage boost', () => {
     localStorage.setItem('whatsNewLastSeen', '1.0.0');
     renderLayout();
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalled();
     });
   });
 
@@ -47,12 +53,12 @@ describe('Layout coverage boost', () => {
     localStorage.setItem('whatsNewLastSeen', '1.2.3');
     renderLayout();
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalled();
     });
   });
 
   it('handles version fetch failure', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('fail'))));
+    mockGet.mockImplementation(() => Promise.reject(new Error('fail')));
     renderLayout();
     // Should not throw
     expect(screen.getAllByText(/sattracker/i).length).toBeGreaterThan(0);

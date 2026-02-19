@@ -118,7 +118,7 @@ async def _create_animation_from_frames(
         loop_style=loop_style,
         overlay=overlay,
         crop_preset_id=crop_preset_id,
-        false_color=1 if false_color else 0,
+        false_color=bool(false_color),
         scale=scale,
         job_id=job_id,
     )
@@ -404,17 +404,16 @@ async def preview_frame_range(
     if total == 0:
         return FrameRangePreview(total_frames=0)
 
-    frames_q = (
-        select(GoesFrame)
-        .where(*base_filter)
-        .order_by(GoesFrame.capture_time.asc())
-    )
-    result = await db.execute(frames_q)
-    all_frames = result.scalars().all()
+    # Bug #15: Use 3 targeted queries instead of loading ALL frames
+    first_q = select(GoesFrame).where(*base_filter).order_by(GoesFrame.capture_time.asc()).limit(1)
+    first = (await db.execute(first_q)).scalars().first()
 
-    first = all_frames[0]
-    middle = all_frames[len(all_frames) // 2]
-    last = all_frames[-1]
+    last_q = select(GoesFrame).where(*base_filter).order_by(GoesFrame.capture_time.desc()).limit(1)
+    last = (await db.execute(last_q)).scalars().first()
+
+    mid_offset = max(0, total // 2)
+    mid_q = select(GoesFrame).where(*base_filter).order_by(GoesFrame.capture_time.asc()).offset(mid_offset).limit(1)
+    middle = (await db.execute(mid_q)).scalars().first()
 
     def _frame_dict(f: GoesFrame) -> dict:
         return {
@@ -423,10 +422,10 @@ async def preview_frame_range(
             "sector": f.sector,
             "band": f.band,
             "capture_time": f.capture_time.isoformat() if f.capture_time else None,
-            "file_path": f.file_path,
             "file_size": f.file_size,
             "width": f.width,
             "height": f.height,
+            "image_url": f"/api/goes/frames/{f.id}/image",
         }
 
     def _thumb(f: GoesFrame) -> str:

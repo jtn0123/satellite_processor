@@ -99,7 +99,8 @@ class TestLatestFrame:
         data = resp.json()
         assert data["width"] == 5424
         assert data["height"] == 3000
-        assert data["thumbnail_path"] == "/tmp/thumb.png"
+        assert "thumbnail_url" in data
+        assert "image_url" in data
 
     async def test_latest_default_params(self, client, db):
         """Default params are GOES-19, CONUS, C02."""

@@ -61,7 +61,7 @@ function StorageSection() {
 
   const satEntries = Object.entries(storage.by_satellite ?? {});
   const bandEntries = Object.entries(storage.by_band ?? {});
-  const maxSatSize = Math.max(...satEntries.map(([, v]) => v.size), 1);
+  const maxSatSize = Math.max(...satEntries.map(([, v]) => v?.size ?? 0), 1);
   const colors = ['bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400', 'bg-pink-400'];
 
   return (
@@ -70,7 +70,7 @@ function StorageSection() {
         <HardDrive className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold">Storage</h2>
         <span className="text-sm text-gray-500 dark:text-slate-400 ml-auto">
-          {formatBytes(storage.total_size_bytes)} · {storage.total_frames.toLocaleString()} frames
+          {formatBytes(storage.total_size_bytes ?? 0)} · {(storage.total_frames ?? 0).toLocaleString()} frames
         </span>
       </div>
 

@@ -246,66 +246,6 @@ async def frame_stats(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
-async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
-    """Get single frame detail."""
-    validate_uuid(frame_id, "frame_id")
-    result = await db.execute(
-        select(GoesFrame)
-        .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
-        .where(GoesFrame.id == frame_id)
-    )
-    frame = result.scalars().first()
-    if not frame:
-        raise APIError(404, "not_found", _FRAME_NOT_FOUND)
-    return GoesFrameResponse.model_validate(frame)
-
-
-@router.delete("/frames")
-async def bulk_delete_frames(
-    payload: BulkFrameDeleteRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk delete frames and their files."""
-    result = await db.execute(
-        select(GoesFrame).where(GoesFrame.id.in_(payload.ids))
-    )
-    frames = result.scalars().all()
-
-    # Delete files
-    for frame in frames:
-        for path in [frame.file_path, frame.thumbnail_path]:
-            if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
-
-    await db.execute(delete(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
-    await db.commit()
-    await invalidate("cache:dashboard-stats*")
-    return {"deleted": len(frames)}
-
-
-@router.post("/frames/tag")
-async def bulk_tag_frames(
-    payload: BulkTagRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk tag frames."""
-    for frame_id in payload.frame_ids:
-        for tag_id in payload.tag_ids:
-            existing = await db.execute(
-                select(FrameTag).where(
-                    FrameTag.frame_id == frame_id, FrameTag.tag_id == tag_id
-                )
-            )
-            if not existing.scalars().first():
-                db.add(FrameTag(frame_id=frame_id, tag_id=tag_id))
-    await db.commit()
-    return {"tagged": len(payload.frame_ids)}
-
-
 def _frames_to_csv(frames: list[GoesFrame]) -> str:
     output = io.StringIO()
     writer = csv.writer(output)
@@ -336,6 +276,8 @@ def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
 MAX_EXPORT_LIMIT = 5000
 
 
+# Bug #2: /frames/export MUST be registered before /frames/{frame_id}
+# to avoid route shadowing (FastAPI matches routes in registration order).
 @router.get("/frames/export")
 async def export_frames(
     format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
@@ -379,6 +321,70 @@ async def export_frames(
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=goes_frames.json"},
     )
+
+
+@router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
+async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
+    """Get single frame detail."""
+    validate_uuid(frame_id, "frame_id")
+    result = await db.execute(
+        select(GoesFrame)
+        .options(selectinload(GoesFrame.tags), selectinload(GoesFrame.collections))
+        .where(GoesFrame.id == frame_id)
+    )
+    frame = result.scalars().first()
+    if not frame:
+        raise APIError(404, "not_found", _FRAME_NOT_FOUND)
+    return GoesFrameResponse.model_validate(frame)
+
+
+@router.delete("/frames")
+async def bulk_delete_frames(
+    payload: BulkFrameDeleteRequest = Body(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk delete frames and their files."""
+    result = await db.execute(
+        select(GoesFrame).where(GoesFrame.id.in_(payload.ids))
+    )
+    frames = result.scalars().all()
+
+    # Delete files
+    for frame in frames:
+        for path in [frame.file_path, frame.thumbnail_path]:
+            if path:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+    # Bug #17: Delete FK references before deleting frames
+    await db.execute(delete(CollectionFrame).where(CollectionFrame.frame_id.in_(payload.ids)))
+    await db.execute(delete(FrameTag).where(FrameTag.frame_id.in_(payload.ids)))
+    await db.execute(delete(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
+    await db.commit()
+    await invalidate("cache:dashboard-stats*")
+    return {"deleted": len(frames)}
+
+
+@router.post("/frames/tag")
+async def bulk_tag_frames(
+    payload: BulkTagRequest = Body(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
+    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+    values = [
+        {"frame_id": frame_id, "tag_id": tag_id}
+        for frame_id in payload.frame_ids
+        for tag_id in payload.tag_ids
+    ]
+    if values:
+        stmt = sqlite_insert(FrameTag).values(values).on_conflict_do_nothing()
+        await db.execute(stmt)
+    await db.commit()
+    return {"tagged": len(payload.frame_ids)}
 
 
 @router.post("/frames/process")
@@ -533,17 +539,19 @@ async def add_frames_to_collection(
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
 
-    added = 0
-    for frame_id in payload.frame_ids:
-        existing = await db.execute(
-            select(CollectionFrame).where(
-                CollectionFrame.collection_id == collection_id,
-                CollectionFrame.frame_id == frame_id,
-            )
-        )
-        if not existing.scalars().first():
-            db.add(CollectionFrame(collection_id=collection_id, frame_id=frame_id))
-            added += 1
+    # Bug #9: Bulk insert with ON CONFLICT DO NOTHING
+    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+    values = [
+        {"collection_id": collection_id, "frame_id": frame_id}
+        for frame_id in payload.frame_ids
+    ]
+    if values:
+        stmt = sqlite_insert(CollectionFrame).values(values).on_conflict_do_nothing()
+        result = await db.execute(stmt)
+        added = result.rowcount
+    else:
+        added = 0
     await db.commit()
     return {"added": added}
 
@@ -618,14 +626,14 @@ async def remove_frames_from_collection(
     payload: CollectionFramesRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
-    await db.execute(
+    result = await db.execute(
         delete(CollectionFrame).where(
             CollectionFrame.collection_id == collection_id,
             CollectionFrame.frame_id.in_(payload.frame_ids),
         )
     )
     await db.commit()
-    return {"removed": len(payload.frame_ids)}
+    return {"removed": result.rowcount}
 
 
 # ── Tags ──────────────────────────────────────────────────────────────

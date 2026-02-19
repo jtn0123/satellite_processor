@@ -47,13 +47,19 @@ def _create_fetch_records(
 
     session = _get_sync_db()
     try:
-        collection_id = str(uuid.uuid4())
-        collection = Collection(
-            id=collection_id,
-            name=f"GOES Fetch {results[0]['satellite'] if results else ''} {results[0]['band'] if results else ''} {sector}",
-            description=f"Auto-created from fetch job {job_id}",
-        )
-        session.add(collection)
+        # Bug #21: Reuse existing collection with same name instead of creating duplicates
+        collection_name = f"GOES Fetch {results[0]['satellite'] if results else ''} {results[0]['band'] if results else ''} {sector}"
+        existing_coll = session.query(Collection).filter(Collection.name == collection_name).first()
+        if existing_coll:
+            collection_id = existing_coll.id
+        else:
+            collection_id = str(uuid.uuid4())
+            collection = Collection(
+                id=collection_id,
+                name=collection_name,
+                description=f"Auto-created from fetch job {job_id}",
+            )
+            session.add(collection)
 
         frame_ids = []
         for frame in results:

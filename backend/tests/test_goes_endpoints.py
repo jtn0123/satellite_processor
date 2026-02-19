@@ -251,7 +251,8 @@ class TestLatest:
         data = resp.json()
         assert data["width"] == 5424
         assert data["height"] == 5424
-        assert data["thumbnail_path"] == "/tmp/thumb.png"
+        assert "thumbnail_url" in data
+        assert "image_url" in data
 
 
 @pytest.mark.asyncio

@@ -71,7 +71,7 @@ export default function GoesData() {
   usePageTitle('Browse & Fetch');
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabId | null;
-  const [activeTab, setActiveTabState] = useState<TabId>(
+  const [activeTab, setActiveTab] = useState<TabId>(
     tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse'
   );
   const [subView, setSubView] = useState<string | null>(null);
@@ -79,14 +79,14 @@ export default function GoesData() {
   // Sync tab from URL on mount and URL changes
   useEffect(() => {
     if (tabFromUrl && allTabIds.includes(tabFromUrl) && tabFromUrl !== activeTab) {
-      setActiveTabState(tabFromUrl);
+      setActiveTab(tabFromUrl);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabFromUrl]);
 
-  // Wrap setActiveTab to also update URL
-  const setActiveTab = useCallback((tab: TabId) => {
-    setActiveTabState(tab);
+  // Wrap changeTab to also update URL
+  const changeTab = useCallback((tab: TabId) => {
+    setActiveTab(tab);
     setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
   }, [setSearchParams]);
 
@@ -95,7 +95,7 @@ export default function GoesData() {
     const map: Record<string, () => void> = {};
     allTabIds.forEach((id, i) => {
       const key = String(i + 1);
-      map[key] = () => { setActiveTab(id); setSubView(null); };
+      map[key] = () => { changeTab(id); setSubView(null); };
     });
     return map;
   }, []);
@@ -103,7 +103,7 @@ export default function GoesData() {
   useHotkeys(shortcuts);
 
   const handleSwipe = useCallback((tab: TabId) => {
-    setActiveTab(tab);
+    changeTab(tab);
     setSubView(null);
   }, []);
 
@@ -118,7 +118,7 @@ export default function GoesData() {
     const handler = (e: Event) => {
       const tabId = (e as CustomEvent).detail as TabId;
       if (allTabIds.includes(tabId)) {
-        setActiveTab(tabId);
+        changeTab(tabId);
         setSubView(null);
       }
     };
@@ -195,7 +195,7 @@ export default function GoesData() {
           <button
             type="button"
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSubView(null); }}
+            onClick={() => { changeTab(tab.id); setSubView(null); }}
             role="tab"
             aria-label={`${tab.label} tab`}
             aria-selected={activeTab === tab.id}

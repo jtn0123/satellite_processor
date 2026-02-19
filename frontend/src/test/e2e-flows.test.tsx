@@ -79,7 +79,7 @@ describe('Flow: New user dashboard experience', () => {
       if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       if (url.includes('/jobs')) return Promise.resolve({ data: [] });
       if (url.includes('/health')) return Promise.resolve({ data: { status: 'ok' } });
-      if (url.includes('/goes/stats')) return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0 } });
+      if (url.includes('/goes/frames/stats')) return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0 } });
       return Promise.resolve({ data: [] });
     });
 
@@ -102,7 +102,7 @@ describe('Flow: New user dashboard experience', () => {
           total: 1,
         },
       });
-      if (url.includes('/goes/stats')) return Promise.resolve({
+      if (url.includes('/goes/frames/stats')) return Promise.resolve({
         data: { total_frames: 1, total_size_bytes: 50000, by_satellite: {}, by_band: {} },
       });
       return Promise.resolve({ data: [] });
@@ -190,7 +190,7 @@ describe('Flow: Browse frames and view details', () => {
 
   it('switches to stats tab to view frame statistics', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/goes/stats')) return Promise.resolve({
+      if (url.includes('/goes/frames/stats')) return Promise.resolve({
         data: { total_frames: 100, total_size_bytes: 5000000, by_satellite: {}, by_band: {} },
       });
       return Promise.resolve({ data: [] });

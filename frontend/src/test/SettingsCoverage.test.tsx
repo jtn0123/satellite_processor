@@ -36,7 +36,7 @@ const STORAGE_DATA = {
     C02: { count: 80, size: 300_000_000 },
     C13: { count: 70, size: 400_000_000 },
   },
-  total_size: 700_000_000,
+  total_size_bytes: 700_000_000,
   total_frames: 150,
 };
 
@@ -52,7 +52,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 function setupLoadedMocks(storage = STORAGE_DATA) {
   mockGet.mockImplementation((url: string) => {
     if (url === '/settings') return Promise.resolve({ data: SETTINGS_DATA });
-    if (url === '/goes/stats') return Promise.resolve({ data: storage });
+    if (url === '/goes/frames/stats') return Promise.resolve({ data: storage });
     return Promise.resolve({ data: {} });
   });
   mockPut.mockResolvedValue({ data: SETTINGS_DATA });
@@ -164,7 +164,7 @@ describe('Settings - storage section with data', () => {
 
 describe('Settings - storage section empty', () => {
   it('does not render satellite section when empty', async () => {
-    setupLoadedMocks({ by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } as typeof STORAGE_DATA);
+    setupLoadedMocks({ by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } as typeof STORAGE_DATA);
     render(<Settings />, { wrapper });
     await waitFor(() => {
       expect(screen.getByText('Storage')).toBeInTheDocument();

@@ -10,10 +10,12 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import AppSetting
+from ..errors import APIError
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +86,7 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
         ).scalars().first()
         if existing:
             existing.value = value
+            flag_modified(existing, "value")
         else:
             db.add(AppSetting(key=key, value=value))
     await db.commit()
@@ -100,12 +103,21 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
 
 @router.put("")
 async def update_settings(body: SettingsUpdate, db: AsyncSession = Depends(get_db)):
-    current = await _load_from_db(db)
-    update_data = body.model_dump(exclude_none=True)
-    # Convert nested models to dicts for JSON serialization
-    for key, val in update_data.items():
-        if isinstance(val, BaseModel):
-            update_data[key] = val.model_dump()
-    current.update(update_data)
-    await _save_to_db(db, current)
-    return current
+    try:
+        current = await _load_from_db(db)
+        update_data = body.model_dump(exclude_none=True)
+        # Convert nested models to dicts for JSON serialization
+        for key, val in update_data.items():
+            if isinstance(val, BaseModel):
+                update_data[key] = val.model_dump()
+        current.update(update_data)
+        await _save_to_db(db, current)
+        return current
+    except sqlalchemy.exc.SQLAlchemyError:
+        logger.exception("Failed to save settings to DB")
+        await db.rollback()
+        raise APIError(500, "db_error", "Failed to save settings")
+    except Exception:
+        logger.exception("Unexpected error saving settings")
+        await db.rollback()
+        raise

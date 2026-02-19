@@ -40,7 +40,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
-      api.patch(`/goes/animation-presets/${id}`, { name }).then((r) => r.data),
+      api.put(`/goes/animation-presets/${id}`, { name }).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['animation-presets'] });
       setEditingId(null);

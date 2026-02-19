@@ -57,9 +57,10 @@ def mock_celery():
     mock_result = MagicMock()
     mock_result.id = "fake-task-id"
 
-    with patch("app.celery_app.celery_app") as mock_app:
+    with patch("app.routers.jobs.celery_app") as mock_app:
         mock_app.send_task.return_value = mock_result
         mock_app.control.revoke = MagicMock()
+        mock_app.control.inspect.return_value = MagicMock()
         mock_app.conf = MagicMock()
         yield mock_app
 

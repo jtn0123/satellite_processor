@@ -166,6 +166,20 @@ app.include_router(share.router)
 app.include_router(file_download.router)
 
 
+# Alias: /api/frames → /api/goes/frames (Bug #6)
+from fastapi.responses import RedirectResponse  # noqa: E402
+
+
+@app.get("/api/frames", include_in_schema=False)
+async def frames_alias(request: Request):
+    """Redirect /api/frames to /api/goes/frames, preserving query params."""
+    query = str(request.query_params)
+    url = "/api/goes/frames"
+    if query:
+        url += f"?{query}"
+    return RedirectResponse(url=url, status_code=307)
+
+
 # ── Metrics endpoint ──────────────────────────────────────────────
 
 
@@ -229,7 +243,12 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     """Validate API key on WebSocket handshake. Returns False if auth fails."""
     if not app_settings.api_key:
         return True
-    key = websocket.query_params.get("api_key", "") or websocket.headers.get("x-api-key", "")
+    key = (
+        websocket.query_params.get("api_key", "")
+        or websocket.headers.get("x-api-key", "")
+        or websocket.headers.get("authorization", "").removeprefix("Bearer ")
+        or websocket.cookies.get("api_key", "")
+    )
     if key != app_settings.api_key:
         await websocket.close(code=4401, reason="Invalid or missing API key")
         return False

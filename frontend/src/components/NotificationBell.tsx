@@ -28,7 +28,7 @@ export default function NotificationBell() {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/notifications/${id}/read`),
+    mutationFn: (id: string) => api.post(`/notifications/${id}/read`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   });
 

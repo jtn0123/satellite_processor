@@ -1,5 +1,6 @@
 """Generic file download endpoint for serving data files (images, thumbnails, etc.)."""
 
+from pathlib import Path
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
@@ -27,6 +28,9 @@ async def download_file(
 
     # Validate path stays within storage root
     storage_root = settings.storage_path
+    # If path is not absolute, resolve it relative to storage root
+    if not path.startswith("/"):
+        path = str(Path(storage_root) / path)
     resolved = validate_safe_path(path, storage_root)
 
     if not resolved.exists():

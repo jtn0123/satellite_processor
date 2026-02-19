@@ -63,6 +63,11 @@ for d in [settings.storage_path, settings.upload_dir, settings.output_dir, setti
     Path(d).mkdir(parents=True, exist_ok=True)
 
 # #70: Warn if DATABASE_URL is still SQLite in non-debug mode
+# Centralized GOES defaults — use these everywhere instead of hardcoding
+DEFAULT_SATELLITE = "GOES-19"
+DEFAULT_SECTOR = "CONUS"
+DEFAULT_BAND = "C02"
+
 if not settings.debug and "sqlite" in settings.database_url.lower():
     logging.getLogger(__name__).warning(
         "DATABASE_URL is using SQLite in non-debug mode. "

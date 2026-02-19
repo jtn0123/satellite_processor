@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import DEFAULT_SATELLITE
 from ..db.database import get_db
 from ..db.models import Composite, GoesFrame, Job
 from ..errors import APIError, validate_uuid
@@ -98,7 +99,7 @@ async def list_products():
             }
             for band in VALID_BANDS
         ],
-        "default_satellite": "GOES-19",
+        "default_satellite": DEFAULT_SATELLITE,
     }
 
     async def _fetch():
@@ -114,7 +115,7 @@ async def list_products():
 @limiter.limit("20/minute")
 async def catalog(
     request: Request,
-    satellite: str = Query("GOES-19"),
+    satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),
     date: str | None = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
@@ -144,7 +145,7 @@ async def catalog(
 @limiter.limit("30/minute")
 async def catalog_latest(
     request: Request,
-    satellite: str = Query("GOES-19"),
+    satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),
 ):
@@ -167,7 +168,7 @@ async def catalog_latest(
 @limiter.limit("10/minute")
 async def catalog_available(
     request: Request,
-    satellite: str = Query("GOES-19"),
+    satellite: str = Query(DEFAULT_SATELLITE),
 ):
     """Check which sectors have recent data (last 2 hours) on S3."""
     from ..services.catalog import catalog_available as _catalog_available
@@ -185,7 +186,7 @@ async def catalog_available(
 @limiter.limit("10/minute")
 async def band_sample_thumbnails(
     request: Request,
-    satellite: str = Query("GOES-19"),
+    satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -470,7 +471,7 @@ async def preview_frame(
 @limiter.limit("30/minute")
 async def band_availability(
     request: Request,
-    satellite: str = Query("GOES-16"),
+    satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -488,7 +489,7 @@ async def band_availability(
 
 @router.get("/latest")
 async def get_latest_frame(
-    satellite: str = Query("GOES-16"),
+    satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),
     db: AsyncSession = Depends(get_db),

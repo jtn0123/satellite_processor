@@ -20,8 +20,8 @@ vi.mock('../api/client', () => ({
           },
         });
       }
-      if (url === '/goes/stats') {
-        return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } });
+      if (url === '/goes/frames/stats') {
+        return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
       }
       return Promise.resolve({ data: {} });
     }),

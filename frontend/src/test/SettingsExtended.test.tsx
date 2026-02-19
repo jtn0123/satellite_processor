@@ -66,7 +66,7 @@ describe('Settings - loaded form', () => {
           },
         });
       }
-      if (url === '/goes/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } });
+      if (url === '/goes/frames/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -82,7 +82,7 @@ describe('Settings - loaded form', () => {
           data: { default_false_color: 'vegetation', timestamp_enabled: true, timestamp_position: 'bottom-left', video_fps: 24, video_codec: 'h264', max_frames_per_fetch: 200, video_quality: 23 },
         });
       }
-      if (url === '/goes/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } });
+      if (url === '/goes/frames/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
       return Promise.resolve({ data: {} });
     });
 

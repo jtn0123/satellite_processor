@@ -15,7 +15,7 @@ const ProcessingForm = lazy(() => import('../components/Processing/ProcessingFor
 interface StorageBreakdown {
   by_satellite: Record<string, { count: number; size: number }>;
   by_band: Record<string, { count: number; size: number }>;
-  total_size: number;
+  total_size_bytes: number;
   total_frames: number;
 }
 
@@ -52,7 +52,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false }: Read
 function StorageSection() {
   const { data: storage } = useQuery<StorageBreakdown>({
     queryKey: ['goes-storage-breakdown'],
-    queryFn: () => api.get('/goes/stats').then((r) => r.data),
+    queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
     staleTime: 60_000,
     retry: 1,
   });
@@ -70,7 +70,7 @@ function StorageSection() {
         <HardDrive className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold">Storage</h2>
         <span className="text-sm text-gray-500 dark:text-slate-400 ml-auto">
-          {formatBytes(storage.total_size)} · {storage.total_frames.toLocaleString()} frames
+          {formatBytes(storage.total_size_bytes)} · {storage.total_frames.toLocaleString()} frames
         </span>
       </div>
 

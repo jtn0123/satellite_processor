@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/jtn0123/satellite_processor/compare/v1.11.0...v1.11.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* **ci:** add core coverage upload and carry forward coverage across skipped tests ([#165](https://github.com/jtn0123/satellite_processor/issues/165)) ([a66f844](https://github.com/jtn0123/satellite_processor/commit/a66f84422267b6cf739434716a117bd6b18a49af))
+
 # [1.11.0](https://github.com/jtn0123/satellite_processor/compare/v1.10.0...v1.11.0) (2026-02-18)
 
 

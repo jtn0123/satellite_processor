@@ -71,7 +71,7 @@ echo "── System ──"
 check 200 GET /api/system/info
 
 echo "── Frames alias ──"
-check 200 GET "/api/frames?page=1&per_page=1"
+check 307 GET "/api/frames?page=1&per_page=1"
 
 echo ""
 echo "═══════════════════════════════"

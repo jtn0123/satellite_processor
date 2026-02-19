@@ -102,8 +102,8 @@ class TestLatestFrame:
         assert data["thumbnail_path"] == "/tmp/thumb.png"
 
     async def test_latest_default_params(self, client, db):
-        """Default params are GOES-16, CONUS, C02."""
-        db.add(_frame())
+        """Default params are GOES-19, CONUS, C02."""
+        db.add(_frame(satellite="GOES-19"))
         await db.commit()
         resp = await client.get("/api/goes/latest")
         assert resp.status_code == 200

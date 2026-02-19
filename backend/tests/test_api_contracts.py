@@ -1,9 +1,10 @@
 """Integration tests: verify all documented endpoints return expected status codes."""
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+from unittest.mock import MagicMock, patch
 
+import pytest
 from app.main import app
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.fixture
@@ -57,10 +58,15 @@ async def test_settings_write_roundtrip(client: AsyncClient):
 @pytest.mark.anyio
 async def test_jobs_accepts_goes_fetch_type(client: AsyncClient):
     """Bug #7 regression: goes_fetch should be an accepted job type."""
-    resp = await client.post(
-        "/api/jobs",
-        json={"name": "test-fetch", "job_type": "goes_fetch", "params": {}},
-    )
+    mock_task = MagicMock()
+    mock_task.delay.return_value = MagicMock(id="fake-task-id")
+
+    with patch("app.routers.jobs.process_image_task", mock_task), \
+         patch("app.routers.jobs.create_video_task", mock_task):
+        resp = await client.post(
+            "/api/jobs",
+            json={"name": "test-fetch", "job_type": "goes_fetch", "params": {}},
+        )
     # Should not be 422 (validation error)
     assert resp.status_code != 422, f"goes_fetch job type rejected: {resp.text}"
 

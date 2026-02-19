@@ -12,6 +12,7 @@ addopts = "-v --tb=short"
 qt_api = "pyqt6"
 
 [tool.coverage.run]
+relative_files = true
 source = ["satellite_processor"]
 omit = ["*/tests/*", "*/test_*"]
 

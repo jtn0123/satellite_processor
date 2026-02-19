@@ -9,6 +9,7 @@ markers = [
 mode = "auto"
 
 [tool.coverage.run]
+relative_files = true
 source = ["app"]
 omit = [
     "app/celery_app.py",

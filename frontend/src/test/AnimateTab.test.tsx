@@ -309,6 +309,9 @@ describe('AnimateTab (Unified)', () => {
 
   it('generate button triggers mutation after setting date range', async () => {
     renderWithProviders(<AnimateTab />);
+    // Manually select a satellite to ensure state is set
+    const satSelect = screen.getByLabelText('Satellite');
+    fireEvent.change(satSelect, { target: { value: 'GOES-19' } });
     // Set a date range first
     fireEvent.click(screen.getByText('Last 1h'));
     await waitFor(() => {

@@ -82,6 +82,35 @@ function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame
   return { awsAge, localAge, behindMin };
 }
 
+function exitFullscreenSafe() {
+  try {
+    document.exitFullscreen();
+  } catch {
+    (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
+  }
+}
+
+function enterFullscreenSafe(el: HTMLElement) {
+  try {
+    el.requestFullscreen();
+  } catch {
+    (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
+  }
+}
+
+function shouldAutoFetch(
+  autoFetch: boolean,
+  catalogLatest: CatalogLatest | null | undefined,
+  frame: LatestFrame | null | undefined,
+  lastAutoFetchTime: string | null,
+  lastAutoFetchMs: number,
+): boolean {
+  if (!autoFetch || !catalogLatest || !frame) return false;
+  const catalogTime = new Date(catalogLatest.scan_time).getTime();
+  const localTime = new Date(frame.capture_time).getTime();
+  return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -250,42 +279,30 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, catalogLatest]);
 
   useEffect(() => {
-    if (!autoFetch || !catalogLatest || !frame) return;
-    const catalogTime = new Date(catalogLatest.scan_time).getTime();
-    const localTime = new Date(frame.capture_time).getTime();
-    if (catalogTime > localTime && lastAutoFetchTime.current !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs.current > 30000) {
-      lastAutoFetchTime.current = catalogLatest.scan_time;
-      lastAutoFetchMs.current = Date.now();
-      api.post('/goes/fetch', {
-        satellite: (satellite || catalogLatest.satellite).toUpperCase(),
-        sector: sector || catalogLatest.sector,
-        band: band || catalogLatest.band,
-        start_time: catalogLatest.scan_time,
-        end_time: catalogLatest.scan_time,
-      }).then((res) => {
-        setActiveJobId(res.data.job_id);
-        showToast('success', 'Auto-fetching new frame from AWS');
-      }).catch(() => {});
-    }
+    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTime.current, lastAutoFetchMs.current)) return;
+    lastAutoFetchTime.current = catalogLatest!.scan_time;
+    lastAutoFetchMs.current = Date.now();
+    api.post('/goes/fetch', {
+      satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+      sector: sector || catalogLatest!.sector,
+      band: band || catalogLatest!.band,
+      start_time: catalogLatest!.scan_time,
+      end_time: catalogLatest!.scan_time,
+    }).then((res) => {
+      setActiveJobId(res.data.job_id);
+      showToast('success', 'Auto-fetching new frame from AWS');
+    }).catch(() => {});
   }, [autoFetch, catalogLatest, frame, satellite, sector, band]);
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
-    if (document.fullscreenElement) {
-      try {
-        document.exitFullscreen();
-      } catch {
-        (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
-      }
-      setIsFullscreen(false);
+    const isCurrentlyFullscreen = !!document.fullscreenElement;
+    if (isCurrentlyFullscreen) {
+      exitFullscreenSafe();
     } else {
-      try {
-        containerRef.current.requestFullscreen();
-      } catch {
-        (containerRef.current as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
-      }
-      setIsFullscreen(true);
+      enterFullscreenSafe(containerRef.current);
     }
+    setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 
   useEffect(() => {

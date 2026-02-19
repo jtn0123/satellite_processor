@@ -80,7 +80,7 @@ export default function MonitorSettingsPanel({
 
           {/* Presets */}
           <div className="space-y-1.5">
-            <label className="text-xs text-white/60 uppercase tracking-wider">Quick Presets</label>
+            <span className="text-xs text-white/60 uppercase tracking-wider">Quick Presets</span>
             {MONITOR_PRESETS.map((preset) => (
               <button
                 key={preset.label}
@@ -100,7 +100,7 @@ export default function MonitorSettingsPanel({
 
           {/* Custom config */}
           <div className="space-y-2 border-t border-white/10 pt-3">
-            <label className="text-xs text-white/60 uppercase tracking-wider">Custom Configuration</label>
+            <span className="text-xs text-white/60 uppercase tracking-wider">Custom Configuration</span>
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={customSatellite}

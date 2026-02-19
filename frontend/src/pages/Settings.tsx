@@ -136,6 +136,24 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
 
   const handleSave = () => {
     setSaveError(null);
+
+    // Validate bounds before saving
+    const fps = Number(form.video_fps ?? 24);
+    const crf = Number(form.video_quality ?? 23);
+    const maxFrames = Number(form.max_frames_per_fetch ?? 200);
+    if (fps < 1 || fps > 120 || !Number.isFinite(fps)) {
+      setSaveError('Video FPS must be between 1 and 120.');
+      return;
+    }
+    if (crf < 0 || crf > 51 || !Number.isFinite(crf)) {
+      setSaveError('Video Quality (CRF) must be between 0 and 51.');
+      return;
+    }
+    if (maxFrames < 50 || maxFrames > 1000 || !Number.isFinite(maxFrames)) {
+      setSaveError('Max Frames per Fetch must be between 50 and 1000.');
+      return;
+    }
+
     updateSettings.mutate(form, {
       onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
       onError: () => setSaveError('Failed to save settings. Please try again.'),

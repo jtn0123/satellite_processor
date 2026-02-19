@@ -26,9 +26,14 @@ export function useFocusTrap(onClose: () => void) {
         onClose();
         return;
       }
-      if (e.key === 'Tab' && focusable.length > 0) {
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
+      if (e.key === 'Tab') {
+        // Re-query focusable elements each time to handle dynamic content
+        const currentFocusable = container.querySelectorAll<HTMLElement>(
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (currentFocusable.length === 0) return;
+        const first = currentFocusable[0];
+        const last = currentFocusable[currentFocusable.length - 1];
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
           last.focus();

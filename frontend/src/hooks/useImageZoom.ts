@@ -33,10 +33,14 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const { minScale = 1, maxScale = 5, doubleTapScale = 2.5 } = options;
 
   const [state, setState] = useState<ZoomState>(INITIAL_STATE);
+  const stateRef = useRef<ZoomState>(INITIAL_STATE);
   const lastTouchRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
+
+  // Keep stateRef in sync
+  stateRef.current = state;
 
   const clampScale = useCallback((s: number) => Math.min(maxScale, Math.max(minScale, s)), [minScale, maxScale]);
 
@@ -58,8 +62,9 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   };
 
   const onTouchStart = useCallback((e: TouchEvent) => {
+    const s = stateRef.current;
     if (e.touches.length === 2) {
-      pinchStartRef.current = { dist: getTouchDist(e), scale: state.scale };
+      pinchStartRef.current = { dist: getTouchDist(e), scale: s.scale };
     } else if (e.touches.length === 1) {
       const now = Date.now();
       const touch = e.touches[0];
@@ -73,12 +78,12 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       }
       lastTouchRef.current = { time: now, x: touch.clientX, y: touch.clientY };
 
-      // Pan start
-      if (state.scale > 1) {
-        panRef.current = { startX: touch.clientX, startY: touch.clientY, tx: state.translateX, ty: state.translateY };
+      // Pan start — read current values from ref to avoid stale closure
+      if (s.scale > 1) {
+        panRef.current = { startX: touch.clientX, startY: touch.clientY, tx: s.translateX, ty: s.translateY };
       }
     }
-  }, [state.scale, state.translateX, state.translateY, doubleTapScale]);
+  }, [doubleTapScale]);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
     if (e.touches.length === 2 && pinchStartRef.current) {
@@ -86,14 +91,14 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const dist = getTouchDist(e);
       const newScale = clampScale(pinchStartRef.current.scale * (dist / pinchStartRef.current.dist));
       setState((prev) => newScale <= 1 ? INITIAL_STATE : { ...prev, scale: newScale });
-    } else if (e.touches.length === 1 && panRef.current && state.scale > 1) {
+    } else if (e.touches.length === 1 && panRef.current && stateRef.current.scale > 1) {
       e.preventDefault();
       const touch = e.touches[0];
       const dx = touch.clientX - panRef.current.startX;
       const dy = touch.clientY - panRef.current.startY;
       setState((prev) => ({ ...prev, translateX: panRef.current!.tx + dx, translateY: panRef.current!.ty + dy }));
     }
-  }, [clampScale, state.scale]);
+  }, [clampScale]);
 
   const onTouchEnd = useCallback(() => {
     pinchStartRef.current = null;
@@ -102,11 +107,12 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
 
   // Mouse drag for desktop panning
   const onMouseDown = useCallback((e: MouseEvent) => {
-    if (state.scale > 1) {
+    const s = stateRef.current;
+    if (s.scale > 1) {
       isDragging.current = true;
-      panRef.current = { startX: e.clientX, startY: e.clientY, tx: state.translateX, ty: state.translateY };
+      panRef.current = { startX: e.clientX, startY: e.clientY, tx: s.translateX, ty: s.translateY };
     }
-  }, [state.scale, state.translateX, state.translateY]);
+  }, []);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging.current && panRef.current) {

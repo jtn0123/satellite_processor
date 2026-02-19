@@ -42,7 +42,8 @@ export default function Layout() {
   // #8: System theme detection - check preference on first load
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof globalThis === 'undefined') return 'dark';
-    const stored = localStorage.getItem('theme');
+    let stored: string | null = null;
+    try { stored = localStorage.getItem('theme'); } catch { /* private browsing */ }
     if (stored === 'dark' || stored === 'light') return stored;
     // No manual preference - detect system
     const prefersDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -58,14 +59,14 @@ export default function Layout() {
       root.classList.add('light');
       root.classList.remove('dark');
     }
-    localStorage.setItem('theme', theme);
+    try { localStorage.setItem('theme', theme); } catch { /* private browsing */ }
     document.documentElement.style.transition = 'background-color 200ms, color 200ms';
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('theme-manual', 'true');
+      try { localStorage.setItem('theme-manual', 'true'); } catch { /* private browsing */ }
       return next;
     });
   }, []);
@@ -81,7 +82,8 @@ export default function Layout() {
         const sha = commit && commit !== 'dev' ? ` (${commit.slice(0, 7)})` : '';
         setVersionInfo({ version, commit, display: `v${version}${sha}` });
         // Auto-open on new version
-        const lastSeen = localStorage.getItem('whatsNewLastSeen');
+        let lastSeen: string | null = null;
+        try { lastSeen = localStorage.getItem('whatsNewLastSeen'); } catch { /* private browsing */ }
         const toMajorMinor = (v: string) => v.split('.').slice(0, 2).join('.');
         if (version && toMajorMinor(version) !== toMajorMinor(lastSeen ?? '')) {
           setHasNewVersion(true);
@@ -322,7 +324,7 @@ export default function Layout() {
             setShowWhatsNew(false);
             setHasNewVersion(false);
             if (versionInfo.version) {
-              localStorage.setItem('whatsNewLastSeen', versionInfo.version);
+              try { localStorage.setItem('whatsNewLastSeen', versionInfo.version); } catch { /* private browsing */ }
             }
           }}
         />

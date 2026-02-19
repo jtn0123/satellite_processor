@@ -104,6 +104,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const zoom = useImageZoom();
 
+  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
+
   // Monitor mode: WebSocket for frame ingestion push notifications
   const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
 
@@ -112,8 +114,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     if (wsLastEvent && monitoring) {
       refetchRef.current?.();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsLastEvent]);
+  }, [wsLastEvent, monitoring]);
 
   const toggleMonitor = useCallback(() => {
     setMonitoring((v) => {
@@ -171,8 +172,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     onRefresh: handlePullRefresh,
   });
 
-  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
-
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
@@ -182,8 +181,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     if (products && !satellite) {
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products]);
+  }, [products, satellite]);
 
   const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
     queryKey: ['goes-available', satellite],
@@ -300,8 +298,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   // Reset zoom when satellite/sector/band changes
   useEffect(() => {
     zoom.reset();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [satellite, sector, band]);
+  }, [satellite, sector, band, zoom]);
 
   const imageUrl = frame?.file_path
     ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`

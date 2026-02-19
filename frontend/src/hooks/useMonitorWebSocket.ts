@@ -11,7 +11,9 @@ export interface FrameIngestEvent {
   timestamp: string;
 }
 
-const RECONNECT_DELAY = 5000;
+const RECONNECT_BASE_DELAY = 5000;
+const RECONNECT_MAX_DELAY = 60000;
+const RECONNECT_MAX_RETRIES = 20;
 
 /**
  * Connects to /ws/frames for real-time frame ingestion notifications.
@@ -40,6 +42,7 @@ export function useMonitorWebSocket(
     let ws: WebSocket | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
+    let retryCount = 0;
 
     function openConnection() {
       if (disposed) return;
@@ -47,15 +50,23 @@ export function useMonitorWebSocket(
       ws = new WebSocket(buildWsUrl('/ws/events'));
 
       ws.onopen = () => {
-        if (!disposed) setConnected(true);
+        if (!disposed) {
+          setConnected(true);
+          retryCount = 0; // Reset on successful connection
+        }
       };
 
       ws.onclose = () => {
         if (!disposed) {
           setConnected(false);
           ws = null;
-          if (enabledRef.current) {
-            timer = setTimeout(openConnection, RECONNECT_DELAY);
+          if (enabledRef.current && retryCount < RECONNECT_MAX_RETRIES) {
+            const delay = Math.min(
+              RECONNECT_BASE_DELAY * Math.pow(2, retryCount),
+              RECONNECT_MAX_DELAY,
+            );
+            retryCount++;
+            timer = setTimeout(openConnection, delay);
           }
         }
       };

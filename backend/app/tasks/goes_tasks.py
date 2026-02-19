@@ -27,7 +27,7 @@ def _read_max_frames_setting() -> int:
             AppSetting.key == "max_frames_per_fetch"
         ).first()
         if setting and isinstance(setting.value, (int, float)):
-            max_frames_limit = int(setting.value)
+            max_frames_limit = max(1, min(int(setting.value), 1000))
     except Exception:
         logger.debug("Could not read max_frames_per_fetch setting, using default")
     finally:
@@ -326,25 +326,46 @@ def _detect_gaps(
 
 
 def _create_backfill_image_records(results: list[dict]) -> None:
-    """Create Image records for backfilled frames."""
-    from ..db.models import Image
+    """Create Image and GoesFrame records for backfilled frames."""
+    from ..db.models import GoesFrame, Image
+    from ..services.thumbnail import generate_thumbnail, get_image_dimensions
 
     session = _get_sync_db()
     try:
         for frame in results:
             path = Path(frame["path"])
+            file_size = path.stat().st_size if path.exists() else 0
+            width, height = get_image_dimensions(str(path))
+            thumb_path = generate_thumbnail(str(path), str(path.parent))
+
             img_record = Image(
                 id=str(uuid.uuid4()),
                 filename=path.name,
                 original_name=path.name,
                 file_path=str(path),
-                file_size=path.stat().st_size if path.exists() else 0,
+                file_size=file_size,
                 satellite=frame["satellite"],
                 channel=frame["band"],
                 captured_at=frame["scan_time"],
                 source="goes_fetch",
+                width=width,
+                height=height,
             )
             session.add(img_record)
+
+            goes_frame = GoesFrame(
+                id=str(uuid.uuid4()),
+                satellite=frame["satellite"],
+                sector=frame.get("sector", ""),
+                band=frame["band"],
+                capture_time=frame["scan_time"],
+                file_path=str(path),
+                file_size=file_size,
+                width=width,
+                height=height,
+                thumbnail_path=thumb_path,
+            )
+            session.add(goes_frame)
         session.commit()
     finally:
         session.close()
@@ -476,7 +497,13 @@ def _normalize_band(band_array, ref_shape):
     from PIL import Image as PILImage
 
     if band_array.shape != ref_shape:
-        img_resized = PILImage.fromarray(band_array.astype(np.uint8)).resize(
+        # Resize in float32 space to avoid double-quantization artifacts
+        bmin, bmax = band_array.min(), band_array.max()
+        if bmax > bmin:
+            normalized = (band_array - bmin) / (bmax - bmin) * 255
+        else:
+            normalized = np.zeros_like(band_array)
+        img_resized = PILImage.fromarray(normalized.astype(np.uint8)).resize(
             (ref_shape[1], ref_shape[0]), PILImage.BILINEAR
         )
         band_array = np.array(img_resized, dtype=np.float32)
@@ -608,21 +635,34 @@ def fetch_composite_data(self, job_id: str, params: dict):
         _publish_progress(job_id, 90, "All bands fetched, queuing composites", "processing")
         _update_job_db(job_id, progress=90, status_message="Queuing composite generation")
 
-        # Auto-queue composite for fetched captures
-        start_time = datetime.fromisoformat(start_time_str)
-        end_time = datetime.fromisoformat(end_time_str)
-        from ..db.models import Composite
+        # Auto-queue composite for fetched captures — query DB instead of re-listing S3
+        from ..db.models import Composite, GoesFrame
         from ..db.models import Job as JobModel
         from ..routers.goes import COMPOSITE_RECIPES
-        from ..services.goes_fetcher import list_available
 
-        available = list_available(satellite, sector, bands[0], start_time, end_time)
-        if available:
+        session = _get_sync_db()
+        try:
+            from sqlalchemy import select as sa_select
+
+            frames = session.execute(
+                sa_select(GoesFrame.capture_time)
+                .where(
+                    GoesFrame.satellite == satellite,
+                    GoesFrame.sector == sector,
+                    GoesFrame.band == bands[0],
+                    GoesFrame.source_job_id == job_id,
+                )
+                .order_by(GoesFrame.capture_time.asc())
+                .limit(50)
+            ).all()
+        finally:
+            session.close()
+
+        if frames:
             composite_tasks = []
             session = _get_sync_db()
             try:
-                for frame_info in available[:50]:
-                    scan_t = frame_info["scan_time"]
+                for (scan_t,) in frames:
                     capture_time = scan_t.isoformat() if isinstance(scan_t, datetime) else scan_t
                     composite_id = str(uuid.uuid4())
                     comp_job_id = str(uuid.uuid4())

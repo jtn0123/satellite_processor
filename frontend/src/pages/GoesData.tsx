@@ -78,10 +78,9 @@ export default function GoesData() {
 
   // Sync tab from URL on mount and URL changes
   useEffect(() => {
-    if (tabFromUrl && allTabIds.includes(tabFromUrl) && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    if (tabFromUrl && allTabIds.includes(tabFromUrl)) {
+      setActiveTab((prev) => tabFromUrl !== prev ? tabFromUrl : prev);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabFromUrl]);
 
   // Wrap changeTab to also update URL

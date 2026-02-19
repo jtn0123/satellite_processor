@@ -35,8 +35,8 @@ test.describe('Mobile navigation', () => {
     const nav = page.locator('nav[aria-label="Mobile navigation"]');
     // Settings is under "More" menu
     await nav.getByText('More').click();
-    const dialog = page.locator('dialog');
-    await dialog.getByRole('link', { name: 'Settings' }).click();
+    const moreDialog = page.locator('dialog[aria-label="More navigation options"]');
+    await moreDialog.getByRole('link', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/\/settings/);
   });
 

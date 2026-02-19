@@ -133,4 +133,4 @@ describe('safeData utilities', () => {
     });
   });
 });
-# Coverage validation
+// Coverage validation

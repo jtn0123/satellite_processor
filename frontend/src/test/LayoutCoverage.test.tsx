@@ -10,7 +10,7 @@ vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 const mockGet = vi.fn(() => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
 vi.mock('../api/client', () => ({
   default: {
-    get: (...args: unknown[]) => mockGet(...args),
+    get: (...args: [string, ...unknown[]]) => mockGet(...args),
   },
 }));
 

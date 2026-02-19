@@ -59,13 +59,10 @@ class TestCollectAgeDeletions:
         now = datetime.now(tz=UTC)
         mock_now.return_value = now
 
-        f1 = SimpleNamespace(id="old1")
-        f2 = SimpleNamespace(id="protected1")
-
+        # Function now uses select(GoesFrame.id) and filters protected in query
+        # so the DB result only contains unprotected IDs as raw tuples
         result_obj = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = [f1, f2]
-        result_obj.scalars.return_value = scalars
+        result_obj.all.return_value = [("old1",)]
 
         db = AsyncMock()
         db.execute.return_value = result_obj
@@ -80,9 +77,7 @@ class TestCollectAgeDeletions:
         mock_now.return_value = datetime.now(tz=UTC)
 
         result_obj = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = []
-        result_obj.scalars.return_value = scalars
+        result_obj.all.return_value = []
 
         db = AsyncMock()
         db.execute.return_value = result_obj
@@ -95,11 +90,9 @@ class TestCollectAgeDeletions:
     async def test_all_protected(self, mock_now):
         mock_now.return_value = datetime.now(tz=UTC)
 
-        f1 = SimpleNamespace(id="f1")
+        # Protected IDs are filtered in the query, so DB returns empty
         result_obj = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = [f1]
-        result_obj.scalars.return_value = scalars
+        result_obj.all.return_value = []
 
         db = AsyncMock()
         db.execute.return_value = result_obj
@@ -128,13 +121,11 @@ class TestCollectStorageDeletions:
         total_result = MagicMock()
         total_result.scalar.return_value = 2 * 1024 * 1024 * 1024
 
-        f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024)
-        f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024)
-
         frames_result = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = [f1, f2]
-        frames_result.scalars.return_value = scalars
+        frames_result.all.return_value = [
+            ("f1", 1024 * 1024 * 1024),
+            ("f2", 1024 * 1024 * 1024),
+        ]
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
@@ -148,13 +139,11 @@ class TestCollectStorageDeletions:
         total_result = MagicMock()
         total_result.scalar.return_value = 2 * 1024 * 1024 * 1024
 
-        f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024)
-        f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024)
-
+        # Protected IDs are filtered in the query, so only unprotected returned
         frames_result = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = [f1, f2]
-        frames_result.scalars.return_value = scalars
+        frames_result.all.return_value = [
+            ("f2", 1024 * 1024 * 1024),
+        ]
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
@@ -168,13 +157,11 @@ class TestCollectStorageDeletions:
         total_result = MagicMock()
         total_result.scalar.return_value = 2 * 1024 * 1024 * 1024
 
-        f1 = SimpleNamespace(id="f1", file_size=None)
-        f2 = SimpleNamespace(id="f2", file_size=2 * 1024 * 1024 * 1024)
-
         frames_result = MagicMock()
-        scalars = MagicMock()
-        scalars.all.return_value = [f1, f2]
-        frames_result.scalars.return_value = scalars
+        frames_result.all.return_value = [
+            ("f1", None),
+            ("f2", 2 * 1024 * 1024 * 1024),
+        ]
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]

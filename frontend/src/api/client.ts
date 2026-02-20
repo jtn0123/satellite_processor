@@ -12,4 +12,21 @@ if (apiKey) {
   api.defaults.headers.common['X-API-Key'] = apiKey;
 }
 
+// Response interceptor for rate limit (429) feedback
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+      const message = seconds
+        ? `Rate limited — please wait ${seconds}s before retrying.`
+        : 'Too many requests — please slow down.';
+      // Attach user-friendly message for consumers
+      error.userMessage = message;
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;

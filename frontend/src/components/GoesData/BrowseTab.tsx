@@ -194,7 +194,9 @@ export default function BrowseTab() {
   }, []);
 
   const handleSingleDelete = useCallback((frame: GoesFrame) => {
-    deleteMutation.mutate([frame.id]);
+    if (globalThis.confirm('Are you sure you want to delete this frame? This action cannot be undone.')) {
+      deleteMutation.mutate([frame.id]);
+    }
   }, [deleteMutation]);
 
   const handleSingleCompare = useCallback((frame: GoesFrame) => {
@@ -399,7 +401,7 @@ export default function BrowseTab() {
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
               <>
-                <button onClick={() => deleteMutation.mutate([...selectedIds])} aria-label="Delete selected frames"
+                <button onClick={() => { if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) deleteMutation.mutate([...selectedIds]); }} aria-label="Delete selected frames"
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors min-h-[44px]">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
@@ -537,7 +539,7 @@ export default function BrowseTab() {
         }}
         onTag={() => { setTagFrameIds([...selectedIds]); setShowTagModal(true); }}
         onAddToCollection={() => { setCollectionFrameIds([...selectedIds]); setShowAddToCollection(true); }}
-        onDelete={() => deleteMutation.mutate([...selectedIds])}
+        onDelete={() => { if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) deleteMutation.mutate([...selectedIds]); }}
         onDownload={() => {
           frames.filter((f) => selectedIds.has(f.id)).forEach((f) => handleDownload(f));
         }}

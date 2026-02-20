@@ -14,6 +14,7 @@ interface LazyImageProps {
 export default function LazyImage({ src, alt, className, placeholder }: Readonly<LazyImageProps>) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,15 +42,20 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
 
   return (
     <div ref={ref} className={className} data-testid="lazy-image-wrapper">
-      {isVisible ? (
+      {isVisible && !hasError ? (
         <img
           src={src}
           alt={alt}
           loading="lazy"
           decoding="async"
           onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
+      ) : hasError ? (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-xs">
+          Failed to load
+        </div>
       ) : (
         placeholder ?? <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-slate-700" />
       )}

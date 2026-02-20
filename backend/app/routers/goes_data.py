@@ -373,7 +373,7 @@ async def bulk_tag_frames(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
-    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     values = [
         {"frame_id": frame_id, "tag_id": tag_id}
@@ -381,7 +381,7 @@ async def bulk_tag_frames(
         for tag_id in payload.tag_ids
     ]
     if values:
-        stmt = sqlite_insert(FrameTag).values(values).on_conflict_do_nothing()
+        stmt = pg_insert(FrameTag).values(values).on_conflict_do_nothing()
         await db.execute(stmt)
     await db.commit()
     return {"tagged": len(payload.frame_ids)}
@@ -540,14 +540,14 @@ async def add_frames_to_collection(
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
 
     # Bug #9: Bulk insert with ON CONFLICT DO NOTHING
-    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     values = [
         {"collection_id": collection_id, "frame_id": frame_id}
         for frame_id in payload.frame_ids
     ]
     if values:
-        stmt = sqlite_insert(CollectionFrame).values(values).on_conflict_do_nothing()
+        stmt = pg_insert(CollectionFrame).values(values).on_conflict_do_nothing()
         result = await db.execute(stmt)
         added = result.rowcount
     else:

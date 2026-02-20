@@ -284,7 +284,7 @@ export default function FetchTab() {
             key={label}
             type="button"
             onClick={() => setStep(i)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${
               (() => {
                 if (i === step) return 'bg-primary/20 text-primary border border-primary/30';
                 if (i < step) return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';

@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Satellite, ExternalLink } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/client';
 
 interface SharedFrame {
   id: string;
@@ -19,7 +19,7 @@ export default function SharedFramePage() {
 
   const { data: frame, isLoading, error } = useQuery<SharedFrame>({
     queryKey: ['shared', token],
-    queryFn: () => axios.get(`/api/shared/${token}`).then((r) => r.data),
+    queryFn: () => api.get(`/shared/${token}`).then((r) => r.data),
     enabled: !!token,
     retry: false,
   });

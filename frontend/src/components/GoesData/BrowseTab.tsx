@@ -127,29 +127,6 @@ export default function BrowseTab() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // #54: Keyboard shortcuts for BrowseTab
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Don't capture when typing in inputs
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
-        selectAll();
-      } else if (e.key === 'Delete' && selectedIds.size > 0) {
-        e.preventDefault();
-        if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) {
-          deleteMutation.mutate([...selectedIds]);
-        }
-      } else if (e.key === 'Escape' && selectedIds.size > 0) {
-        setSelectedIds(new Set());
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }); // intentionally no deps — uses latest state via closure
-
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
   }, [queryClient]);
@@ -234,6 +211,29 @@ export default function BrowseTab() {
       setSelectedIds(new Set(frames.map((f) => f.id)));
     }
   };
+
+  // #54: Keyboard shortcuts for BrowseTab
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAll();
+      } else if (e.key === 'Delete' && selectedIds.size > 0) {
+        e.preventDefault();
+        if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) {
+          deleteMutation.mutate([...selectedIds]);
+        }
+      } else if (e.key === 'Escape' && selectedIds.size > 0) {
+        setSelectedIds(new Set());
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }); // intentionally no deps — uses latest state via closure
 
   const renderFrameGrid = () => {
     if (isLoading) {

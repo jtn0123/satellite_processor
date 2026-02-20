@@ -6,11 +6,11 @@ import { reportError, onError } from './utils/errorReporter';
 import { showToast } from './utils/toast';
 
 // ── Global error handlers ──────────────────────────────────────────
-window.addEventListener('error', (event) => {
+globalThis.addEventListener('error', (event) => {
   reportError(event.error ?? event.message, 'window.onerror');
 });
 
-window.addEventListener('unhandledrejection', (event) => {
+globalThis.addEventListener('unhandledrejection', (event) => {
   reportError(event.reason, 'unhandledrejection');
 });
 

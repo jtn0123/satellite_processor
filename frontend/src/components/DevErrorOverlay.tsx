@@ -14,13 +14,13 @@ export default function DevErrorOverlay() {
   useEffect(() => {
     return onError(() => {
       setCount((c) => c + 1);
-      if (open) setErrors(getErrorLog());
+      if (open) setErrors([...getErrorLog()]);
     });
   }, [open]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
-      if (!prev) setErrors(getErrorLog());
+      if (!prev) setErrors([...getErrorLog()]);
       return !prev;
     });
   }, []);

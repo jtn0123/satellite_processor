@@ -47,6 +47,7 @@ function buildReport(error: unknown, context?: string): ErrorReport {
 export function reportError(error: unknown, context?: string): void {
   const report = buildReport(error, context);
   errorLog.push(report);
+  if (errorLog.length > 100) errorLog.splice(0, errorLog.length - 100);
 
   if (isDev) {
     console.error(`[ErrorReporter] ${report.context ?? 'unknown'}:`, report.message, report.stack ?? '');

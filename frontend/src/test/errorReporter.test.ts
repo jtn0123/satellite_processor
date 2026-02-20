@@ -69,11 +69,13 @@ describe('errorReporter', () => {
       throw new Error('subscriber boom');
     });
     const goodSubscriber = vi.fn();
-    onError(badSubscriber);
-    onError(goodSubscriber);
+    const unsub1 = onError(badSubscriber);
+    const unsub2 = onError(goodSubscriber);
     reportError(new Error('cascade test'));
     expect(badSubscriber).toHaveBeenCalledTimes(1);
     expect(goodSubscriber).toHaveBeenCalledTimes(1);
+    unsub1();
+    unsub2();
   });
 
   it('accumulates multiple errors', () => {

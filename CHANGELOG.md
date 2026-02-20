@@ -1,3 +1,10 @@
+## [1.11.7](https://github.com/jtn0123/satellite_processor/compare/v1.11.6...v1.11.7) (2026-02-20)
+
+
+### Bug Fixes
+
+* batch 1 critical & high-value fixes ([#174](https://github.com/jtn0123/satellite_processor/issues/174)) ([064d5e4](https://github.com/jtn0123/satellite_processor/commit/064d5e4062567eb28f8c910f46cccd45a4f6d8ff)), closes [1/#2](https://github.com/jtn0123/satellite_processor/issues/2) [#13](https://github.com/jtn0123/satellite_processor/issues/13) [45/#21](https://github.com/jtn0123/satellite_processor/issues/21) [#5](https://github.com/jtn0123/satellite_processor/issues/5) [#30](https://github.com/jtn0123/satellite_processor/issues/30) [#50](https://github.com/jtn0123/satellite_processor/issues/50) [#23](https://github.com/jtn0123/satellite_processor/issues/23)
+
 ## [1.11.6](https://github.com/jtn0123/satellite_processor/compare/v1.11.5...v1.11.6) (2026-02-19)
 
 

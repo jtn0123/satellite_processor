@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/jtn0123/satellite_processor/compare/v1.11.12...v1.12.0) (2026-02-20)
+
+
+### Features
+
+* wire errorReporter into all error surfaces ([#183](https://github.com/jtn0123/satellite_processor/issues/183)) ([0a42892](https://github.com/jtn0123/satellite_processor/commit/0a4289239725b9584e9e56937cada57ddd597214))
+
 ## [1.11.12](https://github.com/jtn0123/satellite_processor/compare/v1.11.11...v1.11.12) (2026-02-20)
 
 

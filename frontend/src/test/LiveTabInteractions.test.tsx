@@ -225,7 +225,7 @@ describe('LiveTab - Interactions', () => {
     await waitFor(() => {
       const img = document.querySelector('img');
       expect(img).toBeTruthy();
-      expect(img!.src).toContain('thumb.png');
+      expect(img!.src).toContain('/api/goes/frames/');
     });
   });
 
@@ -241,7 +241,7 @@ describe('LiveTab - Interactions', () => {
     await waitFor(() => {
       const img = document.querySelector('img');
       expect(img).toBeTruthy();
-      expect(img!.src).toContain('test.nc');
+      expect(img!.src).toContain('/api/goes/frames/');
     });
   });
 

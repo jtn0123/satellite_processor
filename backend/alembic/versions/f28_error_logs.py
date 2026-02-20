@@ -1,15 +1,15 @@
 """add error_logs table
 
 Revision ID: f28a1b2c3d4e
-Revises: e17_data_integrity
+Revises: f28_notifications
 Create Date: 2026-02-20 13:50:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "f28a1b2c3d4e"
-down_revision = "e17_data_integrity"
+down_revision = "f28_notifications"
 branch_labels = None
 depends_on = None
 

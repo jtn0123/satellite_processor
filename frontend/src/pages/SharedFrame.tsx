@@ -93,7 +93,7 @@ export default function SharedFramePage() {
             <a
               href={`/api/shared/${token}/image`}
               download
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-gray-900 dark:text-white font-medium hover:bg-primary/80 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-primary-mix text-gray-900 dark:text-white font-medium transition-colors"
             >
               <ExternalLink className="w-4 h-4" /> Download
             </a>

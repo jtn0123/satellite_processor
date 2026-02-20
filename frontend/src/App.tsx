@@ -5,6 +5,7 @@ import { Satellite } from 'lucide-react';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
+import DevErrorOverlay from './components/DevErrorOverlay';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const JobsPage = lazy(() => import('./pages/Jobs'));
@@ -57,6 +58,7 @@ export default function App() {
           </Routes>
         </Suspense>
         <ToastContainer />
+        {import.meta.env.DEV && <DevErrorOverlay />}
       </BrowserRouter>
     </QueryClientProvider>
   );

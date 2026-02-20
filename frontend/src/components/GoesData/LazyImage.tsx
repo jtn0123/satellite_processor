@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { reportError } from '../../utils/errorReporter';
 
 interface LazyImageProps {
   src: string;
@@ -56,7 +57,10 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
           loading="lazy"
           decoding="async"
           onLoad={() => setIsLoaded(true)}
-          onError={() => setHasError(true)}
+          onError={() => {
+            setHasError(true);
+            reportError(new Error(`Image failed to load: ${src}`), 'LazyImage');
+          }}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
       );

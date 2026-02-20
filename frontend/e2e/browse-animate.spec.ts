@@ -33,7 +33,8 @@ function mockFrames(page: Page) {
       file_size: 4000,
       width: 1000,
       height: 800,
-      thumbnail_path: `/data/frames/goes19_conus_c02_${i}_thumb.png`,
+      image_url: `/api/goes/frames/frame-${i}/image`,
+      thumbnail_url: `/api/goes/frames/frame-${i}/thumbnail`,
     }));
     return route.fulfill({ json: { items, total: 50, page: 1, limit: 50 } });
   });
@@ -50,8 +51,9 @@ test.describe('Browse flow', () => {
     // Browse tab should be default
     const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
     await expect(browseTab).toHaveAttribute('aria-selected', 'true');
-    // Frames should render
-    await expect(page.locator('img').first()).toBeVisible({ timeout: 10000 });
+    // Frames should render (LazyImage wraps images in a div; the actual <img> may
+    // not appear until IntersectionObserver fires, so assert on the wrapper instead)
+    await expect(page.locator('[data-testid="lazy-image-wrapper"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('clicking a frame opens detail view', async ({ page }) => {

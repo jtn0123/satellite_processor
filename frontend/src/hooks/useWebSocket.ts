@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { buildWsUrl } from '../api/ws';
+import { reportError } from '../utils/errorReporter';
 
 interface JobProgress {
   progress: number;
@@ -48,6 +49,10 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
       retriesRef.current = 0;
     };
 
+    ws.onerror = () => {
+      reportError(new Error(`WebSocket error for job ${jobId}`), 'useWebSocket.onerror');
+    };
+
     ws.onclose = () => {
       setConnected(false);
       wsRef.current = null;
@@ -90,7 +95,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
           terminalRef.current = true;
         }
       } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
+        reportError(err, 'useWebSocket.parseMessage');
       }
     };
   }, [jobId, maxRetries]);

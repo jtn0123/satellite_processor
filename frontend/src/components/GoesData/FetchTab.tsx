@@ -15,7 +15,6 @@ import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import BandPicker from './BandPicker';
 import SectorPicker from './SectorPicker';
-import FetchProgressBar from './FetchProgressBar';
 import type { SatelliteAvailability } from './types';
 
 const PresetsTab = lazy(() => import('./PresetsTab'));
@@ -113,6 +112,8 @@ export default function FetchTab() {
   });
 
   const dateWarning = useMemo(() => {
+    if (startTime && endTime && new Date(startTime).getTime() >= new Date(endTime).getTime())
+      return 'Start time must be before end time';
     if (!currentAvail) return null;
     if (startTime && !isDateInRange(startTime, currentAvail))
       return `Start time is outside ${satellite} availability (${formatAvailRange(currentAvail)})`;
@@ -601,9 +602,6 @@ export default function FetchTab() {
       )}
 
       </>}
-
-      {/* Progress bar */}
-      <FetchProgressBar />
 
       {/* Saved Presets (collapsible) */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">

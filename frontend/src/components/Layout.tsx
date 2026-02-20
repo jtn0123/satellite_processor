@@ -21,6 +21,7 @@ import ConnectionStatus from './ConnectionStatus';
 import NotificationBell from './NotificationBell';
 import WhatsNewModal from './WhatsNewModal';
 import MobileBottomNav from './MobileBottomNav';
+import FetchProgressBar from './GoesData/FetchProgressBar';
 import { useJobToasts } from '../hooks/useJobToasts';
 
 const links = [
@@ -312,6 +313,9 @@ export default function Layout() {
           </footer>
         </main>
       </div>
+
+      {/* Global fetch progress indicator */}
+      <FetchProgressBar />
 
       {/* Mobile Bottom Nav */}
       <MobileBottomNav />

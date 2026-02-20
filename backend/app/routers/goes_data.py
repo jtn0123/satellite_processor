@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -429,6 +429,13 @@ async def create_collection(
     payload: CollectionCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    # Check for duplicate name
+    existing = await db.execute(
+        select(Collection).where(Collection.name == payload.name)
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail=f"Collection '{payload.name}' already exists")
+
     coll = Collection(
         id=str(uuid.uuid4()),
         name=payload.name,

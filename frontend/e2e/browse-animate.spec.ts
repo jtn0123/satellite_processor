@@ -50,8 +50,9 @@ test.describe('Browse flow', () => {
     // Browse tab should be default
     const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
     await expect(browseTab).toHaveAttribute('aria-selected', 'true');
-    // Frames should render
-    await expect(page.locator('img').first()).toBeVisible({ timeout: 10000 });
+    // Frames should render (LazyImage wraps images in a div; the actual <img> may
+    // not appear until IntersectionObserver fires, so assert on the wrapper instead)
+    await expect(page.locator('[data-testid="lazy-image-wrapper"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('clicking a frame opens detail view', async ({ page }) => {

@@ -80,7 +80,7 @@ const FRAME = {
   file_size: 4096,
   width: 5424,
   height: 3000,
-  thumbnail_path: '/data/thumb.jpg',
+  thumbnail_path: '/data/thumb.jpg', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
 };
 
 const CATALOG_LATEST = {
@@ -159,7 +159,7 @@ describe('LiveViewStates', () => {
     await waitFor(() => {
       const img = screen.getByAltText('GOES-19 C02 CONUS');
       expect(img).toBeInTheDocument();
-      expect(img.getAttribute('src')).toContain('/api/download?path=');
+      expect(img.getAttribute('src')).toContain('/api/goes/frames/');
     });
   });
 

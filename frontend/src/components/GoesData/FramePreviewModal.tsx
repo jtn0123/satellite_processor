@@ -153,9 +153,7 @@ export default function FramePreviewModal({
         >
           <img
             ref={imgRef}
-            src={frame.thumbnail_path
-              ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`
-              : `/api/download?path=${encodeURIComponent(frame.file_path)}`}
+            src={frame.image_url}
             alt={`${frame.satellite} ${frame.band}`}
             className="max-w-full max-h-[60vh] rounded"
             loading="lazy"

@@ -198,8 +198,8 @@ export default function AnimationStudioTab() {
                   {previewFrames.items.map((frame) => (
                     <div key={frame.id} className="shrink-0 w-24">
                       <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
-                        {frame.thumbnail_path ? (
-                          <img src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+                        {(frame.thumbnail_url ?? frame.image_url) ? (
+                          <img src={frame.thumbnail_url ?? frame.image_url}
                             alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

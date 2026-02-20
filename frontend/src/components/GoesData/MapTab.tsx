@@ -18,8 +18,10 @@ interface LatestFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_path: string;
-  thumbnail_path: string | null;
+  image_url: string;
+  thumbnail_url: string | null;
+  file_path?: string;
+  thumbnail_path?: string | null;
 }
 
 const SECTOR_BOUNDS: Record<string, Record<string, LatLngBoundsExpression>> = {
@@ -72,9 +74,7 @@ export default function MapTab() {
     return SECTOR_BOUNDS[satellite]?.[sector] || SECTOR_BOUNDS['GOES-16']['CONUS'];
   }, [satellite, sector]);
 
-  const imageUrl = frame?.file_path
-    ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`
-    : null;
+  const imageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
 
   // Center map on the sector
   const center = useMemo(() => {

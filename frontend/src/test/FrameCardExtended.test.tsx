@@ -13,7 +13,7 @@ const baseFrame: GoesFrame = {
   file_size: 2048000,
   width: 5424,
   height: 5424,
-  thumbnail_path: '/thumbs/f1.jpg',
+  thumbnail_path: '/thumbs/f1.jpg', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
   tags: [{ id: 't1', name: 'Favorite', color: '#ff0000' }],
   collections: [],
 };
@@ -76,7 +76,7 @@ describe('FrameCard — grid mode', () => {
   });
 
   it('renders without thumbnail when thumbnail_path is null', () => {
-    const frame = { ...baseFrame, thumbnail_path: null };
+    const frame = { ...baseFrame, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' };
     render(<FrameCard {...defaultProps} frame={frame} viewMode="grid" />);
     // Should still render without error
     expect(screen.getByText('GOES-19')).toBeInTheDocument();

@@ -34,11 +34,13 @@ interface LatestFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_path: string;
+  image_url: string;
+  thumbnail_url: string | null;
+  file_path?: string;
   file_size: number;
   width: number | null;
   height: number | null;
-  thumbnail_path: string | null;
+  thumbnail_path?: string | null;
 }
 
 interface CatalogLatest {
@@ -338,15 +340,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     zoom.reset();
   }, [satellite, sector, band, zoom]);
 
-  const imageUrl = frame?.file_path
-    ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`
-    : null;
+  const imageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
 
   const recentFramesList = extractArray<LatestFrame>(recentFrames);
   const prevFrame = recentFramesList?.[1];
-  const prevImageUrl = prevFrame?.file_path
-    ? `/api/download?path=${encodeURIComponent(prevFrame.thumbnail_path || prevFrame.file_path)}`
-    : null;
+  const prevImageUrl = prevFrame?.thumbnail_url ?? prevFrame?.image_url ?? null;
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
@@ -432,7 +430,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               </label>
             </div>
 
-            <div className="ml-auto flex items-center gap-1">
+            <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end">
               <MonitorSettingsPanel
                 isMonitoring={monitoring}
                 interval={refreshInterval}
@@ -507,10 +505,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               {frame && (
                 <button
                   onClick={() => {
-                    const url = `/api/download?path=${encodeURIComponent(frame.file_path)}`;
+                    const url = frame.image_url;
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = frame.file_path.split('/').pop() ?? 'frame';
+                    a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
                     a.click();
                   }}
                   className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"

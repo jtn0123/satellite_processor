@@ -3,9 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import AnimationPlayer from '../components/GoesData/AnimationPlayer';
 
 const frames = [
-  { id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:00:00Z', file_path: '/p1.png', thumbnail_path: '/t1.png', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
-  { id: 'f2', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:10:00Z', file_path: '/p2.png', thumbnail_path: '/t2.png', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
-  { id: 'f3', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:20:00Z', file_path: '/p3.png', thumbnail_path: '/t3.png', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
+  { id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:00:00Z', file_path: '/p1.png', thumbnail_path: '/t1.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
+  { id: 'f2', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:10:00Z', file_path: '/p2.png', thumbnail_path: '/t2.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
+  { id: 'f3', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T12:20:00Z', file_path: '/p3.png', thumbnail_path: '/t3.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 1024, width: 100, height: 100, tags: [], collections: [] },
 ];
 
 describe('AnimationPlayer', () => {

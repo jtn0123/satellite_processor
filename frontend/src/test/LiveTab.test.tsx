@@ -42,7 +42,7 @@ beforeEach(() => {
         data: {
           id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
           capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc',
-          file_size: 1024, width: 5424, height: 3000, thumbnail_path: null,
+          file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
         },
       });
     }

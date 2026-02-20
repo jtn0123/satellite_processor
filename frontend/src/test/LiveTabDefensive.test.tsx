@@ -24,7 +24,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
     if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null } });
+    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' } });
     return Promise.resolve({ data: {} });
   });
 });
@@ -90,7 +90,7 @@ describe('LiveTab - Defensive Scenarios', () => {
   it('handles frame with null dimensions', async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null } });
+      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<LiveTab />);

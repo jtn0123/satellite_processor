@@ -48,11 +48,13 @@ export interface GoesFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_path: string;
+  image_url: string;
+  thumbnail_url: string | null;
+  file_path?: string;
   file_size: number;
   width: number | null;
   height: number | null;
-  thumbnail_path: string | null;
+  thumbnail_path?: string | null;
   tags: TagType[];
   collections: CollectionBrief[];
 }

@@ -109,7 +109,7 @@ describe('WhatsNewModal accessibility', () => {
 describe('ImageViewer accessibility', () => {
   it('pan/zoom button has accessible label and no conflicting role', async () => {
     const { default: ImageViewer } = await import('../components/GoesData/ImageViewer');
-    const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
+    const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [] };
     render(withQC(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />));
     const panBtn = document.querySelector('button[aria-label*="Pan and zoom"]');
     expect(panBtn).toBeTruthy();

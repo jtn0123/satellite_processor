@@ -30,7 +30,7 @@ const makeFrame = (id: string) => ({
   capture_time: '2024-01-01T00:00:00Z',
   file_path: '/test.nc',
   file_size: 1024,
-  thumbnail_path: null,
+  thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
   width: 1000,
   height: 1000,
   tags: [],

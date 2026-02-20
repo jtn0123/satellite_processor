@@ -9,7 +9,7 @@ const frame = {
   sector: 'CONUS',
   capture_time: '2026-01-01T12:00:00Z',
   file_path: '/path/to/file',
-  thumbnail_path: '/path/to/thumb',
+  thumbnail_path: '/path/to/thumb', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
   file_size: 1048576,
   width: 1920,
   height: 1080,

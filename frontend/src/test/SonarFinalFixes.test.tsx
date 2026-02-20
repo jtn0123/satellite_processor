@@ -15,7 +15,7 @@ vi.mock('react-router-dom', () => ({
 const makeFrame = (id: string) => ({
   id, satellite: 'GOES-18', sector: 'CONUS', band: 'Band13',
   capture_time: '2024-01-01T00:00:00Z', file_path: '/test.nc',
-  file_size: 1024, thumbnail_path: null, width: 1000, height: 1000,
+  file_size: 1024, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', width: 1000, height: 1000,
   tags: [], collections: [],
 });
 

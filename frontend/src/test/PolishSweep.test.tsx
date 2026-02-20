@@ -103,7 +103,7 @@ describe('FrameCard UTC suffix', () => {
       file_size: 1024,
       width: 100,
       height: 100,
-      thumbnail_path: null,
+      thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
       tags: [],
       collections: [],
       created_at: new Date().toISOString(),

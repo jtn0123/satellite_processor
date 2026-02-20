@@ -33,7 +33,8 @@ function mockFrames(page: Page) {
       file_size: 4000,
       width: 1000,
       height: 800,
-      thumbnail_path: `/data/frames/goes19_conus_c02_${i}_thumb.png`,
+      image_url: `/api/goes/frames/frame-${i}/image`,
+      thumbnail_url: `/api/goes/frames/frame-${i}/thumbnail`,
     }));
     return route.fulfill({ json: { items, total: 50, page: 1, limit: 50 } });
   });

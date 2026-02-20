@@ -1,3 +1,10 @@
+## [1.11.12](https://github.com/jtn0123/satellite_processor/compare/v1.11.11...v1.11.12) (2026-02-20)
+
+
+### Bug Fixes
+
+* raise coverage gates and annotate low-value test files ([#41](https://github.com/jtn0123/satellite_processor/issues/41), [#43](https://github.com/jtn0123/satellite_processor/issues/43)) ([#179](https://github.com/jtn0123/satellite_processor/issues/179)) ([97804a1](https://github.com/jtn0123/satellite_processor/commit/97804a1d737fc0456f37d69ca691e86ca64f1b22)), closes [#42](https://github.com/jtn0123/satellite_processor/issues/42)
+
 ## [1.11.11](https://github.com/jtn0123/satellite_processor/compare/v1.11.10...v1.11.11) (2026-02-20)
 
 

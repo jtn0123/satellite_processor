@@ -44,7 +44,7 @@ describe('CodeRabbit button type fixes', () => {
 import FramePreviewModal from '../components/GoesData/FramePreviewModal';
 
 describe('FramePreviewModal crop area', () => {
-  const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
+  const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [] };
 
   it('crop area is a button element', () => {
     render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} allFrames={[frame]} onNavigate={() => {}} />));
@@ -90,7 +90,7 @@ describe('Modal action button coverage', () => {
   });
 
   it('FramePreviewModal all buttons have type="button"', () => {
-    const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, tags: [], collections: [] };
+    const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [] };
     render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} />));
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(3);

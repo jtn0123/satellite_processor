@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ImageViewer from '../components/GoesData/ImageViewer';
 
-const frame = { id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T00:00:00Z', file_path: '', thumbnail_path: '', file_size: 1024, width: 1920, height: 1080, tags: [], collections: [] };
+const frame = { id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T00:00:00Z', file_path: '', thumbnail_path: '', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 1024, width: 1920, height: 1080, tags: [], collections: [] };
 const frames = [frame, { ...frame, id: 'f2' }, { ...frame, id: 'f3' }];
 
 describe('ImageViewer', () => {

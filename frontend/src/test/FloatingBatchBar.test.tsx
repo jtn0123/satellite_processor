@@ -10,7 +10,7 @@ const makeFrame = (id: string): GoesFrame => ({
   sector: 'CONUS',
   capture_time: '2026-01-01T00:00:00Z',
   file_path: `/path/${id}`,
-  thumbnail_path: `/thumb/${id}`,
+  thumbnail_path: `/thumb/${id}`, image_url: `/api/goes/frames/${id}/image`, thumbnail_url: `/api/goes/frames/${id}/thumbnail`,
   file_size: 1000,
   width: 1920,
   height: 1080,

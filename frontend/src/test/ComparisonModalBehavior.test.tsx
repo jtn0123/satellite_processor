@@ -5,7 +5,7 @@ import ComparisonModal from '../components/GoesData/ComparisonModal';
 const makeFrame = (id: string) => ({
   id, satellite: 'GOES-18', sector: 'CONUS', band: 'C13',
   capture_time: '2024-06-01T12:00:00Z', file_path: '/data/img.nc',
-  file_size: 2048, thumbnail_path: '/data/thumb.png',
+  file_size: 2048, thumbnail_path: '/data/thumb.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
 });
 
 describe('ComparisonModal behavior', () => {

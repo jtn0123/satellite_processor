@@ -7,7 +7,7 @@ function makeFrame(id: string): GoesFrame {
   return {
     id, satellite: 'GOES-19', sector: 'FullDisk', band: 'C02',
     capture_time: '2025-01-01T00:00:00Z', file_path: `/data/${id}.nc`,
-    file_size: 1024, width: 1000, height: 1000, thumbnail_path: null,
+    file_size: 1024, width: 1000, height: 1000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
     tags: [], collections: [],
   };
 }

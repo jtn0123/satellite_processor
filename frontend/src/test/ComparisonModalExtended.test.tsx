@@ -9,7 +9,7 @@ vi.mock('../hooks/useFocusTrap', () => ({
 const frameA = {
   id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS',
   capture_time: '2026-01-01T12:00:00Z', file_path: '/img1.png',
-  thumbnail_path: '/t1.png', file_size: 1024, width: 100, height: 100,
+  thumbnail_path: '/t1.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 1024, width: 100, height: 100,
 };
 const frameB = { ...frameA, id: 'f2', satellite: 'GOES-18', file_path: '/img2.png' };
 

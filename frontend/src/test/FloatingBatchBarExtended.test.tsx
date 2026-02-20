@@ -14,7 +14,7 @@ function makeFrame(id: string): GoesFrame {
     file_size: 1024,
     width: 1000,
     height: 1000,
-    thumbnail_path: null,
+    thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
     tags: [],
     collections: [],
   };

@@ -149,7 +149,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
         return Promise.resolve({
           data: {
             items: [
-              { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, tags: [], collections: [] },
+              { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [] },
             ],
             total: 1, page: 1, limit: 50,
           },
@@ -184,7 +184,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
           data: { items: Array.from({ length: 50 }, (_, i) => ({
             id: `${i}`, satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
             capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc',
-            file_size: 1024, width: null, height: null, thumbnail_path: null, tags: [], collections: [],
+            file_size: 1024, width: null, height: null, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [],
           })), total: 200, page: 1, limit: 50 },
         });
       }
@@ -228,7 +228,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
       if (url.includes('/goes/frames')) {
         return Promise.resolve({
           data: {
-            items: [{ id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null, tags: [], collections: [] }],
+            items: [{ id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', tags: [], collections: [] }],
             total: 1, page: 1, limit: 50,
           },
         });

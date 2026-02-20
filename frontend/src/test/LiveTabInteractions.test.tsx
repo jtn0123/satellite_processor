@@ -37,7 +37,7 @@ const FRAME = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
   capture_time: new Date(Date.now() - 600000).toISOString(),
   file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: '/tmp/thumb.png',
+  thumbnail_path: '/tmp/thumb.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
 };
 
 const CATALOG = {
@@ -230,7 +230,7 @@ describe('LiveTab - Interactions', () => {
   });
 
   it('renders image with file_path when no thumbnail', async () => {
-    const noThumbFrame = { ...FRAME, thumbnail_path: null };
+    const noThumbFrame = { ...FRAME, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' };
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
       if (url.startsWith('/goes/latest')) return Promise.resolve({ data: noThumbFrame });

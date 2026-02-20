@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import CompareView from '../components/GoesData/CompareView';
 
-const frameA = { id: 'a', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T00:00:00Z', file_path: '', thumbnail_path: '', file_size: 0, width: 0, height: 0, tags: [], collections: [] };
+const frameA = { id: 'a', satellite: 'GOES-16', band: 'C02', sector: 'CONUS', capture_time: '2026-01-01T00:00:00Z', file_path: '', thumbnail_path: '', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail', file_size: 0, width: 0, height: 0, tags: [], collections: [] };
 const frameB = { ...frameA, id: 'b', satellite: 'GOES-18' };
 
 describe('CompareView', () => {

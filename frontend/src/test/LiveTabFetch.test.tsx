@@ -27,7 +27,7 @@ const FRAME = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
   capture_time: new Date(Date.now() - 7200000).toISOString(), // 2h old
   file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: null,
+  thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
 };
 
 const CATALOG = {

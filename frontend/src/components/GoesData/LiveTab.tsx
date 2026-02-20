@@ -394,7 +394,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <button
                 onClick={toggleMonitor}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
                   monitoring
                     ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
                     : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
@@ -433,12 +433,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
               />
               <button onClick={() => refetch()}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
               </button>
               <button onClick={toggleFullscreen}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
                 title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
@@ -581,7 +581,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
             }));
             onNavigateToFetch?.();
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Download className="w-4 h-4" />
           Fetch your first image
@@ -597,7 +597,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
         <span className="text-xs text-gray-400 dark:text-slate-600">Select a satellite, sector, and band above, then fetch imagery</span>
         <button
           onClick={() => onNavigateToFetch?.()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Download className="w-4 h-4" />
           Go to Fetch

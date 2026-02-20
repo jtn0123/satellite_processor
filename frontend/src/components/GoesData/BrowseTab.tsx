@@ -517,8 +517,8 @@ export default function BrowseTab() {
         </div>
 
         {/* Hint */}
-        <div className="text-xs text-gray-400 dark:text-slate-500">
-          {infiniteData ? `${totalFrames} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
+        <div className="text-xs text-gray-400 dark:text-slate-500 min-h-[1.25rem]">
+          {infiniteData ? `${totalFrames} frames` : <span className="inline-block h-4 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded align-middle" />} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}
@@ -651,7 +651,7 @@ export default function BrowseTab() {
           </div>
           <button
             onClick={() => setShowBottomSheet(false)}
-            className="w-full py-3 bg-primary text-gray-900 dark:text-white rounded-xl font-medium text-sm min-h-[44px]"
+            className="w-full py-3 btn-primary-mix text-gray-900 dark:text-white rounded-xl font-medium text-sm min-h-[44px]"
           >
             Apply Filters
           </button>

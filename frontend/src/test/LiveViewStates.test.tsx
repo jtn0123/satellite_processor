@@ -159,7 +159,7 @@ describe('LiveViewStates', () => {
     await waitFor(() => {
       const img = screen.getByAltText('GOES-19 C02 CONUS');
       expect(img).toBeInTheDocument();
-      expect(img.getAttribute('src')).toContain('/api/download?path=');
+      expect(img.getAttribute('src')).toContain('/api/goes/frames/');
     });
   });
 

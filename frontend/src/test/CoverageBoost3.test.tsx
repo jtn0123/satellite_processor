@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// TODO(#43): Low-value coverage boost file. Tests mock nearly all dependencies and
+// only verify shallow rendering. Replace with meaningful tests that cover real user
+// workflows through PresetsTab, TagModal, Process, ProcessingForm, etc.
 /**
  * Coverage boost tests for low-coverage components:
  * PresetsTab, TagModal, Process, ProcessingForm, JobList, GoesData, ImageGallery

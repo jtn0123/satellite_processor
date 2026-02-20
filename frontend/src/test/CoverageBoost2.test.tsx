@@ -1,3 +1,6 @@
+// TODO(#43): Low-value coverage boost file. Hook tests here mostly just check that
+// mutate/data exist without verifying behavior. Replace with tests that exercise
+// actual API interactions, error states, and cache invalidation logic.
 /**
  * Coverage boost tests part 2 — hooks and more components.
  */

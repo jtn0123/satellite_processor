@@ -1,3 +1,6 @@
+// TODO(#43): Low-value coverage boost file. Most tests here render components with
+// fully mocked hooks and only assert text presence. Replace with meaningful integration
+// tests that verify actual user interactions, error handling, and state transitions.
 /**
  * Coverage boost tests — targets low-coverage files to reach 80% overall.
  */

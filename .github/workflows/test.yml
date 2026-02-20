@@ -102,7 +102,7 @@ jobs:
           pytest --splits 4 --group ${{ matrix.shard }} \
             --splitting-algorithm least_duration \
             --cov=app --cov-report=xml:coverage-shard${{ matrix.shard }}.xml \
-            --cov-fail-under=0 -n auto --durations=10 --reruns 1 \
+            --cov-fail-under=60 -n auto --durations=10 --reruns 1 \
             -v --tb=short -q \
             --store-durations \
             tests/
@@ -173,7 +173,7 @@ jobs:
       - name: Run core processor tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --reruns 1 --cov-fail-under=0
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --reruns 1 --cov-fail-under=60
 
       - name: Upload core coverage artifact
         if: always()

@@ -399,8 +399,9 @@ export default function BrowseTab() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Batch action buttons — hidden on mobile where FloatingBatchBar handles them */}
             {selectedIds.size > 0 && (
-              <>
+              <div className="hidden md:contents">
                 <button onClick={() => { if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) deleteMutation.mutate([...selectedIds]); }} aria-label="Delete selected frames"
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors min-h-[44px]">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -443,7 +444,7 @@ export default function BrowseTab() {
                     <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
                 )}
-              </>
+              </div>
             )}
             {/* Export button */}
             <button

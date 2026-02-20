@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
+import { Satellite } from 'lucide-react';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
@@ -26,8 +27,9 @@ const queryClient = new QueryClient({
 
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-space-950 gap-4">
+      <Satellite className="w-10 h-10 text-primary animate-pulse" />
+      <div className="text-sm text-gray-500 dark:text-slate-400 font-medium">Loading Satellite Tracker…</div>
     </div>
   );
 }

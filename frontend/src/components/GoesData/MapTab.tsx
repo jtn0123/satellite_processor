@@ -18,8 +18,10 @@ interface LatestFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_path: string;
-  thumbnail_path: string | null;
+  image_url: string;
+  thumbnail_url: string | null;
+  file_path?: string;
+  thumbnail_path?: string | null;
 }
 
 const SECTOR_BOUNDS: Record<string, Record<string, LatLngBoundsExpression>> = {

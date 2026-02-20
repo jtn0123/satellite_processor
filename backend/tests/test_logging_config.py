@@ -150,7 +150,7 @@ class TestRequestLoggingMiddleware:
     async def test_logs_http_request(self, app_mock, caplog):
         middleware = RequestLoggingMiddleware(app_mock)
         scope = {"type": "http", "method": "GET", "path": "/api/test"}
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         assert len(caplog.records) >= 1
         record = caplog.records[-1]
@@ -162,7 +162,7 @@ class TestRequestLoggingMiddleware:
     async def test_logs_status_code(self, error_app, caplog):
         middleware = RequestLoggingMiddleware(error_app)
         scope = {"type": "http", "method": "POST", "path": "/fail"}
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         assert "500" in caplog.records[-1].message
 
@@ -186,7 +186,7 @@ class TestRequestLoggingMiddleware:
 
         middleware = RequestLoggingMiddleware(ws_app)
         scope = {"type": "websocket", "path": "/ws"}
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         assert len(caplog.records) == 0
 
@@ -194,32 +194,38 @@ class TestRequestLoggingMiddleware:
     async def test_duration_in_log_extra(self, app_mock, caplog):
         middleware = RequestLoggingMiddleware(app_mock)
         scope = {"type": "http", "method": "GET", "path": "/health"}
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
-        assert hasattr(record, "duration_ms")
-        assert record.duration_ms >= 0
+        import json
+        event = json.loads(record.message)
+        assert "duration_ms" in event
+        assert event["duration_ms"] >= 0
 
     @pytest.mark.asyncio
     async def test_log_extra_fields(self, app_mock, caplog):
         middleware = RequestLoggingMiddleware(app_mock)
         scope = {"type": "http", "method": "DELETE", "path": "/items/1"}
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
-        assert record.method == "DELETE"
-        assert record.path == "/items/1"
-        assert record.status == 200
+        import json
+        event = json.loads(record.message)
+        assert event["method"] == "DELETE"
+        assert event["path"] == "/items/1"
+        assert event["status_code"] == 200
 
     @pytest.mark.asyncio
     async def test_missing_method_defaults_to_question_mark(self, app_mock, caplog):
         middleware = RequestLoggingMiddleware(app_mock)
         scope = {"type": "http"}  # no method or path
-        with caplog.at_level(logging.INFO, logger="api.request"):
+        with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
-        assert record.method == "?"
-        assert record.path == "?"
+        import json
+        event = json.loads(record.message)
+        assert event["method"] == "?"
+        assert event["path"] == "?"
 
     @pytest.mark.asyncio
     async def test_exception_propagates(self, raising_app):
@@ -234,7 +240,7 @@ class TestRequestLoggingMiddleware:
         middleware = RequestLoggingMiddleware(raising_app)
         scope = {"type": "http", "method": "GET", "path": "/boom"}
         with pytest.raises(RuntimeError):
-            with caplog.at_level(logging.INFO, logger="api.request"):
+            with caplog.at_level(logging.INFO, logger="wide_event"):
                 await middleware(scope, AsyncMock(), AsyncMock())
         # No log record since exception propagated before log line
         # This tests that the middleware doesn't swallow exceptions

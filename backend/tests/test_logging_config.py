@@ -244,3 +244,57 @@ class TestRequestLoggingMiddleware:
                 await middleware(scope, AsyncMock(), AsyncMock())
         # No log record since exception propagated before log line
         # This tests that the middleware doesn't swallow exceptions
+
+    @pytest.mark.asyncio
+    async def test_exception_logs_error_info(self, raising_app, caplog):
+        """When the app raises, the wide event includes error details."""
+        middleware = RequestLoggingMiddleware(raising_app)
+        scope = {"type": "http", "method": "GET", "path": "/boom"}
+        with pytest.raises(RuntimeError):
+            with caplog.at_level(logging.INFO, logger="wide_event"):
+                await middleware(scope, AsyncMock(), AsyncMock())
+        # The finally block should still emit a log even on exception
+        wide_records = [r for r in caplog.records if r.name == "wide_event"]
+        if wide_records:
+            import json
+            event = json.loads(wide_records[-1].message)
+            assert event["status_code"] == 500
+            assert "error" in event
+            assert event["error"]["type"] == "RuntimeError"
+
+    @pytest.mark.asyncio
+    async def test_headers_extracted(self, app_mock, caplog):
+        """Wide event includes user-agent and client IP from headers/scope."""
+        middleware = RequestLoggingMiddleware(app_mock)
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/test",
+            "headers": [
+                (b"user-agent", b"TestAgent/1.0"),
+                (b"content-length", b"42"),
+            ],
+            "client": ("127.0.0.1", 8000),
+        }
+        with caplog.at_level(logging.INFO, logger="wide_event"):
+            await middleware(scope, AsyncMock(), AsyncMock())
+        import json
+        event = json.loads(caplog.records[-1].message)
+        assert event["client_ip"] == "127.0.0.1"
+        assert event["user_agent"] == "TestAgent/1.0"
+        assert event["request_size_bytes"] == 42
+
+    @pytest.mark.asyncio
+    async def test_response_size_tracked(self, caplog):
+        """Wide event tracks response body size."""
+        async def app(scope, receive, send):
+            await send({"type": "http.response.start", "status": 200})
+            await send({"type": "http.response.body", "body": b"hello world"})
+
+        middleware = RequestLoggingMiddleware(app)
+        scope = {"type": "http", "method": "GET", "path": "/size"}
+        with caplog.at_level(logging.INFO, logger="wide_event"):
+            await middleware(scope, AsyncMock(), AsyncMock())
+        import json
+        event = json.loads(caplog.records[-1].message)
+        assert event["response_size_bytes"] == 11

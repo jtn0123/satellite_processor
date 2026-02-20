@@ -120,6 +120,21 @@ function isSectorUnavailable(sectorId: string, availableSectors?: string[]): boo
   return !!availableSectors && !availableSectors.includes(sectorId);
 }
 
+function useFullscreenSync(
+  setIsFullscreen: React.Dispatch<React.SetStateAction<boolean>>,
+  zoom: { reset: () => void },
+) {
+  useEffect(() => {
+    const handler = () => {
+      const fs = !!document.fullscreenElement;
+      setIsFullscreen(fs);
+      if (!fs) zoom.reset();
+    };
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, [setIsFullscreen, zoom]);
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -270,32 +285,39 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     }
   }, [activeJob, refetch]);
 
-  const fetchNow = useCallback(() => {
+  const fetchNow = useCallback(async () => {
     const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
-    api.post('/goes/fetch', {
-      satellite: satellite.toUpperCase(), sector, band,
-      start_time: startDate,
-      end_time: startDate,
-    }).then((res) => {
+    try {
+      const res = await api.post('/goes/fetch', {
+        satellite: satellite.toUpperCase(), sector, band,
+        start_time: startDate,
+        end_time: startDate,
+      });
       setActiveJobId(res.data.job_id);
       showToast('success', 'Fetching latest frame…');
-    }).catch(() => showToast('error', 'Failed to start fetch'));
+    } catch {
+      showToast('error', 'Failed to start fetch');
+    }
   }, [satellite, sector, band, catalogLatest]);
 
   useEffect(() => {
     if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTime.current, lastAutoFetchMs.current)) return;
     lastAutoFetchTime.current = catalogLatest!.scan_time;
     lastAutoFetchMs.current = Date.now();
-    api.post('/goes/fetch', {
-      satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
-      sector: sector || catalogLatest!.sector,
-      band: band || catalogLatest!.band,
-      start_time: catalogLatest!.scan_time,
-      end_time: catalogLatest!.scan_time,
-    }).then((res) => {
-      setActiveJobId(res.data.job_id);
-      showToast('success', 'Auto-fetching new frame from AWS');
-    }).catch(() => {});
+    const doAutoFetch = async () => {
+      try {
+        const res = await api.post('/goes/fetch', {
+          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+          sector: sector || catalogLatest!.sector,
+          band: band || catalogLatest!.band,
+          start_time: catalogLatest!.scan_time,
+          end_time: catalogLatest!.scan_time,
+        });
+        setActiveJobId(res.data.job_id);
+        showToast('success', 'Auto-fetching new frame from AWS');
+      } catch { /* auto-fetch failure is non-critical */ }
+    };
+    doAutoFetch();
   }, [autoFetch, catalogLatest, frame, satellite, sector, band]);
 
   const toggleFullscreen = useCallback(() => {
@@ -309,15 +331,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 
-  useEffect(() => {
-    const handler = () => {
-      const fs = !!document.fullscreenElement;
-      setIsFullscreen(fs);
-      if (!fs) zoom.reset();
-    };
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, [zoom]);
+  useFullscreenSync(setIsFullscreen, zoom);
 
   // Reset zoom when satellite/sector/band changes
   useEffect(() => {

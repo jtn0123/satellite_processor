@@ -33,6 +33,24 @@ import { extractArray } from '../../utils/safeData';
 
 const PAGE_LIMIT = 50;
 
+function buildFilterParams(
+  sortBy: string,
+  sortOrder: string,
+  sat: string,
+  bandVal: string,
+  sector: string,
+  collection: string,
+  tag: string,
+): Record<string, string> {
+  const p: Record<string, string> = { sort: sortBy, order: sortOrder };
+  if (sat) p.satellite = sat;
+  if (bandVal) p.band = bandVal;
+  if (sector) p.sector = sector;
+  if (collection) p.collection_id = collection;
+  if (tag) p.tag = tag;
+  return p;
+}
+
 export default function BrowseTab() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -78,15 +96,10 @@ export default function BrowseTab() {
   const debouncedCollection = useDebounce(filterCollection, 300);
   const debouncedTag = useDebounce(filterTag, 300);
 
-  const filterParams = useMemo(() => {
-    const p: Record<string, string> = { sort: sortBy, order: sortOrder };
-    if (debouncedSat) p.satellite = debouncedSat;
-    if (debouncedBand) p.band = debouncedBand;
-    if (debouncedSector) p.sector = debouncedSector;
-    if (debouncedCollection) p.collection_id = debouncedCollection;
-    if (debouncedTag) p.tag = debouncedTag;
-    return p;
-  }, [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag]);
+  const filterParams = useMemo(
+    () => buildFilterParams(sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag),
+    [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag],
+  );
 
   // Infinite query
   const {
@@ -274,9 +287,9 @@ export default function BrowseTab() {
     }
     if (viewMode === 'grid') {
       return (
-        <div role="list" aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
+        <ul aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3 list-none p-0 m-0">
           {frames.map((frame) => (
-            <div key={frame.id} role="listitem" className="cv-auto @container">
+            <li key={frame.id} className="cv-auto @container">
               <FrameCard
                 frame={frame}
                 isSelected={selectedIds.has(frame.id)}
@@ -289,15 +302,15 @@ export default function BrowseTab() {
                 onDelete={handleSingleDelete}
                 viewMode="grid"
               />
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       );
     }
     return (
-      <div role="list" aria-label="Satellite frames" className="space-y-1">
+      <ul aria-label="Satellite frames" className="space-y-1 list-none p-0 m-0">
         {frames.map((frame) => (
-          <div key={frame.id} role="listitem" className="cv-auto-list">
+          <li key={frame.id} className="cv-auto-list">
             <FrameCard
               frame={frame}
               isSelected={selectedIds.has(frame.id)}
@@ -310,9 +323,9 @@ export default function BrowseTab() {
               onDelete={handleSingleDelete}
               viewMode="list"
             />
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     );
   };
 

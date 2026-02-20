@@ -75,10 +75,11 @@ export default function Layout() {
   useJobToasts();
 
   useEffect(() => {
-    import('../api/client').then(({ default: apiClient }) =>
-    apiClient.get('/health/version')
-      .then((r) => r.data)
-      .then((d: Record<string, string>) => {
+    const fetchVersion = async () => {
+      try {
+        const { default: apiClient } = await import('../api/client');
+        const r = await apiClient.get('/health/version');
+        const d: Record<string, string> = r.data;
         const version = d.version ?? '';
         const commit = d.commit ?? d.build ?? 'dev';
         const sha = commit && commit !== 'dev' ? ` (${commit.slice(0, 7)})` : '';
@@ -91,8 +92,9 @@ export default function Layout() {
           setHasNewVersion(true);
           setShowWhatsNew(true);
         }
-      })
-      .catch(() => {}));
+      } catch { /* version fetch failed, non-critical */ }
+    };
+    fetchVersion();
   }, []);
 
   // Close drawer on navigation

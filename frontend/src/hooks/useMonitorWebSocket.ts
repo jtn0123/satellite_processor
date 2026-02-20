@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { buildWsUrl } from '../api/ws';
 import { showToast } from '../utils/toast';
+import { reportError } from '../utils/errorReporter';
 
 export interface FrameIngestEvent {
   type: 'frame_ingested';
@@ -72,6 +73,7 @@ export function useMonitorWebSocket(
       };
 
       ws.onerror = () => {
+        reportError(new Error('Monitor WebSocket error'), 'useMonitorWebSocket.onerror');
         ws?.close();
       };
 

@@ -49,7 +49,7 @@ function FrameCardGrid({
         {frame.thumbnail_path ? (
           <LazyImage
             src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-            alt={`${frame.satellite} ${frame.band}`}
+            alt={`${frame.satellite} ${frame.band} ${frame.sector} — ${formatCaptureTime(frame.capture_time)}`}
             className="w-full h-full"
           />
         ) : (
@@ -148,7 +148,7 @@ function FrameCardList({
         {frame.thumbnail_path ? (
           <LazyImage
             src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
-            alt={`${frame.satellite} ${frame.band} thumbnail`}
+            alt={`${frame.satellite} ${frame.band} ${frame.sector} — ${formatCaptureTime(frame.capture_time)}`}
             className="w-full h-full"
           />
         ) : (

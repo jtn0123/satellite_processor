@@ -49,6 +49,7 @@ export default function CompareSlider({
         onChange={(e) => onPositionChange(Number(e.target.value))}
         onKeyDown={handleKeyDown}
         aria-label="Compare frames slider"
+        aria-valuetext={`${Math.round(comparePosition)}% current frame visible`}
         className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10"
       />
       {/* Slider handle (visual only) */}
@@ -59,10 +60,10 @@ export default function CompareSlider({
         </div>
       </div>
       {/* Labels */}
-      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none max-w-[45%] truncate">
         Previous{prevFrameTime ? ` · ${timeAgo(prevFrameTime)}` : ''}
       </div>
-      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none max-w-[45%] truncate text-right">
         Current · {frameTime ? timeAgo(frameTime) : ''}
       </div>
     </div>

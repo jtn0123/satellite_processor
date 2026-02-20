@@ -1,6 +1,7 @@
 /**
  * ErrorReporter — centralised error logging utility.
- * In development it logs to console; in production it could POST to an endpoint.
+ * In development it logs to console; in production it POSTs to /api/errors
+ * with debouncing/batching to avoid flooding.
  */
 
 export interface ErrorReport {
@@ -9,13 +10,52 @@ export interface ErrorReport {
   context?: string;
   url?: string;
   timestamp: string;
+  userAgent?: string;
 }
 
 export type ErrorSubscriber = (report: ErrorReport) => void;
 
 const isDev = import.meta.env.DEV;
+const isProd = import.meta.env.PROD;
 const subscribers = new Set<ErrorSubscriber>();
 const errorLog: ErrorReport[] = [];
+
+// --- Production batching ---
+const ERROR_QUEUE: ErrorReport[] = [];
+const MAX_QUEUE = 10;
+const FLUSH_INTERVAL_MS = 5000;
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getApiKey(): string {
+  return import.meta.env.VITE_API_KEY ?? '';
+}
+
+function flushErrors(): void {
+  if (ERROR_QUEUE.length === 0) return;
+  const batch = ERROR_QUEUE.splice(0, MAX_QUEUE);
+  const apiKey = getApiKey();
+
+  for (const report of batch) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['X-API-Key'] = apiKey;
+
+    fetch('/api/errors', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(report),
+    }).catch(() => {
+      // Swallow — can't report errors about error reporting
+    });
+  }
+}
+
+function scheduleFlush(): void {
+  if (flushTimer !== null) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushErrors();
+  }, FLUSH_INTERVAL_MS);
+}
 
 /** Subscribe to all reported errors. Returns an unsubscribe function. */
 export function onError(fn: ErrorSubscriber): () => void {
@@ -34,14 +74,14 @@ export function clearErrorLog(): void {
 }
 
 function buildReport(error: unknown, context?: string): ErrorReport {
-  const report: ErrorReport = {
+  return {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
     context,
     url: globalThis.location?.href,
     timestamp: new Date().toISOString(),
+    userAgent: globalThis.navigator?.userAgent,
   };
-  return report;
 }
 
 export function reportError(error: unknown, context?: string): void {
@@ -50,20 +90,14 @@ export function reportError(error: unknown, context?: string): void {
 
   if (isDev) {
     console.error(`[ErrorReporter] ${report.context ?? 'unknown'}:`, report.message, report.stack ?? '');
-  } else {
-    // In production, POST to an error reporting endpoint (if configured)
-    const endpoint = import.meta.env.VITE_ERROR_ENDPOINT as string | undefined;
-    if (endpoint) {
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-      }).catch(() => {
-        // Swallow — we can't report errors about error reporting
-      });
-    } else {
-      console.error(`[ErrorReporter] ${report.context ?? 'unknown'}:`, report.message);
+  }
+
+  if (isProd) {
+    // Queue and debounce
+    if (ERROR_QUEUE.length < MAX_QUEUE) {
+      ERROR_QUEUE.push(report);
     }
+    scheduleFlush();
   }
 
   // Notify subscribers

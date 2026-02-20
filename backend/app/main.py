@@ -30,6 +30,7 @@ from .redis_pool import close_redis_pool, get_redis_client
 from .routers import (
     animations,
     download,
+    errors,
     file_download,
     goes,
     goes_data,
@@ -51,6 +52,8 @@ logger = logging.getLogger(__name__)
 # Paths that skip API key auth
 AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
 AUTH_SKIP_PREFIXES = ("/api/shared/", "/api/health")
+# POST /api/errors is unauthenticated (errors happen when auth fails too)
+AUTH_SKIP_METHODS_PATHS = {("POST", "/api/errors")}
 
 
 async def _stale_job_checker():
@@ -125,7 +128,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 async def api_key_auth(request: Request, call_next):
     if app_settings.api_key:
         path = request.url.path
-        if path not in AUTH_SKIP_PATHS and not path.startswith("/ws/") and not any(path.startswith(p) for p in AUTH_SKIP_PREFIXES):
+        if path not in AUTH_SKIP_PATHS and (request.method, path) not in AUTH_SKIP_METHODS_PATHS and not path.startswith("/ws/") and not any(path.startswith(p) for p in AUTH_SKIP_PREFIXES):
             key = request.headers.get("X-API-Key", "")
             if key != app_settings.api_key:
                 return JSONResponse(status_code=401, content={"error": "unauthorized", "detail": "Invalid or missing API key"})
@@ -164,6 +167,7 @@ app.include_router(scheduling.router)
 app.include_router(notifications.router)
 app.include_router(share.router)
 app.include_router(file_download.router)
+app.include_router(errors.router)
 
 
 # Alias: /api/frames → /api/goes/frames (Bug #6)

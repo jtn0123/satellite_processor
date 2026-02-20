@@ -1,10 +1,14 @@
-"""Structured logging configuration"""
+"""Structured logging configuration with wide event support."""
 
+import json
 import logging
 import sys
 import time
+import traceback
 
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+from .middleware.correlation import request_id_ctx
 
 
 def setup_logging(debug: bool = False):
@@ -44,43 +48,82 @@ def setup_logging(debug: bool = False):
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING if not debug else logging.INFO)
 
 
+def _get_header(scope: Scope, name: bytes) -> str:
+    """Extract a header value from ASGI scope."""
+    for key, value in scope.get("headers", []):
+        if key == name:
+            return value.decode("latin-1", errors="replace")
+    return ""
+
+
 class RequestLoggingMiddleware:
-    """Log request method, path, status, and duration.
+    """Emit one wide event per HTTP request as structured JSON.
 
     Uses pure ASGI to avoid breaking WebSocket connections.
     """
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
+        self._wide_logger = logging.getLogger("wide_event")
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
-        logger = logging.getLogger("api.request")
         start = time.perf_counter()
         status_code = 500
+        response_size = 0
+        error_info: dict[str, str] | None = None
 
-        async def send_wrapper(message):
-            nonlocal status_code
+        content_length = _get_header(scope, b"content-length")
+        request_size = int(content_length) if content_length.isdigit() else 0
+
+        async def send_wrapper(message: dict) -> None:
+            nonlocal status_code, response_size
             if message["type"] == "http.response.start":
                 status_code = message["status"]
+            elif message["type"] == "http.response.body":
+                body = message.get("body", b"")
+                if body:
+                    response_size += len(body)
             await send(message)
 
-        await self.app(scope, receive, send_wrapper)
-        duration_ms = (time.perf_counter() - start) * 1000
+        try:
+            await self.app(scope, receive, send_wrapper)
+        except Exception as exc:
+            error_info = {
+                "type": type(exc).__name__,
+                "message": str(exc),
+                "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__, limit=5)),
+            }
+            raise
+        finally:
+            duration_ms = (time.perf_counter() - start) * 1000
+            method = scope.get("method", "?")
+            path = scope.get("path", "?")
+            client = scope.get("client")
+            client_ip = client[0] if client else "unknown"
+            user_agent = _get_header(scope, b"user-agent")
+            correlation_id = request_id_ctx.get("")
 
-        logger.info(
-            "%s %s %d %.1fms",
-            scope.get("method", "?"),
-            scope.get("path", "?"),
-            status_code,
-            duration_ms,
-            extra={
-                "method": scope.get("method", "?"),
-                "path": scope.get("path", "?"),
-                "status": status_code,
-                "duration_ms": round(duration_ms, 1),
-            },
-        )
+            wide_event: dict = {
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z",
+                "correlation_id": correlation_id,
+                "method": method,
+                "path": path,
+                "status_code": status_code,
+                "duration_ms": round(duration_ms, 2),
+                "client_ip": client_ip,
+                "user_agent": user_agent,
+                "request_size_bytes": request_size,
+                "response_size_bytes": response_size,
+                "db_query_count": None,
+                "cache_hit": False,
+            }
+
+            if error_info:
+                wide_event["error"] = error_info
+
+            # Emit as a single JSON line
+            self._wide_logger.info(json.dumps(wide_event, default=str))

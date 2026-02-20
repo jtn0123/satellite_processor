@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from ..config import settings
 from ..db.database import get_db
 from ..db.models import GoesFrame, ShareLink
 from ..utils import utcnow
@@ -85,7 +86,10 @@ async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — serve the actual image for a share token."""
     link = await _get_valid_link(token, db)
     frame = link.frame
-    path = frame.file_path
+    path = os.path.realpath(frame.file_path)
+    storage_root = os.path.realpath(settings.storage_path)
+    if not path.startswith(storage_root + os.sep):
+        raise HTTPException(status_code=403, detail="Access denied")
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Image file not found on disk")
     return FileResponse(path, media_type="image/png")

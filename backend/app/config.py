@@ -68,6 +68,12 @@ DEFAULT_SATELLITE = "GOES-19"
 DEFAULT_SECTOR = "CONUS"
 DEFAULT_BAND = "C02"
 
+if not settings.api_key:
+    logging.getLogger(__name__).warning(
+        "API_KEY is not set — authentication is disabled. "
+        "Set the API_KEY environment variable to enable API key authentication."
+    )
+
 if not settings.debug and "sqlite" in settings.database_url.lower():
     logging.getLogger(__name__).warning(
         "DATABASE_URL is using SQLite in non-debug mode. "

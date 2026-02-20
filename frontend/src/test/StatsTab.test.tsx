@@ -70,9 +70,7 @@ describe('StatsTab', () => {
     });
     renderWithProviders(<StatsTab />);
     await waitFor(() => {
-      expect(screen.getAllByText('0').length).toBeGreaterThan(0);
-      expect(screen.getByText('Total Frames')).toBeInTheDocument();
-      expect(screen.getByText('Satellites')).toBeInTheDocument();
+      expect(screen.getByText('No statistics yet')).toBeInTheDocument();
     });
   });
 

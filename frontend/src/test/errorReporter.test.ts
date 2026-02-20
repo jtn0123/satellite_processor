@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { reportError, onError, getErrorLog, clearErrorLog, type ErrorReport } from '../utils/errorReporter';
+import { reportError, onError, getErrorLog, clearErrorLog } from '../utils/errorReporter';
 
 describe('errorReporter', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;

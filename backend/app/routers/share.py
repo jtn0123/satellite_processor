@@ -6,7 +6,7 @@ import os
 import secrets
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import GoesFrame, ShareLink
+from ..errors import APIError
 from ..utils import utcnow
 
 router = APIRouter(tags=["share"])
@@ -48,7 +49,7 @@ async def create_share_link(
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalar_one_or_none()
     if not frame:
-        raise HTTPException(status_code=404, detail="Frame not found")
+        raise APIError(404, "share_error", "Frame not found")
 
     token = secrets.token_urlsafe(32)
     expires = utcnow() + timedelta(hours=hours)
@@ -89,9 +90,9 @@ async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
     path = os.path.realpath(frame.file_path)
     storage_root = os.path.realpath(settings.storage_path)
     if not path.startswith(storage_root + os.sep):
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise APIError(403, "share_error", "Access denied")
     if not os.path.isfile(path):
-        raise HTTPException(status_code=404, detail="Image file not found on disk")
+        raise APIError(404, "share_error", "Image file not found on disk")
     return FileResponse(path, media_type="image/png")
 
 
@@ -103,7 +104,7 @@ async def _get_valid_link(token: str, db: AsyncSession) -> ShareLink:
     )
     link = result.scalar_one_or_none()
     if not link:
-        raise HTTPException(status_code=404, detail="Share link not found")
+        raise APIError(404, "share_error", "Share link not found")
     if link.expires_at < utcnow():
-        raise HTTPException(status_code=410, detail="Share link has expired")
+        raise APIError(410, "share_error", "Share link has expired")
     return link

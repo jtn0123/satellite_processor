@@ -116,7 +116,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db)):
             "recent_jobs": recent_jobs,
         }
 
-    return await get_cached(cache_key, ttl=30, fetch_fn=_fetch)
+    return await get_cached(cache_key, ttl=120, fetch_fn=_fetch)
 
 
 # ── Quick Fetch Presets ───────────────────────────────────────────────
@@ -681,6 +681,8 @@ async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
     tag = result.scalars().first()
     if not tag:
         raise APIError(404, "not_found", "Tag not found")
+    # Explicit batch delete of join-table rows to avoid slow cascade on large datasets
+    await db.execute(delete(FrameTag).where(FrameTag.tag_id == tag_id))
     await db.delete(tag)
     await db.commit()
     return {"deleted": tag_id}

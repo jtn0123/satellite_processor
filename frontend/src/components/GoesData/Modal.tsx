@@ -31,6 +31,7 @@ export default function Modal({
         className="fixed inset-0 w-full h-full bg-transparent cursor-default"
         onClick={onClose}
         aria-label="Close modal"
+        tabIndex={-1}
       />
       <div
         ref={dialogRef}

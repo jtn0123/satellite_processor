@@ -27,7 +27,7 @@ export default function SharedFramePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function SharedFramePage() {
           <a
             href={`/api/shared/${token}/image`}
             download
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500 text-gray-900 font-medium hover:bg-yellow-400 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-gray-900 dark:text-white font-medium hover:bg-primary/80 transition-colors"
           >
             <ExternalLink className="w-4 h-4" /> Download
           </a>

@@ -490,6 +490,22 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                   <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
                 </div>
               )}
+              {frame && (
+                <button
+                  onClick={() => {
+                    const url = `/api/download?path=${encodeURIComponent(frame.file_path)}`;
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = frame.file_path.split('/').pop() ?? 'frame';
+                    a.click();
+                  }}
+                  className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+                  title="Download frame"
+                  aria-label="Download frame"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={toggleOverlay}
                 className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"

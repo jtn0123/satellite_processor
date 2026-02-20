@@ -127,6 +127,29 @@ export default function BrowseTab() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // #54: Keyboard shortcuts for BrowseTab
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAll();
+      } else if (e.key === 'Delete' && selectedIds.size > 0) {
+        e.preventDefault();
+        if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) {
+          deleteMutation.mutate([...selectedIds]);
+        }
+      } else if (e.key === 'Escape' && selectedIds.size > 0) {
+        setSelectedIds(new Set());
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }); // intentionally no deps — uses latest state via closure
+
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
   }, [queryClient]);
@@ -243,9 +266,9 @@ export default function BrowseTab() {
     }
     if (viewMode === 'grid') {
       return (
-        <div className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
+        <div role="list" aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
           {frames.map((frame) => (
-            <div key={frame.id} className="cv-auto @container">
+            <div key={frame.id} role="listitem" className="cv-auto @container">
               <FrameCard
                 frame={frame}
                 isSelected={selectedIds.has(frame.id)}
@@ -264,9 +287,9 @@ export default function BrowseTab() {
       );
     }
     return (
-      <div className="space-y-1">
+      <div role="list" aria-label="Satellite frames" className="space-y-1">
         {frames.map((frame) => (
-          <div key={frame.id} className="cv-auto-list">
+          <div key={frame.id} role="listitem" className="cv-auto-list">
             <FrameCard
               frame={frame}
               isSelected={selectedIds.has(frame.id)}
@@ -313,7 +336,17 @@ export default function BrowseTab() {
       {/* Filter Sidebar */}
       <div className={`w-64 shrink-0 space-y-4 ${showMobileFilters ? 'block' : 'hidden'} md:block`}>
         <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
-          <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
+            {(filterSat || filterBand || filterSector || filterCollection || filterTag) && (
+              <button
+                onClick={() => { setFilterSat(''); setFilterBand(''); setFilterSector(''); setFilterCollection(''); setFilterTag(''); }}
+                className="text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
 
           <div>
             <label htmlFor="browse-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>

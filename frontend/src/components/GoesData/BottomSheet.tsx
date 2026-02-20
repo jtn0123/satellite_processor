@@ -38,11 +38,16 @@ export default function BottomSheet({ open, onClose, title, children }: Readonly
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') { onClose(); }
+      };
+      document.addEventListener('keydown', handler);
+      return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', handler); };
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 

@@ -49,7 +49,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
       retriesRef.current = 0;
     };
 
-    ws.onerror = (event) => {
+    ws.onerror = () => {
       reportError(new Error(`WebSocket error for job ${jobId}`), 'useWebSocket.onerror');
     };
 

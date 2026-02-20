@@ -1,3 +1,10 @@
+## [1.11.8](https://github.com/jtn0123/satellite_processor/compare/v1.11.7...v1.11.8) (2026-02-20)
+
+
+### Bug Fixes
+
+* Batch 2 — High-Impact Polish ([#175](https://github.com/jtn0123/satellite_processor/issues/175)) ([927754e](https://github.com/jtn0123/satellite_processor/commit/927754e0d25b66fdb2f373e399f1c4781b6fb9fe)), closes [Hi#Impact](https://github.com/Hi/issues/Impact) [hi#impact](https://github.com/hi/issues/impact) [#8](https://github.com/jtn0123/satellite_processor/issues/8) [#14](https://github.com/jtn0123/satellite_processor/issues/14) [#17](https://github.com/jtn0123/satellite_processor/issues/17) [#22](https://github.com/jtn0123/satellite_processor/issues/22) [#24](https://github.com/jtn0123/satellite_processor/issues/24) [#56](https://github.com/jtn0123/satellite_processor/issues/56) [#9](https://github.com/jtn0123/satellite_processor/issues/9) [#10](https://github.com/jtn0123/satellite_processor/issues/10)
+
 ## [1.11.7](https://github.com/jtn0123/satellite_processor/compare/v1.11.6...v1.11.7) (2026-02-20)
 
 

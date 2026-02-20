@@ -46,9 +46,9 @@ function FrameCardGrid({
         aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
         className="w-full aspect-video bg-gray-100 dark:bg-slate-800 flex items-center justify-center relative group/img cursor-pointer"
       >
-        {frame.thumbnail_path ? (
+        {(frame.thumbnail_url ?? frame.image_url) ? (
           <LazyImage
-            src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+            src={frame.thumbnail_url ?? frame.image_url}
             alt={`${frame.satellite} ${frame.band} ${frame.sector} — ${formatCaptureTime(frame.capture_time)}`}
             className="w-full h-full"
           />
@@ -145,9 +145,9 @@ function FrameCardList({
         className="w-16 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer min-w-[44px] min-h-[44px]"
         aria-label={`${frame.satellite} ${frame.band} ${frame.sector} frame from ${new Date(frame.capture_time).toLocaleString()}`}
       >
-        {frame.thumbnail_path ? (
+        {(frame.thumbnail_url ?? frame.image_url) ? (
           <LazyImage
-            src={`/api/download?path=${encodeURIComponent(frame.thumbnail_path)}`}
+            src={frame.thumbnail_url ?? frame.image_url}
             alt={`${frame.satellite} ${frame.band} ${frame.sector} — ${formatCaptureTime(frame.capture_time)}`}
             className="w-full h-full"
           />

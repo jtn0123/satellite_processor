@@ -72,9 +72,7 @@ export default function MapTab() {
     return SECTOR_BOUNDS[satellite]?.[sector] || SECTOR_BOUNDS['GOES-16']['CONUS'];
   }, [satellite, sector]);
 
-  const imageUrl = frame?.file_path
-    ? `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`
-    : null;
+  const imageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
 
   // Center map on the sector
   const center = useMemo(() => {

@@ -8,9 +8,11 @@ interface GoesFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_path: string;
+  image_url: string;
+  thumbnail_url: string | null;
+  file_path?: string;
   file_size: number;
-  thumbnail_path: string | null;
+  thumbnail_path?: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -39,7 +41,7 @@ export default function ComparisonModal({
   const right = swapped ? frameA : frameB;
 
   const getUrl = (frame: GoesFrame) =>
-    `/api/download?path=${encodeURIComponent(frame.thumbnail_path || frame.file_path)}`;
+    frame.thumbnail_url ?? frame.image_url;
 
   return (
     <Modal

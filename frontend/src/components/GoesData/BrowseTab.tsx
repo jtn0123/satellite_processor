@@ -191,17 +191,10 @@ export default function BrowseTab() {
   }, []);
 
   const handleDownload = useCallback((frame: GoesFrame) => {
-    api.get('/download', { params: { path: frame.file_path }, responseType: 'blob' })
-      .then((res) => {
-        const blob = new Blob([res.data]);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = frame.file_path.split('/').pop() ?? 'frame';
-        a.click();
-        URL.revokeObjectURL(url);
-      })
-      .catch(() => showToast('error', 'Failed to download frame'));
+    const a = document.createElement('a');
+    a.href = frame.image_url;
+    a.download = `${frame.satellite}_${frame.band}_${frame.sector}_${frame.id.slice(0, 8)}.png`;
+    a.click();
   }, []);
 
   const handleSingleTag = useCallback((frame: GoesFrame) => {
@@ -287,7 +280,7 @@ export default function BrowseTab() {
     }
     if (viewMode === 'grid') {
       return (
-        <ul aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3 list-none p-0 m-0">
+        <ul aria-label="Satellite frames" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 list-none p-0 m-0">
           {frames.map((frame) => (
             <li key={frame.id} className="cv-auto @container">
               <FrameCard

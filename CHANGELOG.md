@@ -1,3 +1,10 @@
+## [1.11.9](https://github.com/jtn0123/satellite_processor/compare/v1.11.8...v1.11.9) (2026-02-20)
+
+
+### Bug Fixes
+
+* Batch 3 — Accessibility & UX Polish ([#176](https://github.com/jtn0123/satellite_processor/issues/176)) ([2ee8b0a](https://github.com/jtn0123/satellite_processor/commit/2ee8b0a9765d62c3ea9f0bf735c33c77ee3ad788)), closes [#39](https://github.com/jtn0123/satellite_processor/issues/39)
+
 ## [1.11.8](https://github.com/jtn0123/satellite_processor/compare/v1.11.7...v1.11.8) (2026-02-20)
 
 

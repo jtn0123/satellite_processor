@@ -134,7 +134,7 @@ describe('FetchTab error handling', () => {
     await navigateToStep3AndFill();
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('error', 'Validation error');
+      expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to create fetch job');
     });
   });
 
@@ -144,7 +144,7 @@ describe('FetchTab error handling', () => {
     await navigateToStep3AndFill();
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to create fetch job');
+      expect(mockShowToast).toHaveBeenCalledWith('error', 'Network error');
     });
   });
 });

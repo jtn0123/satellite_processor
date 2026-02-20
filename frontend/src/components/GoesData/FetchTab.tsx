@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { parseApiError } from '../../utils/parseApiError';
 import {
   Download,
   AlertTriangle,
@@ -160,11 +161,7 @@ export default function FetchTab() {
       setShowConfirm(false);
     },
     onError: (err: unknown) => {
-      const detail = (err as { response?: { data?: { detail?: Array<{ msg?: string }> | string } } })?.response?.data?.detail;
-      let msg = 'Failed to create fetch job';
-      if (Array.isArray(detail)) msg = detail[0]?.msg ?? 'Validation error';
-      else if (typeof detail === 'string') msg = detail;
-      showToast('error', msg.replace(/^Value error, /i, ''));
+      showToast('error', parseApiError(err, 'Failed to create fetch job'));
       setShowConfirm(false);
     },
   });

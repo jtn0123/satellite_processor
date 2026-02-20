@@ -109,7 +109,6 @@ async def list_products():
     }
 
     async def _fetch():
-        await asyncio.sleep(0)
         return products
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)

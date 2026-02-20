@@ -33,6 +33,24 @@ import { extractArray } from '../../utils/safeData';
 
 const PAGE_LIMIT = 50;
 
+function buildFilterParams(
+  sortBy: string,
+  sortOrder: string,
+  sat: string,
+  bandVal: string,
+  sector: string,
+  collection: string,
+  tag: string,
+): Record<string, string> {
+  const p: Record<string, string> = { sort: sortBy, order: sortOrder };
+  if (sat) p.satellite = sat;
+  if (bandVal) p.band = bandVal;
+  if (sector) p.sector = sector;
+  if (collection) p.collection_id = collection;
+  if (tag) p.tag = tag;
+  return p;
+}
+
 export default function BrowseTab() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -78,15 +96,10 @@ export default function BrowseTab() {
   const debouncedCollection = useDebounce(filterCollection, 300);
   const debouncedTag = useDebounce(filterTag, 300);
 
-  const filterParams = useMemo(() => {
-    const p: Record<string, string> = { sort: sortBy, order: sortOrder };
-    if (debouncedSat) p.satellite = debouncedSat;
-    if (debouncedBand) p.band = debouncedBand;
-    if (debouncedSector) p.sector = debouncedSector;
-    if (debouncedCollection) p.collection_id = debouncedCollection;
-    if (debouncedTag) p.tag = debouncedTag;
-    return p;
-  }, [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag]);
+  const filterParams = useMemo(
+    () => buildFilterParams(sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag),
+    [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag],
+  );
 
   // Infinite query
   const {
@@ -178,11 +191,17 @@ export default function BrowseTab() {
   }, []);
 
   const handleDownload = useCallback((frame: GoesFrame) => {
-    const url = `/api/download?path=${encodeURIComponent(frame.file_path)}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = frame.file_path.split('/').pop() ?? 'frame';
-    a.click();
+    api.get('/download', { params: { path: frame.file_path }, responseType: 'blob' })
+      .then((res) => {
+        const blob = new Blob([res.data]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = frame.file_path.split('/').pop() ?? 'frame';
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => showToast('error', 'Failed to download frame'));
   }, []);
 
   const handleSingleTag = useCallback((frame: GoesFrame) => {
@@ -268,9 +287,9 @@ export default function BrowseTab() {
     }
     if (viewMode === 'grid') {
       return (
-        <div role="list" aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3">
+        <ul aria-label="Satellite frames" className="@container grid grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 gap-3 list-none p-0 m-0">
           {frames.map((frame) => (
-            <div key={frame.id} role="listitem" className="cv-auto @container">
+            <li key={frame.id} className="cv-auto @container">
               <FrameCard
                 frame={frame}
                 isSelected={selectedIds.has(frame.id)}
@@ -283,15 +302,15 @@ export default function BrowseTab() {
                 onDelete={handleSingleDelete}
                 viewMode="grid"
               />
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       );
     }
     return (
-      <div role="list" aria-label="Satellite frames" className="space-y-1">
+      <ul aria-label="Satellite frames" className="space-y-1 list-none p-0 m-0">
         {frames.map((frame) => (
-          <div key={frame.id} role="listitem" className="cv-auto-list">
+          <li key={frame.id} className="cv-auto-list">
             <FrameCard
               frame={frame}
               isSelected={selectedIds.has(frame.id)}
@@ -304,9 +323,9 @@ export default function BrowseTab() {
               onDelete={handleSingleDelete}
               viewMode="list"
             />
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     );
   };
 
@@ -511,8 +530,8 @@ export default function BrowseTab() {
         </div>
 
         {/* Hint */}
-        <div className="text-xs text-gray-400 dark:text-slate-500">
-          {infiniteData ? `${totalFrames} frames` : <span className="inline-block h-3 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />} · Click to preview, Shift+Click to select
+        <div className="text-xs text-gray-400 dark:text-slate-500 min-h-[1.25rem]">
+          {infiniteData ? `${totalFrames} frames` : <span className="inline-block h-4 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded align-middle" />} · Click to preview, Shift+Click to select
         </div>
 
         {/* Frame grid/list */}
@@ -618,6 +637,14 @@ export default function BrowseTab() {
             </select>
           </div>
           <div>
+            <label htmlFor="bs-tag" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Tag</label>
+            <select id="bs-tag" value={filterTag} onChange={(e) => setFilterTag(e.target.value)}
+              className={`w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2.5 min-h-[44px]${tagsError ? ' border-red-400' : ''}`}>
+              <option value="">{tagsError ? 'Failed to load' : 'All'}</option>
+              {(tags ?? []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            </select>
+          </div>
+          <div>
             <label htmlFor="bs-sort" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sort by</label>
             <select id="bs-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}
               className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2.5 min-h-[44px]">
@@ -627,9 +654,17 @@ export default function BrowseTab() {
               <option value="created_at">Added</option>
             </select>
           </div>
+          <div>
+            <label htmlFor="bs-order" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Order</label>
+            <select id="bs-order" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}
+              className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2.5 min-h-[44px]">
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
+            </select>
+          </div>
           <button
             onClick={() => setShowBottomSheet(false)}
-            className="w-full py-3 bg-primary text-gray-900 dark:text-white rounded-xl font-medium text-sm min-h-[44px]"
+            className="w-full py-3 btn-primary-mix text-gray-900 dark:text-white rounded-xl font-medium text-sm min-h-[44px]"
           >
             Apply Filters
           </button>

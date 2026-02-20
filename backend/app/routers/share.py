@@ -37,6 +37,7 @@ class SharedFrameResponse(BaseModel):
     width: int | None
     height: int | None
     file_size: int
+    expires_at: str
 
 
 @router.post("/api/goes/frames/{frame_id}/share", response_model=ShareLinkResponse)
@@ -79,6 +80,7 @@ async def get_shared_frame(token: str, db: AsyncSession = Depends(get_db)):
         width=frame.width,
         height=frame.height,
         file_size=frame.file_size,
+        expires_at=link.expires_at.isoformat(),
     )
 
 

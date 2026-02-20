@@ -63,10 +63,10 @@ function FrameCardGrid({
         )}
         {/* Satellite + Band badges overlaid on thumbnail */}
         <div className="absolute bottom-2 left-2 flex gap-1">
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white backdrop-blur-sm">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/70 text-white backdrop-blur-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ring-1 ring-white/20" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
             {frame.satellite}
           </span>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white backdrop-blur-sm">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/70 text-white backdrop-blur-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ring-1 ring-white/20" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
             {frame.band}
           </span>
         </div>

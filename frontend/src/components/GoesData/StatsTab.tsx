@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { Satellite } from 'lucide-react';
 import api from '../../api/client';
 import { formatBytes } from './utils';
+import EmptyState from './EmptyState';
 import type { FrameStats } from './types';
 
 export default function StatsTab() {
@@ -15,6 +17,20 @@ export default function StatsTab() {
 
   if (isError) return <div className="text-sm text-red-400">Failed to load statistics.</div>;
   if (!stats) return null;
+
+  if (stats.total_frames === 0) {
+    return (
+      <EmptyState
+        icon={<Satellite className="w-8 h-8" />}
+        title="No statistics yet"
+        description="Fetch some satellite data first — statistics will appear here once you have frames to analyze."
+        action={{
+          label: 'Go to Fetch Tab',
+          onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
+        }}
+      />
+    );
+  }
 
   const satValues = Object.values(stats.by_satellite ?? {});
   const bandValues = Object.values(stats.by_band ?? {});

@@ -222,6 +222,7 @@ async def openapi_json():
 # ── WebSocket ─────────────────────────────────────────────────────
 
 WS_PING_INTERVAL = 30  # seconds
+WS_TOO_MANY_CONNECTIONS = "Too many connections"
 WS_MAX_CONNECTIONS_PER_IP = 10
 _ws_connections: dict[str, int] = {}  # ip -> count
 _ws_lock = asyncio.Lock()
@@ -297,7 +298,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
 
     client_ip = websocket.client.host if websocket.client else "unknown"
     if not await _ws_track(client_ip, 1):
-        await websocket.close(code=4429, reason="Too many connections")
+        await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
     await websocket.accept()
@@ -338,7 +339,7 @@ async def global_events_websocket(websocket: WebSocket):
 
     client_ip = websocket.client.host if websocket.client else "unknown"
     if not await _ws_track(client_ip, 1):
-        await websocket.close(code=4429, reason="Too many connections")
+        await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
     await websocket.accept()
@@ -388,7 +389,7 @@ async def status_websocket(websocket: WebSocket):
 
     client_ip = websocket.client.host if websocket.client else "unknown"
     if not await _ws_track(client_ip, 1):
-        await websocket.close(code=4429, reason="Too many connections")
+        await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
     await websocket.accept()

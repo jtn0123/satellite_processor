@@ -40,9 +40,16 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
     };
   }, []);
 
-  return (
-    <div ref={ref} className={className} data-testid="lazy-image-wrapper">
-      {isVisible && !hasError ? (
+  const renderContent = () => {
+    if (hasError) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-xs">
+          Failed to load
+        </div>
+      );
+    }
+    if (isVisible) {
+      return (
         <img
           src={src}
           alt={alt}
@@ -52,13 +59,14 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
           onError={() => setHasError(true)}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
-      ) : hasError ? (
-        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-xs">
-          Failed to load
-        </div>
-      ) : (
-        placeholder ?? <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-slate-700" />
-      )}
+      );
+    }
+    return placeholder ?? <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-slate-700" />;
+  };
+
+  return (
+    <div ref={ref} className={className} data-testid="lazy-image-wrapper">
+      {renderContent()}
     </div>
   );
 }

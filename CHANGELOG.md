@@ -1,3 +1,10 @@
+## [1.11.11](https://github.com/jtn0123/satellite_processor/compare/v1.11.10...v1.11.11) (2026-02-20)
+
+
+### Bug Fixes
+
+* Batch 5 UX polish — empty states, mobile filters, touch targets, API consistency ([#178](https://github.com/jtn0123/satellite_processor/issues/178)) ([b477b64](https://github.com/jtn0123/satellite_processor/commit/b477b648ce690a18ca8054a71bf983d0b4260fa8)), closes [#25](https://github.com/jtn0123/satellite_processor/issues/25)
+
 ## [1.11.10](https://github.com/jtn0123/satellite_processor/compare/v1.11.9...v1.11.10) (2026-02-20)
 
 

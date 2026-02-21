@@ -42,6 +42,8 @@ class ErrorReportOut(BaseModel):
 @limiter.limit("10/minute")
 async def report_error(request: Request, body: ErrorReportIn, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """Collect a frontend error report. No auth required."""
+    # NOTE: Client IP stored for abuse detection and rate-limit correlation.
+    # Consider periodic purge of old error logs to limit PII retention.
     client = request.client
     client_ip = client.host if client else None
 

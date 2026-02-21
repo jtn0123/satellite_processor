@@ -299,14 +299,14 @@ jobs:
 
       - name: Wait for frontend
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -sf http://localhost:3000 > /dev/null 2>&1; then
               echo "Frontend ready after ${i}s"
               exit 0
             fi
             sleep 1
           done
-          echo "Frontend failed within 30s"
+          echo "Frontend failed within 60s"
           docker compose logs frontend
           exit 1
 

@@ -71,11 +71,11 @@ describe('Navigation Restructure', () => {
       expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
     });
 
-    it('has exactly 6 nav items in sidebar', () => {
+    it('has exactly 7 nav items in sidebar (includes Error Logs in dev)', () => {
       renderWithRouter();
       // Both desktop and mobile have links, so we check desktop sidebar links
       const navLinks = document.querySelectorAll('aside nav a');
-      expect(navLinks.length).toBe(6);
+      expect(navLinks.length).toBe(7);
     });
   });
 
@@ -125,12 +125,12 @@ describe('Navigation Restructure', () => {
   });
 
   describe('Mobile drawer matches sidebar', () => {
-    it('mobile drawer has same 6 nav items', () => {
+    it('mobile drawer has same 7 nav items (includes Error Logs in dev)', () => {
       renderWithRouter();
       fireEvent.click(screen.getByLabelText('Open menu'));
       const dialog = screen.getByLabelText('Navigation menu');
       const mobileLinks = dialog.querySelectorAll('nav a');
-      expect(mobileLinks.length).toBe(6);
+      expect(mobileLinks.length).toBe(7);
       const labels = Array.from(mobileLinks).map((l) => l.textContent?.trim());
       expect(labels).toContain('Dashboard');
       expect(labels).toContain('Live View');
@@ -138,6 +138,7 @@ describe('Navigation Restructure', () => {
       expect(labels).toContain('Animate');
       expect(labels).toContain('Jobs');
       expect(labels).toContain('Settings');
+      expect(labels).toContain('Error Logs');
     });
   });
 });

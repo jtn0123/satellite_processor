@@ -340,3 +340,17 @@ class AppSetting(Base):
     key = Column(String(100), primary_key=True)
     value = Column(JSON, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class ErrorLog(Base):
+    """Frontend error reports collected via POST /api/errors."""
+    __tablename__ = "error_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    message = Column(Text, nullable=False)
+    stack = Column(Text, nullable=True)
+    context = Column(JSON, nullable=True)
+    url = Column(Text, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    client_ip = Column(String(45), nullable=True)
+    created_at = Column(DateTime, default=utcnow, index=True)

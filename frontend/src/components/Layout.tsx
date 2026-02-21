@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   HelpCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import KeyboardShortcuts from './KeyboardShortcuts';
@@ -24,6 +25,8 @@ import MobileBottomNav from './MobileBottomNav';
 import FetchProgressBar from './GoesData/FetchProgressBar';
 import { useJobToasts } from '../hooks/useJobToasts';
 
+const showErrorDashboard = import.meta.env.DEV || !!import.meta.env.VITE_API_KEY;
+
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/live', icon: Radio, label: 'Live View' },
@@ -31,6 +34,7 @@ const links = [
   { to: '/animate', icon: Sparkles, label: 'Animate' },
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },
   { to: '/settings', icon: Cog, label: 'Settings' },
+  ...(showErrorDashboard ? [{ to: '/errors', icon: AlertTriangle, label: 'Error Logs' }] : []),
 ];
 
 export default function Layout() {

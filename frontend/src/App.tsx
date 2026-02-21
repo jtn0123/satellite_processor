@@ -14,6 +14,7 @@ const GoesData = lazy(() => import('./pages/GoesData'));
 const LiveView = lazy(() => import('./pages/LiveView'));
 const Animate = lazy(() => import('./pages/Animate'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const ErrorDashboard = lazy(() => import('./pages/ErrorDashboard'));
 const SharedFrame = lazy(() => import('./pages/SharedFrame'));
 
 const queryClient = new QueryClient({
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="goes" element={<ErrorBoundary><GoesData /></ErrorBoundary>} />
               <Route path="jobs" element={<ErrorBoundary><JobsPage /></ErrorBoundary>} />
               <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+              <Route path="errors" element={<ErrorBoundary><ErrorDashboard /></ErrorBoundary>} />
               {/* Legacy redirects */}
               <Route path="upload" element={<Navigate to="/settings" replace />} />
               <Route path="process" element={<Navigate to="/settings" replace />} />

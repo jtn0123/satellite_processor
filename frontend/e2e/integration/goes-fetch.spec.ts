@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForApiHealth, apiPost, apiGet, apiDelete, navigateTo, waitForJob } from './helpers';
+import { waitForApiHealth, apiPost, apiGet, navigateTo, waitForJob } from './helpers';
 
 test.describe.serial('GOES Fetch Flow', () => {
   let jobId: string;

@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/jtn0123/satellite_processor/compare/v1.13.0...v1.13.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* upgrade Pillow 12.1.0 → 12.1.1 (CVE-2026-25990) + IP logging privacy notes ([#187](https://github.com/jtn0123/satellite_processor/issues/187)) ([526d6a3](https://github.com/jtn0123/satellite_processor/commit/526d6a323b1827838c334b78f7a4b7203f675ca0))
+
 # [1.13.0](https://github.com/jtn0123/satellite_processor/compare/v1.12.0...v1.13.0) (2026-02-21)
 
 

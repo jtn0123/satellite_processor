@@ -103,6 +103,8 @@ class RequestLoggingMiddleware:
             method = scope.get("method", "?")
             path = scope.get("path", "?")
             client = scope.get("client")
+            # NOTE: IP logged for request tracing / rate-limit debugging.
+            # Ensure production log retention policy limits PII exposure.
             client_ip = client[0] if client else "unknown"
             user_agent = _get_header(scope, b"user-agent")
             correlation_id = request_id_ctx.get("")

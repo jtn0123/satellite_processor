@@ -352,5 +352,6 @@ class ErrorLog(Base):
     context = Column(JSON, nullable=True)
     url = Column(Text, nullable=True)
     user_agent = Column(Text, nullable=True)
+    # Privacy: IP stored for abuse detection; consider periodic purge policy
     client_ip = Column(String(45), nullable=True)
     created_at = Column(DateTime, default=utcnow, index=True)

@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/jtn0123/satellite_processor/compare/v1.12.0...v1.13.0) (2026-02-21)
+
+
+### Features
+
+* wide event logging, error collection endpoint & dashboard ([#185](https://github.com/jtn0123/satellite_processor/issues/185)) ([4f0dba8](https://github.com/jtn0123/satellite_processor/commit/4f0dba8ab03d4f3a2e59feffc9319bd2b85f2fc4))
+
 # [1.12.0](https://github.com/jtn0123/satellite_processor/compare/v1.11.12...v1.12.0) (2026-02-20)
 
 

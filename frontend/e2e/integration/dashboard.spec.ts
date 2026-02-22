@@ -29,6 +29,12 @@ test.describe('Dashboard', () => {
 
   test('navigation links work', async ({ page }) => {
     await navigateTo(page, '/');
+    // Dismiss What's New modal if still visible
+    const modal = page.locator('dialog[open]');
+    if ((await modal.count()) > 0) {
+      await page.keyboard.press('Escape');
+      await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
     // Find and click a nav link to browse
     const browseLink = page.getByRole('link', { name: /browse/i })
       .or(page.locator('a[href*="goes"]'));

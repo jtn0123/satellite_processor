@@ -71,6 +71,12 @@ export async function apiDelete(request: APIRequestContext, path: string) {
 export async function navigateTo(page: Page, path: string): Promise<void> {
   await dismissWhatsNew(page);
   await page.goto(path, { waitUntil: 'networkidle' });
+  // Double-check: dismiss modal via Escape if it still appeared
+  const modal = page.locator('dialog[open]');
+  if ((await modal.count()) > 0) {
+    await page.keyboard.press('Escape');
+    await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  }
 }
 
 /**

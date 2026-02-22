@@ -59,6 +59,12 @@ test.describe('Navigation Flow', () => {
 
   test('clicking sidebar links navigates correctly', async ({ page }) => {
     await navigateTo(page, '/');
+    // Dismiss What's New modal if still visible
+    const modal = page.locator('dialog[open]');
+    if ((await modal.count()) > 0) {
+      await page.keyboard.press('Escape');
+      await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
     // Try to find and click the Browse/GOES link
     const browseLink = page.getByRole('link', { name: /browse|goes|fetch/i }).first();
     const exists = (await browseLink.count()) > 0;

@@ -44,4 +44,25 @@ test.describe('Error Reporting', () => {
     const res = await apiGet(request, '/api/jobs/nonexistent-job-id');
     expect(res.status()).toBeGreaterThanOrEqual(400);
   });
+
+  test('error dashboard page loads at /errors', async ({ page }) => {
+    await navigateTo(page, '/errors');
+    await expect(page.locator('body')).toBeVisible({ timeout: 15_000 });
+    // May redirect to home or show error page — either is valid
+  });
+
+  test('API returns proper error format for bad requests', async ({ request }) => {
+    const res = await apiPost(request, '/api/goes/fetch', {});
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+    const body = await res.json();
+    expect(body).toBeTruthy();
+    // Error response should have some structure
+    expect(typeof body).toBe('object');
+  });
+
+  test('invalid API routes return 404 or 405', async ({ request }) => {
+    const res = await apiGet(request, '/api/this-endpoint-does-not-exist');
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+    expect(res.status()).toBeLessThan(500);
+  });
 });

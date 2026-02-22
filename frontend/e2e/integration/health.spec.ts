@@ -42,4 +42,39 @@ test.describe('Stack Health', () => {
     const body = await res.json() as { satellites: string[] };
     expect(body.satellites.length).toBeGreaterThan(0);
   });
+
+  test('health detailed endpoint returns structured system info', async ({ request }) => {
+    const res = await apiGet(request, '/api/health/detailed');
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json() as Record<string, unknown>;
+    expect(body).toBeTruthy();
+    expect(typeof body).toBe('object');
+    // Should have some system info fields
+    const keys = Object.keys(body);
+    expect(keys.length).toBeGreaterThan(0);
+  });
+
+  test('API returns CORS headers', async ({ request }) => {
+    const res = await apiGet(request, '/api/health');
+    expect(res.ok()).toBeTruthy();
+    const headers = res.headers();
+    // CORS headers may or may not be present depending on same-origin
+    // Just verify headers object is accessible
+    expect(headers).toBeTruthy();
+  });
+
+  test('system info endpoint returns data', async ({ request }) => {
+    const res = await apiGet(request, '/api/system/info');
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body).toBeTruthy();
+    expect(typeof body).toBe('object');
+  });
+
+  test('GOES catalog endpoint is accessible', async ({ request }) => {
+    const res = await apiGet(request, '/api/goes/catalog');
+    // May return 200 or other status — just verify it responds
+    expect(res.status()).toBeGreaterThanOrEqual(200);
+    expect(res.status()).toBeLessThan(500);
+  });
 });

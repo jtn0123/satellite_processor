@@ -49,7 +49,28 @@ test.describe.serial('GOES Fetch Flow', () => {
     const res = await apiGet(request, '/api/goes/frames?limit=10');
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { items: unknown[]; total: number };
-    // May or may not have frames depending on GOES data availability
     expect(body.total).toBeGreaterThanOrEqual(0);
+  });
+
+  test('products endpoint lists available satellites and bands', async ({ request }) => {
+    const res = await apiGet(request, '/api/goes/products');
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json() as { satellites: string[] };
+    expect(body.satellites).toBeTruthy();
+    expect(body.satellites.length).toBeGreaterThan(0);
+  });
+
+  test('fetch with different satellite returns valid response', async ({ request }) => {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const res = await apiPost(request, '/api/goes/fetch', {
+      satellite: 'GOES-18',
+      sector: 'CONUS',
+      band: 'C02',
+      start_time: oneHourAgo.toISOString(),
+      end_time: now.toISOString(),
+    });
+    // Should succeed or fail gracefully — not 500
+    expect(res.status()).toBeLessThan(500);
   });
 });

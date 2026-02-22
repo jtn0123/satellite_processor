@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import secrets
 from datetime import timedelta
 
@@ -16,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import GoesFrame, ShareLink
-from ..errors import APIError
+from ..errors import APIError, validate_safe_path
 from ..utils import utcnow
 
 router = APIRouter(tags=["share"])
@@ -89,13 +88,13 @@ async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — serve the actual image for a share token."""
     link = await _get_valid_link(token, db)
     frame = link.frame
-    path = os.path.realpath(frame.file_path)
-    storage_root = os.path.realpath(settings.storage_path)
-    if not path.startswith(storage_root + os.sep):
-        raise APIError(403, "share_error", "Access denied")
-    if not os.path.isfile(path):
+    try:
+        path = validate_safe_path(frame.file_path, settings.storage_path)
+    except APIError:
         raise APIError(404, "share_error", "Image file not found on disk")
-    return FileResponse(path, media_type="image/png")
+    if not path.is_file():
+        raise APIError(404, "share_error", "Image file not found on disk")
+    return FileResponse(str(path), media_type="image/png")
 
 
 async def _get_valid_link(token: str, db: AsyncSession) -> ShareLink:

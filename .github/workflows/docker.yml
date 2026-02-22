@@ -82,47 +82,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy to Portainer
-    needs: build-and-push
-    runs-on: [self-hosted, ci]
-    if: github.ref == 'refs/heads/release'
-
-    steps:
-      - name: Authenticate with Portainer
-        id: auth
-        run: |
-          TOKEN=$(curl -sf -X POST "${{ secrets.PORTAINER_URL }}/api/auth" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"${{ secrets.PORTAINER_USER }}\",\"password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}" \
-            | jq -r .jwt)
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-
-      - name: Redeploy stack
-        run: |
-          STACK_ID="${{ secrets.PORTAINER_STACK_ID }}"
-
-          # Get current stack to preserve env vars and compose file
-          STACK=$(curl -sf "${{ secrets.PORTAINER_URL }}/api/stacks/${STACK_ID}" \
-            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}")
-
-          ENDPOINT_ID=$(echo "$STACK" | jq -r '.EndpointId')
-          ENV_VARS=$(echo "$STACK" | jq '.Env')
-
-          # Fetch the existing stack file from Portainer
-          STACK_FILE=$(curl -sf "${{ secrets.PORTAINER_URL }}/api/stacks/${STACK_ID}/file" \
-            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
-            | jq -r '.StackFileContent')
-
-          # Redeploy with pullImage=true
-          curl -sf -X PUT \
-            "${{ secrets.PORTAINER_URL }}/api/stacks/${STACK_ID}?endpointId=${ENDPOINT_ID}" \
-            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --argjson env "$ENV_VARS" \
-              --arg stackFileContent "$STACK_FILE" \
-              '{env: $env, stackFileContent: $stackFileContent, pullImage: true, prune: true}')"
-
-          echo "Stack redeployed successfully"
+  # Deployment is handled automatically by Watchtower on the production host.
+  # Watchtower polls GHCR every 3 minutes with label-based filtering and
+  # pulls new images once they are pushed by the build-and-push job above.

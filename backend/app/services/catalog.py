@@ -125,6 +125,10 @@ def catalog_latest(
         if latest is not None:
             break
 
+    if latest is not None:
+        # Add public S3 URL for direct image access
+        latest["image_url"] = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
+
     return latest
 
 

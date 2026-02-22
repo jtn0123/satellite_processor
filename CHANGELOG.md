@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/jtn0123/satellite_processor/compare/v1.16.1...v1.16.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* UX polish — image error placeholder enhancement ([#203](https://github.com/jtn0123/satellite_processor/issues/203)) ([a93f5b8](https://github.com/jtn0123/satellite_processor/commit/a93f5b881fa23b118f2ef232e641f24f73feff0d)), closes [#14](https://github.com/jtn0123/satellite_processor/issues/14) [#55](https://github.com/jtn0123/satellite_processor/issues/55)
+
 ## [1.16.1](https://github.com/jtn0123/satellite_processor/compare/v1.16.0...v1.16.1) (2026-02-22)
 
 

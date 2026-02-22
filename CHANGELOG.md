@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/jtn0123/satellite_processor/compare/v1.13.1...v1.14.0) (2026-02-22)
+
+
+### Features
+
+* expand integration E2E suite (v2) ([#190](https://github.com/jtn0123/satellite_processor/issues/190)) ([8e5043d](https://github.com/jtn0123/satellite_processor/commit/8e5043dccee4e476d8f0d9005bcef02237b57bdf))
+
 ## [1.13.1](https://github.com/jtn0123/satellite_processor/compare/v1.13.0...v1.13.1) (2026-02-21)
 
 

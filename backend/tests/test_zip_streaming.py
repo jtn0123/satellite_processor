@@ -6,6 +6,7 @@ import os
 import zipfile
 
 import pytest
+
 from app.errors import APIError
 from app.routers.download import MAX_ZIP_FILES, _zip_stream
 
@@ -52,11 +53,7 @@ class TestZipStreaming:
             list(_zip_stream(pairs))
 
     def test_large_file_count_streams_without_full_buffer(self, tmp_path):
-        """Many files stream without building the full archive first.
-
-        We verify by checking that the first chunk arrives before all files
-        would have been read in a buffered approach.
-        """
+        """Many files stream incrementally — first chunk arrives immediately."""
         pairs = _make_files(str(tmp_path), 200, size=512)
         gen = _zip_stream(pairs)
         first_chunk = next(gen)

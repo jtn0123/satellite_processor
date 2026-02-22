@@ -78,6 +78,12 @@ async def lifespan(app: FastAPI):
     setup_logging(debug=app_settings.debug)
     await init_db()
 
+    if not app_settings.api_key:
+        logger.warning(
+            "API key is not set — authentication is disabled. "
+            "Set API_KEY environment variable for production."
+        )
+
     # Check for stale jobs on startup
     try:
         from .db.database import async_session

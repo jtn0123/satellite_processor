@@ -6,6 +6,7 @@ import os
 import zipfile
 
 import pytest
+from app.errors import APIError
 from app.routers.download import MAX_ZIP_FILES, _zip_stream
 
 
@@ -46,7 +47,7 @@ class TestZipStreaming:
     def test_exceeds_max_files_raises(self, tmp_path):
         """Requesting more than MAX_ZIP_FILES raises APIError."""
         pairs = [(str(tmp_path / "x.dat"), f"f{i}.dat") for i in range(MAX_ZIP_FILES + 1)]
-        with pytest.raises(Exception, match="export_too_large|exceeds maximum"):
+        with pytest.raises(APIError, match="export_too_large|exceeds maximum"):
             # Must consume the generator to trigger the check
             list(_zip_stream(pairs))
 

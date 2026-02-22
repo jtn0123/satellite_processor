@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/jtn0123/satellite_processor/compare/v1.15.6...v1.16.0) (2026-02-22)
+
+
+### Features
+
+* Live View proxy-through mode — show latest satellite imagery without local fetch ([#201](https://github.com/jtn0123/satellite_processor/issues/201)) ([1787a4a](https://github.com/jtn0123/satellite_processor/commit/1787a4aa265e4c4b2e04f826016e2ebfcc1b9426))
+
 ## [1.15.6](https://github.com/jtn0123/satellite_processor/compare/v1.15.5...v1.15.6) (2026-02-22)
 
 

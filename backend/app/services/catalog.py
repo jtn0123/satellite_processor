@@ -14,7 +14,61 @@ from ..services.goes_fetcher import (
     validate_params,
 )
 
+# CDN sector mapping: internal sector names → CDN path segments
+CDN_SECTOR_MAP: dict[str, str] = {
+    "CONUS": "CONUS",
+    "FullDisk": "FD",
+    "Mesoscale1": "MESO1",
+    "Mesoscale2": "MESO2",
+}
+
+# CDN resolution defaults per sector
+CDN_RESOLUTIONS: dict[str, dict[str, str]] = {
+    "CONUS": {"desktop": "2500x1500", "mobile": "1250x750", "thumbnail": "625x375"},
+    "FullDisk": {"desktop": "1808x1808", "mobile": "1808x1808", "thumbnail": "678x678"},
+    "Mesoscale1": {"desktop": "2500x1500", "mobile": "1250x750", "thumbnail": "625x375"},
+    "Mesoscale2": {"desktop": "2500x1500", "mobile": "1250x750", "thumbnail": "625x375"},
+}
+
 logger = logging.getLogger(__name__)
+
+
+def build_cdn_urls(
+    satellite: str, sector: str, band: str, scan_time_iso: str
+) -> dict[str, str] | None:
+    """Build NOAA CDN image URLs for multiple resolutions.
+
+    Returns dict with keys: desktop, mobile, thumbnail — or None on failure.
+    """
+    # Satellite: "GOES-19" → "GOES19"
+    sat_cdn = satellite.replace("-", "")
+
+    # Sector mapping
+    cdn_sector = CDN_SECTOR_MAP.get(sector)
+    if cdn_sector is None:
+        logger.warning("No CDN sector mapping for %s", sector)
+        return None
+
+    # Band: "C02" → "02"
+    cdn_band = band.lstrip("C") if band.startswith("C") else band
+
+    # Timestamp: ISO → YYYYDDDHHMM (day-of-year format)
+    try:
+        dt = datetime.fromisoformat(scan_time_iso)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        timestamp = f"{dt.year}{dt.timetuple().tm_yday:03d}{dt.hour:02d}{dt.minute:02d}"
+    except (ValueError, AttributeError):
+        logger.warning("Failed to parse scan_time for CDN URL: %s", scan_time_iso)
+        return None
+
+    resolutions = CDN_RESOLUTIONS.get(sector, CDN_RESOLUTIONS["CONUS"])
+    base = f"https://cdn.star.nesdis.noaa.gov/{sat_cdn}/ABI/{cdn_sector}/{cdn_band}"
+
+    return {
+        res_key: f"{base}/{timestamp}_{sat_cdn}-ABI-{cdn_sector}-{cdn_band}-{res_val}.jpg"
+        for res_key, res_val in resolutions.items()
+    }
 
 
 def _normalize_date(date: datetime | None) -> datetime:
@@ -126,8 +180,17 @@ def catalog_latest(
             break
 
     if latest is not None:
-        # Add public S3 URL for direct image access
-        latest["image_url"] = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
+        cdn_urls = build_cdn_urls(satellite, sector, band, latest["scan_time"])
+        if cdn_urls:
+            latest["image_url"] = cdn_urls["desktop"]
+            latest["thumbnail_url"] = cdn_urls["thumbnail"]
+            latest["mobile_url"] = cdn_urls["mobile"]
+        else:
+            # Fallback to S3 URL if CDN URL can't be built
+            s3_fallback = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
+            latest["image_url"] = s3_fallback
+            latest["mobile_url"] = s3_fallback
+            latest["thumbnail_url"] = s3_fallback
 
     return latest
 

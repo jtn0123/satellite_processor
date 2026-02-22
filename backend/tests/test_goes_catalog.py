@@ -22,7 +22,7 @@ class TestCatalogLatestImageUrl:
     """Verify image_url is correctly constructed from bucket + key."""
 
     @patch("app.services.catalog._get_s3_client")
-    def test_image_url_has_correct_s3_format(self, mock_s3):
+    def test_image_url_has_correct_cdn_format(self, mock_s3):
         from app.services.catalog import catalog_latest
 
         paginator = MagicMock()
@@ -37,11 +37,15 @@ class TestCatalogLatestImageUrl:
             result = catalog_latest("GOES-19", "CONUS", "C02")
 
         assert result is not None
-        assert "image_url" in result
-        assert result["image_url"] == f"https://noaa-goes19.s3.amazonaws.com/{key}"
+        assert result["image_url"] == (
+            "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/"
+            "20241661200_GOES19-ABI-CONUS-02-2500x1500.jpg"
+        )
+        assert "thumbnail_url" in result
+        assert "mobile_url" in result
 
     @patch("app.services.catalog._get_s3_client")
-    def test_image_url_uses_correct_bucket_per_satellite(self, mock_s3):
+    def test_image_url_uses_correct_satellite_in_cdn_path(self, mock_s3):
         from app.services.catalog import catalog_latest
 
         paginator = MagicMock()
@@ -56,7 +60,9 @@ class TestCatalogLatestImageUrl:
             result = catalog_latest("GOES-16", "CONUS", "C02")
 
         assert result is not None
-        assert result["image_url"].startswith("https://noaa-goes16.s3.amazonaws.com/")
+        assert result["image_url"].startswith("https://cdn.star.nesdis.noaa.gov/GOES16/")
+        assert "thumbnail_url" in result
+        assert "mobile_url" in result
 
     @patch("app.services.catalog._get_s3_client")
     def test_no_image_url_when_no_data(self, mock_s3):

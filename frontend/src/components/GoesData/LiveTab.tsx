@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { useMonitorWebSocket } from '../../hooks/useMonitorWebSocket';
@@ -247,6 +248,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (no frames) — show empty state immediately
+      if (axios.isAxiosError(error) && error.response?.status === 404) return false;
+      return failureCount < 2;
+    },
   });
 
   useEffect(() => {

@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from app.services.catalog import build_cdn_urls
 
 
 @pytest.mark.asyncio
@@ -123,8 +124,6 @@ async def test_fetch_composite_end_before_start(client):
 
 
 # --- CDN URL construction tests ---
-
-from app.services.catalog import build_cdn_urls
 
 
 class TestBuildCdnUrls:

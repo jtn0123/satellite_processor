@@ -187,7 +187,10 @@ def catalog_latest(
             latest["mobile_url"] = cdn_urls["mobile"]
         else:
             # Fallback to S3 URL if CDN URL can't be built
-            latest["image_url"] = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
+            s3_fallback = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
+            latest["image_url"] = s3_fallback
+            latest["mobile_url"] = s3_fallback
+            latest["thumbnail_url"] = s3_fallback
 
     return latest
 

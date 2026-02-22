@@ -350,7 +350,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const catalogImageUrl = (typeof window !== 'undefined' && window.innerWidth < 768
+  const catalogImageUrl = (typeof globalThis.window !== 'undefined' && globalThis.window.innerWidth < 768
     ? catalogLatest?.mobile_url
     : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;

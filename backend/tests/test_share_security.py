@@ -85,7 +85,9 @@ async def test_api_key_warning_logged_when_empty(caplog):
          patch("app.main.init_db", new_callable=AsyncMock), \
          patch("app.main.close_redis_pool", new_callable=AsyncMock), \
          patch("app.main.setup_logging"), \
-         patch("app.main._stale_job_checker", new_callable=AsyncMock):
+         patch("app.main._stale_job_checker", new_callable=AsyncMock), \
+         patch("app.db.database.async_session", new_callable=AsyncMock), \
+         patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock):
         mock_settings.api_key = ""
         mock_settings.debug = False
 

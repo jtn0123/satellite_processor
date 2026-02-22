@@ -35,10 +35,15 @@ docker run -d --name "$CONTAINER_NAME" -p "$PORT:80" \
     -e API_KEY=smoke-test-key sat-smoke-frontend >/dev/null
 
 # Wait for nginx to be ready
-for i in $(seq 1 10); do
-    if curl -sf "http://localhost:$PORT/" >/dev/null 2>&1; then break; fi
+READY=false
+for _ in $(seq 1 10); do
+    if curl -sf "http://localhost:$PORT/" >/dev/null 2>&1; then READY=true; break; fi
     sleep 1
 done
+if [ "$READY" = false ]; then
+    echo "  ❌ Container failed to become ready"
+    exit 1
+fi
 
 check_status() {
     local desc="$1" url="$2" expected="$3"
@@ -78,8 +83,8 @@ check_header "Pragma on /" "$BASE/" "Pragma" "no-cache"
 # Extract asset paths from index.html
 HTML=$(curl -s "$BASE/")
 
-JS_PATH=$(echo "$HTML" | grep -oP '(?<=src=")[^"]+\.js' | head -1)
-CSS_PATH=$(echo "$HTML" | grep -oP '(?<=href=")[^"]+\.css' | head -1)
+JS_PATH=$(echo "$HTML" | sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' | head -1)
+CSS_PATH=$(echo "$HTML" | sed -n 's/.*href="\([^"]*\.css\)".*/\1/p' | head -1)
 
 echo "── JS assets ──"
 if [ -n "${JS_PATH:-}" ]; then

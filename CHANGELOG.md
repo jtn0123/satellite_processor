@@ -1,3 +1,10 @@
+## [1.15.4](https://github.com/jtn0123/satellite_processor/compare/v1.15.3...v1.15.4) (2026-02-22)
+
+
+### Bug Fixes
+
+* backend cleanup — pagination, TODO removal, tests ([#197](https://github.com/jtn0123/satellite_processor/issues/197)) ([4f3eb36](https://github.com/jtn0123/satellite_processor/commit/4f3eb3657555cd6e3003b94e591866ff2cae2d3a))
+
 ## [1.15.3](https://github.com/jtn0123/satellite_processor/compare/v1.15.2...v1.15.3) (2026-02-22)
 
 

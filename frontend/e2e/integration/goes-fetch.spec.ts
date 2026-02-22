@@ -9,12 +9,14 @@ test.describe.serial('GOES Fetch Flow', () => {
   });
 
   test('trigger a GOES fetch via API', async ({ request }) => {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const res = await apiPost(request, '/api/goes/fetch', {
       satellite: 'GOES-19',
       sector: 'CONUS',
       band: 'C02',
-      hours_back: 1,
-      max_frames: 2,
+      start_time: oneHourAgo.toISOString(),
+      end_time: now.toISOString(),
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { job_id: string };

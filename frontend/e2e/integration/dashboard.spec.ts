@@ -31,12 +31,12 @@ test.describe('Dashboard', () => {
     await navigateTo(page, '/');
     // Find and click a nav link to browse
     const browseLink = page.getByRole('link', { name: /browse/i })
-      .or(page.locator('a[href*="browse"]'));
+      .or(page.locator('a[href*="goes"]'));
     const linkExists = (await browseLink.count()) > 0;
     if (linkExists) {
       await browseLink.first().click();
-      await page.waitForURL(/browse/, { timeout: 10_000 });
-      expect(page.url()).toContain('browse');
+      await page.waitForURL(/goes|browse/, { timeout: 10_000 });
+      expect(page.url()).toMatch(/goes|browse/);
     }
   });
 

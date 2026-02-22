@@ -1,3 +1,10 @@
+## [1.16.3](https://github.com/jtn0123/satellite_processor/compare/v1.16.2...v1.16.3) (2026-02-22)
+
+
+### Bug Fixes
+
+* Live View CDN imagery — use NOAA pre-rendered JPEGs instead of raw NetCDF ([#204](https://github.com/jtn0123/satellite_processor/issues/204)) ([b0a9e16](https://github.com/jtn0123/satellite_processor/commit/b0a9e166e057ac5ed853f0b7e380924d73a2fa60))
+
 ## [1.16.2](https://github.com/jtn0123/satellite_processor/compare/v1.16.1...v1.16.2) (2026-02-22)
 
 

@@ -11,13 +11,7 @@ vi.mock('../api/client', () => ({
 
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
-
-function make404() {
-  const err = new Error('Not found') as Error & { isAxiosError: boolean; response: { status: number } };
-  err.isAxiosError = true;
-  err.response = { status: 404 };
-  return err;
-}
+import { make404 } from './utils/axiosErrors';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;

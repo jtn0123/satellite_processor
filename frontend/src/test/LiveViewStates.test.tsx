@@ -47,13 +47,7 @@ vi.mock('../components/GoesData/InlineFetchProgress', () => ({
 
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
-
-function make404() {
-  const err = new Error('Not found') as Error & { isAxiosError: boolean; response: { status: number } };
-  err.isAxiosError = true;
-  err.response = { status: 404 };
-  return err;
-}
+import { make404 } from './utils/axiosErrors';
 
 const mockedApi = api as unknown as {
   get: ReturnType<typeof vi.fn>;

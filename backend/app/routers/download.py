@@ -1,5 +1,6 @@
 """Download endpoints for job outputs."""
 
+import logging
 import os
 from collections.abc import Generator
 from pathlib import Path
@@ -38,10 +39,24 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
             f"Requested {len(files)} files.",
         )
 
+    logger = logging.getLogger(__name__)
     zs = zipstream.ZipStream(sized=False)
     for abs_path, arc_name in files:
-        zs.add_path(abs_path, arc_name)
-    yield from zs
+        try:
+            # Verify the file is readable before adding to the stream.
+            # add_path only stats the file; actual reads happen during iteration.
+            # Pre-opening catches permission errors and confirms readability.
+            with open(abs_path, "rb") as f:
+                f.read(1)
+            zs.add_path(abs_path, arc_name)
+        except OSError:
+            logger.warning("Skipping missing/unreadable file: %s", abs_path)
+    try:
+        yield from zs
+    except OSError:
+        # File disappeared or became unreadable between add and iteration.
+        # The zip is already partially written so we can only log and stop.
+        logger.error("OSError during zip streaming — archive may be truncated")
 
 
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:

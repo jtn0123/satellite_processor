@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { ImageOff } from 'lucide-react';
 import { reportError } from '../../utils/errorReporter';
 
 interface LazyImageProps {
@@ -44,8 +45,9 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
   const renderContent = () => {
     if (hasError) {
       return (
-        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-xs">
-          Failed to load
+        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded" data-testid="image-error-placeholder">
+          <ImageOff className="w-8 h-8" aria-hidden="true" />
+          <span className="text-xs font-medium">Image unavailable</span>
         </div>
       );
     }

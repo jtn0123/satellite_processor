@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/jtn0123/satellite_processor/compare/v1.15.1...v1.15.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* wire Settings defaults to routers (dead code fix) ([#196](https://github.com/jtn0123/satellite_processor/issues/196)) ([fa8ea57](https://github.com/jtn0123/satellite_processor/commit/fa8ea577a61ebb12685e4e321fd9296e3e397a39))
+
 ## [1.15.1](https://github.com/jtn0123/satellite_processor/compare/v1.15.0...v1.15.1) (2026-02-22)
 
 

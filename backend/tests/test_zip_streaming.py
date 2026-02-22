@@ -6,7 +6,6 @@ import os
 import zipfile
 
 import pytest
-
 from app.errors import APIError
 from app.routers.download import MAX_ZIP_FILES, _zip_stream
 
@@ -64,6 +63,30 @@ class TestZipStreaming:
         buf = io.BytesIO(full)
         with zipfile.ZipFile(buf, "r") as zf:
             assert len(zf.namelist()) == 200
+
+    def test_file_missing_at_add_time_skipped(self, tmp_path):
+        """Files that don't exist at add time are skipped gracefully."""
+        pairs = _make_files(str(tmp_path), 3, size=100)
+        # Remove the second file before calling _zip_stream
+        os.unlink(pairs[1][0])
+        data = b"".join(_zip_stream(pairs))
+        buf = io.BytesIO(data)
+        with zipfile.ZipFile(buf, "r") as zf:
+            names = zf.namelist()
+            assert len(names) == 2
+            assert pairs[1][1] not in names
+
+    def test_file_disappears_during_streaming(self, tmp_path):
+        """File deleted after add but before iteration doesn't crash the generator."""
+        pairs = _make_files(str(tmp_path), 3, size=100)
+        # Add files normally, then delete one before consuming the stream
+        gen = _zip_stream(pairs)
+        # Delete the last file after generator is created (files already added)
+        os.unlink(pairs[2][0])
+        # Should not raise — the generator catches OSError during iteration
+        data = b"".join(gen)
+        # Archive may be truncated but should not crash
+        assert len(data) > 0
 
     def test_single_file_zip(self, tmp_path):
         """Single file produces valid ZIP."""

@@ -1,5 +1,6 @@
 """Download endpoints for job outputs."""
 
+import logging
 import os
 from collections.abc import Generator
 from pathlib import Path
@@ -38,9 +39,13 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
             f"Requested {len(files)} files.",
         )
 
+    logger = logging.getLogger(__name__)
     zs = zipstream.ZipStream(sized=False)
     for abs_path, arc_name in files:
-        zs.add_path(abs_path, arc_name)
+        try:
+            zs.add_path(abs_path, arc_name)
+        except OSError:
+            logger.warning("Skipping missing/unreadable file: %s", abs_path)
     yield from zs
 
 

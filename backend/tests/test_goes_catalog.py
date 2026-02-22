@@ -13,6 +13,107 @@ from app.services.catalog import (
 pytestmark = pytest.mark.anyio
 
 
+# ── catalog_latest image_url construction ─────────────────────────
+
+
+class TestCatalogLatestImageUrl:
+    """Verify image_url is correctly constructed from bucket + key."""
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_has_correct_s3_format(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadC/2024/166/12/OR_ABI-L1b-RadC-M6C02_G19_s20241661200.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 5000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-19", "CONUS", "C02")
+
+        assert result is not None
+        assert "image_url" in result
+        assert result["image_url"] == f"https://noaa-goes19.s3.amazonaws.com/{key}"
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_uses_correct_bucket_per_satellite(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadC/2024/166/12/test.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 3000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-16", "CONUS", "C02")
+
+        assert result is not None
+        assert result["image_url"].startswith("https://noaa-goes16.s3.amazonaws.com/")
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_no_image_url_when_no_data(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        paginator.paginate.return_value = [{"Contents": []}]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_latest("GOES-19", "CONUS", "C02")
+        assert result is None
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_includes_satellite_sector_band(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadF/2024/166/12/test.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 8000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-19", "FullDisk", "C13")
+
+        assert result is not None
+        assert result["satellite"] == "GOES-19"
+        assert result["sector"] == "FullDisk"
+        assert result["band"] == "C13"
+        assert "image_url" in result
+
+
+# ── catalog_latest endpoint image_url ─────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_catalog_latest_returns_image_url(client):
+    """GET /api/goes/catalog/latest returns image_url with S3 URL."""
+    mock_result = {
+        "scan_time": "2025-01-01T12:00:00+00:00",
+        "size": 5000,
+        "key": "ABI-L1b-RadC/2025/001/12/test.nc",
+        "satellite": "GOES-19",
+        "sector": "CONUS",
+        "band": "C02",
+        "image_url": "https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2025/001/12/test.nc",
+    }
+    with patch("app.routers.goes.get_cached", return_value=mock_result):
+        resp = await client.get("/api/goes/catalog/latest", params={
+            "satellite": "GOES-19", "sector": "CONUS", "band": "C02",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "image_url" in data
+        assert data["image_url"].startswith("https://noaa-goes19.s3.amazonaws.com/")
+
+
 # ── _normalize_date ───────────────────────────────────────────────
 
 

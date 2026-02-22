@@ -274,3 +274,145 @@ describe('LiveViewStates', () => {
     });
   });
 });
+
+// ── Proxy-through (catalog S3 fallback) tests ────────────────────
+
+describe('LiveView proxy-through (catalog S3 image)', () => {
+  it('shows catalog S3 image when no local frames exist', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2024/166/12/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      const img = screen.getByRole('img');
+      expect(img.getAttribute('src')).toBe(catalogWithUrl.image_url);
+    });
+  });
+
+  it('shows local frame when it exists (not catalog image)', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      const img = screen.getByRole('img');
+      expect(img.getAttribute('src')).toContain('/api/goes/frames/');
+      expect(img.getAttribute('src')).not.toContain('s3.amazonaws.com');
+    });
+  });
+
+  it('shows stale banner when local frame exists and catalog is newer', async () => {
+    const oldFrame = { ...FRAME, capture_time: new Date(Date.now() - 3600000).toISOString() };
+    const newCatalog = { ...CATALOG_LATEST, scan_time: new Date(Date.now() - 60000).toISOString() };
+    setupMocks({ frame: oldFrame, catalog: newCatalog });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByTestId('stale-banner')).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty state when no local frames AND no catalog', async () => {
+    setupMocks({ frameError: true, catalogError: true });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByText(/No local frames available/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows "via NOAA S3" badge when displaying catalog image', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByText('via NOAA S3')).toBeInTheDocument();
+    });
+  });
+
+  it('does NOT show "via NOAA S3" badge when showing local frame', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('via NOAA S3')).not.toBeInTheDocument();
+  });
+
+  it('catalog metadata overlay shows satellite/band/sector when no local frame', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      // The "via NOAA S3" badge confirms we're showing catalog overlay (which includes sat/band/sector badges)
+      expect(screen.getByText('via NOAA S3')).toBeInTheDocument();
+    });
+    // Catalog overlay badges are spans with rounded-full class — find them specifically
+    const badges = screen.getAllByText(/^(GOES-19|C02|CONUS)$/);
+    // Should have at least the 3 catalog overlay badges (plus selector options)
+    expect(badges.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('selector changes re-query catalog (satellite change)', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toBeInTheDocument();
+    });
+    const satSelect = screen.getByLabelText('Satellite') as HTMLSelectElement;
+    fireEvent.change(satSelect, { target: { value: 'GOES-16' } });
+    // After change, catalog query should be called again with new satellite
+    await waitFor(() => {
+      const catalogCalls = mockedApi.get.mock.calls.filter(
+        (c: string[]) => c[0].startsWith('/goes/catalog/latest')
+      );
+      expect(catalogCalls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('compare mode works with catalog-only image', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toBeInTheDocument();
+    });
+    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input')!;
+    fireEvent.click(checkbox);
+    await waitFor(() => {
+      expect(screen.getByTestId('compare-slider')).toBeInTheDocument();
+    });
+  });
+
+  it('fullscreen button works with catalog image', async () => {
+    const catalogWithUrl = {
+      ...CATALOG_LATEST,
+      image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
+    };
+    setupMocks({ frameError: true, catalog: catalogWithUrl });
+    renderLive();
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText('Enter fullscreen')).toBeInTheDocument();
+  });
+});

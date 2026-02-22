@@ -1,3 +1,10 @@
+## [1.15.3](https://github.com/jtn0123/satellite_processor/compare/v1.15.2...v1.15.3) (2026-02-22)
+
+
+### Bug Fixes
+
+* Live View empty state & error toast dedup ([#199](https://github.com/jtn0123/satellite_processor/issues/199)) ([4bc71f4](https://github.com/jtn0123/satellite_processor/commit/4bc71f4a460235c053822ef7ff9ac04ffa3df63e))
+
 ## [1.15.2](https://github.com/jtn0123/satellite_processor/compare/v1.15.1...v1.15.2) (2026-02-22)
 
 

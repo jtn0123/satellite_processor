@@ -605,8 +605,16 @@ async def export_collection(
     collection_id: str,
     format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
     db: AsyncSession = Depends(get_db),
+    limit: int = Query(1000, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     """Export frame metadata for a collection."""
+    if limit > MAX_EXPORT_LIMIT:
+        raise APIError(
+            400,
+            "limit_exceeded",
+            f"Export limit must not exceed {MAX_EXPORT_LIMIT}. Requested: {limit}",
+        )
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -616,6 +624,8 @@ async def export_collection(
         .join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id)
         .where(CollectionFrame.collection_id == collection_id)
         .order_by(GoesFrame.capture_time.desc())
+        .offset(offset)
+        .limit(limit)
     )
     frames = frame_result.scalars().all()
     if format == "csv":

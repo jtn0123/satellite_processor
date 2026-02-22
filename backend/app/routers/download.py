@@ -1,10 +1,10 @@
 """Download endpoints for job outputs."""
 
 import os
-import zipfile
 from collections.abc import Generator
 from pathlib import Path
 
+import zipstream
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select
@@ -27,14 +27,9 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
     """Stream zip creation for job output downloads.
 
     Each tuple is (absolute_path, archive_name).
-    Uses ZIP_STORED (no compression) so bytes can be yielded incrementally.
-
-    NOTE: This still buffers via BytesIO internally. For truly streaming ZIP
-    creation (needed for very large exports), consider migrating to zipstream-ng.
-    TODO: Replace with zipstream-ng for true streaming without memory buffering.
+    Uses zipstream-ng for true streaming — files are read and yielded in chunks
+    without buffering the entire archive in memory.
     """
-    import io
-
     if len(files) > MAX_ZIP_FILES:
         raise APIError(
             400,
@@ -43,15 +38,10 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
             f"Requested {len(files)} files.",
         )
 
-    # Bug #7: Build entire ZIP in memory then yield once.
-    # The previous seek/truncate approach corrupted ZIP central directory offsets.
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
-        for abs_path, arc_name in files:
-            zf.write(abs_path, arc_name)
-    buf.seek(0)
-    while chunk := buf.read(65536):
-        yield chunk
+    zs = zipstream.ZipStream(sized=False)
+    for abs_path, arc_name in files:
+        zs.add_path(abs_path, arc_name)
+    yield from zs
 
 
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:

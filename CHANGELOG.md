@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/jtn0123/satellite_processor/compare/v1.14.0...v1.15.0) (2026-02-22)
+
+
+### Features
+
+* expand integration E2E — websocket, image rendering, delete, animation pipeline, API errors, settings, theme ([#192](https://github.com/jtn0123/satellite_processor/issues/192)) ([30b53e5](https://github.com/jtn0123/satellite_processor/commit/30b53e5b2a96e5efbae6c4a9d2947f8e75e794ac))
+
 # [1.14.0](https://github.com/jtn0123/satellite_processor/compare/v1.13.1...v1.14.0) (2026-02-22)
 
 

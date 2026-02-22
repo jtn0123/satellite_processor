@@ -1,3 +1,10 @@
+## [1.15.5](https://github.com/jtn0123/satellite_processor/compare/v1.15.4...v1.15.5) (2026-02-22)
+
+
+### Bug Fixes
+
+* streaming ZIP downloads to prevent OOM ([#198](https://github.com/jtn0123/satellite_processor/issues/198)) ([6705f4f](https://github.com/jtn0123/satellite_processor/commit/6705f4fcc3b2f59e637c2fef80e8c777c65d8ec9))
+
 ## [1.15.4](https://github.com/jtn0123/satellite_processor/compare/v1.15.3...v1.15.4) (2026-02-22)
 
 

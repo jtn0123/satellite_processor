@@ -1,3 +1,10 @@
+## [1.15.6](https://github.com/jtn0123/satellite_processor/compare/v1.15.5...v1.15.6) (2026-02-22)
+
+
+### Bug Fixes
+
+* add no-cache headers on HTML and CORS on static assets ([#200](https://github.com/jtn0123/satellite_processor/issues/200)) ([2137dff](https://github.com/jtn0123/satellite_processor/commit/2137dffb48f834f644f0e0edc09b75497c430283))
+
 ## [1.15.5](https://github.com/jtn0123/satellite_processor/compare/v1.15.4...v1.15.5) (2026-02-22)
 
 

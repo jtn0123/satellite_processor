@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/jtn0123/satellite_processor/compare/v1.15.0...v1.15.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* resolve dependency security vulnerabilities ([#195](https://github.com/jtn0123/satellite_processor/issues/195)) ([a384b61](https://github.com/jtn0123/satellite_processor/commit/a384b61b275d7ee1ab3020aca347c627beeace36)), closes [hi#severity](https://github.com/hi/issues/severity)
+
 # [1.15.0](https://github.com/jtn0123/satellite_processor/compare/v1.14.0...v1.15.0) (2026-02-22)
 
 

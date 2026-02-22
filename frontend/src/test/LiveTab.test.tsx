@@ -102,7 +102,12 @@ describe('LiveTab', () => {
   it('shows error state when no frame data', async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url.startsWith('/goes/latest')) {
-        return Promise.reject(new Error('Not found'));
+        // Must look like an Axios 404 so the component's custom retry skips retries
+        const axiosError = Object.assign(new Error('Not found'), {
+          isAxiosError: true,
+          response: { status: 404 },
+        });
+        return Promise.reject(axiosError);
       }
       if (url === '/goes/products') {
         return Promise.resolve({

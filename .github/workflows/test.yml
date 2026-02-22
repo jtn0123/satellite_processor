@@ -318,14 +318,14 @@ jobs:
           retention-days: 1
 
   e2e:
-    name: E2E Tests (Shard ${{ matrix.shard }}/2)
+    name: E2E Tests (Shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     needs: [frontend-build]
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
-        total: [2]
+        shard: [1, 2, 3]
+        total: [3]
     steps:
       - uses: actions/checkout@v6
 

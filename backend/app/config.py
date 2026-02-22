@@ -35,8 +35,8 @@ class Settings(BaseSettings):
 
     # GOES settings
     goes_auto_backfill: bool = False
-    goes_default_satellite: str = "GOES-16"
-    goes_default_sector: str = "FullDisk"
+    goes_default_satellite: str = "GOES-19"
+    goes_default_sector: str = "CONUS"
     goes_default_band: str = "C02"
 
     @model_validator(mode="after")
@@ -63,10 +63,10 @@ for d in [settings.storage_path, settings.upload_dir, settings.output_dir, setti
     Path(d).mkdir(parents=True, exist_ok=True)
 
 # #70: Warn if DATABASE_URL is still SQLite in non-debug mode
-# Centralized GOES defaults — use these everywhere instead of hardcoding
-DEFAULT_SATELLITE = "GOES-19"
-DEFAULT_SECTOR = "CONUS"
-DEFAULT_BAND = "C02"
+# Centralized GOES defaults — derived from Settings so env vars take effect
+DEFAULT_SATELLITE = settings.goes_default_satellite
+DEFAULT_SECTOR = settings.goes_default_sector
+DEFAULT_BAND = settings.goes_default_band
 
 if not settings.api_key:
     logging.getLogger(__name__).warning(

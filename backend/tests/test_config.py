@@ -34,8 +34,8 @@ class TestSettingsDefaults:
     def test_goes_defaults(self):
         with patch.dict("os.environ", {}, clear=True):
             s = Settings(_env_file=None)
-        assert s.goes_default_satellite == "GOES-16"
-        assert s.goes_default_sector == "FullDisk"
+        assert s.goes_default_satellite == "GOES-19"
+        assert s.goes_default_sector == "CONUS"
         assert s.goes_default_band == "C02"
         assert s.goes_auto_backfill is False
 

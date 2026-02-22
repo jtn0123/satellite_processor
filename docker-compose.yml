@@ -11,6 +11,8 @@ services:
       - "3000:80"
     depends_on:
       - api
+    environment:
+      - API_KEY=${API_KEY:-}
     deploy:
       resources:
         limits:

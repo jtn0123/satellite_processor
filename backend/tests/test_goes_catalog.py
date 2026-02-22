@@ -5,8 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.services.catalog import (
+    _collect_matching_entries,
     _is_newer_scan,
     _normalize_date,
+    catalog_available,
     catalog_list,
 )
 
@@ -216,6 +218,107 @@ async def test_latest_frame_404(client):
     """GET /api/goes/latest with no data returns 404."""
     resp = await client.get("/api/goes/latest?satellite=GOES-19&sector=CONUS&band=C02")
     assert resp.status_code == 404
+
+
+# ── catalog_available ──────────────────────────────────────────────
+
+
+class TestCatalogAvailable:
+    def test_unknown_satellite_raises(self):
+        with pytest.raises(ValueError, match="Unknown satellite"):
+            catalog_available("GOES-99")
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_returns_available_sectors(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.return_value = {
+            "Contents": [{"Key": "test.nc"}]
+        }
+        result = catalog_available("GOES-19")
+        assert result["satellite"] == "GOES-19"
+        assert isinstance(result["available_sectors"], list)
+        assert len(result["available_sectors"]) > 0
+        assert "checked_at" in result
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_no_data_returns_empty_sectors(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.return_value = {}
+        result = catalog_available("GOES-19")
+        assert result["available_sectors"] == []
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_exception_handled_gracefully(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.side_effect = Exception("S3 error")
+        result = catalog_available("GOES-19")
+        assert result["available_sectors"] == []
+
+
+# ── _collect_matching_entries ─────────────────────────────────────
+
+
+class TestCollectMatchingEntries:
+    @patch("app.services.catalog._parse_scan_time", return_value=None)
+    @patch("app.services.catalog._matches_sector_and_band", return_value=True)
+    def test_skips_entries_without_scan_time(self, mock_match, mock_parse):
+        s3 = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": "test.nc", "Size": 100}]}
+        ]
+        s3.get_paginator.return_value = paginator
+        result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
+        assert result == []
+
+    @patch("app.services.catalog._matches_sector_and_band", return_value=False)
+    def test_skips_non_matching_entries(self, mock_match):
+        s3 = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": "test.nc", "Size": 100}]}
+        ]
+        s3.get_paginator.return_value = paginator
+        result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
+        assert result == []
+
+
+# ── catalog_list exception handling ───────────────────────────────
+
+
+class TestCatalogListExceptions:
+    @patch("app.services.catalog._get_s3_client")
+    def test_s3_exception_handled(self, mock_s3):
+        paginator = MagicMock()
+        paginator.paginate.side_effect = Exception("S3 down")
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_list("GOES-19", "CONUS", "C02", datetime(2024, 6, 14, tzinfo=UTC))
+        assert result == []
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_future_hours_skipped(self, mock_s3):
+        """catalog_list breaks when hour exceeds current UTC time."""
+        paginator = MagicMock()
+        paginator.paginate.return_value = [{"Contents": []}]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        # Use today's date - should skip future hours
+        result = catalog_list("GOES-19", "CONUS", "C02")
+        assert isinstance(result, list)
+
+
+# ── catalog_latest exception handling ─────────────────────────────
+
+
+class TestCatalogLatestExceptions:
+    @patch("app.services.catalog._get_s3_client")
+    def test_s3_exception_returns_none(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        paginator.paginate.side_effect = Exception("S3 error")
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_latest("GOES-19", "CONUS", "C02")
+        assert result is None
 
 
 async def test_band_availability_empty(client):

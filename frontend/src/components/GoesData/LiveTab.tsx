@@ -51,6 +51,7 @@ interface CatalogLatest {
   satellite: string;
   sector: string;
   band: string;
+  image_url?: string;
 }
 
 const REFRESH_INTERVALS = [
@@ -346,7 +347,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     zoom.reset();
   }, [satellite, sector, band, zoom]);
 
-  const imageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
+  // Primary: local frame if available; fallback: catalog S3 URL (proxy-through)
+  const catalogImageUrl = catalogLatest?.image_url ?? null;
+  const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
+  const imageUrl = localImageUrl ?? catalogImageUrl;
 
   const recentFramesList = extractArray<LatestFrame>(recentFrames);
   const prevFrame = recentFramesList?.[1];
@@ -365,8 +369,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         {...(compareMode ? {} : zoom.handlers)}
       >
         <ImagePanelContent
-          isLoading={isLoading}
-          isError={isError}
+          isLoading={isLoading && !catalogImageUrl}
+          isError={isError && !imageUrl}
           imageUrl={imageUrl}
           compareMode={compareMode}
           satellite={satellite}
@@ -465,7 +469,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         </div>
 
         {/* Stale data warning overlay */}
-        {freshnessInfo && frame && (
+        {freshnessInfo && frame && localImageUrl && (
           <div className="absolute top-16 inset-x-4 z-10">
             <StaleDataBanner
               freshnessInfo={freshnessInfo}
@@ -499,7 +503,21 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 </div>
               </div>
             )}
-            {!frame && <div />}
+            {!frame && catalogLatest && overlayVisible && (
+              <div className="space-y-1">
+                <div className="text-white text-lg font-semibold text-shadow-overlay">
+                  {new Date(catalogLatest.scan_time).toLocaleString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.band}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA S3</span>
+                  <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
+                </div>
+              </div>
+            )}
+            {!frame && !catalogLatest && <div />}
 
             <div className="flex items-center gap-2">
               {catalogLatest && (

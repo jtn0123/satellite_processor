@@ -5,12 +5,115 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.services.catalog import (
+    _collect_matching_entries,
     _is_newer_scan,
     _normalize_date,
+    catalog_available,
     catalog_list,
 )
 
 pytestmark = pytest.mark.anyio
+
+
+# ── catalog_latest image_url construction ─────────────────────────
+
+
+class TestCatalogLatestImageUrl:
+    """Verify image_url is correctly constructed from bucket + key."""
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_has_correct_s3_format(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadC/2024/166/12/OR_ABI-L1b-RadC-M6C02_G19_s20241661200.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 5000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-19", "CONUS", "C02")
+
+        assert result is not None
+        assert "image_url" in result
+        assert result["image_url"] == f"https://noaa-goes19.s3.amazonaws.com/{key}"
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_uses_correct_bucket_per_satellite(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadC/2024/166/12/test.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 3000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-16", "CONUS", "C02")
+
+        assert result is not None
+        assert result["image_url"].startswith("https://noaa-goes16.s3.amazonaws.com/")
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_no_image_url_when_no_data(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        paginator.paginate.return_value = [{"Contents": []}]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_latest("GOES-19", "CONUS", "C02")
+        assert result is None
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_image_url_includes_satellite_sector_band(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        key = "ABI-L1b-RadF/2024/166/12/test.nc"
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": key, "Size": 8000}]}
+        ]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
+             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+            result = catalog_latest("GOES-19", "FullDisk", "C13")
+
+        assert result is not None
+        assert result["satellite"] == "GOES-19"
+        assert result["sector"] == "FullDisk"
+        assert result["band"] == "C13"
+        assert "image_url" in result
+
+
+# ── catalog_latest endpoint image_url ─────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_catalog_latest_returns_image_url(client):
+    """GET /api/goes/catalog/latest returns image_url with S3 URL."""
+    mock_result = {
+        "scan_time": "2025-01-01T12:00:00+00:00",
+        "size": 5000,
+        "key": "ABI-L1b-RadC/2025/001/12/test.nc",
+        "satellite": "GOES-19",
+        "sector": "CONUS",
+        "band": "C02",
+        "image_url": "https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2025/001/12/test.nc",
+    }
+    with patch("app.routers.goes.get_cached", return_value=mock_result):
+        resp = await client.get("/api/goes/catalog/latest", params={
+            "satellite": "GOES-19", "sector": "CONUS", "band": "C02",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "image_url" in data
+        assert data["image_url"].startswith("https://noaa-goes19.s3.amazonaws.com/")
 
 
 # ── _normalize_date ───────────────────────────────────────────────
@@ -115,6 +218,107 @@ async def test_latest_frame_404(client):
     """GET /api/goes/latest with no data returns 404."""
     resp = await client.get("/api/goes/latest?satellite=GOES-19&sector=CONUS&band=C02")
     assert resp.status_code == 404
+
+
+# ── catalog_available ──────────────────────────────────────────────
+
+
+class TestCatalogAvailable:
+    def test_unknown_satellite_raises(self):
+        with pytest.raises(ValueError, match="Unknown satellite"):
+            catalog_available("GOES-99")
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_returns_available_sectors(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.return_value = {
+            "Contents": [{"Key": "test.nc"}]
+        }
+        result = catalog_available("GOES-19")
+        assert result["satellite"] == "GOES-19"
+        assert isinstance(result["available_sectors"], list)
+        assert len(result["available_sectors"]) > 0
+        assert "checked_at" in result
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_no_data_returns_empty_sectors(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.return_value = {}
+        result = catalog_available("GOES-19")
+        assert result["available_sectors"] == []
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_exception_handled_gracefully(self, mock_s3):
+        mock_s3.return_value.list_objects_v2.side_effect = Exception("S3 error")
+        result = catalog_available("GOES-19")
+        assert result["available_sectors"] == []
+
+
+# ── _collect_matching_entries ─────────────────────────────────────
+
+
+class TestCollectMatchingEntries:
+    @patch("app.services.catalog._parse_scan_time", return_value=None)
+    @patch("app.services.catalog._matches_sector_and_band", return_value=True)
+    def test_skips_entries_without_scan_time(self, mock_match, mock_parse):
+        s3 = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": "test.nc", "Size": 100}]}
+        ]
+        s3.get_paginator.return_value = paginator
+        result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
+        assert result == []
+
+    @patch("app.services.catalog._matches_sector_and_band", return_value=False)
+    def test_skips_non_matching_entries(self, mock_match):
+        s3 = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": "test.nc", "Size": 100}]}
+        ]
+        s3.get_paginator.return_value = paginator
+        result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
+        assert result == []
+
+
+# ── catalog_list exception handling ───────────────────────────────
+
+
+class TestCatalogListExceptions:
+    @patch("app.services.catalog._get_s3_client")
+    def test_s3_exception_handled(self, mock_s3):
+        paginator = MagicMock()
+        paginator.paginate.side_effect = Exception("S3 down")
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_list("GOES-19", "CONUS", "C02", datetime(2024, 6, 14, tzinfo=UTC))
+        assert result == []
+
+    @patch("app.services.catalog._get_s3_client")
+    def test_future_hours_skipped(self, mock_s3):
+        """catalog_list breaks when hour exceeds current UTC time."""
+        paginator = MagicMock()
+        paginator.paginate.return_value = [{"Contents": []}]
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        # Use today's date - should skip future hours
+        result = catalog_list("GOES-19", "CONUS", "C02")
+        assert isinstance(result, list)
+
+
+# ── catalog_latest exception handling ─────────────────────────────
+
+
+class TestCatalogLatestExceptions:
+    @patch("app.services.catalog._get_s3_client")
+    def test_s3_exception_returns_none(self, mock_s3):
+        from app.services.catalog import catalog_latest
+
+        paginator = MagicMock()
+        paginator.paginate.side_effect = Exception("S3 error")
+        mock_s3.return_value.get_paginator.return_value = paginator
+
+        result = catalog_latest("GOES-19", "CONUS", "C02")
+        assert result is None
 
 
 async def test_band_availability_empty(client):

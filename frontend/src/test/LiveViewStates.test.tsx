@@ -323,7 +323,7 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     });
   });
 
-  it('shows "via NOAA S3" badge when displaying catalog image', async () => {
+  it('shows "via NOAA CDN" badge when displaying catalog image', async () => {
     const catalogWithUrl = {
       ...CATALOG_LATEST,
       image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
@@ -331,11 +331,11 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     setupMocks({ frameError: true, catalog: catalogWithUrl });
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText('via NOAA S3')).toBeInTheDocument();
+      expect(screen.getByText('via NOAA CDN')).toBeInTheDocument();
     });
   });
 
-  it('does NOT show "via NOAA S3" badge when showing local frame', async () => {
+  it('does NOT show "via NOAA CDN" badge when showing local frame', async () => {
     const catalogWithUrl = {
       ...CATALOG_LATEST,
       image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
@@ -345,7 +345,7 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
-    expect(screen.queryByText('via NOAA S3')).not.toBeInTheDocument();
+    expect(screen.queryByText('via NOAA CDN')).not.toBeInTheDocument();
   });
 
   it('catalog metadata overlay shows satellite/band/sector when no local frame', async () => {
@@ -356,8 +356,8 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     setupMocks({ frameError: true, catalog: catalogWithUrl });
     renderLive();
     await waitFor(() => {
-      // The "via NOAA S3" badge confirms we're showing catalog overlay (which includes sat/band/sector badges)
-      expect(screen.getByText('via NOAA S3')).toBeInTheDocument();
+      // The "via NOAA CDN" badge confirms we're showing catalog overlay (which includes sat/band/sector badges)
+      expect(screen.getByText('via NOAA CDN')).toBeInTheDocument();
     });
     // Catalog overlay badges are spans with rounded-full class — find them specifically
     const badges = screen.getAllByText(/^(GOES-19|C02|CONUS)$/);

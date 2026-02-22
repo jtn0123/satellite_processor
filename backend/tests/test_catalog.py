@@ -120,3 +120,51 @@ async def test_fetch_composite_end_before_start(client):
         "end_time": "2025-01-01T01:00:00Z",
     })
     assert resp.status_code == 422
+
+
+# --- CDN URL construction tests ---
+
+from app.services.catalog import build_cdn_urls
+
+
+class TestBuildCdnUrls:
+    """Tests for NOAA CDN URL construction."""
+
+    def test_conus_basic(self):
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:11:00+00:00")
+        assert urls is not None
+        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-2500x1500.jpg"
+        assert urls["mobile"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-1250x750.jpg"
+        assert urls["thumbnail"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-625x375.jpg"
+
+    def test_fulldisk(self):
+        urls = build_cdn_urls("GOES-19", "FullDisk", "C13", "2026-02-22T22:00:00+00:00")
+        assert urls is not None
+        assert "FD" in urls["desktop"]
+        assert "1808x1808" in urls["desktop"]
+        assert "/13/" in urls["desktop"]
+
+    def test_goes16(self):
+        urls = build_cdn_urls("GOES-16", "CONUS", "C02", "2026-01-01T00:00:00+00:00")
+        assert urls is not None
+        assert "GOES16" in urls["desktop"]
+        assert "20260010000" in urls["desktop"]
+
+    def test_mesoscale(self):
+        urls = build_cdn_urls("GOES-18", "Mesoscale1", "C02", "2026-06-15T12:30:00+00:00")
+        assert urls is not None
+        assert "MESO1" in urls["desktop"]
+
+    def test_unknown_sector_returns_none(self):
+        urls = build_cdn_urls("GOES-19", "UnknownSector", "C02", "2026-01-01T00:00:00+00:00")
+        assert urls is None
+
+    def test_bad_scan_time_returns_none(self):
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "not-a-date")
+        assert urls is None
+
+    def test_day_of_year_calculation(self):
+        # March 1 in non-leap year = day 60, but 2026 is not leap
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-03-01T15:30:00+00:00")
+        assert urls is not None
+        assert "20260601530" in urls["desktop"]

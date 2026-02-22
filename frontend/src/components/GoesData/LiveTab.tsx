@@ -52,6 +52,8 @@ interface CatalogLatest {
   sector: string;
   band: string;
   image_url?: string;
+  thumbnail_url?: string;
+  mobile_url?: string;
 }
 
 const REFRESH_INTERVALS = [
@@ -347,8 +349,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     zoom.reset();
   }, [satellite, sector, band, zoom]);
 
-  // Primary: local frame if available; fallback: catalog S3 URL (proxy-through)
-  const catalogImageUrl = catalogLatest?.image_url ?? null;
+  // Primary: local frame if available; fallback: catalog CDN URL (responsive)
+  const catalogImageUrl = (typeof window !== 'undefined' && window.innerWidth < 768
+    ? catalogLatest?.mobile_url
+    : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
   const imageUrl = localImageUrl ?? catalogImageUrl;
 
@@ -512,7 +516,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                   <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
                   <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.band}</span>
                   <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA S3</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
                   <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
                 </div>
               </div>
@@ -655,13 +659,40 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
     );
   }
   return (
-    <img
+    <CdnImage
       src={imageUrl}
       alt={`${satellite} ${band} ${sector}`}
       className="max-w-full max-h-full object-contain select-none"
       style={isFullscreen ? zoomStyle : undefined}
       draggable={false}
+    />
+  );
+}
+
+/* CdnImage — img with onError fallback to avoid broken image icons */
+function CdnImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [error, setError] = useState(false);
+  // Reset error state when src changes
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on prop change
+  useEffect(() => { setError(false); }, [src]);
+
+  if (error || !src) {
+    return (
+      <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500 py-8">
+        <Satellite className="w-12 h-12" />
+        <span className="text-sm font-medium">Image unavailable</span>
+        <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setError(true)}
       loading="lazy"
+      {...props}
     />
   );
 }

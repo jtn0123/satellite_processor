@@ -1,7 +1,6 @@
 """SQLAlchemy async database setup
 
-# TODO: Set up Alembic migrations for production schema changes.
-# Using create_all() is fine for development but production deployments
+# Note: Using create_all() for development. Production deployments
 # should use Alembic to manage schema migrations safely.
 """
 

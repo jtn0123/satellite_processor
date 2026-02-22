@@ -22,7 +22,7 @@ describe('Layout', () => {
   it('renders navigation links', () => {
     render(<Layout />, { wrapper });
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Live View').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Browse & Fetch').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Animate').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Jobs').length).toBeGreaterThan(0);

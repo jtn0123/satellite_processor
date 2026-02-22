@@ -141,7 +141,7 @@ describe('LiveViewStates', () => {
     });
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText('Loading latest frame...')).toBeInTheDocument();
+      expect(screen.getByTestId('loading-shimmer')).toBeInTheDocument();
     });
   });
 

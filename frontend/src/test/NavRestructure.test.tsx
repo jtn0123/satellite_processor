@@ -23,7 +23,7 @@ function renderWithRouter(initialRoute = '/') {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<div data-testid="dashboard-page">Dashboard</div>} />
-            <Route path="live" element={<div data-testid="live-page">Live View</div>} />
+            <Route path="live" element={<div data-testid="live-page">Live</div>} />
             <Route path="animate" element={<div data-testid="animate-page">Animate</div>} />
             <Route path="goes" element={<div data-testid="goes-page">Browse & Fetch</div>} />
             <Route path="jobs" element={<div data-testid="jobs-page">Jobs</div>} />
@@ -46,9 +46,9 @@ describe('Navigation Restructure', () => {
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
     });
 
-    it('renders Live View link', () => {
+    it('renders Live link', () => {
       renderWithRouter();
-      expect(screen.getAllByText('Live View').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
     });
 
     it('renders Browse & Fetch link', () => {
@@ -133,7 +133,7 @@ describe('Navigation Restructure', () => {
       expect(mobileLinks.length).toBe(7);
       const labels = Array.from(mobileLinks).map((l) => l.textContent?.trim());
       expect(labels).toContain('Dashboard');
-      expect(labels).toContain('Live View');
+      expect(labels).toContain('Live');
       expect(labels).toContain('Browse & Fetch');
       expect(labels).toContain('Animate');
       expect(labels).toContain('Jobs');

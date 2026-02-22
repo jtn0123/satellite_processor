@@ -41,7 +41,7 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('LiveView page', () => {
   it('renders heading', () => {
     renderWithProviders(<LiveView />);
-    expect(screen.getByRole('heading', { name: /live view/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^live$/i })).toBeInTheDocument();
   });
 
   it('renders breadcrumb with Dashboard link', () => {
@@ -52,6 +52,6 @@ describe('LiveView page', () => {
   it('renders breadcrumb current page', () => {
     renderWithProviders(<LiveView />);
     const nav = screen.getByRole('navigation');
-    expect(nav).toHaveTextContent('Live View');
+    expect(nav).toHaveTextContent('Live');
   });
 });

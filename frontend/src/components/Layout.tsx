@@ -29,7 +29,7 @@ const showErrorDashboard = import.meta.env.DEV || !!import.meta.env.VITE_API_KEY
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/live', icon: Radio, label: 'Live View' },
+  { to: '/live', icon: Radio, label: 'Live' },
   { to: '/goes', icon: Satellite, label: 'Browse & Fetch' },
   { to: '/animate', icon: Sparkles, label: 'Animate' },
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },

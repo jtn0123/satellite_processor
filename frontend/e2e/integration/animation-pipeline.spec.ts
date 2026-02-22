@@ -32,7 +32,7 @@ test.describe('Fetch → Animate pipeline', () => {
     expect(body).toBeTruthy();
   });
 
-  test('animate page shows frames available for selection', async ({ page, request }) => {
+  test('animate page shows frames available for selection', async ({ page }) => {
     await navigateTo(page, '/animate');
     await page.waitForTimeout(2_000);
 

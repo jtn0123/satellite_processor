@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navigateTo, apiPost, apiGet, waitForApiHealth, waitForJob, buildFetchRequest } from './helpers';
+import { navigateTo, apiPost, waitForApiHealth, waitForJob, buildFetchRequest } from './helpers';
 
 test.describe('Frame filtering E2E', () => {
   test.describe.configure({ mode: 'serial' });
@@ -35,9 +35,6 @@ test.describe('Frame filtering E2E', () => {
       const el = page.locator(sel).first();
       if (await el.isVisible({ timeout: 2_000 }).catch(() => false)) {
         filterFound = true;
-        // Get initial content
-        const beforeText = await page.textContent('main, [role="main"], .content, body');
-
         // Try to interact with the filter
         if (await el.evaluate((e) => e.tagName === 'SELECT')) {
           const options = await el.locator('option').allTextContents();

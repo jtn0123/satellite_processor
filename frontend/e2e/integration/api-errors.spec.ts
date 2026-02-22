@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiPost, apiPostRaw, waitForApiHealth, API_BASE, API_KEY } from './helpers';
+import { apiPost, apiPostRaw, waitForApiHealth, API_KEY } from './helpers';
 
 test.describe('API error responses', () => {
   test.beforeAll(async ({ request }) => {

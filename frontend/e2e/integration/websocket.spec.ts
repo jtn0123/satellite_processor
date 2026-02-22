@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { navigateTo, apiPost, waitForApiHealth, buildFetchRequest, API_BASE } from './helpers';
+import { apiPost, waitForApiHealth, buildFetchRequest, API_BASE } from './helpers';
 
 const WS_URL = API_BASE.replace(/^http/, 'ws') + '/ws/status';
 

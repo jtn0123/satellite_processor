@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/jtn0123/satellite_processor/compare/v1.16.0...v1.16.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* security hardening — shared frame path validation & API key warning ([#202](https://github.com/jtn0123/satellite_processor/issues/202)) ([83dfae8](https://github.com/jtn0123/satellite_processor/commit/83dfae8a8f693b231b6500f4e9e388c541300b69)), closes [#5](https://github.com/jtn0123/satellite_processor/issues/5) [#50](https://github.com/jtn0123/satellite_processor/issues/50)
+
 # [1.16.0](https://github.com/jtn0123/satellite_processor/compare/v1.15.6...v1.16.0) (2026-02-22)
 
 

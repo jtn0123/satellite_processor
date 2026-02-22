@@ -48,6 +48,13 @@ vi.mock('../components/GoesData/InlineFetchProgress', () => ({
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
 
+function make404() {
+  const err = new Error('Not found') as Error & { isAxiosError: boolean; response: { status: number } };
+  err.isAxiosError = true;
+  err.response = { status: 404 };
+  return err;
+}
+
 const mockedApi = api as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
@@ -110,7 +117,7 @@ function setupMocks(overrides: {
   mockedApi.get.mockImplementation((url: string) => {
     if (url === '/goes/products') return Promise.resolve({ data: overrides.products ?? PRODUCTS });
     if (url.startsWith('/goes/latest')) {
-      if (overrides.frameError) return Promise.reject(new Error('404'));
+      if (overrides.frameError) return Promise.reject(make404());
       return Promise.resolve({ data: overrides.frame ?? FRAME });
     }
     if (url.startsWith('/goes/catalog/latest')) {

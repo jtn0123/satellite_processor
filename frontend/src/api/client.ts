@@ -26,7 +26,10 @@ api.interceptors.response.use(
       // Attach user-friendly message for consumers
       error.userMessage = message;
     }
-    reportError(error, `API ${error.config?.method?.toUpperCase()} ${error.config?.url} [${error.response?.status ?? 'network'}]`);
+    // Don't report 404s — they're expected for empty data states (e.g., no frames yet)
+    if (error.response?.status !== 404) {
+      reportError(error, `API ${error.config?.method?.toUpperCase()} ${error.config?.url} [${error.response?.status ?? 'network'}]`);
+    }
     return Promise.reject(error);
   },
 );

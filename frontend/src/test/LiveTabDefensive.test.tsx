@@ -12,6 +12,13 @@ vi.mock('../api/client', () => ({
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
 
+function make404() {
+  const err = new Error('Not found') as Error & { isAxiosError: boolean; response: { status: number } };
+  err.isAxiosError = true;
+  err.response = { status: 404 };
+  return err;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
@@ -70,7 +77,7 @@ describe('LiveTab - Defensive Scenarios', () => {
   it('handles latest frame API error', async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-      if (url.startsWith('/goes/latest')) return Promise.reject(new Error('Not found'));
+      if (url.startsWith('/goes/latest')) return Promise.reject(make404());
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<LiveTab />);

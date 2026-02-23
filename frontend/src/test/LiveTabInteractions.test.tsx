@@ -70,21 +70,23 @@ afterEach(() => {
 });
 
 describe('LiveTab - Interactions', () => {
-  it('toggles compare mode checkbox', async () => {
+  it('toggles compare mode button', async () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByText('Compare')).toBeInTheDocument());
-    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input[type="checkbox"]')! as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
-    fireEvent.click(checkbox);
-    expect(checkbox.checked).toBe(true);
+    const btn = screen.getByText('Compare').closest('button')!;
+    expect(btn.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(btn);
+    expect(btn.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('toggles auto-fetch checkbox', async () => {
+  it('toggles auto-fetch switch', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input[type="checkbox"]')! as HTMLInputElement;
-    fireEvent.click(checkbox);
-    expect(checkbox.checked).toBe(true);
+    await waitFor(() => expect(screen.getByText(/Auto-fetch every/)).toBeInTheDocument());
+    const switches = screen.getAllByRole('switch');
+    // First switch without a title is the auto-fetch toggle
+    const autoFetchSwitch = switches.find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    fireEvent.click(autoFetchSwitch);
+    expect(autoFetchSwitch.getAttribute('aria-checked')).toBe('true');
   });
 
   it('toggles overlay visibility', async () => {
@@ -144,7 +146,7 @@ describe('LiveTab - Interactions', () => {
 
   it('changes auto-refresh interval', async () => {
     renderLiveTab();
-    const select = screen.getByLabelText('Auto-refresh interval') as HTMLSelectElement;
+    const select = screen.getByLabelText('Auto-fetch interval') as HTMLSelectElement;
     await waitFor(() => expect(select).toBeInTheDocument());
     fireEvent.change(select, { target: { value: '60000' } });
     expect(select.value).toBe('60000');
@@ -212,8 +214,8 @@ describe('LiveTab - Interactions', () => {
   it('shows compare slider when compare mode is on and frames exist', async () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByText('Compare')).toBeInTheDocument());
-    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input')! as HTMLInputElement;
-    fireEvent.click(checkbox);
+    const btn = screen.getByText('Compare').closest('button')!;
+    fireEvent.click(btn);
     // CompareSlider should render
     await waitFor(() => {
       // The compare slider renders with the image

@@ -510,13 +510,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{getFriendlyBandLabel(b.id, b.description, isMobile)}</option>)}
             </select>
-            <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))} aria-label="Auto-refresh interval"
-              className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {REFRESH_INTERVALS.map((ri) => (
-                <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
-              ))}
-            </select>
-
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <button
                 onClick={toggleMonitor}
@@ -532,16 +525,43 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 {monitoring ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 {monitoring ? 'Stop Watch' : 'Watch'}
               </button>
-              <label className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer hover:text-white transition-colors">
-                <input type="checkbox" checked={autoFetch} onChange={(e) => setAutoFetch(e.target.checked)} className="rounded" />
+              <div className="flex items-center gap-1.5 text-xs text-white/80">
+                <button
+                  role="switch"
+                  aria-checked={autoFetch}
+                  onClick={() => setAutoFetch((v) => !v)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${autoFetch ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                Auto-fetch
-              </label>
-              <label className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer hover:text-white transition-colors">
-                <input type="checkbox" checked={compareMode} onChange={(e) => setCompareMode(e.target.checked)} className="rounded" />
+                <span className="whitespace-nowrap">Auto-fetch every</span>
+                <select
+                  value={refreshInterval}
+                  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                  disabled={!autoFetch}
+                  aria-label="Auto-fetch interval"
+                  className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${!autoFetch ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                >
+                  {REFRESH_INTERVALS.map((ri) => (
+                    <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                role="switch"
+                aria-checked={compareMode}
+                onClick={() => setCompareMode((v) => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+                  compareMode
+                    ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30'
+                    : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
+                }`}
+                title={compareMode ? 'Disable compare' : 'Enable compare'}
+              >
                 <Columns2 className="w-3.5 h-3.5 text-blue-400" />
                 Compare
-              </label>
+              </button>
             </div>
 
             <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
@@ -562,7 +582,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">{countdownDisplay}</span>
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">Next: {countdownDisplay}</span>
               </button>
               <button onClick={toggleFullscreen}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
@@ -769,16 +789,28 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             {monitoring ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {monitoring ? 'Stop Watch' : 'Watch'}
           </button>
-          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
-            <input type="checkbox" checked={autoFetch} onChange={(e) => onAutoFetchChange(e.target.checked)} className="rounded" />
+          <button
+            onClick={() => onAutoFetchChange(!autoFetch)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              autoFetch
+                ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
+                : 'bg-white/10 border border-white/20 text-white/80'
+            }`}
+          >
             <Zap className="w-4 h-4 text-amber-400" />
             Auto-fetch
-          </label>
-          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
-            <input type="checkbox" checked={compareMode} onChange={(e) => onCompareModeChange(e.target.checked)} className="rounded" />
+          </button>
+          <button
+            onClick={() => onCompareModeChange(!compareMode)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              compareMode
+                ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
+                : 'bg-white/10 border border-white/20 text-white/80'
+            }`}
+          >
             <Columns2 className="w-4 h-4 text-blue-400" />
             Compare
-          </label>
+          </button>
         </div>
       )}
       <button

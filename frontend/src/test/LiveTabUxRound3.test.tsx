@@ -200,7 +200,7 @@ describe('Countdown Timer', () => {
     // The countdown is rendered as a span inside the button
     const countdown = refreshBtn.querySelector('span');
     expect(countdown).toBeTruthy();
-    expect(countdown?.textContent).toMatch(/^\d+:\d{2}$/);
+    expect(countdown?.textContent).toMatch(/^Next: \d+:\d{2}$/);
   });
 
   it('countdown shows M:SS format', async () => {
@@ -211,8 +211,8 @@ describe('Countdown Timer', () => {
 
     const refreshBtn = screen.getByLabelText('Refresh now');
     const countdown = refreshBtn.querySelector('span');
-    // Default is 5 min (300s) → "5:00"
-    expect(countdown?.textContent).toBe('5:00');
+    // Default is 5 min (300s) → "Next: 5:00"
+    expect(countdown?.textContent).toBe('Next: 5:00');
   });
 
   it('countdown decrements after 1 second', async () => {
@@ -224,13 +224,13 @@ describe('Countdown Timer', () => {
     const refreshBtn = screen.getByLabelText('Refresh now');
     const getCountdown = () => refreshBtn.querySelector('span')?.textContent;
 
-    expect(getCountdown()).toBe('5:00');
+    expect(getCountdown()).toBe('Next: 5:00');
 
     act(() => { vi.advanceTimersByTime(1000); });
-    expect(getCountdown()).toBe('4:59');
+    expect(getCountdown()).toBe('Next: 4:59');
 
     act(() => { vi.advanceTimersByTime(1000); });
-    expect(getCountdown()).toBe('4:58');
+    expect(getCountdown()).toBe('Next: 4:58');
   });
 });
 

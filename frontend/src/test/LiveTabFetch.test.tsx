@@ -64,10 +64,10 @@ afterEach(() => {
 describe('LiveTab - Fetch & Auto-fetch', () => {
   it('auto-fetch triggers when enabled and catalog is newer than local', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
 
     // Enable auto-fetch
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     // Wait for the auto-fetch effect to fire
@@ -82,9 +82,9 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
   it('auto-fetch sends start_time/end_time (not start_date/end_date) with uppercase satellite', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
 
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     await waitFor(() => {
@@ -113,10 +113,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     });
 
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
 
     // Enable auto-fetch to trigger job
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
@@ -169,7 +169,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     await waitFor(() => expect(screen.getByText('LIVE')).toBeInTheDocument());
 
     // Enable auto-fetch which will trigger fetchNow
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     // Should not crash even on error
@@ -186,10 +186,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     });
 
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('Auto-fetch')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
 
     // Enable auto-fetch
-    const checkbox = screen.getByText('Auto-fetch').closest('label')!.querySelector('input')!;
+    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());

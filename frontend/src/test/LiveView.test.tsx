@@ -44,9 +44,9 @@ describe('LiveView page', () => {
     expect(screen.getByRole('heading', { name: /^live$/i })).toBeInTheDocument();
   });
 
-  it('renders breadcrumb with Dashboard link', () => {
+  it('renders breadcrumb with Home link', () => {
     renderWithProviders(<LiveView />);
-    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/');
   });
 
   it('renders breadcrumb current page', () => {

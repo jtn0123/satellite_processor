@@ -82,7 +82,7 @@ describe('LiveTab', () => {
   it('renders auto-refresh selector', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-fetch interval')).toBeInTheDocument();
     });
   });
 

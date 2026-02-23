@@ -99,7 +99,7 @@ async function exitFullscreenSafe() {
   try {
     await document.exitFullscreen();
   } catch {
-    (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
+    await (document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen?.();
   }
 }
 
@@ -107,7 +107,7 @@ async function enterFullscreenSafe(el: HTMLElement) {
   try {
     await el.requestFullscreen();
   } catch {
-    (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
+    await (el as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen?.();
   }
 }
 

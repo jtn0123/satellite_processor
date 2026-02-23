@@ -328,11 +328,8 @@ export default function BrowseTab() {
   }, [toggleSelect]);
 
   const selectAll = () => {
-    if (selectedIds.size === frames.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(frames.map((f) => f.id)));
-    }
+    const allSelected = selectedIds.size === frames.length;
+    setSelectedIds(allSelected ? new Set() : new Set(frames.map((f) => f.id)));
   };
 
   // #54: Keyboard shortcuts for BrowseTab

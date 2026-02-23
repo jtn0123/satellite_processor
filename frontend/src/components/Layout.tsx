@@ -305,18 +305,7 @@ export default function Layout() {
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
-          <footer className="md:hidden mt-8 pb-4 text-center text-sm text-gray-500 dark:text-slate-400">
-            <button
-              onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors relative"
-              aria-label="Show changelog"
-            >
-              {versionInfo.display}
-              {hasNewVersion && (
-                <span className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" aria-label="New version available" />
-              )}
-            </button>
-          </footer>
+          {/* Version moved to Settings — no longer shown in global footer */}
         </main>
       </div>
 

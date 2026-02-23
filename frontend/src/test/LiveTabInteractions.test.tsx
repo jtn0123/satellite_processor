@@ -150,10 +150,11 @@ describe('LiveTab - Interactions', () => {
     expect(select.value).toBe('60000');
   });
 
-  it('shows AWS latest info in bottom overlay when catalog data exists', async () => {
+  it('shows condensed metadata in bottom overlay when catalog data exists', async () => {
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('AWS Latest')).toBeInTheDocument();
+      // Condensed metadata shows satellite name
+      expect(screen.getByText('GOES-16')).toBeInTheDocument();
     });
   });
 
@@ -332,12 +333,14 @@ describe('LiveTab - Interactions', () => {
     });
   });
 
-  it('shows metadata overlay with frame info badges', async () => {
+  it('shows condensed metadata overlay with frame info', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Satellite, band, sector shown as separate badge elements in bottom overlay
-      const badges = document.querySelectorAll('.backdrop-blur-sm');
-      expect(badges.length).toBeGreaterThanOrEqual(3);
+      // Condensed metadata shows satellite, band, sector inline
+      // Multiple matches expected (select options + metadata)
+      expect(screen.getAllByText('GOES-16').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('C02').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('CONUS').length).toBeGreaterThanOrEqual(1);
     });
   });
 

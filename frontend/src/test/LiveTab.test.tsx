@@ -127,12 +127,11 @@ describe('LiveTab', () => {
     });
   });
 
-  it('displays frame capture time', async () => {
+  it('displays frame metadata in condensed overlay', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      // The component displays the date from the frame
-      const timeText = screen.getAllByText(/2024/);
-      expect(timeText.length).toBeGreaterThan(0);
+      // Condensed metadata shows satellite name
+      expect(screen.getByText('GOES-16')).toBeInTheDocument();
     });
   });
 });

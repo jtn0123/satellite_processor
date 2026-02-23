@@ -13,7 +13,7 @@
     "analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/postcss": "^4.2.0",
     "@tanstack/react-query": "^5.90.21",
     "@types/leaflet": "^1.9.21",
     "axios": "^1.13.5",

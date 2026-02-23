@@ -794,7 +794,13 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
 }
 
 /* CdnImage — img with onError fallback, shimmer placeholder, crossfade, and offline cache */
-function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+interface CdnImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  'data-satellite'?: string;
+  'data-band'?: string;
+  'data-sector'?: string;
+}
+
+function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
@@ -812,9 +818,9 @@ function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTM
   }, [src]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const dataSatellite = props['data-satellite'] as string | undefined;
-  const dataBand = props['data-band'] as string | undefined;
-  const dataSector = props['data-sector'] as string | undefined;
+  const dataSatellite = props['data-satellite'];
+  const dataBand = props['data-band'];
+  const dataSector = props['data-sector'];
 
   const handleLoad = useCallback(() => {
     setLoaded(true);

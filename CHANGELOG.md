@@ -1,3 +1,10 @@
+## [1.16.7](https://github.com/jtn0123/satellite_processor/compare/v1.16.6...v1.16.7) (2026-02-23)
+
+
+### Bug Fixes
+
+* Live View mobile UX polish ([#223](https://github.com/jtn0123/satellite_processor/issues/223)) ([cdffe7e](https://github.com/jtn0123/satellite_processor/commit/cdffe7e7f57d1e2ea17c852edcdd1ab28006f621))
+
 ## [1.16.6](https://github.com/jtn0123/satellite_processor/compare/v1.16.5...v1.16.6) (2026-02-23)
 
 

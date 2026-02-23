@@ -19,7 +19,7 @@ test.describe('New user flow', () => {
     await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
     const nav = page.locator('nav, aside');
     await expect(nav.first()).toBeVisible();
-    await expect(page.locator('text=Live View').first()).toBeVisible();
+    await expect(page.locator('text=Live').first()).toBeVisible();
   });
 
   test('dashboard fetch latest button triggers fetch', async ({ page }) => {
@@ -40,12 +40,12 @@ test.describe('New user flow', () => {
   test('navigating from dashboard to live view via sidebar', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
     await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
-    await page.locator('text=Live View').first().click();
+    await page.locator('text=Live').first().click();
     await expect(page).toHaveURL(/live/);
   });
 });
 
-test.describe('Live View flow', () => {
+test.describe('Live flow', () => {
   test('live view page loads with heading', async ({ page }) => {
     await page.goto('/live', { waitUntil: 'networkidle' });
     // Should have some content indicating live view

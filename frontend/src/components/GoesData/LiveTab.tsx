@@ -633,7 +633,7 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
   return (
     <div ref={fabRef} className="relative">
       {open && (
-        <div className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]" data-testid="fab-menu">
+        <div id="fab-menu" className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]" data-testid="fab-menu">
           <button
             onClick={() => { onToggleMonitor(); setOpen(false); }}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
@@ -661,6 +661,8 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
         onClick={() => setOpen((o) => !o)}
         className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
         aria-label="Toggle controls"
+        aria-expanded={open}
+        aria-controls="fab-menu"
         data-testid="fab-toggle"
       >
         {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}

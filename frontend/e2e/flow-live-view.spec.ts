@@ -5,10 +5,10 @@ test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
 });
 
-test.describe('Live View flow', () => {
+test.describe('Live flow', () => {
   test('live view page loads with heading', async ({ page }) => {
     await page.goto('/live');
-    await expect(page.locator('h1')).toContainText('Live View');
+    await expect(page.locator('h1')).toContainText('Live');
   });
 
   test('live view shows satellite selector', async ({ page }) => {
@@ -41,8 +41,8 @@ test.describe('Live View flow', () => {
 
   test('live view survives reload', async ({ page }) => {
     await page.goto('/live');
-    await expect(page.locator('h1')).toContainText('Live View');
+    await expect(page.locator('h1')).toContainText('Live');
     await page.reload();
-    await expect(page.locator('h1')).toContainText('Live View');
+    await expect(page.locator('h1')).toContainText('Live');
   });
 });

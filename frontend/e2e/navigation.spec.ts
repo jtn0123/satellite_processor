@@ -53,7 +53,7 @@ test('shows 404 for unknown routes', async ({ page }) => {
 test('sidebar links work', async ({ page }) => {
   await page.goto('/');
   const sidebar = page.locator('aside');
-  await sidebar.getByText('Live View').click();
+  await sidebar.getByText('Live').click();
   await expect(page).toHaveURL(/live/);
   await sidebar.getByText('Jobs').click();
   await expect(page).toHaveURL(/jobs/);

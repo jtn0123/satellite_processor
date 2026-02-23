@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
@@ -22,6 +22,13 @@ import {
   loadCachedImage,
 } from './liveTabUtils';
 import type { CachedImageMeta } from './liveTabUtils';
+
+function subscribeToResize(cb: () => void) {
+  globalThis.addEventListener('resize', cb);
+  return () => globalThis.removeEventListener('resize', cb);
+}
+function getIsMobile() { return typeof globalThis.window !== 'undefined' && globalThis.innerWidth < 768; }
+function useIsMobile() { return useSyncExternalStore(subscribeToResize, getIsMobile, () => false); }
 
 interface SatelliteAvailability {
   status: string;
@@ -222,6 +229,7 @@ interface LiveTabProps {
 
 export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
   const navigateFn = useNavigate();
+  const isMobile = useIsMobile();
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
@@ -434,7 +442,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{getFriendlyBandLabel(b.id, b.description)}</option>)}
+              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{getFriendlyBandLabel(b.id, b.description, isMobile)}</option>)}
             </select>
             <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))} aria-label="Auto-refresh interval"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
@@ -526,8 +534,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         />
 
         {/* Live / Monitoring indicator */}
-        <div className="absolute top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
-          <div className={`w-2 h-2 rounded-full ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
+        <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
+          <div className={`w-2 h-2 rounded-full shrink-0 ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
           <span className="text-xs text-white/70 font-medium">
             {monitoring ? 'MONITORING' : 'LIVE'}
           </span>
@@ -731,7 +739,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   }
   if (isError) {
     return (
-      <div className="flex flex-col items-center gap-4 text-gray-400 dark:text-slate-500 py-8">
+      <div className="flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
         <Satellite className="w-12 h-12" />
         <span className="text-sm font-medium">No local frames available</span>
         <span className="text-xs text-gray-400 dark:text-slate-600">Fetch your first image to see it here</span>
@@ -752,7 +760,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   }
   if (!imageUrl) {
     return (
-      <div className="flex flex-col items-center gap-4 text-gray-400 dark:text-slate-500 py-8">
+      <div className="flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
         <Satellite className="w-12 h-12" />
         <span className="text-sm font-medium">No frames loaded yet</span>
         <span className="text-xs text-gray-400 dark:text-slate-600">Select a satellite, sector, and band above, then fetch imagery</span>
@@ -853,10 +861,17 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
 
   if (error || !displaySrc) {
     return (
-      <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500 py-8">
+      <div className="flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
         <Satellite className="w-12 h-12" />
         <span className="text-sm font-medium">Image unavailable</span>
         <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
+        <button
+          onClick={() => { setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setDisplaySrc(src ? `${src}${src.includes('?') ? '&' : '?'}_r=${Date.now()}` : src); }}
+          className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors text-sm font-medium min-h-[44px]"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Tap to retry
+        </button>
       </div>
     );
   }

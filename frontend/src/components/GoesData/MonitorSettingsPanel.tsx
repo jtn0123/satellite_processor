@@ -49,7 +49,7 @@ export default function MonitorSettingsPanel({
     <div className="relative" data-testid="monitor-settings-panel">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`p-2 rounded-lg backdrop-blur-md border transition-colors ${
+        className={`p-2 rounded-lg backdrop-blur-md border transition-colors min-w-[44px] min-h-[44px] ${
           isMonitoring
             ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
             : 'bg-white/10 border-white/20 text-white/80 hover:text-white hover:bg-white/20'

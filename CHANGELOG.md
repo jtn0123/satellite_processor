@@ -1,3 +1,10 @@
+## [1.16.8](https://github.com/jtn0123/satellite_processor/compare/v1.16.7...v1.16.8) (2026-02-23)
+
+
+### Bug Fixes
+
+* Live View UX round 3 — layout, metadata, gestures, polish ([#224](https://github.com/jtn0123/satellite_processor/issues/224)) ([7ae0910](https://github.com/jtn0123/satellite_processor/commit/7ae091010239eefacc99d1a50ecca1d0051884bc))
+
 ## [1.16.7](https://github.com/jtn0123/satellite_processor/compare/v1.16.6...v1.16.7) (2026-02-23)
 
 

@@ -673,7 +673,7 @@ function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleO
   return (
     <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
       <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
-        {source && overlayVisible ? (
+        {source && overlayVisible && (
           <div className="space-y-1">
             {/* Condensed single-line summary */}
             <div className="flex items-center gap-1 text-white/70 text-xs" data-testid="condensed-metadata">
@@ -703,8 +703,6 @@ function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleO
               </div>
             )}
           </div>
-        ) : (
-          <div />
         )}
         <div className="flex items-center gap-2">
           {frame && (

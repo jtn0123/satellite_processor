@@ -123,25 +123,21 @@ test.describe('Live flow', () => {
 
   test('metadata line shows satellite info when data loaded', async ({ page }) => {
     await page.goto('/live');
-    // Metadata only renders when catalog/frame data is available from mock API
+    // Mock API provides catalog/frame data, so metadata should render
     const metaArea = page.locator('[data-testid="condensed-metadata"]');
-    if (await metaArea.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // If metadata rendered, it should contain satellite info
-      const text = await metaArea.textContent();
-      expect(text).toBeTruthy();
-    }
-    // If no data loaded, metadata won't render — that's OK in mocked E2E
+    await expect(metaArea).toBeVisible({ timeout: 10000 });
+    const text = await metaArea.textContent();
+    expect(text).toBeTruthy();
   });
 
   test('expandable details toggle', async ({ page }) => {
     await page.goto('/live');
     const toggleBtn = page.locator('button[aria-label="Toggle image details"]');
-    // This button only appears when metadata is visible (frame or catalog data loaded)
-    if (await toggleBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
-      await toggleBtn.click();
-      await expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
-    }
+    // Mock API provides data, so metadata and its toggle button should render
+    await expect(toggleBtn).toBeVisible({ timeout: 10000 });
+    await expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
+    await toggleBtn.click();
+    await expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
   });
 
   test('version number not visible in live content area', async ({ page }) => {
@@ -181,11 +177,11 @@ test.describe('Live flow', () => {
     await page.route('**/api/goes/frames/*/image', (route) => route.fulfill({ status: 500 }));
     await page.goto('/live');
     const banner = page.locator('[data-testid="cached-image-banner"]');
-    if (await banner.isVisible({ timeout: 8000 }).catch(() => false)) {
-      const dismissBtn = banner.locator('button[aria-label="Dismiss cached banner"]');
-      await dismissBtn.click();
-      await expect(banner).not.toBeVisible();
-    }
+    // Banner should appear since we seeded cache and forced image error fallback
+    await expect(banner).toBeVisible({ timeout: 10000 });
+    const dismissBtn = banner.locator('button[aria-label="Dismiss cached banner"]');
+    await dismissBtn.click();
+    await expect(banner).not.toBeVisible();
   });
 
   test('auto-refresh countdown visible', async ({ page }) => {
@@ -193,7 +189,7 @@ test.describe('Live flow', () => {
     const refreshBtn = page.locator('button[aria-label="Refresh now"]');
     await expect(refreshBtn).toBeVisible({ timeout: 10000 });
     // Countdown is a span inside the refresh button showing m:ss format
-    const countdown = refreshBtn.locator('span');
+    const countdown = refreshBtn.locator('span').filter({ hasText: /\d+:\d{2}/ });
     await expect(countdown).toBeVisible({ timeout: 5000 });
     const text = await countdown.textContent();
     expect(text).toMatch(/\d+:\d{2}/);

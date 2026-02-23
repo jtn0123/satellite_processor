@@ -362,19 +362,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   // Auto-refresh countdown (#12)
   const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
+  // Reset displayed value only when the interval duration changes
   useEffect(() => {
     setCountdownSec(Math.floor(refreshInterval / 1000));
   }, [refreshInterval]);
+  // Single interval — restart on refreshInterval change OR frame change (new data arrived)
+  // Only refreshInterval change resets the displayed value above; frame change just restarts the tick
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [refreshInterval]);
-  // Reset countdown when data refetches
-  useEffect(() => {
-    setCountdownSec(Math.floor(refreshInterval / 1000));
-  }, [frame, refreshInterval]);
+  }, [refreshInterval, frame]);
 
   const countdownDisplay = useMemo(() => {
     const m = Math.floor(countdownSec / 60);
@@ -389,6 +388,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [products]);
 
   const [swipeToast, setSwipeToast] = useState<string | null>(null);
+  const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -410,8 +410,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     const nextBand = bandKeys[nextIdx];
     setBand(nextBand);
     const label = getFriendlyBandName(nextBand);
+    clearTimeout(swipeToastTimer.current);
     setSwipeToast(`${nextBand} — ${label}`);
-    setTimeout(() => setSwipeToast(null), 1500);
+    swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
   }, [band, bandKeys]);
 
   const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
@@ -782,15 +783,15 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
       )}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
+        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
         aria-label="Toggle controls"
         aria-expanded={open}
         aria-controls="fab-menu"
         data-testid="fab-toggle"
       >
         {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
+        <span className="text-[9px] text-white/40">Controls</span>
       </button>
-      <span className="text-[9px] text-white/40 pointer-events-none">Controls</span>
     </div>
   );
 }
@@ -935,7 +936,7 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
         <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
         <button
           onClick={() => {
-            setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null);
+            setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setCachedDismissed(false);
             const separator = src?.includes('?') ? '&' : '?';
             setDisplaySrc(src ? `${src}${separator}_r=${Date.now()}` : src);
           }}

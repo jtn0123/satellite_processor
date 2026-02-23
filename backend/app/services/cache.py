@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -25,7 +26,7 @@ def make_cache_key(prefix: str, params: dict[str, Any] | None = None) -> str:
 async def get_cached(
     key: str,
     ttl: int,
-    fetch_fn: Callable[[], Awaitable[Any]],
+    fetch_fn: Callable[[], Any] | Callable[[], Awaitable[Any]],
 ) -> Any:
     """Return cached value or call fetch_fn, cache result, and return it."""
     redis = get_redis_client()
@@ -36,7 +37,8 @@ async def get_cached(
     except Exception:
         logger.warning("Redis cache read failed for %s", key, exc_info=True)
 
-    result = await fetch_fn()
+    raw = fetch_fn()
+    result = await raw if inspect.isawaitable(raw) else raw
 
     try:
         await redis.set(key, json.dumps(result, default=str), ex=ttl)

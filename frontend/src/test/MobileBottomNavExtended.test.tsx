@@ -92,6 +92,6 @@ describe('MobileBottomNav — extended', () => {
 
   it('nav has aria-label "Mobile navigation"', () => {
     renderNav();
-    expect(screen.getByRole('navigation')).toHaveAttribute('aria-label', 'Mobile navigation');
+    expect(screen.getByRole('tablist')).toHaveAttribute('aria-label', 'Mobile navigation');
   });
 });

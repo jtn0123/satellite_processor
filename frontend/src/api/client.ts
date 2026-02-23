@@ -19,7 +19,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after'];
-      const seconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+      const seconds = retryAfter ? Number.parseInt(retryAfter, 10) : undefined;
       const message = seconds
         ? `Rate limited — please wait ${seconds}s before retrying.`
         : 'Too many requests — please slow down.';

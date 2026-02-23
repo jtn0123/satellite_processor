@@ -15,6 +15,13 @@ import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
+import {
+  getFriendlyBandLabel,
+  getFriendlyBandName,
+  saveCachedImage,
+  loadCachedImage,
+} from './liveTabUtils';
+import type { CachedImageMeta } from './liveTabUtils';
 
 interface SatelliteAvailability {
   status: string;
@@ -56,66 +63,6 @@ interface CatalogLatest {
   mobile_url?: string;
 }
 
-// Friendly band name mapping
-const FRIENDLY_BAND_NAMES: Record<string, string> = {
-  C01: 'Visible Blue',
-  C02: 'Visible Red',
-  C03: 'Near-IR Veggie',
-  C04: 'Cirrus',
-  C05: 'Snow/Ice',
-  C06: 'Cloud Particle Size',
-  C07: 'Shortwave IR',
-  C08: 'Upper Water Vapor',
-  C09: 'Mid Water Vapor',
-  C10: 'Lower Water Vapor',
-  C11: 'Cloud-Top Phase',
-  C12: 'Ozone',
-  C13: 'Clean IR Longwave',
-  C14: 'IR Longwave',
-  C15: 'Dirty Longwave',
-  C16: 'CO₂ Longwave',
-  GEOCOLOR: 'GeoColor (True Color)',
-};
-
-function getFriendlyBandLabel(bandId: string, description?: string): string {
-  const friendly = FRIENDLY_BAND_NAMES[bandId];
-  if (bandId === 'GEOCOLOR') return friendly ?? bandId;
-  if (friendly && description) return `${friendly} (${bandId} — ${description})`;
-  if (friendly) return `${friendly} (${bandId})`;
-  return description ? `${bandId} — ${description}` : bandId;
-}
-
-function getFriendlyBandName(bandId: string): string {
-  return FRIENDLY_BAND_NAMES[bandId] ?? bandId;
-}
-
-// Cached image storage helpers
-const CACHE_KEY_IMAGE = 'live-last-image';
-const CACHE_KEY_META = 'live-last-image-meta';
-
-interface CachedImageMeta {
-  url: string;
-  satellite: string;
-  band: string;
-  sector: string;
-  timestamp: string;
-}
-
-function saveCachedImage(url: string, meta: Omit<CachedImageMeta, 'url'>) {
-  try {
-    localStorage.setItem(CACHE_KEY_IMAGE, url);
-    localStorage.setItem(CACHE_KEY_META, JSON.stringify({ url, ...meta }));
-  } catch { /* storage full — ignore */ }
-}
-
-function loadCachedImage(): CachedImageMeta | null {
-  try {
-    const meta = localStorage.getItem(CACHE_KEY_META);
-    if (meta) return JSON.parse(meta) as CachedImageMeta;
-  } catch { /* corrupted — ignore */ }
-  return null;
-}
-
 const REFRESH_INTERVALS = [
   { label: '1 min', value: 60000 },
   { label: '5 min', value: 300000 },
@@ -148,17 +95,17 @@ function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame
   return { awsAge, localAge, behindMin };
 }
 
-function exitFullscreenSafe() {
+async function exitFullscreenSafe() {
   try {
-    document.exitFullscreen();
+    await document.exitFullscreen();
   } catch {
     (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
   }
 }
 
-function enterFullscreenSafe(el: HTMLElement) {
+async function enterFullscreenSafe(el: HTMLElement) {
   try {
-    el.requestFullscreen();
+    await el.requestFullscreen();
   } catch {
     (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
   }
@@ -199,6 +146,74 @@ function useFullscreenSync(
     document.addEventListener('fullscreenchange', handler);
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [setIsFullscreen, zoom]);
+}
+
+/* Extracted fetch-job logic to reduce LiveTab cognitive complexity */
+function useLiveFetchJob({
+  satellite, sector, band, autoFetch, catalogLatest, frame,
+  lastAutoFetchTimeRef, lastAutoFetchMsRef, refetch,
+}: {
+  satellite: string; sector: string; band: string; autoFetch: boolean;
+  catalogLatest: CatalogLatest | null; frame: LatestFrame | null;
+  lastAutoFetchTimeRef: React.MutableRefObject<string | null>;
+  lastAutoFetchMsRef: React.MutableRefObject<number>;
+  refetch: () => Promise<unknown>;
+}) {
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
+    queryKey: ['live-job', activeJobId],
+    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
+    enabled: !!activeJobId,
+    refetchInterval: activeJobId ? 2000 : false,
+  });
+
+  useEffect(() => {
+    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
+      const timer = setTimeout(() => {
+        setActiveJobId(null);
+        refetch();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeJob, refetch]);
+
+  const fetchNow = useCallback(async () => {
+    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
+    try {
+      const res = await api.post('/goes/fetch', {
+        satellite: satellite.toUpperCase(), sector, band,
+        start_time: startDate,
+        end_time: startDate,
+      });
+      setActiveJobId(res.data.job_id);
+      showToast('success', 'Fetching latest frame…');
+    } catch {
+      showToast('error', 'Failed to start fetch');
+    }
+  }, [satellite, sector, band, catalogLatest]);
+
+  useEffect(() => {
+    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
+    lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
+    lastAutoFetchMsRef.current = Date.now();
+    const doAutoFetch = async () => {
+      try {
+        const res = await api.post('/goes/fetch', {
+          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+          sector: sector || catalogLatest!.sector,
+          band: band || catalogLatest!.band,
+          start_time: catalogLatest!.scan_time,
+          end_time: catalogLatest!.scan_time,
+        });
+        setActiveJobId(res.data.job_id);
+        showToast('success', 'Auto-fetching new frame from AWS');
+      } catch { /* auto-fetch failure is non-critical */ }
+    };
+    doAutoFetch();
+  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef]);
+
+  return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }
 
 interface LiveTabProps {
@@ -337,67 +352,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     retry: 1,
   });
 
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-
-  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
-    queryKey: ['live-job', activeJobId],
-    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
-    enabled: !!activeJobId,
-    refetchInterval: activeJobId ? 2000 : false,
+  const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
+    satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
+    frame: frame ?? null, lastAutoFetchTimeRef: lastAutoFetchTime, lastAutoFetchMsRef: lastAutoFetchMs, refetch,
   });
 
-  useEffect(() => {
-    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
-      const timer = setTimeout(() => {
-        setActiveJobId(null);
-        refetch();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeJob, refetch]);
-
-  const fetchNow = useCallback(async () => {
-    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
-    try {
-      const res = await api.post('/goes/fetch', {
-        satellite: satellite.toUpperCase(), sector, band,
-        start_time: startDate,
-        end_time: startDate,
-      });
-      setActiveJobId(res.data.job_id);
-      showToast('success', 'Fetching latest frame…');
-    } catch {
-      showToast('error', 'Failed to start fetch');
-    }
-  }, [satellite, sector, band, catalogLatest]);
-
-  useEffect(() => {
-    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTime.current, lastAutoFetchMs.current)) return;
-    lastAutoFetchTime.current = catalogLatest!.scan_time;
-    lastAutoFetchMs.current = Date.now();
-    const doAutoFetch = async () => {
-      try {
-        const res = await api.post('/goes/fetch', {
-          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
-          sector: sector || catalogLatest!.sector,
-          band: band || catalogLatest!.band,
-          start_time: catalogLatest!.scan_time,
-          end_time: catalogLatest!.scan_time,
-        });
-        setActiveJobId(res.data.job_id);
-        showToast('success', 'Auto-fetching new frame from AWS');
-      } catch { /* auto-fetch failure is non-critical */ }
-    };
-    doAutoFetch();
-  }, [autoFetch, catalogLatest, frame, satellite, sector, band]);
-
-  const toggleFullscreen = useCallback(() => {
+  const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     const isCurrentlyFullscreen = !!document.fullscreenElement;
     if (isCurrentlyFullscreen) {
-      exitFullscreenSafe();
+      await exitFullscreenSafe();
     } else {
-      enterFullscreenSafe(containerRef.current);
+      await enterFullscreenSafe(containerRef.current);
     }
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
@@ -410,7 +376,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const catalogImageUrl = (typeof globalThis.window !== 'undefined' && globalThis.window.innerWidth < 768
+  const catalogImageUrl = (globalThis.window !== undefined && globalThis.window.innerWidth < 768
     ? catalogLatest?.mobile_url
     : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
@@ -552,71 +518,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
 
         {/* Bottom metadata overlay */}
-        <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
-          <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
-            {frame && overlayVisible && (
-              <div className="space-y-1">
-                <div className="text-white text-lg font-semibold text-shadow-overlay">
-                  {new Date(frame.capture_time).toLocaleString()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.satellite}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(frame.band)}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.sector}</span>
-                  <span className="text-white/50 text-xs ml-1">{timeAgo(frame.capture_time)}</span>
-                </div>
-              </div>
-            )}
-            {!frame && catalogLatest && overlayVisible && (
-              <div className="space-y-1">
-                <div className="text-white text-lg font-semibold text-shadow-overlay">
-                  {new Date(catalogLatest.scan_time).toLocaleString()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(catalogLatest.band)}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
-                  <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
-                </div>
-              </div>
-            )}
-            {!frame && !catalogLatest && <div />}
-
-            <div className="flex items-center gap-2">
-              {catalogLatest && (
-                <div className="text-right mr-2">
-                  <div className="text-white/50 text-[10px] uppercase tracking-wider">AWS Latest</div>
-                  <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
-                </div>
-              )}
-              {frame && (
-                <button
-                  onClick={() => {
-                    const url = frame.image_url;
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
-                    a.click();
-                  }}
-                  className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-                  title="Download frame"
-                  aria-label="Download frame"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={toggleOverlay}
-                className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-                title={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-                aria-label={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <BottomMetadataOverlay
+          frame={frame ?? null}
+          catalogLatest={catalogLatest ?? null}
+          overlayVisible={overlayVisible}
+          onToggleOverlay={toggleOverlay}
+        />
 
         {/* Live / Monitoring indicator */}
         <div className="absolute top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
@@ -672,6 +579,89 @@ interface ImagePanelContentProps {
 }
 
 /* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
+/* Extracted bottom metadata overlay to reduce LiveTab cognitive complexity */
+function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleOverlay }: Readonly<{
+  frame: LatestFrame | null;
+  catalogLatest: CatalogLatest | null;
+  overlayVisible: boolean;
+  onToggleOverlay: () => void;
+}>) {
+  const metaContent = (() => {
+    if (frame && overlayVisible) {
+      return (
+        <div className="space-y-1">
+          <div className="text-white text-lg font-semibold text-shadow-overlay">
+            {new Date(frame.capture_time).toLocaleString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.satellite}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(frame.band)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.sector}</span>
+            <span className="text-white/50 text-xs ml-1">{timeAgo(frame.capture_time)}</span>
+          </div>
+        </div>
+      );
+    }
+    if (!frame && catalogLatest && overlayVisible) {
+      return (
+        <div className="space-y-1">
+          <div className="text-white text-lg font-semibold text-shadow-overlay">
+            {new Date(catalogLatest.scan_time).toLocaleString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(catalogLatest.band)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
+            <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
+          </div>
+        </div>
+      );
+    }
+    return <div />;
+  })();
+
+  return (
+    <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
+      <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
+        {metaContent}
+        <div className="flex items-center gap-2">
+          {catalogLatest && (
+            <div className="text-right mr-2">
+              <div className="text-white/50 text-[10px] uppercase tracking-wider">AWS Latest</div>
+              <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
+            </div>
+          )}
+          {frame && (
+            <button
+              onClick={() => {
+                const url = frame.image_url;
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
+                a.click();
+              }}
+              className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              title="Download frame"
+              aria-label="Download frame"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onToggleOverlay}
+            className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+            title={overlayVisible ? 'Hide frame info' : 'Show frame info'}
+            aria-label={overlayVisible ? 'Hide frame info' : 'Show frame info'}
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
@@ -796,6 +786,9 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
       className="max-w-full max-h-full object-contain select-none"
       style={isFullscreen ? zoomStyle : undefined}
       draggable={false}
+      data-satellite={satellite}
+      data-band={band}
+      data-sector={sector}
     />
   );
 }
@@ -819,20 +812,22 @@ function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTM
   }, [src]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const dataSatellite = props['data-satellite'] as string | undefined;
+  const dataBand = props['data-band'] as string | undefined;
+  const dataSector = props['data-sector'] as string | undefined;
+
   const handleLoad = useCallback(() => {
     setLoaded(true);
     // Cache successful load
     if (src && !usingCached) {
-      // Extract metadata from alt text (format: "SATELLITE BAND SECTOR")
-      const parts = (alt ?? '').split(' ');
       saveCachedImage(src, {
-        satellite: parts[0] ?? '',
-        band: parts[1] ?? '',
-        sector: parts[2] ?? '',
+        satellite: dataSatellite ?? '',
+        band: dataBand ?? '',
+        sector: dataSector ?? '',
         timestamp: new Date().toISOString(),
       });
     }
-  }, [src, alt, usingCached]);
+  }, [src, usingCached, dataSatellite, dataBand, dataSector]);
 
   const handleError = useCallback(() => {
     // Try cached image before showing error

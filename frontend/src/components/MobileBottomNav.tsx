@@ -121,6 +121,7 @@ export default function MobileBottomNav() {
       {/* Bottom tab bar */}
       <nav
         aria-label="Mobile navigation"
+        data-testid="mobile-bottom-nav"
         role="tablist"
         tabIndex={0}
         className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 flex items-center justify-around safe-bottom"

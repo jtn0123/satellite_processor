@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -153,8 +153,9 @@ describe('LiveTab - Interactions', () => {
   it('shows condensed metadata in bottom overlay when catalog data exists', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Condensed metadata shows satellite name
-      expect(screen.getByText('GOES-16')).toBeInTheDocument();
+      // Condensed metadata shows satellite name — scoped to avoid matching select options
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
     });
   });
 
@@ -336,11 +337,11 @@ describe('LiveTab - Interactions', () => {
   it('shows condensed metadata overlay with frame info', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Condensed metadata shows satellite, band, sector inline
-      // Multiple matches expected (select options + metadata)
-      expect(screen.getAllByText('GOES-16').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('C02').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('CONUS').length).toBeGreaterThanOrEqual(1);
+      // Condensed metadata shows satellite, band, sector inline — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
+      expect(metadata.getByText('C02')).toBeInTheDocument();
+      expect(metadata.getByText('CONUS')).toBeInTheDocument();
     });
   });
 

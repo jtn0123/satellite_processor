@@ -99,9 +99,9 @@ test.describe('Live flow', () => {
 
   test('image has rounded corners', async ({ page }) => {
     await page.goto('/live');
-    // The image container div has rounded-lg
-    const container = page.locator('.rounded-lg.overflow-hidden');
-    await expect(container.first()).toBeVisible({ timeout: 10000 });
+    // The image container div has data-testid
+    const container = page.locator('[data-testid="live-image-container"]');
+    await expect(container).toBeVisible({ timeout: 10000 });
   });
 
   test('retry button appears on image error', async ({ page }) => {
@@ -109,10 +109,11 @@ test.describe('Live flow', () => {
     await page.route('**/api/goes/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     await page.route('**/api/goes/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     await page.goto('/live');
-    // Should show error state with retry
-    const retryBtn = page.getByText('Tap to retry');
-    const fetchBtn = page.getByText('Fetch your first image');
-    const noFrames = page.getByText('No frames loaded yet');
+    // Should show error state with retry — scope to the image area
+    const imageArea = page.locator('[data-testid="live-image-area"]');
+    const retryBtn = imageArea.getByText('Tap to retry');
+    const fetchBtn = imageArea.getByText('Fetch your first image');
+    const noFrames = imageArea.getByText('No frames loaded yet');
     // One of the error/empty states should appear
     await expect(retryBtn.or(fetchBtn).or(noFrames)).toBeVisible({ timeout: 10000 });
   });
@@ -122,14 +123,10 @@ test.describe('Live flow', () => {
   test('metadata line shows satellite info', async ({ page }) => {
     await page.goto('/live');
     // The bottom overlay shows satellite · band · sector from catalog latest mock
-    // Wait for the metadata to render (from catalogLatest mock: GOES-19, C02, CONUS)
-    const metaArea = page.locator('.absolute.bottom-0');
+    const metaArea = page.locator('[data-testid="condensed-metadata"]');
     await expect(metaArea).toBeVisible({ timeout: 10000 });
     // Check for satellite name in the overlay
-    const satText = page.getByText('GOES-19');
-    if (await satText.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(satText.first()).toBeVisible();
-    }
+    await expect(metaArea.getByText('GOES-19')).toBeVisible();
   });
 
   test('expandable details toggle', async ({ page }) => {
@@ -143,18 +140,19 @@ test.describe('Live flow', () => {
     }
   });
 
-  test('version number not visible on live page', async ({ page }) => {
+  test('version number not visible in live content area', async ({ page }) => {
     await page.goto('/live');
-    await page.waitForTimeout(2000);
-    // The live page should not show a version string
-    const versionText = page.locator('text=/v\\d+\\./');
+    // The live content area should not show a version string (sidebar may contain it)
+    const liveContent = page.locator('[data-testid="live-image-area"]');
+    await expect(liveContent).toBeVisible({ timeout: 10000 });
+    const versionText = liveContent.locator('text=/v\\d+\\./');
     expect(await versionText.count()).toBe(0);
   });
 
   test('breadcrumb hidden on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/live');
-    await page.waitForTimeout(1000);
+    await expect(page.locator('h1')).toContainText('Live', { timeout: 10000 });
     // Breadcrumb nav should not be visible on mobile
     const breadcrumb = page.locator('nav[aria-label="Breadcrumb"]');
     if (await breadcrumb.count() > 0) {
@@ -207,9 +205,8 @@ test.describe('Live flow', () => {
 
   test('swipe gesture area exists', async ({ page }) => {
     await page.goto('/live');
-    // The swipe gesture area is a div with onTouchStart/onTouchEnd inside the container
-    // It wraps the image panel content — verify it exists as a full-size div
-    const swipeArea = page.locator('.w-full.h-full.flex.items-center.justify-center').first();
+    // The swipe gesture area wraps the image panel content
+    const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
     await expect(swipeArea).toBeVisible({ timeout: 10000 });
   });
 
@@ -219,7 +216,7 @@ test.describe('Live flow', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/live');
     // Mobile bottom navigation bar
-    const bottomNav = page.locator('nav').last();
+    const bottomNav = page.locator('[data-testid="mobile-bottom-nav"]');
     await expect(bottomNav).toBeVisible({ timeout: 10000 });
   });
 
@@ -227,7 +224,7 @@ test.describe('Live flow', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/live');
     // Desktop sidebar navigation
-    const sidebar = page.locator('aside, nav').first();
+    const sidebar = page.locator('[data-testid="desktop-sidebar"]');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
   });
 });

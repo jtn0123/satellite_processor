@@ -141,7 +141,7 @@ export default function Layout() {
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
+      <aside data-testid="desktop-sidebar" className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-200 dark:border-space-700/50">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>

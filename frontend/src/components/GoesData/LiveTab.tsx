@@ -457,11 +457,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       {/* Full-bleed image area */}
       <div
         ref={containerRef}
+        data-testid="live-image-area"
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
         {...(compareMode ? {} : zoom.handlers)}
       >
         {/* Swipe gesture area */}
-        <div className="w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="w-full h-full flex items-center justify-center" data-testid="swipe-gesture-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <ImagePanelContent
             isLoading={isLoading && !catalogImageUrl}
             isError={isError && !imageUrl}
@@ -661,11 +662,13 @@ function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleO
 }>) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const source = frame
+  const frameSource = frame
     ? { satellite: frame.satellite, band: frame.band, sector: frame.sector, time: frame.capture_time, isCdn: false }
-    : catalogLatest
-      ? { satellite: catalogLatest.satellite, band: catalogLatest.band, sector: catalogLatest.sector, time: catalogLatest.scan_time, isCdn: true }
-      : null;
+    : null;
+  const catalogSource = catalogLatest
+    ? { satellite: catalogLatest.satellite, band: catalogLatest.band, sector: catalogLatest.sector, time: catalogLatest.scan_time, isCdn: true }
+    : null;
+  const source = frameSource ?? catalogSource;
 
   return (
     <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
@@ -673,7 +676,7 @@ function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleO
         {source && overlayVisible ? (
           <div className="space-y-1">
             {/* Condensed single-line summary */}
-            <div className="flex items-center gap-1 text-white/70 text-xs">
+            <div className="flex items-center gap-1 text-white/70 text-xs" data-testid="condensed-metadata">
               <span className="text-white/90 font-medium">{source.satellite}</span>
               <span className="text-white/40">·</span>
               <span>{source.band}</span>
@@ -962,7 +965,7 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
           <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
         </div>
       )}
-      <div className="rounded-lg overflow-hidden border border-white/10">
+      <div className="rounded-lg overflow-hidden border border-white/10" data-testid="live-image-container">
         <img
           src={displaySrc}
           alt={alt}

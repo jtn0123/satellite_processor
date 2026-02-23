@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -270,8 +270,9 @@ describe('LiveViewStates', () => {
   it('renders condensed metadata in bottom overlay', async () => {
     renderLive();
     await waitFor(() => {
-      // Condensed metadata shows satellite name inline
-      expect(screen.getByText('GOES-19')).toBeInTheDocument();
+      // Condensed metadata shows satellite name inline — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-19')).toBeInTheDocument();
     });
   });
 });
@@ -365,13 +366,12 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     setupMocks({ frameError: true, catalog: catalogWithUrl });
     renderLive();
     await waitFor(() => {
-      // Condensed metadata shows satellite info
-      expect(screen.getByText('GOES-19')).toBeInTheDocument();
+      // Condensed metadata shows satellite info — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-19')).toBeInTheDocument();
+      expect(metadata.getByText('C02')).toBeInTheDocument();
+      expect(metadata.getByText('CONUS')).toBeInTheDocument();
     });
-    // Catalog overlay shows satellite/band/sector inline (also in select options)
-    const badges = screen.getAllByText(/^(GOES-19|C02|CONUS)$/);
-    // At least 2: some appear in both metadata and select options
-    expect(badges.length).toBeGreaterThanOrEqual(2);
   });
 
   it('selector changes re-query catalog (satellite change)', async () => {

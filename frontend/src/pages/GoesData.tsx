@@ -174,7 +174,7 @@ export default function GoesData() {
         <Satellite className="w-7 h-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Browse & Fetch</h1>
-          <Breadcrumb segments={breadcrumbSegments} />
+          <div className="hidden md:block"><Breadcrumb segments={breadcrumbSegments} /></div>
         </div>
       </div>
 

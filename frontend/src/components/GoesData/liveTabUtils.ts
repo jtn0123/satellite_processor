@@ -20,9 +20,10 @@ export const FRIENDLY_BAND_NAMES: Record<string, string> = {
   GEOCOLOR: 'GeoColor (True Color)',
 };
 
-export function getFriendlyBandLabel(bandId: string, description?: string): string {
+export function getFriendlyBandLabel(bandId: string, description?: string, short?: boolean): string {
   const friendly = FRIENDLY_BAND_NAMES[bandId];
-  if (bandId === 'GEOCOLOR') return friendly ?? bandId;
+  if (bandId === 'GEOCOLOR') return short ? 'GeoColor' : (friendly ?? bandId);
+  if (short) return friendly ? `${bandId} ${friendly}` : bandId;
   if (friendly && description) return `${friendly} (${bandId} — ${description})`;
   if (friendly) return `${friendly} (${bandId})`;
   return description ? `${bandId} — ${description}` : bandId;

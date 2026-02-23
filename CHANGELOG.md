@@ -1,3 +1,10 @@
+## [1.16.6](https://github.com/jtn0123/satellite_processor/compare/v1.16.5...v1.16.6) (2026-02-23)
+
+
+### Bug Fixes
+
+* resolve SonarQube bugs and code smells ([#222](https://github.com/jtn0123/satellite_processor/issues/222)) ([b83caa2](https://github.com/jtn0123/satellite_processor/commit/b83caa299ffcd5c4ee60740a10bc0fc591109305))
+
 ## [1.16.5](https://github.com/jtn0123/satellite_processor/compare/v1.16.4...v1.16.5) (2026-02-23)
 
 

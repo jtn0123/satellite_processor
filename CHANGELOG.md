@@ -1,3 +1,10 @@
+## [1.16.4](https://github.com/jtn0123/satellite_processor/compare/v1.16.3...v1.16.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* Live View mobile polish — consistent naming, floating controls, loading shimmer, double-tap zoom ([#205](https://github.com/jtn0123/satellite_processor/issues/205)) ([05921a9](https://github.com/jtn0123/satellite_processor/commit/05921a9cad9ad8a16d9876ae6a735ecc3365358e))
+
 ## [1.16.3](https://github.com/jtn0123/satellite_processor/compare/v1.16.2...v1.16.3) (2026-02-22)
 
 

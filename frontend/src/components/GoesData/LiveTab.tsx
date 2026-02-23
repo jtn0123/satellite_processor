@@ -15,6 +15,13 @@ import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
+import {
+  getFriendlyBandLabel,
+  getFriendlyBandName,
+  saveCachedImage,
+  loadCachedImage,
+} from './liveTabUtils';
+import type { CachedImageMeta } from './liveTabUtils';
 
 interface SatelliteAvailability {
   status: string;
@@ -88,17 +95,17 @@ function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame
   return { awsAge, localAge, behindMin };
 }
 
-function exitFullscreenSafe() {
+async function exitFullscreenSafe() {
   try {
-    document.exitFullscreen();
+    await document.exitFullscreen();
   } catch {
     (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.();
   }
 }
 
-function enterFullscreenSafe(el: HTMLElement) {
+async function enterFullscreenSafe(el: HTMLElement) {
   try {
-    el.requestFullscreen();
+    await el.requestFullscreen();
   } catch {
     (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.();
   }
@@ -139,6 +146,74 @@ function useFullscreenSync(
     document.addEventListener('fullscreenchange', handler);
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [setIsFullscreen, zoom]);
+}
+
+/* Extracted fetch-job logic to reduce LiveTab cognitive complexity */
+function useLiveFetchJob({
+  satellite, sector, band, autoFetch, catalogLatest, frame,
+  lastAutoFetchTimeRef, lastAutoFetchMsRef, refetch,
+}: {
+  satellite: string; sector: string; band: string; autoFetch: boolean;
+  catalogLatest: CatalogLatest | null; frame: LatestFrame | null;
+  lastAutoFetchTimeRef: React.MutableRefObject<string | null>;
+  lastAutoFetchMsRef: React.MutableRefObject<number>;
+  refetch: () => Promise<unknown>;
+}) {
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
+    queryKey: ['live-job', activeJobId],
+    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
+    enabled: !!activeJobId,
+    refetchInterval: activeJobId ? 2000 : false,
+  });
+
+  useEffect(() => {
+    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
+      const timer = setTimeout(() => {
+        setActiveJobId(null);
+        refetch();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeJob, refetch]);
+
+  const fetchNow = useCallback(async () => {
+    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
+    try {
+      const res = await api.post('/goes/fetch', {
+        satellite: satellite.toUpperCase(), sector, band,
+        start_time: startDate,
+        end_time: startDate,
+      });
+      setActiveJobId(res.data.job_id);
+      showToast('success', 'Fetching latest frame…');
+    } catch {
+      showToast('error', 'Failed to start fetch');
+    }
+  }, [satellite, sector, band, catalogLatest]);
+
+  useEffect(() => {
+    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
+    lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
+    lastAutoFetchMsRef.current = Date.now();
+    const doAutoFetch = async () => {
+      try {
+        const res = await api.post('/goes/fetch', {
+          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+          sector: sector || catalogLatest!.sector,
+          band: band || catalogLatest!.band,
+          start_time: catalogLatest!.scan_time,
+          end_time: catalogLatest!.scan_time,
+        });
+        setActiveJobId(res.data.job_id);
+        showToast('success', 'Auto-fetching new frame from AWS');
+      } catch { /* auto-fetch failure is non-critical */ }
+    };
+    doAutoFetch();
+  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef]);
+
+  return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }
 
 interface LiveTabProps {
@@ -277,67 +352,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     retry: 1,
   });
 
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-
-  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
-    queryKey: ['live-job', activeJobId],
-    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
-    enabled: !!activeJobId,
-    refetchInterval: activeJobId ? 2000 : false,
+  const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
+    satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
+    frame: frame ?? null, lastAutoFetchTimeRef: lastAutoFetchTime, lastAutoFetchMsRef: lastAutoFetchMs, refetch,
   });
 
-  useEffect(() => {
-    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
-      const timer = setTimeout(() => {
-        setActiveJobId(null);
-        refetch();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeJob, refetch]);
-
-  const fetchNow = useCallback(async () => {
-    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
-    try {
-      const res = await api.post('/goes/fetch', {
-        satellite: satellite.toUpperCase(), sector, band,
-        start_time: startDate,
-        end_time: startDate,
-      });
-      setActiveJobId(res.data.job_id);
-      showToast('success', 'Fetching latest frame…');
-    } catch {
-      showToast('error', 'Failed to start fetch');
-    }
-  }, [satellite, sector, band, catalogLatest]);
-
-  useEffect(() => {
-    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTime.current, lastAutoFetchMs.current)) return;
-    lastAutoFetchTime.current = catalogLatest!.scan_time;
-    lastAutoFetchMs.current = Date.now();
-    const doAutoFetch = async () => {
-      try {
-        const res = await api.post('/goes/fetch', {
-          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
-          sector: sector || catalogLatest!.sector,
-          band: band || catalogLatest!.band,
-          start_time: catalogLatest!.scan_time,
-          end_time: catalogLatest!.scan_time,
-        });
-        setActiveJobId(res.data.job_id);
-        showToast('success', 'Auto-fetching new frame from AWS');
-      } catch { /* auto-fetch failure is non-critical */ }
-    };
-    doAutoFetch();
-  }, [autoFetch, catalogLatest, frame, satellite, sector, band]);
-
-  const toggleFullscreen = useCallback(() => {
+  const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     const isCurrentlyFullscreen = !!document.fullscreenElement;
     if (isCurrentlyFullscreen) {
-      exitFullscreenSafe();
+      await exitFullscreenSafe();
     } else {
-      enterFullscreenSafe(containerRef.current);
+      await enterFullscreenSafe(containerRef.current);
     }
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
@@ -350,7 +376,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const catalogImageUrl = (typeof globalThis.window !== 'undefined' && globalThis.window.innerWidth < 768
+  const catalogImageUrl = (globalThis.window !== undefined && globalThis.window.innerWidth < 768
     ? catalogLatest?.mobile_url
     : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
@@ -408,7 +434,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{b.id} — {b.description}</option>)}
+              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{getFriendlyBandLabel(b.id, b.description)}</option>)}
             </select>
             <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))} aria-label="Auto-refresh interval"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
@@ -492,71 +518,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
 
         {/* Bottom metadata overlay */}
-        <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
-          <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
-            {frame && overlayVisible && (
-              <div className="space-y-1">
-                <div className="text-white text-lg font-semibold text-shadow-overlay">
-                  {new Date(frame.capture_time).toLocaleString()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.satellite}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.band}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.sector}</span>
-                  <span className="text-white/50 text-xs ml-1">{timeAgo(frame.capture_time)}</span>
-                </div>
-              </div>
-            )}
-            {!frame && catalogLatest && overlayVisible && (
-              <div className="space-y-1">
-                <div className="text-white text-lg font-semibold text-shadow-overlay">
-                  {new Date(catalogLatest.scan_time).toLocaleString()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.band}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
-                  <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
-                </div>
-              </div>
-            )}
-            {!frame && !catalogLatest && <div />}
-
-            <div className="flex items-center gap-2">
-              {catalogLatest && (
-                <div className="text-right mr-2">
-                  <div className="text-white/50 text-[10px] uppercase tracking-wider">AWS Latest</div>
-                  <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
-                </div>
-              )}
-              {frame && (
-                <button
-                  onClick={() => {
-                    const url = frame.image_url;
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
-                    a.click();
-                  }}
-                  className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-                  title="Download frame"
-                  aria-label="Download frame"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={toggleOverlay}
-                className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-                title={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-                aria-label={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <BottomMetadataOverlay
+          frame={frame ?? null}
+          catalogLatest={catalogLatest ?? null}
+          overlayVisible={overlayVisible}
+          onToggleOverlay={toggleOverlay}
+        />
 
         {/* Live / Monitoring indicator */}
         <div className="absolute top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
@@ -612,6 +579,89 @@ interface ImagePanelContentProps {
 }
 
 /* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
+/* Extracted bottom metadata overlay to reduce LiveTab cognitive complexity */
+function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleOverlay }: Readonly<{
+  frame: LatestFrame | null;
+  catalogLatest: CatalogLatest | null;
+  overlayVisible: boolean;
+  onToggleOverlay: () => void;
+}>) {
+  const metaContent = (() => {
+    if (frame && overlayVisible) {
+      return (
+        <div className="space-y-1">
+          <div className="text-white text-lg font-semibold text-shadow-overlay">
+            {new Date(frame.capture_time).toLocaleString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.satellite}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(frame.band)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.sector}</span>
+            <span className="text-white/50 text-xs ml-1">{timeAgo(frame.capture_time)}</span>
+          </div>
+        </div>
+      );
+    }
+    if (!frame && catalogLatest && overlayVisible) {
+      return (
+        <div className="space-y-1">
+          <div className="text-white text-lg font-semibold text-shadow-overlay">
+            {new Date(catalogLatest.scan_time).toLocaleString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(catalogLatest.band)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
+            <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
+          </div>
+        </div>
+      );
+    }
+    return <div />;
+  })();
+
+  return (
+    <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
+      <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
+        {metaContent}
+        <div className="flex items-center gap-2">
+          {catalogLatest && (
+            <div className="text-right mr-2">
+              <div className="text-white/50 text-[10px] uppercase tracking-wider">AWS Latest</div>
+              <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
+            </div>
+          )}
+          {frame && (
+            <button
+              onClick={() => {
+                const url = frame.image_url;
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
+                a.click();
+              }}
+              className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              title="Download frame"
+              aria-label="Download frame"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onToggleOverlay}
+            className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+            title={overlayVisible ? 'Hide frame info' : 'Show frame info'}
+            aria-label={overlayVisible ? 'Hide frame info' : 'Show frame info'}
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
@@ -736,19 +786,72 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
       className="max-w-full max-h-full object-contain select-none"
       style={isFullscreen ? zoomStyle : undefined}
       draggable={false}
+      data-satellite={satellite}
+      data-band={band}
+      data-sector={sector}
     />
   );
 }
 
-/* CdnImage — img with onError fallback, shimmer placeholder, and crossfade */
-function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+/* CdnImage — img with onError fallback, shimmer placeholder, crossfade, and offline cache */
+interface CdnImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  'data-satellite'?: string;
+  'data-band'?: string;
+  'data-sector'?: string;
+}
+
+function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  // Reset state when src changes
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on prop change
-  useEffect(() => { setError(false); setLoaded(false); }, [src]);
+  const [usingCached, setUsingCached] = useState(false);
+  const [cachedMeta, setCachedMeta] = useState<CachedImageMeta | null>(null);
+  const [displaySrc, setDisplaySrc] = useState(src);
 
-  if (error || !src) {
+  // Reset state when src changes
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on prop change */
+  useEffect(() => {
+    setError(false);
+    setLoaded(false);
+    setUsingCached(false);
+    setCachedMeta(null);
+    setDisplaySrc(src);
+  }, [src]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const dataSatellite = props['data-satellite'];
+  const dataBand = props['data-band'];
+  const dataSector = props['data-sector'];
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+    // Cache successful load
+    if (src && !usingCached) {
+      saveCachedImage(src, {
+        satellite: dataSatellite ?? '',
+        band: dataBand ?? '',
+        sector: dataSector ?? '',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }, [src, usingCached, dataSatellite, dataBand, dataSector]);
+
+  const handleError = useCallback(() => {
+    // Try cached image before showing error
+    if (!usingCached) {
+      const cached = loadCachedImage();
+      if (cached) {
+        setUsingCached(true);
+        setCachedMeta(cached);
+        setDisplaySrc(cached.url);
+        setError(false);
+        setLoaded(false);
+        return;
+      }
+    }
+    setError(true);
+  }, [usingCached]);
+
+  if (error || !displaySrc) {
     return (
       <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500 py-8">
         <Satellite className="w-12 h-12" />
@@ -760,6 +863,14 @@ function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTM
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
+      {/* Cached image banner */}
+      {usingCached && cachedMeta && (
+        <div className="absolute top-2 inset-x-4 z-20 flex items-center justify-center" data-testid="cached-image-banner">
+          <div className="px-4 py-2 rounded-lg bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-200 text-xs font-medium">
+            Showing cached image from {new Date(cachedMeta.timestamp).toLocaleString()}
+          </div>
+        </div>
+      )}
       {/* Shimmer placeholder */}
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center" data-testid="image-shimmer">
@@ -767,10 +878,10 @@ function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTM
         </div>
       )}
       <img
-        src={src}
+        src={displaySrc}
         alt={alt}
-        onError={() => setError(true)}
-        onLoad={() => setLoaded(true)}
+        onError={handleError}
+        onLoad={handleLoad}
         loading="lazy"
         className={`${className ?? ''} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         {...props}

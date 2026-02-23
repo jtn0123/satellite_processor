@@ -108,7 +108,7 @@ async def list_products():
         "default_satellite": DEFAULT_SATELLITE,
     }
 
-    async def _fetch():
+    def _fetch():
         return products
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)

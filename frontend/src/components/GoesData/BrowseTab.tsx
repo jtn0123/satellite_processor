@@ -33,6 +33,29 @@ import { extractArray } from '../../utils/safeData';
 
 const PAGE_LIMIT = 50;
 
+function handleBrowseKeydown(
+  e: KeyboardEvent,
+  selectAll: () => void,
+  selectedIds: Set<string>,
+  deleteMutation: { mutate: (ids: string[]) => void },
+  setSelectedIds: (ids: Set<string>) => void,
+) {
+  const tag = (e.target as HTMLElement)?.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+    e.preventDefault();
+    selectAll();
+  } else if (e.key === 'Delete' && selectedIds.size > 0) {
+    e.preventDefault();
+    if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) {
+      deleteMutation.mutate([...selectedIds]);
+    }
+  } else if (e.key === 'Escape' && selectedIds.size > 0) {
+    setSelectedIds(new Set());
+  }
+}
+
 function buildFilterParams(
   sortBy: string,
   sortOrder: string,
@@ -49,6 +72,92 @@ function buildFilterParams(
   if (collection) p.collection_id = collection;
   if (tag) p.tag = tag;
   return p;
+}
+
+/* Extracted to reduce BrowseTab cognitive complexity */
+function FrameGridContent({ isLoading, frames, viewMode, selectedIds, onFrameClick, onView, onDownload, onCompare, onTag, onAddToCollection, onDelete }: Readonly<{
+  isLoading: boolean;
+  frames: GoesFrame[];
+  viewMode: 'grid' | 'list';
+  selectedIds: Set<string>;
+  onFrameClick: (frame: GoesFrame, e: React.MouseEvent) => void;
+  onView: (frame: GoesFrame) => void;
+  onDownload: (frame: GoesFrame) => void;
+  onCompare: (frame: GoesFrame) => void;
+  onTag: (frame: GoesFrame) => void;
+  onAddToCollection: (frame: GoesFrame) => void;
+  onDelete: (frame: GoesFrame) => void;
+}>) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
+          <div key={key} className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden">
+            <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
+            <div className="p-2 space-y-2">
+              <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
+              <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (frames.length === 0) {
+    return (
+      <EmptyState
+        icon={<Satellite className="w-8 h-8" />}
+        title="No frames yet"
+        description="Fetch satellite data to start browsing frames. Head over to the Fetch tab to download GOES imagery."
+        action={{
+          label: 'Go to Fetch Tab',
+          onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
+        }}
+      />
+    );
+  }
+  if (viewMode === 'grid') {
+    return (
+      <ul aria-label="Satellite frames" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 list-none p-0 m-0">
+        {frames.map((frame) => (
+          <li key={frame.id} className="cv-auto @container">
+            <FrameCard
+              frame={frame}
+              isSelected={selectedIds.has(frame.id)}
+              onClick={onFrameClick}
+              onView={onView}
+              onDownload={onDownload}
+              onCompare={onCompare}
+              onTag={onTag}
+              onAddToCollection={onAddToCollection}
+              onDelete={onDelete}
+              viewMode="grid"
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <ul aria-label="Satellite frames" className="space-y-1 list-none p-0 m-0">
+      {frames.map((frame) => (
+        <li key={frame.id} className="cv-auto-list">
+          <FrameCard
+            frame={frame}
+            isSelected={selectedIds.has(frame.id)}
+            onClick={onFrameClick}
+            onView={onView}
+            onDownload={onDownload}
+            onCompare={onCompare}
+            onTag={onTag}
+            onAddToCollection={onAddToCollection}
+            onDelete={onDelete}
+            viewMode="list"
+          />
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export default function BrowseTab() {
@@ -229,98 +338,27 @@ export default function BrowseTab() {
   // #54: Keyboard shortcuts for BrowseTab
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Don't capture when typing in inputs
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
-        selectAll();
-      } else if (e.key === 'Delete' && selectedIds.size > 0) {
-        e.preventDefault();
-        if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) {
-          deleteMutation.mutate([...selectedIds]);
-        }
-      } else if (e.key === 'Escape' && selectedIds.size > 0) {
-        setSelectedIds(new Set());
-      }
+      handleBrowseKeydown(e, selectAll, selectedIds, deleteMutation, setSelectedIds);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }); // intentionally no deps — uses latest state via closure
 
-  const renderFrameGrid = () => {
-    if (isLoading) {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
-            <div key={key} className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden">
-              <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
-              <div className="p-2 space-y-2">
-                <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
-                <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    if (frames.length === 0) {
-      return (
-        <EmptyState
-          icon={<Satellite className="w-8 h-8" />}
-          title="No frames yet"
-          description="Fetch satellite data to start browsing frames. Head over to the Fetch tab to download GOES imagery."
-          action={{
-            label: 'Go to Fetch Tab',
-            onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
-          }}
-        />
-      );
-    }
-    if (viewMode === 'grid') {
-      return (
-        <ul aria-label="Satellite frames" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 list-none p-0 m-0">
-          {frames.map((frame) => (
-            <li key={frame.id} className="cv-auto @container">
-              <FrameCard
-                frame={frame}
-                isSelected={selectedIds.has(frame.id)}
-                onClick={handleFrameClick}
-                onView={handleView}
-                onDownload={handleDownload}
-                onCompare={handleSingleCompare}
-                onTag={handleSingleTag}
-                onAddToCollection={handleSingleCollection}
-                onDelete={handleSingleDelete}
-                viewMode="grid"
-              />
-            </li>
-          ))}
-        </ul>
-      );
-    }
-    return (
-      <ul aria-label="Satellite frames" className="space-y-1 list-none p-0 m-0">
-        {frames.map((frame) => (
-          <li key={frame.id} className="cv-auto-list">
-            <FrameCard
-              frame={frame}
-              isSelected={selectedIds.has(frame.id)}
-              onClick={handleFrameClick}
-              onView={handleView}
-              onDownload={handleDownload}
-              onCompare={handleSingleCompare}
-              onTag={handleSingleTag}
-              onAddToCollection={handleSingleCollection}
-              onDelete={handleSingleDelete}
-              viewMode="list"
-            />
-          </li>
-        ))}
-      </ul>
-    );
-  };
+  const renderFrameGrid = () => (
+    <FrameGridContent
+      isLoading={isLoading}
+      frames={frames}
+      viewMode={viewMode}
+      selectedIds={selectedIds}
+      onFrameClick={handleFrameClick}
+      onView={handleView}
+      onDownload={handleDownload}
+      onCompare={handleSingleCompare}
+      onTag={handleSingleTag}
+      onAddToCollection={handleSingleCollection}
+      onDelete={handleSingleDelete}
+    />
+  );
 
   return (
     <div className="space-y-2">

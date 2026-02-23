@@ -150,13 +150,13 @@ export default function GoesData() {
       );
     }
 
-    const tabMap: Record<Exclude<TabId, 'stats'>, { component: React.ReactNode; name: string }> = {
+    const tabMap: Record<string, { component: React.ReactNode; name: string }> = {
       browse: { component: <BrowseTab />, name: 'Browse' },
       fetch: { component: <FetchTab />, name: 'Fetch' },
       map: { component: <MapTab />, name: 'Map' },
     };
 
-    const tab = tabMap[activeTab as Exclude<TabId, 'stats'>];
+    const tab = tabMap[activeTab];
     return (
       <TabErrorBoundary tabName={tab.name} key={activeTab}>
         <Suspense fallback={<TabLoadingFallback />}>

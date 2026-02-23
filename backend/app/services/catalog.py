@@ -57,7 +57,8 @@ def build_cdn_urls(
         dt = datetime.fromisoformat(scan_time_iso)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
-        timestamp = f"{dt.year}{dt.timetuple().tm_yday:03d}{dt.hour:02d}{dt.minute:02d}"
+        rounded_minute = (dt.minute // 5) * 5
+        timestamp = f"{dt.year}{dt.timetuple().tm_yday:03d}{dt.hour:02d}{rounded_minute:02d}"
     except (ValueError, AttributeError):
         logger.warning("Failed to parse scan_time for CDN URL: %s", scan_time_iso)
         return None

@@ -930,17 +930,17 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
 
   if (error || !displaySrc) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
-        <Satellite className="w-12 h-12" />
-        <span className="text-sm font-medium">Image unavailable</span>
-        <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
+      <div className="flex flex-col items-center justify-center gap-3 text-amber-400/70 dark:text-amber-500/60 py-8 min-h-[50vh]">
+        <Satellite className="w-16 h-16" />
+        <span className="text-lg font-semibold text-amber-300/90">Image unavailable</span>
+        <span className="text-sm text-amber-200/50">The satellite image could not be loaded</span>
         <button
           onClick={() => {
             setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setCachedDismissed(false);
             const separator = src?.includes('?') ? '&' : '?';
             setDisplaySrc(src ? `${src}${separator}_r=${Date.now()}` : src);
           }}
-          className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors text-sm font-medium min-h-[44px]"
+          className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-300 hover:bg-teal-500/30 transition-colors text-sm font-medium min-h-[44px]"
         >
           <RefreshCw className="w-4 h-4" />
           Tap to retry
@@ -963,10 +963,8 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
         </div>
       )}
       {/* Shimmer placeholder */}
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center" data-testid="image-shimmer">
-          <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
-        </div>
+      {!loaded && !error && (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
       <div className="rounded-lg overflow-hidden border border-white/10" data-testid="live-image-container">
         <img

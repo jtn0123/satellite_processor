@@ -132,9 +132,10 @@ class TestBuildCdnUrls:
     def test_conus_basic(self):
         urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:11:00+00:00")
         assert urls is not None
-        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-2500x1500.jpg"
-        assert urls["mobile"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-1250x750.jpg"
-        assert urls["thumbnail"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532211_GOES19-ABI-CONUS-02-625x375.jpg"
+        # 11 minutes rounds down to 10
+        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-2500x1500.jpg"
+        assert urls["mobile"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-1250x750.jpg"
+        assert urls["thumbnail"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-625x375.jpg"
 
     def test_fulldisk(self):
         urls = build_cdn_urls("GOES-19", "FullDisk", "C13", "2026-02-22T22:00:00+00:00")
@@ -161,6 +162,37 @@ class TestBuildCdnUrls:
     def test_bad_scan_time_returns_none(self):
         urls = build_cdn_urls("GOES-19", "CONUS", "C02", "not-a-date")
         assert urls is None
+
+    def test_timestamp_rounds_down_to_5min(self):
+        """Minutes should round DOWN to nearest 5-minute boundary."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:13:45+00:00")
+        assert urls is not None
+        # 13 minutes → rounds to 10
+        assert "20260532210" in urls["desktop"]
+
+    def test_timestamp_exact_5min(self):
+        """Exact 5-minute mark stays unchanged."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:15:00+00:00")
+        assert urls is not None
+        assert "20260532215" in urls["desktop"]
+
+    def test_timestamp_rounds_59min(self):
+        """59 minutes rounds to 55."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:59:00+00:00")
+        assert urls is not None
+        assert "20260532255" in urls["desktop"]
+
+    def test_timestamp_zero_min(self):
+        """0 minutes stays 0."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:00:00+00:00")
+        assert urls is not None
+        assert "20260532200" in urls["desktop"]
+
+    def test_timestamp_rounds_11min(self):
+        """11 minutes rounds to 10."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:11:00+00:00")
+        assert urls is not None
+        assert "20260532210" in urls["desktop"]
 
     def test_day_of_year_calculation(self):
         # March 1 in non-leap year = day 60, but 2026 is not leap

@@ -1,3 +1,11 @@
+## [1.16.9](https://github.com/jtn0123/satellite_processor/compare/v1.16.8...v1.16.9) (2026-02-23)
+
+
+### Bug Fixes
+
+* error state UX — prominent retry, loading skeleton, visual hierarchy ([#225](https://github.com/jtn0123/satellite_processor/issues/225)) ([e090f9b](https://github.com/jtn0123/satellite_processor/commit/e090f9b81035dafa7a307221e5c503bfbc6d4609))
+* layout bugs — control overlap, FAB positioning, alignment ([#226](https://github.com/jtn0123/satellite_processor/issues/226)) ([429a048](https://github.com/jtn0123/satellite_processor/commit/429a048facd204262f3d750e2d8ec600796b67fa))
+
 ## [1.16.8](https://github.com/jtn0123/satellite_processor/compare/v1.16.7...v1.16.8) (2026-02-23)
 
 

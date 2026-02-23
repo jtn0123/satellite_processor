@@ -1,3 +1,10 @@
+## [1.16.5](https://github.com/jtn0123/satellite_processor/compare/v1.16.4...v1.16.5) (2026-02-23)
+
+
+### Bug Fixes
+
+* Live View polish — friendly band names, CDN timestamp alignment, offline resilience ([#206](https://github.com/jtn0123/satellite_processor/issues/206)) ([8d1d19a](https://github.com/jtn0123/satellite_processor/commit/8d1d19af73e1602a56dc0dbbdc0d0eaa93801b61))
+
 ## [1.16.4](https://github.com/jtn0123/satellite_processor/compare/v1.16.3...v1.16.4) (2026-02-23)
 
 

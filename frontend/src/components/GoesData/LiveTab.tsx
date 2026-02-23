@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
@@ -16,6 +16,7 @@ import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
 import {
+  FRIENDLY_BAND_NAMES,
   getFriendlyBandLabel,
   getFriendlyBandName,
   saveCachedImage,
@@ -316,7 +317,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useEffect(() => {
     if (products && !satellite) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default init
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
   }, [products, satellite]);
@@ -359,6 +359,61 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     enabled: !!satellite,
     retry: 1,
   });
+
+  // Auto-refresh countdown (#12)
+  const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
+  // Reset displayed value only when the interval duration changes
+  useEffect(() => {
+    setCountdownSec(Math.floor(refreshInterval / 1000));
+  }, [refreshInterval]);
+  // Single interval — restart on refreshInterval change OR frame change (new data arrived)
+  // Only refreshInterval change resets the displayed value above; frame change just restarts the tick
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [refreshInterval, frame]);
+
+  const countdownDisplay = useMemo(() => {
+    const m = Math.floor(countdownSec / 60);
+    const s = countdownSec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }, [countdownSec]);
+
+  // Swipe gestures (#10)
+  const bandKeys = useMemo(() => {
+    if (products?.bands?.length) return products.bands.map((b) => b.id);
+    return Object.keys(FRIENDLY_BAND_NAMES);
+  }, [products]);
+
+  const [swipeToast, setSwipeToast] = useState<string | null>(null);
+  const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = t.clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    const currentIdx = bandKeys.indexOf(band);
+    if (currentIdx < 0) return;
+    const nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
+    if (nextIdx < 0 || nextIdx >= bandKeys.length) return;
+    const nextBand = bandKeys[nextIdx];
+    setBand(nextBand);
+    const label = getFriendlyBandName(nextBand);
+    clearTimeout(swipeToastTimer.current);
+    setSwipeToast(`${nextBand} — ${label}`);
+    swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
+  }, [band, bandKeys]);
 
   const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
     satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
@@ -403,26 +458,37 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       {/* Full-bleed image area */}
       <div
         ref={containerRef}
+        data-testid="live-image-area"
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
         {...(compareMode ? {} : zoom.handlers)}
       >
-        <ImagePanelContent
-          isLoading={isLoading && !catalogImageUrl}
-          isError={isError && !imageUrl}
-          imageUrl={imageUrl}
-          compareMode={compareMode}
-          satellite={satellite}
-          band={band}
-          sector={sector}
-          isFullscreen={isFullscreen}
-          zoomStyle={zoom.style}
-          prevImageUrl={prevImageUrl}
-          comparePosition={comparePosition}
-          onPositionChange={setComparePosition}
-          frameTime={frame?.capture_time ?? null}
-          prevFrameTime={prevFrame?.capture_time ?? null}
-          onNavigateToFetch={() => navigateFn('/goes?tab=fetch')}
-        />
+        {/* Swipe gesture area */}
+        <div className="w-full h-full flex items-center justify-center" data-testid="swipe-gesture-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+          <ImagePanelContent
+            isLoading={isLoading && !catalogImageUrl}
+            isError={isError && !imageUrl}
+            imageUrl={imageUrl}
+            compareMode={compareMode}
+            satellite={satellite}
+            band={band}
+            sector={sector}
+            isFullscreen={isFullscreen}
+            zoomStyle={zoom.style}
+            prevImageUrl={prevImageUrl}
+            comparePosition={comparePosition}
+            onPositionChange={setComparePosition}
+            frameTime={frame?.capture_time ?? null}
+            prevFrameTime={prevFrame?.capture_time ?? null}
+            onNavigateToFetch={() => navigateFn('/goes?tab=fetch')}
+          />
+        </div>
+
+        {/* Swipe toast */}
+        {swipeToast && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 px-4 py-2 rounded-lg bg-black/70 backdrop-blur-md text-white text-sm font-medium pointer-events-none">
+            {swipeToast}
+          </div>
+        )}
 
         {/* Top controls overlay */}
         <div className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none">
@@ -493,9 +559,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
               />
               <button onClick={() => refetch()}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-white/50 whitespace-nowrap">{countdownDisplay}</span>
               </button>
               <button onClick={toggleFullscreen}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
@@ -541,8 +608,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </span>
         </div>
 
-        {/* Mobile FAB for controls */}
-        <div className="sm:hidden absolute bottom-24 right-4 z-20" data-testid="mobile-fab">
+        {/* Mobile FAB for controls — labeled */}
+        <div className="sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}
@@ -594,52 +661,51 @@ function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleO
   overlayVisible: boolean;
   onToggleOverlay: () => void;
 }>) {
-  const metaContent = (() => {
-    if (frame && overlayVisible) {
-      return (
-        <div className="space-y-1">
-          <div className="text-white text-lg font-semibold text-shadow-overlay">
-            {new Date(frame.capture_time).toLocaleString()}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.satellite}</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(frame.band)}</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{frame.sector}</span>
-            <span className="text-white/50 text-xs ml-1">{timeAgo(frame.capture_time)}</span>
-          </div>
-        </div>
-      );
-    }
-    if (!frame && catalogLatest && overlayVisible) {
-      return (
-        <div className="space-y-1">
-          <div className="text-white text-lg font-semibold text-shadow-overlay">
-            {new Date(catalogLatest.scan_time).toLocaleString()}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.satellite}</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{getFriendlyBandName(catalogLatest.band)}</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs">{catalogLatest.sector}</span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-sm text-amber-300 text-xs ml-1">via NOAA CDN</span>
-            <span className="text-white/50 text-xs ml-1">{timeAgo(catalogLatest.scan_time)}</span>
-          </div>
-        </div>
-      );
-    }
-    return <div />;
-  })();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const frameSource = frame
+    ? { satellite: frame.satellite, band: frame.band, sector: frame.sector, time: frame.capture_time, isCdn: false }
+    : null;
+  const catalogSource = catalogLatest
+    ? { satellite: catalogLatest.satellite, band: catalogLatest.band, sector: catalogLatest.sector, time: catalogLatest.scan_time, isCdn: true }
+    : null;
+  const source = frameSource ?? catalogSource;
 
   return (
     <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
       <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
-        {metaContent}
-        <div className="flex items-center gap-2">
-          {catalogLatest && (
-            <div className="text-right mr-2">
-              <div className="text-white/50 text-[10px] uppercase tracking-wider">AWS Latest</div>
-              <div className="text-white/80 text-xs">{timeAgo(catalogLatest.scan_time)}</div>
+        {source && overlayVisible && (
+          <div className="space-y-1">
+            {/* Condensed single-line summary */}
+            <div className="flex items-center gap-1 text-white/70 text-xs" data-testid="condensed-metadata">
+              <span className="text-white/90 font-medium">{source.satellite}</span>
+              <span className="text-white/40">·</span>
+              <span>{source.band}</span>
+              <span className="text-white/40">·</span>
+              <span>{source.sector}</span>
+              <span className="text-white/40">·</span>
+              <span>{timeAgo(source.time)}</span>
+              <button
+                onClick={() => setDetailsOpen((v) => !v)}
+                className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors text-white/50 hover:text-white/80"
+                title="Toggle details"
+                aria-label="Toggle image details"
+                aria-expanded={detailsOpen}
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
             </div>
-          )}
+            {/* Expandable details */}
+            {detailsOpen && (
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/50">
+                <span>{new Date(source.time).toLocaleString()}</span>
+                {source.isCdn && <span className="text-amber-300/70">via NOAA CDN</span>}
+                {catalogLatest && <span>AWS: {timeAgo(catalogLatest.scan_time)}</span>}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
           {frame && (
             <button
               onClick={() => {
@@ -717,13 +783,14 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
       )}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
+        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
         aria-label="Toggle controls"
         aria-expanded={open}
         aria-controls="fab-menu"
         data-testid="fab-toggle"
       >
         {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
+        <span className="text-[9px] text-white/40">Controls</span>
       </button>
     </div>
   );
@@ -813,6 +880,7 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
   const [cachedMeta, setCachedMeta] = useState<CachedImageMeta | null>(null);
+  const [cachedDismissed, setCachedDismissed] = useState(false);
   const [displaySrc, setDisplaySrc] = useState(src);
 
   // Reset state when src changes
@@ -822,6 +890,7 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
     setLoaded(false);
     setUsingCached(false);
     setCachedMeta(null);
+    setCachedDismissed(false);
     setDisplaySrc(src);
   }, [src]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -866,7 +935,11 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
         <span className="text-sm font-medium">Image unavailable</span>
         <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
         <button
-          onClick={() => { setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setDisplaySrc(src ? `${src}${src.includes('?') ? '&' : '?'}_r=${Date.now()}` : src); }}
+          onClick={() => {
+            setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setCachedDismissed(false);
+            const separator = src?.includes('?') ? '&' : '?';
+            setDisplaySrc(src ? `${src}${separator}_r=${Date.now()}` : src);
+          }}
           className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors text-sm font-medium min-h-[44px]"
         >
           <RefreshCw className="w-4 h-4" />
@@ -877,12 +950,15 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      {/* Cached image banner */}
-      {usingCached && cachedMeta && (
-        <div className="absolute top-2 inset-x-4 z-20 flex items-center justify-center" data-testid="cached-image-banner">
-          <div className="px-4 py-2 rounded-lg bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-200 text-xs font-medium">
-            Showing cached image from {new Date(cachedMeta.timestamp).toLocaleString()}
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
+      {/* Cached image banner — inline above image, dismissible */}
+      {usingCached && cachedMeta && !cachedDismissed && (
+        <div className="w-full flex justify-center px-4 py-1" data-testid="cached-image-banner">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px]">
+            <span>Cached image · {new Date(cachedMeta.timestamp).toLocaleString()}</span>
+            <button onClick={() => setCachedDismissed(true)} className="p-0.5 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
+              <X className="w-3 h-3" />
+            </button>
           </div>
         </div>
       )}
@@ -892,15 +968,17 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
           <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
         </div>
       )}
-      <img
-        src={displaySrc}
-        alt={alt}
-        onError={handleError}
-        onLoad={handleLoad}
-        loading="lazy"
-        className={`${className ?? ''} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-        {...props}
-      />
+      <div className="rounded-lg overflow-hidden border border-white/10" data-testid="live-image-container">
+        <img
+          src={displaySrc}
+          alt={alt}
+          onError={handleError}
+          onLoad={handleLoad}
+          loading="lazy"
+          className={`${className ?? ''} rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          {...props}
+        />
+      </div>
     </div>
   );
 }

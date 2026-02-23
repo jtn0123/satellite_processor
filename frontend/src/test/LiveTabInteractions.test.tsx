@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -150,10 +150,12 @@ describe('LiveTab - Interactions', () => {
     expect(select.value).toBe('60000');
   });
 
-  it('shows AWS latest info in bottom overlay when catalog data exists', async () => {
+  it('shows condensed metadata in bottom overlay when catalog data exists', async () => {
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('AWS Latest')).toBeInTheDocument();
+      // Condensed metadata shows satellite name — scoped to avoid matching select options
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
     });
   });
 
@@ -332,12 +334,14 @@ describe('LiveTab - Interactions', () => {
     });
   });
 
-  it('shows metadata overlay with frame info badges', async () => {
+  it('shows condensed metadata overlay with frame info', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Satellite, band, sector shown as separate badge elements in bottom overlay
-      const badges = document.querySelectorAll('.backdrop-blur-sm');
-      expect(badges.length).toBeGreaterThanOrEqual(3);
+      // Condensed metadata shows satellite, band, sector inline — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
+      expect(metadata.getByText('C02')).toBeInTheDocument();
+      expect(metadata.getByText('CONUS')).toBeInTheDocument();
     });
   });
 

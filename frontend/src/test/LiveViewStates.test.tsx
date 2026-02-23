@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -267,10 +267,12 @@ describe('LiveViewStates', () => {
     });
   });
 
-  it('renders AWS Latest info in bottom overlay', async () => {
+  it('renders condensed metadata in bottom overlay', async () => {
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText('AWS Latest')).toBeInTheDocument();
+      // Condensed metadata shows satellite name inline — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-19')).toBeInTheDocument();
     });
   });
 });
@@ -323,19 +325,24 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     });
   });
 
-  it('shows "via NOAA CDN" badge when displaying catalog image', async () => {
+  it('shows "via NOAA CDN" in expandable details when displaying catalog image', async () => {
     const catalogWithUrl = {
       ...CATALOG_LATEST,
       image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
     };
     setupMocks({ frameError: true, catalog: catalogWithUrl });
     renderLive();
+    // Expand details to see CDN source
+    await waitFor(() => {
+      expect(screen.getByLabelText('Toggle image details')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText('Toggle image details'));
     await waitFor(() => {
       expect(screen.getByText('via NOAA CDN')).toBeInTheDocument();
     });
   });
 
-  it('does NOT show "via NOAA CDN" badge when showing local frame', async () => {
+  it('does NOT show "via NOAA CDN" when showing local frame', async () => {
     const catalogWithUrl = {
       ...CATALOG_LATEST,
       image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
@@ -345,6 +352,9 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
+    // Even when details are expanded, local frame doesn't show CDN badge
+    const detailsBtn = screen.getByLabelText('Toggle image details');
+    fireEvent.click(detailsBtn);
     expect(screen.queryByText('via NOAA CDN')).not.toBeInTheDocument();
   });
 
@@ -356,13 +366,12 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     setupMocks({ frameError: true, catalog: catalogWithUrl });
     renderLive();
     await waitFor(() => {
-      // The "via NOAA CDN" badge confirms we're showing catalog overlay (which includes sat/band/sector badges)
-      expect(screen.getByText('via NOAA CDN')).toBeInTheDocument();
+      // Condensed metadata shows satellite info — scoped to metadata overlay
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-19')).toBeInTheDocument();
+      expect(metadata.getByText('C02')).toBeInTheDocument();
+      expect(metadata.getByText('CONUS')).toBeInTheDocument();
     });
-    // Catalog overlay badges are spans with rounded-full class — find them specifically
-    const badges = screen.getAllByText(/^(GOES-19|C02|CONUS)$/);
-    // Should have at least the 3 catalog overlay badges (plus selector options)
-    expect(badges.length).toBeGreaterThanOrEqual(3);
   });
 
   it('selector changes re-query catalog (satellite change)', async () => {

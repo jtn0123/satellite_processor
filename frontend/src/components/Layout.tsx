@@ -141,7 +141,7 @@ export default function Layout() {
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
+      <aside data-testid="desktop-sidebar" className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-200 dark:border-space-700/50">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>
@@ -305,18 +305,7 @@ export default function Layout() {
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
-          <footer className="md:hidden mt-8 pb-4 text-center text-sm text-gray-500 dark:text-slate-400">
-            <button
-              onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors relative"
-              aria-label="Show changelog"
-            >
-              {versionInfo.display}
-              {hasNewVersion && (
-                <span className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" aria-label="New version available" />
-              )}
-            </button>
-          </footer>
+          {/* Version moved to Settings — no longer shown in global footer */}
         </main>
       </div>
 

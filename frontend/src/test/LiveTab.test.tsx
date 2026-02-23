@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -127,12 +127,12 @@ describe('LiveTab', () => {
     });
   });
 
-  it('displays frame capture time', async () => {
+  it('displays frame metadata in condensed overlay', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      // The component displays the date from the frame
-      const timeText = screen.getAllByText(/2024/);
-      expect(timeText.length).toBeGreaterThan(0);
+      // Condensed metadata shows satellite name — scoped to avoid matching select options
+      const metadata = within(screen.getByTestId('condensed-metadata'));
+      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
     });
   });
 });

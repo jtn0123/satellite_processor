@@ -116,7 +116,7 @@ test.describe('Live flow', () => {
     const fetchBtn = imageArea.getByText('Fetch your first image');
     const noFrames = imageArea.getByText('No frames loaded yet');
     // One of the error/empty states should appear
-    await expect(retryBtn.or(fetchBtn).or(noFrames)).toBeVisible({ timeout: 10000 });
+    await expect(retryBtn.or(fetchBtn).or(noFrames).first()).toBeVisible({ timeout: 10000 });
   });
 
   // --- Metadata & Layout ---

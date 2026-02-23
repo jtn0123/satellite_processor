@@ -936,7 +936,11 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
         <span className="text-sm font-medium">Image unavailable</span>
         <span className="text-xs text-gray-400 dark:text-slate-600">The satellite image could not be loaded</span>
         <button
-          onClick={() => { setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setDisplaySrc(src ? `${src}${src.includes('?') ? '&' : '?'}_r=${Date.now()}` : src); }}
+          onClick={() => {
+            setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null);
+            const separator = src?.includes('?') ? '&' : '?';
+            setDisplaySrc(src ? `${src}${separator}_r=${Date.now()}` : src);
+          }}
           className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors text-sm font-medium min-h-[44px]"
         >
           <RefreshCw className="w-4 h-4" />

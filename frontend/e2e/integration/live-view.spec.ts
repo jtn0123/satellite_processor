@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { waitForApiHealth, navigateTo } from './helpers';
 
-test.describe('Live View', () => {
+test.describe('Live', () => {
   test.beforeAll(async ({ request }) => {
     await waitForApiHealth(request);
   });

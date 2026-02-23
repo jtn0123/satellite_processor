@@ -115,8 +115,8 @@ describe('Flow: New user dashboard experience', () => {
   });
 });
 
-// ===================== Flow 2: Live View → auto-refresh =====================
-describe('Flow: Live View with auto-refresh', () => {
+// ===================== Flow 2: Live → auto-refresh =====================
+describe('Flow: Live with auto-refresh', () => {
   beforeEach(async () => {
     LiveView = (await import('../pages/LiveView')).default;
   });
@@ -133,7 +133,7 @@ describe('Flow: Live View with auto-refresh', () => {
       </QueryClientProvider>,
     );
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Live View' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Live' })).toBeInTheDocument();
     });
   });
 });

@@ -7,7 +7,7 @@ import Skeleton from '../components/GoesData/Skeleton';
 const LiveTab = lazy(() => import('../components/GoesData/LiveTab'));
 
 export default function LiveView() {
-  usePageTitle('Live View');
+  usePageTitle('Live');
   const [monitoring, setMonitoring] = useState(false);
 
   const handleMonitorChange = useCallback((active: boolean) => {
@@ -20,7 +20,7 @@ export default function LiveView() {
         <Radio className="w-7 h-7 text-primary" />
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">Live View</h1>
+            <h1 className="text-2xl font-bold">Live</h1>
             {monitoring && (
               <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-400/30" data-testid="monitor-header-indicator">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

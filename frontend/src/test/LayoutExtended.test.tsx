@@ -19,9 +19,9 @@ describe('Layout extended', () => {
     expect(screen.getAllByText(/Browse & Fetch/i).length).toBeGreaterThan(0);
   });
 
-  it('renders Live View nav link', () => {
+  it('renders Live nav link', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText(/Live View/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Live/i).length).toBeGreaterThan(0);
   });
 
   it('has theme toggle button', () => {

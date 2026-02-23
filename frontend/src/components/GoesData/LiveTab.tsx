@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -566,11 +566,23 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </span>
         </div>
 
+        {/* Mobile FAB for controls */}
+        <div className="sm:hidden absolute bottom-24 right-4 z-20" data-testid="mobile-fab">
+          <MobileControlsFab
+            monitoring={monitoring}
+            onToggleMonitor={toggleMonitor}
+            autoFetch={autoFetch}
+            onAutoFetchChange={setAutoFetch}
+            compareMode={compareMode}
+            onCompareModeChange={setCompareMode}
+          />
+        </div>
+
         {/* Zoom reset hint */}
         {zoom.isZoomed && (
           <button
             onClick={zoom.reset}
-            className="absolute top-20 right-4 z-10 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors"
+            className="absolute top-20 right-4 z-10 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             Reset zoom
           </button>
@@ -599,12 +611,71 @@ interface ImagePanelContentProps {
   onNavigateToFetch?: () => void;
 }
 
+/* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
+function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange }: Readonly<{
+  monitoring: boolean; onToggleMonitor: () => void;
+  autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
+  compareMode: boolean; onCompareModeChange: (v: boolean) => void;
+}>) {
+  const [open, setOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: globalThis.MouseEvent | globalThis.TouchEvent) => {
+      if (fabRef.current && !fabRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+  }, [open]);
+
+  return (
+    <div ref={fabRef} className="relative">
+      {open && (
+        <div id="fab-menu" className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]" data-testid="fab-menu">
+          <button
+            onClick={() => { onToggleMonitor(); setOpen(false); }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              monitoring
+                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
+                : 'bg-white/10 border border-white/20 text-white/80'
+            }`}
+          >
+            {monitoring ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {monitoring ? 'Stop Watch' : 'Watch'}
+          </button>
+          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
+            <input type="checkbox" checked={autoFetch} onChange={(e) => onAutoFetchChange(e.target.checked)} className="rounded" />
+            <Zap className="w-4 h-4 text-amber-400" />
+            Auto-fetch
+          </label>
+          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
+            <input type="checkbox" checked={compareMode} onChange={(e) => onCompareModeChange(e.target.checked)} className="rounded" />
+            <Columns2 className="w-4 h-4 text-blue-400" />
+            Compare
+          </label>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
+        aria-label="Toggle controls"
+        aria-expanded={open}
+        aria-controls="fab-menu"
+        data-testid="fab-toggle"
+      >
+        {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
+      </button>
+    </div>
+  );
+}
+
 function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, onNavigateToFetch }: Readonly<ImagePanelContentProps>) {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-slate-400">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        <span className="text-sm">Loading latest frame...</span>
+      <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
+        <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
       </div>
     );
   }
@@ -669,12 +740,13 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   );
 }
 
-/* CdnImage — img with onError fallback to avoid broken image icons */
-function CdnImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+/* CdnImage — img with onError fallback, shimmer placeholder, and crossfade */
+function CdnImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [error, setError] = useState(false);
-  // Reset error state when src changes
+  const [loaded, setLoaded] = useState(false);
+  // Reset state when src changes
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on prop change
-  useEffect(() => { setError(false); }, [src]);
+  useEffect(() => { setError(false); setLoaded(false); }, [src]);
 
   if (error || !src) {
     return (
@@ -687,13 +759,23 @@ function CdnImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageEleme
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setError(true)}
-      loading="lazy"
-      {...props}
-    />
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Shimmer placeholder */}
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center" data-testid="image-shimmer">
+          <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onError={() => setError(true)}
+        onLoad={() => setLoaded(true)}
+        loading="lazy"
+        className={`${className ?? ''} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        {...props}
+      />
+    </div>
   );
 }
 

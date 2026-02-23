@@ -70,7 +70,7 @@ describe('Layout coverage boost', () => {
   it('renders desktop sidebar with all nav links', () => {
     renderLayout();
     expect(screen.getAllByLabelText('Dashboard').length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText('Live View').length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText('Live').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/browse/i).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText('Animate').length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText('Jobs').length).toBeGreaterThan(0);

@@ -16,7 +16,7 @@ test.describe('Mobile navigation', () => {
     expect(hasBottomNav).toBeTruthy();
   });
 
-  test('can navigate to Live View on mobile', async ({ page }) => {
+  test('can navigate to Live on mobile', async ({ page }) => {
     await page.goto('/');
     const nav = page.locator('nav[aria-label="Mobile navigation"]');
     await nav.getByText('Live').click();

@@ -55,9 +55,9 @@ describe('Layout - mobile drawer', () => {
     expect(showChangelog.length).toBeGreaterThan(0);
   });
 
-  it('renders Live View nav link', () => {
+  it('renders Live nav link', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText('Live View').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
   });
 
   it('renders Animate nav link', () => {

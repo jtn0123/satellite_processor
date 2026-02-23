@@ -3,7 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Radio,
   Grid3X3,
-  Download,
   Sparkles,
   MoreHorizontal,
   ListTodo,
@@ -15,17 +14,16 @@ import {
 const primaryTabs = [
   { to: '/live', label: 'Live', icon: Radio },
   { to: '/goes', label: 'Browse', icon: Grid3X3 },
-  { to: '/goes?tab=fetch', label: 'Fetch', icon: Download },
+  { to: '/jobs', label: 'Jobs', icon: ListTodo },
   { to: '/animate', label: 'Animate', icon: Sparkles },
 ];
 
 const moreLinks = [
-  { to: '/jobs', label: 'Jobs', icon: ListTodo },
   { to: '/settings', label: 'Settings', icon: Cog },
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
 ];
 
-const moreRoutes = new Set(['/', '/jobs', '/settings', '/upload', '/process', '/presets']);
+const moreRoutes = new Set(['/', '/settings', '/upload', '/process', '/presets']);
 
 export default function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -36,17 +34,15 @@ export default function MobileBottomNav() {
 
   const isTabActive = (tab: typeof primaryTabs[number]) => {
     const path = location.pathname;
-    const search = location.search;
-    const tabParam = new URLSearchParams(search).get('tab');
 
     // Live tab: active on /live
     if (tab.to === '/live') return path === '/live';
     // Animate tab: active on /animate
     if (tab.to === '/animate') return path === '/animate';
-    // Fetch tab: active on /goes with tab=fetch
-    if (tab.label === 'Fetch') return path === '/goes' && tabParam === 'fetch';
-    // Browse tab: active on /goes without tab param or with tab=browse
-    if (tab.label === 'Browse') return path === '/goes' && tabParam !== 'fetch';
+    // Browse tab: active on /goes (all sub-tabs)
+    if (tab.to === '/goes') return path === '/goes';
+    // Jobs tab: active on /jobs
+    if (tab.to === '/jobs') return path === '/jobs';
     return false;
   };
 
@@ -146,15 +142,7 @@ export default function MobileBottomNav() {
               aria-selected={active}
               onClick={() => {
                 setMoreOpen(false);
-                // For fetch tab, navigate to /goes and dispatch switch-tab event
-                if (tab.label === 'Fetch') {
-                  navigate('/goes');
-                  setTimeout(() => {
-                    globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' }));
-                  }, 0);
-                } else {
-                  navigate(tab.to);
-                }
+                navigate(tab.to);
               }}
               className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors border-none bg-transparent ${
                 active

@@ -97,8 +97,8 @@ export default function ConnectionStatus() {
   if (status === 'disconnected' && !hasConnected) return null;
 
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
-      <span className={`w-2 h-2 rounded-full ${cfg.color} ${status === 'reconnecting' ? 'animate-pulse' : ''}`} />
+    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
+      <span className={`w-2.5 h-2.5 rounded-full ${cfg.color} ${status === 'reconnecting' ? 'animate-pulse' : ''}`} />
       {status === 'disconnected' ? 'Offline' : cfg.label}
     </div>
   );

@@ -11,26 +11,30 @@ import {
 } from '../components/GoesData/liveTabUtils';
 
 describe('Friendly Band Names', () => {
-  it('formats C02 with description', () => {
-    expect(getFriendlyBandLabel('C02', 'Red (0.64µm)')).toBe('Visible Red (C02 — Red (0.64µm))');
+  it('formats C02 with description (long)', () => {
+    expect(getFriendlyBandLabel('C02', 'Red (0.64µm)', 'long')).toBe('Visible Red (C02 — Red (0.64µm))');
   });
 
-  it('formats C13 with description', () => {
-    expect(getFriendlyBandLabel('C13', 'Clean IR Longwave (10.3µm)')).toBe(
+  it('formats C13 with description (long)', () => {
+    expect(getFriendlyBandLabel('C13', 'Clean IR Longwave (10.3µm)', 'long')).toBe(
       'Clean IR Longwave (C13 — Clean IR Longwave (10.3µm))',
     );
   });
 
-  it('formats GEOCOLOR without parentheses', () => {
+  it('formats GEOCOLOR in medium mode', () => {
     expect(getFriendlyBandLabel('GEOCOLOR', 'GeoColor')).toBe('GeoColor (True Color)');
   });
 
-  it('falls back for unknown band', () => {
+  it('falls back for unknown band (medium)', () => {
     expect(getFriendlyBandLabel('C99', 'Unknown')).toBe('C99 — Unknown');
   });
 
   it('falls back for unknown band without description', () => {
     expect(getFriendlyBandLabel('C99')).toBe('C99');
+  });
+
+  it('formats C02 in medium mode (default)', () => {
+    expect(getFriendlyBandLabel('C02', 'Red (0.64µm)')).toBe('C02 — Visible Red');
   });
 
   it('returns friendly name for badge', () => {

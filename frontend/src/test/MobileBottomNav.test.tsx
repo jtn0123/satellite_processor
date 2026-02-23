@@ -16,7 +16,7 @@ describe('MobileBottomNav', () => {
     renderWithRouter();
     expect(screen.getByText('Live')).toBeInTheDocument();
     expect(screen.getByText('Browse')).toBeInTheDocument();
-    expect(screen.getByText('Fetch')).toBeInTheDocument();
+    expect(screen.getByText('Jobs')).toBeInTheDocument();
     expect(screen.getByText('Animate')).toBeInTheDocument();
     expect(screen.getByText('More')).toBeInTheDocument();
   });
@@ -44,10 +44,10 @@ describe('MobileBottomNav', () => {
     expect(animateTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Fetch tab is active on /goes?tab=fetch', () => {
-    renderWithRouter('/goes?tab=fetch');
-    const fetchTab = screen.getByRole('tab', { name: 'Fetch' });
-    expect(fetchTab).toHaveAttribute('aria-selected', 'true');
+  it('Jobs tab is active on /jobs', () => {
+    renderWithRouter('/jobs');
+    const jobsTab = screen.getByRole('tab', { name: 'Jobs' });
+    expect(jobsTab).toHaveAttribute('aria-selected', 'true');
   });
 
   it('More button opens more menu', () => {
@@ -56,10 +56,9 @@ describe('MobileBottomNav', () => {
     expect(screen.getByLabelText('More navigation options')).toBeInTheDocument();
   });
 
-  it('More menu shows Jobs, Settings, Dashboard links', () => {
+  it('More menu shows Settings, Dashboard links', () => {
     renderWithRouter();
     fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    expect(screen.getByLabelText('Jobs')).toBeInTheDocument();
     expect(screen.getByLabelText('Settings')).toBeInTheDocument();
     expect(screen.getByLabelText('Dashboard')).toBeInTheDocument();
   });
@@ -89,8 +88,8 @@ describe('MobileBottomNav', () => {
     expect(screen.queryByLabelText('More navigation options')).not.toBeInTheDocument();
   });
 
-  it('More tab shows active when on a more route like /jobs', () => {
-    renderWithRouter('/jobs');
+  it('More tab shows active when on a more route like /settings', () => {
+    renderWithRouter('/settings');
     const moreTab = screen.getByRole('tab', { name: 'More' });
     expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });

@@ -492,7 +492,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Top controls overlay */}
         <div className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none">
-          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 px-4 py-3">
+          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3">
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.satellites ?? []).map((s) => (
@@ -544,7 +544,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               </label>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end">
+            <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
               <MonitorSettingsPanel
                 isMonitoring={monitoring}
                 interval={refreshInterval}
@@ -559,10 +559,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
               />
               <button onClick={() => refetch()}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-white/50 whitespace-nowrap">{countdownDisplay}</span>
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">{countdownDisplay}</span>
               </button>
               <button onClick={toggleFullscreen}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
@@ -601,15 +601,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         />
 
         {/* Live / Monitoring indicator */}
-        <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2" data-testid="live-indicator">
+        <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
           <div className={`w-2 h-2 rounded-full shrink-0 ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
-          <span className="text-xs text-white/70 font-medium">
+          <span className="text-xs text-white/70 font-medium mr-3">
             {monitoring ? 'MONITORING' : 'LIVE'}
           </span>
         </div>
 
         {/* Mobile FAB for controls — labeled */}
-        <div className="sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
+        <div className="sm:hidden absolute bottom-20 right-4 md:bottom-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}

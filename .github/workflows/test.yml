@@ -348,7 +348,7 @@ jobs:
         run: npm ci
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-build
           path: frontend/dist/
@@ -407,7 +407,7 @@ jobs:
 
       - name: Download backend coverage shards
         id: dl-backend
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           pattern: backend-coverage-shard*
@@ -419,7 +419,7 @@ jobs:
 
       - name: Download frontend coverage shards
         id: dl-frontend
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           pattern: frontend-coverage-shard*
@@ -435,7 +435,7 @@ jobs:
 
       - name: Download core coverage
         id: dl-core
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: core-coverage
@@ -969,7 +969,7 @@ jobs:
 
       - name: Download backend coverage shards
         if: needs.backend.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           pattern: backend-coverage-*
@@ -978,7 +978,7 @@ jobs:
 
       - name: Download frontend coverage shards
         if: needs.frontend.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           pattern: frontend-coverage-shard*

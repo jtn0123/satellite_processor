@@ -116,21 +116,24 @@ export default function MobileBottomNav() {
 
       {/* Bottom tab bar */}
       <nav
-        aria-label="Mobile navigation"
         data-testid="mobile-bottom-nav"
-        role="tablist"
-        tabIndex={0}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 flex items-center justify-around safe-bottom"
-        onKeyDown={(e) => {
-          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-          const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button[role="tab"]'));
-          const idx = buttons.indexOf(e.target as HTMLElement);
-          if (idx < 0) return;
-          const next = e.key === 'ArrowRight' ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
-          buttons[next].focus();
-          e.preventDefault();
-        }}
+        aria-label="Mobile navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 safe-bottom"
       >
+        <div
+          role="tablist"
+          aria-label="Navigation tabs"
+          className="flex items-center justify-around"
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button[role="tab"]'));
+            const idx = buttons.indexOf(e.target as HTMLElement);
+            if (idx < 0) return;
+            const next = e.key === 'ArrowRight' ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+            buttons[next].focus();
+            e.preventDefault();
+          }}
+        >
         {primaryTabs.map((tab) => {
           const active = isTabActive(tab);
           return (
@@ -170,6 +173,7 @@ export default function MobileBottomNav() {
           <MoreHorizontal className="w-5 h-5" />
           More
         </button>
+        </div>
       </nav>
     </>
   );

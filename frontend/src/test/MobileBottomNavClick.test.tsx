@@ -43,22 +43,10 @@ describe('MobileBottomNav — click handlers', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/animate');
   });
 
-  it('clicking Fetch tab navigates to /goes and dispatches switch-tab event', () => {
-    const dispatchSpy = vi.spyOn(globalThis, 'dispatchEvent');
+  it('clicking Jobs tab navigates to /jobs', () => {
     renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'Fetch' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/goes');
-    // The switch-tab event is dispatched via setTimeout, so we need to flush
-    vi.useFakeTimers();
-    vi.advanceTimersByTime(1);
-    // Check that a CustomEvent with detail 'fetch' was dispatched
-    const hasSwitchTab = dispatchSpy.mock.calls.some(
-      (call) => call[0] instanceof CustomEvent && (call[0] as CustomEvent).type === 'switch-tab',
-    );
-    // It might not have fired yet due to setTimeout, but navigate was called
-    expect(hasSwitchTab || mockNavigate).toBeTruthy();
-    dispatchSpy.mockRestore();
-    vi.useRealTimers();
+    fireEvent.click(screen.getByRole('tab', { name: 'Jobs' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/jobs');
   });
 
   it('clicking a primary tab closes the more menu if open', () => {

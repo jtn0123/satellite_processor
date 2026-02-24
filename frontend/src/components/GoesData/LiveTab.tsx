@@ -361,6 +361,10 @@ function useSwipeBand(products: Product | undefined, band: string, setBand: (b: 
   return { swipeToast, handleTouchStart, handleTouchEnd };
 }
 
+function isNotFoundError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -398,11 +402,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [startMonitorRaw, applyMonitorConfig]);
 
   const applyPreset = useCallback((preset: MonitorPreset) => {
-    if (preset.satellite) setSatellite(preset.satellite);
+    setSatellite(preset.satellite || satellite);
     setSector(preset.sector);
-    if (preset.band) setBand(preset.band);
+    setBand(preset.band || band);
     setRefreshInterval(preset.interval);
-  }, []);
+  }, [satellite, band]);
 
   const { overlayVisible, toggleOverlay } = useOverlayToggle();
 
@@ -440,11 +444,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
-    retry: (failureCount, error) => {
-      // Don't retry on 404 (no frames) — show empty state immediately
-      if (axios.isAxiosError(error) && error.response?.status === 404) return false;
-      return failureCount < 2;
-    },
+    retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
   });
 
   useEffect(() => {
@@ -480,11 +480,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     const isCurrentlyFullscreen = !!document.fullscreenElement;
-    if (isCurrentlyFullscreen) {
-      await exitFullscreenSafe();
-    } else {
-      await enterFullscreenSafe(containerRef.current);
-    }
+    await (isCurrentlyFullscreen ? exitFullscreenSafe() : enterFullscreenSafe(containerRef.current));
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 

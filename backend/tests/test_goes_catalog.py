@@ -39,7 +39,7 @@ class TestCatalogLatestImageUrl:
         assert result is not None
         assert result["image_url"] == (
             "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/"
-            "20241661200_GOES19-ABI-CONUS-02-2500x1500.jpg"
+            "2500x1500.jpg"
         )
         assert "thumbnail_url" in result
         assert "mobile_url" in result

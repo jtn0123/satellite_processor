@@ -125,23 +125,27 @@ test.describe('Live flow', () => {
 
   // --- Metadata & Layout ---
 
-  test('metadata line shows satellite info when data loaded', async ({ page }) => {
+  test('status pill shows satellite info when data loaded', async ({ page }) => {
     await page.goto('/live');
-    // Mock API provides catalog/frame data, so metadata should render
-    const metaArea = page.locator('[data-testid="condensed-metadata"]');
-    await expect(metaArea).toBeVisible({ timeout: 10000 });
-    const text = await metaArea.textContent();
+    // Mock API provides catalog/frame data, so the status pill should render
+    const pill = page.locator('[data-testid="status-pill"]');
+    await expect(pill).toBeVisible({ timeout: 10000 });
+    const text = await pill.textContent();
     expect(text).toBeTruthy();
+    // Pill should contain satellite identifier from mock data
+    expect(text).toMatch(/GOES/i);
   });
 
-  test('expandable details toggle', async ({ page }) => {
+  test('mobile controls FAB is visible on small viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/live');
-    const toggleBtn = page.locator('button[aria-label="Toggle image details"]');
-    // Mock API provides data, so metadata and its toggle button should render
-    await expect(toggleBtn).toBeVisible({ timeout: 10000 });
-    await expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
-    await toggleBtn.click();
-    await expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
+    // The mobile FAB replaces the old expandable details toggle
+    const fab = page.locator('[data-testid="fab-toggle"]');
+    await expect(fab).toBeVisible({ timeout: 10000 });
+    // Tapping the FAB opens the menu
+    await fab.click();
+    const menu = page.locator('[data-testid="fab-menu"]');
+    await expect(menu).toBeVisible({ timeout: 5000 });
   });
 
   test('version number not visible in live content area', async ({ page }) => {

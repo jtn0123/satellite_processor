@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import SystemMonitor from '../components/System/SystemMonitor';
-import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive, ChevronDown, ChevronRight, Upload, Layers, Trash2, FlaskConical } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive, ChevronDown, ChevronRight, Upload, Layers, Trash2, FlaskConical, Info } from 'lucide-react';
 import api from '../api/client';
 import { formatBytes } from '../utils/format';
 
@@ -117,6 +117,43 @@ function StorageSection() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function VersionInfo() {
+  const { data } = useQuery({
+    queryKey: ['version'],
+    queryFn: async () => {
+      const r = await api.get('/health/version');
+      return r.data as { version?: string; commit_sha?: string };
+    },
+    staleTime: Infinity,
+  });
+
+  const version = data?.version ?? '';
+  const commit = data?.commit_sha ?? '';
+  const shortSha = commit ? commit.slice(0, 7) : '';
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Info className="w-5 h-5" /> About
+      </h2>
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+        <dl className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-gray-500 dark:text-slate-400">Version</dt>
+            <dd className="font-mono text-gray-900 dark:text-white">{version ? `v${version}` : '—'}</dd>
+          </div>
+          {shortSha && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500 dark:text-slate-400">Commit</dt>
+              <dd className="font-mono text-gray-900 dark:text-white">{shortSha}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
     </div>
   );
 }
@@ -334,6 +371,8 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
         <h2 className="text-lg font-semibold mb-4">System Resources</h2>
         <SystemMonitor />
       </div>
+
+      <VersionInfo />
     </div>
   );
 }

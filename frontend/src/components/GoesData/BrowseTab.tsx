@@ -160,6 +160,51 @@ function FrameGridContent({ isLoading, frames, viewMode, selectedIds, onFrameCli
   );
 }
 
+/* Extracted to reduce BrowseTab cognitive complexity — modals & status indicator */
+function BrowseModals({ showAddToCollection, collectionFrameIds, onCloseCollection, showTagModal, tagFrameIds, onCloseTag, previewFrame, onClosePreview, allFrames, onNavigatePreview, compareFrames, onCloseCompare, processingJobId }: Readonly<{
+  showAddToCollection: boolean;
+  collectionFrameIds: string[];
+  onCloseCollection: () => void;
+  showTagModal: boolean;
+  tagFrameIds: string[];
+  onCloseTag: () => void;
+  previewFrame: GoesFrame | null;
+  onClosePreview: () => void;
+  allFrames: GoesFrame[];
+  onNavigatePreview: (f: GoesFrame) => void;
+  compareFrames: [GoesFrame, GoesFrame] | null;
+  onCloseCompare: () => void;
+  processingJobId: string | null;
+}>) {
+  return (
+    <>
+      {showAddToCollection && (
+        <AddToCollectionModal frameIds={collectionFrameIds} onClose={onCloseCollection} />
+      )}
+      {showTagModal && (
+        <TagModal frameIds={tagFrameIds} onClose={onCloseTag} />
+      )}
+      {previewFrame && (
+        <FramePreviewModal
+          frame={previewFrame}
+          onClose={onClosePreview}
+          allFrames={allFrames}
+          onNavigate={onNavigatePreview}
+        />
+      )}
+      {compareFrames && (
+        <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={onCloseCompare} />
+      )}
+      {processingJobId && (
+        <div className="text-sm text-emerald-400 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
+          Processing job created: {processingJobId}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function BrowseTab() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -583,31 +628,22 @@ export default function BrowseTab() {
           </div>
         )}
 
-        {/* Modals */}
-        {showAddToCollection && (
-          <AddToCollectionModal frameIds={collectionFrameIds} onClose={() => setShowAddToCollection(false)} />
-        )}
-        {showTagModal && (
-          <TagModal frameIds={tagFrameIds} onClose={() => setShowTagModal(false)} />
-        )}
-        {previewFrame && (
-          <FramePreviewModal
-            frame={previewFrame}
-            onClose={() => { setPreviewFrame(null); globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
-            allFrames={frames}
-            onNavigate={(f) => setPreviewFrame(f)}
-          />
-        )}
-        {compareFrames && (
-          <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={() => setCompareFrames(null)} />
-        )}
-
-        {processMutation.isSuccess && (
-          <div className="text-sm text-emerald-400 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Processing job created: {processMutation.data.job_id}
-          </div>
-        )}
+        {/* Modals & status */}
+        <BrowseModals
+          showAddToCollection={showAddToCollection}
+          collectionFrameIds={collectionFrameIds}
+          onCloseCollection={() => setShowAddToCollection(false)}
+          showTagModal={showTagModal}
+          tagFrameIds={tagFrameIds}
+          onCloseTag={() => setShowTagModal(false)}
+          previewFrame={previewFrame}
+          onClosePreview={() => { setPreviewFrame(null); globalThis.dispatchEvent(new CustomEvent('set-subview', { detail: null })); }}
+          allFrames={frames}
+          onNavigatePreview={(f) => setPreviewFrame(f)}
+          compareFrames={compareFrames}
+          onCloseCompare={() => setCompareFrames(null)}
+          processingJobId={processMutation.isSuccess ? processMutation.data.job_id : null}
+        />
       </div>
 
       {/* Floating batch action bar */}

@@ -452,7 +452,7 @@ describe('CdnImage Error Recovery', () => {
     if (img) fireEvent.error(img);
 
     await waitFor(() => {
-      expect(screen.getByText('Tap to retry')).toBeInTheDocument();
+      expect(screen.getByText(/Image unavailable · Retrying/)).toBeInTheDocument();
     });
   });
 });

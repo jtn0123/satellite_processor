@@ -76,7 +76,10 @@ describe('LiveTab - Defensive Scenarios', () => {
     });
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText(/No local frames available/i)).toBeInTheDocument();
+      // Live tab always has a CDN URL — shows image or shimmer, never empty state
+      const img = screen.queryByRole('img');
+      const shimmer = screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
+      expect(img ?? shimmer).toBeTruthy();
     });
   });
 

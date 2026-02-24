@@ -54,4 +54,17 @@ describe('LiveView page', () => {
     const nav = screen.getByRole('navigation');
     expect(nav).toHaveTextContent('Live');
   });
+
+  it('breadcrumb nav has aria-label', () => {
+    renderWithProviders(<LiveView />);
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
+  });
+
+  it('current page span has aria-current="page"', () => {
+    renderWithProviders(<LiveView />);
+    const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const current = nav.querySelector('[aria-current="page"]');
+    expect(current).not.toBeNull();
+    expect(current!.textContent).toBe('Live');
+  });
 });

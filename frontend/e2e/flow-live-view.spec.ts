@@ -35,9 +35,10 @@ test.describe('Live flow', () => {
 
   test('live view has refresh interval selector', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Auto-fetch interval"], select[aria-label="Auto-refresh interval"]');
+    const select = page.locator('select[aria-label="Auto-fetch interval"]');
     // Interval may be hidden when auto-fetch is off
-    if (await select.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const visible = await select.isVisible();
+    if (visible) {
       await expect(select).toBeVisible();
     }
   });

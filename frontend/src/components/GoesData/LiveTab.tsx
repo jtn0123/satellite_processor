@@ -527,7 +527,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               </button>
               <div className="flex items-center gap-1.5 text-xs text-white/80">
                 <button
+                  type="button"
                   role="switch"
+                  aria-label="Toggle auto-fetch"
                   aria-checked={autoFetch}
                   onClick={() => setAutoFetch((v) => !v)}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
@@ -549,6 +551,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 </select>
               </div>
               <button
+                type="button"
                 role="switch"
                 aria-checked={compareMode}
                 onClick={() => setCompareMode((v) => !v)}

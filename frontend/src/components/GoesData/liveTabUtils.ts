@@ -22,14 +22,29 @@ export const FRIENDLY_BAND_NAMES: Record<string, string> = {
 
 export function getFriendlyBandLabel(bandId: string, description?: string, format?: 'short' | 'medium' | 'long'): string {
   const friendly = FRIENDLY_BAND_NAMES[bandId];
-  if (bandId === 'GEOCOLOR') return format === 'short' ? 'GeoColor' : (friendly ?? bandId);
-  if (format === 'short') return friendly ? `${bandId} ${friendly}` : bandId;
-  // Medium: "C02 — Visible Red" (no wavelength)
-  if (!format || format === 'medium') return friendly ? `${bandId} — ${friendly}` : (description ? `${bandId} — ${description}` : bandId);
-  // Long: "Visible Red (C02 — Red (0.64μm))"
-  if (friendly && description) return `${friendly} (${bandId} — ${description})`;
-  if (friendly) return `${friendly} (${bandId})`;
-  return description ? `${bandId} — ${description}` : bandId;
+
+  if (bandId === 'GEOCOLOR') {
+    if (format === 'short') return 'GeoColor';
+    return friendly ?? bandId;
+  }
+
+  switch (format) {
+    case 'short':
+      return friendly ? `${bandId} ${friendly}` : bandId;
+
+    case 'long':
+      if (friendly && description) return `${friendly} (${bandId} — ${description})`;
+      if (friendly) return `${friendly} (${bandId})`;
+      if (description) return `${bandId} — ${description}`;
+      return bandId;
+
+    default: {
+      // Medium (default)
+      if (friendly) return `${bandId} — ${friendly}`;
+      if (description) return `${bandId} — ${description}`;
+      return bandId;
+    }
+  }
 }
 
 export function getFriendlyBandName(bandId: string): string {

@@ -28,7 +28,7 @@ function subscribeToResize(cb: () => void) {
   globalThis.addEventListener('resize', cb);
   return () => globalThis.removeEventListener('resize', cb);
 }
-function getIsMobile() { return typeof globalThis.window !== 'undefined' && globalThis.innerWidth < 768; }
+function getIsMobile() { return globalThis.window !== undefined && globalThis.innerWidth < 768; }
 function useIsMobile() { return useSyncExternalStore(subscribeToResize, getIsMobile, () => false); }
 
 interface SatelliteAvailability {

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -13,6 +12,7 @@ import { useImageZoom } from '../../hooks/useImageZoom';
 import { useDoubleTap } from '../../hooks/useDoubleTap';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
 import SwipeHint from './SwipeHint';
+import ShimmerLoader from './ShimmerLoader';
 import BottomSheet from './BottomSheet';
 import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
@@ -142,16 +142,29 @@ function useMonitorMode(
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
+/** Build a direct CDN URL from satellite/sector/band (always available) */
+function buildCdnUrl(satellite: string, sector: string, band: string): string | null {
+  if (!satellite || !sector || !band) return null;
+  // NOAA CDN uses satellite name without hyphen for path, e.g. GOES16
+  const satPath = satellite.replace('-', '');
+  const resolution = sector === 'FD' ? '1808x1808' : '1250x750';
+  return `https://cdn.star.nesdis.noaa.gov/${satPath}/ABI/${sector}/${band}/latest_${resolution}.jpg`;
+}
+
 /** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
 function resolveImageUrls(
   catalogLatest: CatalogLatest | null | undefined,
   frame: LatestFrame | null | undefined,
   recentFrames: LatestFrame[] | undefined,
+  satellite?: string,
+  sector?: string,
+  band?: string,
 ) {
   const isMobileView = globalThis.window !== undefined && globalThis.window.innerWidth < 768;
   const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
-  const imageUrl = localImageUrl ?? catalogImageUrl;
+  const directCdnUrl = buildCdnUrl(satellite ?? '', sector ?? '', band ?? '');
+  const imageUrl = localImageUrl ?? catalogImageUrl ?? directCdnUrl;
 
   const recentFramesList = extractArray<LatestFrame>(recentFrames);
   const prevFrame = recentFramesList?.[1];
@@ -388,7 +401,6 @@ interface LiveTabProps {
 }
 
 export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
-  const navigateFn = useNavigate();
   const isMobile = useIsMobile();
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
@@ -538,7 +550,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames);
+  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
@@ -573,7 +585,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onPositionChange={setComparePosition}
             frameTime={frame?.capture_time ?? null}
             prevFrameTime={prevFrame?.capture_time ?? null}
-            onNavigateToFetch={() => navigateFn('/goes?tab=fetch')}
           />
         </div>
 
@@ -759,7 +770,6 @@ interface ImagePanelContentProps {
   onPositionChange: (pos: number) => void;
   frameTime: string | null;
   prevFrameTime: string | null;
-  onNavigateToFetch?: () => void;
 }
 
 /* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
@@ -920,55 +930,28 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
   );
 }
 
-function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, onNavigateToFetch }: Readonly<ImagePanelContentProps>) {
-  if (isLoading) {
+function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
+  if (isLoading || (!imageUrl && !isError)) {
     return (
       <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
-        <div className="w-full h-full max-w-[90%] max-h-[90%] rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
+        <ShimmerLoader />
       </div>
     );
   }
-  if (isError) {
+  if (isError && !imageUrl) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
-        <Satellite className="w-12 h-12" />
-        <span className="text-sm font-medium">No local frames available</span>
-        <span className="text-xs text-gray-400 dark:text-slate-600">Fetch your first image to see it here</span>
-        <button
-          onClick={() => {
-            globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
-              detail: { satellite, sector, band },
-            }));
-            onNavigateToFetch?.();
-          }}
-          className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Fetch your first image
-        </button>
-      </div>
-    );
-  }
-  if (!imageUrl) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-slate-500 py-8 min-h-[50vh]">
-        <Satellite className="w-12 h-12" />
-        <span className="text-sm font-medium">No frames loaded yet</span>
-        <span className="text-xs text-gray-400 dark:text-slate-600">Select a satellite, sector, and band above, then fetch imagery</span>
-        <button
-          onClick={() => onNavigateToFetch?.()}
-          className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Go to Fetch
-        </button>
+      <div className="relative w-full h-full flex items-center justify-center" data-testid="live-error-state">
+        <ShimmerLoader />
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <span className="text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>
+        </div>
       </div>
     );
   }
   if (compareMode) {
     return (
       <CompareSlider
-        imageUrl={imageUrl}
+        imageUrl={imageUrl ?? ''}
         prevImageUrl={prevImageUrl}
         comparePosition={comparePosition}
         onPositionChange={onPositionChange}
@@ -980,7 +963,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   }
   return (
     <CdnImage
-      src={imageUrl}
+      src={imageUrl ?? ''}
       alt={`${satellite} ${band} ${sector}`}
       className="max-w-full max-h-full object-contain select-none"
       style={isFullscreen ? zoomStyle : undefined}
@@ -1058,23 +1041,26 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
     setError(true);
   }, [usingCached]);
 
+  // Auto-retry on error after 10 seconds
+  useEffect(() => {
+    if (!error || !src) return;
+    const timer = setTimeout(() => {
+      setError(false);
+      setLoaded(false);
+      setUsingCached(false);
+      setCachedMeta(null);
+      setCachedDismissed(false);
+      const separator = src.includes('?') ? '&' : '?';
+      setDisplaySrc(`${src}${separator}_r=${Date.now()}`);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [error, src]);
+
   if (error || !displaySrc) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 text-amber-400/70 dark:text-amber-500/60 py-8 min-h-[50vh]">
-        <Satellite className="w-16 h-16" />
-        <span className="text-lg font-semibold text-amber-300/90">Image unavailable</span>
-        <span className="text-sm text-amber-200/50">The satellite image could not be loaded</span>
-        <button
-          onClick={() => {
-            setError(false); setLoaded(false); setUsingCached(false); setCachedMeta(null); setCachedDismissed(false);
-            const separator = src?.includes('?') ? '&' : '?';
-            setDisplaySrc(src ? `${src}${separator}_r=${Date.now()}` : src);
-          }}
-          className="flex items-center gap-2 px-4 py-2 mt-2 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-300 hover:bg-teal-500/30 transition-colors text-sm font-medium min-h-[44px]"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Tap to retry
-        </button>
+      <div className="relative w-full h-full flex items-center justify-center" data-testid="cdn-image-error">
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" />
+        <span className="relative z-10 text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>
       </div>
     );
   }

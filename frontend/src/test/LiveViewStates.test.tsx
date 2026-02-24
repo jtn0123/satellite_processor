@@ -145,14 +145,17 @@ describe('LiveViewStates', () => {
     });
   });
 
-  it('shows empty state when no frames exist', async () => {
+  it('shows CDN image when no local frames exist (never shows empty state)', async () => {
     setupMocks({ frameError: true });
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText(/No local frames available/i)).toBeInTheDocument();
+      // Live tab always has a CDN fallback URL — shows image, not empty state
+      const img = screen.queryByRole('img');
+      const shimmer = screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
+      expect(img ?? shimmer).toBeTruthy();
     });
-    // Button with "Fetch your first image" CTA
-    expect(screen.getByRole('button', { name: /Fetch your first image/i })).toBeInTheDocument();
+    // "Fetch your first image" CTA should NOT render on Live tab
+    expect(screen.queryByRole('button', { name: /Fetch your first image/i })).not.toBeInTheDocument();
   });
 
   it('shows frame image when frame exists', async () => {
@@ -316,12 +319,17 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     });
   });
 
-  it('shows empty state when no local frames AND no catalog', async () => {
+  it('shows CDN image when no local frames AND no catalog (direct CDN fallback)', async () => {
     setupMocks({ frameError: true, catalogError: true });
     renderLive();
     await waitFor(() => {
-      expect(screen.getByText(/No local frames available/i)).toBeInTheDocument();
+      // Direct CDN URL is always constructed — never shows empty state
+      const img = screen.queryByRole('img');
+      const shimmer = screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
+      expect(img ?? shimmer).toBeTruthy();
     });
+    expect(screen.queryByText(/No local frames available/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Fetch your first image/i })).not.toBeInTheDocument();
   });
 
   it('status pill shows satellite info when displaying catalog image', async () => {

@@ -117,11 +117,12 @@ export default function MobileBottomNav() {
       {/* Bottom tab bar */}
       <nav
         data-testid="mobile-bottom-nav"
+        aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 safe-bottom"
       >
         <div
           role="tablist"
-          aria-label="Mobile navigation"
+          aria-label="Navigation tabs"
           className="flex items-center justify-around"
           onKeyDown={(e) => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;

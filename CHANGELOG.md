@@ -1,3 +1,10 @@
+## [1.16.11](https://github.com/jtn0123/satellite_processor/compare/v1.16.10...v1.16.11) (2026-02-24)
+
+
+### Bug Fixes
+
+* controls & nav polish — breadcrumb, toggles, countdown, reduced complexity ([#230](https://github.com/jtn0123/satellite_processor/issues/230)) ([95e7f33](https://github.com/jtn0123/satellite_processor/commit/95e7f339e1bc8b577c97a4ac8117d0fe1881a253))
+
 ## [1.16.10](https://github.com/jtn0123/satellite_processor/compare/v1.16.9...v1.16.10) (2026-02-24)
 
 

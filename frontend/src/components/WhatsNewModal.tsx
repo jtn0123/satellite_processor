@@ -117,3 +117,4 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
     </dialog>
   );
 }
+

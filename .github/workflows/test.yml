@@ -338,7 +338,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: frontend/node_modules
           key: node-modules-${{ hashFiles('frontend/package-lock.json') }}
@@ -355,7 +355,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('frontend/package-lock.json') }}

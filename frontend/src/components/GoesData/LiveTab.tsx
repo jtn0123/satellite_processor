@@ -92,6 +92,84 @@ function getOverlayPref(): boolean {
   try { return localStorage.getItem('live-overlay-visible') !== 'false'; } catch { return true; }
 }
 
+/** Hook: encapsulates monitor mode state + WS-driven refetch */
+function useMonitorMode(
+  onMonitorChange: ((active: boolean) => void) | undefined,
+  satellite: string,
+  sector: string,
+  band: string,
+  refetchRef: React.RefObject<(() => Promise<unknown>) | null>,
+) {
+  const [monitoring, setMonitoring] = useState(false);
+  const [autoFetch, setAutoFetch] = useState(false);
+
+  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
+
+  useEffect(() => {
+    if (wsLastEvent && monitoring) {
+      refetchRef.current?.();
+    }
+  }, [wsLastEvent, monitoring, refetchRef]);
+
+  const toggleMonitor = useCallback(() => {
+    setMonitoring((v) => {
+      const next = !v;
+      setAutoFetch(next);
+      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
+      onMonitorChange?.(next);
+      return next;
+    });
+  }, [onMonitorChange]);
+
+  const startMonitorRaw = useCallback((applyConfig: () => void) => {
+    applyConfig();
+    setAutoFetch(true);
+    setMonitoring(true);
+    onMonitorChange?.(true);
+    showToast('success', 'Monitor mode activated');
+  }, [onMonitorChange]);
+
+  const stopMonitor = useCallback(() => {
+    setMonitoring(false);
+    setAutoFetch(false);
+    onMonitorChange?.(false);
+    showToast('info', 'Monitor mode stopped');
+  }, [onMonitorChange]);
+
+  return { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor };
+}
+
+/** Hook: overlay visibility with localStorage persistence */
+function useOverlayToggle() {
+  const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
+  const toggleOverlay = useCallback(() => {
+    setOverlayVisible((v) => {
+      const next = !v;
+      try { localStorage.setItem('live-overlay-visible', String(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+  return { overlayVisible, toggleOverlay };
+}
+
+/** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
+function resolveImageUrls(
+  catalogLatest: CatalogLatest | null | undefined,
+  frame: LatestFrame | null | undefined,
+  recentFrames: LatestFrame[] | undefined,
+) {
+  const isMobileView = globalThis.window !== undefined && globalThis.window.innerWidth < 768;
+  const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
+  const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
+  const imageUrl = localImageUrl ?? catalogImageUrl;
+
+  const recentFramesList = extractArray<LatestFrame>(recentFrames);
+  const prevFrame = recentFramesList?.[1];
+  const prevImageUrl = prevFrame?.thumbnail_url ?? prevFrame?.image_url ?? null;
+
+  return { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl };
+}
+
 function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame: LatestFrame | null | undefined) {
   if (!catalogLatest || !frame) return null;
   const awsAge = timeAgo(catalogLatest.scan_time);
@@ -294,12 +372,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
   const [refreshInterval, setRefreshInterval] = useState(300000);
-  const [autoFetch, setAutoFetch] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [comparePosition, setComparePosition] = useState(50);
-  const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
-  const [monitoring, setMonitoring] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
@@ -308,43 +383,19 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
 
-  // Monitor mode: WebSocket for frame ingestion push notifications
-  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
-
-  // When WS notifies of a new frame, refetch the latest
-  useEffect(() => {
-    if (wsLastEvent && monitoring) {
-      refetchRef.current?.();
-    }
-  }, [wsLastEvent, monitoring]);
-
-  const toggleMonitor = useCallback(() => {
-    setMonitoring((v) => {
-      const next = !v;
-      setAutoFetch(next);
-      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
-      onMonitorChange?.(next);
-      return next;
-    });
-  }, [onMonitorChange]);
-
-  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
+  const applyMonitorConfig = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
     setSatellite(config.satellite);
     setSector(config.sector);
     setBand(config.band);
     setRefreshInterval(config.interval);
-    setAutoFetch(true);
-    setMonitoring(true);
-    onMonitorChange?.(true);
-    showToast('success', 'Monitor mode activated');
-  }, [onMonitorChange]);
+  }, []);
 
-  const stopMonitor = useCallback(() => {
-    setMonitoring(false);
-    setAutoFetch(false);
-    onMonitorChange?.(false);
-    showToast('info', 'Monitor mode stopped');
-  }, [onMonitorChange]);
+  // Monitor mode: state + WS-driven refetch
+  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } = useMonitorMode(onMonitorChange, satellite, sector, band, refetchRef);
+
+  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
+    startMonitorRaw(() => applyMonitorConfig(config));
+  }, [startMonitorRaw, applyMonitorConfig]);
 
   const applyPreset = useCallback((preset: MonitorPreset) => {
     if (preset.satellite) setSatellite(preset.satellite);
@@ -353,13 +404,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     setRefreshInterval(preset.interval);
   }, []);
 
-  const toggleOverlay = useCallback(() => {
-    setOverlayVisible((v) => {
-      const next = !v;
-      try { localStorage.setItem('live-overlay-visible', String(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
+  const { overlayVisible, toggleOverlay } = useOverlayToggle();
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
@@ -451,15 +496,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const catalogImageUrl = (globalThis.window !== undefined && globalThis.window.innerWidth < 768
-    ? catalogLatest?.mobile_url
-    : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
-  const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
-  const imageUrl = localImageUrl ?? catalogImageUrl;
-
-  const recentFramesList = extractArray<LatestFrame>(recentFrames);
-  const prevFrame = recentFramesList?.[1];
-  const prevImageUrl = prevFrame?.thumbnail_url ?? prevFrame?.image_url ?? null;
+  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 

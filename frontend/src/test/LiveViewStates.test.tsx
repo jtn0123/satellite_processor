@@ -190,19 +190,19 @@ describe('LiveViewStates', () => {
     await waitFor(() => {
       expect(screen.getByText('Compare')).toBeInTheDocument();
     });
-    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input')!;
-    fireEvent.click(checkbox);
+    const btn = screen.getByText('Compare').closest('button')!;
+    fireEvent.click(btn);
     await waitFor(() => {
       expect(screen.getByTestId('compare-slider')).toBeInTheDocument();
     });
   });
 
-  it('auto-refresh interval selector works', async () => {
+  it('auto-fetch interval selector works', async () => {
     renderLive();
     await waitFor(() => {
-      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-fetch interval')).toBeInTheDocument();
     });
-    const select = screen.getByLabelText('Auto-refresh interval') as HTMLSelectElement;
+    const select = screen.getByLabelText('Auto-fetch interval') as HTMLSelectElement;
     fireEvent.change(select, { target: { value: '60000' } });
     expect(select.value).toBe('60000');
   });
@@ -405,8 +405,8 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
-    const checkbox = screen.getByText('Compare').closest('label')!.querySelector('input')!;
-    fireEvent.click(checkbox);
+    const btn = screen.getByText('Compare').closest('button')!;
+    fireEvent.click(btn);
     await waitFor(() => {
       expect(screen.getByTestId('compare-slider')).toBeInTheDocument();
     });

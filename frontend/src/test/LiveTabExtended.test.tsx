@@ -69,7 +69,7 @@ describe('LiveTab extended', () => {
       expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
       expect(screen.getByLabelText('Sector')).toBeInTheDocument();
       expect(screen.getByLabelText('Band')).toBeInTheDocument();
-      expect(screen.getByLabelText('Auto-refresh interval')).toBeInTheDocument();
+      expect(screen.getByLabelText('Auto-fetch interval')).toBeInTheDocument();
     });
   });
 

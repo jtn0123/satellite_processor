@@ -34,9 +34,12 @@ logger = logging.getLogger(__name__)
 
 
 def build_cdn_urls(
-    satellite: str, sector: str, band: str, scan_time_iso: str
+    satellite: str, sector: str, band: str
 ) -> dict[str, str] | None:
     """Build NOAA CDN image URLs for multiple resolutions.
+
+    The CDN always serves the latest image at each resolution — no timestamp
+    is needed in the filename.
 
     Returns dict with keys: desktop, mobile, thumbnail — or None on failure.
     """
@@ -49,25 +52,19 @@ def build_cdn_urls(
         logger.warning("No CDN sector mapping for %s", sector)
         return None
 
-    # Band: "C02" → "02"
-    cdn_band = band.lstrip("C") if band.startswith("C") else band
-
-    # Timestamp: ISO → YYYYDDDHHMM (day-of-year format)
-    try:
-        dt = datetime.fromisoformat(scan_time_iso)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        rounded_minute = (dt.minute // 5) * 5
-        timestamp = f"{dt.year}{dt.timetuple().tm_yday:03d}{dt.hour:02d}{rounded_minute:02d}"
-    except (ValueError, AttributeError):
-        logger.warning("Failed to parse scan_time for CDN URL: %s", scan_time_iso)
-        return None
+    # Band: "C02" → "02", but GEOCOLOR stays as-is
+    if band == "GEOCOLOR":
+        cdn_band = "GEOCOLOR"
+    elif band.startswith("C"):
+        cdn_band = band.lstrip("C")
+    else:
+        cdn_band = band
 
     resolutions = CDN_RESOLUTIONS.get(sector, CDN_RESOLUTIONS["CONUS"])
     base = f"https://cdn.star.nesdis.noaa.gov/{sat_cdn}/ABI/{cdn_sector}/{cdn_band}"
 
     return {
-        res_key: f"{base}/{timestamp}_{sat_cdn}-ABI-{cdn_sector}-{cdn_band}-{res_val}.jpg"
+        res_key: f"{base}/{res_val}.jpg"
         for res_key, res_val in resolutions.items()
     }
 
@@ -181,7 +178,7 @@ def catalog_latest(
             break
 
     if latest is not None:
-        cdn_urls = build_cdn_urls(satellite, sector, band, latest["scan_time"])
+        cdn_urls = build_cdn_urls(satellite, sector, band)
         if cdn_urls:
             latest["image_url"] = cdn_urls["desktop"]
             latest["thumbnail_url"] = cdn_urls["thumbnail"]

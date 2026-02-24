@@ -92,6 +92,84 @@ function getOverlayPref(): boolean {
   try { return localStorage.getItem('live-overlay-visible') !== 'false'; } catch { return true; }
 }
 
+/** Hook: encapsulates monitor mode state + WS-driven refetch */
+function useMonitorMode(
+  onMonitorChange: ((active: boolean) => void) | undefined,
+  satellite: string,
+  sector: string,
+  band: string,
+  refetchRef: React.RefObject<(() => Promise<unknown>) | null>,
+) {
+  const [monitoring, setMonitoring] = useState(false);
+  const [autoFetch, setAutoFetch] = useState(false);
+
+  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
+
+  useEffect(() => {
+    if (wsLastEvent && monitoring) {
+      refetchRef.current?.();
+    }
+  }, [wsLastEvent, monitoring, refetchRef]);
+
+  const toggleMonitor = useCallback(() => {
+    setMonitoring((v) => {
+      const next = !v;
+      setAutoFetch(next);
+      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
+      onMonitorChange?.(next);
+      return next;
+    });
+  }, [onMonitorChange]);
+
+  const startMonitorRaw = useCallback((applyConfig: () => void) => {
+    applyConfig();
+    setAutoFetch(true);
+    setMonitoring(true);
+    onMonitorChange?.(true);
+    showToast('success', 'Monitor mode activated');
+  }, [onMonitorChange]);
+
+  const stopMonitor = useCallback(() => {
+    setMonitoring(false);
+    setAutoFetch(false);
+    onMonitorChange?.(false);
+    showToast('info', 'Monitor mode stopped');
+  }, [onMonitorChange]);
+
+  return { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor };
+}
+
+/** Hook: overlay visibility with localStorage persistence */
+function useOverlayToggle() {
+  const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
+  const toggleOverlay = useCallback(() => {
+    setOverlayVisible((v) => {
+      const next = !v;
+      try { localStorage.setItem('live-overlay-visible', String(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+  return { overlayVisible, toggleOverlay };
+}
+
+/** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
+function resolveImageUrls(
+  catalogLatest: CatalogLatest | null | undefined,
+  frame: LatestFrame | null | undefined,
+  recentFrames: LatestFrame[] | undefined,
+) {
+  const isMobileView = globalThis.window !== undefined && globalThis.window.innerWidth < 768;
+  const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
+  const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
+  const imageUrl = localImageUrl ?? catalogImageUrl;
+
+  const recentFramesList = extractArray<LatestFrame>(recentFrames);
+  const prevFrame = recentFramesList?.[1];
+  const prevImageUrl = prevFrame?.thumbnail_url ?? prevFrame?.image_url ?? null;
+
+  return { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl };
+}
+
 function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame: LatestFrame | null | undefined) {
   if (!catalogLatest || !frame) return null;
   const awsAge = timeAgo(catalogLatest.scan_time);
@@ -224,164 +302,29 @@ function useLiveFetchJob({
   return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }
 
-interface LiveTabProps {
-  onMonitorChange?: (active: boolean) => void;
-}
-
-export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
-  const navigateFn = useNavigate();
-  const isMobile = useIsMobile();
-  const [satellite, setSatellite] = useState('');
-  const [sector, setSector] = useState('CONUS');
-  const [band, setBand] = useState('C02');
-  const [refreshInterval, setRefreshInterval] = useState(300000);
-  const [autoFetch, setAutoFetch] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [compareMode, setCompareMode] = useState(false);
-  const [comparePosition, setComparePosition] = useState(50);
-  const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
-  const [monitoring, setMonitoring] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastAutoFetchTime = useRef<string | null>(null);
-  const lastAutoFetchMs = useRef<number>(0);
-
-  const zoom = useImageZoom();
-
-  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
-
-  // Monitor mode: WebSocket for frame ingestion push notifications
-  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
-
-  // When WS notifies of a new frame, refetch the latest
-  useEffect(() => {
-    if (wsLastEvent && monitoring) {
-      refetchRef.current?.();
-    }
-  }, [wsLastEvent, monitoring]);
-
-  const toggleMonitor = useCallback(() => {
-    setMonitoring((v) => {
-      const next = !v;
-      setAutoFetch(next);
-      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
-      onMonitorChange?.(next);
-      return next;
-    });
-  }, [onMonitorChange]);
-
-  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
-    setSatellite(config.satellite);
-    setSector(config.sector);
-    setBand(config.band);
-    setRefreshInterval(config.interval);
-    setAutoFetch(true);
-    setMonitoring(true);
-    onMonitorChange?.(true);
-    showToast('success', 'Monitor mode activated');
-  }, [onMonitorChange]);
-
-  const stopMonitor = useCallback(() => {
-    setMonitoring(false);
-    setAutoFetch(false);
-    onMonitorChange?.(false);
-    showToast('info', 'Monitor mode stopped');
-  }, [onMonitorChange]);
-
-  const applyPreset = useCallback((preset: MonitorPreset) => {
-    if (preset.satellite) setSatellite(preset.satellite);
-    setSector(preset.sector);
-    if (preset.band) setBand(preset.band);
-    setRefreshInterval(preset.interval);
-  }, []);
-
-  const toggleOverlay = useCallback(() => {
-    setOverlayVisible((v) => {
-      const next = !v;
-      try { localStorage.setItem('live-overlay-visible', String(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
-
-  const handlePullRefresh = useCallback(async () => {
-    await refetchRef.current?.();
-  }, []);
-
-  const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
-    onRefresh: handlePullRefresh,
-  });
-
-  const { data: products } = useQuery<Product>({
-    queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
-  });
-
-  useEffect(() => {
-    if (products && !satellite) {
-      setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
-    }
-  }, [products, satellite]);
-
-  const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
-    queryKey: ['goes-available', satellite],
-    queryFn: () => api.get('/goes/catalog/available', { params: { satellite } }).then((r) => r.data),
-    enabled: !!satellite,
-    staleTime: 120000,
-    retry: 1,
-  });
-
-  const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
-    queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite,
-    retry: (failureCount, error) => {
-      // Don't retry on 404 (no frames) — show empty state immediately
-      if (axios.isAxiosError(error) && error.response?.status === 404) return false;
-      return failureCount < 2;
-    },
-  });
-
-  useEffect(() => {
-    refetchRef.current = refetch;
-  }, [refetch]);
-
-  const { data: recentFrames } = useQuery<LatestFrame[]>({
-    queryKey: ['goes-frames-compare', satellite, sector, band],
-    queryFn: () => api.get('/goes/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite && compareMode,
-  });
-
-  const { data: catalogLatest } = useQuery<CatalogLatest>({
-    queryKey: ['goes-catalog-latest-live', satellite, sector, band],
-    queryFn: () => api.get('/goes/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite,
-    retry: 1,
-  });
-
-  // Auto-refresh countdown (#12)
+/* Countdown display hook — extracted to reduce LiveTab cognitive complexity */
+function useCountdownDisplay(refreshInterval: number, frame: LatestFrame | undefined) {
   const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
-  // Reset displayed value only when the interval duration changes
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on interval change */
   useEffect(() => {
     setCountdownSec(Math.floor(refreshInterval / 1000));
   }, [refreshInterval]);
-  // Single interval — restart on refreshInterval change OR frame change (new data arrived)
-  // Only refreshInterval change resets the displayed value above; frame change just restarts the tick
+  /* eslint-enable react-hooks/set-state-in-effect */
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
   }, [refreshInterval, frame]);
-
-  const countdownDisplay = useMemo(() => {
+  return useMemo(() => {
     const m = Math.floor(countdownSec / 60);
     const s = countdownSec % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   }, [countdownSec]);
+}
 
-  // Swipe gestures (#10)
+/* Swipe-to-change-band hook — extracted to reduce LiveTab cognitive complexity */
+function useSwipeBand(products: Product | undefined, band: string, setBand: (b: string) => void) {
   const bandKeys = useMemo(() => {
     if (products?.bands?.length) return products.bands.map((b) => b.id);
     return Object.keys(FRIENDLY_BAND_NAMES);
@@ -413,7 +356,145 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     clearTimeout(swipeToastTimer.current);
     setSwipeToast(`${nextBand} — ${label}`);
     swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
-  }, [band, bandKeys]);
+  }, [band, bandKeys, setBand]);
+
+  return { swipeToast, handleTouchStart, handleTouchEnd };
+}
+
+function FullscreenButton({ isFullscreen, onClick }: Readonly<{ isFullscreen: boolean; onClick: () => void }>) {
+  const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+  const Icon = isFullscreen ? Minimize2 : Maximize2;
+  return (
+    <button onClick={onClick}
+      className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
+      title={label} aria-label={label}>
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
+function LiveIndicator({ monitoring }: Readonly<{ monitoring: boolean }>) {
+  const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
+  return (
+    <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
+      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass} animate-pulse`} />
+      <span className="text-sm md:text-xs font-semibold text-white/70 mr-3">
+        {monitoring ? 'MONITORING' : 'LIVE'}
+      </span>
+    </div>
+  );
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
+
+interface LiveTabProps {
+  onMonitorChange?: (active: boolean) => void;
+}
+
+export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
+  const navigateFn = useNavigate();
+  const isMobile = useIsMobile();
+  const [satellite, setSatellite] = useState('');
+  const [sector, setSector] = useState('CONUS');
+  const [band, setBand] = useState('C02');
+  const [refreshInterval, setRefreshInterval] = useState(300000);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparePosition, setComparePosition] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastAutoFetchTime = useRef<string | null>(null);
+  const lastAutoFetchMs = useRef<number>(0);
+
+  const zoom = useImageZoom();
+
+  const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
+
+  const applyMonitorConfig = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
+    setSatellite(config.satellite);
+    setSector(config.sector);
+    setBand(config.band);
+    setRefreshInterval(config.interval);
+  }, []);
+
+  // Monitor mode: state + WS-driven refetch
+  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } = useMonitorMode(onMonitorChange, satellite, sector, band, refetchRef);
+
+  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
+    startMonitorRaw(() => applyMonitorConfig(config));
+  }, [startMonitorRaw, applyMonitorConfig]);
+
+  const applyPreset = useCallback((preset: MonitorPreset) => {
+    setSatellite(preset.satellite || satellite);
+    setSector(preset.sector);
+    setBand(preset.band || band);
+    setRefreshInterval(preset.interval);
+  }, [satellite, band]);
+
+  const { overlayVisible, toggleOverlay } = useOverlayToggle();
+
+  const handlePullRefresh = useCallback(async () => {
+    await refetchRef.current?.();
+  }, []);
+
+  const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
+    onRefresh: handlePullRefresh,
+  });
+
+  const { data: products } = useQuery<Product>({
+    queryKey: ['goes-products'],
+    queryFn: () => api.get('/goes/products').then((r) => r.data),
+  });
+
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional init from async data */
+  useEffect(() => {
+    if (products && !satellite) {
+      setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
+    }
+  }, [products, satellite]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
+    queryKey: ['goes-available', satellite],
+    queryFn: () => api.get('/goes/catalog/available', { params: { satellite } }).then((r) => r.data),
+    enabled: !!satellite,
+    staleTime: 120000,
+    retry: 1,
+  });
+
+  const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
+    queryKey: ['goes-latest', satellite, sector, band],
+    queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    refetchInterval: refreshInterval,
+    enabled: !!satellite,
+    retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
+  });
+
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+
+  const { data: recentFrames } = useQuery<LatestFrame[]>({
+    queryKey: ['goes-frames-compare', satellite, sector, band],
+    queryFn: () => api.get('/goes/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
+    refetchInterval: refreshInterval,
+    enabled: !!satellite && compareMode,
+  });
+
+  const { data: catalogLatest } = useQuery<CatalogLatest>({
+    queryKey: ['goes-catalog-latest-live', satellite, sector, band],
+    queryFn: () => api.get('/goes/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    refetchInterval: refreshInterval,
+    enabled: !!satellite,
+    retry: 1,
+  });
+
+  // Auto-refresh countdown (#12)
+  const countdownDisplay = useCountdownDisplay(refreshInterval, frame);
+
+  // Swipe gestures (#10)
+  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
 
   const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
     satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
@@ -423,11 +504,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     const isCurrentlyFullscreen = !!document.fullscreenElement;
-    if (isCurrentlyFullscreen) {
-      await exitFullscreenSafe();
-    } else {
-      await enterFullscreenSafe(containerRef.current);
-    }
+    await (isCurrentlyFullscreen ? exitFullscreenSafe() : enterFullscreenSafe(containerRef.current));
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 
@@ -439,15 +516,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const catalogImageUrl = (globalThis.window !== undefined && globalThis.window.innerWidth < 768
-    ? catalogLatest?.mobile_url
-    : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
-  const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
-  const imageUrl = localImageUrl ?? catalogImageUrl;
-
-  const recentFramesList = extractArray<LatestFrame>(recentFrames);
-  const prevFrame = recentFramesList?.[1];
-  const prevImageUrl = prevFrame?.thumbnail_url ?? prevFrame?.image_url ?? null;
+  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
@@ -503,46 +572,24 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.sectors ?? []).map((s) => {
                 const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
-                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
+                const label = unavailable ? `${s.name} (unavailable)` : s.name;
+                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{label}</option>;
               })}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white" title={getFriendlyBandLabel(b.id, b.description, 'long')}>{getFriendlyBandLabel(b.id, b.description, isMobile ? 'short' : 'medium')}</option>)}
             </select>
-            <select id="live-auto-refresh" value={refreshInterval} onChange={(e) => setRefreshInterval(Number(e.target.value))} aria-label="Auto-refresh interval"
-              className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {REFRESH_INTERVALS.map((ri) => (
-                <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
-              ))}
-            </select>
-
-            <div className="hidden sm:flex items-center gap-2 ml-2">
-              <button
-                onClick={toggleMonitor}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-                  monitoring
-                    ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
-                    : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
-                }`}
-                title={monitoring ? 'Stop watching' : 'Start watching'}
-                aria-label={monitoring ? 'Stop watching' : 'Start watching'}
-                data-testid="watch-toggle-btn"
-              >
-                {monitoring ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                {monitoring ? 'Stop Watch' : 'Watch'}
-              </button>
-              <label className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer hover:text-white transition-colors">
-                <input type="checkbox" checked={autoFetch} onChange={(e) => setAutoFetch(e.target.checked)} className="rounded" />
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                Auto-fetch
-              </label>
-              <label className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer hover:text-white transition-colors">
-                <input type="checkbox" checked={compareMode} onChange={(e) => setCompareMode(e.target.checked)} className="rounded" />
-                <Columns2 className="w-3.5 h-3.5 text-blue-400" />
-                Compare
-              </label>
-            </div>
+            <DesktopControlsBar
+              monitoring={monitoring}
+              onToggleMonitor={toggleMonitor}
+              autoFetch={autoFetch}
+              onAutoFetchChange={setAutoFetch}
+              refreshInterval={refreshInterval}
+              onRefreshIntervalChange={setRefreshInterval}
+              compareMode={compareMode}
+              onCompareModeChange={setCompareMode}
+            />
 
             <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
               <MonitorSettingsPanel
@@ -562,13 +609,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">{countdownDisplay}</span>
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">Next: {countdownDisplay}</span>
               </button>
-              <button onClick={toggleFullscreen}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
-                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
+              <FullscreenButton isFullscreen={isFullscreen} onClick={toggleFullscreen} />
             </div>
           </div>
         </div>
@@ -601,12 +644,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         />
 
         {/* Live / Monitoring indicator */}
-        <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
-          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
-          <span className="text-sm md:text-xs font-semibold text-white/70 mr-3">
-            {monitoring ? 'MONITORING' : 'LIVE'}
-          </span>
-        </div>
+        <LiveIndicator monitoring={monitoring} />
 
         {/* Mobile FAB for controls — labeled */}
         <div className="sm:hidden absolute bottom-20 right-4 md:bottom-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
@@ -655,6 +693,77 @@ interface ImagePanelContentProps {
 
 /* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
 /* Extracted bottom metadata overlay to reduce LiveTab cognitive complexity */
+/* Extracted desktop controls bar to reduce LiveTab cognitive complexity */
+function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, refreshInterval, onRefreshIntervalChange, compareMode, onCompareModeChange }: Readonly<{
+  monitoring: boolean;
+  onToggleMonitor: () => void;
+  autoFetch: boolean;
+  onAutoFetchChange: React.Dispatch<React.SetStateAction<boolean>>;
+  refreshInterval: number;
+  onRefreshIntervalChange: (v: number) => void;
+  compareMode: boolean;
+  onCompareModeChange: React.Dispatch<React.SetStateAction<boolean>>;
+}>) {
+  return (
+    <div className="hidden sm:flex items-center gap-2 ml-2">
+      <button
+        onClick={onToggleMonitor}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+          monitoring
+            ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
+            : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
+        }`}
+        title={monitoring ? 'Stop watching' : 'Start watching'}
+        aria-label={monitoring ? 'Stop watching' : 'Start watching'}
+        data-testid="watch-toggle-btn"
+      >
+        {monitoring ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        {monitoring ? 'Stop Watch' : 'Watch'}
+      </button>
+      <div className="flex items-center gap-1.5 text-xs text-white/80">
+        <button
+          type="button"
+          role="switch"
+          aria-label="Toggle auto-fetch"
+          aria-checked={autoFetch}
+          onClick={() => onAutoFetchChange((v) => !v)}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
+        >
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${autoFetch ? 'translate-x-4' : 'translate-x-0.5'}`} />
+        </button>
+        <Zap className="w-3.5 h-3.5 text-amber-400" />
+        <span className="whitespace-nowrap">Auto-fetch every</span>
+        <select
+          value={refreshInterval}
+          onChange={(e) => onRefreshIntervalChange(Number(e.target.value))}
+          disabled={!autoFetch}
+          aria-label="Auto-fetch interval"
+          className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${autoFetch ? 'hover:bg-white/20' : 'opacity-40 cursor-not-allowed'}`}
+        >
+          {REFRESH_INTERVALS.map((ri) => (
+            <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
+          ))}
+        </select>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={compareMode}
+        onClick={() => onCompareModeChange((v) => !v)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+          compareMode
+            ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30'
+            : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
+        }`}
+        title={compareMode ? 'Disable compare' : 'Enable compare'}
+      >
+        <Columns2 className="w-3.5 h-3.5 text-blue-400" />
+        Compare
+      </button>
+    </div>
+  );
+}
+
 function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleOverlay }: Readonly<{
   frame: LatestFrame | null;
   catalogLatest: CatalogLatest | null;
@@ -769,16 +878,28 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             {monitoring ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {monitoring ? 'Stop Watch' : 'Watch'}
           </button>
-          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
-            <input type="checkbox" checked={autoFetch} onChange={(e) => onAutoFetchChange(e.target.checked)} className="rounded" />
+          <button
+            onClick={() => onAutoFetchChange(!autoFetch)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              autoFetch
+                ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
+                : 'bg-white/10 border border-white/20 text-white/80'
+            }`}
+          >
             <Zap className="w-4 h-4 text-amber-400" />
             Auto-fetch
-          </label>
-          <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-white/80 cursor-pointer min-h-[44px]">
-            <input type="checkbox" checked={compareMode} onChange={(e) => onCompareModeChange(e.target.checked)} className="rounded" />
+          </button>
+          <button
+            onClick={() => onCompareModeChange(!compareMode)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              compareMode
+                ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
+                : 'bg-white/10 border border-white/20 text-white/80'
+            }`}
+          >
             <Columns2 className="w-4 h-4 text-blue-400" />
             Compare
-          </label>
+          </button>
         </div>
       )}
       <button
@@ -982,3 +1103,4 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
 }
 
 /* CatalogPanel removed — catalog info now shown in bottom overlay */
+// trigger

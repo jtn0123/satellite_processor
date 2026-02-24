@@ -127,75 +127,46 @@ async def test_fetch_composite_end_before_start(client):
 
 
 class TestBuildCdnUrls:
-    """Tests for NOAA CDN URL construction."""
+    """Tests for NOAA CDN URL construction (resolution-only filenames)."""
 
     def test_conus_basic(self):
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:11:00+00:00")
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02")
         assert urls is not None
-        # 11 minutes rounds down to 10
-        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-2500x1500.jpg"
-        assert urls["mobile"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-1250x750.jpg"
-        assert urls["thumbnail"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/20260532210_GOES19-ABI-CONUS-02-625x375.jpg"
+        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/2500x1500.jpg"
+        assert urls["mobile"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/1250x750.jpg"
+        assert urls["thumbnail"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/625x375.jpg"
 
     def test_fulldisk(self):
-        urls = build_cdn_urls("GOES-19", "FullDisk", "C13", "2026-02-22T22:00:00+00:00")
+        urls = build_cdn_urls("GOES-19", "FullDisk", "C13")
         assert urls is not None
-        assert "FD" in urls["desktop"]
-        assert "1808x1808" in urls["desktop"]
-        assert "/13/" in urls["desktop"]
+        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/FD/13/1808x1808.jpg"
 
     def test_goes16(self):
-        urls = build_cdn_urls("GOES-16", "CONUS", "C02", "2026-01-01T00:00:00+00:00")
+        urls = build_cdn_urls("GOES-16", "CONUS", "C02")
         assert urls is not None
         assert "GOES16" in urls["desktop"]
-        assert "20260010000" in urls["desktop"]
+        assert urls["desktop"].endswith("/2500x1500.jpg")
 
     def test_mesoscale(self):
-        urls = build_cdn_urls("GOES-18", "Mesoscale1", "C02", "2026-06-15T12:30:00+00:00")
+        urls = build_cdn_urls("GOES-18", "Mesoscale1", "C02")
         assert urls is not None
         assert "MESO1" in urls["desktop"]
 
+    def test_geocolor_band(self):
+        """GEOCOLOR band should use 'GEOCOLOR' path, not strip prefix."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "GEOCOLOR")
+        assert urls is not None
+        assert urls["desktop"] == "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/2500x1500.jpg"
+
     def test_unknown_sector_returns_none(self):
-        urls = build_cdn_urls("GOES-19", "UnknownSector", "C02", "2026-01-01T00:00:00+00:00")
+        urls = build_cdn_urls("GOES-19", "UnknownSector", "C02")
         assert urls is None
 
-    def test_bad_scan_time_returns_none(self):
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "not-a-date")
-        assert urls is None
-
-    def test_timestamp_rounds_down_to_5min(self):
-        """Minutes should round DOWN to nearest 5-minute boundary."""
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:13:45+00:00")
+    def test_no_timestamp_in_url(self):
+        """CDN URLs must NOT contain timestamps — just resolution filenames."""
+        urls = build_cdn_urls("GOES-19", "CONUS", "C02")
         assert urls is not None
-        # 13 minutes → rounds to 10
-        assert "20260532210" in urls["desktop"]
-
-    def test_timestamp_exact_5min(self):
-        """Exact 5-minute mark stays unchanged."""
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:15:00+00:00")
-        assert urls is not None
-        assert "20260532215" in urls["desktop"]
-
-    def test_timestamp_rounds_59min(self):
-        """59 minutes rounds to 55."""
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:59:00+00:00")
-        assert urls is not None
-        assert "20260532255" in urls["desktop"]
-
-    def test_timestamp_zero_min(self):
-        """0 minutes stays 0."""
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:00:00+00:00")
-        assert urls is not None
-        assert "20260532200" in urls["desktop"]
-
-    def test_timestamp_rounds_11min(self):
-        """11 minutes rounds to 10."""
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-02-22T22:11:00+00:00")
-        assert urls is not None
-        assert "20260532210" in urls["desktop"]
-
-    def test_day_of_year_calculation(self):
-        # March 1 in non-leap year = day 60, but 2026 is not leap
-        urls = build_cdn_urls("GOES-19", "CONUS", "C02", "2026-03-01T15:30:00+00:00")
-        assert urls is not None
-        assert "20260601530" in urls["desktop"]
+        for key, url in urls.items():
+            # Filename should be just {resolution}.jpg
+            filename = url.rsplit("/", 1)[-1]
+            assert "_" not in filename, f"{key} URL has timestamp: {url}"

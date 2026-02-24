@@ -28,7 +28,7 @@ export default function LiveView() {
               </span>
             )}
           </div>
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400">
+          <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400">
             <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
             <ChevronRight className="w-3.5 h-3.5" />
             <span aria-current="page" className="text-gray-900 dark:text-white">Live</span>

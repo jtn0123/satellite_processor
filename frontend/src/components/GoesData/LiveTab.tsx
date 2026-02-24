@@ -10,7 +10,10 @@ import MonitorSettingsPanel from './MonitorSettingsPanel';
 import type { MonitorPreset } from './monitorPresets';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useImageZoom } from '../../hooks/useImageZoom';
+import { useDoubleTap } from '../../hooks/useDoubleTap';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
+import SwipeHint from './SwipeHint';
+import BottomSheet from './BottomSheet';
 import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
@@ -423,7 +426,28 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     setRefreshInterval(preset.interval);
   }, [satellite, band]);
 
-  // overlayVisible/toggleOverlay removed — bottom metadata overlay killed in favor of status pill
+  // Mobile overlay auto-hide: visible on first load, hides after 3s of inactivity
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const overlayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const resetOverlayTimer = useCallback(() => {
+    clearTimeout(overlayTimer.current);
+    overlayTimer.current = setTimeout(() => setOverlayVisible(false), 3000);
+  }, []);
+  useEffect(() => {
+    // Auto-hide on initial load
+    resetOverlayTimer();
+    return () => clearTimeout(overlayTimer.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleOverlay = useCallback(() => {
+    setOverlayVisible((v) => {
+      const next = !v;
+      if (next) resetOverlayTimer();
+      return next;
+    });
+  }, [resetOverlayTimer]);
+
+  // Bottom sheet for mobile pickers
+  const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
@@ -501,6 +525,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useFullscreenSync(setIsFullscreen, zoom);
 
+  // Double-tap fullscreen vs single-tap overlay toggle (mobile only)
+  const handleImageTap = useDoubleTap(
+    () => { if (isMobile) toggleOverlay(); },
+    () => { toggleFullscreen(); },
+    300,
+  );
+
   // Reset zoom when satellite/sector/band changes
   useEffect(() => {
     zoom.reset();
@@ -522,8 +553,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
         {...(compareMode ? {} : zoom.handlers)}
       >
+        {/* Swipe hint (first visit only) */}
+        {isMobile && <SwipeHint />}
+
         {/* Swipe gesture area */}
-        <div className="w-full h-full flex items-center justify-center" data-testid="swipe-gesture-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="w-full h-full flex items-center justify-center" data-testid="swipe-gesture-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={handleImageTap}>
           <ImagePanelContent
             isLoading={isLoading && !catalogImageUrl}
             isError={isError && !imageUrl}
@@ -550,17 +584,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         )}
 
-        {/* Top controls overlay */}
-        <div className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none">
-          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3">
+        {/* Top controls overlay — on mobile, hidden unless overlayVisible */}
+        <div className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${isMobile && !overlayVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} data-testid="controls-overlay">
+          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3" onClick={() => { if (isMobile) resetOverlayTimer(); }}>
+            {/* On mobile, hide dropdowns — use bottom sheet instead */}
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
-              className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
+              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.satellites ?? []).map((s) => (
                 <option key={s} value={s} className="bg-space-900 text-white">{getSatelliteLabel(s, products?.satellite_availability)}</option>
               ))}
             </select>
             <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Sector"
-              className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
+              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.sectors ?? []).map((s) => {
                 const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
                 const label = unavailable ? `${s.name} (unavailable)` : s.name;
@@ -568,7 +603,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               })}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
-              className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
+              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white" title={getFriendlyBandLabel(b.id, b.description, 'long')}>{getFriendlyBandLabel(b.id, b.description, isMobile ? 'short' : 'medium')}</option>)}
             </select>
             <DesktopControlsBar
@@ -638,6 +673,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onAutoFetchChange={setAutoFetch}
             compareMode={compareMode}
             onCompareModeChange={setCompareMode}
+            onOpenSheet={() => setBottomSheetOpen(true)}
           />
         </div>
 
@@ -651,6 +687,58 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </button>
         )}
       </div>
+
+      {/* Mobile bottom sheet for pickers */}
+      <BottomSheet open={bottomSheetOpen} onClose={() => setBottomSheetOpen(false)} title="Settings">
+        <div className="flex flex-col gap-4">
+          <PickerRow label="Satellite" value={satellite}>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(products?.satellites ?? []).map((s) => (
+                <button key={s} onClick={() => { setSatellite(s); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${satellite === s ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
+                  {getSatelliteLabel(s, products?.satellite_availability)}
+                </button>
+              ))}
+            </div>
+          </PickerRow>
+          <PickerRow label="Sector" value={sector}>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(products?.sectors ?? []).map((s) => {
+                const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
+                return (
+                  <button key={s.id} disabled={unavailable} onClick={() => { setSector(s.id); }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${unavailable ? 'opacity-30 cursor-not-allowed' : ''} ${sector === s.id ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
+                    {s.name}
+                  </button>
+                );
+              })}
+            </div>
+          </PickerRow>
+          <PickerRow label="Band" value={getFriendlyBandName(band)}>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(products?.bands ?? []).map((b) => (
+                <button key={b.id} onClick={() => { setBand(b.id); }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${band === b.id ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
+                  {getFriendlyBandLabel(b.id, b.description, 'short')}
+                </button>
+              ))}
+            </div>
+          </PickerRow>
+        </div>
+      </BottomSheet>
+    </div>
+  );
+}
+
+/** Expandable picker row for bottom sheet */
+function PickerRow({ label, value, children }: Readonly<{ label: string; value: string; children: React.ReactNode }>) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="border-b border-white/10 pb-3 last:border-b-0">
+      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-center justify-between py-2" data-testid={`picker-row-${label.toLowerCase()}`}>
+        <span className="text-sm font-medium text-gray-400">{label}</span>
+        <span className="text-sm font-semibold text-white">{value}</span>
+      </button>
+      {expanded && children}
     </div>
   );
 }
@@ -749,10 +837,11 @@ function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetc
 
 /* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
 
-function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange }: Readonly<{
+function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenSheet }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
   compareMode: boolean; onCompareModeChange: (v: boolean) => void;
+  onOpenSheet?: () => void;
 }>) {
   const [open, setOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -804,6 +893,16 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             <Columns2 className="w-4 h-4 text-blue-400" />
             Compare
           </button>
+          {onOpenSheet && (
+            <button
+              onClick={() => { onOpenSheet(); setOpen(false); }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] bg-white/10 border border-white/20 text-white/80"
+              data-testid="open-picker-sheet"
+            >
+              <Satellite className="w-4 h-4 text-teal-400" />
+              Satellite / Band
+            </button>
+          )}
         </div>
       )}
       <button

@@ -128,11 +128,27 @@ describe('WhatsNewModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('dismisses on Escape keydown', async () => {
+    mockFetchSuccess();
+    const onClose = vi.fn();
+    render(<WhatsNewModal onClose={onClose} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('has aria-label on dialog', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     const dialog = document.querySelector('dialog');
     expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
+  });
+
+  it('has role=dialog and aria-modal on modal panel', () => {
+    mockFetchSuccess();
+    render(<WhatsNewModal onClose={vi.fn()} />);
+    const panel = document.querySelector('[role="dialog"]');
+    expect(panel).not.toBeNull();
+    expect(panel?.getAttribute('aria-modal')).toBe('true');
   });
 
   it('fetches from /api/health/changelog', () => {

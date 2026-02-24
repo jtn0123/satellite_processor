@@ -91,10 +91,11 @@ export default function Layout() {
         // Auto-open on new version
         let lastSeen: string | null = null;
         try { lastSeen = localStorage.getItem('whatsNewLastSeen'); } catch { /* private browsing */ }
-        const toMajorMinor = (v: string) => v.split('.').slice(0, 2).join('.');
-        if (version && toMajorMinor(version) !== toMajorMinor(lastSeen ?? '')) {
+        if (version && version !== (lastSeen ?? '')) {
           setHasNewVersion(true);
           setShowWhatsNew(true);
+          // Persist immediately so the modal won't re-appear on navigation
+          try { localStorage.setItem('whatsNewLastSeen', version); } catch { /* private browsing */ }
         }
       } catch { /* version fetch failed, non-critical */ }
     };

@@ -60,7 +60,10 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
       <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={close} aria-label="Close dialog" tabIndex={-1} />
       <div
         ref={dialogRef}
-        className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="What's New"
+        className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel z-[60]"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -72,7 +75,7 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
               )}
             </div>
           </div>
-          <button onClick={close} className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
+          <button onClick={close} autoFocus className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -1,3 +1,10 @@
+## [1.16.10](https://github.com/jtn0123/satellite_processor/compare/v1.16.9...v1.16.10) (2026-02-24)
+
+
+### Bug Fixes
+
+* typography & visual consistency — labels, styling, nav IA ([#228](https://github.com/jtn0123/satellite_processor/issues/228)) ([26f3382](https://github.com/jtn0123/satellite_processor/commit/26f338228492a89bdf6ee40913d35e8ad063fa1c))
+
 ## [1.16.9](https://github.com/jtn0123/satellite_processor/compare/v1.16.8...v1.16.9) (2026-02-23)
 
 

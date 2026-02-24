@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/jtn0123/satellite_processor/compare/v1.16.12...v1.17.0) (2026-02-24)
+
+
+### Features
+
+* full-bleed mobile Live View with overlay controls ([#234](https://github.com/jtn0123/satellite_processor/issues/234)) ([4c8105d](https://github.com/jtn0123/satellite_processor/commit/4c8105d6618f738e967dab953b964fabd9bb85dd))
+
 ## [1.16.12](https://github.com/jtn0123/satellite_processor/compare/v1.16.11...v1.16.12) (2026-02-24)
 
 

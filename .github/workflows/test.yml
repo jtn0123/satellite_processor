@@ -510,7 +510,7 @@ jobs:
 
       - name: Post SonarQube summary to PR
         if: always() && (github.event_name == 'pull_request' || steps.pr-info.outputs.number)
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -923,7 +923,7 @@ jobs:
 
       - name: Post commit status
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const sha = context.sha;
@@ -1016,7 +1016,7 @@ jobs:
           retention-days: 1
 
       - name: Post PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

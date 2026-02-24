@@ -377,8 +377,8 @@ function LiveIndicator({ monitoring }: Readonly<{ monitoring: boolean }>) {
   const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
   return (
     <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
-      <div className={`w-2 h-2 rounded-full shrink-0 ${dotClass} animate-pulse`} />
-      <span className="text-xs text-white/70 font-medium mr-3">
+      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass} animate-pulse`} />
+      <span className="text-sm md:text-xs font-semibold text-white/70 mr-3">
         {monitoring ? 'MONITORING' : 'LIVE'}
       </span>
     </div>
@@ -578,7 +578,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white">{getFriendlyBandLabel(b.id, b.description, isMobile)}</option>)}
+              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white" title={getFriendlyBandLabel(b.id, b.description, 'long')}>{getFriendlyBandLabel(b.id, b.description, isMobile ? 'short' : 'medium')}</option>)}
             </select>
             <DesktopControlsBar
               monitoring={monitoring}

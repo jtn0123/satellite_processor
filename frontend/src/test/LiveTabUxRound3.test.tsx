@@ -167,7 +167,9 @@ describe('Swipe Gestures', () => {
 
     // Swipe toast should appear with "C03 — Near-IR Veggie"
     await waitFor(() => {
-      expect(screen.getByText('C03 — Near-IR Veggie')).toBeInTheDocument();
+      const matches = screen.getAllByText('C03 — Near-IR Veggie');
+      // One is the dropdown option, the other is the swipe toast
+      expect(matches.length).toBeGreaterThanOrEqual(2);
     });
   });
 

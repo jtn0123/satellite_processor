@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/jtn0123/satellite_processor/compare/v1.17.0...v1.18.0) (2026-02-24)
+
+
+### Features
+
+* app-like mobile interactions for Live View ([#235](https://github.com/jtn0123/satellite_processor/issues/235)) ([35c7ced](https://github.com/jtn0123/satellite_processor/commit/35c7ced2a8cc348bdcc1c441a3e856edef704229))
+
 # [1.17.0](https://github.com/jtn0123/satellite_processor/compare/v1.16.12...v1.17.0) (2026-02-24)
 
 

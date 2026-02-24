@@ -951,7 +951,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   if (compareMode) {
     return (
       <CompareSlider
-        imageUrl={imageUrl}
+        imageUrl={imageUrl ?? ''}
         prevImageUrl={prevImageUrl}
         comparePosition={comparePosition}
         onPositionChange={onPositionChange}
@@ -963,7 +963,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
   }
   return (
     <CdnImage
-      src={imageUrl}
+      src={imageUrl ?? ''}
       alt={`${satellite} ${band} ${sector}`}
       className="max-w-full max-h-full object-contain select-none"
       style={isFullscreen ? zoomStyle : undefined}

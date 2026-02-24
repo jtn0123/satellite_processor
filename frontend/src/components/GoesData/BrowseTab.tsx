@@ -327,6 +327,15 @@ export default function BrowseTab() {
     showToast('info', 'Select one more frame to compare');
   }, [toggleSelect]);
 
+  const handleExport = useCallback(() => {
+    const exportParams = new URLSearchParams();
+    if (debouncedSat) exportParams.set('satellite', debouncedSat);
+    if (debouncedBand) exportParams.set('band', debouncedBand);
+    if (debouncedSector) exportParams.set('sector', debouncedSector);
+    exportParams.set('format', 'csv');
+    globalThis.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
+  }, [debouncedSat, debouncedBand, debouncedSector]);
+
   const selectAll = () => {
     const allSelected = selectedIds.size === frames.length;
     setSelectedIds(allSelected ? new Set() : new Set(frames.map((f) => f.id)));
@@ -532,14 +541,7 @@ export default function BrowseTab() {
             <button
               className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors min-h-[44px]"
               aria-label="Export frames"
-              onClick={() => {
-                const exportParams = new URLSearchParams();
-                if (debouncedSat) exportParams.set('satellite', debouncedSat);
-                if (debouncedBand) exportParams.set('band', debouncedBand);
-                if (debouncedSector) exportParams.set('sector', debouncedSector);
-                exportParams.set('format', 'csv');
-                globalThis.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
-              }}
+              onClick={handleExport}
             >
               <FileDown className="w-3.5 h-3.5" /> Export CSV
             </button>

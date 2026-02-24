@@ -28,7 +28,7 @@ function subscribeToResize(cb: () => void) {
   globalThis.addEventListener('resize', cb);
   return () => globalThis.removeEventListener('resize', cb);
 }
-function getIsMobile() { return typeof globalThis.window !== 'undefined' && globalThis.innerWidth < 768; }
+function getIsMobile() { return globalThis.window !== undefined && globalThis.innerWidth < 768; }
 function useIsMobile() { return useSyncExternalStore(subscribeToResize, getIsMobile, () => false); }
 
 interface SatelliteAvailability {
@@ -115,7 +115,9 @@ function useMonitorMode(
     setMonitoring((v) => {
       const next = !v;
       setAutoFetch(next);
-      showToast(next ? 'success' : 'info', next ? 'Monitor mode activated' : 'Monitor mode stopped');
+      const toastLevel = next ? 'success' : 'info';
+      const toastMsg = next ? 'Monitor mode activated' : 'Monitor mode stopped';
+      showToast(toastLevel, toastMsg);
       onMonitorChange?.(next);
       return next;
     });
@@ -996,7 +998,7 @@ interface CdnImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   'data-sector'?: string;
 }
 
-function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
+function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);

@@ -224,6 +224,65 @@ function useLiveFetchJob({
   return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }
 
+/* Countdown display hook — extracted to reduce LiveTab cognitive complexity */
+function useCountdownDisplay(refreshInterval: number, frame: LatestFrame | undefined) {
+  const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on interval change */
+  useEffect(() => {
+    setCountdownSec(Math.floor(refreshInterval / 1000));
+  }, [refreshInterval]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [refreshInterval, frame]);
+  return useMemo(() => {
+    const m = Math.floor(countdownSec / 60);
+    const s = countdownSec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }, [countdownSec]);
+}
+
+/* Swipe-to-change-band hook — extracted to reduce LiveTab cognitive complexity */
+function useSwipeBand(products: Product | undefined, band: string, setBand: (b: string) => void) {
+  const bandKeys = useMemo(() => {
+    if (products?.bands?.length) return products.bands.map((b) => b.id);
+    return Object.keys(FRIENDLY_BAND_NAMES);
+  }, [products]);
+
+  const [swipeToast, setSwipeToast] = useState<string | null>(null);
+  const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = t.clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    const currentIdx = bandKeys.indexOf(band);
+    if (currentIdx < 0) return;
+    const nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
+    if (nextIdx < 0 || nextIdx >= bandKeys.length) return;
+    const nextBand = bandKeys[nextIdx];
+    setBand(nextBand);
+    const label = getFriendlyBandName(nextBand);
+    clearTimeout(swipeToastTimer.current);
+    setSwipeToast(`${nextBand} — ${label}`);
+    swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
+  }, [band, bandKeys, setBand]);
+
+  return { swipeToast, handleTouchStart, handleTouchEnd };
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -315,11 +374,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional init from async data */
   useEffect(() => {
     if (products && !satellite) {
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
   }, [products, satellite]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
     queryKey: ['goes-available', satellite],
@@ -361,59 +422,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   });
 
   // Auto-refresh countdown (#12)
-  const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
-  // Reset displayed value only when the interval duration changes
-  useEffect(() => {
-    setCountdownSec(Math.floor(refreshInterval / 1000));
-  }, [refreshInterval]);
-  // Single interval — restart on refreshInterval change OR frame change (new data arrived)
-  // Only refreshInterval change resets the displayed value above; frame change just restarts the tick
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [refreshInterval, frame]);
-
-  const countdownDisplay = useMemo(() => {
-    const m = Math.floor(countdownSec / 60);
-    const s = countdownSec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }, [countdownSec]);
+  const countdownDisplay = useCountdownDisplay(refreshInterval, frame);
 
   // Swipe gestures (#10)
-  const bandKeys = useMemo(() => {
-    if (products?.bands?.length) return products.bands.map((b) => b.id);
-    return Object.keys(FRIENDLY_BAND_NAMES);
-  }, [products]);
-
-  const [swipeToast, setSwipeToast] = useState<string | null>(null);
-  const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.current.x;
-    const dy = t.clientY - touchStart.current.y;
-    touchStart.current = null;
-    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
-    const currentIdx = bandKeys.indexOf(band);
-    if (currentIdx < 0) return;
-    const nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-    if (nextIdx < 0 || nextIdx >= bandKeys.length) return;
-    const nextBand = bandKeys[nextIdx];
-    setBand(nextBand);
-    const label = getFriendlyBandName(nextBand);
-    clearTimeout(swipeToastTimer.current);
-    setSwipeToast(`${nextBand} — ${label}`);
-    swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
-  }, [band, bandKeys]);
+  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
 
   const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
     satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,

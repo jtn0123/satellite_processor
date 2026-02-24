@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/jtn0123/satellite_processor/compare/v1.18.0...v1.19.0) (2026-02-24)
+
+
+### Features
+
+* add version info to Settings page ([#236](https://github.com/jtn0123/satellite_processor/issues/236)) ([81bec7e](https://github.com/jtn0123/satellite_processor/commit/81bec7ebbe68c69c82cb1095620d1be8aac83235))
+
 # [1.18.0](https://github.com/jtn0123/satellite_processor/compare/v1.17.0...v1.18.0) (2026-02-24)
 
 

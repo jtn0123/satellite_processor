@@ -1103,3 +1103,4 @@ function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
 }
 
 /* CatalogPanel removed — catalog info now shown in bottom overlay */
+// trigger

@@ -543,7 +543,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                   onChange={(e) => setRefreshInterval(Number(e.target.value))}
                   disabled={!autoFetch}
                   aria-label="Auto-fetch interval"
-                  className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${!autoFetch ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                  className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${autoFetch ? 'hover:bg-white/20' : 'opacity-40 cursor-not-allowed'}`}
                 >
                   {REFRESH_INTERVALS.map((ri) => (
                     <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>

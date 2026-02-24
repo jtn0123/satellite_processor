@@ -84,6 +84,11 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('old /goes?tab=fetch URL does not break — Browse tab stays active', () => {
+    renderNav('/goes?tab=fetch');
+    expect(screen.getByRole('tab', { name: 'Browse' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('nav has aria-label "Mobile navigation"', () => {
     renderNav();
     expect(screen.getByRole('tablist')).toHaveAttribute('aria-label', 'Mobile navigation');

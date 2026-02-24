@@ -59,8 +59,8 @@ describe('MobileBottomNav', () => {
   it('More menu shows Settings, Dashboard links', () => {
     renderWithRouter();
     fireEvent.click(screen.getByRole('tab', { name: 'More' }));
-    expect(screen.getByLabelText('Settings')).toBeInTheDocument();
-    expect(screen.getByLabelText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
   });
 
   it('Close button inside dialog closes more menu', () => {

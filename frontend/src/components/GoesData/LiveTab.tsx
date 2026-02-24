@@ -361,6 +361,30 @@ function useSwipeBand(products: Product | undefined, band: string, setBand: (b: 
   return { swipeToast, handleTouchStart, handleTouchEnd };
 }
 
+function FullscreenButton({ isFullscreen, onClick }: Readonly<{ isFullscreen: boolean; onClick: () => void }>) {
+  const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+  const Icon = isFullscreen ? Minimize2 : Maximize2;
+  return (
+    <button onClick={onClick}
+      className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
+      title={label} aria-label={label}>
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
+function LiveIndicator({ monitoring }: Readonly<{ monitoring: boolean }>) {
+  const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
+  return (
+    <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
+      <div className={`w-2 h-2 rounded-full shrink-0 ${dotClass} animate-pulse`} />
+      <span className="text-xs text-white/70 font-medium mr-3">
+        {monitoring ? 'MONITORING' : 'LIVE'}
+      </span>
+    </div>
+  );
+}
+
 function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
@@ -548,7 +572,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               className="rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
               {(products?.sectors ?? []).map((s) => {
                 const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
-                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{s.name}{unavailable ? ' (unavailable)' : ''}</option>;
+                const label = unavailable ? `${s.name} (unavailable)` : s.name;
+                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{label}</option>;
               })}
             </select>
             <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
@@ -586,11 +611,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 <RefreshCw className="w-4 h-4" />
                 <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">Next: {countdownDisplay}</span>
               </button>
-              <button onClick={toggleFullscreen}
-                className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
-                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
+              <FullscreenButton isFullscreen={isFullscreen} onClick={toggleFullscreen} />
             </div>
           </div>
         </div>
@@ -623,12 +644,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         />
 
         {/* Live / Monitoring indicator */}
-        <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
-          <div className={`w-2 h-2 rounded-full shrink-0 ${monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50'} animate-pulse`} />
-          <span className="text-xs text-white/70 font-medium mr-3">
-            {monitoring ? 'MONITORING' : 'LIVE'}
-          </span>
-        </div>
+        <LiveIndicator monitoring={monitoring} />
 
         {/* Mobile FAB for controls — labeled */}
         <div className="sm:hidden absolute bottom-20 right-4 md:bottom-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">

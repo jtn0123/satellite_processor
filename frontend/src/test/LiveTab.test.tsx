@@ -96,7 +96,7 @@ describe('LiveTab', () => {
   it('renders fullscreen button', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByTitle('Fullscreen')).toBeInTheDocument();
+      expect(screen.getByTitle('Enter fullscreen')).toBeInTheDocument();
     });
   });
 

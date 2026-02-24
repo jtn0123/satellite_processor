@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -89,29 +89,10 @@ describe('LiveTab - Interactions', () => {
     expect(autoFetchSwitch.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('toggles overlay visibility', async () => {
+  it('shows status pill overlay', async () => {
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByLabelText('Hide frame info')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText('Hide frame info'));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Show frame info')).toBeInTheDocument();
-    });
-  });
-
-  it('persists overlay preference to localStorage', async () => {
-    renderLiveTab();
-    await waitFor(() => expect(screen.getByLabelText('Hide frame info')).toBeInTheDocument());
-    fireEvent.click(screen.getByLabelText('Hide frame info'));
-    expect(localStorage.getItem('live-overlay-visible')).toBe('false');
-  });
-
-  it('reads overlay preference from localStorage', async () => {
-    localStorage.setItem('live-overlay-visible', 'false');
-    renderLiveTab();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Show frame info')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 
@@ -152,12 +133,11 @@ describe('LiveTab - Interactions', () => {
     expect(select.value).toBe('60000');
   });
 
-  it('shows condensed metadata in bottom overlay when catalog data exists', async () => {
+  it('shows satellite info in status pill', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Condensed metadata shows satellite name — scoped to avoid matching select options
-      const metadata = within(screen.getByTestId('condensed-metadata'));
-      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-16');
     });
   });
 
@@ -170,7 +150,7 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('LIVE')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 
@@ -183,14 +163,14 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('LIVE')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 
   it('shows LIVE indicator', async () => {
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('LIVE')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 
@@ -258,7 +238,7 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('LIVE')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 
@@ -286,7 +266,6 @@ describe('LiveTab - Interactions', () => {
   });
 
   it('timeAgo returns correct values', async () => {
-    // Test by rendering with different capture times
     const justNow = { ...FRAME, capture_time: new Date().toISOString() };
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
@@ -296,7 +275,8 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('just now')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('just now');
     });
   });
 
@@ -310,7 +290,8 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('2h ago')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('2h ago');
     });
   });
 
@@ -324,7 +305,8 @@ describe('LiveTab - Interactions', () => {
     });
     renderLiveTab();
     await waitFor(() => {
-      expect(screen.getByText('2d ago')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('2d ago');
     });
   });
 
@@ -336,14 +318,12 @@ describe('LiveTab - Interactions', () => {
     });
   });
 
-  it('shows condensed metadata overlay with frame info', async () => {
+  it('shows status pill with satellite, band info', async () => {
     renderLiveTab();
     await waitFor(() => {
-      // Condensed metadata shows satellite, band, sector inline — scoped to metadata overlay
-      const metadata = within(screen.getByTestId('condensed-metadata'));
-      expect(metadata.getByText('GOES-16')).toBeInTheDocument();
-      expect(metadata.getByText('C02')).toBeInTheDocument();
-      expect(metadata.getByText('CONUS')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-16');
+      expect(pill.textContent).toContain('C02');
     });
   });
 

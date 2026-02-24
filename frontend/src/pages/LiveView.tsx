@@ -15,8 +15,8 @@ export default function LiveView() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="space-y-6 max-md:space-y-0">
+      <div className="hidden md:flex items-center gap-3">
         <Radio className="w-7 h-7 text-primary" />
         <div>
           <div className="flex items-center gap-2">

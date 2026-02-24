@@ -236,81 +236,25 @@ describe('Countdown Timer', () => {
   });
 });
 
-describe('Condensed Metadata Overlay', () => {
-  it('renders satellite, band, sector, and time ago', async () => {
+describe('Status Pill Overlay', () => {
+  it('renders satellite, band, and time ago', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByTestId('condensed-metadata')).toBeInTheDocument();
-    });
-
-    const meta = screen.getByTestId('condensed-metadata');
-    expect(meta.textContent).toContain('GOES-16');
-    expect(meta.textContent).toContain('C02');
-    expect(meta.textContent).toContain('CONUS');
-    // Time ago should be present (e.g., "2 min ago")
-    expect(meta.textContent).toMatch(/\d+ min ago|just now/);
-  });
-
-  it('details toggle expands and collapses', async () => {
-    vi.useRealTimers();
-    renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      expect(screen.getByLabelText('Toggle image details')).toBeInTheDocument();
-    });
-
-    const toggle = screen.getByLabelText('Toggle image details');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-
-    // Expand
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-
-    // Collapse
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('shows exact timestamp in expanded view', async () => {
-    vi.useRealTimers();
-    renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      expect(screen.getByLabelText('Toggle image details')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByLabelText('Toggle image details'));
-
-    // Expanded details should show a localized timestamp
-    await waitFor(() => {
-      // The expanded view shows new Date(source.time).toLocaleString()
-      const details = screen.getByTestId('condensed-metadata').parentElement;
-      expect(details?.textContent).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}/);
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-16');
+      expect(pill.textContent).toContain('C02');
+      // Time ago should be present (e.g., "2 min ago")
+      expect(pill.textContent).toMatch(/\d+ min ago|just now/);
     });
   });
 
-  it('shows "via NOAA CDN" when source is catalog only', async () => {
+  it('shows LIVE label by default', async () => {
     vi.useRealTimers();
-    // Return 404 for local frames so catalog is the source
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/goes/latest')) return Promise.reject({ response: { status: 404 } });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG_DATA });
-      if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
-      return Promise.resolve({ data: {} });
-    });
-
     renderWithProviders(<LiveTab />);
-
-    // Wait for condensed metadata to appear with catalog source
     await waitFor(() => {
-      expect(screen.getByTestId('condensed-metadata')).toBeInTheDocument();
-    });
-
-    // Expand details to see CDN label
-    fireEvent.click(screen.getByLabelText('Toggle image details'));
-
-    await waitFor(() => {
-      expect(screen.getByText('via NOAA CDN')).toBeInTheDocument();
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('LIVE');
     });
   });
 });
@@ -482,29 +426,12 @@ describe('Controls FAB', () => {
   });
 });
 
-describe('Overlay Toggle', () => {
-  it('overlay can be toggled off and on', async () => {
+describe('Status Pill Always Visible', () => {
+  it('status pill is always visible when data is loaded', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByTestId('condensed-metadata')).toBeInTheDocument();
-    });
-
-    // Find the overlay toggle button (the Info icon button in the bottom-right)
-    const toggleBtn = screen.getByLabelText('Hide frame info');
-    fireEvent.click(toggleBtn);
-
-    // Metadata should be hidden
-    await waitFor(() => {
-      expect(screen.queryByTestId('condensed-metadata')).not.toBeInTheDocument();
-    });
-
-    // Show it again
-    const showBtn = screen.getByLabelText('Show frame info');
-    fireEvent.click(showBtn);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('condensed-metadata')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 });

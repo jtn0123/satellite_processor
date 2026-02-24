@@ -149,7 +149,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
   it('fetchNow posts to /goes/fetch', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('LIVE')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('status-pill')).toBeInTheDocument());
 
     // Try to find and click "Fetch now" if stale banner is visible
     await waitFor(() => {
@@ -166,7 +166,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
   it('fetchNow error shows error toast', async () => {
     mockedApi.post.mockRejectedValue(new Error('fail'));
     renderLiveTab();
-    await waitFor(() => expect(screen.getByText('LIVE')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('status-pill')).toBeInTheDocument());
 
     // Enable auto-fetch which will trigger fetchNow
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;

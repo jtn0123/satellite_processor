@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Info, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { Satellite, Maximize2, Minimize2, RefreshCw, Download, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -88,10 +88,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function getOverlayPref(): boolean {
-  try { return localStorage.getItem('live-overlay-visible') !== 'false'; } catch { return true; }
-}
-
 /** Hook: encapsulates monitor mode state + WS-driven refetch */
 function useMonitorMode(
   onMonitorChange: ((active: boolean) => void) | undefined,
@@ -141,18 +137,7 @@ function useMonitorMode(
   return { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor };
 }
 
-/** Hook: overlay visibility with localStorage persistence */
-function useOverlayToggle() {
-  const [overlayVisible, setOverlayVisible] = useState(getOverlayPref);
-  const toggleOverlay = useCallback(() => {
-    setOverlayVisible((v) => {
-      const next = !v;
-      try { localStorage.setItem('live-overlay-visible', String(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
-  return { overlayVisible, toggleOverlay };
-}
+/* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
 /** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
 function resolveImageUrls(
@@ -375,13 +360,17 @@ function FullscreenButton({ isFullscreen, onClick }: Readonly<{ isFullscreen: bo
   );
 }
 
-function LiveIndicator({ monitoring }: Readonly<{ monitoring: boolean }>) {
+function StatusPill({ monitoring, satellite, band, frameTime }: Readonly<{ monitoring: boolean; satellite: string; band: string; frameTime: string | null }>) {
   const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
+  const age = frameTime ? timeAgo(frameTime) : '';
   return (
-    <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-2 mr-3" data-testid="live-indicator">
-      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass} animate-pulse`} />
-      <span className="text-sm md:text-xs font-semibold text-white/70 mr-3">
+    <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm" data-testid="status-pill">
+      <div className={`w-2 h-2 rounded-full shrink-0 ${dotClass} animate-pulse`} />
+      <span className="text-xs font-medium text-white/90">
         {monitoring ? 'MONITORING' : 'LIVE'}
+        {satellite && <> · {satellite}</>}
+        {band && <> · {band}</>}
+        {age && <> · {age}</>}
       </span>
     </div>
   );
@@ -434,7 +423,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     setRefreshInterval(preset.interval);
   }, [satellite, band]);
 
-  const { overlayVisible, toggleOverlay } = useOverlayToggle();
+  // overlayVisible/toggleOverlay removed — bottom metadata overlay killed in favor of status pill
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
@@ -523,7 +512,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
-    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-8rem)] flex flex-col bg-black">
+    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-8rem)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
@@ -637,19 +626,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         )}
 
-        {/* Bottom metadata overlay */}
-        <BottomMetadataOverlay
-          frame={frame ?? null}
-          catalogLatest={catalogLatest ?? null}
-          overlayVisible={overlayVisible}
-          onToggleOverlay={toggleOverlay}
-        />
+        {/* Status pill overlay */}
+        <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} />
 
-        {/* Live / Monitoring indicator */}
-        <LiveIndicator monitoring={monitoring} />
-
-        {/* Mobile FAB for controls — labeled */}
-        <div className="sm:hidden absolute bottom-20 right-4 md:bottom-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
+        {/* Mobile FAB for controls — overlaid on image bottom-right */}
+        <div className="sm:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}
@@ -766,86 +747,7 @@ function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetc
   );
 }
 
-function BottomMetadataOverlay({ frame, catalogLatest, overlayVisible, onToggleOverlay }: Readonly<{
-  frame: LatestFrame | null;
-  catalogLatest: CatalogLatest | null;
-  overlayVisible: boolean;
-  onToggleOverlay: () => void;
-}>) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
-  const frameSource = frame
-    ? { satellite: frame.satellite, band: frame.band, sector: frame.sector, time: frame.capture_time, isCdn: false }
-    : null;
-  const catalogSource = catalogLatest
-    ? { satellite: catalogLatest.satellite, band: catalogLatest.band, sector: catalogLatest.sector, time: catalogLatest.scan_time, isCdn: true }
-    : null;
-  const source = frameSource ?? catalogSource;
-
-  return (
-    <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none">
-      <div className="pointer-events-auto flex items-end justify-between px-4 py-3">
-        {source && overlayVisible && (
-          <div className="space-y-1">
-            {/* Condensed single-line summary */}
-            <div className="flex items-center gap-1 text-white/70 text-xs" data-testid="condensed-metadata">
-              <span className="text-white/90 font-medium">{source.satellite}</span>
-              <span className="text-white/40">·</span>
-              <span>{source.band}</span>
-              <span className="text-white/40">·</span>
-              <span>{source.sector}</span>
-              <span className="text-white/40">·</span>
-              <span>{timeAgo(source.time)}</span>
-              <button
-                onClick={() => setDetailsOpen((v) => !v)}
-                className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors text-white/50 hover:text-white/80"
-                title="Toggle details"
-                aria-label="Toggle image details"
-                aria-expanded={detailsOpen}
-              >
-                <Info className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {/* Expandable details */}
-            {detailsOpen && (
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/50">
-                <span>{new Date(source.time).toLocaleString()}</span>
-                {source.isCdn && <span className="text-amber-300/70">via NOAA CDN</span>}
-                {catalogLatest && <span>AWS: {timeAgo(catalogLatest.scan_time)}</span>}
-              </div>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {frame && (
-            <button
-              onClick={() => {
-                const url = frame.image_url;
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${frame.satellite}_${frame.band}_${frame.sector}.png`;
-                a.click();
-              }}
-              className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-              title="Download frame"
-              aria-label="Download frame"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            onClick={onToggleOverlay}
-            className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-            title={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-            aria-label={overlayVisible ? 'Hide frame info' : 'Show frame info'}
-          >
-            <Info className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
 
 function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
@@ -1005,10 +907,14 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
   const [cachedMeta, setCachedMeta] = useState<CachedImageMeta | null>(null);
   const [cachedDismissed, setCachedDismissed] = useState(false);
   const [displaySrc, setDisplaySrc] = useState(src);
+  const [prevSrc, setPrevSrc] = useState<string | null>(null);
 
-  // Reset state when src changes
+  // Crossfade: keep previous image while new one loads
   /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on prop change */
   useEffect(() => {
+    if (src !== displaySrc) {
+      setPrevSrc(displaySrc ?? null);
+    }
     setError(false);
     setLoaded(false);
     setUsingCached(false);
@@ -1024,6 +930,8 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
 
   const handleLoad = useCallback(() => {
     setLoaded(true);
+    // Clear previous image after crossfade completes
+    setTimeout(() => setPrevSrc(null), 350);
     // Cache successful load
     if (src && !usingCached) {
       saveCachedImage(src, {
@@ -1089,14 +997,23 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
       {!loaded && !error && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
-      <div className="rounded-lg overflow-hidden border border-white/10" data-testid="live-image-container">
+      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
+        {/* Previous image for crossfade */}
+        {prevSrc && (
+          <img
+            src={prevSrc}
+            alt=""
+            aria-hidden="true"
+            className={`${className ?? ''} absolute inset-0 w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-0' : 'opacity-100'}`}
+          />
+        )}
         <img
           src={displaySrc}
           alt={alt}
           onError={handleError}
           onLoad={handleLoad}
           loading="lazy"
-          className={`${className ?? ''} rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           {...props}
         />
       </div>

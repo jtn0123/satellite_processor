@@ -51,7 +51,7 @@ describe('LiveTab - Defensive Scenarios', () => {
     });
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByText('LIVE')).toBeInTheDocument();
+      expect(screen.getByTestId('status-pill')).toBeInTheDocument();
     });
   });
 

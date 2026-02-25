@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Satellite, Maximize2, Minimize2, RefreshCw, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { Maximize2, Minimize2, RefreshCw, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -307,7 +307,7 @@ function useLiveFetchJob({
 }
 
 /* Countdown display hook — extracted to reduce LiveTab cognitive complexity */
-function useCountdownDisplay(refreshInterval: number, frame: LatestFrame | undefined) {
+function useCountdownDisplay(refreshInterval: number) {
   const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
    
   useEffect(() => {
@@ -319,7 +319,7 @@ function useCountdownDisplay(refreshInterval: number, frame: LatestFrame | undef
       setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [refreshInterval, frame]);
+  }, [refreshInterval]);
   return useMemo(() => {
     const m = Math.floor(countdownSec / 60);
     const s = countdownSec % 60;
@@ -539,7 +539,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   });
 
   // Auto-refresh countdown (#12)
-  const countdownDisplay = useCountdownDisplay(refreshInterval, frame);
+  const countdownDisplay = useCountdownDisplay(refreshInterval);
 
   // Swipe gestures (#10)
   const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
@@ -576,7 +576,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
-    <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[100dvh] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
+    <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-140px)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
@@ -589,9 +589,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
         {/* Swipe gesture area */}
-        <button
-          type="button"
+        <div
           className="w-full h-full flex items-center justify-center bg-transparent border-none p-0 m-0 cursor-default appearance-none"
+          tabIndex={-1}
           data-testid="swipe-gesture-area"
           onWheel={compareMode ? undefined : zoom.handlers.onWheel}
           onTouchStart={(e) => {
@@ -623,7 +623,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             frameTime={frame?.capture_time ?? null}
             prevFrameTime={prevFrame?.capture_time ?? null}
           />
-        </button>
+        </div>
 
         {/* Swipe toast */}
         {swipeToast && (
@@ -692,7 +692,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Stale data warning overlay */}
         {freshnessInfo && frame && localImageUrl && (
-          <div className="absolute top-16 inset-x-4 z-10">
+          <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <StaleDataBanner
               freshnessInfo={freshnessInfo}
               captureTime={frame.capture_time}
@@ -704,7 +704,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Inline fetch progress overlay */}
         {activeJobId && activeJob && (
-          <div className="absolute top-16 inset-x-4 z-10">
+          <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <InlineFetchProgress job={activeJob} />
           </div>
         )}
@@ -721,7 +721,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onAutoFetchChange={setAutoFetch}
             compareMode={compareMode}
             onCompareModeChange={setCompareMode}
-            onOpenSheet={() => setBottomSheetOpen(true)}
             onOpenBandSheet={() => { scrollToBandsRef.current = true; setBottomSheetOpen(true); }}
           />
         </div>
@@ -904,11 +903,10 @@ function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetc
 
 /* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
 
-function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenSheet, onOpenBandSheet }: Readonly<{
+function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenBandSheet }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
   compareMode: boolean; onCompareModeChange: (v: boolean) => void;
-  onOpenSheet?: () => void;
   onOpenBandSheet?: () => void;
 }>) {
   const [open, setOpen] = useState(false);
@@ -972,16 +970,6 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             >
               <SlidersHorizontal className="w-4 h-4 text-purple-400" />
               Change Band
-            </button>
-          )}
-          {onOpenSheet && (
-            <button
-              onClick={() => { onOpenSheet(); setOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] bg-white/10 border border-white/20 text-white/80"
-              data-testid="open-picker-sheet"
-            >
-              <Satellite className="w-4 h-4 text-teal-400" />
-              Satellite / Band
             </button>
           )}
         </div>
@@ -1059,14 +1047,9 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
   const [cachedMeta, setCachedMeta] = useState<CachedImageMeta | null>(null);
   const [cachedDismissed, setCachedDismissed] = useState(false);
   const [displaySrc, setDisplaySrc] = useState(src);
-  const [prevSrc, setPrevSrc] = useState<string | null>(null);
-
-  // Crossfade: keep previous image while new one loads
+  // Reset state when src changes — no crossfade to avoid stale band images
   /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on prop change */
   useEffect(() => {
-    if (src !== displaySrc) {
-      setPrevSrc(displaySrc ?? null);
-    }
     setError(false);
     setLoaded(false);
     setUsingCached(false);
@@ -1082,8 +1065,6 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
 
   const handleLoad = useCallback(() => {
     setLoaded(true);
-    // Clear previous image after crossfade completes
-    setTimeout(() => setPrevSrc(null), 350);
     // Cache successful load
     if (src && !usingCached) {
       saveCachedImage(src, {
@@ -1153,21 +1134,12 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
       <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
-        {/* Previous image for crossfade */}
-        {prevSrc && (
-          <img
-            src={prevSrc}
-            alt=""
-            aria-hidden="true"
-            className={`${className ?? ''} absolute inset-0 w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-0' : 'opacity-100'}`}
-          />
-        )}
         <img
           src={displaySrc}
           alt={alt}
           onError={handleError}
           onLoad={handleLoad}
-          loading="lazy"
+          loading="eager"
           className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           {...props}
         />

@@ -635,7 +635,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Top controls overlay — on mobile, hidden unless overlayVisible */}
         <div className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${isMobile && !overlayVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} data-testid="controls-overlay">
-          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3" onClick={() => { if (isMobile) resetOverlayTimer(); }}>
+          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3" onPointerDown={() => { if (isMobile) resetOverlayTimer(); }}>
             {/* On mobile, hide dropdowns — use bottom sheet instead */}
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
               className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">

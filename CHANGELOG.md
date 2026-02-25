@@ -1,3 +1,10 @@
+## [1.20.4](https://github.com/jtn0123/satellite_processor/compare/v1.20.3...v1.20.4) (2026-02-25)
+
+
+### Bug Fixes
+
+* Live View UX friction — picker, gestures, overlay timing ([#242](https://github.com/jtn0123/satellite_processor/issues/242)) ([d44777e](https://github.com/jtn0123/satellite_processor/commit/d44777ef4f8ab33b14c5b86fb01f569a4614033b))
+
 ## [1.20.3](https://github.com/jtn0123/satellite_processor/compare/v1.20.2...v1.20.3) (2026-02-25)
 
 

@@ -577,16 +577,25 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Swipe gesture area */}
         <div
+          role="button"
+          tabIndex={0}
           className="w-full h-full flex items-center justify-center"
           data-testid="swipe-gesture-area"
           onWheel={compareMode ? undefined : zoom.handlers.onWheel}
-          onTouchStart={(e) => { if (!compareMode) zoom.handlers.onTouchStart(e); handleTouchStart(e); }}
+          onTouchStart={(e) => {
+            if (!compareMode) { zoom.handlers.onTouchStart(e); }
+            handleTouchStart(e);
+          }}
           onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
-          onTouchEnd={(e) => { if (!compareMode) zoom.handlers.onTouchEnd(e); handleTouchEnd(e); }}
+          onTouchEnd={(e) => {
+            if (!compareMode) { zoom.handlers.onTouchEnd(e); }
+            handleTouchEnd(e);
+          }}
           onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
           onMouseMove={compareMode ? undefined : zoom.handlers.onMouseMove}
           onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
           onClick={handleImageTap}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleImageTap(); }}
         >
           <ImagePanelContent
             isLoading={isLoading && !catalogImageUrl}

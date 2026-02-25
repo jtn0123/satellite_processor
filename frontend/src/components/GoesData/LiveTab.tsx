@@ -308,11 +308,11 @@ function useLiveFetchJob({
 /* Countdown display hook — extracted to reduce LiveTab cognitive complexity */
 function useCountdownDisplay(refreshInterval: number, frame: LatestFrame | undefined) {
   const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
-  /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on interval change */
+   
   useEffect(() => {
     setCountdownSec(Math.floor(refreshInterval / 1000));
   }, [refreshInterval]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
@@ -545,10 +545,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useFullscreenSync(setIsFullscreen, zoom);
 
-  // Double-tap fullscreen vs single-tap overlay toggle (mobile only)
+  // Double-tap zoom vs single-tap overlay toggle (mobile only)
   const handleImageTap = useDoubleTap(
     () => { if (isMobile) toggleOverlay(); },
-    () => { toggleFullscreen(); },
+    () => { if (zoom.isZoomed) { zoom.reset(); } else { zoom.zoomIn(); } },
     300,
   );
 
@@ -571,13 +571,30 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         ref={containerRef}
         data-testid="live-image-area"
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
-        {...(compareMode ? {} : zoom.handlers)}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint />}
 
         {/* Swipe gesture area */}
-        <div className="w-full h-full flex items-center justify-center" data-testid="swipe-gesture-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={handleImageTap}>
+        <button
+          type="button"
+          className="w-full h-full flex items-center justify-center bg-transparent border-none p-0 m-0 cursor-default appearance-none"
+          data-testid="swipe-gesture-area"
+          onWheel={compareMode ? undefined : zoom.handlers.onWheel}
+          onTouchStart={(e) => {
+            if (!compareMode) { zoom.handlers.onTouchStart(e); }
+            handleTouchStart(e);
+          }}
+          onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
+          onTouchEnd={(e) => {
+            if (!compareMode) { zoom.handlers.onTouchEnd(e); }
+            handleTouchEnd(e);
+          }}
+          onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
+          onMouseMove={compareMode ? undefined : zoom.handlers.onMouseMove}
+          onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
+          onClick={handleImageTap}
+        >
           <ImagePanelContent
             isLoading={isLoading && !catalogImageUrl}
             isError={isError && !imageUrl}
@@ -593,7 +610,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             frameTime={frame?.capture_time ?? null}
             prevFrameTime={prevFrame?.capture_time ?? null}
           />
-        </div>
+        </button>
 
         {/* Swipe toast */}
         {swipeToast && (

@@ -22,9 +22,9 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.getByRole('tab', { name: 'Browse' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Live tab is active on /live', () => {
+  it('hides on /live for full-bleed image', () => {
     renderNav('/live');
-    expect(screen.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByTestId('mobile-bottom-nav')).toBeNull();
   });
 
   it('Browse tab active on /goes?tab=browse', () => {

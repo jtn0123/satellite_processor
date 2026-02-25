@@ -58,17 +58,12 @@ describe('useImageZoom', () => {
     expect(result.current.isZoomed).toBe(false);
   });
 
-  it('double tap toggles zoom', () => {
+  it('zoomIn toggles zoom', () => {
     const { result } = renderHook(() => useImageZoom());
-    const touch = { clientX: 100, clientY: 100 };
-    // First tap
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    // Second tap within 300ms
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
-    // Double tap again to reset
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    // reset returns to default
+    act(() => result.current.reset());
     expect(result.current.isZoomed).toBe(false);
   });
 
@@ -120,10 +115,8 @@ describe('useImageZoom', () => {
 
   it('touch pan when zoomed', () => {
     const { result } = renderHook(() => useImageZoom());
-    // Zoom in via double tap
-    const touch = { clientX: 100, clientY: 100 };
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    // Zoom in via zoomIn method
+    act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
 
     // Start pan
@@ -180,9 +173,7 @@ describe('useImageZoom', () => {
 
   it('respects custom options', () => {
     const { result } = renderHook(() => useImageZoom({ minScale: 0.5, maxScale: 3, doubleTapScale: 2 }));
-    const touch = { clientX: 100, clientY: 100 };
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
     const match = result.current.style.transform?.toString().match(/scale\(([\d.]+)\)/);
     expect(Number(match?.[1])).toBe(2);

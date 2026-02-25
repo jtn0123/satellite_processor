@@ -213,10 +213,11 @@ test.describe('Mobile Live View', () => {
     expect(afterText).toBeTruthy();
   });
 
-  test('bottom nav visible', async ({ page }) => {
+  test('bottom nav hidden on live page', async ({ page }) => {
     await page.goto('/live');
+    // Bottom nav is hidden on /live for full-bleed image experience
     const bottomNav = page.locator('[data-testid="mobile-bottom-nav"]');
-    await expect(bottomNav).toBeVisible({ timeout: 10000 });
+    await expect(bottomNav).not.toBeVisible({ timeout: 10000 });
   });
 
   test('no page overflow', async ({ page }) => {

@@ -6,12 +6,6 @@ function makeWheelEvent(deltaY: number) {
   return { deltaY, preventDefault: () => {} } as unknown as React.WheelEvent;
 }
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
-  return {
-    touches,
-    preventDefault: () => {},
-  } as unknown as React.TouchEvent;
-}
 
 describe('useImageZoom', () => {
   it('starts at scale 1 with no zoom', () => {
@@ -56,24 +50,15 @@ describe('useImageZoom', () => {
     expect(result.current.isZoomed).toBe(false);
   });
 
-  it('double-tap toggles zoom', () => {
+  it('zoomIn sets scale to doubleTapScale', () => {
     const { result } = renderHook(() => useImageZoom({ doubleTapScale: 3 }));
-    const touch = { clientX: 100, clientY: 100 };
 
-    // First tap
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    act(() => result.current.handlers.onTouchEnd(makeTouchEvent([])));
-
-    // Second tap within 300ms (simulated by same ref timestamp)
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
     expect(result.current.style.transform).toContain('scale(3)');
 
-    // Double-tap again to reset
-    act(() => result.current.handlers.onTouchEnd(makeTouchEvent([])));
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
-    act(() => result.current.handlers.onTouchEnd(makeTouchEvent([])));
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
+    // reset returns to default
+    act(() => result.current.reset());
     expect(result.current.isZoomed).toBe(false);
   });
 

@@ -61,6 +61,9 @@ export default function MobileBottomNav() {
 
   // Close more menu on navigation — handled by NavLink onClick handlers below
 
+  // Hide bottom nav on Live tab for full-bleed image
+  if (location.pathname === '/live') return null;
+
   return (
     <>
       {/* More sheet overlay */}

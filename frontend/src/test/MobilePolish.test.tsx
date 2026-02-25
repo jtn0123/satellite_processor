@@ -22,27 +22,17 @@ describe('Naming consistency', () => {
 
 // ── 2. Double-tap zoom (hook) ──────────────────────────────────────────
 
-describe('useImageZoom double-tap', () => {
-  it('double-tap toggles zoom', async () => {
+describe('useImageZoom zoomIn/reset', () => {
+  it('zoomIn and reset toggle zoom', async () => {
     const { useImageZoom } = await import('../hooks/useImageZoom');
     const { renderHook, act: actHook } = await import('@testing-library/react');
     const { result } = renderHook(() => useImageZoom());
     expect(result.current.isZoomed).toBe(false);
 
-    const touch1 = { touches: [{ clientX: 100, clientY: 100 }], length: 1 } as unknown as React.TouchEvent;
-    const touch2 = { touches: [{ clientX: 100, clientY: 100 }], length: 1 } as unknown as React.TouchEvent;
-
-    actHook(() => { result.current.handlers.onTouchStart(touch1); });
-    // Small delay then second tap
-    actHook(() => { result.current.handlers.onTouchStart(touch2); });
-
+    actHook(() => { result.current.zoomIn(); });
     expect(result.current.isZoomed).toBe(true);
 
-    // Double-tap again to reset
-    const touch3 = { touches: [{ clientX: 100, clientY: 100 }], length: 1 } as unknown as React.TouchEvent;
-    const touch4 = { touches: [{ clientX: 100, clientY: 100 }], length: 1 } as unknown as React.TouchEvent;
-    actHook(() => { result.current.handlers.onTouchStart(touch3); });
-    actHook(() => { result.current.handlers.onTouchStart(touch4); });
+    actHook(() => { result.current.reset(); });
     expect(result.current.isZoomed).toBe(false);
   });
 });

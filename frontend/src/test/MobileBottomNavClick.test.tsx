@@ -32,7 +32,7 @@ describe('MobileBottomNav — click handlers', () => {
   });
 
   it('clicking Browse tab navigates to /goes', () => {
-    renderNav('/live');
+    renderNav('/goes');
     fireEvent.click(screen.getByRole('tab', { name: 'Browse' }));
     expect(mockNavigate).toHaveBeenCalledWith('/goes');
   });

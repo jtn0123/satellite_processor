@@ -4,6 +4,7 @@ interface ZoomState {
   scale: number;
   translateX: number;
   translateY: number;
+  isInteracting: boolean;
 }
 
 interface UseImageZoomOptions {
@@ -24,17 +25,17 @@ interface UseImageZoomReturn {
     onMouseUp: () => void;
   };
   reset: () => void;
+  zoomIn: () => void;
   isZoomed: boolean;
 }
 
-const INITIAL_STATE: ZoomState = { scale: 1, translateX: 0, translateY: 0 };
+const INITIAL_STATE: ZoomState = { scale: 1, translateX: 0, translateY: 0, isInteracting: false };
 
 export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomReturn {
   const { minScale = 1, maxScale = 5, doubleTapScale = 2.5 } = options;
 
   const [state, setState] = useState<ZoomState>(INITIAL_STATE);
   const stateRef = useRef<ZoomState>(INITIAL_STATE);
-  const lastTouchRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
@@ -47,6 +48,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const clampScale = useCallback((s: number) => Math.min(maxScale, Math.max(minScale, s)), [minScale, maxScale]);
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
+
+  const zoomIn = useCallback(() => {
+    setState({ scale: doubleTapScale, translateX: 0, translateY: 0, isInteracting: false });
+  }, [doubleTapScale]);
 
   const onWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
@@ -65,27 +70,17 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
 
   const onTouchStart = useCallback((e: TouchEvent) => {
     const s = stateRef.current;
+    setState((prev) => ({ ...prev, isInteracting: true }));
     if (e.touches.length === 2) {
       pinchStartRef.current = { dist: getTouchDist(e), scale: s.scale };
     } else if (e.touches.length === 1) {
-      const now = Date.now();
       const touch = e.touches[0];
-      const last = lastTouchRef.current;
-
-      // Double-tap detection
-      if (last && now - last.time < 300 && Math.abs(touch.clientX - last.x) < 30 && Math.abs(touch.clientY - last.y) < 30) {
-        setState((prev) => prev.scale > 1 ? INITIAL_STATE : { scale: doubleTapScale, translateX: 0, translateY: 0 });
-        lastTouchRef.current = null;
-        return;
-      }
-      lastTouchRef.current = { time: now, x: touch.clientX, y: touch.clientY };
-
       // Pan start — read current values from ref to avoid stale closure
       if (s.scale > 1) {
         panRef.current = { startX: touch.clientX, startY: touch.clientY, tx: s.translateX, ty: s.translateY };
       }
     }
-  }, [doubleTapScale]);
+  }, []);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
     if (e.touches.length === 2 && pinchStartRef.current) {
@@ -105,6 +100,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const onTouchEnd = useCallback(() => {
     pinchStartRef.current = null;
     panRef.current = null;
+    setState((prev) => ({ ...prev, isInteracting: false }));
   }, []);
 
   // Mouse drag for desktop panning
@@ -112,6 +108,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     const s = stateRef.current;
     if (s.scale > 1) {
       isDragging.current = true;
+      setState((prev) => ({ ...prev, isInteracting: true }));
       panRef.current = { startX: e.clientX, startY: e.clientY, tx: s.translateX, ty: s.translateY };
     }
   }, []);
@@ -127,20 +124,22 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const onMouseUp = useCallback(() => {
     isDragging.current = false;
     panRef.current = null;
+    setState((prev) => ({ ...prev, isInteracting: false }));
   }, []);
 
   const style: CSSProperties = {
     transform: `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`,
     transformOrigin: 'center center',
     cursor: state.scale > 1 ? 'grab' : 'default',
-    touchAction: state.scale > 1 ? 'none' : 'auto',
-    transition: 'transform 0.1s ease-out',
+    touchAction: 'none',
+    transition: state.isInteracting ? 'none' : 'transform 0.1s ease-out',
   };
 
   return {
     style,
     handlers: { onWheel, onTouchStart, onTouchMove, onTouchEnd, onMouseDown, onMouseMove, onMouseUp },
     reset,
+    zoomIn,
     isZoomed: state.scale > 1,
   };
 }

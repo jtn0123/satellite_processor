@@ -126,13 +126,15 @@ function VersionInfo() {
     queryKey: ['version'],
     queryFn: async () => {
       const r = await api.get('/health/version');
-      return r.data as { version?: string; commit_sha?: string };
+      return r.data as { version?: string; commit?: string; build_date?: string };
     },
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   const version = data?.version ?? '';
-  const commit = data?.commit_sha ?? '';
+  const commit = data?.commit ?? '';
+  const buildDate = data?.build_date ?? '';
   const shortSha = commit ? commit.slice(0, 7) : '';
 
   return (
@@ -150,6 +152,12 @@ function VersionInfo() {
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-slate-400">Commit</dt>
               <dd className="font-mono text-gray-900 dark:text-white">{shortSha}</dd>
+            </div>
+          )}
+          {buildDate && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500 dark:text-slate-400">Build Date</dt>
+              <dd className="font-mono text-gray-900 dark:text-white">{buildDate}</dd>
             </div>
           )}
         </dl>

@@ -6,12 +6,6 @@ function makeWheelEvent(deltaY: number) {
   return { deltaY, preventDefault: () => {} } as unknown as React.WheelEvent;
 }
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
-  return {
-    touches,
-    preventDefault: () => {},
-  } as unknown as React.TouchEvent;
-}
 
 describe('useImageZoom', () => {
   it('starts at scale 1 with no zoom', () => {

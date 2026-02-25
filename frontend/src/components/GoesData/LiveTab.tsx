@@ -712,7 +712,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} isMobile={isMobile} />
 
         {/* Mobile FAB for controls — overlaid on image bottom-right */}
-        <div className="sm:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
+        <div className="sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}

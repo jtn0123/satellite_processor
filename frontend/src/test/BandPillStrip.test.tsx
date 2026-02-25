@@ -9,14 +9,23 @@ const mockBands = [
   { id: 'C13', description: 'Clean Longwave Window' },
 ];
 
+const mockSatellites = ['GOES-16', 'GOES-18'];
+const mockSectors = [
+  { id: 'CONUS', name: 'CONUS' },
+  { id: 'FD', name: 'Full Disk' },
+  { id: 'MESO1', name: 'Mesoscale 1' },
+];
+
 const defaultProps = {
   bands: mockBands,
   activeBand: 'C02',
   onBandChange: vi.fn(),
   satellite: 'GOES-16',
   sector: 'CONUS',
-  onSatelliteClick: vi.fn(),
-  onSectorClick: vi.fn(),
+  satellites: mockSatellites,
+  sectors: mockSectors,
+  onSatelliteChange: vi.fn(),
+  onSectorChange: vi.fn(),
   sectorName: 'CONUS',
 } as const;
 
@@ -49,18 +58,50 @@ describe('BandPillStrip', () => {
     expect(onBandChange).toHaveBeenCalledWith('C13');
   });
 
-  it('satellite chip is tappable and calls onSatelliteClick', () => {
-    const onSatelliteClick = vi.fn();
-    render(<BandPillStrip {...defaultProps} onSatelliteClick={onSatelliteClick} />);
+  it('clicking satellite chip expands satellite options', () => {
+    render(<BandPillStrip {...defaultProps} />);
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    expect(onSatelliteClick).toHaveBeenCalled();
+    // After expanding, should see GOES-18 as an option
+    expect(screen.getByText('GOES-18')).toBeInTheDocument();
   });
 
-  it('sector chip is tappable and calls onSectorClick', () => {
-    const onSectorClick = vi.fn();
-    render(<BandPillStrip {...defaultProps} onSectorClick={onSectorClick} />);
+  it('selecting a satellite calls onSatelliteChange and collapses', () => {
+    const onSatelliteChange = vi.fn();
+    render(<BandPillStrip {...defaultProps} onSatelliteChange={onSatelliteChange} />);
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    fireEvent.click(screen.getByText('GOES-18'));
+    expect(onSatelliteChange).toHaveBeenCalledWith('GOES-18');
+  });
+
+  it('clicking sector chip expands sector options', () => {
+    render(<BandPillStrip {...defaultProps} />);
     fireEvent.click(screen.getByTestId('pill-strip-sector'));
-    expect(onSectorClick).toHaveBeenCalled();
+    expect(screen.getByText('Full Disk')).toBeInTheDocument();
+    expect(screen.getByText('Mesoscale 1')).toBeInTheDocument();
+  });
+
+  it('expanding one group collapses when toggled', () => {
+    render(<BandPillStrip {...defaultProps} />);
+    // Expand satellite
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    expect(screen.getByText('GOES-18')).toBeInTheDocument();
+    // Click active satellite to collapse back to default
+    fireEvent.click(screen.getByTestId('satellite-option-GOES-16'));
+    // Now both chips should be visible again
+    expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument();
+    expect(screen.getByTestId('pill-strip-sector')).toBeInTheDocument();
+    // Now expand sector
+    fireEvent.click(screen.getByTestId('pill-strip-sector'));
+    expect(screen.getByText('Full Disk')).toBeInTheDocument();
+  });
+
+  it('clicking active satellite option just collapses', () => {
+    const onSatelliteChange = vi.fn();
+    render(<BandPillStrip {...defaultProps} onSatelliteChange={onSatelliteChange} />);
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    // Click the already-active satellite (shown with checkmark)
+    fireEvent.click(screen.getByTestId('satellite-option-GOES-16'));
+    expect(onSatelliteChange).not.toHaveBeenCalled();
   });
 
   it('shows satellite status when not operational', () => {

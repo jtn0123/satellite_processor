@@ -1,3 +1,15 @@
+# [1.21.0](https://github.com/jtn0123/satellite_processor/compare/v1.20.4...v1.21.0) (2026-02-25)
+
+
+### Bug Fixes
+
+* restore bottom nav on live page with translucent style, fix swipe flicker ([#243](https://github.com/jtn0123/satellite_processor/issues/243)) ([349c1b1](https://github.com/jtn0123/satellite_processor/commit/349c1b10fe2bcc723d92777af42d24c1757e8ce8))
+
+
+### Features
+
+* mobile Live View band pill strip ([#244](https://github.com/jtn0123/satellite_processor/issues/244)) ([5c8f63a](https://github.com/jtn0123/satellite_processor/commit/5c8f63aba71d60e89e951dd219251fc4a7061671))
+
 ## [1.20.4](https://github.com/jtn0123/satellite_processor/compare/v1.20.3...v1.20.4) (2026-02-25)
 
 

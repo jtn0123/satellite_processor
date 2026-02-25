@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/jtn0123/satellite_processor/compare/v1.21.0...v1.21.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* pill strip chips open respective picker sections ([#246](https://github.com/jtn0123/satellite_processor/issues/246)) ([0fc6448](https://github.com/jtn0123/satellite_processor/commit/0fc6448718c9d9d0c6fc762c7f9cfc283829b715))
+
 # [1.21.0](https://github.com/jtn0123/satellite_processor/compare/v1.20.4...v1.21.0) (2026-02-25)
 
 

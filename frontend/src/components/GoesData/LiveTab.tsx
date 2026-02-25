@@ -25,6 +25,7 @@ import {
   saveCachedImage,
   loadCachedImage,
 } from './liveTabUtils';
+import BandPillStrip from './BandPillStrip';
 import type { CachedImageMeta } from './liveTabUtils';
 
 function subscribeToResize(cb: () => void) {
@@ -711,7 +712,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} isMobile={isMobile} />
 
         {/* Mobile FAB for controls — overlaid on image bottom-right */}
-        <div className="sm:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
+        <div className="sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}
@@ -774,6 +775,20 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         </div>
       </BottomSheet>
+
+      {/* Mobile band pill strip — pinned above bottom nav */}
+      {isMobile && products?.bands && (
+        <BandPillStrip
+          bands={products.bands}
+          activeBand={band}
+          onBandChange={setBand}
+          satellite={satellite}
+          sector={sector}
+          onSatelliteClick={() => setBottomSheetOpen(true)}
+          sectorName={products.sectors?.find((s) => s.id === sector)?.name}
+          satelliteAvailability={products.satellite_availability}
+        />
+      )}
     </div>
   );
 }

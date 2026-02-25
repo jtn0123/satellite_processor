@@ -1,3 +1,10 @@
+## [1.20.2](https://github.com/jtn0123/satellite_processor/compare/v1.20.1...v1.20.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* version display field mismatch and stale cache ([#240](https://github.com/jtn0123/satellite_processor/issues/240)) ([1710eb2](https://github.com/jtn0123/satellite_processor/commit/1710eb2ae7fb5d5541b9337380232df6b9415b3c))
+
 ## [1.20.1](https://github.com/jtn0123/satellite_processor/compare/v1.20.0...v1.20.1) (2026-02-25)
 
 

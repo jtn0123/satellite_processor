@@ -1,3 +1,10 @@
+## [1.20.3](https://github.com/jtn0123/satellite_processor/compare/v1.20.2...v1.20.3) (2026-02-25)
+
+
+### Bug Fixes
+
+* critical mobile Live View — zoom, pan, scroll, gestures ([#241](https://github.com/jtn0123/satellite_processor/issues/241)) ([b9800cf](https://github.com/jtn0123/satellite_processor/commit/b9800cf606a8467d470e8d9d449a5e9a33a3c6f1))
+
 ## [1.20.2](https://github.com/jtn0123/satellite_processor/compare/v1.20.1...v1.20.2) (2026-02-25)
 
 

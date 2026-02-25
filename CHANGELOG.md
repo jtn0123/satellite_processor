@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/jtn0123/satellite_processor/compare/v1.20.0...v1.20.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* move Docker build args after code layers to prevent cache staleness ([#239](https://github.com/jtn0123/satellite_processor/issues/239)) ([1156053](https://github.com/jtn0123/satellite_processor/commit/11560539525c5d689c8ef6618d41d0662383e69a))
+
 # [1.20.0](https://github.com/jtn0123/satellite_processor/compare/v1.19.0...v1.20.0) (2026-02-25)
 
 

@@ -3,11 +3,17 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STORAGE_KEY = 'liveSwipeHintSeen';
 
+interface SwipeHintProps {
+  availableBands?: number;
+  isZoomed?: boolean;
+}
+
 /**
  * Shows left/right chevron arrows on first visit to hint at swipe-to-change-band.
- * Fades out after 2 seconds and sets localStorage so it won't show again.
+ * Fades out after 3.5 seconds and sets localStorage so it won't show again.
+ * Hidden when only 1 band is available or when zoomed in.
  */
-export default function SwipeHint() {
+export default function SwipeHint({ availableBands = 2, isZoomed = false }: Readonly<SwipeHintProps>) {
   // Check localStorage synchronously during init to avoid effect setState
   const [visible, setVisible] = useState(() => {
     try {
@@ -24,11 +30,11 @@ export default function SwipeHint() {
       try {
         localStorage.setItem(STORAGE_KEY, '1');
       } catch { /* ignore */ }
-    }, 2000);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [visible]);
 
-  if (!visible) return null;
+  if (!visible || availableBands <= 1 || isZoomed) return null;
 
   return (
     <>

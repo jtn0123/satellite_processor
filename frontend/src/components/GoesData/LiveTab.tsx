@@ -589,9 +589,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
         {/* Swipe gesture area */}
-        <div
+        <button
+          type="button"
           className="w-full h-full flex items-center justify-center bg-transparent border-none p-0 m-0 cursor-default appearance-none"
-          tabIndex={-1}
+          aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
           data-testid="swipe-gesture-area"
           onWheel={compareMode ? undefined : zoom.handlers.onWheel}
           onTouchStart={(e) => {
@@ -623,7 +624,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             frameTime={frame?.capture_time ?? null}
             prevFrameTime={prevFrame?.capture_time ?? null}
           />
-        </div>
+        </button>
 
         {/* Swipe toast */}
         {swipeToast && (

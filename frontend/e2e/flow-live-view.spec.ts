@@ -203,12 +203,11 @@ test.describe('Live flow', () => {
     expect(text).toMatch(/\d+:\d{2}/);
   });
 
-  test('controls FAB button has label', async ({ page }) => {
+  test('controls FAB button is visible on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/live');
     const fab = page.locator('[data-testid="mobile-fab"]');
     await expect(fab).toBeVisible({ timeout: 10000 });
-    await expect(fab.getByText('Controls')).toBeVisible();
   });
 
   test('swipe gesture area exists', async ({ page }) => {

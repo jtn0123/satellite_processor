@@ -6,12 +6,20 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Mobile Live View', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test('scroll lock active on live page', async ({ page }) => {
     await page.goto('/live');
     await page.waitForSelector('[data-testid="live-image-area"]', { timeout: 10000 });
-    const overflow = await page.evaluate(() => document.body.style.overflow);
+    // Scroll lock depends on useIsMobile hook detecting viewport < 768px
+    // Trigger a resize event to ensure the hook picks up the viewport
+    await page.evaluate(() => globalThis.dispatchEvent(new Event('resize')));
+    await page.waitForTimeout(200);
+    const overflow = await page.evaluate(() => {
+      const style = document.body.style.overflow;
+      const computed = globalThis.getComputedStyle(document.body).overflow;
+      return style || computed;
+    });
     expect(overflow).toBe('hidden');
   });
 

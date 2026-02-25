@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/jtn0123/satellite_processor/compare/v1.21.1...v1.22.0) (2026-02-25)
+
+
+### Features
+
+* inline satellite/sector chip expansion in pill strip ([#247](https://github.com/jtn0123/satellite_processor/issues/247)) ([801378a](https://github.com/jtn0123/satellite_processor/commit/801378aaa9dd33d35d7fc397081f247ffa9daf75))
+
 ## [1.21.1](https://github.com/jtn0123/satellite_processor/compare/v1.21.0...v1.21.1) (2026-02-25)
 
 

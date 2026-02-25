@@ -129,6 +129,7 @@ function VersionInfo() {
       return r.data as { version?: string; commit?: string; build_date?: string };
     },
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   const version = data?.version ?? '';

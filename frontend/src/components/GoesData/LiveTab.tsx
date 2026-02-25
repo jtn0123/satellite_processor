@@ -25,6 +25,7 @@ import {
   saveCachedImage,
   loadCachedImage,
 } from './liveTabUtils';
+import BandPillStrip from './BandPillStrip';
 import type { CachedImageMeta } from './liveTabUtils';
 
 function subscribeToResize(cb: () => void) {
@@ -774,6 +775,20 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         </div>
       </BottomSheet>
+
+      {/* Mobile band pill strip — pinned above bottom nav */}
+      {isMobile && products?.bands && (
+        <BandPillStrip
+          bands={products.bands}
+          activeBand={band}
+          onBandChange={setBand}
+          satellite={satellite}
+          sector={sector}
+          onSatelliteClick={() => setBottomSheetOpen(true)}
+          sectorName={products.sectors?.find((s) => s.id === sector)?.name}
+          satelliteAvailability={products.satellite_availability}
+        />
+      )}
     </div>
   );
 }

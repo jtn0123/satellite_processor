@@ -470,7 +470,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   // Bottom sheet for mobile pickers
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
-  const [sheetFocus, setSheetFocus] = useState<'satellite' | 'sector' | 'band' | null>(null);
+  const [sheetFocus, setSheetFocus] = useState<'band' | null>(null);
   const bandPickerRef = useRef<HTMLDivElement>(null);
   const scrollToBandsRef = useRef(false);
 
@@ -740,7 +740,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       {/* Mobile bottom sheet for pickers */}
       <BottomSheet open={bottomSheetOpen} onClose={() => { setBottomSheetOpen(false); setSheetFocus(null); }} title="Settings">
         <div className="flex flex-col gap-4">
-          <PickerRow label="Satellite" value={satellite} defaultExpanded={sheetFocus === 'satellite'}>
+          <PickerRow label="Satellite" value={satellite}>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.satellites ?? []).map((s) => (
                 <button key={s} onClick={() => { setSatellite(s); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${satellite === s ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
@@ -749,7 +749,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               ))}
             </div>
           </PickerRow>
-          <PickerRow label="Sector" value={sector} defaultExpanded={sheetFocus === 'sector'}>
+          <PickerRow label="Sector" value={sector}>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.sectors ?? []).map((s) => {
                 const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
@@ -785,8 +785,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onBandChange={setBand}
           satellite={satellite}
           sector={sector}
-          onSatelliteClick={() => { setSheetFocus('satellite'); setBottomSheetOpen(true); }}
-          onSectorClick={() => { setSheetFocus('sector'); setBottomSheetOpen(true); }}
+          satellites={products?.satellites ?? []}
+          sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
+          onSatelliteChange={setSatellite}
+          onSectorChange={setSector}
           sectorName={products.sectors?.find((s) => s.id === sector)?.name}
           satelliteAvailability={products.satellite_availability}
         />

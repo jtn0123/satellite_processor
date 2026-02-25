@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/jtn0123/satellite_processor/compare/v1.19.0...v1.20.0) (2026-02-25)
+
+
+### Features
+
+* **mobile:** Final Live View Polish — App-Like Experience ([#238](https://github.com/jtn0123/satellite_processor/issues/238)) ([516b5e3](https://github.com/jtn0123/satellite_processor/commit/516b5e34fc4e0651870fa5a7554191afc9830620))
+
 # [1.19.0](https://github.com/jtn0123/satellite_processor/compare/v1.18.0...v1.19.0) (2026-02-24)
 
 

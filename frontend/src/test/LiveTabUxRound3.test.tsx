@@ -358,7 +358,7 @@ describe('Cached Image Banner', () => {
 });
 
 describe('Controls FAB', () => {
-  it('FAB shows "Controls" label', async () => {
+  it('FAB has no text label on mobile (icon only)', async () => {
     vi.useRealTimers();
     // Mock mobile viewport
     Object.defineProperty(window, 'innerWidth', { value: 400, writable: true });
@@ -369,7 +369,7 @@ describe('Controls FAB', () => {
       expect(screen.getByTestId('mobile-fab')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.queryByText('Controls')).not.toBeInTheDocument();
 
     // Restore
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });

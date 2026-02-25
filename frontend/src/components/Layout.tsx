@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Cog,
@@ -43,6 +43,8 @@ export default function Layout() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [hasNewVersion, setHasNewVersion] = useState(false);
   const drawerRef = useRef<HTMLDialogElement>(null);
+  const location = useLocation();
+  const isLivePage = location.pathname === '/live';
 
   // #8: System theme detection - check preference on first load
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -278,7 +280,7 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50">
+        <header className={`md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50 ${isLivePage ? 'hidden' : ''}`}>
           <button
             onClick={() => setDrawerOpen(true)}
             className="p-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"

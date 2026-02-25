@@ -376,11 +376,11 @@ function FullscreenButton({ isFullscreen, onClick }: Readonly<{ isFullscreen: bo
   );
 }
 
-function StatusPill({ monitoring, satellite, band, frameTime }: Readonly<{ monitoring: boolean; satellite: string; band: string; frameTime: string | null }>) {
+function StatusPill({ monitoring, satellite, band, frameTime, isMobile }: Readonly<{ monitoring: boolean; satellite: string; band: string; frameTime: string | null; isMobile?: boolean }>) {
   const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
   const age = frameTime ? timeAgo(frameTime) : '';
   return (
-    <div className="absolute top-28 md:top-16 left-4 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm" data-testid="status-pill">
+    <div className={`absolute z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm ${isMobile ? 'top-2 left-2 bg-black/60' : 'top-16 left-4 bg-black/50'}`} data-testid="status-pill">
       <div className={`w-2 h-2 rounded-full shrink-0 ${dotClass} animate-pulse`} />
       <span className="text-xs font-medium text-white/90">
         {monitoring ? 'MONITORING' : 'LIVE'}
@@ -402,6 +402,14 @@ interface LiveTabProps {
 
 export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}) {
   const isMobile = useIsMobile();
+
+  // #1: Lock scroll on Live tab (mobile only)
+  useEffect(() => {
+    if (!isMobile) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile]);
+
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('C02');
@@ -555,7 +563,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
   return (
-    <div ref={pullContainerRef} className="relative h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-8rem)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
+    <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[100dvh] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
@@ -578,7 +586,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             satellite={satellite}
             band={band}
             sector={sector}
-            isFullscreen={isFullscreen}
             zoomStyle={zoom.style}
             prevImageUrl={prevImageUrl}
             comparePosition={comparePosition}
@@ -672,8 +679,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         )}
 
-        {/* Status pill overlay */}
-        <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} />
+        {/* Status pill overlay — positioned on image */}
+        <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} isMobile={isMobile} />
 
         {/* Mobile FAB for controls — overlaid on image bottom-right */}
         <div className="sm:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
@@ -763,7 +770,6 @@ interface ImagePanelContentProps {
   satellite: string;
   band: string;
   sector: string;
-  isFullscreen: boolean;
   zoomStyle: React.CSSProperties;
   prevImageUrl: string | null;
   comparePosition: number;
@@ -924,13 +930,12 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
         data-testid="fab-toggle"
       >
         {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
-        <span className="text-[9px] text-white/40">Controls</span>
       </button>
     </div>
   );
 }
 
-function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, isFullscreen, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
+function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
   if (isLoading || (!imageUrl && !isError)) {
     return (
       <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
@@ -966,7 +971,7 @@ function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellit
       src={imageUrl ?? ''}
       alt={`${satellite} ${band} ${sector}`}
       className="max-w-full max-h-full object-contain select-none"
-      style={isFullscreen ? zoomStyle : undefined}
+      style={zoomStyle}
       draggable={false}
       data-satellite={satellite}
       data-band={band}

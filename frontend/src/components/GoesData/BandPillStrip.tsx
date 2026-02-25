@@ -18,6 +18,7 @@ interface BandPillStripProps {
   satellite: string;
   sector: string;
   onSatelliteClick: () => void;
+  onSectorClick: () => void;
   sectorName?: string;
   satelliteAvailability?: Readonly<Record<string, SatelliteAvailabilityInfo>>;
 }
@@ -29,6 +30,7 @@ export default function BandPillStrip({
   satellite,
   sector,
   onSatelliteClick,
+  onSectorClick,
   sectorName,
   satelliteAvailability,
 }: Readonly<BandPillStripProps>) {
@@ -65,7 +67,7 @@ export default function BandPillStrip({
           {satLabel} ▾
         </button>
         <button
-          onClick={onSatelliteClick}
+          onClick={onSectorClick}
           className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 text-xs font-medium hover:bg-white/20 transition-colors"
           data-testid="pill-strip-sector"
         >

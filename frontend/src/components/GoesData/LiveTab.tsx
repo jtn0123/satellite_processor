@@ -1116,7 +1116,7 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center">
+    <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-900">
       {/* Cached image banner — inline above image, dismissible */}
       {usingCached && cachedMeta && !cachedDismissed && (
         <div className="w-full flex justify-center px-4 py-1" data-testid="cached-image-banner">
@@ -1132,7 +1132,7 @@ function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
       {!loaded && !error && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
-      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
+      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
         {/* Previous image for crossfade */}
         {prevSrc && (
           <img

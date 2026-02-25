@@ -304,7 +304,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main id="main-content" className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-0 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}>
+        <main id="main-content" className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-16 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

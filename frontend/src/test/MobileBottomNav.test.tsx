@@ -32,9 +32,9 @@ describe('MobileBottomNav', () => {
     expect(browseTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('hides on /live for full-bleed image', () => {
+  it('shows translucent nav on /live', () => {
     renderWithRouter('/live');
-    expect(screen.queryByTestId('mobile-bottom-nav')).toBeNull();
+    expect(screen.getByTestId('mobile-bottom-nav')).toBeInTheDocument();
   });
 
   it('Animate tab is active on /animate', () => {

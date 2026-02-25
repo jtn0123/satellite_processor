@@ -342,12 +342,13 @@ function useSwipeBand(products: Product | undefined, band: string, setBand: (b: 
     touchStart.current = { x: t.clientX, y: t.clientY };
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent, isZoomed?: boolean) => {
     if (!touchStart.current) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - touchStart.current.x;
     const dy = t.clientY - touchStart.current.y;
     touchStart.current = null;
+    if (isZoomed) return;
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
     const currentIdx = bandKeys.indexOf(band);
     if (currentIdx < 0) return;
@@ -451,7 +452,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const overlayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const resetOverlayTimer = useCallback(() => {
     clearTimeout(overlayTimer.current);
-    overlayTimer.current = setTimeout(() => setOverlayVisible(false), 3000);
+    overlayTimer.current = setTimeout(() => setOverlayVisible(false), 5000);
   }, []);
   useEffect(() => {
     // Auto-hide on initial load
@@ -468,6 +469,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   // Bottom sheet for mobile pickers
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
+  const bandPickerRef = useRef<HTMLDivElement>(null);
+  const scrollToBandsRef = useRef(false);
+
+  useEffect(() => {
+    if (bottomSheetOpen && scrollToBandsRef.current && bandPickerRef.current) {
+      bandPickerRef.current.scrollIntoView({ behavior: 'smooth' });
+      scrollToBandsRef.current = false;
+    }
+  }, [bottomSheetOpen]);
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
@@ -475,6 +485,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
     onRefresh: handlePullRefresh,
+    enabled: !zoom.isZoomed,
   });
 
   const { data: products } = useQuery<Product>({
@@ -573,7 +584,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
       >
         {/* Swipe hint (first visit only) */}
-        {isMobile && <SwipeHint />}
+        {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
         {/* Swipe gesture area */}
         <button
@@ -588,7 +599,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
           onTouchEnd={(e) => {
             if (!compareMode) { zoom.handlers.onTouchEnd(e); }
-            handleTouchEnd(e);
+            handleTouchEnd(e, zoom.isZoomed);
           }}
           onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
           onMouseMove={compareMode ? undefined : zoom.handlers.onMouseMove}
@@ -709,6 +720,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             compareMode={compareMode}
             onCompareModeChange={setCompareMode}
             onOpenSheet={() => setBottomSheetOpen(true)}
+            onOpenBandSheet={() => { scrollToBandsRef.current = true; setBottomSheetOpen(true); }}
           />
         </div>
 
@@ -748,7 +760,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               })}
             </div>
           </PickerRow>
-          <PickerRow label="Band" value={getFriendlyBandName(band)}>
+          <div ref={bandPickerRef}>
+          <PickerRow label="Band" value={getFriendlyBandName(band)} defaultExpanded>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.bands ?? []).map((b) => (
                 <button key={b.id} onClick={() => { setBand(b.id); }}
@@ -758,6 +771,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               ))}
             </div>
           </PickerRow>
+          </div>
         </div>
       </BottomSheet>
     </div>
@@ -765,8 +779,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 }
 
 /** Expandable picker row for bottom sheet */
-function PickerRow({ label, value, children }: Readonly<{ label: string; value: string; children: React.ReactNode }>) {
-  const [expanded, setExpanded] = useState(false);
+function PickerRow({ label, value, children, defaultExpanded = false }: Readonly<{ label: string; value: string; children: React.ReactNode; defaultExpanded?: boolean }>) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <div className="border-b border-white/10 pb-3 last:border-b-0">
       <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-center justify-between py-2" data-testid={`picker-row-${label.toLowerCase()}`}>
@@ -870,18 +884,22 @@ function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetc
 
 /* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
 
-function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenSheet }: Readonly<{
+function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenSheet, onOpenBandSheet }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
   compareMode: boolean; onCompareModeChange: (v: boolean) => void;
   onOpenSheet?: () => void;
+  onOpenBandSheet?: () => void;
 }>) {
   const [open, setOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
+  const openedAt = useRef<number>(0);
 
   useEffect(() => {
     if (!open) return;
+    openedAt.current = Date.now();
     const handler = (e: globalThis.MouseEvent | globalThis.TouchEvent) => {
+      if (Date.now() - openedAt.current < 150) return;
       if (fabRef.current && !fabRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
@@ -926,6 +944,16 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             <Columns2 className="w-4 h-4 text-blue-400" />
             Compare
           </button>
+          {onOpenBandSheet && (
+            <button
+              onClick={() => { onOpenBandSheet(); setOpen(false); }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] bg-white/10 border border-white/20 text-white/80"
+              data-testid="open-band-sheet"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-purple-400" />
+              Change Band
+            </button>
+          )}
           {onOpenSheet && (
             <button
               onClick={() => { onOpenSheet(); setOpen(false); }}

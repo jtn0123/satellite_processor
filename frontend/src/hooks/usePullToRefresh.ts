@@ -21,7 +21,7 @@ export function usePullToRefresh({
   const touchStartY = useRef<number | null>(null);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (!enabled || isRefreshing) return;
+    if (!enabled || isRefreshing) { touchStartY.current = null; return; }
     const el = containerRef.current;
     // Only activate when scrolled to top
     if (el && el.scrollTop <= 0) {

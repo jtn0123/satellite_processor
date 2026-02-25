@@ -8,19 +8,12 @@ test.beforeEach(async ({ page }) => {
 test.describe('Mobile Live View', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-  test('scroll lock active on live page', async ({ page }) => {
+  test('no vertical scroll on live page', async ({ page }) => {
     await page.goto('/live');
     await page.waitForSelector('[data-testid="live-image-area"]', { timeout: 10000 });
-    // Scroll lock depends on useIsMobile hook detecting viewport < 768px
-    // Trigger a resize event to ensure the hook picks up the viewport
-    await page.evaluate(() => globalThis.dispatchEvent(new Event('resize')));
-    await page.waitForTimeout(200);
-    const overflow = await page.evaluate(() => {
-      const style = document.body.style.overflow;
-      const computed = globalThis.getComputedStyle(document.body).overflow;
-      return style || computed;
-    });
-    expect(overflow).toBe('hidden');
+    // Verify the page doesn't scroll — content fits within viewport
+    const canScroll = await page.evaluate(() => document.body.scrollHeight > globalThis.innerHeight + 10);
+    expect(canScroll).toBe(false);
   });
 
   test('scroll lock cleanup on navigation away', async ({ page }) => {

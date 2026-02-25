@@ -1,12 +1,4 @@
 FROM python:3.11-slim
-ARG BUILD_VERSION=0.0.0
-ARG BUILD_COMMIT=dev
-ARG BUILD_DATE=""
-ARG BUILD_SHA=dev
-ENV BUILD_VERSION=${BUILD_VERSION}
-ENV BUILD_COMMIT=${BUILD_COMMIT}
-ENV BUILD_DATE=${BUILD_DATE}
-ENV BUILD_SHA=${BUILD_SHA}
 
 WORKDIR /app
 
@@ -28,6 +20,16 @@ COPY satellite_processor /app/satellite_processor
 
 # Copy backend app
 COPY backend/app /app/app
+
+# Build metadata — placed AFTER code layers to avoid cache pollution
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_COMMIT=dev
+ARG BUILD_DATE=""
+ARG BUILD_SHA=dev
+ENV BUILD_VERSION=${BUILD_VERSION}
+ENV BUILD_COMMIT=${BUILD_COMMIT}
+ENV BUILD_DATE=${BUILD_DATE}
+ENV BUILD_SHA=${BUILD_SHA}
 
 # Copy Alembic migration files
 COPY backend/alembic.ini /app/alembic.ini

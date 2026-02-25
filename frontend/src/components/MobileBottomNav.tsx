@@ -61,8 +61,7 @@ export default function MobileBottomNav() {
 
   // Close more menu on navigation — handled by NavLink onClick handlers below
 
-  // Hide bottom nav on Live tab for full-bleed image
-  if (location.pathname === '/live') return null;
+  const isLive = location.pathname === '/live';
 
   return (
     <>
@@ -121,7 +120,7 @@ export default function MobileBottomNav() {
       <nav
         data-testid="mobile-bottom-nav"
         aria-label="Mobile navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50 safe-bottom"
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 safe-bottom ${isLive ? 'bg-black/60 backdrop-blur-md border-t border-white/10' : 'bg-white dark:bg-space-900 border-t border-gray-200 dark:border-space-700/50'}`}
       >
         <div
           role="tablist"

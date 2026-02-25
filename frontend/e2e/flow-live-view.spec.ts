@@ -219,12 +219,12 @@ test.describe('Live flow', () => {
 
   // --- Responsive ---
 
-  test('mobile viewport — bottom nav hidden on live page', async ({ page }) => {
+  test('mobile viewport — bottom nav visible on live page', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/live');
-    // Bottom nav is hidden on /live for full-bleed image experience
+    // Bottom nav is visible on /live with translucent styling
     const bottomNav = page.locator('[data-testid="mobile-bottom-nav"]');
-    await expect(bottomNav).not.toBeVisible({ timeout: 10000 });
+    await expect(bottomNav).toBeVisible({ timeout: 10000 });
   });
 
   test('desktop viewport — sidebar visible', async ({ page }) => {

@@ -16,6 +16,7 @@ const defaultProps = {
   satellite: 'GOES-16',
   sector: 'CONUS',
   onSatelliteClick: vi.fn(),
+  onSectorClick: vi.fn(),
   sectorName: 'CONUS',
 } as const;
 
@@ -55,11 +56,11 @@ describe('BandPillStrip', () => {
     expect(onSatelliteClick).toHaveBeenCalled();
   });
 
-  it('sector chip is tappable and calls onSatelliteClick', () => {
-    const onSatelliteClick = vi.fn();
-    render(<BandPillStrip {...defaultProps} onSatelliteClick={onSatelliteClick} />);
+  it('sector chip is tappable and calls onSectorClick', () => {
+    const onSectorClick = vi.fn();
+    render(<BandPillStrip {...defaultProps} onSectorClick={onSectorClick} />);
     fireEvent.click(screen.getByTestId('pill-strip-sector'));
-    expect(onSatelliteClick).toHaveBeenCalled();
+    expect(onSectorClick).toHaveBeenCalled();
   });
 
   it('shows satellite status when not operational', () => {

@@ -470,6 +470,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   // Bottom sheet for mobile pickers
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
+  const [sheetFocus, setSheetFocus] = useState<'satellite' | 'sector' | 'band' | null>(null);
   const bandPickerRef = useRef<HTMLDivElement>(null);
   const scrollToBandsRef = useRef(false);
 
@@ -737,9 +738,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       </div>
 
       {/* Mobile bottom sheet for pickers */}
-      <BottomSheet open={bottomSheetOpen} onClose={() => setBottomSheetOpen(false)} title="Settings">
+      <BottomSheet open={bottomSheetOpen} onClose={() => { setBottomSheetOpen(false); setSheetFocus(null); }} title="Settings">
         <div className="flex flex-col gap-4">
-          <PickerRow label="Satellite" value={satellite}>
+          <PickerRow label="Satellite" value={satellite} defaultExpanded={sheetFocus === 'satellite'}>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.satellites ?? []).map((s) => (
                 <button key={s} onClick={() => { setSatellite(s); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${satellite === s ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
@@ -748,7 +749,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               ))}
             </div>
           </PickerRow>
-          <PickerRow label="Sector" value={sector}>
+          <PickerRow label="Sector" value={sector} defaultExpanded={sheetFocus === 'sector'}>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.sectors ?? []).map((s) => {
                 const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
@@ -762,7 +763,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             </div>
           </PickerRow>
           <div ref={bandPickerRef}>
-          <PickerRow label="Band" value={getFriendlyBandName(band)} defaultExpanded>
+          <PickerRow label="Band" value={getFriendlyBandName(band)} defaultExpanded={sheetFocus === 'band' || sheetFocus === null}>
             <div className="flex flex-wrap gap-2 mt-2">
               {(products?.bands ?? []).map((b) => (
                 <button key={b.id} onClick={() => { setBand(b.id); }}
@@ -784,7 +785,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onBandChange={setBand}
           satellite={satellite}
           sector={sector}
-          onSatelliteClick={() => setBottomSheetOpen(true)}
+          onSatelliteClick={() => { setSheetFocus('satellite'); setBottomSheetOpen(true); }}
+          onSectorClick={() => { setSheetFocus('sector'); setBottomSheetOpen(true); }}
           sectorName={products.sectors?.find((s) => s.id === sector)?.name}
           satelliteAvailability={products.satellite_availability}
         />
@@ -796,6 +798,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 /** Expandable picker row for bottom sheet */
 function PickerRow({ label, value, children, defaultExpanded = false }: Readonly<{ label: string; value: string; children: React.ReactNode; defaultExpanded?: boolean }>) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  useEffect(() => { setExpanded(defaultExpanded); }, [defaultExpanded]);
   return (
     <div className="border-b border-white/10 pb-3 last:border-b-0">
       <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-center justify-between py-2" data-testid={`picker-row-${label.toLowerCase()}`}>

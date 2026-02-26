@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
@@ -60,7 +61,7 @@ describe('FullscreenButton', () => {
 // ImageErrorBoundary
 import ImageErrorBoundary from '../components/GoesData/ImageErrorBoundary';
 
-function ThrowingChild() {
+function ThrowingChild(): React.JSX.Element {
   throw new Error('Test error');
 }
 

@@ -41,6 +41,8 @@ class ResourceMonitor:
 
     def set_interval(self, msec: int):
         """Set the update interval in milliseconds"""
+        if msec <= 0:
+            raise ValueError("Interval must be positive")
         self._interval = msec / 1000.0
 
     def start(self):

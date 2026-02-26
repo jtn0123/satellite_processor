@@ -366,10 +366,14 @@ class ImageOperations:
     def _init_worker():
         """Initialize worker process"""
         try:
+            import os
             import psutil
 
             process = psutil.Process()
-            process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            if os.name == "nt":
+                process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            else:
+                process.nice(-5)
         except Exception:
             pass
 

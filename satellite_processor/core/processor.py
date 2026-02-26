@@ -182,6 +182,8 @@ class SatelliteImageProcessor:
         self, operation: str, current: int, total: int, width: int = 40
     ) -> str:
         """Create simple progress bar string"""
+        if total <= 0:
+            return f"{operation} [{'░' * width}] 0%"
         progress = float(current) / total
         filled = int(width * progress)
         bar = "█" * filled + "░" * (width - filled)

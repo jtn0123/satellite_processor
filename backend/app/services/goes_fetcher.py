@@ -358,7 +358,7 @@ def _normalize_cmi_to_image(cmi: np.ndarray) -> PILImage.Image:
         return PILImage.new("L", (w, h), 0)
 
     vmin, vmax = np.nanpercentile(cmi, [2, 98])
-    if vmax <= vmin:
+    if vmax - vmin < 1e-6:
         vmax = vmin + 1
     np.clip(cmi, vmin, vmax, out=cmi)
     cmi -= vmin

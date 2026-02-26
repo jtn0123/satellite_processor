@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import statistics
 from collections import Counter
 from typing import Any
 
@@ -57,8 +58,7 @@ async def detect_capture_pattern(db: AsyncSession) -> dict[str, Any]:
     expected_interval = None
     if intervals:
         # Use median interval as expected
-        intervals.sort()
-        expected_interval = intervals[len(intervals) // 2]
+        expected_interval = statistics.median(intervals)
 
     return {
         "satellite": dominant_satellite,

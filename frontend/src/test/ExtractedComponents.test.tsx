@@ -177,3 +177,57 @@ describe('DesktopControlsBar', () => {
     expect(screen.getByText('Stop Watch')).toBeInTheDocument();
   });
 });
+
+// liveTabUtils — multi-band cache
+import { saveCachedImage, loadCachedImage } from '../components/GoesData/liveTabUtils';
+
+describe('Multi-band offline cache', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('saves and loads cached image by band', () => {
+    saveCachedImage('https://cdn.example.com/img1.jpg', {
+      satellite: 'GOES-16', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
+    });
+    const result = loadCachedImage('GOES-16', 'CONUS', 'C02');
+    expect(result).not.toBeNull();
+    expect(result?.url).toBe('https://cdn.example.com/img1.jpg');
+    expect(result?.band).toBe('C02');
+  });
+
+  it('returns null when no cache exists', () => {
+    expect(loadCachedImage('GOES-16', 'CONUS', 'C07')).toBeNull();
+  });
+
+  it('returns most recent when no specific band requested', () => {
+    saveCachedImage('https://cdn.example.com/old.jpg', {
+      satellite: 'GOES-16', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
+    });
+    saveCachedImage('https://cdn.example.com/new.jpg', {
+      satellite: 'GOES-16', band: 'C07', sector: 'CONUS', timestamp: '2026-01-02T00:00:00Z',
+    });
+    const result = loadCachedImage();
+    expect(result?.url).toBe('https://cdn.example.com/new.jpg');
+  });
+
+  it('prunes old entries when over MAX_CACHED limit', () => {
+    for (let i = 1; i <= 8; i++) {
+      saveCachedImage(`https://cdn.example.com/img${i}.jpg`, {
+        satellite: 'GOES-16', band: `C${String(i).padStart(2, '0')}`, sector: 'CONUS',
+        timestamp: `2026-01-0${i}T00:00:00Z`,
+      });
+    }
+    // Should have pruned oldest, keeping MAX_CACHED (6)
+    const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('live-cache:'));
+    expect(cacheKeys.length).toBeLessThanOrEqual(6);
+  });
+
+  it('handles storage errors gracefully', () => {
+    const origSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => { throw new Error('QuotaExceeded'); };
+    // Should not throw
+    expect(() => saveCachedImage('url', { satellite: 'X', band: 'Y', sector: 'Z', timestamp: '' })).not.toThrow();
+    Storage.prototype.setItem = origSetItem;
+  });
+});

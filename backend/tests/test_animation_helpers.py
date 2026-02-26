@@ -41,8 +41,8 @@ class TestApplyLoopStyle:
         assert result == [1, 2, 3, 4, 3, 2]
 
     def test_pingpong_two_frames(self):
-        # edge: reversed(frames[1:-1]) is empty
-        assert _apply_loop_style([1, 2], "pingpong", 10) == [1, 2]
+        # 2-frame pingpong should bounce: [A, B, A]
+        assert _apply_loop_style([1, 2], "pingpong", 10) == [1, 2, 1]
 
     def test_hold(self):
         frames = [1, 2, 3]

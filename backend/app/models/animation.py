@@ -106,7 +106,7 @@ class AnimationResponse(BaseModel):
     scale: str = "100%"
     output_path: str | None = None
     file_size: int = 0
-    duration_seconds: int = 0
+    duration_seconds: float = 0.0
     created_at: datetime | None = None
     completed_at: datetime | None = None
     error: str = ""

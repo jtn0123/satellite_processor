@@ -366,7 +366,6 @@ class ImageOperations:
     def _init_worker():
         """Initialize worker process"""
         try:
-            import os
             import psutil
 
             process = psutil.Process()
@@ -374,6 +373,8 @@ class ImageOperations:
                 process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
             else:
                 process.nice(-5)
+        except PermissionError:
+            logger.debug("Insufficient permissions to set process priority")
         except Exception:
             pass
 

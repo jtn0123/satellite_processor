@@ -506,7 +506,9 @@ async def band_availability(
 
 
 @router.get("/latest")
+@limiter.limit("30/minute")
 async def get_latest_frame(
+    request: Request,
     satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),

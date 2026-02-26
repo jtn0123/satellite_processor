@@ -54,7 +54,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   }, [doubleTapScale]);
 
   const onWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
+    // Only prevent default scroll when zoomed in; at scale=1, let page scroll normally
+    if (stateRef.current.scale > 1) {
+      e.preventDefault();
+    }
     setState((prev) => {
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
       const newScale = clampScale(prev.scale * factor);

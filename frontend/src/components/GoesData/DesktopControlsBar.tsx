@@ -10,9 +10,11 @@ interface DesktopControlsBarProps {
   onRefreshIntervalChange: (v: number) => void;
   compareMode: boolean;
   onCompareModeChange: React.Dispatch<React.SetStateAction<boolean>>;
+  autoFetchDisabled?: boolean;
+  autoFetchDisabledReason?: string;
 }
 
-export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, refreshInterval, onRefreshIntervalChange, compareMode, onCompareModeChange }: Readonly<DesktopControlsBarProps>) {
+export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, refreshInterval, onRefreshIntervalChange, compareMode, onCompareModeChange, autoFetchDisabled, autoFetchDisabledReason }: Readonly<DesktopControlsBarProps>) {
   return (
     <div className="hidden sm:flex items-center gap-2 ml-2">
       <button
@@ -35,10 +37,12 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           role="switch"
           aria-label="Toggle auto-fetch"
           aria-checked={autoFetch}
-          onClick={() => onAutoFetchChange((v) => !v)}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
+          aria-disabled={autoFetchDisabled}
+          onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange((v) => !v)}
+          title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetchDisabled ? 'bg-gray-600 opacity-40 cursor-not-allowed' : autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
         >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${autoFetch ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${autoFetch && !autoFetchDisabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
         </button>
         <Zap className="w-3.5 h-3.5 text-amber-400" />
         <span className="whitespace-nowrap">Auto-fetch every</span>

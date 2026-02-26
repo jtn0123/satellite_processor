@@ -6,9 +6,11 @@ interface MobileControlsFabProps {
   onToggleMonitor: () => void;
   autoFetch: boolean;
   onAutoFetchChange: (v: boolean) => void;
+  autoFetchDisabled?: boolean;
+  autoFetchDisabledReason?: string;
 }
 
-export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange }: Readonly<MobileControlsFabProps>) {
+export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, autoFetchDisabled, autoFetchDisabledReason }: Readonly<MobileControlsFabProps>) {
   const [open, setOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
   const openedAt = useRef<number>(0);
@@ -41,15 +43,19 @@ export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFet
             {monitoring ? 'Stop Watch' : 'Watch'}
           </button>
           <button
-            onClick={() => onAutoFetchChange(!autoFetch)}
+            onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange(!autoFetch)}
+            title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
+            aria-disabled={autoFetchDisabled}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-              autoFetch
-                ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
-                : 'bg-white/10 border border-white/20 text-white/80'
+              autoFetchDisabled
+                ? 'bg-white/10 border border-white/20 text-white/40 cursor-not-allowed'
+                : autoFetch
+                  ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
+                  : 'bg-white/10 border border-white/20 text-white/80'
             }`}
           >
             <Zap className="w-4 h-4 text-amber-400" />
-            Auto-fetch
+            {autoFetchDisabled ? 'Auto-fetch N/A' : 'Auto-fetch'}
           </button>
         </div>
       )}

@@ -605,7 +605,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
           onMouseMove={(e) => {
             if (!compareMode) { zoom.handlers.onMouseMove(e); }
-            if (!isMobile && !overlayVisible) { setOverlayVisible(true); resetOverlayTimer(); }
+            if (isMobile || overlayVisible) { return; }
+            setOverlayVisible(true);
+            resetOverlayTimer();
           }}
           onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
           onClick={handleImageTap}

@@ -41,13 +41,14 @@ describe('useImageZoom zoomIn/reset', () => {
 
 describe('Image loading shimmer', () => {
   it('CdnImage shows shimmer before load, hides after', async () => {
-    // We test via the LiveTab's ImagePanelContent indirectly
-    // Simpler: test the raw source contains shimmer data-testid
-    const mod = await import('../components/GoesData/LiveTab?raw');
-    const src = (mod as unknown as { default: string }).default;
-    expect(src).toContain('data-testid="image-shimmer"');
-    expect(src).toContain('data-testid="loading-shimmer"');
-    expect(src).toContain('animate-pulse');
+    // CdnImage is now in its own file; ImagePanelContent has loading-shimmer
+    const cdnMod = await import('../components/GoesData/CdnImage?raw');
+    const cdnSrc = (cdnMod as unknown as { default: string }).default;
+    expect(cdnSrc).toContain('data-testid="image-shimmer"');
+    expect(cdnSrc).toContain('animate-pulse');
+    const panelMod = await import('../components/GoesData/ImagePanelContent?raw');
+    const panelSrc = (panelMod as unknown as { default: string }).default;
+    expect(panelSrc).toContain('data-testid="loading-shimmer"');
   });
 });
 
@@ -55,11 +56,13 @@ describe('Image loading shimmer', () => {
 
 describe('Mobile FAB', () => {
   it('FAB markup exists with sm:hidden for mobile-only', async () => {
-    const mod = await import('../components/GoesData/LiveTab?raw');
-    const src = (mod as unknown as { default: string }).default;
-    expect(src).toContain('data-testid="mobile-fab"');
-    expect(src).toContain('sm:hidden');
-    expect(src).toContain('data-testid="fab-toggle"');
-    expect(src).toContain('data-testid="fab-menu"');
+    const liveMod = await import('../components/GoesData/LiveTab?raw');
+    const liveSrc = (liveMod as unknown as { default: string }).default;
+    expect(liveSrc).toContain('data-testid="mobile-fab"');
+    expect(liveSrc).toContain('sm:hidden');
+    const fabMod = await import('../components/GoesData/MobileControlsFab?raw');
+    const fabSrc = (fabMod as unknown as { default: string }).default;
+    expect(fabSrc).toContain('data-testid="fab-toggle"');
+    expect(fabSrc).toContain('data-testid="fab-menu"');
   });
 });

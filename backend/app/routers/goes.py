@@ -49,6 +49,7 @@ BAND_DESCRIPTIONS = {
     "C11": "Cloud-top Phase (8.4µm)", "C12": "Ozone (9.6µm)",
     "C13": "Clean IR (10.3µm)", "C14": "IR (11.2µm)",
     "C15": "Dirty IR (12.3µm)", "C16": "CO2 (13.3µm)",
+    "GEOCOLOR": "GeoColor (True Color Day, IR Night)",
 }
 
 # Enhanced band metadata
@@ -69,6 +70,7 @@ BAND_METADATA = {
     "C14": {"wavelength_um": 11.2, "common_name": "IR Longwave", "category": "infrared", "use_case": "Cloud-top temperature, general IR"},
     "C15": {"wavelength_um": 12.3, "common_name": "Dirty IR", "category": "infrared", "use_case": "Dirty IR window — volcanic ash"},
     "C16": {"wavelength_um": 13.3, "common_name": "CO₂ Longwave", "category": "infrared", "use_case": "Cloud-top height estimation"},
+    "GEOCOLOR": {"wavelength_um": None, "common_name": "GeoColor", "category": "composite", "use_case": "True color daytime, multispectral IR nighttime"},
 }
 
 SECTOR_DISPLAY_NAMES = {
@@ -105,6 +107,8 @@ async def list_products():
             for k, v in SECTOR_PRODUCTS.items()
         ],
         "bands": [
+            {"id": "GEOCOLOR", "description": BAND_DESCRIPTIONS["GEOCOLOR"], **BAND_METADATA["GEOCOLOR"]},
+        ] + [
             {
                 "id": band,
                 "description": BAND_DESCRIPTIONS.get(band, band),

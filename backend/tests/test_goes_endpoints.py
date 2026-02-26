@@ -48,7 +48,7 @@ class TestProducts:
         resp = await client.get("/api/goes/products")
         data = resp.json()
         assert "bands" in data
-        assert len(data["bands"]) == 16
+        assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
         band_ids = [b["id"] for b in data["bands"]]
         assert "C01" in band_ids
         assert "C16" in band_ids

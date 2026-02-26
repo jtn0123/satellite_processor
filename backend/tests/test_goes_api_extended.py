@@ -53,7 +53,7 @@ class TestProducts:
     async def test_products_band_count(self, client):
         resp = await client.get("/api/goes/products")
         data = resp.json()
-        assert len(data["bands"]) == 16  # C01-C16
+        assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
 
 
 @pytest.mark.asyncio

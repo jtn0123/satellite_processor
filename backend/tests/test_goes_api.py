@@ -15,7 +15,7 @@ class TestGoesProducts:
         assert resp.status_code == 200
         data = resp.json()
         assert "GOES-16" in data["satellites"]
-        assert len(data["bands"]) == 16
+        assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
         assert len(data["sectors"]) == 4
 
 

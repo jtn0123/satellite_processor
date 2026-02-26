@@ -91,6 +91,22 @@ describe('MonitorSettingsPanel', () => {
     fireEvent.click(screen.getByLabelText('Monitor settings'));
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
+
+  it('closes dropdown on Escape key', () => {
+    render(<MonitorSettingsPanel {...defaultProps} />);
+    fireEvent.click(screen.getByLabelText('Monitor settings'));
+    expect(screen.getByTestId('monitor-settings-dropdown')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByTestId('monitor-settings-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('closes dropdown on outside click', () => {
+    render(<MonitorSettingsPanel {...defaultProps} />);
+    fireEvent.click(screen.getByLabelText('Monitor settings'));
+    expect(screen.getByTestId('monitor-settings-dropdown')).toBeInTheDocument();
+    fireEvent.mouseDown(document);
+    expect(screen.queryByTestId('monitor-settings-dropdown')).not.toBeInTheDocument();
+  });
 });
 
 describe('MONITOR_PRESETS', () => {

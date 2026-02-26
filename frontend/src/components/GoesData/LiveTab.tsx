@@ -638,7 +638,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Top controls overlay — on mobile, hidden unless overlayVisible */}
         <div
-          className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${!overlayVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           data-testid="controls-overlay"
         >
           <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3">

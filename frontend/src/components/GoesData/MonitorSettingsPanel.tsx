@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Square, Clock } from 'lucide-react';
 import { MONITOR_PRESETS } from './monitorPresets';
 import type { MonitorPreset } from './monitorPresets';
@@ -40,13 +40,31 @@ export default function MonitorSettingsPanel({
   bands,
 }: Readonly<MonitorSettingsPanelProps>) {
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: globalThis.MouseEvent | globalThis.TouchEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const escHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    document.addEventListener('keydown', escHandler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('keydown', escHandler);
+    };
+  }, [open]);
+
   const [customInterval, setCustomInterval] = useState(interval);
   const [customSatellite, setCustomSatellite] = useState(satellite);
   const [customSector, setCustomSector] = useState(sector);
   const [customBand, setCustomBand] = useState(band);
 
   return (
-    <div className="relative" data-testid="monitor-settings-panel">
+    <div ref={panelRef} className="relative" data-testid="monitor-settings-panel">
       <button
         onClick={() => setOpen((v) => !v)}
         className={`p-2 rounded-lg backdrop-blur-md border transition-colors min-w-[44px] min-h-[44px] ${

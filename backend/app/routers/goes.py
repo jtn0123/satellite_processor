@@ -71,6 +71,13 @@ BAND_METADATA = {
     "C16": {"wavelength_um": 13.3, "common_name": "CO₂ Longwave", "category": "infrared", "use_case": "Cloud-top height estimation"},
 }
 
+SECTOR_DISPLAY_NAMES = {
+    "FullDisk": "Full Disk",
+    "CONUS": "CONUS",
+    "Mesoscale1": "Mesoscale 1",
+    "Mesoscale2": "Mesoscale 2",
+}
+
 SECTOR_FILE_SIZES_KB = {
     "FullDisk": 12000,
     "CONUS": 4000,
@@ -90,7 +97,7 @@ async def list_products():
         "sectors": [
             {
                 "id": k,
-                "name": k,
+                "name": SECTOR_DISPLAY_NAMES.get(k, k),
                 "product": v,
                 "cadence_minutes": SECTOR_INTERVALS.get(k, 10),
                 "typical_file_size_kb": SECTOR_FILE_SIZES_KB.get(k, 4000),

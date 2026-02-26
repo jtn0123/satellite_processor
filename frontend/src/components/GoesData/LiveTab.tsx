@@ -13,7 +13,7 @@ import { useDoubleTap } from '../../hooks/useDoubleTap';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
 import SwipeHint from './SwipeHint';
 import ShimmerLoader from './ShimmerLoader';
-import BottomSheet from './BottomSheet';
+// BottomSheet removed — pill strip handles all pickers
 import StaleDataBanner from './StaleDataBanner';
 import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
@@ -160,8 +160,8 @@ function resolveImageUrls(
   satellite?: string,
   sector?: string,
   band?: string,
+  isMobileView?: boolean,
 ) {
-  const isMobileView = globalThis.window !== undefined && globalThis.window.innerWidth < 768;
   const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
   const directCdnUrl = buildCdnUrl(satellite ?? '', sector ?? '', band ?? '');
@@ -306,25 +306,36 @@ function useLiveFetchJob({
   return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }
 
-/* Countdown display hook — extracted to reduce LiveTab cognitive complexity */
+/* Countdown display hook — target-time approach to avoid drift */
 function useCountdownDisplay(refreshInterval: number) {
-  const [countdownSec, setCountdownSec] = useState(Math.floor(refreshInterval / 1000));
-   
+  const nextRefreshAt = useRef(0);
+
+  // Initialize on first render + reset when interval changes
   useEffect(() => {
-    setCountdownSec(Math.floor(refreshInterval / 1000));
+    nextRefreshAt.current = Date.now() + refreshInterval;
   }, [refreshInterval]);
-   
+
+  const [display, setDisplay] = useState(() => {
+    const sec = Math.max(0, Math.ceil(refreshInterval / 1000));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  });
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdownSec((prev) => (prev <= 1 ? Math.floor(refreshInterval / 1000) : prev - 1));
+      const remaining = Math.max(0, Math.ceil((nextRefreshAt.current - Date.now()) / 1000));
+      if (remaining <= 0) {
+        nextRefreshAt.current = Date.now() + refreshInterval;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      setDisplay(`${m}:${s.toString().padStart(2, '0')}`);
     }, 1000);
     return () => clearInterval(timer);
   }, [refreshInterval]);
-  return useMemo(() => {
-    const m = Math.floor(countdownSec / 60);
-    const s = countdownSec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }, [countdownSec]);
+
+  return display;
 }
 
 /* Swipe-to-change-band hook — extracted to reduce LiveTab cognitive complexity */
@@ -468,19 +479,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     });
   }, [resetOverlayTimer]);
 
-  // Bottom sheet for mobile pickers
-  const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
-  const [sheetFocus, setSheetFocus] = useState<'band' | null>(null);
-  const bandPickerRef = useRef<HTMLDivElement>(null);
-  const scrollToBandsRef = useRef(false);
-
-  useEffect(() => {
-    if (bottomSheetOpen && scrollToBandsRef.current && bandPickerRef.current) {
-      bandPickerRef.current.scrollIntoView({ behavior: 'smooth' });
-      scrollToBandsRef.current = false;
-    }
-  }, [bottomSheetOpen]);
-
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
   }, []);
@@ -571,7 +569,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom]);
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band);
+  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
 
@@ -634,7 +632,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
 
         {/* Top controls overlay — on mobile, hidden unless overlayVisible */}
-        <div className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${isMobile && !overlayVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} data-testid="controls-overlay">
+        <div
+          className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${!overlayVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          data-testid="controls-overlay"
+          onMouseEnter={() => { setOverlayVisible(true); clearTimeout(overlayTimer.current); }}
+          onMouseLeave={resetOverlayTimer}
+        >
           <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3" onPointerDown={() => { if (isMobile) resetOverlayTimer(); }}>
             {/* On mobile, hide dropdowns — use bottom sheet instead */}
             <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
@@ -720,9 +723,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onToggleMonitor={toggleMonitor}
             autoFetch={autoFetch}
             onAutoFetchChange={setAutoFetch}
-            compareMode={compareMode}
-            onCompareModeChange={setCompareMode}
-            onOpenBandSheet={() => { scrollToBandsRef.current = true; setBottomSheetOpen(true); }}
           />
         </div>
 
@@ -736,46 +736,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </button>
         )}
       </div>
-
-      {/* Mobile bottom sheet for pickers */}
-      <BottomSheet open={bottomSheetOpen} onClose={() => { setBottomSheetOpen(false); setSheetFocus(null); }} title="Settings">
-        <div className="flex flex-col gap-4">
-          <PickerRow label="Satellite" value={satellite}>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(products?.satellites ?? []).map((s) => (
-                <button key={s} onClick={() => { setSatellite(s); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${satellite === s ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
-                  {getSatelliteLabel(s, products?.satellite_availability)}
-                </button>
-              ))}
-            </div>
-          </PickerRow>
-          <PickerRow label="Sector" value={sector}>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(products?.sectors ?? []).map((s) => {
-                const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
-                return (
-                  <button key={s.id} disabled={unavailable} onClick={() => { setSector(s.id); }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${unavailable ? 'opacity-30 cursor-not-allowed' : ''} ${sector === s.id ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
-                    {s.name}
-                  </button>
-                );
-              })}
-            </div>
-          </PickerRow>
-          <div ref={bandPickerRef}>
-          <PickerRow label="Band" value={getFriendlyBandName(band)} defaultExpanded={sheetFocus === 'band' || sheetFocus === null}>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(products?.bands ?? []).map((b) => (
-                <button key={b.id} onClick={() => { setBand(b.id); }}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${band === b.id ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'}`}>
-                  {getFriendlyBandLabel(b.id, b.description, 'short')}
-                </button>
-              ))}
-            </div>
-          </PickerRow>
-          </div>
-        </div>
-      </BottomSheet>
 
       {/* Mobile band pill strip — pinned above bottom nav */}
       {isMobile && products?.bands && (
@@ -793,21 +753,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           satelliteAvailability={products.satellite_availability}
         />
       )}
-    </div>
-  );
-}
-
-/** Expandable picker row for bottom sheet */
-function PickerRow({ label, value, children, defaultExpanded = false }: Readonly<{ label: string; value: string; children: React.ReactNode; defaultExpanded?: boolean }>) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  useEffect(() => { setExpanded(defaultExpanded); }, [defaultExpanded]);
-  return (
-    <div className="border-b border-white/10 pb-3 last:border-b-0">
-      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-center justify-between py-2" data-testid={`picker-row-${label.toLowerCase()}`}>
-        <span className="text-sm font-medium text-gray-400">{label}</span>
-        <span className="text-sm font-semibold text-white">{value}</span>
-      </button>
-      {expanded && children}
     </div>
   );
 }
@@ -904,11 +849,9 @@ function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetc
 
 /* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
 
-function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, compareMode, onCompareModeChange, onOpenBandSheet }: Readonly<{
+function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange }: Readonly<{
   monitoring: boolean; onToggleMonitor: () => void;
   autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
-  compareMode: boolean; onCompareModeChange: (v: boolean) => void;
-  onOpenBandSheet?: () => void;
 }>) {
   const [open, setOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -952,27 +895,6 @@ function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetch
             <Zap className="w-4 h-4 text-amber-400" />
             Auto-fetch
           </button>
-          <button
-            onClick={() => onCompareModeChange(!compareMode)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-              compareMode
-                ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
-                : 'bg-white/10 border border-white/20 text-white/80'
-            }`}
-          >
-            <Columns2 className="w-4 h-4 text-blue-400" />
-            Compare
-          </button>
-          {onOpenBandSheet && (
-            <button
-              onClick={() => { onOpenBandSheet(); setOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] bg-white/10 border border-white/20 text-white/80"
-              data-testid="open-band-sheet"
-            >
-              <SlidersHorizontal className="w-4 h-4 text-purple-400" />
-              Change Band
-            </button>
-          )}
         </div>
       )}
       <button

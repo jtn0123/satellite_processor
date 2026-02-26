@@ -400,7 +400,7 @@ describe('Controls FAB', () => {
     window.dispatchEvent(new Event('resize'));
   });
 
-  it('FAB menu shows Watch, Auto-fetch, and Compare options', async () => {
+  it('FAB menu shows Watch and Auto-fetch options', async () => {
     vi.useRealTimers();
     Object.defineProperty(window, 'innerWidth', { value: 400, writable: true });
     window.dispatchEvent(new Event('resize'));
@@ -419,7 +419,6 @@ describe('Controls FAB', () => {
     const menu = screen.getByTestId('fab-menu');
     expect(menu.textContent).toContain('Watch');
     expect(menu.textContent).toContain('Auto-fetch');
-    expect(menu.textContent).toContain('Compare');
 
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
     window.dispatchEvent(new Event('resize'));

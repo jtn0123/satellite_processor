@@ -130,6 +130,14 @@ function useMonitorMode(
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
+/** CDN sector mapping — mirrors backend CDN_SECTOR_MAP */
+const CDN_SECTOR_MAP: Record<string, string> = {
+  CONUS: 'CONUS',
+  FullDisk: 'FD',
+  Mesoscale1: 'MESO1',
+  Mesoscale2: 'MESO2',
+};
+
 /** Sectors that have CDN pre-rendered images (meso sectors do NOT) */
 const CDN_AVAILABLE_SECTORS = new Set(['CONUS', 'FullDisk']);
 

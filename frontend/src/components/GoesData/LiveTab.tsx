@@ -84,6 +84,7 @@ function useMonitorMode(
   sector: string,
   band: string,
   refetchRef: React.RefObject<(() => Promise<unknown>) | null>,
+  onRefetch?: () => void,
 ) {
   const [monitoring, setMonitoring] = useState(false);
   const [autoFetch, setAutoFetch] = useState(false);
@@ -93,8 +94,9 @@ function useMonitorMode(
   useEffect(() => {
     if (wsLastEvent && monitoring) {
       refetchRef.current?.();
+      onRefetch?.();
     }
-  }, [wsLastEvent, monitoring, refetchRef]);
+  }, [wsLastEvent, monitoring, refetchRef, onRefetch]);
 
   const toggleMonitor = useCallback(() => {
     setMonitoring((v) => {
@@ -128,13 +130,34 @@ function useMonitorMode(
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
-/** Build a direct CDN URL from satellite/sector/band (always available) */
-function buildCdnUrl(satellite: string, sector: string, band: string): string | null {
+/** CDN sector mapping — mirrors backend CDN_SECTOR_MAP */
+const CDN_SECTOR_MAP: Record<string, string> = {
+  CONUS: 'CONUS',
+  FullDisk: 'FD',
+  Mesoscale1: 'MESO1',
+  Mesoscale2: 'MESO2',
+};
+
+/** Sectors that have CDN pre-rendered images (meso sectors do NOT) */
+const CDN_AVAILABLE_SECTORS = new Set(['CONUS', 'FullDisk']);
+
+/** CDN resolutions per sector — mirrors backend CDN_RESOLUTIONS */
+const CDN_RESOLUTIONS: Record<string, { desktop: string; mobile: string }> = {
+  CONUS: { desktop: '2500x1500', mobile: '1250x750' },
+  FullDisk: { desktop: '1808x1808', mobile: '1808x1808' },
+};
+
+/** Build a direct CDN URL from satellite/sector/band (returns null for meso sectors) */
+function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
   if (!satellite || !sector || !band) return null;
-  // NOAA CDN uses satellite name without hyphen for path, e.g. GOES16
+  if (!CDN_AVAILABLE_SECTORS.has(sector)) return null;
   const satPath = satellite.replace('-', '');
-  const resolution = sector === 'FD' ? '1808x1808' : '1250x750';
-  return `https://cdn.star.nesdis.noaa.gov/${satPath}/ABI/${sector}/${band}/latest_${resolution}.jpg`;
+  const cdnSector = CDN_SECTOR_MAP[sector];
+  if (!cdnSector) return null;
+  const cdnBand = band === 'GEOCOLOR' ? 'GEOCOLOR' : (band.startsWith('C') ? band.slice(1) : band);
+  const resolutions = CDN_RESOLUTIONS[sector] ?? CDN_RESOLUTIONS.CONUS;
+  const resolution = isMobile ? resolutions.mobile : resolutions.desktop;
+  return `https://cdn.star.nesdis.noaa.gov/${satPath}/ABI/${cdnSector}/${cdnBand}/${resolution}.jpg`;
 }
 
 /** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
@@ -149,7 +172,7 @@ function resolveImageUrls(
 ) {
   const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
-  const directCdnUrl = buildCdnUrl(satellite ?? '', sector ?? '', band ?? '');
+  const directCdnUrl = buildCdnUrl(satellite ?? '', sector ?? '', band ?? '', isMobileView);
   const imageUrl = localImageUrl ?? catalogImageUrl ?? directCdnUrl;
 
   const recentFramesList = extractArray<LatestFrame>(recentFrames);
@@ -300,6 +323,10 @@ function useCountdownDisplay(refreshInterval: number) {
     nextRefreshAt.current = Date.now() + refreshInterval;
   }, [refreshInterval]);
 
+  const resetCountdown = useCallback(() => {
+    nextRefreshAt.current = Date.now() + refreshInterval;
+  }, [refreshInterval]);
+
   const [display, setDisplay] = useState(() => {
     const sec = Math.max(0, Math.ceil(refreshInterval / 1000));
     const m = Math.floor(sec / 60);
@@ -320,7 +347,7 @@ function useCountdownDisplay(refreshInterval: number) {
     return () => clearInterval(timer);
   }, [refreshInterval]);
 
-  return display;
+  return { display, resetCountdown };
 }
 
 /* Swipe-to-change-band hook — extracted to reduce LiveTab cognitive complexity */
@@ -362,6 +389,21 @@ function useSwipeBand(products: Product | undefined, band: string, setBand: (b: 
   return { swipeToast, handleTouchStart, handleTouchEnd };
 }
 
+/** Message shown for mesoscale sectors where CDN images are not available */
+function MesoFetchRequiredMessage({ onFetchNow }: Readonly<{ onFetchNow: () => void }>) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 text-center p-8">
+      <p className="text-white/70 text-sm">No live preview available for mesoscale sectors — CDN images are not provided by NOAA.</p>
+      <button
+        onClick={onFetchNow}
+        className="px-4 py-2 rounded-lg bg-primary/80 hover:bg-primary text-white text-sm font-medium transition-colors"
+      >
+        Fetch to view
+      </button>
+    </div>
+  );
+}
+
 function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
@@ -394,6 +436,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const zoom = useImageZoom();
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
+  const resetCountdownRef = useRef<(() => void) | null>(null);
+  const handleRefetchWithCountdown = useCallback(() => {
+    resetCountdownRef.current?.();
+  }, []);
 
   const applyMonitorConfig = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
     setSatellite(config.satellite);
@@ -403,7 +449,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, []);
 
   // Monitor mode: state + WS-driven refetch
-  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } = useMonitorMode(onMonitorChange, satellite, sector, band, refetchRef);
+  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } = useMonitorMode(onMonitorChange, satellite, sector, band, refetchRef, handleRefetchWithCountdown);
 
   const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
     startMonitorRaw(() => applyMonitorConfig(config));
@@ -438,6 +484,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
+    resetCountdownRef.current?.();
   }, []);
 
   const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
@@ -494,7 +541,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   });
 
   // Auto-refresh countdown (#12)
-  const countdownDisplay = useCountdownDisplay(refreshInterval);
+  const { display: countdownDisplay, resetCountdown } = useCountdownDisplay(refreshInterval);
+  useEffect(() => { resetCountdownRef.current = resetCountdown; }, [resetCountdown]);
 
   // Swipe gestures (#10)
   const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
@@ -570,21 +618,25 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onClick={handleImageTap}
         >
           <ImageErrorBoundary>
-            <ImagePanelContent
-              isLoading={isLoading && !catalogImageUrl}
-              isError={isError && !imageUrl}
-              imageUrl={imageUrl}
-              compareMode={compareMode}
-              satellite={satellite}
-              band={band}
-              sector={sector}
-              zoomStyle={zoom.style}
-              prevImageUrl={prevImageUrl}
-              comparePosition={comparePosition}
-              onPositionChange={setComparePosition}
-              frameTime={frame?.capture_time ?? null}
-              prevFrameTime={prevFrame?.capture_time ?? null}
-            />
+            {!imageUrl && !CDN_AVAILABLE_SECTORS.has(sector) && !isLoading ? (
+              <MesoFetchRequiredMessage onFetchNow={fetchNow} />
+            ) : (
+              <ImagePanelContent
+                isLoading={isLoading && !catalogImageUrl}
+                isError={isError && !imageUrl}
+                imageUrl={imageUrl}
+                compareMode={compareMode}
+                satellite={satellite}
+                band={band}
+                sector={sector}
+                zoomStyle={zoom.style}
+                prevImageUrl={prevImageUrl}
+                comparePosition={comparePosition}
+                onPositionChange={setComparePosition}
+                frameTime={frame?.capture_time ?? null}
+                prevFrameTime={prevFrame?.capture_time ?? null}
+              />
+            )}
           </ImageErrorBoundary>
         </button>
 
@@ -629,6 +681,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               onRefreshIntervalChange={setRefreshInterval}
               compareMode={compareMode}
               onCompareModeChange={setCompareMode}
+              autoFetchDisabled={band === 'GEOCOLOR'}
+              autoFetchDisabledReason="Auto-fetch not available for GeoColor — CDN images update automatically"
             />
 
             <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
@@ -645,7 +699,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
                 bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
               />
-              <button onClick={() => refetch()}
+              <button onClick={() => { refetch(); resetCountdown(); }}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
@@ -656,8 +710,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         </div>
 
-        {/* Stale data warning overlay */}
-        {freshnessInfo && frame && localImageUrl && (
+        {/* Stale data warning overlay — hidden when fetch in progress to avoid overlap */}
+        {freshnessInfo && frame && localImageUrl && !activeJobId && (
           <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <StaleDataBanner
               freshnessInfo={freshnessInfo}
@@ -685,6 +739,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onToggleMonitor={toggleMonitor}
             autoFetch={autoFetch}
             onAutoFetchChange={setAutoFetch}
+            autoFetchDisabled={band === 'GEOCOLOR'}
+            autoFetchDisabledReason="Auto-fetch not available for GeoColor — CDN images update automatically"
           />
         </div>
 

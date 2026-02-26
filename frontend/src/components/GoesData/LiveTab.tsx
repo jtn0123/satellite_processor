@@ -130,16 +130,14 @@ function useMonitorMode(
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
-/** CDN sector mapping — mirrors backend CDN_SECTOR_MAP */
-const CDN_SECTOR_MAP: Record<string, string> = {
-  CONUS: 'CONUS',
-  FullDisk: 'FD',
-  Mesoscale1: 'MESO1',
-  Mesoscale2: 'MESO2',
-};
-
 /** Sectors that have CDN pre-rendered images (meso sectors do NOT) */
 const CDN_AVAILABLE_SECTORS = new Set(['CONUS', 'FullDisk']);
+
+/** CDN sector path mapping — mirrors backend CDN_SECTOR_MAP (CDN-available sectors only) */
+const CDN_SECTOR_PATH: Record<string, string> = {
+  CONUS: 'CONUS',
+  FullDisk: 'FD',
+};
 
 /** CDN resolutions per sector — mirrors backend CDN_RESOLUTIONS */
 const CDN_RESOLUTIONS: Record<string, { desktop: string; mobile: string }> = {
@@ -151,8 +149,8 @@ const CDN_RESOLUTIONS: Record<string, { desktop: string; mobile: string }> = {
 function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
   if (!satellite || !sector || !band) return null;
   if (!CDN_AVAILABLE_SECTORS.has(sector)) return null;
-  const satPath = satellite.replace('-', '');
-  const cdnSector = CDN_SECTOR_MAP[sector];
+  const satPath = satellite.replaceAll('-', '');
+  const cdnSector = CDN_SECTOR_PATH[sector];
   if (!cdnSector) return null;
   const cdnBand = band === 'GEOCOLOR' ? 'GEOCOLOR' : (band.startsWith('C') ? band.slice(1) : band);
   const resolutions = CDN_RESOLUTIONS[sector] ?? CDN_RESOLUTIONS.CONUS;
@@ -776,4 +774,3 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 }
 
 /* CatalogPanel removed — catalog info now shown in bottom overlay */
-// trigger

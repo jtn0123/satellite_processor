@@ -36,9 +36,9 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           type="button"
           role="switch"
           aria-label="Toggle auto-fetch"
-          aria-checked={autoFetch}
-          aria-disabled={autoFetchDisabled}
-          onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange((v) => !v)}
+          aria-checked={autoFetch && !autoFetchDisabled}
+          disabled={autoFetchDisabled}
+          onClick={() => onAutoFetchChange((v) => !v)}
           title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetchDisabled ? 'bg-gray-600 opacity-40 cursor-not-allowed' : autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
         >

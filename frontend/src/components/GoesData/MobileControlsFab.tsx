@@ -43,9 +43,9 @@ export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFet
             {monitoring ? 'Stop Watch' : 'Watch'}
           </button>
           <button
-            onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange(!autoFetch)}
+            onClick={() => onAutoFetchChange(!autoFetch)}
             title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
-            aria-disabled={autoFetchDisabled}
+            disabled={autoFetchDisabled}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
               autoFetchDisabled
                 ? 'bg-white/10 border border-white/20 text-white/40 cursor-not-allowed'

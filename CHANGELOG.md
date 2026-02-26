@@ -1,3 +1,10 @@
+## [1.22.3](https://github.com/jtn0123/satellite_processor/compare/v1.22.2...v1.22.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* override Cloudflare CORS headers to prevent arbitrary origin reflection ([#253](https://github.com/jtn0123/satellite_processor/issues/253)) ([e23d534](https://github.com/jtn0123/satellite_processor/commit/e23d534d8bdb72dafd66cff5837891bf06da4be4)), closes [#252](https://github.com/jtn0123/satellite_processor/issues/252) [#251](https://github.com/jtn0123/satellite_processor/issues/251) [#245](https://github.com/jtn0123/satellite_processor/issues/245) [#252](https://github.com/jtn0123/satellite_processor/issues/252) [#251](https://github.com/jtn0123/satellite_processor/issues/251) [#245](https://github.com/jtn0123/satellite_processor/issues/245)
+
 ## [1.22.2](https://github.com/jtn0123/satellite_processor/compare/v1.22.1...v1.22.2) (2026-02-26)
 
 

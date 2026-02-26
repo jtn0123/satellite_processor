@@ -11,6 +11,14 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
+/** Shared assertion: verify status pill shows expected band */
+async function expectPillBand(bandId: string) {
+  await waitFor(() => {
+    const pill = screen.getByTestId('status-pill');
+    expect(pill.textContent).toContain(bandId);
+  });
+}
+
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
@@ -125,19 +133,13 @@ describe('Swipe Gestures', () => {
     fireEvent.touchStart(area, { touches: [{ clientX: 100, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 300, clientY: 200 }] });
 
-    await waitFor(() => {
-      const pill = screen.getByTestId('status-pill');
-      expect(pill.textContent).toContain('GEOCOLOR');
-    });
+    await expectPillBand('GEOCOLOR');
   });
 
   it('small swipe below threshold does nothing', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      const pill = screen.getByTestId('status-pill');
-      expect(pill.textContent).toContain('GEOCOLOR');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     // Swipe only 30px (below 50px threshold)
@@ -145,17 +147,13 @@ describe('Swipe Gestures', () => {
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 170, clientY: 200 }] });
 
     // Band should remain GEOCOLOR
-    const pill = screen.getByTestId('status-pill');
-    expect(pill.textContent).toContain('GEOCOLOR');
+    await expectPillBand('GEOCOLOR');
   });
 
   it('swipe toast appears on band switch', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      const pill = screen.getByTestId('status-pill');
-      expect(pill.textContent).toContain('GEOCOLOR');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
@@ -171,18 +169,14 @@ describe('Swipe Gestures', () => {
   it('vertical swipe does not change band', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      const pill = screen.getByTestId('status-pill');
-      expect(pill.textContent).toContain('GEOCOLOR');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     // Vertical swipe (dy > dx)
     fireEvent.touchStart(area, { touches: [{ clientX: 200, clientY: 100 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 210, clientY: 300 }] });
 
-    const pill = screen.getByTestId('status-pill');
-    expect(pill.textContent).toContain('GEOCOLOR');
+    await expectPillBand('GEOCOLOR');
   });
 });
 

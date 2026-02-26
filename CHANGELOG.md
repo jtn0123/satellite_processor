@@ -1,3 +1,10 @@
+## [1.22.2](https://github.com/jtn0123/satellite_processor/compare/v1.22.1...v1.22.2) (2026-02-26)
+
+
+### Bug Fixes
+
+* Live Tab polish pass 2 — 8 fixes ([#249](https://github.com/jtn0123/satellite_processor/issues/249)) ([f52ab59](https://github.com/jtn0123/satellite_processor/commit/f52ab595449f1be6ecab050568e05a33a055e542))
+
 ## [1.22.1](https://github.com/jtn0123/satellite_processor/compare/v1.22.0...v1.22.1) (2026-02-26)
 
 

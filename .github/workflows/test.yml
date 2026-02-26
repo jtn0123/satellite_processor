@@ -401,9 +401,28 @@ jobs:
       pull-requests: write
       statuses: write
     steps:
+      - name: Clean workspace and scanner cache
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.* 2>/dev/null || true
+          rm -rf /tmp/runner/work/satellite_processor/satellite_processor/.scannerwork 2>/dev/null || true
+          rm -rf "$HOME/.sonar" 2>/dev/null || true
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          clean: true
+
+      - name: Verify no contamination
+        run: |
+          echo "Checking for contaminated directories..."
+          for dir in src receiver; do
+            if [ -d "$dir" ]; then
+              echo "ERROR: Found contaminated directory: $dir"
+              rm -rf "$dir"
+            fi
+          done
+          echo "Source files found:"
+          find . -name "*.ts" -o -name "*.tsx" -o -name "*.py" | grep -v node_modules | grep -v .venv | wc -l
 
       - name: Download backend coverage shards
         id: dl-backend

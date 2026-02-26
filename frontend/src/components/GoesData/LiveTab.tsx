@@ -152,7 +152,9 @@ function buildCdnUrl(satellite: string, sector: string, band: string, isMobile =
   const satPath = satellite.replaceAll('-', '');
   const cdnSector = CDN_SECTOR_PATH[sector];
   if (!cdnSector) return null;
-  const cdnBand = band === 'GEOCOLOR' ? 'GEOCOLOR' : (band.startsWith('C') ? band.slice(1) : band);
+  let cdnBand = band;
+  if (band === 'GEOCOLOR') cdnBand = 'GEOCOLOR';
+  else if (band.startsWith('C')) cdnBand = band.slice(1);
   const resolutions = CDN_RESOLUTIONS[sector] ?? CDN_RESOLUTIONS.CONUS;
   const resolution = isMobile ? resolutions.mobile : resolutions.desktop;
   return `https://cdn.star.nesdis.noaa.gov/${satPath}/ABI/${cdnSector}/${cdnBand}/${resolution}.jpg`;
@@ -290,6 +292,7 @@ function useLiveFetchJob({
   }, [satellite, sector, band, catalogLatest]);
 
   useEffect(() => {
+    if (band === 'GEOCOLOR') return;
     if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
     lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
     lastAutoFetchMsRef.current = Date.now();
@@ -393,6 +396,7 @@ function MesoFetchRequiredMessage({ onFetchNow }: Readonly<{ onFetchNow: () => v
     <div className="flex flex-col items-center justify-center gap-4 text-center p-8">
       <p className="text-white/70 text-sm">No live preview available for mesoscale sectors — CDN images are not provided by NOAA.</p>
       <button
+        type="button"
         onClick={onFetchNow}
         className="px-4 py-2 rounded-lg bg-primary/80 hover:bg-primary text-white text-sm font-medium transition-colors"
       >
@@ -501,6 +505,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       setSatellite(products.default_satellite || products.satellites?.[0] || 'GOES-16');
     }
   }, [products, satellite]);
+
+  // Validate band exists in available products — fall back to first available
+  useEffect(() => {
+    if (!products?.bands?.length) return;
+    const bandExists = products.bands.some((b) => b.id === band);
+    if (!bandExists) {
+      setBand(products.bands[0].id);
+    }
+  }, [products, band]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
@@ -697,7 +710,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
                 bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
               />
-              <button onClick={() => { refetch(); resetCountdown(); }}
+              <button type="button" onClick={() => { refetch(); resetCountdown(); }}
                 className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
                 title="Refresh now" aria-label="Refresh now">
                 <RefreshCw className="w-4 h-4" />
@@ -745,6 +758,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         {/* Zoom reset hint */}
         {zoom.isZoomed && (
           <button
+            type="button"
             onClick={zoom.reset}
             className="absolute top-20 right-4 z-10 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >

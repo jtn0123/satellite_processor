@@ -19,7 +19,7 @@ const mockedApi = api as any;
 const PRODUCTS = {
   satellites: ['GOES-16'],
   sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-  bands: [{ id: 'C02', description: 'Red' }],
+  bands: [{ id: 'GEOCOLOR', description: 'GeoColor' }, { id: 'C02', description: 'Red' }],
   default_satellite: 'GOES-16',
 };
 
@@ -66,6 +66,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
 
+    // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
+    const c02Pill = screen.getByTestId('band-pill-C02');
+    await act(async () => { fireEvent.click(c02Pill); });
+
     // Enable auto-fetch
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
@@ -83,6 +87,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
   it('auto-fetch sends start_time/end_time (not start_date/end_date) with uppercase satellite', async () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
+
+    // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
+    const c02Pill = screen.getByTestId('band-pill-C02');
+    await act(async () => { fireEvent.click(c02Pill); });
 
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
@@ -114,6 +122,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     renderLiveTab();
     await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
+
+    // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
+    const c02Pill = screen.getByTestId('band-pill-C02');
+    await act(async () => { fireEvent.click(c02Pill); });
 
     // Enable auto-fetch to trigger job
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
@@ -168,6 +180,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByTestId('status-pill')).toBeInTheDocument());
 
+    // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
+    const c02Pill = screen.getByTestId('band-pill-C02');
+    await act(async () => { fireEvent.click(c02Pill); });
+
     // Enable auto-fetch which will trigger fetchNow
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
     await act(async () => { fireEvent.click(checkbox); });
@@ -187,6 +203,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     renderLiveTab();
     await waitFor(() => expect(screen.getByText(/Auto-fetch/)).toBeInTheDocument());
+
+    // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
+    const c02Pill = screen.getByTestId('band-pill-C02');
+    await act(async () => { fireEvent.click(c02Pill); });
 
     // Enable auto-fetch
     const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;

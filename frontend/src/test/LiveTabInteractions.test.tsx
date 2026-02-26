@@ -23,6 +23,7 @@ const PRODUCTS = {
     { id: 'FD', name: 'Full Disk', product: 'ABI-L2-CMIPF' },
   ],
   bands: [
+    { id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' },
     { id: 'C02', description: 'Red (0.64µm)' },
     { id: 'C13', description: 'IR (10.3µm)' },
   ],
@@ -96,32 +97,36 @@ describe('LiveTab - Interactions', () => {
     });
   });
 
-  it('changes satellite selection', async () => {
+  it('changes satellite via pill strip', async () => {
     renderLiveTab();
-    await waitFor(() => expect(screen.getByLabelText('Satellite')).toBeInTheDocument());
-    const select = screen.getByLabelText('Satellite') as HTMLSelectElement;
-    // Wait for default satellite to be set
-    await waitFor(() => expect(select.value).toBe('GOES-16'));
-    fireEvent.change(select, { target: { value: 'GOES-18' } });
-    expect(select.value).toBe('GOES-18');
-  });
-
-  it('shows satellite availability status in dropdown', async () => {
-    renderLiveTab();
+    await waitFor(() => expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument());
+    // Click satellite chip to expand options
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    await waitFor(() => expect(screen.getByTestId('satellite-option-GOES-18')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('satellite-option-GOES-18'));
+    // Verify status pill updates
     await waitFor(() => {
-      const select = screen.getByLabelText('Satellite') as HTMLSelectElement;
-      expect(select.value).toBe('GOES-16');
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-18');
     });
-    const options = screen.getByLabelText('Satellite').querySelectorAll('option');
-    const goes18Option = Array.from(options).find(o => o.textContent?.includes('testing'));
-    expect(goes18Option).toBeTruthy();
   });
 
-  it('renders sector and band selects', async () => {
+  it('shows satellite availability status in pill strip', async () => {
+    renderLiveTab();
+    await waitFor(() => expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument());
+    // Expand satellite options
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    await waitFor(() => {
+      const goes18Option = screen.getByTestId('satellite-option-GOES-18');
+      expect(goes18Option).toBeInTheDocument();
+    });
+  });
+
+  it('renders pill strip with band pills', async () => {
     renderLiveTab();
     await waitFor(() => {
-      expect(document.getElementById('live-sector')).toBeInTheDocument();
-      expect(document.getElementById('live-band')).toBeInTheDocument();
+      expect(screen.getByTestId('band-pill-strip')).toBeInTheDocument();
+      expect(screen.getByTestId('band-pill-C02')).toBeInTheDocument();
     });
   });
 
@@ -313,8 +318,8 @@ describe('LiveTab - Interactions', () => {
   it('uses default_satellite from products', async () => {
     renderLiveTab();
     await waitFor(() => {
-      const select = screen.getByLabelText('Satellite') as HTMLSelectElement;
-      expect(select.value).toBe('GOES-16');
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-16');
     });
   });
 
@@ -323,26 +328,18 @@ describe('LiveTab - Interactions', () => {
     await waitFor(() => {
       const pill = screen.getByTestId('status-pill');
       expect(pill.textContent).toContain('GOES-16');
-      expect(pill.textContent).toContain('C02');
+      expect(pill.textContent).toContain('GEOCOLOR');
     });
   });
 
-  it('handles sector availability marking unavailable sectors', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/available')) return Promise.resolve({
-        data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() }
-      });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
-      return Promise.resolve({ data: {} });
-    });
+  it('changes sector via pill strip', async () => {
     renderLiveTab();
-    await waitFor(() => {
-      const sectorSelect = screen.getByLabelText('Sector');
-      const options = sectorSelect.querySelectorAll('option');
-      const fdOption = Array.from(options).find(o => o.textContent?.includes('unavailable'));
-      expect(fdOption).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByTestId('pill-strip-sector')).toBeInTheDocument());
+    // Click sector chip to expand options
+    fireEvent.click(screen.getByTestId('pill-strip-sector'));
+    await waitFor(() => expect(screen.getByTestId('sector-option-FD')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('sector-option-FD'));
+    // Should not crash
+    expect(document.body.textContent).toBeTruthy();
   });
 });

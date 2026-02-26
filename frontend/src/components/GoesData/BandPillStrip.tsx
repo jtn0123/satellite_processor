@@ -23,7 +23,15 @@ interface BandPillStripProps {
   onSectorChange: (sector: string) => void;
   sectorName?: string;
   satelliteAvailability?: Readonly<Record<string, SatelliteAvailabilityInfo>>;
+  variant?: 'mobile' | 'desktop';
 }
+
+const VARIANT_CLASSES = {
+  mobile: 'fixed bottom-16 left-0 right-0 z-20',
+  desktop: 'absolute bottom-0 left-0 right-0 z-10 rounded-t-xl',
+} as const;
+
+const SHARED_CLASSES = 'bg-black/70 backdrop-blur-md border-t border-white/10';
 
 export default function BandPillStrip({
   bands,
@@ -37,6 +45,7 @@ export default function BandPillStrip({
   onSectorChange,
   sectorName,
   satelliteAvailability,
+  variant = 'mobile',
 }: Readonly<BandPillStripProps>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -92,9 +101,12 @@ export default function BandPillStrip({
   const activePillClass = 'bg-primary/20 border border-primary/50 text-primary font-semibold';
   const inactivePillClass = 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20';
 
+  const geoColorActiveClass = 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-semibold';
+  const geoColorInactiveClass = 'bg-emerald-500/10 border border-emerald-400/30 text-emerald-300/70 hover:bg-emerald-500/20';
+
   return (
     <div
-      className="fixed bottom-16 left-0 right-0 z-20 bg-black/70 backdrop-blur-md border-t border-white/10 sm:hidden"
+      className={`${VARIANT_CLASSES[variant]} ${SHARED_CLASSES}`}
       data-testid="band-pill-strip"
     >
       {/* Top row: satellite + sector chips (or expanded options) */}
@@ -161,16 +173,19 @@ export default function BandPillStrip({
       >
         {bands.map((b) => {
           const isActive = b.id === activeBand;
+          const isGeoColor = b.id === 'GEOCOLOR';
+          let pillClass: string;
+          if (isGeoColor) {
+            pillClass = isActive ? geoColorActiveClass : geoColorInactiveClass;
+          } else {
+            pillClass = isActive ? activePillClass : inactivePillClass;
+          }
           return (
             <button
               key={b.id}
               ref={isActive ? activeRef : undefined}
               onClick={() => handleBandClick(b.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                isActive
-                  ? 'bg-primary/20 border border-primary/50 text-primary font-semibold'
-                  : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20'
-              }`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${pillClass}`}
               style={{ scrollSnapAlign: 'center' }}
               data-testid={`band-pill-${b.id}`}
             >

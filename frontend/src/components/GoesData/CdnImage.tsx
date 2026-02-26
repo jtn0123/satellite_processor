@@ -9,7 +9,7 @@ export interface CdnImageProps extends Readonly<React.ImgHTMLAttributes<HTMLImag
   'data-sector'?: string;
 }
 
-export default function CdnImage({ src, alt, className, ...props }: CdnImageProps) {
+export default function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);

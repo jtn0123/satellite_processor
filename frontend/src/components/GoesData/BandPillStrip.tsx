@@ -98,7 +98,7 @@ export default function BandPillStrip({
       data-testid="band-pill-strip"
     >
       {/* Top row: satellite + sector chips (or expanded options) */}
-      <div className="flex items-center gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide transition-all duration-200">
+      <div key={expandedGroup ?? 'default'} className="flex items-center gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide animate-fade-in">
         {expandedGroup === null && (
           <>
             <button

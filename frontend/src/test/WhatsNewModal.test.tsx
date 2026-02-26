@@ -143,12 +143,12 @@ describe('WhatsNewModal', () => {
     expect(dialog?.getAttribute('aria-label')).toBe("What's New dialog");
   });
 
-  it('has role=dialog and aria-modal on modal panel', () => {
+  it('uses native dialog element for accessibility', () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
-    const panel = document.querySelector('[role="dialog"]');
-    expect(panel).not.toBeNull();
-    expect(panel?.getAttribute('aria-modal')).toBe('true');
+    const dialog = document.querySelector('dialog[open]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('aria-label')).toBeTruthy();
   });
 
   it('fetches from /api/health/changelog', () => {

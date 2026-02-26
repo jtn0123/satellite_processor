@@ -125,6 +125,7 @@ export default function MobileBottomNav() {
         <div
           role="tablist"
           aria-label="Navigation tabs"
+          tabIndex={0}
           className="flex items-center justify-around"
           onKeyDown={(e) => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;

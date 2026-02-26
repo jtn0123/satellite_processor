@@ -401,9 +401,14 @@ jobs:
       pull-requests: write
       statuses: write
     steps:
+      - name: Clean workspace
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.* 2>/dev/null || true
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          clean: true
 
       - name: Download backend coverage shards
         id: dl-backend

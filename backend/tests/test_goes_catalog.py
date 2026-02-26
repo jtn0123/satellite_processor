@@ -199,7 +199,7 @@ async def test_products_endpoint(client):
     assert "satellites" in data
     assert "sectors" in data
     assert "bands" in data
-    assert len(data["bands"]) == 16
+    assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
 
 
 async def test_products_has_default_satellite(client):

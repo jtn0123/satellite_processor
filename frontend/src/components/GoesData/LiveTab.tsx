@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Maximize2, Minimize2, RefreshCw, Zap, Columns2, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
@@ -12,21 +12,23 @@ import { useImageZoom } from '../../hooks/useImageZoom';
 import { useDoubleTap } from '../../hooks/useDoubleTap';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
 import SwipeHint from './SwipeHint';
-import ShimmerLoader from './ShimmerLoader';
 // BottomSheet removed — pill strip handles all pickers
 import StaleDataBanner from './StaleDataBanner';
-import CompareSlider from './CompareSlider';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
 import {
   FRIENDLY_BAND_NAMES,
   getFriendlyBandLabel,
   getFriendlyBandName,
-  saveCachedImage,
-  loadCachedImage,
+  timeAgo,
 } from './liveTabUtils';
 import BandPillStrip from './BandPillStrip';
-import type { CachedImageMeta } from './liveTabUtils';
+import ImagePanelContent from './ImagePanelContent';
+import ImageErrorBoundary from './ImageErrorBoundary';
+import MobileControlsFab from './MobileControlsFab';
+import DesktopControlsBar from './DesktopControlsBar';
+import StatusPill from './StatusPill';
+import FullscreenButton from './FullscreenButton';
 
 function subscribeToResize(cb: () => void) {
   globalThis.addEventListener('resize', cb);
@@ -73,23 +75,6 @@ interface CatalogLatest {
   image_url?: string;
   thumbnail_url?: string;
   mobile_url?: string;
-}
-
-const REFRESH_INTERVALS = [
-  { label: '1 min', value: 60000 },
-  { label: '5 min', value: 300000 },
-  { label: '10 min', value: 600000 },
-  { label: '30 min', value: 1800000 },
-];
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
-  const hrs = Math.floor(min / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 /** Hook: encapsulates monitor mode state + WS-driven refetch */
@@ -377,34 +362,6 @@ function useSwipeBand(products: Product | undefined, band: string, setBand: (b: 
   return { swipeToast, handleTouchStart, handleTouchEnd };
 }
 
-function FullscreenButton({ isFullscreen, onClick }: Readonly<{ isFullscreen: boolean; onClick: () => void }>) {
-  const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
-  const Icon = isFullscreen ? Minimize2 : Maximize2;
-  return (
-    <button onClick={onClick}
-      className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
-      title={label} aria-label={label}>
-      <Icon className="w-4 h-4" />
-    </button>
-  );
-}
-
-function StatusPill({ monitoring, satellite, band, frameTime, isMobile }: Readonly<{ monitoring: boolean; satellite: string; band: string; frameTime: string | null; isMobile?: boolean }>) {
-  const dotClass = monitoring ? 'bg-emerald-400' : 'bg-emerald-400/50';
-  const age = frameTime ? timeAgo(frameTime) : '';
-  return (
-    <div className={`absolute z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm ${isMobile ? 'top-2 left-2 bg-black/60' : 'top-16 left-4 bg-black/50'}`} data-testid="status-pill">
-      <div className={`w-2 h-2 rounded-full shrink-0 ${dotClass} animate-pulse`} />
-      <span className="text-xs font-medium text-white/90">
-        {monitoring ? 'MONITORING' : 'LIVE'}
-        {satellite && <> · {satellite}</>}
-        {band && <> · {band}</>}
-        {age && <> · {age}</>}
-      </span>
-    </div>
-  );
-}
-
 function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
@@ -612,21 +569,23 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
           onClick={handleImageTap}
         >
-          <ImagePanelContent
-            isLoading={isLoading && !catalogImageUrl}
-            isError={isError && !imageUrl}
-            imageUrl={imageUrl}
-            compareMode={compareMode}
-            satellite={satellite}
-            band={band}
-            sector={sector}
-            zoomStyle={zoom.style}
-            prevImageUrl={prevImageUrl}
-            comparePosition={comparePosition}
-            onPositionChange={setComparePosition}
-            frameTime={frame?.capture_time ?? null}
-            prevFrameTime={prevFrame?.capture_time ?? null}
-          />
+          <ImageErrorBoundary>
+            <ImagePanelContent
+              isLoading={isLoading && !catalogImageUrl}
+              isError={isError && !imageUrl}
+              imageUrl={imageUrl}
+              compareMode={compareMode}
+              satellite={satellite}
+              band={band}
+              sector={sector}
+              zoomStyle={zoom.style}
+              prevImageUrl={prevImageUrl}
+              comparePosition={comparePosition}
+              onPositionChange={setComparePosition}
+              frameTime={frame?.capture_time ?? null}
+              prevFrameTime={prevFrame?.capture_time ?? null}
+            />
+          </ImageErrorBoundary>
         </button>
 
         {/* Swipe toast */}
@@ -756,320 +715,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           satelliteAvailability={products.satellite_availability}
         />
       )}
-    </div>
-  );
-}
-
-/* Extracted image panel content to reduce LiveTab cognitive complexity */
-interface ImagePanelContentProps {
-  isLoading: boolean;
-  isError: boolean;
-  imageUrl: string | null;
-  compareMode: boolean;
-  satellite: string;
-  band: string;
-  sector: string;
-  zoomStyle: React.CSSProperties;
-  prevImageUrl: string | null;
-  comparePosition: number;
-  onPositionChange: (pos: number) => void;
-  frameTime: string | null;
-  prevFrameTime: string | null;
-}
-
-/* Floating action button for mobile — shows Watch/Auto-fetch/Compare toggles */
-/* Extracted bottom metadata overlay to reduce LiveTab cognitive complexity */
-/* Extracted desktop controls bar to reduce LiveTab cognitive complexity */
-function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, refreshInterval, onRefreshIntervalChange, compareMode, onCompareModeChange }: Readonly<{
-  monitoring: boolean;
-  onToggleMonitor: () => void;
-  autoFetch: boolean;
-  onAutoFetchChange: React.Dispatch<React.SetStateAction<boolean>>;
-  refreshInterval: number;
-  onRefreshIntervalChange: (v: number) => void;
-  compareMode: boolean;
-  onCompareModeChange: React.Dispatch<React.SetStateAction<boolean>>;
-}>) {
-  return (
-    <div className="hidden sm:flex items-center gap-2 ml-2">
-      <button
-        onClick={onToggleMonitor}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-          monitoring
-            ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
-            : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
-        }`}
-        title={monitoring ? 'Stop watching' : 'Start watching'}
-        aria-label={monitoring ? 'Stop watching' : 'Start watching'}
-        data-testid="watch-toggle-btn"
-      >
-        {monitoring ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-        {monitoring ? 'Stop Watch' : 'Watch'}
-      </button>
-      <div className="flex items-center gap-1.5 text-xs text-white/80">
-        <button
-          type="button"
-          role="switch"
-          aria-label="Toggle auto-fetch"
-          aria-checked={autoFetch}
-          onClick={() => onAutoFetchChange((v) => !v)}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoFetch ? 'bg-amber-500' : 'bg-gray-600'}`}
-        >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${autoFetch ? 'translate-x-4' : 'translate-x-0.5'}`} />
-        </button>
-        <Zap className="w-3.5 h-3.5 text-amber-400" />
-        <span className="whitespace-nowrap">Auto-fetch every</span>
-        <select
-          value={refreshInterval}
-          onChange={(e) => onRefreshIntervalChange(Number(e.target.value))}
-          disabled={!autoFetch}
-          aria-label="Auto-fetch interval"
-          className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${autoFetch ? 'hover:bg-white/20' : 'opacity-40 cursor-not-allowed'}`}
-        >
-          {REFRESH_INTERVALS.map((ri) => (
-            <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
-          ))}
-        </select>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={compareMode}
-        onClick={() => onCompareModeChange((v) => !v)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-          compareMode
-            ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30'
-            : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20'
-        }`}
-        title={compareMode ? 'Disable compare' : 'Enable compare'}
-      >
-        <Columns2 className="w-3.5 h-3.5 text-blue-400" />
-        Compare
-      </button>
-    </div>
-  );
-}
-
-/* BottomMetadataOverlay removed — NOAA watermark has satellite/band/time info; replaced by StatusPill */
-
-function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange }: Readonly<{
-  monitoring: boolean; onToggleMonitor: () => void;
-  autoFetch: boolean; onAutoFetchChange: (v: boolean) => void;
-}>) {
-  const [open, setOpen] = useState(false);
-  const fabRef = useRef<HTMLDivElement>(null);
-  const openedAt = useRef<number>(0);
-
-  useEffect(() => {
-    if (!open) return;
-    openedAt.current = Date.now();
-    const handler = (e: globalThis.MouseEvent | globalThis.TouchEvent) => {
-      if (Date.now() - openedAt.current < 150) return;
-      if (fabRef.current && !fabRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
-  }, [open]);
-
-  return (
-    <div ref={fabRef} className="relative">
-      {open && (
-        <div id="fab-menu" className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]" data-testid="fab-menu">
-          <button
-            onClick={() => { onToggleMonitor(); setOpen(false); }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-              monitoring
-                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                : 'bg-white/10 border border-white/20 text-white/80'
-            }`}
-          >
-            {monitoring ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {monitoring ? 'Stop Watch' : 'Watch'}
-          </button>
-          <button
-            onClick={() => onAutoFetchChange(!autoFetch)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
-              autoFetch
-                ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
-                : 'bg-white/10 border border-white/20 text-white/80'
-            }`}
-          >
-            <Zap className="w-4 h-4 text-amber-400" />
-            Auto-fetch
-          </button>
-        </div>
-      )}
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
-        aria-label="Toggle controls"
-        aria-expanded={open}
-        aria-controls="fab-menu"
-        data-testid="fab-toggle"
-      >
-        {open ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
-      </button>
-    </div>
-  );
-}
-
-function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
-  if (isLoading || (!imageUrl && !isError)) {
-    return (
-      <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
-        <ShimmerLoader />
-      </div>
-    );
-  }
-  if (isError && !imageUrl) {
-    return (
-      <div className="relative w-full h-full flex items-center justify-center" data-testid="live-error-state">
-        <ShimmerLoader />
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <span className="text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>
-        </div>
-      </div>
-    );
-  }
-  if (compareMode) {
-    return (
-      <CompareSlider
-        imageUrl={imageUrl ?? ''}
-        prevImageUrl={prevImageUrl}
-        comparePosition={comparePosition}
-        onPositionChange={onPositionChange}
-        frameTime={frameTime}
-        prevFrameTime={prevFrameTime}
-        timeAgo={timeAgo}
-      />
-    );
-  }
-  return (
-    <CdnImage
-      src={imageUrl ?? ''}
-      alt={`${satellite} ${band} ${sector}`}
-      className="max-w-full max-h-full object-contain select-none"
-      style={zoomStyle}
-      draggable={false}
-      data-satellite={satellite}
-      data-band={band}
-      data-sector={sector}
-    />
-  );
-}
-
-/* CdnImage — img with onError fallback, shimmer placeholder, crossfade, and offline cache */
-interface CdnImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  'data-satellite'?: string;
-  'data-band'?: string;
-  'data-sector'?: string;
-}
-
-function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
-  const [error, setError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [usingCached, setUsingCached] = useState(false);
-  const [cachedMeta, setCachedMeta] = useState<CachedImageMeta | null>(null);
-  const [cachedDismissed, setCachedDismissed] = useState(false);
-  const [displaySrc, setDisplaySrc] = useState(src);
-  // Reset state when src changes — no crossfade to avoid stale band images
-  /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on prop change */
-  useEffect(() => {
-    setError(false);
-    setLoaded(false);
-    setUsingCached(false);
-    setCachedMeta(null);
-    setCachedDismissed(false);
-    setDisplaySrc(src);
-  }, [src]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const dataSatellite = props['data-satellite'];
-  const dataBand = props['data-band'];
-  const dataSector = props['data-sector'];
-
-  const handleLoad = useCallback(() => {
-    setLoaded(true);
-    // Cache successful load
-    if (src && !usingCached) {
-      saveCachedImage(src, {
-        satellite: dataSatellite ?? '',
-        band: dataBand ?? '',
-        sector: dataSector ?? '',
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }, [src, usingCached, dataSatellite, dataBand, dataSector]);
-
-  const handleError = useCallback(() => {
-    // Try cached image before showing error
-    if (!usingCached) {
-      const cached = loadCachedImage();
-      if (cached) {
-        setUsingCached(true);
-        setCachedMeta(cached);
-        setDisplaySrc(cached.url);
-        setError(false);
-        setLoaded(false);
-        return;
-      }
-    }
-    setError(true);
-  }, [usingCached]);
-
-  // Auto-retry on error after 10 seconds
-  useEffect(() => {
-    if (!error || !src) return;
-    const timer = setTimeout(() => {
-      setError(false);
-      setLoaded(false);
-      setUsingCached(false);
-      setCachedMeta(null);
-      setCachedDismissed(false);
-      const separator = src.includes('?') ? '&' : '?';
-      setDisplaySrc(`${src}${separator}_r=${Date.now()}`);
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [error, src]);
-
-  if (error || !displaySrc) {
-    return (
-      <div className="relative w-full h-full flex items-center justify-center" data-testid="cdn-image-error">
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" />
-        <span className="relative z-10 text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-900">
-      {/* Cached image banner — inline above image, dismissible */}
-      {usingCached && cachedMeta && !cachedDismissed && (
-        <div className="w-full flex justify-center px-4 py-1" data-testid="cached-image-banner">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px]">
-            <span>Cached image · {new Date(cachedMeta.timestamp).toLocaleString()}</span>
-            <button onClick={() => setCachedDismissed(true)} className="p-0.5 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Shimmer placeholder */}
-      {!loaded && !error && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
-      )}
-      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
-        <img
-          src={displaySrc}
-          alt={alt}
-          onError={handleError}
-          onLoad={handleLoad}
-          loading="eager"
-          className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-          {...props}
-        />
-      </div>
     </div>
   );
 }

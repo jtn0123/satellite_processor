@@ -15,7 +15,7 @@ async def test_products_structure(client):
     assert "sectors" in data
     assert "bands" in data
     assert len(data["satellites"]) > 0
-    assert len(data["bands"]) == 16
+    assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
     # Each band should have id and description
     for band in data["bands"]:
         assert "id" in band

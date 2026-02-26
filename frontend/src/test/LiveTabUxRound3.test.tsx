@@ -270,7 +270,7 @@ describe('Cached Image Banner', () => {
       sector: 'CONUS',
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('live-last-image-meta', JSON.stringify(cachedData));
+    localStorage.setItem('live-cache:GOES-16:CONUS:C02', JSON.stringify(cachedData));
 
     // Make the real image fail so it falls back to cache
     mockedApi.get.mockImplementation((url: string) => {
@@ -304,7 +304,7 @@ describe('Cached Image Banner', () => {
       expect(screen.getByText(/Cached image/)).toBeInTheDocument();
     });
 
-    localStorage.removeItem('live-last-image-meta');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
   });
 
   it('X button dismisses cached banner', async () => {
@@ -316,7 +316,7 @@ describe('Cached Image Banner', () => {
       sector: 'CONUS',
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('live-last-image-meta', JSON.stringify(cachedData));
+    localStorage.setItem('live-cache:GOES-16:CONUS:C02', JSON.stringify(cachedData));
 
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
@@ -353,7 +353,7 @@ describe('Cached Image Banner', () => {
       expect(screen.queryByTestId('cached-image-banner')).not.toBeInTheDocument();
     });
 
-    localStorage.removeItem('live-last-image-meta');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
   });
 });
 
@@ -438,7 +438,7 @@ describe('Status Pill Always Visible', () => {
 describe('CdnImage Error Recovery', () => {
   it('shows retry button when image fails and no cache', async () => {
     vi.useRealTimers();
-    localStorage.removeItem('live-last-image-meta');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
 
     renderWithProviders(<LiveTab />);
 

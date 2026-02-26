@@ -60,18 +60,59 @@ export interface CachedImageMeta {
   timestamp: string;
 }
 
-const CACHE_KEY_META = 'live-last-image-meta';
+export const REFRESH_INTERVALS = [
+  { label: '1 min', value: 60000 },
+  { label: '5 min', value: 300000 },
+  { label: '10 min', value: 600000 },
+  { label: '30 min', value: 1800000 },
+];
+
+export function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const CACHE_PREFIX = 'live-cache:';
+const MAX_CACHED = 6;
 
 export function saveCachedImage(url: string, meta: Omit<CachedImageMeta, 'url'>) {
   try {
-    localStorage.setItem(CACHE_KEY_META, JSON.stringify({ url, ...meta }));
+    const key = `${CACHE_PREFIX}${meta.satellite}:${meta.sector}:${meta.band}`;
+    localStorage.setItem(key, JSON.stringify({ url, ...meta }));
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+    if (allKeys.length > MAX_CACHED) {
+      const entries = allKeys.map(k => {
+        try { return { key: k, ts: JSON.parse(localStorage.getItem(k) ?? '{}').timestamp ?? '' }; }
+        catch { return { key: k, ts: '' }; }
+      }).sort((a, b) => a.ts.localeCompare(b.ts));
+      for (let i = 0; i < entries.length - MAX_CACHED; i++) {
+        localStorage.removeItem(entries[i].key);
+      }
+    }
   } catch { /* storage full — ignore */ }
 }
 
-export function loadCachedImage(): CachedImageMeta | null {
+export function loadCachedImage(satellite?: string, sector?: string, band?: string): CachedImageMeta | null {
   try {
-    const meta = localStorage.getItem(CACHE_KEY_META);
-    if (meta) return JSON.parse(meta) as CachedImageMeta;
-  } catch { /* corrupted — ignore */ }
-  return null;
+    if (satellite && sector && band) {
+      const key = `${CACHE_PREFIX}${satellite}:${sector}:${band}`;
+      const data = localStorage.getItem(key);
+      if (data) return JSON.parse(data) as CachedImageMeta;
+    }
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+    if (allKeys.length === 0) return null;
+    let newest: CachedImageMeta | null = null;
+    for (const k of allKeys) {
+      const data = localStorage.getItem(k);
+      if (!data) continue;
+      const parsed = JSON.parse(data) as CachedImageMeta;
+      if (!newest || parsed.timestamp > newest.timestamp) newest = parsed;
+    }
+    return newest;
+  } catch { return null; }
 }

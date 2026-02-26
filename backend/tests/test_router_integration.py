@@ -185,7 +185,7 @@ class TestGoesProducts:
         assert "satellites" in data
         assert "GOES-16" in data["satellites"]
         assert "bands" in data
-        assert len(data["bands"]) == 16
+        assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
 
     @pytest.mark.asyncio
     async def test_products_has_metadata(self, client):

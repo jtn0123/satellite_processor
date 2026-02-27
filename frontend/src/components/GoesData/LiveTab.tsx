@@ -255,6 +255,7 @@ function useLiveFetchJob({
   }, [satellite, sector, band, catalogLatest]);
 
   useEffect(() => {
+    // GEOCOLOR is a pre-rendered composite served via CDN — no raw data to fetch
     if (band === 'GEOCOLOR') return;
     if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
     lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
@@ -438,7 +439,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     // Auto-hide on initial load
     resetOverlayTimer();
     return () => clearTimeout(overlayTimer.current);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [resetOverlayTimer]);
   const toggleOverlay = useCallback(() => {
     setOverlayVisible((v) => {
       const next = !v;
@@ -537,7 +538,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   // Reset zoom when satellite/sector/band changes
   useEffect(() => {
     zoom.reset();
-  }, [satellite, sector, band, zoom]);
+  }, [satellite, sector, band, zoom.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
@@ -584,7 +585,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
           onClick={handleImageTap}
         >
-          <ImageErrorBoundary>
+          <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
             {!imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading ? (
               <MesoFetchRequiredMessage onFetchNow={fetchNow} />
             ) : (
@@ -624,7 +625,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               monitoring={monitoring}
               onToggleMonitor={toggleMonitor}
               autoFetch={autoFetch}
-              onAutoFetchChange={setAutoFetch}
+              onAutoFetchChange={(v) => setAutoFetch(v)}
               refreshInterval={refreshInterval}
               onRefreshIntervalChange={setRefreshInterval}
               compareMode={compareMode}
@@ -686,7 +687,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}
             autoFetch={autoFetch}
-            onAutoFetchChange={setAutoFetch}
+            onAutoFetchChange={(v) => setAutoFetch(v)}
             autoFetchDisabled={band === 'GEOCOLOR'}
             autoFetchDisabledReason="Auto-fetch not available for GeoColor — CDN images update automatically"
           />

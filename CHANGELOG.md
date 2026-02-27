@@ -1,3 +1,10 @@
+## [1.23.3](https://github.com/jtn0123/satellite_processor/compare/v1.23.2...v1.23.3) (2026-02-27)
+
+
+### Bug Fixes
+
+* error boundary reset, zoom dep fix, prop type alignment, overlay timer deps ([#257](https://github.com/jtn0123/satellite_processor/issues/257)) ([eb93746](https://github.com/jtn0123/satellite_processor/commit/eb9374698bead97bde1491b02d26a92f24976b31))
+
 ## [1.23.2](https://github.com/jtn0123/satellite_processor/compare/v1.23.1...v1.23.2) (2026-02-27)
 
 

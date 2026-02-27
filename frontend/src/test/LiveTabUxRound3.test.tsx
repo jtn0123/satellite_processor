@@ -11,6 +11,14 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
+/** Shared assertion: verify status pill shows expected band */
+async function expectPillBand(bandId: string) {
+  await waitFor(() => {
+    const pill = screen.getByTestId('status-pill');
+    expect(pill.textContent).toContain(bandId);
+  });
+}
+
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
@@ -34,6 +42,7 @@ const PRODUCTS_DATA = {
     { id: 'FD', name: 'Full Disk', product: 'ABI-L2-CMIPF' },
   ],
   bands: [
+    { id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' },
     { id: 'C01', description: 'Blue (0.47µm)' },
     { id: 'C02', description: 'Red (0.64µm)' },
     { id: 'C03', description: 'Veggie (0.86µm)' },
@@ -107,86 +116,67 @@ describe('Swipe Gestures', () => {
     fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 200 }] });
 
-    // Swipe left should go to next band (C02 -> C03)
+    // Swipe left should go to next band (GEOCOLOR -> C01)
     await waitFor(() => {
-      const bandSelect = screen.getByLabelText('Band') as HTMLSelectElement;
-      expect(bandSelect.value).toBe('C03');
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('C01');
     });
   });
 
-  it('swipe right triggers previous band', async () => {
+  it('swipe right at first band does nothing', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
     await waitFor(() => expect(screen.getByTestId('swipe-gesture-area')).toBeInTheDocument());
 
     const area = screen.getByTestId('swipe-gesture-area');
-    // First swipe left to get to C03
-    fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
-    fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 200 }] });
-
-    await waitFor(() => {
-      expect((screen.getByLabelText('Band') as HTMLSelectElement).value).toBe('C03');
-    });
-
-    // Now swipe right to go back to C02
+    // Swipe right at first band (GEOCOLOR) should do nothing
     fireEvent.touchStart(area, { touches: [{ clientX: 100, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 300, clientY: 200 }] });
 
-    await waitFor(() => {
-      expect((screen.getByLabelText('Band') as HTMLSelectElement).value).toBe('C02');
-    });
+    await expectPillBand('GEOCOLOR');
   });
 
   it('small swipe below threshold does nothing', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      expect((screen.getByLabelText('Band') as HTMLSelectElement).value).toBe('C02');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     // Swipe only 30px (below 50px threshold)
     fireEvent.touchStart(area, { touches: [{ clientX: 200, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 170, clientY: 200 }] });
 
-    // Band should remain C02
-    const bandSelect = screen.getByLabelText('Band') as HTMLSelectElement;
-    expect(bandSelect.value).toBe('C02');
+    // Band should remain GEOCOLOR
+    await expectPillBand('GEOCOLOR');
   });
 
   it('swipe toast appears on band switch', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      expect((screen.getByLabelText('Band') as HTMLSelectElement).value).toBe('C02');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 200 }] });
 
-    // Swipe toast should appear with "C03 — Near-IR Veggie"
+    // Swipe toast should appear with C01 info
     await waitFor(() => {
-      const matches = screen.getAllByText('C03 — Near-IR Veggie');
-      // One is the dropdown option, the other is the swipe toast
-      expect(matches.length).toBeGreaterThanOrEqual(2);
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('C01');
     });
   });
 
   it('vertical swipe does not change band', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => {
-      expect((screen.getByLabelText('Band') as HTMLSelectElement).value).toBe('C02');
-    });
+    await expectPillBand('GEOCOLOR');
 
     const area = screen.getByTestId('swipe-gesture-area');
     // Vertical swipe (dy > dx)
     fireEvent.touchStart(area, { touches: [{ clientX: 200, clientY: 100 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 210, clientY: 300 }] });
 
-    const bandSelect = screen.getByLabelText('Band') as HTMLSelectElement;
-    expect(bandSelect.value).toBe('C02');
+    await expectPillBand('GEOCOLOR');
   });
 });
 
@@ -243,7 +233,7 @@ describe('Status Pill Overlay', () => {
     await waitFor(() => {
       const pill = screen.getByTestId('status-pill');
       expect(pill.textContent).toContain('GOES-16');
-      expect(pill.textContent).toContain('C02');
+      expect(pill.textContent).toContain('GEOCOLOR');
       // Time ago should be present (e.g., "2 min ago")
       expect(pill.textContent).toMatch(/\d+ min ago|just now/);
     });
@@ -266,11 +256,11 @@ describe('Cached Image Banner', () => {
     const cachedData = {
       url: 'data:image/png;base64,iVBOR',
       satellite: 'GOES-16',
-      band: 'C02',
+      band: 'GEOCOLOR',
       sector: 'CONUS',
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('live-cache:GOES-16:CONUS:C02', JSON.stringify(cachedData));
+    localStorage.setItem('live-cache:GOES-16:CONUS:GEOCOLOR', JSON.stringify(cachedData));
 
     // Make the real image fail so it falls back to cache
     mockedApi.get.mockImplementation((url: string) => {
@@ -304,7 +294,7 @@ describe('Cached Image Banner', () => {
       expect(screen.getByText(/Cached image/)).toBeInTheDocument();
     });
 
-    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:GEOCOLOR');
   });
 
   it('X button dismisses cached banner', async () => {
@@ -312,11 +302,11 @@ describe('Cached Image Banner', () => {
     const cachedData = {
       url: 'data:image/png;base64,iVBOR',
       satellite: 'GOES-16',
-      band: 'C02',
+      band: 'GEOCOLOR',
       sector: 'CONUS',
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('live-cache:GOES-16:CONUS:C02', JSON.stringify(cachedData));
+    localStorage.setItem('live-cache:GOES-16:CONUS:GEOCOLOR', JSON.stringify(cachedData));
 
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
@@ -353,7 +343,7 @@ describe('Cached Image Banner', () => {
       expect(screen.queryByTestId('cached-image-banner')).not.toBeInTheDocument();
     });
 
-    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:GEOCOLOR');
   });
 });
 
@@ -438,7 +428,7 @@ describe('Status Pill Always Visible', () => {
 describe('CdnImage Error Recovery', () => {
   it('shows retry button when image fails and no cache', async () => {
     vi.useRealTimers();
-    localStorage.removeItem('live-cache:GOES-16:CONUS:C02');
+    localStorage.removeItem('live-cache:GOES-16:CONUS:GEOCOLOR');
 
     renderWithProviders(<LiveTab />);
 

@@ -29,7 +29,7 @@ beforeEach(() => {
         data: {
           satellites: ['GOES-16', 'GOES-18'],
           sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-          bands: [{ id: 'C02', description: 'Red' }, { id: 'C13', description: 'IR' }],
+          bands: [{ id: 'GEOCOLOR', description: 'GeoColor' }, { id: 'C02', description: 'Red' }, { id: 'C13', description: 'IR' }],
         },
       });
     }
@@ -63,22 +63,21 @@ describe('LiveTab extended', () => {
     });
   });
 
-  it('has four control sections', async () => {
+  it('has pill strip and auto-fetch controls', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
-      expect(screen.getByLabelText('Sector')).toBeInTheDocument();
-      expect(screen.getByLabelText('Band')).toBeInTheDocument();
+      expect(screen.getByTestId('band-pill-strip')).toBeInTheDocument();
+      expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument();
+      expect(screen.getByTestId('pill-strip-sector')).toBeInTheDocument();
       expect(screen.getByLabelText('Auto-fetch interval')).toBeInTheDocument();
     });
   });
 
-  it('renders refresh interval options', async () => {
+  it('renders auto-fetch interval select', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      const selects = document.querySelectorAll('select');
-      // Should have satellite, sector, band, and refresh interval selects
-      expect(selects.length).toBe(4);
+      // Auto-fetch interval select should exist
+      expect(screen.getByLabelText('Auto-fetch interval')).toBeInTheDocument();
     });
   });
 

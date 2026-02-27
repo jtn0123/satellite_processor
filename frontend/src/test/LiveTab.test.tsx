@@ -33,7 +33,7 @@ beforeEach(() => {
         data: {
           satellites: ['GOES-16', 'GOES-18'],
           sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
-          bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
+          bands: [{ id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' }, { id: 'C02', description: 'Red (0.64µm)' }],
         },
       });
     }
@@ -58,24 +58,24 @@ describe('LiveTab', () => {
     });
   });
 
-  it('renders satellite selector', async () => {
+  it('renders satellite chip in pill strip', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
+      expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument();
     });
   });
 
-  it('renders band selector', async () => {
+  it('renders band pills in pill strip', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Band')).toBeInTheDocument();
+      expect(screen.getByTestId('band-pill-strip')).toBeInTheDocument();
     });
   });
 
-  it('renders sector selector', async () => {
+  it('renders sector chip in pill strip', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Sector')).toBeInTheDocument();
+      expect(screen.getByTestId('pill-strip-sector')).toBeInTheDocument();
     });
   });
 
@@ -115,7 +115,7 @@ describe('LiveTab', () => {
           data: {
             satellites: ['GOES-16'],
             sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-            bands: [{ id: 'C02', description: 'Red' }],
+            bands: [{ id: 'GEOCOLOR', description: 'GeoColor' }, { id: 'C02', description: 'Red' }],
           },
         });
       }
@@ -144,7 +144,7 @@ describe('LiveTab', () => {
     await waitFor(() => {
       const pill = screen.getByTestId('status-pill');
       expect(pill.textContent).toContain('GOES-16');
-      expect(pill.textContent).toContain('C02');
+      expect(pill.textContent).toContain('GEOCOLOR');
     });
   });
 });

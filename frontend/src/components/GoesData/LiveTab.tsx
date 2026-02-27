@@ -18,7 +18,6 @@ import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
 import {
   FRIENDLY_BAND_NAMES,
-  getFriendlyBandLabel,
   getFriendlyBandName,
   timeAgo,
 } from './liveTabUtils';
@@ -222,15 +221,6 @@ function shouldAutoFetch(
   return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
 }
 
-function getSatelliteLabel(s: string, satelliteAvailability?: Record<string, SatelliteAvailability>): string {
-  const status = satelliteAvailability?.[s]?.status;
-  return status && status !== 'operational' ? `${s} (${status})` : s;
-}
-
-function isSectorUnavailable(sectorId: string, availableSectors?: string[]): boolean {
-  return !!availableSectors && !availableSectors.includes(sectorId);
-}
-
 function useFullscreenSync(
   setIsFullscreen: React.Dispatch<React.SetStateAction<boolean>>,
   zoom: { reset: () => void },
@@ -426,7 +416,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const [satellite, setSatellite] = useState('');
   const [sector, setSector] = useState('CONUS');
-  const [band, setBand] = useState('C02');
+  const [band, setBand] = useState('GEOCOLOR');
   const [refreshInterval, setRefreshInterval] = useState(300000);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
@@ -516,14 +506,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [products, band]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const { data: availability } = useQuery<{ satellite: string; available_sectors: string[]; checked_at: string }>({
-    queryKey: ['goes-available', satellite],
-    queryFn: () => api.get('/goes/catalog/available', { params: { satellite } }).then((r) => r.data),
-    enabled: !!satellite,
-    staleTime: 120000,
-    retry: 1,
-  });
-
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
     queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
@@ -588,6 +570,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
+  const isComposite = band === 'GEOCOLOR';
 
   return (
     <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-140px)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
@@ -663,26 +646,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           data-testid="controls-overlay"
         >
-          <div className="pointer-events-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 px-4 py-3">
-            {/* On mobile, hide dropdowns — use bottom sheet instead */}
-            <select id="live-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)} aria-label="Satellite"
-              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.satellites ?? []).map((s) => (
-                <option key={s} value={s} className="bg-space-900 text-white">{getSatelliteLabel(s, products?.satellite_availability)}</option>
-              ))}
-            </select>
-            <select id="live-sector" value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Sector"
-              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.sectors ?? []).map((s) => {
-                const unavailable = isSectorUnavailable(s.id, availability?.available_sectors);
-                const label = unavailable ? `${s.name} (unavailable)` : s.name;
-                return <option key={s.id} value={s.id} disabled={unavailable} className="bg-space-900 text-white">{label}</option>;
-              })}
-            </select>
-            <select id="live-band" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band"
-              className="max-sm:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm px-3 py-1.5 focus:ring-2 focus:ring-primary/50 focus:outline-hidden transition-colors hover:bg-white/20">
-              {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id} className="bg-space-900 text-white" title={getFriendlyBandLabel(b.id, b.description, 'long')}>{getFriendlyBandLabel(b.id, b.description, isMobile ? 'short' : 'medium')}</option>)}
-            </select>
+          <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-4 py-3">
             <DesktopControlsBar
               monitoring={monitoring}
               onToggleMonitor={toggleMonitor}
@@ -721,8 +685,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         </div>
 
-        {/* Stale data warning overlay — hidden when fetch in progress to avoid overlap */}
-        {freshnessInfo && frame && localImageUrl && !activeJobId && (
+        {/* Stale data warning overlay — hidden when fetch in progress or composite */}
+        {!isComposite && freshnessInfo && frame && localImageUrl && !activeJobId && (
           <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <StaleDataBanner
               freshnessInfo={freshnessInfo}
@@ -764,6 +728,24 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           >
             Reset zoom
           </button>
+        )}
+
+        {/* Desktop band pill strip — inside image area */}
+        {!isMobile && products?.bands && (
+          <BandPillStrip
+            variant="desktop"
+            bands={products.bands}
+            activeBand={band}
+            onBandChange={setBand}
+            satellite={satellite}
+            sector={sector}
+            satellites={products?.satellites ?? []}
+            sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
+            onSatelliteChange={setSatellite}
+            onSectorChange={setSector}
+            sectorName={products.sectors?.find((s) => s.id === sector)?.name}
+            satelliteAvailability={products.satellite_availability}
+          />
         )}
       </div>
 

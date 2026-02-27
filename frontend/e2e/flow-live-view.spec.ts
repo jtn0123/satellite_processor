@@ -13,8 +13,8 @@ test.describe('Live flow', () => {
 
   test('live view shows satellite selector', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Satellite"]');
-    await expect(select).toBeVisible({ timeout: 10000 });
+    const satelliteChip = page.locator('[data-testid="pill-strip-satellite"]');
+    await expect(satelliteChip).toBeVisible({ timeout: 10000 });
   });
 
   test('live view has auto-fetch toggle', async ({ page }) => {
@@ -54,42 +54,50 @@ test.describe('Live flow', () => {
 
   test('band selector has options', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Band"]');
-    await expect(select).toBeVisible({ timeout: 10000 });
-    const options = select.locator('option');
-    expect(await options.count()).toBeGreaterThanOrEqual(2);
+    const strip = page.locator('[data-testid="band-pill-strip"]');
+    await expect(strip).toBeVisible({ timeout: 10000 });
+    const pills = strip.locator('button[data-testid^="band-pill-"]');
+    expect(await pills.count()).toBeGreaterThanOrEqual(2);
   });
 
   test('sector selector has options', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Sector"]');
-    await expect(select).toBeVisible({ timeout: 10000 });
-    const options = select.locator('option');
-    expect(await options.count()).toBeGreaterThanOrEqual(2);
-    // Verify known sectors
-    await expect(select).toContainText('CONUS');
-    await expect(select).toContainText('FullDisk');
+    const sectorChip = page.locator('[data-testid="pill-strip-sector"]');
+    await expect(sectorChip).toBeVisible({ timeout: 10000 });
+    // Click to expand sector options
+    await sectorChip.click();
+    const conusOption = page.locator('[data-testid="sector-option-CONUS"]');
+    const fullDiskOption = page.locator('[data-testid="sector-option-FullDisk"]');
+    await expect(conusOption).toBeVisible({ timeout: 5000 });
+    await expect(fullDiskOption).toBeVisible({ timeout: 5000 });
   });
 
   test('changing satellite updates the view', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Satellite"]');
-    await expect(select).toBeVisible({ timeout: 10000 });
-    // Default should be GOES-19
-    await expect(select).toHaveValue('GOES-19');
-    await select.selectOption('GOES-18');
-    await expect(select).toHaveValue('GOES-18');
+    const satelliteChip = page.locator('[data-testid="pill-strip-satellite"]');
+    await expect(satelliteChip).toBeVisible({ timeout: 10000 });
+    // Default should show GOES-19
+    await expect(satelliteChip).toContainText('GOES-19');
+    // Click to expand satellite options
+    await satelliteChip.click();
+    const goes18Option = page.locator('[data-testid="satellite-option-GOES-18"]');
+    await expect(goes18Option).toBeVisible({ timeout: 5000 });
+    await goes18Option.click();
+    // After selection, chip should show GOES-18
+    await expect(satelliteChip).toContainText('GOES-18', { timeout: 5000 });
   });
 
   test('changing band updates the view', async ({ page }) => {
     await page.goto('/live');
-    const select = page.locator('select[aria-label="Band"]');
-    await expect(select).toBeVisible({ timeout: 10000 });
-    // Default band (C02) should be selected
-    const initialValue = await select.inputValue();
-    expect(initialValue).toBeTruthy();
-    await select.selectOption('C13');
-    await expect(select).toHaveValue('C13');
+    const strip = page.locator('[data-testid="band-pill-strip"]');
+    await expect(strip).toBeVisible({ timeout: 10000 });
+    // Find any two band pills and click the second one
+    const pills = strip.locator('button[data-testid^="band-pill-"]');
+    expect(await pills.count()).toBeGreaterThanOrEqual(2);
+    const secondPill = pills.nth(1);
+    await secondPill.click();
+    // The clicked pill should become active (font-semibold)
+    await expect(secondPill).toHaveClass(/font-semibold/, { timeout: 5000 });
   });
 
   // --- Image Display ---
@@ -112,17 +120,18 @@ test.describe('Live flow', () => {
   });
 
   test('error state appears on image load failure', async ({ page }) => {
-    // Override API routes to return 404 to trigger error/fallback state
+    // Override image routes to return 404 to trigger error state
     await page.route('**/api/goes/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     await page.route('**/api/goes/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    // Also block CDN fallback images so error state appears
+    await page.route('**/cdn.star.nesdis.noaa.gov/**', (route) => route.abort('connectionrefused'));
     await page.goto('/live');
-    // With API 404s, the Live tab falls back to CDN URL — image or error state should appear
+    // Should show unavailable/retry state — Live always has CDN fallback
     const imageArea = page.locator('[data-testid="live-image-area"]');
-    const image = imageArea.locator('img');
     const unavailable = imageArea.getByText(/unavailable|retrying|retry/i);
     const shimmer = imageArea.locator('[data-testid="shimmer-loader"]');
-    // CDN fallback may load an image, or show unavailable/shimmer if CDN also fails
-    await expect(image.or(unavailable).or(shimmer).first()).toBeVisible({ timeout: 10000 });
+    // Either the unavailable message or shimmer loader should appear
+    await expect(unavailable.or(shimmer).first()).toBeVisible({ timeout: 10000 });
   });
 
   // --- Metadata & Layout ---

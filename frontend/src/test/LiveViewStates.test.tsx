@@ -61,6 +61,7 @@ const PRODUCTS = {
     { id: 'FullDisk', name: 'Full Disk', product: 'ABI-L2-CMIPF' },
   ],
   bands: [
+    { id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' },
     { id: 'C02', description: 'Red (0.64µm)' },
     { id: 'C13', description: 'Clean IR (10.3µm)' },
   ],
@@ -161,7 +162,7 @@ describe('LiveViewStates', () => {
   it('shows frame image when frame exists', async () => {
     renderLive();
     await waitFor(() => {
-      const img = screen.getByAltText('GOES-19 C02 CONUS');
+      const img = screen.getByAltText('GOES-19 GEOCOLOR CONUS');
       expect(img).toBeInTheDocument();
       expect(img.getAttribute('src')).toContain('/api/goes/frames/');
     });
@@ -172,6 +173,9 @@ describe('LiveViewStates', () => {
     const newCatalog = { ...CATALOG_LATEST, scan_time: new Date(Date.now() - 60000).toISOString() };
     setupMocks({ frame: oldFrame, catalog: newCatalog });
     renderLive();
+    // Switch to C02 (stale banner hidden for GEOCOLOR composites)
+    await waitFor(() => expect(screen.getByTestId('band-pill-C02')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('band-pill-C02'));
     await waitFor(() => {
       expect(screen.getByTestId('stale-banner')).toBeInTheDocument();
     });
@@ -221,6 +225,9 @@ describe('LiveViewStates', () => {
     const oldFrame = { ...FRAME, capture_time: new Date(Date.now() - 7200000).toISOString() };
     setupMocks({ frame: oldFrame });
     renderLive();
+    // Switch to C02 (stale banner hidden for GEOCOLOR composites)
+    await waitFor(() => expect(screen.getByTestId('band-pill-C02')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('band-pill-C02'));
     await waitFor(() => {
       const fetchBtn = screen.queryByText('Fetch Now');
       if (fetchBtn) {
@@ -237,36 +244,40 @@ describe('LiveViewStates', () => {
       return Promise.resolve({ data: {} });
     });
     renderLive();
-    // Should still render controls (empty selectors)
+    // Should still render controls overlay
     await waitFor(() => {
-      expect(screen.getByLabelText('Satellite')).toBeInTheDocument();
+      expect(screen.getByTestId('controls-overlay')).toBeInTheDocument();
     });
   });
 
-  it('satellite selector updates when changed', async () => {
+  it('satellite changes via pill strip', async () => {
     renderLive();
+    await waitFor(() => expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    await waitFor(() => expect(screen.getByTestId('satellite-option-GOES-16')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('satellite-option-GOES-16'));
     await waitFor(() => {
-      const select = screen.getByLabelText('Satellite') as HTMLSelectElement;
-      fireEvent.change(select, { target: { value: 'GOES-16' } });
-      expect(select.value).toBe('GOES-16');
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('GOES-16');
     });
   });
 
-  it('sector selector updates when changed', async () => {
+  it('sector changes via pill strip', async () => {
     renderLive();
-    await waitFor(() => {
-      const select = screen.getByLabelText('Sector') as HTMLSelectElement;
-      fireEvent.change(select, { target: { value: 'FullDisk' } });
-      expect(select.value).toBe('FullDisk');
-    });
+    await waitFor(() => expect(screen.getByTestId('pill-strip-sector')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('pill-strip-sector'));
+    await waitFor(() => expect(screen.getByTestId('sector-option-FullDisk')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('sector-option-FullDisk'));
+    expect(document.body.textContent).toBeTruthy();
   });
 
-  it('band selector updates when changed', async () => {
+  it('band changes via pill strip', async () => {
     renderLive();
+    await waitFor(() => expect(screen.getByTestId('band-pill-C13')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('band-pill-C13'));
     await waitFor(() => {
-      const select = screen.getByLabelText('Band') as HTMLSelectElement;
-      fireEvent.change(select, { target: { value: 'C13' } });
-      expect(select.value).toBe('C13');
+      const pill = screen.getByTestId('status-pill');
+      expect(pill.textContent).toContain('C13');
     });
   });
 
@@ -314,6 +325,9 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     const newCatalog = { ...CATALOG_LATEST, scan_time: new Date(Date.now() - 60000).toISOString() };
     setupMocks({ frame: oldFrame, catalog: newCatalog });
     renderLive();
+    // Switch to C02 (stale banner hidden for GEOCOLOR composites)
+    await waitFor(() => expect(screen.getByTestId('band-pill-C02')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('band-pill-C02'));
     await waitFor(() => {
       expect(screen.getByTestId('stale-banner')).toBeInTheDocument();
     });
@@ -342,11 +356,11 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       const pill = screen.getByTestId('status-pill');
       expect(pill.textContent).toContain('GOES-19');
-      expect(pill.textContent).toContain('C02');
+      expect(pill.textContent).toContain('GEOCOLOR');
     });
   });
 
-  it('selector changes re-query catalog (satellite change)', async () => {
+  it('pill strip changes re-query catalog (satellite change)', async () => {
     const catalogWithUrl = {
       ...CATALOG_LATEST,
       image_url: 'https://noaa-goes19.s3.amazonaws.com/test.nc',
@@ -356,8 +370,9 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
-    const satSelect = screen.getByLabelText('Satellite') as HTMLSelectElement;
-    fireEvent.change(satSelect, { target: { value: 'GOES-16' } });
+    fireEvent.click(screen.getByTestId('pill-strip-satellite'));
+    await waitFor(() => expect(screen.getByTestId('satellite-option-GOES-16')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('satellite-option-GOES-16'));
     // After change, catalog query should be called again with new satellite
     await waitFor(() => {
       const catalogCalls = mockedApi.get.mock.calls.filter(

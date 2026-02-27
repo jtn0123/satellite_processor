@@ -1,3 +1,10 @@
+## [1.23.1](https://github.com/jtn0123/satellite_processor/compare/v1.23.0...v1.23.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* fix 14 number-related bugs across the codebase ([#254](https://github.com/jtn0123/satellite_processor/issues/254)) ([1bdec40](https://github.com/jtn0123/satellite_processor/commit/1bdec408e565cafe228c1d418d2052df2c1649ad))
+
 # [1.23.0](https://github.com/jtn0123/satellite_processor/compare/v1.22.5...v1.23.0) (2026-02-27)
 
 

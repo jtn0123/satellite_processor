@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/jtn0123/satellite_processor/compare/v1.22.5...v1.23.0) (2026-02-27)
+
+
+### Features
+
+* desktop pill strip + GEOCOLOR default ([#251](https://github.com/jtn0123/satellite_processor/issues/251)) ([5eddb12](https://github.com/jtn0123/satellite_processor/commit/5eddb124ab9c592382ab95dfec84543208f669ad))
+
 ## [1.22.5](https://github.com/jtn0123/satellite_processor/compare/v1.22.4...v1.22.5) (2026-02-27)
 
 

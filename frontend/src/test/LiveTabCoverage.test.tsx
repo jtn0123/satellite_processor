@@ -17,7 +17,7 @@ vi.mock('../hooks/useMonitorWebSocket', () => ({
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
 
-const mockedApi = api as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
+const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
 
 const PRODUCTS_DATA = {
   satellites: ['GOES-16', 'GOES-18'],

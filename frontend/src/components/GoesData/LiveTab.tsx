@@ -585,7 +585,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onClick={handleImageTap}
         >
           <ImageErrorBoundary>
-            {!imageUrl && !products?.sectors.find((s) => s.id === sector)?.cdn_available && !isLoading ? (
+            {!imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading ? (
               <MesoFetchRequiredMessage onFetchNow={fetchNow} />
             ) : (
               <ImagePanelContent

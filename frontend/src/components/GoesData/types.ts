@@ -126,11 +126,12 @@ export interface LatestFrame {
   sector: string;
   band: string;
   capture_time: string;
-  file_size: number;
-  width: number;
-  height: number;
+  file_size: number | null;
+  width: number | null;
+  height: number | null;
   image_url: string;
-  thumbnail_url?: string;
+  thumbnail_url?: string | null;
+  mobile_url?: string;
 }
 
 export interface CatalogLatest {

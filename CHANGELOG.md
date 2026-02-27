@@ -1,3 +1,10 @@
+## [1.23.2](https://github.com/jtn0123/satellite_processor/compare/v1.23.1...v1.23.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* API response alignment — CDN availability, cache headers, shared types ([#256](https://github.com/jtn0123/satellite_processor/issues/256)) ([08c7dfe](https://github.com/jtn0123/satellite_processor/commit/08c7dfe30bdcd9f7569bcd6a4f5c36f80618c935))
+
 ## [1.23.1](https://github.com/jtn0123/satellite_processor/compare/v1.23.0...v1.23.1) (2026-02-27)
 
 

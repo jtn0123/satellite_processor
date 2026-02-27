@@ -110,8 +110,6 @@ async def list_products(response: Response):
             for k, v in SECTOR_PRODUCTS.items()
         ],
         "bands": [
-            {"id": "GEOCOLOR", "description": BAND_DESCRIPTIONS["GEOCOLOR"], **BAND_METADATA["GEOCOLOR"]},
-        ] + [
             {
                 "id": band,
                 "description": BAND_DESCRIPTIONS.get(band, band),

@@ -85,3 +85,72 @@ async def test_openapi_spec_available(client: AsyncClient):
     assert resp.status_code == 200
     spec = resp.json()
     assert "paths" in spec
+
+
+# ---------------------------------------------------------------------------
+# GEOCOLOR / band validation regression tests
+# ---------------------------------------------------------------------------
+
+
+def test_validate_params_geocolor_does_not_raise():
+    """GEOCOLOR must be accepted by validate_params (regression for 500 bug)."""
+    from app.services.goes_fetcher import validate_params
+
+    # Should not raise
+    validate_params("GOES-19", "CONUS", "GEOCOLOR")
+    validate_params("GOES-18", "FullDisk", "GEOCOLOR")
+
+
+def test_valid_bands_includes_geocolor():
+    """VALID_BANDS must include GEOCOLOR alongside C01-C16."""
+    from app.services.goes_fetcher import VALID_BANDS
+
+    assert "GEOCOLOR" in VALID_BANDS
+    # Ensure the 16 ABI bands are still present
+    for i in range(1, 17):
+        assert f"C{i:02d}" in VALID_BANDS
+
+
+@pytest.mark.anyio
+async def test_catalog_latest_geocolor_no_500(client: AsyncClient):
+    """GET /api/goes/catalog/latest?band=GEOCOLOR must not return 500."""
+    resp = await client.get(
+        "/api/goes/catalog/latest",
+        params={"satellite": "GOES-19", "sector": "CONUS", "band": "GEOCOLOR"},
+    )
+    # 404 is fine (no S3 data for GEOCOLOR), 500 is not
+    assert resp.status_code != 500, f"catalog/latest returned 500 for GEOCOLOR: {resp.text}"
+
+
+@pytest.mark.anyio
+async def test_products_includes_geocolor(client: AsyncClient):
+    """GET /api/goes/products must list GEOCOLOR in bands."""
+    resp = await client.get("/api/goes/products")
+    assert resp.status_code == 200
+    data = resp.json()
+    band_ids = [b["id"] if isinstance(b, dict) else b for b in data.get("bands", [])]
+    assert "GEOCOLOR" in band_ids, f"GEOCOLOR missing from /goes/products bands: {band_ids}"
+
+
+@pytest.mark.anyio
+async def test_all_product_bands_accepted_by_catalog_latest(client: AsyncClient):
+    """Contract: every band from /goes/products must not 500 on /catalog/latest.
+
+    This is the test that would have caught the GEOCOLOR bug.
+    """
+    resp = await client.get("/api/goes/products")
+    assert resp.status_code == 200
+    raw_bands = resp.json().get("bands", [])
+    bands = [b["id"] if isinstance(b, dict) else b for b in raw_bands]
+    assert len(bands) > 0, "No bands returned from /goes/products"
+
+    failures = []
+    for band in bands:
+        r = await client.get(
+            "/api/goes/catalog/latest",
+            params={"satellite": "GOES-19", "sector": "CONUS", "band": band},
+        )
+        if r.status_code == 500:
+            failures.append(f"{band}: 500 - {r.text[:200]}")
+
+    assert not failures, f"Bands returned 500 on /catalog/latest:\n" + "\n".join(failures)

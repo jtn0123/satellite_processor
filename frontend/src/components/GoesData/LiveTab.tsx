@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import api from '../../api/client';
-import { showToast } from '../../utils/toast';
-import { useMonitorWebSocket } from '../../hooks/useMonitorWebSocket';
+
 import MonitorSettingsPanel from './MonitorSettingsPanel';
 import type { MonitorPreset } from './monitorPresets';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
@@ -16,12 +15,13 @@ import SwipeHint from './SwipeHint';
 import StaleDataBanner from './StaleDataBanner';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
-import type { LatestFrame, CatalogLatest } from './types';
-import {
-  FRIENDLY_BAND_NAMES,
-  getFriendlyBandName,
-  timeAgo,
-} from './liveTabUtils';
+import type { LatestFrame, CatalogLatest, Product } from './types';
+import { timeAgo } from './liveTabUtils';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { useMonitorMode } from '../../hooks/useMonitorMode';
+import { useLiveFetchJob } from '../../hooks/useLiveFetchJob';
+import { useCountdownDisplay } from '../../hooks/useCountdownDisplay';
+import { useSwipeBand } from '../../hooks/useSwipeBand';
 import BandPillStrip from './BandPillStrip';
 import ImagePanelContent from './ImagePanelContent';
 import ImageErrorBoundary from './ImageErrorBoundary';
@@ -30,78 +30,9 @@ import DesktopControlsBar from './DesktopControlsBar';
 import StatusPill from './StatusPill';
 import FullscreenButton from './FullscreenButton';
 
-function subscribeToResize(cb: () => void) {
-  globalThis.addEventListener('resize', cb);
-  return () => globalThis.removeEventListener('resize', cb);
-}
-function getIsMobile() { return globalThis.window !== undefined && globalThis.innerWidth < 768; }
-function useIsMobile() { return useSyncExternalStore(subscribeToResize, getIsMobile, () => false); }
-
-interface SatelliteAvailability {
-  status: string;
-  description: string;
-}
-
-interface Product {
-  satellites: string[];
-  sectors: { id: string; name: string; product: string; cdn_available?: boolean }[];
-  bands: { id: string; description: string }[];
-  default_satellite?: string;
-  satellite_availability?: Record<string, SatelliteAvailability>;
-}
 
 
 
-/** Hook: encapsulates monitor mode state + WS-driven refetch */
-function useMonitorMode(
-  onMonitorChange: ((active: boolean) => void) | undefined,
-  satellite: string,
-  sector: string,
-  band: string,
-  refetchRef: React.RefObject<(() => Promise<unknown>) | null>,
-  onRefetch?: () => void,
-) {
-  const [monitoring, setMonitoring] = useState(false);
-  const [autoFetch, setAutoFetch] = useState(false);
-
-  const { lastEvent: wsLastEvent } = useMonitorWebSocket(monitoring, { satellite, sector, band });
-
-  useEffect(() => {
-    if (wsLastEvent && monitoring) {
-      refetchRef.current?.();
-      onRefetch?.();
-    }
-  }, [wsLastEvent, monitoring, refetchRef, onRefetch]);
-
-  const toggleMonitor = useCallback(() => {
-    setMonitoring((v) => {
-      const next = !v;
-      setAutoFetch(next);
-      const toastLevel = next ? 'success' : 'info';
-      const toastMsg = next ? 'Monitor mode activated' : 'Monitor mode stopped';
-      showToast(toastLevel, toastMsg);
-      onMonitorChange?.(next);
-      return next;
-    });
-  }, [onMonitorChange]);
-
-  const startMonitorRaw = useCallback((applyConfig: () => void) => {
-    applyConfig();
-    setAutoFetch(true);
-    setMonitoring(true);
-    onMonitorChange?.(true);
-    showToast('success', 'Monitor mode activated');
-  }, [onMonitorChange]);
-
-  const stopMonitor = useCallback(() => {
-    setMonitoring(false);
-    setAutoFetch(false);
-    onMonitorChange?.(false);
-    showToast('info', 'Monitor mode stopped');
-  }, [onMonitorChange]);
-
-  return { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor };
-}
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
@@ -181,21 +112,8 @@ async function enterFullscreenSafe(el: HTMLElement) {
   }
 }
 
-function shouldAutoFetch(
-  autoFetch: boolean,
-  catalogLatest: CatalogLatest | null | undefined,
-  frame: LatestFrame | null | undefined,
-  lastAutoFetchTime: string | null,
-  lastAutoFetchMs: number,
-): boolean {
-  if (!autoFetch || !catalogLatest || !frame) return false;
-  const catalogTime = new Date(catalogLatest.scan_time).getTime();
-  const localTime = new Date(frame.capture_time).getTime();
-  return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
-}
-
 function useFullscreenSync(
-  setIsFullscreen: React.Dispatch<React.SetStateAction<boolean>>,
+  setIsFullscreen: Dispatch<SetStateAction<boolean>>,
   zoom: { reset: () => void },
 ) {
   useEffect(() => {
@@ -209,150 +127,7 @@ function useFullscreenSync(
   }, [setIsFullscreen, zoom]);
 }
 
-/* Extracted fetch-job logic to reduce LiveTab cognitive complexity */
-function useLiveFetchJob({
-  satellite, sector, band, autoFetch, catalogLatest, frame,
-  lastAutoFetchTimeRef, lastAutoFetchMsRef, refetch,
-}: {
-  satellite: string; sector: string; band: string; autoFetch: boolean;
-  catalogLatest: CatalogLatest | null; frame: LatestFrame | null;
-  lastAutoFetchTimeRef: React.MutableRefObject<string | null>;
-  lastAutoFetchMsRef: React.MutableRefObject<number>;
-  refetch: () => Promise<unknown>;
-}) {
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
-  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
-    queryKey: ['live-job', activeJobId],
-    queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
-    enabled: !!activeJobId,
-    refetchInterval: activeJobId ? 2000 : false,
-  });
-
-  useEffect(() => {
-    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
-      const timer = setTimeout(() => {
-        setActiveJobId(null);
-        refetch();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeJob, refetch]);
-
-  const fetchNow = useCallback(async () => {
-    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
-    try {
-      const res = await api.post('/goes/fetch', {
-        satellite: satellite.toUpperCase(), sector, band,
-        start_time: startDate,
-        end_time: startDate,
-      });
-      setActiveJobId(res.data.job_id);
-      showToast('success', 'Fetching latest frame…');
-    } catch {
-      showToast('error', 'Failed to start fetch');
-    }
-  }, [satellite, sector, band, catalogLatest]);
-
-  useEffect(() => {
-    // GEOCOLOR is a pre-rendered composite served via CDN — no raw data to fetch
-    if (band === 'GEOCOLOR') return;
-    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
-    lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
-    lastAutoFetchMsRef.current = Date.now();
-    const doAutoFetch = async () => {
-      try {
-        const res = await api.post('/goes/fetch', {
-          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
-          sector: sector || catalogLatest!.sector,
-          band: band || catalogLatest!.band,
-          start_time: catalogLatest!.scan_time,
-          end_time: catalogLatest!.scan_time,
-        });
-        setActiveJobId(res.data.job_id);
-        showToast('success', 'Auto-fetching new frame from AWS');
-      } catch { /* auto-fetch failure is non-critical */ }
-    };
-    doAutoFetch();
-  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef]);
-
-  return { activeJobId, activeJob: activeJob ?? null, fetchNow };
-}
-
-/* Countdown display hook — target-time approach to avoid drift */
-function useCountdownDisplay(refreshInterval: number) {
-  const nextRefreshAt = useRef(0);
-
-  // Initialize on first render + reset when interval changes
-  useEffect(() => {
-    nextRefreshAt.current = Date.now() + refreshInterval;
-  }, [refreshInterval]);
-
-  const resetCountdown = useCallback(() => {
-    nextRefreshAt.current = Date.now() + refreshInterval;
-  }, [refreshInterval]);
-
-  const [display, setDisplay] = useState(() => {
-    const sec = Math.max(0, Math.ceil(refreshInterval / 1000));
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((nextRefreshAt.current - Date.now()) / 1000));
-      if (remaining <= 0) {
-        nextRefreshAt.current = Date.now() + refreshInterval;
-      }
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      setDisplay(`${m}:${s.toString().padStart(2, '0')}`);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [refreshInterval]);
-
-  return { display, resetCountdown };
-}
-
-/* Swipe-to-change-band hook — extracted to reduce LiveTab cognitive complexity */
-function useSwipeBand(products: Product | undefined, band: string, setBand: (b: string) => void) {
-  const bandKeys = useMemo(() => {
-    if (products?.bands?.length) return products.bands.map((b) => b.id);
-    return Object.keys(FRIENDLY_BAND_NAMES);
-  }, [products]);
-
-  const [swipeToast, setSwipeToast] = useState<string | null>(null);
-  const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent, isZoomed?: boolean) => {
-    if (!touchStart.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.current.x;
-    const dy = t.clientY - touchStart.current.y;
-    touchStart.current = null;
-    if (isZoomed) return;
-    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
-    const currentIdx = bandKeys.indexOf(band);
-    if (currentIdx < 0) return;
-    const nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-    if (nextIdx < 0 || nextIdx >= bandKeys.length) return;
-    const nextBand = bandKeys[nextIdx];
-    setBand(nextBand);
-    const label = getFriendlyBandName(nextBand);
-    clearTimeout(swipeToastTimer.current);
-    setSwipeToast(`${nextBand} — ${label}`);
-    swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
-  }, [band, bandKeys, setBand]);
-
-  return { swipeToast, handleTouchStart, handleTouchEnd };
-}
 
 /** Message shown for mesoscale sectors where CDN images are not available */
 function MesoFetchRequiredMessage({ onFetchNow }: Readonly<{ onFetchNow: () => void }>) {
@@ -610,7 +385,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
         {/* Swipe toast */}
         {swipeToast && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 px-4 py-2 rounded-lg bg-black/70 backdrop-blur-md text-white text-sm font-medium pointer-events-none">
+          <div aria-live="assertive" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 px-4 py-2 rounded-lg bg-black/70 backdrop-blur-md text-white text-sm font-medium pointer-events-none">
             {swipeToast}
           </div>
         )}

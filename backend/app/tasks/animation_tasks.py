@@ -52,7 +52,9 @@ def _apply_loop_style(frames, loop_style: str, fps: int) -> list:
     if not frames:
         return frames
     if loop_style == "pingpong":
-        return list(frames) + list(reversed(frames[1:-1]))
+        if len(frames) > 2:
+            return list(frames) + list(reversed(frames[1:-1]))
+        return list(frames) + list(reversed(frames[:-1]))
     if loop_style == "hold":
         hold_count = fps * 2
         return list(frames) + [frames[-1]] * hold_count

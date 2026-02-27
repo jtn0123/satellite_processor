@@ -625,7 +625,7 @@ def fetch_composite_data(self, job_id: str, params: dict):
         total_bands = len(bands)
 
         for i, band in enumerate(bands):
-            band_progress = int((i / total_bands) * 80)
+            band_progress = int(((i + 1) / total_bands) * 80)
             _publish_progress(job_id, band_progress, f"Fetching band {band} ({i + 1}/{total_bands})", "processing")
             _update_job_db(job_id, progress=band_progress, status_message=f"Fetching band {band}")
 

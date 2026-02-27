@@ -93,7 +93,7 @@ class VideoHandler:
             ]
             for path in common_paths:
                 if path.exists():
-                    self.ffmpeg_path = str(path)
+                    self.ffmpeg_path = path
                     break
 
         if not self.ffmpeg_path and not getattr(self, "testing", False):
@@ -357,7 +357,7 @@ class VideoHandler:
         """Create initial video with proper frame timing"""
         try:
             list_file = output.parent / "frames.txt"
-            frame_duration = options.get("frame_duration", DEFAULT_FRAME_DURATION)
+            frame_duration = options.get("frame_duration", 1.0 / fps if fps > 0 else DEFAULT_FRAME_DURATION)
 
             with open(list_file, "w", encoding="utf-8") as f:
                 for frame in frame_files:
@@ -419,7 +419,7 @@ class VideoHandler:
             encoder = options.get("encoder", "H.264")
             bitrate = options.get("bitrate", "8000k")
             preset = options.get("preset", "slow")
-            frame_duration = options.get("frame_duration", DEFAULT_FRAME_DURATION)
+            frame_duration = options.get("frame_duration", 1.0 / fps if fps > 0 else DEFAULT_FRAME_DURATION)
 
             output_path = Path(output_path).resolve()
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -430,6 +430,8 @@ class VideoHandler:
                 for frame_path in frame_paths:
                     f.write(f"file '{frame_path}'\n")
                     f.write(f"duration {frame_duration}\n")
+                if frame_paths:
+                    f.write(f"file '{frame_paths[-1]}'\n")
 
             cmd = [
                 str(self.ffmpeg_path),

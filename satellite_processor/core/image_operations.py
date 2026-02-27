@@ -369,7 +369,12 @@ class ImageOperations:
             import psutil
 
             process = psutil.Process()
-            process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            if os.name == "nt":
+                process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+            else:
+                process.nice(-5)
+        except PermissionError:
+            logger.debug("Insufficient permissions to set process priority")
         except Exception:
             pass
 

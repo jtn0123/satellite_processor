@@ -3,7 +3,7 @@
 import shutil
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -67,24 +67,37 @@ async def storage_breakdown(request: Request, db: AsyncSession = Depends(get_db)
     )).all()
     by_band = {row[0]: row[1] for row in band_rows}
 
-    # By age bucket
-    buckets = [
-        ("last_24h", now - timedelta(hours=24)),
-        ("last_7d", now - timedelta(days=7)),
-        ("last_30d", now - timedelta(days=30)),
-    ]
-    by_age: dict[str, int] = {}
-    for label, cutoff in buckets:
-        val = (await db.execute(
-            select(func.coalesce(func.sum(GoesFrame.file_size), 0))
-            .where(GoesFrame.capture_time >= cutoff)
-        )).scalar() or 0
-        by_age[label] = val
+    # By age bucket (exclusive ranges, single query for consistency)
+    cutoff_24h = now - timedelta(hours=24)
+    cutoff_7d = now - timedelta(days=7)
+    cutoff_30d = now - timedelta(days=30)
 
-    total_storage = (await db.execute(
-        select(func.coalesce(func.sum(GoesFrame.file_size), 0))
-    )).scalar() or 0
-    by_age["older"] = total_storage - by_age.get("last_30d", 0)
+    age_row = (await db.execute(
+        select(
+            func.coalesce(func.sum(GoesFrame.file_size), 0),
+            func.coalesce(func.sum(case(
+                (GoesFrame.capture_time >= cutoff_24h, GoesFrame.file_size),
+                else_=0,
+            )), 0),
+            func.coalesce(func.sum(case(
+                (GoesFrame.capture_time >= cutoff_7d, GoesFrame.file_size),
+                else_=0,
+            )), 0),
+            func.coalesce(func.sum(case(
+                (GoesFrame.capture_time >= cutoff_30d, GoesFrame.file_size),
+                else_=0,
+            )), 0),
+        )
+    )).one()
+
+    total_storage, val_24h, val_7d, val_30d = age_row
+
+    by_age: dict[str, int] = {
+        "last_24h": val_24h,
+        "last_7d": val_7d - val_24h,
+        "last_30d": val_30d - val_7d,
+        "older": total_storage - val_30d,
+    }
 
     return {
         "by_satellite": by_satellite,

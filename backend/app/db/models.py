@@ -52,7 +52,7 @@ class Job(Base):
         Index("ix_jobs_status_created_at", "status", "created_at"),
         CheckConstraint("progress >= 0 AND progress <= 100", name="ck_jobs_progress"),
         CheckConstraint(
-            "status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')",
+            "status IN ('pending', 'processing', 'completed', 'completed_partial', 'failed', 'cancelled')",
             name="ck_jobs_status",
         ),
     )
@@ -195,7 +195,7 @@ class Animation(Base):
     scale = Column(String(10), default="100%")
     output_path = Column(Text, nullable=True)
     file_size = Column(BigInteger, default=0)
-    duration_seconds = Column(Integer, default=0)
+    duration_seconds = Column(Float, default=0.0)
     created_at = Column(DateTime, default=utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
     error = Column(Text, default="")

@@ -214,6 +214,11 @@ def _write_concat_file(
             f.write(f"file '{frame_path}'\n")
             if options.get("frame_duration"):
                 f.write(f"duration {options['frame_duration']}\n")
+        if frame_files:
+            last_path = str(frame_files[-1]).replace("\\", "/")
+            if fix_unc and not last_path.startswith("//"):
+                last_path = "//" + last_path.lstrip("/")
+            f.write(f"file '{last_path}'\n")
 
 
 def _build_concat_input(
@@ -294,9 +299,11 @@ def build_ffmpeg_command(
         hardware = options.get("hardware", "CPU")
         _append_hardware_flags(cmd, hardware)
 
+        bitrate = options.get("bitrate", 5000)
+        bitrate_str = bitrate if isinstance(bitrate, str) else f"{bitrate}k"
         cmd.extend([
             "-c:v", get_codec(options.get("encoder", "H.264"), hardware),
-            "-b:v", f"{options.get('bitrate', 5000)}k",
+            "-b:v", bitrate_str,
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
         ])

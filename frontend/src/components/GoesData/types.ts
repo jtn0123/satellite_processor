@@ -1,8 +1,8 @@
 // Shared types for GoesData components
 
 export interface SatelliteAvailability {
-  available_from?: string;
-  available_to?: string | null;
+  available_from: string;
+  available_to: string | null;
   status: string;
   description: string;
 }

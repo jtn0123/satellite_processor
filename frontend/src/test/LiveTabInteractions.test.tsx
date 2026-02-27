@@ -83,9 +83,11 @@ describe('LiveTab - Interactions', () => {
   it('toggles auto-fetch switch', async () => {
     renderLiveTab();
     await waitFor(() => expect(screen.getByText(/Auto-fetch every/)).toBeInTheDocument());
-    const switches = screen.getAllByRole('switch');
-    // First switch without a title is the auto-fetch toggle
-    const autoFetchSwitch = switches.find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    // Switch to a non-GEOCOLOR band so auto-fetch is enabled
+    await waitFor(() => expect(screen.getByTestId('band-pill-C02')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('band-pill-C02'));
+    const autoFetchSwitch = screen.getByRole('switch', { name: /toggle auto-fetch/i });
+    expect(autoFetchSwitch.getAttribute('aria-checked')).toBe('false');
     fireEvent.click(autoFetchSwitch);
     expect(autoFetchSwitch.getAttribute('aria-checked')).toBe('true');
   });

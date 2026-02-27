@@ -147,10 +147,12 @@ class TestBuildCdnUrls:
         assert "GOES16" in urls["desktop"]
         assert urls["desktop"].endswith("/2500x1500.jpg")
 
-    def test_mesoscale(self):
+    def test_mesoscale_returns_none(self):
+        """Mesoscale sectors should return None — CDN doesn't serve them."""
         urls = build_cdn_urls("GOES-18", "Mesoscale1", "C02")
-        assert urls is not None
-        assert "MESO1" in urls["desktop"]
+        assert urls is None
+        urls2 = build_cdn_urls("GOES-18", "Mesoscale2", "C02")
+        assert urls2 is None
 
     def test_geocolor_band(self):
         """GEOCOLOR band should use 'GEOCOLOR' path, not strip prefix."""

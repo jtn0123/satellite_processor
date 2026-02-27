@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import axios from 'axios';
@@ -113,7 +113,7 @@ async function enterFullscreenSafe(el: HTMLElement) {
 }
 
 function useFullscreenSync(
-  setIsFullscreen: React.Dispatch<React.SetStateAction<boolean>>,
+  setIsFullscreen: Dispatch<SetStateAction<boolean>>,
   zoom: { reset: () => void },
 ) {
   useEffect(() => {

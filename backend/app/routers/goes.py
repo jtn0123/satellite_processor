@@ -89,10 +89,12 @@ SECTOR_FILE_SIZES_KB = {
 
 
 @router.get("/products")
-async def list_products():
+async def list_products(response: Response):
     """List available GOES satellites, sectors, and bands with enhanced metadata."""
+    response.headers["Cache-Control"] = "public, max-age=300"
     cache_key = make_cache_key("products")
 
+    cdn_sectors = {"CONUS", "FullDisk"}
     products = {
         "satellites": list(SATELLITE_BUCKETS),
         "satellite_availability": dict(SATELLITE_AVAILABILITY),
@@ -103,6 +105,7 @@ async def list_products():
                 "product": v,
                 "cadence_minutes": SECTOR_INTERVALS.get(k, 10),
                 "typical_file_size_kb": SECTOR_FILE_SIZES_KB.get(k, 4000),
+                "cdn_available": k in cdn_sectors,
             }
             for k, v in SECTOR_PRODUCTS.items()
         ],
@@ -161,11 +164,13 @@ async def catalog(
 @limiter.limit("30/minute")
 async def catalog_latest(
     request: Request,
+    response: Response,
     satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),
 ):
     """Return the most recent available frame on S3 (checks last 2 hours)."""
+    response.headers["Cache-Control"] = "public, max-age=60"
     from ..services.catalog import catalog_latest as _catalog_latest
 
     cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}:{band}")
@@ -509,12 +514,14 @@ async def band_availability(
 @limiter.limit("30/minute")
 async def get_latest_frame(
     request: Request,
+    response: Response,
     satellite: str = Query(DEFAULT_SATELLITE),
     sector: str = Query("CONUS"),
     band: str = Query("C02"),
     db: AsyncSession = Depends(get_db),
 ):
     """Return the most recent GoesFrame for the given satellite/sector/band."""
+    response.headers["Cache-Control"] = "public, max-age=30"
     result = await db.execute(
         select(GoesFrame)
         .where(
@@ -528,6 +535,10 @@ async def get_latest_frame(
     frame = result.scalars().first()
     if not frame:
         raise APIError(404, "not_found", "No frames found for the given parameters")
+    from ..services.catalog import build_cdn_urls
+    cdn_urls = build_cdn_urls(frame.satellite, frame.sector, frame.band)
+    mobile_url = cdn_urls["mobile"] if cdn_urls else f"/api/goes/frames/{frame.id}/image"
+
     return {
         "id": frame.id,
         "satellite": frame.satellite,
@@ -539,6 +550,7 @@ async def get_latest_frame(
         "height": frame.height,
         "image_url": f"/api/goes/frames/{frame.id}/image",
         "thumbnail_url": f"/api/goes/frames/{frame.id}/thumbnail",
+        "mobile_url": mobile_url,
     }
 
 

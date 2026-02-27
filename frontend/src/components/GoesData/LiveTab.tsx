@@ -16,6 +16,7 @@ import SwipeHint from './SwipeHint';
 import StaleDataBanner from './StaleDataBanner';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
+import type { LatestFrame, CatalogLatest } from './types';
 import {
   FRIENDLY_BAND_NAMES,
   getFriendlyBandName,
@@ -43,38 +44,13 @@ interface SatelliteAvailability {
 
 interface Product {
   satellites: string[];
-  sectors: { id: string; name: string; product: string }[];
+  sectors: { id: string; name: string; product: string; cdn_available?: boolean }[];
   bands: { id: string; description: string }[];
   default_satellite?: string;
   satellite_availability?: Record<string, SatelliteAvailability>;
 }
 
-interface LatestFrame {
-  id: string;
-  satellite: string;
-  sector: string;
-  band: string;
-  capture_time: string;
-  image_url: string;
-  thumbnail_url: string | null;
-  file_path?: string;
-  file_size: number;
-  width: number | null;
-  height: number | null;
-  thumbnail_path?: string | null;
-}
 
-interface CatalogLatest {
-  scan_time: string;
-  size: number;
-  key: string;
-  satellite: string;
-  sector: string;
-  band: string;
-  image_url?: string;
-  thumbnail_url?: string;
-  mobile_url?: string;
-}
 
 /** Hook: encapsulates monitor mode state + WS-driven refetch */
 function useMonitorMode(
@@ -129,9 +105,6 @@ function useMonitorMode(
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
 
-/** Sectors that have CDN pre-rendered images (meso sectors do NOT) */
-const CDN_AVAILABLE_SECTORS = new Set(['CONUS', 'FullDisk']);
-
 /** CDN sector path mapping — mirrors backend CDN_SECTOR_MAP (CDN-available sectors only) */
 const CDN_SECTOR_PATH: Record<string, string> = {
   CONUS: 'CONUS',
@@ -147,7 +120,7 @@ const CDN_RESOLUTIONS: Record<string, { desktop: string; mobile: string }> = {
 /** Build a direct CDN URL from satellite/sector/band (returns null for meso sectors) */
 function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
   if (!satellite || !sector || !band) return null;
-  if (!CDN_AVAILABLE_SECTORS.has(sector)) return null;
+  if (!CDN_SECTOR_PATH[sector]) return null;
   const satPath = satellite.replaceAll('-', '');
   const cdnSector = CDN_SECTOR_PATH[sector];
   if (!cdnSector) return null;
@@ -612,7 +585,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onClick={handleImageTap}
         >
           <ImageErrorBoundary>
-            {!imageUrl && !CDN_AVAILABLE_SECTORS.has(sector) && !isLoading ? (
+            {!imageUrl && !products?.sectors.find((s) => s.id === sector)?.cdn_available && !isLoading ? (
               <MesoFetchRequiredMessage onFetchNow={fetchNow} />
             ) : (
               <ImagePanelContent

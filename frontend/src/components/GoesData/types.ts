@@ -119,3 +119,28 @@ export interface PaginatedAnimations {
 }
 
 export type CropPresetType = CropPreset;
+
+export interface LatestFrame {
+  id: number;
+  satellite: string;
+  sector: string;
+  band: string;
+  capture_time: string;
+  file_size: number;
+  width: number;
+  height: number;
+  image_url: string;
+  thumbnail_url?: string;
+}
+
+export interface CatalogLatest {
+  scan_time: string;
+  size: number;
+  key: string;
+  satellite: string;
+  sector: string;
+  band: string;
+  image_url: string;
+  thumbnail_url: string;
+  mobile_url: string;
+}

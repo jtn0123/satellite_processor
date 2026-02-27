@@ -43,6 +43,9 @@ def build_cdn_urls(
 
     Returns dict with keys: desktop, mobile, thumbnail — or None on failure.
     """
+    if sector in ("Mesoscale1", "Mesoscale2"):
+        return None
+
     # Satellite: "GOES-19" → "GOES19"
     sat_cdn = satellite.replace("-", "")
 

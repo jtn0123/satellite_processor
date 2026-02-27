@@ -5,7 +5,7 @@ interface DesktopControlsBarProps {
   monitoring: boolean;
   onToggleMonitor: () => void;
   autoFetch: boolean;
-  onAutoFetchChange: React.Dispatch<React.SetStateAction<boolean>>;
+  onAutoFetchChange: (v: boolean) => void;
   refreshInterval: number;
   onRefreshIntervalChange: (v: number) => void;
   compareMode: boolean;
@@ -56,7 +56,7 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           aria-label="Toggle auto-fetch"
           aria-checked={autoFetch && !autoFetchDisabled}
           disabled={autoFetchDisabled}
-          onClick={() => onAutoFetchChange((v) => !v)}
+          onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange(!autoFetch)}
           title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${getToggleSwitchClass(autoFetch, autoFetchDisabled)}`}
         >

@@ -30,7 +30,7 @@ export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobI
   }
 
   return (
-    <div className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
+    <div role="alert" className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
       {staleLevel === 'red'
         ? <AlertTriangle className="w-4 h-4 shrink-0" />
         : <Clock className="w-4 h-4 shrink-0" />}

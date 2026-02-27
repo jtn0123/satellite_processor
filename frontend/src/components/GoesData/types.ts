@@ -1,18 +1,18 @@
 // Shared types for GoesData components
 
 export interface SatelliteAvailability {
-  available_from: string;
-  available_to: string | null;
-  status: 'active' | 'historical';
+  available_from?: string;
+  available_to?: string | null;
+  status: string;
   description: string;
 }
 
 export interface Product {
   satellites: string[];
-  satellite_availability: Record<string, SatelliteAvailability>;
-  sectors: { id: string; name: string; product: string }[];
+  satellite_availability?: Record<string, SatelliteAvailability>;
+  sectors: { id: string; name: string; product: string; cdn_available?: boolean }[];
   bands: { id: string; description: string }[];
-  default_satellite: string;
+  default_satellite?: string;
 }
 
 export interface Gap {

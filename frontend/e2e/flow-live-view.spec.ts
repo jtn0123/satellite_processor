@@ -123,6 +123,8 @@ test.describe('Live flow', () => {
     // Override image routes to return 404 to trigger error state
     await page.route('**/api/goes/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     await page.route('**/api/goes/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    // Also block CDN fallback images so error state appears
+    await page.route('**/cdn.star.nesdis.noaa.gov/**', (route) => route.abort('connectionrefused'));
     await page.goto('/live');
     // Should show unavailable/retry state — Live always has CDN fallback
     const imageArea = page.locator('[data-testid="live-image-area"]');

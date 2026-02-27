@@ -1,3 +1,10 @@
+## [1.22.5](https://github.com/jtn0123/satellite_processor/compare/v1.22.4...v1.22.5) (2026-02-27)
+
+
+### Bug Fixes
+
+* Live Tab CDN alignment, meso handling, and 6 bug fixes ([#252](https://github.com/jtn0123/satellite_processor/issues/252)) ([3257f57](https://github.com/jtn0123/satellite_processor/commit/3257f57300404625f55c4d64f86537a0c52107a6))
+
 ## [1.22.4](https://github.com/jtn0123/satellite_processor/compare/v1.22.3...v1.22.4) (2026-02-27)
 
 

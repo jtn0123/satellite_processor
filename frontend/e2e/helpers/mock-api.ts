@@ -59,6 +59,7 @@ export async function handleApiRoute(route: Route): Promise<void> {
           { id: 'FullDisk', name: 'FullDisk', product: 'ABI-L2-CMIPF', cadence_minutes: 10, typical_file_size_kb: 12000 },
         ],
         bands: [
+          { id: 'GEOCOLOR', description: 'GeoColor (True Color Day / IR Night)', wavelength_um: 0, common_name: 'GeoColor', category: 'composite', use_case: 'True color composite' },
           { id: 'C02', description: 'Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' },
           { id: 'C13', description: 'IR (10.3µm)', wavelength_um: 10.3, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
         ],

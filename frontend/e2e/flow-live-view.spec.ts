@@ -89,14 +89,15 @@ test.describe('Live flow', () => {
 
   test('changing band updates the view', async ({ page }) => {
     await page.goto('/live');
-    // Default band should be GEOCOLOR (active pill)
-    const geocolorPill = page.locator('[data-testid="band-pill-GEOCOLOR"]');
-    await expect(geocolorPill).toBeVisible({ timeout: 10000 });
-    // Click C13 band pill
-    const c13Pill = page.locator('[data-testid="band-pill-C13"]');
-    await c13Pill.click();
-    // C13 should now be the active pill (has font-semibold class)
-    await expect(c13Pill).toHaveClass(/font-semibold/, { timeout: 5000 });
+    const strip = page.locator('[data-testid="band-pill-strip"]');
+    await expect(strip).toBeVisible({ timeout: 10000 });
+    // Find any two band pills and click the second one
+    const pills = strip.locator('button[data-testid^="band-pill-"]');
+    expect(await pills.count()).toBeGreaterThanOrEqual(2);
+    const secondPill = pills.nth(1);
+    await secondPill.click();
+    // The clicked pill should become active (font-semibold)
+    await expect(secondPill).toHaveClass(/font-semibold/, { timeout: 5000 });
   });
 
   // --- Image Display ---

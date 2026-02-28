@@ -75,6 +75,11 @@ def _update_job_db(job_id: str, **kwargs):
             return
         _last_progress_update[job_id] = new_progress
 
+    # Clean up completed/failed jobs from throttle tracker to prevent memory leak
+    is_terminal = kwargs.get("status") in ("completed", "failed", "cancelled")
+    if is_terminal:
+        _last_progress_update.pop(job_id, None)
+
     session = _get_sync_db()
     try:
         job = session.query(Job).filter(Job.id == job_id).first()

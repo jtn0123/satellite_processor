@@ -200,15 +200,16 @@ describe('Multi-band offline cache', () => {
     expect(loadCachedImage('GOES-16', 'CONUS', 'C07')).toBeNull();
   });
 
-  it('returns most recent when no specific band requested', () => {
+  it('returns null when no specific band requested (no cross-band fallback)', () => {
     saveCachedImage('https://cdn.example.com/old.jpg', {
       satellite: 'GOES-16', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
     });
     saveCachedImage('https://cdn.example.com/new.jpg', {
       satellite: 'GOES-16', band: 'C07', sector: 'CONUS', timestamp: '2026-01-02T00:00:00Z',
     });
+    // No params = no result (prevents showing wrong band's image)
     const result = loadCachedImage();
-    expect(result?.url).toBe('https://cdn.example.com/new.jpg');
+    expect(result).toBeNull();
   });
 
   it('prunes old entries when over MAX_CACHED limit', () => {

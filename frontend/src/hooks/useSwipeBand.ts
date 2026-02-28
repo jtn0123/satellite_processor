@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import type { Product } from '../components/GoesData/types';
 import { FRIENDLY_BAND_NAMES, getFriendlyBandName } from '../components/GoesData/liveTabUtils';
 
@@ -36,6 +36,11 @@ export function useSwipeBand(products: Product | undefined, band: string, setBan
     setSwipeToast(`${nextBand} — ${label}`);
     swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
   }, [band, bandKeys, setBand]);
+
+  // Clean up timer on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => clearTimeout(swipeToastTimer.current);
+  }, []);
 
   return { swipeToast, handleTouchStart, handleTouchEnd };
 }

@@ -57,7 +57,7 @@ describe('Image Cache (localStorage)', () => {
     localStorage.clear();
   });
 
-  it('saves and loads cached image', () => {
+  it('saves and loads cached image by exact match', () => {
     saveCachedImage('https://example.com/img.jpg', {
       satellite: 'GOES-19',
       band: 'C02',
@@ -65,7 +65,7 @@ describe('Image Cache (localStorage)', () => {
       timestamp: '2026-02-22T22:10:00Z',
     });
 
-    const cached = loadCachedImage();
+    const cached = loadCachedImage('GOES-19', 'CONUS', 'C02');
     expect(cached).not.toBeNull();
     expect(cached!.url).toBe('https://example.com/img.jpg');
     expect(cached!.satellite).toBe('GOES-19');
@@ -82,15 +82,15 @@ describe('Image Cache (localStorage)', () => {
     expect(loadCachedImage()).toBeNull();
   });
 
-  it('overwrites previous cache', () => {
+  it('overwrites previous cache for same band', () => {
     saveCachedImage('https://example.com/old.jpg', {
-      satellite: 'GOES-16', band: 'C13', sector: 'FullDisk', timestamp: '2026-01-01T00:00:00Z',
+      satellite: 'GOES-19', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
     });
     saveCachedImage('https://example.com/new.jpg', {
       satellite: 'GOES-19', band: 'C02', sector: 'CONUS', timestamp: '2026-02-22T22:10:00Z',
     });
 
-    const cached = loadCachedImage();
+    const cached = loadCachedImage('GOES-19', 'CONUS', 'C02');
     expect(cached!.url).toBe('https://example.com/new.jpg');
   });
 

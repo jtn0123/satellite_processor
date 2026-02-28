@@ -47,8 +47,9 @@ def _create_fetch_records(
 
     session = _get_sync_db()
     try:
-        # Bug #21: Reuse existing collection with same name instead of creating duplicates
-        collection_name = f"GOES Fetch {results[0]['satellite'] if results else ''} {results[0]['band'] if results else ''} {sector}"
+        # Reuse existing collection with same name instead of creating duplicates
+        # Include sector in name to avoid merging frames from different sectors
+        collection_name = f"GOES Fetch {results[0]['satellite'] if results else ''} {sector} {results[0]['band'] if results else ''}"
         existing_coll = session.query(Collection).filter(Collection.name == collection_name).first()
         if existing_coll:
             collection_id = existing_coll.id

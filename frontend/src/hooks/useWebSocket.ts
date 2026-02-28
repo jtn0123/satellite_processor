@@ -102,12 +102,16 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
 
   useEffect(() => {
     connectRef.current = connect;
-  });
+  }, [connect]);
 
   useEffect(() => {
     terminalRef.current = false;
     retriesRef.current = 0;
     logsRef.current = [];
+    /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on jobId change */
+    setData(null);
+    setLogs([]);
+    /* eslint-enable react-hooks/set-state-in-effect */
     connect();
 
     return () => {

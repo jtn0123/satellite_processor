@@ -281,6 +281,11 @@ class TestServiceLogging:
         from app.services.storage import StorageService
 
         svc = StorageService.__new__(StorageService)
+        svc.upload_dir = tmp_path
+        svc.output_dir = tmp_path / "output"
+        svc.temp_dir = tmp_path / "temp"
+        svc.output_dir.mkdir()
+        svc.temp_dir.mkdir()
         test_file = tmp_path / "test.txt"
         test_file.write_text("data")
 
@@ -294,8 +299,14 @@ class TestServiceLogging:
         from app.services.storage import StorageService
 
         svc = StorageService.__new__(StorageService)
+        svc.upload_dir = tmp_path / "uploads"
+        svc.output_dir = tmp_path / "output"
+        svc.temp_dir = tmp_path / "temp"
+        svc.upload_dir.mkdir()
+        svc.output_dir.mkdir()
+        svc.temp_dir.mkdir()
         with caplog.at_level(logging.WARNING, logger="app.services.storage"):
-            result = svc.delete_file(str(tmp_path / "nonexistent.txt"))
+            result = svc.delete_file(str(svc.upload_dir / "nonexistent.txt"))
         assert result is False
         assert "not found for deletion" in caplog.text
 

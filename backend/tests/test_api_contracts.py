@@ -153,4 +153,4 @@ async def test_all_product_bands_accepted_by_catalog_latest(client: AsyncClient)
         if r.status_code == 500:
             failures.append(f"{band}: 500 - {r.text[:200]}")
 
-    assert not failures, f"Bands returned 500 on /catalog/latest:\n" + "\n".join(failures)
+    assert not failures, "Bands returned 500 on /catalog/latest:\n" + "\n".join(failures)

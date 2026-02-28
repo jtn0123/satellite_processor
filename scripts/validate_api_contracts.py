@@ -137,5 +137,35 @@ def main() -> int:
     return 0
 
 
+def check_band_consistency() -> int:
+    """Verify all bands from /goes/products are in VALID_BANDS."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+    from app.services.goes_fetcher import VALID_BANDS  # noqa: E402
+
+    from app.main import app  # noqa: E402
+    import asyncio
+    from httpx import ASGITransport, AsyncClient
+
+    async def _check() -> int:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/goes/products")
+            if resp.status_code != 200:
+                print(f"❌ /api/goes/products returned {resp.status_code}")
+                return 1
+            raw_bands = resp.json().get("bands", [])
+            bands = [b["id"] if isinstance(b, dict) else b for b in raw_bands]
+            missing = [b for b in bands if b not in VALID_BANDS]
+            if missing:
+                print(f"❌ Bands in /goes/products but not in VALID_BANDS: {missing}")
+                return 1
+            print(f"✅ All {len(bands)} product bands are in VALID_BANDS")
+            return 0
+
+    return asyncio.run(_check())
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    rc2 = check_band_consistency()
+    sys.exit(rc or rc2)

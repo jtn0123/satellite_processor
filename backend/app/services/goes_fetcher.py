@@ -66,7 +66,7 @@ SECTOR_PRODUCTS: dict[str, str] = {
 }
 
 # All 16 ABI bands
-VALID_BANDS: list[str] = [f"C{i:02d}" for i in range(1, 17)]
+VALID_BANDS: list[str] = [f"C{i:02d}" for i in range(1, 17)] + ["GEOCOLOR"]
 
 # Expected scan intervals per sector (minutes)
 SECTOR_INTERVALS: dict[str, int] = {

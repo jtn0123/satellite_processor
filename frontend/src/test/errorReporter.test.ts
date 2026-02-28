@@ -1,28 +1,37 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { reportError, onError, getErrorLog, clearErrorLog } from '../utils/errorReporter';
 
+// Need to test both dev and prod paths. Use dynamic import.
 describe('errorReporter', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let reportError: typeof import('../utils/errorReporter').reportError;
+  let onError: typeof import('../utils/errorReporter').onError;
+  let getErrorLog: typeof import('../utils/errorReporter').getErrorLog;
+  let clearErrorLog: typeof import('../utils/errorReporter').clearErrorLog;
 
-  beforeEach(() => {
-    clearErrorLog();
-    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import('../utils/errorReporter');
+    reportError = mod.reportError;
+    onError = mod.onError;
+    getErrorLog = mod.getErrorLog;
+    clearErrorLog = mod.clearErrorLog;
   });
 
   afterEach(() => {
-    consoleSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
-  it('logs errors to the error log', () => {
-    reportError(new Error('test error'), 'TestContext');
+  it('captures Error instances with message and stack', () => {
+    const err = new Error('test error');
+    reportError(err, 'test-context');
     const log = getErrorLog();
     expect(log).toHaveLength(1);
     expect(log[0].message).toBe('test error');
-    expect(log[0].context).toBe('TestContext');
+    expect(log[0].stack).toBeDefined();
+    expect(log[0].context).toBe('test-context');
     expect(log[0].timestamp).toBeTruthy();
   });
 
-  it('handles non-Error values', () => {
+  it('captures non-Error values as strings', () => {
     reportError('string error');
     const log = getErrorLog();
     expect(log).toHaveLength(1);
@@ -30,69 +39,94 @@ describe('errorReporter', () => {
     expect(log[0].stack).toBeUndefined();
   });
 
-  it('includes stack trace for Error objects', () => {
-    reportError(new Error('with stack'), 'ctx');
-    const log = getErrorLog();
-    expect(log[0].stack).toBeDefined();
-    expect(log[0].stack).toContain('with stack');
+  it('captures numeric error values', () => {
+    reportError(42);
+    expect(getErrorLog()[0].message).toBe('42');
   });
 
-  it('clears the error log', () => {
-    reportError(new Error('err1'));
-    reportError(new Error('err2'));
+  it('limits error log to 100 entries', () => {
+    for (let i = 0; i < 110; i++) {
+      reportError(`error-${i}`);
+    }
+    const log = getErrorLog();
+    expect(log.length).toBeLessThanOrEqual(100);
+    // Most recent errors should be present
+    expect(log[log.length - 1].message).toBe('error-109');
+  });
+
+  it('clearErrorLog empties the log', () => {
+    reportError('one');
+    reportError('two');
     expect(getErrorLog()).toHaveLength(2);
     clearErrorLog();
     expect(getErrorLog()).toHaveLength(0);
   });
 
-  it('notifies subscribers on error', () => {
+  it('onError subscriber receives reports', () => {
     const subscriber = vi.fn();
     const unsub = onError(subscriber);
-    reportError(new Error('sub test'), 'SubCtx');
-    expect(subscriber).toHaveBeenCalledTimes(1);
-    expect(subscriber).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'sub test', context: 'SubCtx' }),
-    );
+
+    reportError(new Error('sub test'), 'ctx');
+    expect(subscriber).toHaveBeenCalledOnce();
+    expect(subscriber.mock.calls[0][0].message).toBe('sub test');
+    expect(subscriber.mock.calls[0][0].context).toBe('ctx');
+
     unsub();
   });
 
-  it('unsubscribe stops notifications', () => {
+  it('unsubscribe stops receiving reports', () => {
     const subscriber = vi.fn();
     const unsub = onError(subscriber);
+
+    reportError('before');
+    expect(subscriber).toHaveBeenCalledTimes(1);
+
     unsub();
-    reportError(new Error('after unsub'));
-    expect(subscriber).not.toHaveBeenCalled();
+    reportError('after');
+    expect(subscriber).toHaveBeenCalledTimes(1); // no new calls
   });
 
   it('subscriber errors do not cascade', () => {
-    const badSubscriber = vi.fn(() => {
-      throw new Error('subscriber boom');
-    });
-    const goodSubscriber = vi.fn();
-    const unsub1 = onError(badSubscriber);
-    const unsub2 = onError(goodSubscriber);
-    reportError(new Error('cascade test'));
-    expect(badSubscriber).toHaveBeenCalledTimes(1);
-    expect(goodSubscriber).toHaveBeenCalledTimes(1);
-    unsub1();
-    unsub2();
+    const badSub = vi.fn(() => { throw new Error('subscriber crash'); });
+    const goodSub = vi.fn();
+    onError(badSub);
+    onError(goodSub);
+
+    // Should not throw
+    reportError('test');
+    expect(badSub).toHaveBeenCalledOnce();
+    expect(goodSub).toHaveBeenCalledOnce();
   });
 
-  it('accumulates multiple errors', () => {
-    reportError(new Error('e1'));
-    reportError(new Error('e2'));
-    reportError(new Error('e3'));
-    expect(getErrorLog()).toHaveLength(3);
+  it('logs to console in dev mode', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    reportError(new Error('dev error'), 'dev-ctx');
+
+    // In test environment, import.meta.env.DEV is true
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[ErrorReporter] dev-ctx:',
+      'dev error',
+      expect.any(String),
+    );
+    consoleSpy.mockRestore();
   });
 
-  it('reports without context', () => {
-    reportError(new Error('no ctx'));
-    const log = getErrorLog();
-    expect(log[0].context).toBeUndefined();
+  it('includes URL and userAgent in report', () => {
+    reportError('ua test');
+    const report = getErrorLog()[0];
+    expect(report.url).toBeDefined();
+    expect(report.userAgent).toBeDefined();
   });
 
-  it('logs to console.error in dev mode', () => {
-    reportError(new Error('dev log'), 'DevCtx');
-    expect(consoleSpy).toHaveBeenCalled();
+  it('handles undefined context gracefully', () => {
+    reportError('no context');
+    const report = getErrorLog()[0];
+    expect(report.context).toBeUndefined();
+  });
+
+  it('default export is reportError', async () => {
+    vi.resetModules();
+    const mod = await import('../utils/errorReporter');
+    expect(mod.default).toBe(mod.reportError);
   });
 });

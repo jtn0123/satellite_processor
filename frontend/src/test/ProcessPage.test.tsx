@@ -1,10 +1,44 @@
-/**
- * Tests for Process page — covers empty state, image selection, and preset loading.
- */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
+
+// Mock child components to isolate Process page
+vi.mock('../components/ImageGallery/ImageGallery', () => ({
+  default: ({ onToggle, selected }: { onToggle: (id: string) => void; selected: Set<string> }) => (
+    <div data-testid="image-gallery">
+      <button data-testid="toggle-img1" onClick={() => onToggle('img1')}>
+        Toggle img1 {selected.has('img1') ? '✓' : ''}
+      </button>
+      <button data-testid="toggle-img2" onClick={() => onToggle('img2')}>
+        Toggle img2 {selected.has('img2') ? '✓' : ''}
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock('../components/Processing/ProcessingForm', () => ({
+  default: ({ selectedImages, initialParams }: { selectedImages: string[]; initialParams: Record<string, unknown> | null }) => (
+    <div data-testid="processing-form">
+      <span data-testid="selected-count">{selectedImages.length}</span>
+      {initialParams && <span data-testid="has-params">yes</span>}
+    </div>
+  ),
+}));
+
+vi.mock('../components/Processing/PresetManager', () => ({
+  default: ({ onLoadPreset }: { onLoadPreset: (params: Record<string, unknown>) => void }) => (
+    <div data-testid="preset-manager">
+      <button data-testid="load-preset" onClick={() => onLoadPreset({ crop: true })}>Load</button>
+    </div>
+  ),
+}));
+
+const mockUseImages = vi.fn();
+vi.mock('../hooks/useApi', () => ({
+  useImages: () => mockUseImages(),
+}));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -12,70 +46,81 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('../hooks/useApi', () => ({
-  useImages: vi.fn(() => ({ data: [], isLoading: false })),
-  useCreateJob: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  usePresets: vi.fn(() => ({ data: [], isLoading: false })),
-  useDeletePreset: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useRenamePreset: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useCreatePreset: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useDeleteImage: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useUploadImage: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useSettings: vi.fn(() => ({ data: {}, isLoading: false })),
-  useUpdateSettings: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-}));
-
-vi.mock('../hooks/usePageTitle', () => ({
-  usePageTitle: vi.fn(),
-}));
-
 import ProcessPage from '../pages/Process';
-import { useImages } from '../hooks/useApi';
 
 function renderPage() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
+    <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <ProcessPage />
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
 describe('ProcessPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('shows empty state when no images', () => {
+    mockUseImages.mockReturnValue({ data: [] });
     renderPage();
     expect(screen.getByText('No images yet')).toBeInTheDocument();
     expect(screen.getByText('Upload Images')).toBeInTheDocument();
+    expect(screen.queryByTestId('image-gallery')).not.toBeInTheDocument();
   });
 
   it('shows image gallery when images exist', () => {
-    vi.mocked(useImages).mockReturnValue({
-      data: [
-        { id: 'img1', filename: 'test1.nc', thumbnail: null, created_at: '2024-01-01' },
-        { id: 'img2', filename: 'test2.nc', thumbnail: null, created_at: '2024-01-02' },
-      ],
-      isLoading: false,
-    } as ReturnType<typeof useImages>);
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }, { id: 'img2' }] });
     renderPage();
-    expect(screen.getByText(/Select Images/)).toBeInTheDocument();
+    expect(screen.getByTestId('image-gallery')).toBeInTheDocument();
+    expect(screen.queryByText('No images yet')).not.toBeInTheDocument();
+  });
+
+  it('toggles image selection', () => {
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }] });
+    renderPage();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
+    expect(screen.getByText('(1 selected)')).toBeInTheDocument();
+  });
+
+  it('shows processing form when images selected', () => {
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }] });
+    renderPage();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
+    expect(screen.getByTestId('processing-form')).toBeInTheDocument();
+    expect(screen.getByTestId('preset-manager')).toBeInTheDocument();
+  });
+
+  it('clears selection with clear button', () => {
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }] });
+    renderPage();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
+    expect(screen.getByText('(1 selected)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Clear selection'));
+    expect(screen.getByText('(0 selected)')).toBeInTheDocument();
+    expect(screen.queryByTestId('processing-form')).not.toBeInTheDocument();
+  });
+
+  it('deselects already-selected image on toggle', () => {
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }] });
+    renderPage();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
+    expect(screen.getByText('(1 selected)')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
     expect(screen.getByText('(0 selected)')).toBeInTheDocument();
   });
 
-  it('toggles image selection and shows clear button', () => {
-    vi.mocked(useImages).mockReturnValue({
-      data: [
-        { id: 'img1', filename: 'test1.nc', thumbnail: null, created_at: '2024-01-01' },
-      ],
-      isLoading: false,
-    } as ReturnType<typeof useImages>);
+  it('loads preset params into form', () => {
+    mockUseImages.mockReturnValue({ data: [{ id: 'img1' }] });
     renderPage();
-    // The gallery renders image cards — look for selectable elements
-    expect(screen.getByText(/Select Images/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('toggle-img1'));
+    fireEvent.click(screen.getByTestId('load-preset'));
+    expect(screen.getByTestId('has-params')).toBeInTheDocument();
+  });
+
+  it('handles undefined images data', () => {
+    mockUseImages.mockReturnValue({ data: undefined });
+    renderPage();
+    expect(screen.getByText('No images yet')).toBeInTheDocument();
   });
 });

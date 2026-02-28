@@ -329,7 +329,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <div
         ref={containerRef}
         data-testid="live-image-area"
-        className={`relative flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
@@ -378,6 +378,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 onPositionChange={setComparePosition}
                 frameTime={frame?.capture_time ?? null}
                 prevFrameTime={prevFrame?.capture_time ?? null}
+                isZoomed={zoom.isZoomed}
               />
             )}
           </ImageErrorBoundary>
@@ -453,11 +454,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         )}
 
-        {/* Status pill overlay — positioned on image */}
-        <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} isMobile={isMobile} />
+        {/* Status pill overlay — positioned on image, hidden when zoomed */}
+        {!zoom.isZoomed && <StatusPill monitoring={monitoring} satellite={satellite} band={band} frameTime={frame?.capture_time ?? catalogLatest?.scan_time ?? null} isMobile={isMobile} />}
 
-        {/* Mobile FAB for controls — overlaid on image bottom-right */}
-        <div className="sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1" data-testid="mobile-fab">
+        {/* Mobile FAB for controls — overlaid on image bottom-right, hidden when zoomed */}
+        <div className={`sm:hidden absolute bottom-24 right-4 z-20 flex flex-col items-center gap-1 ${zoom.isZoomed ? 'hidden' : ''}`} data-testid="mobile-fab">
           <MobileControlsFab
             monitoring={monitoring}
             onToggleMonitor={toggleMonitor}

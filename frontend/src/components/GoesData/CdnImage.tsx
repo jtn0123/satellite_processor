@@ -7,9 +7,10 @@ export interface CdnImageProps extends Readonly<React.ImgHTMLAttributes<HTMLImag
   'data-satellite'?: string;
   'data-band'?: string;
   'data-sector'?: string;
+  isZoomed?: boolean;
 }
 
-export default function CdnImage({ src, alt, className, ...props }: Readonly<CdnImageProps>) {
+export default function CdnImage({ src, alt, className, isZoomed = false, ...props }: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
@@ -102,14 +103,14 @@ export default function CdnImage({ src, alt, className, ...props }: Readonly<Cdn
       {!loaded && !error && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
-      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900" style={{ aspectRatio: '5/3' }} data-testid="live-image-container">
+      <div className={`relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900 ${isZoomed ? 'h-full' : ''}`} style={isZoomed ? undefined : { aspectRatio: '5/3' }} data-testid="live-image-container">
         <img
           src={displaySrc}
           alt={alt}
           onError={handleError}
           onLoad={handleLoad}
           loading="eager"
-          className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`${className ?? ''} w-full h-full ${isZoomed ? 'object-cover' : 'object-contain'} md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           {...props}
         />
       </div>

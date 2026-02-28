@@ -57,4 +57,22 @@ describe('CdnImage', () => {
     render(<CdnImage src="" alt="test" />);
     expect(screen.getByTestId('cdn-image-error')).toBeInTheDocument();
   });
+
+  it('uses aspect-ratio 5/3 and object-contain when not zoomed', () => {
+    render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" />);
+    const container = screen.getByTestId('live-image-container');
+    expect(container.style.aspectRatio).toBe('5 / 3');
+    const img = screen.getByRole('img');
+    expect(img.className).toContain('object-contain');
+  });
+
+  it('removes aspect-ratio and uses object-cover when zoomed', () => {
+    render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" isZoomed />);
+    const container = screen.getByTestId('live-image-container');
+    expect(container.style.aspectRatio).toBe('');
+    expect(container.className).toContain('h-full');
+    const img = screen.getByRole('img');
+    expect(img.className).toContain('object-cover');
+    expect(img.className).not.toContain('object-contain');
+  });
 });

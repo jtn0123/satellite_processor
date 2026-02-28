@@ -56,12 +56,31 @@ def _get_header(scope: Scope, name: bytes) -> str:
     return ""
 
 
+_OS_MARKERS: list[tuple[str, str]] = [
+    ("Android", "Android"),
+    ("iPhone", "iOS"),
+    ("iPad", "iOS"),
+    ("Windows", "Windows"),
+    ("Mac OS", "macOS"),
+    ("Macintosh", "macOS"),
+    ("Linux", "Linux"),
+]
+
+
+def _detect_os(ua: str) -> str:
+    """Detect OS from a User-Agent string."""
+    for marker, os_name in _OS_MARKERS:
+        if marker in ua:
+            return os_name
+    return "Unknown"
+
+
 def _parse_user_agent(ua: str) -> str | None:
     """Extract a simplified browser/OS string from a User-Agent header."""
     if not ua:
         return None
     import re
-    # Common patterns: Chrome, Firefox, Safari, Edge, bot
+
     for pattern, name in [
         (r"Edg[e/](\S+)", "Edge"),
         (r"Chrome/(\S+)", "Chrome"),
@@ -71,32 +90,12 @@ def _parse_user_agent(ua: str) -> str | None:
         m = re.search(pattern, ua)
         if m:
             version = m.group(1).split(".")[0]
-            # Detect OS
-            os_name = "Unknown"
-            if "Android" in ua:
-                os_name = "Android"
-            elif "iPhone" in ua or "iPad" in ua:
-                os_name = "iOS"
-            elif "Windows" in ua:
-                os_name = "Windows"
-            elif "Mac OS" in ua or "Macintosh" in ua:
-                os_name = "macOS"
-            elif "Linux" in ua:
-                os_name = "Linux"
-            return f"{name}/{version} ({os_name})"
-    if "bot" in ua.lower() or "crawler" in ua.lower():
+            return f"{name}/{version} ({_detect_os(ua)})"
+
+    ua_lower = ua.lower()
+    if "bot" in ua_lower or "crawler" in ua_lower:
         return "Bot"
     return ua[:50] if len(ua) > 50 else ua
-
-
-def _get_response_content_type(send_wrapper, scope) -> str | None:  # noqa: ARG001
-    """Extract response content-type. Returns None if unavailable.
-
-    Note: In the current ASGI send-wrapper pattern, response headers aren't
-    captured. This returns None as a placeholder; a future enhancement can
-    capture headers in send_wrapper.
-    """
-    return None
 
 
 class RequestLoggingMiddleware:
@@ -147,41 +146,45 @@ class RequestLoggingMiddleware:
             }
             raise
         finally:
-            duration_ms = (time.perf_counter() - start) * 1000
-            method = scope.get("method", "?")
-            path = scope.get("path", "?")
-            query_string = scope.get("query_string", b"").decode("latin-1", errors="replace")
-            client = scope.get("client")
-            # NOTE: IP logged for request tracing / rate-limit debugging.
-            # Ensure production log retention policy limits PII exposure.
-            client_ip = client[0] if client else "unknown"
-            user_agent = _get_header(scope, b"user-agent")
-            content_type = response_content_type
-            correlation_id = request_id_ctx.get("")
+            self._emit_wide_event(
+                scope, start, status_code, request_size, response_size,
+                response_content_type, error_info,
+            )
 
-            # Parse user agent into simplified browser/OS string
-            ua_parsed = _parse_user_agent(user_agent)
+    def _emit_wide_event(
+        self,
+        scope: Scope,
+        start: float,
+        status_code: int,
+        request_size: int,
+        response_size: int,
+        response_content_type: str | None,
+        error_info: dict[str, str] | None,
+    ) -> None:
+        """Build and emit the wide event JSON log entry."""
+        duration_ms = (time.perf_counter() - start) * 1000
+        client = scope.get("client")
+        user_agent = _get_header(scope, b"user-agent")
 
-            wide_event: dict = {
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z",
-                "correlation_id": correlation_id,
-                "method": method,
-                "path": path,
-                "query_string": query_string or None,
-                "status_code": status_code,
-                "duration_ms": round(duration_ms, 2),
-                "client_ip": client_ip,
-                "user_agent": user_agent,
-                "user_agent_parsed": ua_parsed,
-                "response_content_type": content_type,
-                "request_size_bytes": request_size,
-                "response_size_bytes": response_size,
-                "db_query_count": None,
-                "cache_hit": False,
-            }
+        wide_event: dict = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z",
+            "correlation_id": request_id_ctx.get(""),
+            "method": scope.get("method", "?"),
+            "path": scope.get("path", "?"),
+            "query_string": scope.get("query_string", b"").decode("latin-1", errors="replace") or None,
+            "status_code": status_code,
+            "duration_ms": round(duration_ms, 2),
+            "client_ip": client[0] if client else "unknown",
+            "user_agent": user_agent,
+            "user_agent_parsed": _parse_user_agent(user_agent),
+            "response_content_type": response_content_type,
+            "request_size_bytes": request_size,
+            "response_size_bytes": response_size,
+            "db_query_count": None,
+            "cache_hit": False,
+        }
 
-            if error_info:
-                wide_event["error"] = error_info
+        if error_info:
+            wide_event["error"] = error_info
 
-            # Emit as a single JSON line
-            self._wide_logger.info(json.dumps(wide_event, default=str))
+        self._wide_logger.info(json.dumps(wide_event, default=str))

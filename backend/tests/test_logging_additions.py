@@ -5,7 +5,7 @@ import logging
 from unittest.mock import AsyncMock
 
 import pytest
-from app.logging_config import RequestLoggingMiddleware, _parse_user_agent
+from app.logging_config import RequestLoggingMiddleware, _detect_os, _parse_user_agent
 
 
 class TestParseUserAgent:
@@ -66,6 +66,34 @@ class TestParseUserAgent:
         ua = "CustomClient/1.0"
         result = _parse_user_agent(ua)
         assert result == "CustomClient/1.0"
+
+
+class TestDetectOs:
+    """Tests for _detect_os helper."""
+
+    def test_android(self):
+        assert _detect_os("Mozilla/5.0 (Linux; Android 14)") == "Android"
+
+    def test_iphone(self):
+        assert _detect_os("Mozilla/5.0 (iPhone; CPU iPhone OS 17)") == "iOS"
+
+    def test_ipad(self):
+        assert _detect_os("Mozilla/5.0 (iPad; CPU OS 17)") == "iOS"
+
+    def test_windows(self):
+        assert _detect_os("Mozilla/5.0 (Windows NT 10.0)") == "Windows"
+
+    def test_macos_mac_os(self):
+        assert _detect_os("Mozilla/5.0 (Mac OS X)") == "macOS"
+
+    def test_macos_macintosh(self):
+        assert _detect_os("Mozilla/5.0 (Macintosh; Intel)") == "macOS"
+
+    def test_linux(self):
+        assert _detect_os("Mozilla/5.0 (X11; Linux x86_64)") == "Linux"
+
+    def test_unknown(self):
+        assert _detect_os("CustomAgent/1.0") == "Unknown"
 
 
 class TestEnrichedWideEvent:
@@ -209,6 +237,67 @@ class TestServiceLogging:
             from app.services.processor import logger as proc_logger
             proc_logger.info("Configuring processor with params: %s", ["crop", "scale"])
         assert "Configuring processor with params" in caplog.text
+
+
+class TestEndpointLoggingIntegration:
+    """Integration tests verifying endpoints actually emit log messages."""
+
+    @pytest.mark.asyncio
+    async def test_health_endpoint_logs(self, client, mock_redis, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.health"):
+            response = await client.get("/api/health")
+        assert response.status_code == 200
+        assert "Health check requested" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_stats_endpoint_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.stats"):
+            response = await client.get("/api/stats")
+        assert response.status_code == 200
+        assert "Stats requested" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_notifications_list_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.notifications"):
+            response = await client.get("/api/notifications")
+        assert response.status_code == 200
+        assert "Listing notifications" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_presets_list_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.presets"):
+            response = await client.get("/api/presets")
+        assert response.status_code == 200
+        assert "Listing presets" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_system_status_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.system"):
+            response = await client.get("/api/system/status")
+        assert response.status_code == 200
+        assert "System status requested" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_download_missing_file_logs(self, client, caplog):
+        with caplog.at_level(logging.INFO, logger="app.routers.file_download"):
+            response = await client.get("/api/download?path=nonexistent.png")
+        # May 404 or 403, but should have logged
+        assert response.status_code in (404, 403)
+        assert "File download requested" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_goes_data_frames_list_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_data"):
+            response = await client.get("/api/goes/frames?page=1&limit=10")
+        assert response.status_code == 200
+        assert "Listing frames" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_goes_data_dashboard_logs(self, client, caplog):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_data"):
+            response = await client.get("/api/goes/dashboard-stats")
+        assert response.status_code == 200
+        assert "Dashboard stats requested" in caplog.text
 
 
 class TestGapDetectorLogging:

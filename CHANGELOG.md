@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/jtn0123/satellite_processor/compare/v1.23.4...v1.24.0) (2026-02-28)
+
+
+### Features
+
+* logging overhaul — contextual logging across all routers, services, and WebSocket handlers ([#262](https://github.com/jtn0123/satellite_processor/issues/262)) ([1a87d93](https://github.com/jtn0123/satellite_processor/commit/1a87d9354f3016590107428d4fd0c9a83cc0d1b6))
+
 ## [1.23.4](https://github.com/jtn0123/satellite_processor/compare/v1.23.3...v1.23.4) (2026-02-28)
 
 

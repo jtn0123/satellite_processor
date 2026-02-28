@@ -1,3 +1,10 @@
+## [1.24.2](https://github.com/jtn0123/satellite_processor/compare/v1.24.1...v1.24.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* mobile zoom fills viewport instead of staying in aspect-ratio box ([#265](https://github.com/jtn0123/satellite_processor/issues/265)) ([a083e5f](https://github.com/jtn0123/satellite_processor/commit/a083e5f9bb1f1d002ada63eaf264b2d2470b07e9))
+
 ## [1.24.1](https://github.com/jtn0123/satellite_processor/compare/v1.24.0...v1.24.1) (2026-02-28)
 
 

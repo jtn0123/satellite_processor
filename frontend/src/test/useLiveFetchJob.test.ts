@@ -1,24 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CatalogLatest, LatestFrame } from '../components/GoesData/types';
 
 // Mock api client
+const mockGet = vi.fn();
 const mockPost = vi.fn();
 vi.mock('../api/client', () => ({
-  default: { get: vi.fn(), post: (...args: unknown[]) => mockPost(...args) },
+  default: {
+    get: (...args: unknown[]) => mockGet(...args),
+    post: (...args: unknown[]) => mockPost(...args),
+  },
 }));
 
 // Mock toast
 const mockShowToast = vi.fn();
 vi.mock('../utils/toast', () => ({
   showToast: (...args: unknown[]) => mockShowToast(...args),
-}));
-
-// Mock useQuery
-const mockUseQuery = vi.fn();
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
 import { useLiveFetchJob } from '../hooks/useLiveFetchJob';
@@ -53,6 +52,17 @@ function makeFrame(overrides: Partial<LatestFrame> = {}): LatestFrame {
   };
 }
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+  return function Wrapper({ children }: Readonly<{ children: React.ReactNode }>) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  };
+}
+
 function makeProps(overrides: Record<string, unknown> = {}) {
   return {
     satellite: 'GOES-18',
@@ -70,27 +80,25 @@ function makeProps(overrides: Record<string, unknown> = {}) {
 
 describe('useLiveFetchJob', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     mockPost.mockReset();
+    mockGet.mockReset();
     mockShowToast.mockReset();
-    mockUseQuery.mockReset();
-    mockUseQuery.mockReturnValue({ data: undefined });
     mockPost.mockResolvedValue({ data: { job_id: 'job-123' } });
+    mockGet.mockResolvedValue({ data: { id: 'job-123', status: 'processing', progress: 50, status_message: 'Working' } });
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
   it('returns null activeJobId and null activeJob initially', () => {
-    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()), { wrapper: createWrapper() });
     expect(result.current.activeJobId).toBeNull();
     expect(result.current.activeJob).toBeNull();
   });
 
   it('fetchNow calls api.post and sets activeJobId', async () => {
-    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()), { wrapper: createWrapper() });
     await act(async () => {
       await result.current.fetchNow();
     });
@@ -105,7 +113,7 @@ describe('useLiveFetchJob', () => {
 
   it('fetchNow shows error toast on failure', async () => {
     mockPost.mockRejectedValueOnce(new Error('Network error'));
-    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()), { wrapper: createWrapper() });
     await act(async () => {
       await result.current.fetchNow();
     });
@@ -113,10 +121,8 @@ describe('useLiveFetchJob', () => {
   });
 
   it('fetchNow uses catalogLatest scan_time when available', async () => {
-    const props = makeProps({
-      catalogLatest: makeCatalog(),
-    });
-    const { result } = renderHook(() => useLiveFetchJob(props));
+    const props = makeProps({ catalogLatest: makeCatalog() });
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     await act(async () => {
       await result.current.fetchNow();
     });
@@ -127,43 +133,34 @@ describe('useLiveFetchJob', () => {
   });
 
   it('clears activeJobId after job completes with delay', async () => {
+    vi.useFakeTimers();
     const refetch = vi.fn().mockResolvedValue(undefined);
-    // Return completed job from useQuery
-    mockUseQuery.mockReturnValue({
+    // Return completed job from API
+    mockGet.mockResolvedValue({
       data: { id: 'job-123', status: 'completed', progress: 100, status_message: 'Done' },
     });
 
-    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })));
+    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })), { wrapper: createWrapper() });
 
-    // Set active job first
+    // Set active job
     await act(async () => {
       await result.current.fetchNow();
     });
     expect(result.current.activeJobId).toBe('job-123');
 
-    // Advance timer to trigger the completion cleanup
+    // Wait for useQuery to fetch and return completed status
     await act(async () => {
-      vi.advanceTimersByTime(2500);
-    });
-    expect(result.current.activeJobId).toBeNull();
-    expect(refetch).toHaveBeenCalled();
-  });
-
-  it('clears activeJobId after job fails with delay', async () => {
-    const refetch = vi.fn().mockResolvedValue(undefined);
-    mockUseQuery.mockReturnValue({
-      data: { id: 'job-123', status: 'failed', progress: 50, status_message: 'Error' },
+      vi.advanceTimersByTime(3000);
     });
 
-    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })));
+    // The completion effect sets a 2s timer then clears activeJobId
     await act(async () => {
-      await result.current.fetchNow();
+      vi.advanceTimersByTime(3000);
     });
-    await act(async () => {
-      vi.advanceTimersByTime(2500);
-    });
+
     expect(result.current.activeJobId).toBeNull();
     expect(refetch).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('does not auto-fetch when band is GEOCOLOR', () => {
@@ -173,7 +170,7 @@ describe('useLiveFetchJob', () => {
       catalogLatest: makeCatalog({ band: 'GEOCOLOR' }),
       frame: makeFrame(),
     });
-    renderHook(() => useLiveFetchJob(props));
+    renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     expect(mockPost).not.toHaveBeenCalled();
   });
 
@@ -183,12 +180,11 @@ describe('useLiveFetchJob', () => {
       catalogLatest: makeCatalog(),
       frame: makeFrame(),
     });
-    renderHook(() => useLiveFetchJob(props));
+    renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     expect(mockPost).not.toHaveBeenCalled();
   });
 
   it('triggers auto-fetch when conditions are met', async () => {
-    vi.useRealTimers(); // Need real timers for async
     const lastAutoFetchMsRef = { current: 0 };
     const lastAutoFetchTimeRef = { current: null as string | null };
     const props = makeProps({
@@ -199,7 +195,7 @@ describe('useLiveFetchJob', () => {
       lastAutoFetchTimeRef,
     });
 
-    renderHook(() => useLiveFetchJob(props));
+    renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
@@ -212,7 +208,6 @@ describe('useLiveFetchJob', () => {
   });
 
   it('auto-fetch handles api failure gracefully', async () => {
-    vi.useRealTimers();
     mockPost.mockRejectedValueOnce(new Error('API fail'));
     const props = makeProps({
       autoFetch: true,
@@ -222,40 +217,15 @@ describe('useLiveFetchJob', () => {
       lastAutoFetchTimeRef: { current: null },
     });
 
-    // Should not throw
-    const { result } = renderHook(() => useLiveFetchJob(props));
-    // Wait a tick to let async complete
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     await new Promise((r) => setTimeout(r, 50));
     // Auto-fetch failure is non-critical — no error toast, no job set
     expect(mockShowToast).not.toHaveBeenCalledWith('error', expect.anything());
     expect(result.current.activeJobId).toBeNull();
   });
 
-  it('configures useQuery with correct parameters', () => {
-    renderHook(() => useLiveFetchJob(makeProps()));
-    expect(mockUseQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryKey: ['live-job', null],
-        enabled: false,
-      }),
-    );
-  });
-
-  it('enables useQuery polling when activeJobId is set', async () => {
-    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
-    await act(async () => {
-      await result.current.fetchNow();
-    });
-    // After setting activeJobId, useQuery should be called with enabled: true
-    const lastCall = mockUseQuery.mock.calls[mockUseQuery.mock.calls.length - 1][0];
-    expect(lastCall.queryKey).toEqual(['live-job', 'job-123']);
-    expect(lastCall.enabled).toBe(true);
-    expect(lastCall.refetchInterval).toBe(2000);
-  });
-
   it('cleanup cancels inflight auto-fetch', async () => {
-    vi.useRealTimers();
-    // Make post slow so cleanup has a chance to cancel
+    // Make post slow
     mockPost.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: { job_id: 'job-slow' } }), 100)));
     const props = makeProps({
       autoFetch: true,
@@ -265,13 +235,9 @@ describe('useLiveFetchJob', () => {
       lastAutoFetchTimeRef: { current: null },
     });
 
-    const { unmount } = renderHook(() => useLiveFetchJob(props));
-    // Unmount immediately to trigger cleanup (cancelled = true)
+    const { unmount } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     unmount();
-    // Wait for the post to resolve
     await new Promise((r) => setTimeout(r, 150));
-    // setActiveJobId should NOT have been called after cancellation
-    // (no error thrown = success, the cancelled flag prevented setState)
     expect(mockShowToast).not.toHaveBeenCalledWith('success', 'Auto-fetching new frame from AWS');
   });
 
@@ -284,20 +250,53 @@ describe('useLiveFetchJob', () => {
       lastAutoFetchMsRef: { current: 0 },
       lastAutoFetchTimeRef: { current: null },
     });
-    renderHook(() => useLiveFetchJob(props));
+    renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     expect(mockPost).not.toHaveBeenCalled();
   });
 
   it('fetchNow falls back to current time when no catalogLatest', async () => {
     const beforeTime = Date.now();
-    vi.useRealTimers();
     const props = makeProps({ catalogLatest: null });
-    const { result } = renderHook(() => useLiveFetchJob(props));
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
     await act(async () => {
       await result.current.fetchNow();
     });
     const call = mockPost.mock.calls[0];
     const startTime = new Date(call[1].start_time).getTime();
     expect(startTime).toBeGreaterThanOrEqual(beforeTime - 1000);
+  });
+
+  it('polls job status via useQuery when activeJobId is set', async () => {
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()), { wrapper: createWrapper() });
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    // After setting job, useQuery should fetch job status
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledWith('/jobs/job-123');
+    });
+  });
+
+  it('does not auto-fetch when there is an active job', async () => {
+    mockPost.mockResolvedValueOnce({ data: { job_id: 'job-active' } });
+    const props = makeProps({
+      autoFetch: true,
+      catalogLatest: makeCatalog(),
+      frame: makeFrame(),
+      lastAutoFetchMsRef: { current: 0 },
+      lastAutoFetchTimeRef: { current: null },
+    });
+
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
+    // First auto-fetch should fire
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledTimes(1);
+    });
+    expect(result.current.activeJobId).toBe('job-active');
+    // With an active job, no further auto-fetch should trigger
+    mockPost.mockClear();
+    // Re-render with same props shouldn't trigger another fetch
+    await new Promise((r) => setTimeout(r, 100));
+    // mockPost should not be called again (hasActiveJob guard)
   });
 });

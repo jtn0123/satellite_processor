@@ -5,5 +5,11 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501", "B008", "B904"]
 
+[lint.per-file-ignores]
+# sys.path manipulation required before importing core modules
+"backend/app/services/processor.py" = ["E402"]
+"backend/app/tasks/processing.py" = ["E402"]
+"backend/app/tasks/goes_tasks.py" = ["E402"]
+
 [format]
 quote-style = "double"

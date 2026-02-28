@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
+import type { CatalogLatest, LatestFrame } from '../components/GoesData/types';
 
 // Mock api client
 const mockPost = vi.fn();
@@ -22,14 +23,44 @@ vi.mock('@tanstack/react-query', () => ({
 
 import { useLiveFetchJob } from '../hooks/useLiveFetchJob';
 
+function makeCatalog(overrides: Partial<CatalogLatest> = {}): CatalogLatest {
+  return {
+    scan_time: '2024-06-01T12:00:00Z',
+    size: 1024,
+    key: 'test-key',
+    satellite: 'GOES-18',
+    sector: 'CONUS',
+    band: 'Band02',
+    image_url: 'https://example.com/image.jpg',
+    thumbnail_url: 'https://example.com/thumb.jpg',
+    mobile_url: 'https://example.com/mobile.jpg',
+    ...overrides,
+  };
+}
+
+function makeFrame(overrides: Partial<LatestFrame> = {}): LatestFrame {
+  return {
+    id: 1,
+    satellite: 'GOES-18',
+    sector: 'CONUS',
+    band: 'Band02',
+    capture_time: '2024-06-01T11:00:00Z',
+    file_size: 500000,
+    width: 1920,
+    height: 1080,
+    image_url: 'https://example.com/frame.jpg',
+    ...overrides,
+  };
+}
+
 function makeProps(overrides: Record<string, unknown> = {}) {
   return {
     satellite: 'GOES-18',
     sector: 'CONUS',
     band: 'Band02',
     autoFetch: false,
-    catalogLatest: null as { scan_time: string; satellite: string; sector: string; band: string } | null,
-    frame: null as { capture_time: string } | null,
+    catalogLatest: null as CatalogLatest | null,
+    frame: null as LatestFrame | null,
     lastAutoFetchTimeRef: { current: null } as React.MutableRefObject<string | null>,
     lastAutoFetchMsRef: { current: 0 } as React.MutableRefObject<number>,
     refetch: vi.fn().mockResolvedValue(undefined),
@@ -80,7 +111,7 @@ describe('useLiveFetchJob', () => {
 
   it('fetchNow uses catalogLatest scan_time when available', async () => {
     const props = makeProps({
-      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
+      catalogLatest: makeCatalog(),
     });
     const { result } = renderHook(() => useLiveFetchJob(props));
     await act(async () => {
@@ -136,8 +167,8 @@ describe('useLiveFetchJob', () => {
     const props = makeProps({
       band: 'GEOCOLOR',
       autoFetch: true,
-      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'GEOCOLOR' },
-      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      catalogLatest: makeCatalog({ band: 'GEOCOLOR' }),
+      frame: makeFrame(),
     });
     renderHook(() => useLiveFetchJob(props));
     expect(mockPost).not.toHaveBeenCalled();
@@ -146,8 +177,8 @@ describe('useLiveFetchJob', () => {
   it('does not auto-fetch when autoFetch is false', () => {
     const props = makeProps({
       autoFetch: false,
-      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
-      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      catalogLatest: makeCatalog(),
+      frame: makeFrame(),
     });
     renderHook(() => useLiveFetchJob(props));
     expect(mockPost).not.toHaveBeenCalled();
@@ -159,8 +190,8 @@ describe('useLiveFetchJob', () => {
     const lastAutoFetchTimeRef = { current: null as string | null };
     const props = makeProps({
       autoFetch: true,
-      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
-      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      catalogLatest: makeCatalog(),
+      frame: makeFrame(),
       lastAutoFetchMsRef,
       lastAutoFetchTimeRef,
     });
@@ -182,8 +213,8 @@ describe('useLiveFetchJob', () => {
     mockPost.mockRejectedValueOnce(new Error('API fail'));
     const props = makeProps({
       autoFetch: true,
-      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
-      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      catalogLatest: makeCatalog(),
+      frame: makeFrame(),
       lastAutoFetchMsRef: { current: 0 },
       lastAutoFetchTimeRef: { current: null },
     });

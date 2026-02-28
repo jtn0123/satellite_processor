@@ -102,7 +102,7 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
 
   useEffect(() => {
     connectRef.current = connect;
-  });
+  }, [connect]);
 
   useEffect(() => {
     terminalRef.current = false;

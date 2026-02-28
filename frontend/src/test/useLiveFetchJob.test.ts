@@ -288,15 +288,13 @@ describe('useLiveFetchJob', () => {
     });
 
     const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
-    // First auto-fetch should fire
+    // First auto-fetch should fire and set activeJobId
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledTimes(1);
+      expect(result.current.activeJobId).toBe('job-active');
     });
-    expect(result.current.activeJobId).toBe('job-active');
     // With an active job, no further auto-fetch should trigger
     mockPost.mockClear();
-    // Re-render with same props shouldn't trigger another fetch
     await new Promise((r) => setTimeout(r, 100));
-    // mockPost should not be called again (hasActiveJob guard)
+    expect(mockPost).not.toHaveBeenCalled();
   });
 });

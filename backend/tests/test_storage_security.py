@@ -79,3 +79,44 @@ def test_delete_nonexistent_file_returns_false(storage_service):
     svc, _ = storage_service
     result = svc.delete_file(str(svc.upload_dir / "nonexistent.png"))
     assert result is False
+
+
+def test_get_job_output_dir_creates_directory(storage_service):
+    svc, _ = storage_service
+    job_dir = svc.get_job_output_dir("test-job-123")
+    assert job_dir.exists()
+    assert job_dir.is_dir()
+    assert job_dir.name == "test-job-123"
+    assert str(svc.output_dir) in str(job_dir)
+
+
+def test_get_job_output_dir_idempotent(storage_service):
+    svc, _ = storage_service
+    dir1 = svc.get_job_output_dir("same-job")
+    dir2 = svc.get_job_output_dir("same-job")
+    assert dir1 == dir2
+    assert dir1.exists()
+
+
+def test_delete_file_in_temp_dir_allowed(storage_service):
+    svc, _ = storage_service
+    target = svc.temp_dir / "temp_file.dat"
+    target.write_text("temp data")
+
+    result = svc.delete_file(str(target))
+    assert result is True
+    assert not target.exists()
+
+
+def test_validate_path_blocks_symlink_traversal(storage_service):
+    """Ensure symlink-based traversal is blocked."""
+    svc, tmpdir = storage_service
+    # Create a symlink inside upload_dir pointing outside
+    secret = os.path.join(tmpdir, "secret.txt")
+    with open(secret, "w") as f:
+        f.write("secret")
+    link = svc.upload_dir / "link.txt"
+    os.symlink(secret, str(link))
+
+    with pytest.raises(ValueError, match="Path traversal"):
+        svc._validate_path(link, svc.upload_dir)

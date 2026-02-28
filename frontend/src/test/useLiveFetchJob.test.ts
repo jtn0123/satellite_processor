@@ -223,10 +223,12 @@ describe('useLiveFetchJob', () => {
     });
 
     // Should not throw
-    renderHook(() => useLiveFetchJob(props));
+    const { result } = renderHook(() => useLiveFetchJob(props));
     // Wait a tick to let async complete
     await new Promise((r) => setTimeout(r, 50));
-    // No toast on auto-fetch failure (non-critical)
+    // Auto-fetch failure is non-critical — no error toast, no job set
+    expect(mockShowToast).not.toHaveBeenCalledWith('error', expect.anything());
+    expect(result.current.activeJobId).toBeNull();
   });
 
   it('configures useQuery with correct parameters', () => {
@@ -237,5 +239,65 @@ describe('useLiveFetchJob', () => {
         enabled: false,
       }),
     );
+  });
+
+  it('enables useQuery polling when activeJobId is set', async () => {
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    // After setting activeJobId, useQuery should be called with enabled: true
+    const lastCall = mockUseQuery.mock.calls[mockUseQuery.mock.calls.length - 1][0];
+    expect(lastCall.queryKey).toEqual(['live-job', 'job-123']);
+    expect(lastCall.enabled).toBe(true);
+    expect(lastCall.refetchInterval).toBe(2000);
+  });
+
+  it('cleanup cancels inflight auto-fetch', async () => {
+    vi.useRealTimers();
+    // Make post slow so cleanup has a chance to cancel
+    mockPost.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: { job_id: 'job-slow' } }), 100)));
+    const props = makeProps({
+      autoFetch: true,
+      catalogLatest: makeCatalog(),
+      frame: makeFrame(),
+      lastAutoFetchMsRef: { current: 0 },
+      lastAutoFetchTimeRef: { current: null },
+    });
+
+    const { unmount } = renderHook(() => useLiveFetchJob(props));
+    // Unmount immediately to trigger cleanup (cancelled = true)
+    unmount();
+    // Wait for the post to resolve
+    await new Promise((r) => setTimeout(r, 150));
+    // setActiveJobId should NOT have been called after cancellation
+    // (no error thrown = success, the cancelled flag prevented setState)
+    expect(mockShowToast).not.toHaveBeenCalledWith('success', 'Auto-fetching new frame from AWS');
+  });
+
+  it('does not auto-fetch when catalog time equals local time', () => {
+    const sameTime = '2024-06-01T12:00:00Z';
+    const props = makeProps({
+      autoFetch: true,
+      catalogLatest: makeCatalog({ scan_time: sameTime }),
+      frame: makeFrame({ capture_time: sameTime }),
+      lastAutoFetchMsRef: { current: 0 },
+      lastAutoFetchTimeRef: { current: null },
+    });
+    renderHook(() => useLiveFetchJob(props));
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it('fetchNow falls back to current time when no catalogLatest', async () => {
+    const beforeTime = Date.now();
+    vi.useRealTimers();
+    const props = makeProps({ catalogLatest: null });
+    const { result } = renderHook(() => useLiveFetchJob(props));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    const call = mockPost.mock.calls[0];
+    const startTime = new Date(call[1].start_time).getTime();
+    expect(startTime).toBeGreaterThanOrEqual(beforeTime - 1000);
   });
 });

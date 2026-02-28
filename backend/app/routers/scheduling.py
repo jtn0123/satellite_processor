@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from datetime import timedelta
@@ -36,6 +37,8 @@ from ..models.scheduling import (
 )
 from ..utils import utcnow
 
+logger = logging.getLogger(__name__)
+
 _FETCH_PRESET_NOT_FOUND = "Fetch preset not found"
 _SCHEDULE_NOT_FOUND = "Schedule not found"
 
@@ -49,6 +52,7 @@ async def create_fetch_preset(
     payload: FetchPresetCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Creating fetch preset")
     preset = FetchPreset(
         id=str(uuid.uuid4()),
         name=payload.name,
@@ -65,6 +69,7 @@ async def create_fetch_preset(
 
 @router.get("/fetch-presets", response_model=list[FetchPresetResponse])
 async def list_fetch_presets(db: AsyncSession = Depends(get_db)):
+    logger.debug("Listing fetch presets")
     result = await db.execute(select(FetchPreset).order_by(FetchPreset.created_at.desc()))
     return [FetchPresetResponse.model_validate(p) for p in result.scalars().all()]
 
@@ -75,6 +80,7 @@ async def update_fetch_preset(
     payload: FetchPresetUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Updating fetch preset: id=%s", preset_id)
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -93,6 +99,7 @@ async def delete_fetch_preset(
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting fetch preset: id=%s", preset_id)
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -145,6 +152,7 @@ async def create_schedule(
     db: AsyncSession = Depends(get_db),
 ):
     # Verify preset exists
+    logger.info("Creating schedule")
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == payload.preset_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
@@ -166,6 +174,7 @@ async def create_schedule(
 
 @router.get("/schedules", response_model=list[FetchScheduleResponse])
 async def list_schedules(db: AsyncSession = Depends(get_db)):
+    logger.debug("Listing schedules")
     result = await db.execute(
         select(FetchSchedule)
         .options(selectinload(FetchSchedule.preset))
@@ -181,6 +190,7 @@ async def update_schedule(
     payload: FetchScheduleUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Updating schedule: id=%s", schedule_id)
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
     )
@@ -215,6 +225,7 @@ async def delete_schedule(
     schedule_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting schedule: id=%s", schedule_id)
     result = await db.execute(select(FetchSchedule).where(FetchSchedule.id == schedule_id))
     schedule = result.scalars().first()
     if not schedule:
@@ -229,6 +240,7 @@ async def toggle_schedule(
     schedule_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Toggling schedule: id=%s", schedule_id)
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
     )
@@ -266,6 +278,7 @@ async def create_cleanup_rule(
     payload: CleanupRuleCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Creating cleanup rule")
     rule = CleanupRule(
         id=str(uuid.uuid4()),
         name=payload.name,
@@ -282,6 +295,7 @@ async def create_cleanup_rule(
 
 @router.get("/cleanup-rules", response_model=list[CleanupRuleResponse])
 async def list_cleanup_rules(db: AsyncSession = Depends(get_db)):
+    logger.debug("Listing cleanup rules")
     result = await db.execute(select(CleanupRule).order_by(CleanupRule.created_at.desc()))
     return [CleanupRuleResponse.model_validate(r) for r in result.scalars().all()]
 
@@ -292,6 +306,7 @@ async def update_cleanup_rule(
     payload: CleanupRuleUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Updating cleanup rule: id=%s", rule_id)
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
     if not rule:
@@ -310,6 +325,7 @@ async def delete_cleanup_rule(
     rule_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting cleanup rule: id=%s", rule_id)
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
     if not rule:
@@ -322,6 +338,7 @@ async def delete_cleanup_rule(
 @router.get("/cleanup/preview", response_model=CleanupPreviewResponse)
 async def preview_cleanup(db: AsyncSession = Depends(get_db)):
     """Dry-run: show what would be deleted by active cleanup rules."""
+    logger.info("Preview cleanup requested")
     frames_to_delete = await _get_frames_to_cleanup(db)
     total_size = sum(f.file_size or 0 for f in frames_to_delete)
     return CleanupPreviewResponse(

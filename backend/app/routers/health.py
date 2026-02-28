@@ -1,6 +1,7 @@
 """Health check endpoints."""
 
 import asyncio
+import logging
 import os
 import re
 import shutil
@@ -13,6 +14,8 @@ from sqlalchemy import text
 from ..config import settings
 from ..db.database import async_session
 from ..redis_pool import get_redis_client
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 
@@ -122,6 +125,7 @@ async def health_basic():
     Returns 'ok' if core services are reachable, 'degraded' if DB or Redis
     is down but the app is still running.
     """
+    logger.debug("Health check requested")
     db_check = await _check_database()
     redis_check = await _check_redis()
 
@@ -216,6 +220,7 @@ def _derive_overall(checks: dict) -> str:
 @router.get("/changelog")
 async def changelog():
     """Return parsed CHANGELOG.md as structured JSON."""
+    logger.debug("Changelog requested")
     global _changelog_cache  # noqa: PLW0603
     # Clear cache to allow detecting newly available CHANGELOG.md
     if _changelog_cache is not None and len(_changelog_cache) == 0:
@@ -244,6 +249,7 @@ async def _check_worker() -> dict:
 @router.get("/detailed")
 async def health_detailed():
     """Detailed health check with dependency status."""
+    logger.debug("Detailed health check requested")
     checks = {
         "database": await _check_database(),
         "redis": await _check_redis(),

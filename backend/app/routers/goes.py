@@ -2,6 +2,7 @@
 
 import asyncio
 import atexit
+import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -34,6 +35,8 @@ from ..services.goes_fetcher import (
     SECTOR_PRODUCTS,
     VALID_BANDS,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/goes", tags=["goes"])
 
@@ -91,6 +94,7 @@ SECTOR_FILE_SIZES_KB = {
 @router.get("/products")
 async def list_products(response: Response):
     """List available GOES satellites, sectors, and bands with enhanced metadata."""
+    logger.debug("Listing GOES products")
     response.headers["Cache-Control"] = "public, max-age=300"
     cache_key = make_cache_key("products")
 
@@ -138,6 +142,7 @@ async def catalog(
     date: str | None = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
 ):
     """Query NOAA S3 for available GOES captures."""
+    logger.debug("GOES catalog requested")
     from ..services.catalog import catalog_list
 
     dt = None
@@ -168,6 +173,7 @@ async def catalog_latest(
     band: str = Query("C02"),
 ):
     """Return the most recent available frame on S3 (checks last 2 hours)."""
+    logger.debug("GOES catalog latest requested")
     response.headers["Cache-Control"] = "public, max-age=60"
     from ..services.catalog import catalog_latest as _catalog_latest
 
@@ -190,6 +196,7 @@ async def catalog_available(
     satellite: str = Query(DEFAULT_SATELLITE),
 ):
     """Check which sectors have recent data (last 2 hours) on S3."""
+    logger.debug("GOES catalog available requested")
     from ..services.catalog import catalog_available as _catalog_available
 
     cache_key = make_cache_key(f"catalog-available:{satellite}")
@@ -210,6 +217,7 @@ async def band_sample_thumbnails(
     db: AsyncSession = Depends(get_db),
 ):
     """Return thumbnail URLs for the latest frame of each band."""
+    logger.debug("Band sample thumbnails requested")
 
     cache_key = make_cache_key(f"band-samples:{satellite}:{sector}")
 
@@ -250,6 +258,7 @@ async def fetch_composite(
     db: AsyncSession = Depends(get_db),
 ):
     """Fetch multiple bands and auto-composite. Max 50 frames per request."""
+    logger.info("Composite fetch requested")
     recipe_bands = {
         "true_color": ["C01", "C02", "C03"],
         "natural_color": ["C02", "C06", "C07"],
@@ -330,6 +339,7 @@ async def fetch_goes(
     db: AsyncSession = Depends(get_db),
 ):
     """Kick off a GOES data fetch job."""
+    logger.info("GOES fetch requested")
     # Validate time range against satellite availability
     avail = SATELLITE_AVAILABILITY.get(payload.satellite)
     if avail:
@@ -399,6 +409,7 @@ async def detect_gaps(
     db: AsyncSession = Depends(get_db),
 ):
     """Run gap detection and return coverage stats."""
+    logger.debug("Gap detection requested")
     stats = await get_coverage_stats(
         db,
         satellite=satellite,
@@ -417,6 +428,7 @@ async def backfill_gaps(
     db: AsyncSession = Depends(get_db),
 ):
     """Fill detected gaps (one-shot, not automatic)."""
+    logger.info("Backfill gaps requested")
     job_id = str(uuid.uuid4())
     job = Job(
         id=job_id,
@@ -454,6 +466,7 @@ async def estimate_frame_count(
     end_time: datetime = Query(...),
 ):
     """Estimate frame count for a time range without downloading."""
+    logger.debug("Frame count estimation requested")
     import asyncio
 
     from ..services.goes_fetcher import list_available, validate_params
@@ -479,6 +492,7 @@ async def preview_frame(
     time: datetime = Query(...),
 ):
     """Fetch a single frame preview."""
+    logger.debug("Preview frame requested")
     from ..services.goes_fetcher import fetch_single_preview
 
     png_bytes = fetch_single_preview(satellite, sector, band, time)
@@ -497,6 +511,7 @@ async def band_availability(
     db: AsyncSession = Depends(get_db),
 ):
     """Return frame count per band for the given satellite/sector."""
+    logger.debug("Band availability requested")
     from sqlalchemy import func
 
     result = await db.execute(
@@ -519,6 +534,7 @@ async def get_latest_frame(
     db: AsyncSession = Depends(get_db),
 ):
     """Return the most recent GoesFrame for the given satellite/sector/band."""
+    logger.debug("Latest frame requested")
     response.headers["Cache-Control"] = "public, max-age=30"
     result = await db.execute(
         select(GoesFrame)
@@ -580,6 +596,7 @@ async def create_composite(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a band composite image via Celery task."""
+    logger.info("Creating composite")
     recipe = payload.recipe
     if recipe not in COMPOSITE_RECIPES:
         raise APIError(400, "bad_request", f"Unknown recipe: {recipe}")
@@ -632,6 +649,7 @@ async def list_composites(
     limit: int = Query(20, ge=1, le=100),
 ):
     """List generated composites."""
+    logger.debug("Listing composites")
     total = (await db.execute(select(func.count(Composite.id)))).scalar() or 0
     result = await db.execute(
         select(Composite)
@@ -663,6 +681,7 @@ async def list_composites(
 @router.get("/composites/{composite_id}")
 async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Get composite detail."""
+    logger.debug("Composite requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()
@@ -687,6 +706,7 @@ async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/composites/{composite_id}/image")
 async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Serve the composite image file."""
+    logger.debug("Composite image requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()

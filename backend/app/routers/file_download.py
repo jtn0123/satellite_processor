@@ -1,5 +1,6 @@
 """Generic file download endpoint for serving data files (images, thumbnails, etc.)."""
 
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Query, Request
@@ -8,6 +9,8 @@ from fastapi.responses import FileResponse
 from ..config import settings
 from ..errors import APIError, validate_safe_path
 from ..rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["files"])
 
@@ -23,6 +26,7 @@ async def download_file(
     The path must resolve to a location within the configured storage path.
     Path traversal attempts are rejected.
     """
+    logger.info("File download requested: path=%s", path)
     if not path:
         raise APIError(400, "bad_request", "path parameter is required")
 

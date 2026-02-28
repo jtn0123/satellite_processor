@@ -3,8 +3,11 @@
 The ProcessorService class was removed (unused dead code — audit #3 finding #3).
 """
 
+import logging
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Add parent project to path so we can import the core module
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
@@ -18,6 +21,7 @@ def configure_processor(processor: SatelliteImageProcessor, params: dict):
 
     Used by both the Celery tasks and any direct processor invocations.
     """
+    logger.info("Configuring processor with params: %s", list(params.keys()))
     # Unify API-style settings to core format (#14)
     params = to_core_settings(params)
     sm = processor.settings_manager

@@ -1,5 +1,6 @@
 """Animation studio endpoints — crop presets, animations, presets, and batch."""
 
+import logging
 import os
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -33,6 +34,8 @@ from ..models.animation import (
     FrameRangePreview,
 )
 from ..models.pagination import PaginatedResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/goes", tags=["animation-studio"])
 
@@ -165,6 +168,7 @@ async def create_crop_preset(
     payload: CropPresetCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Creating crop preset")
     existing = await db.execute(select(CropPreset).where(CropPreset.name == payload.name))
     if existing.scalars().first():
         raise APIError(409, "conflict", "Crop preset name already exists")
@@ -184,6 +188,7 @@ async def create_crop_preset(
 
 @router.get("/crop-presets", response_model=list[CropPresetResponse])
 async def list_crop_presets(db: AsyncSession = Depends(get_db)):
+    logger.debug("Listing crop presets")
     result = await db.execute(select(CropPreset).order_by(CropPreset.name))
     return [CropPresetResponse.model_validate(p) for p in result.scalars().all()]
 
@@ -212,6 +217,7 @@ async def delete_crop_preset(
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting crop preset: id=%s", preset_id)
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -230,6 +236,7 @@ async def create_animation(
     db: AsyncSession = Depends(get_db),
 ):
     """Create an animation generation job."""
+    logger.info("Creating animation")
     if payload.frame_ids:
         frame_ids = payload.frame_ids
     else:
@@ -341,6 +348,7 @@ async def list_animations(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
+    logger.debug("Listing animations")
     count = (await db.execute(select(func.count(Animation.id)))).scalar() or 0
     offset = (page - 1) * limit
     result = await db.execute(
@@ -352,6 +360,7 @@ async def list_animations(
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
 async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+    logger.debug("Animation requested: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
@@ -362,6 +371,7 @@ async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.delete("/animations/{animation_id}")
 async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+    logger.info("Deleting animation: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
@@ -447,6 +457,7 @@ async def preview_frame_range(
 
 @router.get("/animation-presets", response_model=list[AnimationPresetResponse])
 async def list_animation_presets(db: AsyncSession = Depends(get_db)):
+    logger.debug("Listing animation presets")
     result = await db.execute(
         select(AnimationPreset).order_by(AnimationPreset.name)
     )
@@ -458,6 +469,7 @@ async def create_animation_preset(
     payload: AnimationPresetCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Creating animation preset")
     existing = await db.execute(
         select(AnimationPreset).where(AnimationPreset.name == payload.name)
     )
@@ -502,6 +514,7 @@ async def update_animation_preset(
     payload: AnimationPresetUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Updating animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(
         select(AnimationPreset).where(AnimationPreset.id == preset_id)
@@ -524,6 +537,7 @@ async def delete_animation_preset(
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(
         select(AnimationPreset).where(AnimationPreset.id == preset_id)

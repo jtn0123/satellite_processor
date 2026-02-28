@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -11,6 +13,8 @@ from ..db.database import get_db
 from ..db.models import Preset
 from ..errors import APIError
 from ..models.settings import PresetCreate
+
+logger = logging.getLogger(__name__)
 
 
 class PresetRename(BaseModel):
@@ -26,6 +30,7 @@ async def list_presets(
     db: AsyncSession = Depends(get_db),
 ):
     """List presets with pagination (#160)."""
+    logger.debug("Listing presets: limit=%d, offset=%d", limit, offset)
     result = await db.execute(
         select(Preset).order_by(Preset.name).offset(offset).limit(limit)
     )
@@ -39,6 +44,7 @@ async def list_presets(
 @router.post("")
 async def create_preset(preset_in: PresetCreate, db: AsyncSession = Depends(get_db)):
     """Create a preset"""
+    logger.info("Creating preset: name=%s", preset_in.name)
     result = await db.execute(select(Preset).where(Preset.name == preset_in.name))
     if result.scalar_one_or_none():
         raise APIError(409, "duplicate_preset", f"Preset '{preset_in.name}' already exists")
@@ -53,6 +59,7 @@ async def create_preset(preset_in: PresetCreate, db: AsyncSession = Depends(get_
 @router.patch("/{name}")
 async def rename_preset(name: str, body: PresetRename, db: AsyncSession = Depends(get_db)):
     """Rename a preset"""
+    logger.info("Renaming preset: %s -> %s", name, body.name)
     result = await db.execute(select(Preset).where(Preset.name == name))
     preset = result.scalar_one_or_none()
     if not preset:
@@ -73,6 +80,7 @@ async def rename_preset(name: str, body: PresetRename, db: AsyncSession = Depend
 @router.delete("/{name}")
 async def delete_preset(name: str, db: AsyncSession = Depends(get_db)):
     """Delete a preset by name"""
+    logger.info("Deleting preset: name=%s", name)
     result = await db.execute(select(Preset).where(Preset.name == name))
     preset = result.scalar_one_or_none()
     if not preset:

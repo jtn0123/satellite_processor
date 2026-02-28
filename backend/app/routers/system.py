@@ -1,12 +1,15 @@
 """System status endpoint"""
 
 import asyncio
+import logging
 import platform
 import sys
 import time
 
 import psutil
 from fastapi import APIRouter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/system", tags=["system"])
 
@@ -16,6 +19,7 @@ _start_time = time.time()
 @router.get("/status")
 async def system_status():
     """Get system resource usage"""
+    logger.debug("System status requested")
     # #28: cpu_percent(interval=0.1) blocks — run in thread
     cpu = await asyncio.to_thread(psutil.cpu_percent, interval=0.1)
 
@@ -44,6 +48,7 @@ _system_info_cache: dict = {"data": None, "expires": 0.0}
 @router.get("/info")
 async def system_info():
     """Get system information: Python version, uptime, disk, memory, worker status."""
+    logger.debug("System info requested")
     now = time.time()
     if _system_info_cache["data"] is not None and now < _system_info_cache["expires"]:
         return _system_info_cache["data"]

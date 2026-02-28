@@ -10,8 +10,9 @@ function shouldAutoFetch(
   frame: LatestFrame | null | undefined,
   lastAutoFetchTime: string | null,
   lastAutoFetchMs: number,
+  hasActiveJob: boolean,
 ): boolean {
-  if (!autoFetch || !catalogLatest || !frame) return false;
+  if (!autoFetch || !catalogLatest || !frame || hasActiveJob) return false;
   const catalogTime = new Date(catalogLatest.scan_time).getTime();
   const localTime = new Date(frame.capture_time).getTime();
   return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
@@ -63,7 +64,7 @@ export function useLiveFetchJob({
 
   useEffect(() => {
     if (band === 'GEOCOLOR') return;
-    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current)) return;
+    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current, !!activeJobId)) return;
     lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
     lastAutoFetchMsRef.current = Date.now();
     const doAutoFetch = async () => {
@@ -80,7 +81,7 @@ export function useLiveFetchJob({
       } catch { /* auto-fetch failure is non-critical */ }
     };
     doAutoFetch();
-  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef]);
+  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef, activeJobId]);
 
   return { activeJobId, activeJob: activeJob ?? null, fetchNow };
 }

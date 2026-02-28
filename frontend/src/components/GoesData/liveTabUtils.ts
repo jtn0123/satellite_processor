@@ -104,15 +104,7 @@ export function loadCachedImage(satellite?: string, sector?: string, band?: stri
       const data = localStorage.getItem(key);
       if (data) return JSON.parse(data) as CachedImageMeta;
     }
-    const allKeys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
-    if (allKeys.length === 0) return null;
-    let newest: CachedImageMeta | null = null;
-    for (const k of allKeys) {
-      const data = localStorage.getItem(k);
-      if (!data) continue;
-      const parsed = JSON.parse(data) as CachedImageMeta;
-      if (!newest || parsed.timestamp > newest.timestamp) newest = parsed;
-    }
-    return newest;
+    // Only return exact-match cache to avoid showing wrong band's image
+    return null;
   } catch { return null; }
 }

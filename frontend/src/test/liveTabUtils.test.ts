@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { getFriendlyBandLabel } from '../components/GoesData/liveTabUtils';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { getFriendlyBandLabel, saveCachedImage, loadCachedImage } from '../components/GoesData/liveTabUtils';
 
 describe('getFriendlyBandLabel', () => {
   describe('short mode', () => {
@@ -54,5 +54,49 @@ describe('getFriendlyBandLabel', () => {
     it('returns friendly name for GEOCOLOR', () => {
       expect(getFriendlyBandLabel('GEOCOLOR', undefined, 'long')).toBe('GeoColor (True Color)');
     });
+  });
+});
+
+describe('loadCachedImage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('returns exact match when satellite/sector/band provided', () => {
+    saveCachedImage('https://cdn.test/img.jpg', {
+      satellite: 'GOES-16',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2024-01-01T00:00:00Z',
+    });
+
+    const result = loadCachedImage('GOES-16', 'CONUS', 'C02');
+    expect(result).not.toBeNull();
+    expect(result?.url).toBe('https://cdn.test/img.jpg');
+  });
+
+  it('returns null when no exact match exists — no cross-band fallback', () => {
+    saveCachedImage('https://cdn.test/c02.jpg', {
+      satellite: 'GOES-16',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2024-01-01T00:00:00Z',
+    });
+
+    // Requesting C13 should NOT fall back to C02's cached image
+    const result = loadCachedImage('GOES-16', 'CONUS', 'C13');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when called without params — no arbitrary fallback', () => {
+    saveCachedImage('https://cdn.test/img.jpg', {
+      satellite: 'GOES-16',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2024-01-01T00:00:00Z',
+    });
+
+    const result = loadCachedImage();
+    expect(result).toBeNull();
   });
 });

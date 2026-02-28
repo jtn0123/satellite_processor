@@ -2,7 +2,7 @@
 
 import json
 import logging
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from app.logging_config import RequestLoggingMiddleware, _parse_user_agent

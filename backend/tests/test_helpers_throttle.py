@@ -7,16 +7,16 @@ import pytest
 @pytest.fixture(autouse=True)
 def _reset_throttle():
     """Reset the throttle dict before each test."""
-    from backend.app.tasks.helpers import _last_progress_update
+    from app.tasks.helpers import _last_progress_update
     _last_progress_update.clear()
     yield
     _last_progress_update.clear()
 
 
-@patch("backend.app.tasks.helpers._get_sync_db")
+@patch("app.tasks.helpers._get_sync_db")
 def test_throttle_cleanup_on_terminal_status(mock_db):
     """Completed jobs should be removed from throttle tracker."""
-    from backend.app.tasks.helpers import _last_progress_update, _update_job_db
+    from app.tasks.helpers import _last_progress_update, _update_job_db
 
     mock_session = MagicMock()
     mock_job = MagicMock()
@@ -32,10 +32,10 @@ def test_throttle_cleanup_on_terminal_status(mock_db):
     assert "job-1" not in _last_progress_update
 
 
-@patch("backend.app.tasks.helpers._get_sync_db")
+@patch("app.tasks.helpers._get_sync_db")
 def test_throttle_cleanup_on_failed_status(mock_db):
     """Failed jobs should be removed from throttle tracker."""
-    from backend.app.tasks.helpers import _last_progress_update, _update_job_db
+    from app.tasks.helpers import _last_progress_update, _update_job_db
 
     mock_session = MagicMock()
     mock_job = MagicMock()
@@ -49,10 +49,10 @@ def test_throttle_cleanup_on_failed_status(mock_db):
     assert "job-2" not in _last_progress_update
 
 
-@patch("backend.app.tasks.helpers._get_sync_db")
+@patch("app.tasks.helpers._get_sync_db")
 def test_throttle_skips_small_progress_delta(mock_db):
     """Progress updates < 5% delta should be skipped (throttled)."""
-    from backend.app.tasks.helpers import _update_job_db
+    from app.tasks.helpers import _update_job_db
 
     mock_session = MagicMock()
     mock_job = MagicMock()

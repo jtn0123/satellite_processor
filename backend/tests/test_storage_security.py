@@ -18,12 +18,12 @@ def storage_service():
         os.makedirs(output_dir)
         os.makedirs(temp_dir)
 
-        with patch("backend.app.services.storage.settings") as mock_settings:
+        with patch("app.services.storage.settings") as mock_settings:
             mock_settings.upload_dir = upload_dir
             mock_settings.output_dir = output_dir
             mock_settings.temp_dir = temp_dir
 
-            from backend.app.services.storage import StorageService
+            from app.services.storage import StorageService
 
             svc = StorageService()
             yield svc, tmpdir

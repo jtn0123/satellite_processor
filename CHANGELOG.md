@@ -1,3 +1,10 @@
+## [1.24.1](https://github.com/jtn0123/satellite_processor/compare/v1.24.0...v1.24.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* systematic bug sweep — 7 bugs found and fixed ([#263](https://github.com/jtn0123/satellite_processor/issues/263)) ([9d4fd8e](https://github.com/jtn0123/satellite_processor/commit/9d4fd8e8b7240fda7c6d8c55e3d3e57cdd26bb0d))
+
 # [1.24.0](https://github.com/jtn0123/satellite_processor/compare/v1.23.4...v1.24.0) (2026-02-28)
 
 

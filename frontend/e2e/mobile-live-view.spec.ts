@@ -164,25 +164,30 @@ test.describe('Mobile Live View', () => {
     const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
     await expect(swipeArea).toBeVisible({ timeout: 10000 });
 
-    // Double-tap via two rapid taps
     const box = await swipeArea.boundingBox();
     expect(box).toBeTruthy();
     const cx = box!.x + box!.width / 2;
     const cy = box!.y + box!.height / 2;
 
+    // First double-tap zooms IN (from default state)
     await page.touchscreen.tap(cx, cy);
     await page.waitForTimeout(50);
     await page.touchscreen.tap(cx, cy);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
-    // After double-tap, zoom should be reset (scale 1 or no transform)
+    // Second double-tap should reset zoom back to default
+    await page.touchscreen.tap(cx, cy);
+    await page.waitForTimeout(50);
+    await page.touchscreen.tap(cx, cy);
+    await page.waitForTimeout(500);
+
+    // After reset, transform should be identity or scale(1)
     const transform = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="swipe-gesture-area"]');
       if (!el) return 'none';
       const img = el.querySelector('img') || el;
       return window.getComputedStyle(img).transform;
     });
-    // Reset zoom means either no transform or identity matrix
     const isReset = !transform || transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)';
     expect(isReset).toBe(true);
   });

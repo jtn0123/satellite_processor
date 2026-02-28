@@ -25,7 +25,7 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
   const statusContent = getStatusContent(job);
 
   return (
-    <div aria-live="polite" role="status" className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3">
+    <output aria-live="polite" className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3">
       {statusContent ?? (
         <>
           <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
@@ -40,6 +40,6 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
           </div>
         </>
       )}
-    </div>
+    </output>
   );
 }

@@ -1,92 +1,207 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import React from 'react';
 
-// Test the shouldAutoFetch logic directly since the hook is complex to render
-// We extract and test the guard conditions
+// Mock api client
+const mockPost = vi.fn();
+vi.mock('../api/client', () => ({
+  default: { get: vi.fn(), post: (...args: unknown[]) => mockPost(...args) },
+}));
 
-describe('useLiveFetchJob auto-fetch guard', () => {
-  // Inline the shouldAutoFetch function for unit testing
-  function shouldAutoFetch(
-    autoFetch: boolean,
-    catalogLatest: { scan_time: string } | null,
-    frame: { capture_time: string } | null,
-    lastAutoFetchTime: string | null,
-    lastAutoFetchMs: number,
-    hasActiveJob: boolean,
-  ): boolean {
-    if (!autoFetch || !catalogLatest || !frame || hasActiveJob) return false;
-    const catalogTime = new Date(catalogLatest.scan_time).getTime();
-    const localTime = new Date(frame.capture_time).getTime();
-    return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
-  }
+// Mock toast
+const mockShowToast = vi.fn();
+vi.mock('../utils/toast', () => ({
+  showToast: (...args: unknown[]) => mockShowToast(...args),
+}));
 
-  it('returns false when autoFetch is disabled', () => {
-    expect(shouldAutoFetch(false, { scan_time: '2024-01-01T01:00:00Z' }, { capture_time: '2024-01-01T00:00:00Z' }, null, 0, false)).toBe(false);
+// Mock useQuery
+const mockUseQuery = vi.fn();
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+}));
+
+import { useLiveFetchJob } from '../hooks/useLiveFetchJob';
+
+function makeProps(overrides: Record<string, unknown> = {}) {
+  return {
+    satellite: 'GOES-18',
+    sector: 'CONUS',
+    band: 'Band02',
+    autoFetch: false,
+    catalogLatest: null as { scan_time: string; satellite: string; sector: string; band: string } | null,
+    frame: null as { capture_time: string } | null,
+    lastAutoFetchTimeRef: { current: null } as React.MutableRefObject<string | null>,
+    lastAutoFetchMsRef: { current: 0 } as React.MutableRefObject<number>,
+    refetch: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
+describe('useLiveFetchJob', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockUseQuery.mockReturnValue({ data: undefined });
+    mockPost.mockResolvedValue({ data: { job_id: 'job-123' } });
   });
 
-  it('returns false when catalogLatest is null', () => {
-    expect(shouldAutoFetch(true, null, { capture_time: '2024-01-01T00:00:00Z' }, null, 0, false)).toBe(false);
-  });
-
-  it('returns false when frame is null', () => {
-    expect(shouldAutoFetch(true, { scan_time: '2024-01-01T01:00:00Z' }, null, null, 0, false)).toBe(false);
-  });
-
-  it('returns false when there is an active job (race condition guard)', () => {
-    expect(shouldAutoFetch(
-      true,
-      { scan_time: '2024-01-01T01:00:00Z' },
-      { capture_time: '2024-01-01T00:00:00Z' },
-      null,
-      0,
-      true, // active job running
-    )).toBe(false);
-  });
-
-  it('returns true when catalog is newer and no active job', () => {
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now + 60000);
-
-    expect(shouldAutoFetch(
-      true,
-      { scan_time: '2024-01-01T01:00:00Z' },
-      { capture_time: '2024-01-01T00:00:00Z' },
-      null,
-      now - 60000, // 60s ago
-      false,
-    )).toBe(true);
-
+  afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  it('returns false when last auto-fetch was too recent (< 30s)', () => {
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now);
-
-    expect(shouldAutoFetch(
-      true,
-      { scan_time: '2024-01-01T01:00:00Z' },
-      { capture_time: '2024-01-01T00:00:00Z' },
-      null,
-      now - 10000, // only 10s ago
-      false,
-    )).toBe(false);
-
-    vi.restoreAllMocks();
+  it('returns null activeJobId and null activeJob initially', () => {
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    expect(result.current.activeJobId).toBeNull();
+    expect(result.current.activeJob).toBeNull();
   });
 
-  it('returns false when already fetched this scan_time', () => {
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now + 60000);
+  it('fetchNow calls api.post and sets activeJobId', async () => {
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      satellite: 'GOES-18',
+      sector: 'CONUS',
+      band: 'Band02',
+    }));
+    expect(result.current.activeJobId).toBe('job-123');
+    expect(mockShowToast).toHaveBeenCalledWith('success', 'Fetching latest frame…');
+  });
 
-    expect(shouldAutoFetch(
-      true,
-      { scan_time: '2024-01-01T01:00:00Z' },
-      { capture_time: '2024-01-01T00:00:00Z' },
-      '2024-01-01T01:00:00Z', // already fetched this scan_time
-      now - 60000,
-      false,
-    )).toBe(false);
+  it('fetchNow shows error toast on failure', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Network error'));
+    const { result } = renderHook(() => useLiveFetchJob(makeProps()));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to start fetch');
+  });
 
-    vi.restoreAllMocks();
+  it('fetchNow uses catalogLatest scan_time when available', async () => {
+    const props = makeProps({
+      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
+    });
+    const { result } = renderHook(() => useLiveFetchJob(props));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      start_time: '2024-06-01T12:00:00Z',
+      end_time: '2024-06-01T12:00:00Z',
+    }));
+  });
+
+  it('clears activeJobId after job completes with delay', async () => {
+    const refetch = vi.fn().mockResolvedValue(undefined);
+    // Return completed job from useQuery
+    mockUseQuery.mockReturnValue({
+      data: { id: 'job-123', status: 'completed', progress: 100, status_message: 'Done' },
+    });
+
+    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })));
+
+    // Set active job first
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    expect(result.current.activeJobId).toBe('job-123');
+
+    // Advance timer to trigger the completion cleanup
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(result.current.activeJobId).toBeNull();
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('clears activeJobId after job fails with delay', async () => {
+    const refetch = vi.fn().mockResolvedValue(undefined);
+    mockUseQuery.mockReturnValue({
+      data: { id: 'job-123', status: 'failed', progress: 50, status_message: 'Error' },
+    });
+
+    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })));
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(result.current.activeJobId).toBeNull();
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('does not auto-fetch when band is GEOCOLOR', () => {
+    const props = makeProps({
+      band: 'GEOCOLOR',
+      autoFetch: true,
+      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'GEOCOLOR' },
+      frame: { capture_time: '2024-06-01T11:00:00Z' },
+    });
+    renderHook(() => useLiveFetchJob(props));
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-fetch when autoFetch is false', () => {
+    const props = makeProps({
+      autoFetch: false,
+      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
+      frame: { capture_time: '2024-06-01T11:00:00Z' },
+    });
+    renderHook(() => useLiveFetchJob(props));
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it('triggers auto-fetch when conditions are met', async () => {
+    vi.useRealTimers(); // Need real timers for async
+    const lastAutoFetchMsRef = { current: 0 };
+    const lastAutoFetchTimeRef = { current: null as string | null };
+    const props = makeProps({
+      autoFetch: true,
+      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
+      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      lastAutoFetchMsRef,
+      lastAutoFetchTimeRef,
+    });
+
+    renderHook(() => useLiveFetchJob(props));
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+        satellite: 'GOES-18',
+        sector: 'CONUS',
+        band: 'Band02',
+      }));
+    });
+    expect(mockShowToast).toHaveBeenCalledWith('success', 'Auto-fetching new frame from AWS');
+  });
+
+  it('auto-fetch handles api failure gracefully', async () => {
+    vi.useRealTimers();
+    mockPost.mockRejectedValueOnce(new Error('API fail'));
+    const props = makeProps({
+      autoFetch: true,
+      catalogLatest: { scan_time: '2024-06-01T12:00:00Z', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' },
+      frame: { capture_time: '2024-06-01T11:00:00Z' },
+      lastAutoFetchMsRef: { current: 0 },
+      lastAutoFetchTimeRef: { current: null },
+    });
+
+    // Should not throw
+    renderHook(() => useLiveFetchJob(props));
+    // Wait a tick to let async complete
+    await new Promise((r) => setTimeout(r, 50));
+    // No toast on auto-fetch failure (non-critical)
+  });
+
+  it('configures useQuery with correct parameters', () => {
+    renderHook(() => useLiveFetchJob(makeProps()));
+    expect(mockUseQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['live-job', null],
+        enabled: false,
+      }),
+    );
   });
 });

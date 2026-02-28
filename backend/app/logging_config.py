@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import sys
 import time
 import traceback
@@ -79,7 +80,6 @@ def _parse_user_agent(ua: str) -> str | None:
     """Extract a simplified browser/OS string from a User-Agent header."""
     if not ua:
         return None
-    import re
 
     for pattern, name in [
         (r"Edg[e/](\S+)", "Edge"),

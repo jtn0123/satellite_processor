@@ -60,9 +60,6 @@ class TestParseUserAgent:
     def test_empty_string(self):
         assert _parse_user_agent("") is None
 
-    def test_none_like(self):
-        assert _parse_user_agent("") is None
-
     def test_unknown_ua_truncated(self):
         ua = "x" * 100
         result = _parse_user_agent(ua)

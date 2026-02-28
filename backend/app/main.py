@@ -48,6 +48,7 @@ from .routers import settings as settings_router
 from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
+ws_logger = logging.getLogger("websocket")
 
 # Paths that skip API key auth
 AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
@@ -312,7 +313,6 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         return
 
     await websocket.accept()
-    ws_logger = logging.getLogger("websocket")
     ws_logger.info("WS connected: /ws/jobs/%s from %s", job_id, client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()
@@ -355,7 +355,6 @@ async def global_events_websocket(websocket: WebSocket):
         return
 
     await websocket.accept()
-    ws_logger = logging.getLogger("websocket")
     ws_logger.info("WS connected: /ws/events from %s", client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()

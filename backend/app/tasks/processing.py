@@ -133,6 +133,7 @@ def process_images_task(self, job_id: str, params: dict):
 @celery_app.task(bind=True, name="create_video")
 def create_video_task(self, job_id: str, params: dict):
     """Video creation task"""
+    start_time = time.monotonic()
     logger.info("Starting video creation job %s", job_id, extra={"job_id": job_id})
 
     def _log(msg: str, level: str = "info") -> None:
@@ -186,7 +187,9 @@ def create_video_task(self, job_id: str, params: dict):
         }
         success = processor.create_video(input_files, output_path, video_options)
 
+        duration = time.monotonic() - start_time
         if success:
+            logger.info("Video job %s completed in %.1fs", job_id, duration, extra={"job_id": job_id})
             _log(MSG_VIDEO_CREATION_COMPLETE)
             _update_job_db(
                 job_id,
@@ -208,7 +211,8 @@ def create_video_task(self, job_id: str, params: dict):
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
     except Exception as e:
-        logger.exception("Video job %s failed", job_id, extra={"job_id": job_id})
+        duration = time.monotonic() - start_time
+        logger.exception("Video job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Video creation failed: {e}", "error")
         _update_job_db(
             job_id,

@@ -249,7 +249,7 @@ async def _check_worker() -> dict:
 @router.get("/detailed")
 async def health_detailed():
     """Detailed health check with dependency status."""
-    logger.info("Detailed health check requested")
+    logger.debug("Detailed health check requested")
     checks = {
         "database": await _check_database(),
         "redis": await _check_redis(),

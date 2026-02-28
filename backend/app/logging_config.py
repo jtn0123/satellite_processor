@@ -98,6 +98,39 @@ def _parse_user_agent(ua: str) -> str | None:
     return ua[:50] if len(ua) > 50 else ua
 
 
+class _ResponseContext:
+    """Captures HTTP response metadata from ASGI send messages."""
+
+    __slots__ = ("status_code", "response_size", "content_type")
+
+    def __init__(self) -> None:
+        self.status_code = 500
+        self.response_size = 0
+        self.content_type: str | None = None
+
+    def capture(self, message: dict) -> None:
+        """Process an ASGI send message."""
+        if message["type"] == "http.response.start":
+            self.status_code = message["status"]
+            for key, value in message.get("headers", []):
+                if key == b"content-type":
+                    self.content_type = value.decode("latin-1", errors="replace")
+                    break
+        elif message["type"] == "http.response.body":
+            body = message.get("body", b"")
+            if body:
+                self.response_size += len(body)
+
+
+def _format_error(exc: Exception) -> dict[str, str]:
+    """Format an exception into a dict for wide event logging."""
+    return {
+        "type": type(exc).__name__,
+        "message": str(exc),
+        "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__, limit=5)),
+    }
+
+
 class RequestLoggingMiddleware:
     """Emit one wide event per HTTP request as structured JSON.
 
@@ -113,42 +146,25 @@ class RequestLoggingMiddleware:
             await self.app(scope, receive, send)
             return
 
-        start = time.perf_counter()
-        status_code = 500
-        response_size = 0
-        response_content_type: str | None = None
-        error_info: dict[str, str] | None = None
-
+        ctx = _ResponseContext()
         content_length = _get_header(scope, b"content-length")
         request_size = int(content_length) if content_length.isdigit() else 0
+        start = time.perf_counter()
+        error_info: dict[str, str] | None = None
 
         async def send_wrapper(message: dict) -> None:
-            nonlocal status_code, response_size, response_content_type
-            if message["type"] == "http.response.start":
-                status_code = message["status"]
-                for key, value in message.get("headers", []):
-                    if key == b"content-type":
-                        response_content_type = value.decode("latin-1", errors="replace")
-                        break
-            elif message["type"] == "http.response.body":
-                body = message.get("body", b"")
-                if body:
-                    response_size += len(body)
+            ctx.capture(message)
             await send(message)
 
         try:
             await self.app(scope, receive, send_wrapper)
         except Exception as exc:
-            error_info = {
-                "type": type(exc).__name__,
-                "message": str(exc),
-                "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__, limit=5)),
-            }
+            error_info = _format_error(exc)
             raise
         finally:
             self._emit_wide_event(
-                scope, start, status_code, request_size, response_size,
-                response_content_type, error_info,
+                scope, start, ctx.status_code, request_size, ctx.response_size,
+                ctx.content_type, error_info,
             )
 
     def _emit_wide_event(

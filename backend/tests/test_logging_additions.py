@@ -5,7 +5,13 @@ import logging
 from unittest.mock import AsyncMock
 
 import pytest
-from app.logging_config import RequestLoggingMiddleware, _detect_os, _parse_user_agent
+from app.logging_config import (
+    RequestLoggingMiddleware,
+    _detect_os,
+    _format_error,
+    _parse_user_agent,
+    _ResponseContext,
+)
 
 
 class TestParseUserAgent:
@@ -66,6 +72,71 @@ class TestParseUserAgent:
         ua = "CustomClient/1.0"
         result = _parse_user_agent(ua)
         assert result == "CustomClient/1.0"
+
+
+class TestResponseContext:
+    """Tests for _ResponseContext."""
+
+    def test_initial_state(self):
+        ctx = _ResponseContext()
+        assert ctx.status_code == 500
+        assert ctx.response_size == 0
+        assert ctx.content_type is None
+
+    def test_capture_response_start(self):
+        ctx = _ResponseContext()
+        ctx.capture({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [(b"content-type", b"text/html")],
+        })
+        assert ctx.status_code == 200
+        assert ctx.content_type == "text/html"
+
+    def test_capture_response_body(self):
+        ctx = _ResponseContext()
+        ctx.capture({"type": "http.response.body", "body": b"hello"})
+        ctx.capture({"type": "http.response.body", "body": b" world"})
+        assert ctx.response_size == 11
+
+    def test_capture_empty_body(self):
+        ctx = _ResponseContext()
+        ctx.capture({"type": "http.response.body", "body": b""})
+        assert ctx.response_size == 0
+
+    def test_capture_no_headers(self):
+        ctx = _ResponseContext()
+        ctx.capture({"type": "http.response.start", "status": 204})
+        assert ctx.status_code == 204
+        assert ctx.content_type is None
+
+    def test_capture_no_content_type_header(self):
+        ctx = _ResponseContext()
+        ctx.capture({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [(b"x-custom", b"value")],
+        })
+        assert ctx.content_type is None
+
+
+class TestFormatError:
+    """Tests for _format_error."""
+
+    def test_format_runtime_error(self):
+        try:
+            raise RuntimeError("test error")
+        except RuntimeError as e:
+            result = _format_error(e)
+        assert result["type"] == "RuntimeError"
+        assert result["message"] == "test error"
+        assert "traceback" in result
+        assert "RuntimeError" in result["traceback"]
+
+    def test_format_value_error(self):
+        result = _format_error(ValueError("bad value"))
+        assert result["type"] == "ValueError"
+        assert result["message"] == "bad value"
 
 
 class TestDetectOs:

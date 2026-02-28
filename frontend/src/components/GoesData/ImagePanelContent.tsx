@@ -17,9 +17,10 @@ export interface ImagePanelContentProps {
   onPositionChange: (pos: number) => void;
   frameTime: string | null;
   prevFrameTime: string | null;
+  isZoomed?: boolean;
 }
 
-export default function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime }: Readonly<ImagePanelContentProps>) {
+export default function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, isZoomed = false }: Readonly<ImagePanelContentProps>) {
   if (isLoading || (!imageUrl && !isError)) {
     return (
       <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
@@ -54,9 +55,10 @@ export default function ImagePanelContent({ isLoading, isError, imageUrl, compar
     <CdnImage
       src={imageUrl ?? ''}
       alt={`${satellite} ${band} ${sector}`}
-      className="max-w-full max-h-full object-contain select-none"
+      className="max-w-full max-h-full select-none"
       style={zoomStyle}
       draggable={false}
+      isZoomed={isZoomed}
       data-satellite={satellite}
       data-band={band}
       data-sector={sector}

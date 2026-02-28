@@ -1,5 +1,6 @@
 """Image upload and listing endpoints"""
 
+import logging
 import os
 import re
 import uuid
@@ -22,6 +23,8 @@ from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
+
+logger = logging.getLogger(__name__)
 
 _IMAGE_NOT_FOUND = "Image not found"
 
@@ -48,6 +51,7 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 @limiter.limit("10/minute")
 async def upload_image(request: Request, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     """Upload a satellite image using chunked streaming to avoid OOM on large files."""
+    logger.info("Image upload started: filename=%s", file.filename)
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
@@ -119,6 +123,7 @@ async def list_images(
     db: AsyncSession = Depends(get_db),
 ):
     """List uploaded images with pagination"""
+    logger.debug("Listing images: page=%d, limit=%d", page, limit)
     count_result = await db.execute(select(func.count()).select_from(Image))
     total = count_result.scalar_one()
 
@@ -142,6 +147,7 @@ async def bulk_delete_images(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk delete images by IDs."""
+    logger.info("Bulk delete requested: count=%d", len(payload.ids))
     ids = payload.ids
 
     result = await db.execute(select(Image).where(Image.id.in_(ids)))
@@ -161,6 +167,7 @@ async def bulk_delete_images(
 @limiter.limit("10/minute")
 async def delete_image(request: Request, image_id: str, db: AsyncSession = Depends(get_db)):
     """Delete an uploaded image"""
+    logger.info("Deleting image: id=%s", image_id)
     validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -175,6 +182,7 @@ async def delete_image(request: Request, image_id: str, db: AsyncSession = Depen
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     """Return a ~256px thumbnail"""
+    logger.debug("Thumbnail requested: image_id=%s", image_id)
     validate_uuid(image_id, "image_id")
     from ..config import settings as app_settings
     result = await db.execute(select(Image).where(Image.id == image_id))
@@ -209,6 +217,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/{image_id}/full")
 async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     """Return the original image file"""
+    logger.debug("Full image requested: image_id=%s", image_id)
     validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()

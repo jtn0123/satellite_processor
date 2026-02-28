@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -44,6 +45,8 @@ from ..models.pagination import PaginatedResponse
 from ..services.cache import get_cached, invalidate, make_cache_key
 from ..utils.path_validation import validate_file_path
 
+logger = logging.getLogger(__name__)
+
 _COLLECTION_NOT_FOUND = "Collection not found"
 _FRAME_NOT_FOUND = "Frame not found"
 
@@ -55,6 +58,7 @@ router = APIRouter(prefix="/api/goes", tags=["goes-data"])
 @router.get("/dashboard-stats")
 async def dashboard_stats(db: AsyncSession = Depends(get_db)):
     """Aggregated dashboard statistics for the GOES data overview."""
+    logger.debug("Dashboard stats requested")
     cache_key = make_cache_key("dashboard-stats")
 
     async def _fetch():
@@ -150,6 +154,7 @@ async def list_frames(
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     """List GOES frames with filtering, sorting, pagination."""
+    logger.debug("Listing frames: page=%d, limit=%d", page, limit)
     query = select(GoesFrame).options(
         selectinload(GoesFrame.tags),
         selectinload(GoesFrame.collections),
@@ -211,6 +216,7 @@ async def list_frames(
 @router.get("/frames/stats", response_model=FrameStatsResponse)
 async def frame_stats(db: AsyncSession = Depends(get_db)):
     """Storage stats per satellite/band."""
+    logger.debug("Frame stats requested")
     result = await db.execute(
         select(
             GoesFrame.satellite,
@@ -286,6 +292,7 @@ async def export_frames(
     offset: int = Query(0, ge=0),
 ):
     """Export frame metadata as CSV or JSON with pagination."""
+    logger.info("Exporting frames")
     if limit > MAX_EXPORT_LIMIT:
         raise APIError(
             400,
@@ -326,6 +333,7 @@ async def export_frames(
 @router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
 async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
     """Get single frame detail."""
+    logger.debug("Frame requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(
         select(GoesFrame)
@@ -344,6 +352,7 @@ async def bulk_delete_frames(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk delete frames and their files."""
+    logger.info("Bulk delete frames requested")
     result = await db.execute(
         select(GoesFrame).where(GoesFrame.id.in_(payload.ids))
     )
@@ -373,6 +382,7 @@ async def bulk_tag_frames(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
+    logger.info("Bulk tagging frames")
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     values = [
@@ -393,6 +403,7 @@ async def process_frames(
     db: AsyncSession = Depends(get_db),
 ):
     """Send selected frames to the processing pipeline."""
+    logger.info("Processing frames requested")
     result = await db.execute(
         select(GoesFrame.file_path).where(GoesFrame.id.in_(payload.frame_ids))
     )
@@ -430,6 +441,7 @@ async def create_collection(
     db: AsyncSession = Depends(get_db),
 ):
     # Check for duplicate name
+    logger.info("Creating collection: name=%s", payload.name)
     existing = await db.execute(
         select(Collection).where(Collection.name == payload.name)
     )
@@ -460,6 +472,7 @@ async def list_collections(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
 ):
+    logger.debug("Listing collections")
     total = (await db.execute(select(func.count(Collection.id)))).scalar() or 0
     result = await db.execute(
         select(
@@ -493,6 +506,7 @@ async def update_collection(
     payload: CollectionUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Updating collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
@@ -526,6 +540,7 @@ async def delete_collection(
     collection_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Deleting collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
@@ -542,6 +557,7 @@ async def add_frames_to_collection(
     db: AsyncSession = Depends(get_db),
 ):
     # Verify collection exists
+    logger.info("Adding frames to collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -571,6 +587,7 @@ async def list_collection_frames(
     limit: int = Query(100, ge=1, le=1000),
 ):
     """Return ordered frames for a collection with pagination."""
+    logger.debug("Listing collection frames: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -609,6 +626,7 @@ async def export_collection(
     offset: int = Query(0, ge=0),
 ):
     """Export frame metadata for a collection."""
+    logger.info("Exporting collection: id=%s", collection_id)
     if limit > MAX_EXPORT_LIMIT:
         raise APIError(
             400,
@@ -643,6 +661,7 @@ async def remove_frames_from_collection(
     payload: CollectionFramesRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info("Removing frames from collection: id=%s", collection_id)
     result = await db.execute(
         delete(CollectionFrame).where(
             CollectionFrame.collection_id == collection_id,
@@ -661,6 +680,7 @@ async def create_tag(
     db: AsyncSession = Depends(get_db),
 ):
     # Check uniqueness
+    logger.info("Creating tag: name=%s", payload.name)
     existing = await db.execute(select(Tag).where(Tag.name == payload.name))
     if existing.scalars().first():
         raise APIError(409, "conflict", "Tag already exists")
@@ -677,6 +697,7 @@ async def list_tags(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),
 ):
+    logger.debug("Listing tags")
     total = (await db.execute(select(func.count(Tag.id)))).scalar() or 0
     result = await db.execute(
         select(Tag).order_by(Tag.name).offset((page - 1) * limit).limit(limit)
@@ -687,6 +708,7 @@ async def list_tags(
 
 @router.delete("/tags/{tag_id}")
 async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
+    logger.info("Deleting tag: id=%s", tag_id)
     result = await db.execute(select(Tag).where(Tag.id == tag_id))
     tag = result.scalars().first()
     if not tag:
@@ -704,6 +726,7 @@ async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/frames/{frame_id}/image")
 async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
     """Serve the raw image file for a frame."""
+    logger.debug("Frame image requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()
@@ -737,6 +760,7 @@ async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/frames/{frame_id}/thumbnail")
 async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db)):
     """Serve the thumbnail image for a frame."""
+    logger.debug("Frame thumbnail requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()

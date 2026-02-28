@@ -26,8 +26,10 @@ async def detect_capture_pattern(db: AsyncSession) -> dict[str, Any]:
         .order_by(GoesFrame.capture_time.asc())
     )
     rows = result.all()
+    logger.debug("Analyzing capture pattern: %d rows found", len(rows))
 
     if not rows:
+        logger.info("No capture data found for pattern detection")
         return {
             "satellite": None,
             "band": None,
@@ -109,10 +111,12 @@ async def find_gaps(
     timestamps = [r[0] for r in result.all()]
 
     if len(timestamps) < 2:
+        logger.info("Not enough timestamps for gap detection: count=%d", len(timestamps))
         return []
 
     threshold = expected_interval * tolerance
     gaps: list[dict[str, Any]] = []
+    logger.debug("Finding gaps: threshold=%.1f min, timestamps=%d", threshold, len(timestamps))
 
     for i in range(1, len(timestamps)):
         delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
@@ -125,6 +129,7 @@ async def find_gaps(
                 "expected_frames": max(expected_frames, 1),
             })
 
+    logger.info("Gap detection complete: %d gaps found", len(gaps))
     return gaps
 
 

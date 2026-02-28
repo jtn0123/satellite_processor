@@ -2,6 +2,7 @@
 
 import logging
 import sys
+import time
 from pathlib import Path
 
 from ..celery_app import celery_app
@@ -63,6 +64,7 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
 @celery_app.task(bind=True, name="process_images")
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
+    start_time = time.monotonic()
     logger.info("Starting image processing job %s", job_id, extra={"job_id": job_id})
 
     def _log(msg: str, level: str = "info") -> None:
@@ -109,10 +111,13 @@ def process_images_task(self, job_id: str, params: dict):
         processor.set_output_directory(output_path)
         result = processor.process()
         _finalize_job(job_id, result, output_path)
+        duration = time.monotonic() - start_time
+        logger.info("Job %s completed in %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(MSG_PROCESSING_COMPLETE if result else MSG_PROCESSING_FAILED, "info" if result else "error")
 
     except Exception as e:
-        logger.exception("Job %s failed", job_id, extra={"job_id": job_id})
+        duration = time.monotonic() - start_time
+        logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Processing failed: {e}", "error")
         _update_job_db(job_id, status="failed", error=str(e),
                        completed_at=utcnow(), status_message=f"Error: {e}")

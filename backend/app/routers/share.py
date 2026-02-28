@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 from datetime import timedelta
 
@@ -17,6 +18,8 @@ from ..db.database import get_db
 from ..db.models import GoesFrame, ShareLink
 from ..errors import APIError, validate_safe_path
 from ..utils import utcnow
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["share"])
 
@@ -46,6 +49,7 @@ async def create_share_link(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a public share link for a frame (expires in N hours, default 72)."""
+    logger.info("Creating share link: frame_id=%s, hours=%d", frame_id, hours)
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalar_one_or_none()
     if not frame:
@@ -68,6 +72,7 @@ async def create_share_link(
 @router.get("/api/shared/{token}", response_model=SharedFrameResponse)
 async def get_shared_frame(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — retrieve frame info by share token."""
+    logger.info("Shared frame requested: token=%s...", token[:8])
     link = await _get_valid_link(token, db)
     frame = link.frame
     return SharedFrameResponse(
@@ -86,6 +91,7 @@ async def get_shared_frame(token: str, db: AsyncSession = Depends(get_db)):
 @router.get("/api/shared/{token}/image")
 async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — serve the actual image for a share token."""
+    logger.info("Shared image requested: token=%s...", token[:8])
     link = await _get_valid_link(token, db)
     frame = link.frame
     try:

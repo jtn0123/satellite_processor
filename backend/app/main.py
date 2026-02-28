@@ -312,6 +312,8 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         return
 
     await websocket.accept()
+    ws_logger = logging.getLogger("websocket")
+    ws_logger.info("WS connected: /ws/jobs/%s from %s", job_id, client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()
     await pubsub.subscribe(f"job:{job_id}")
@@ -329,7 +331,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         for t in pending:
             t.cancel()
     except WebSocketDisconnect:
-        pass
+        ws_logger.info("WS disconnected: /ws/jobs/%s from %s", job_id, client_ip)
     finally:
         await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(f"job:{job_id}")
@@ -353,6 +355,8 @@ async def global_events_websocket(websocket: WebSocket):
         return
 
     await websocket.accept()
+    ws_logger = logging.getLogger("websocket")
+    ws_logger.info("WS connected: /ws/events from %s", client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()
     await pubsub.subscribe(GLOBAL_EVENT_CHANNEL)
@@ -381,7 +385,7 @@ async def global_events_websocket(websocket: WebSocket):
         for t in pending:
             t.cancel()
     except WebSocketDisconnect:
-        pass
+        ws_logger.info("WS disconnected: /ws/events from %s", client_ip)
     finally:
         await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(GLOBAL_EVENT_CHANNEL)

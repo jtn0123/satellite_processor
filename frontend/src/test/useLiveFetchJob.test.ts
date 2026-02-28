@@ -71,6 +71,9 @@ function makeProps(overrides: Record<string, unknown> = {}) {
 describe('useLiveFetchJob', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    mockPost.mockReset();
+    mockShowToast.mockReset();
+    mockUseQuery.mockReset();
     mockUseQuery.mockReturnValue({ data: undefined });
     mockPost.mockResolvedValue({ data: { job_id: 'job-123' } });
   });

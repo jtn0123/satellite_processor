@@ -80,7 +80,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
         satellite: 'GOES-16',
         sector: 'CONUS',
         band: 'C02',
-      }), expect.anything());
+      }));
     });
   });
 

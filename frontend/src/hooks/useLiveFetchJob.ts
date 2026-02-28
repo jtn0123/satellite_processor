@@ -67,7 +67,7 @@ export function useLiveFetchJob({
     if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current, !!activeJobId)) return;
     lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
     lastAutoFetchMsRef.current = Date.now();
-    const controller = new AbortController();
+    let cancelled = false;
     const doAutoFetch = async () => {
       try {
         const res = await api.post('/goes/fetch', {
@@ -76,15 +76,15 @@ export function useLiveFetchJob({
           band: band || catalogLatest!.band,
           start_time: catalogLatest!.scan_time,
           end_time: catalogLatest!.scan_time,
-        }, { signal: controller.signal });
-        if (!controller.signal.aborted) {
+        });
+        if (!cancelled) {
           setActiveJobId(res.data.job_id);
           showToast('success', 'Auto-fetching new frame from AWS');
         }
       } catch { /* auto-fetch failure is non-critical */ }
     };
     doAutoFetch();
-    return () => controller.abort();
+    return () => { cancelled = true; };
   }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef, activeJobId]);
 
   return { activeJobId, activeJob: activeJob ?? null, fetchNow };

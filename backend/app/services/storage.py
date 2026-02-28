@@ -16,6 +16,15 @@ class StorageService:
         self.output_dir = Path(settings.output_dir)
         self.temp_dir = Path(settings.temp_dir)
 
+    @staticmethod
+    def _is_within(path: Path, base: Path) -> bool:
+        """Check if resolved path is within base directory."""
+        try:
+            path.relative_to(base)
+            return True
+        except ValueError:
+            return False
+
     def _validate_path(self, path: Path, base_dir: Path) -> Path:
         """Ensure resolved path stays within the expected base directory."""
         resolved = path.resolve()
@@ -27,14 +36,12 @@ class StorageService:
     def get_upload_path(self, filename: str) -> Path:
         logger.debug("Resolving upload path for filename=%s", filename)
         path = self.upload_dir / filename
-        self._validate_path(path, self.upload_dir)
-        return path
+        return self._validate_path(path, self.upload_dir)
 
     def delete_file(self, file_path: str) -> bool:
         """Delete a file, validating it resides within allowed directories."""
-        path = Path(file_path)
+        resolved = Path(file_path).resolve()
         # Allow deletion from upload, output, or temp directories
-        resolved = path.resolve()
         allowed_dirs = [
             d for d in (
                 getattr(self, "upload_dir", None),
@@ -42,15 +49,17 @@ class StorageService:
                 getattr(self, "temp_dir", None),
             ) if d is not None
         ]
-        allowed = not allowed_dirs or any(
-            str(resolved).startswith(str(d.resolve()))
-            for d in allowed_dirs
+        if not allowed_dirs:
+            logger.warning("No allowed directories configured; blocking deletion: %s", file_path)
+            return False
+        allowed = any(
+            self._is_within(resolved, d.resolve()) for d in allowed_dirs
         )
         if not allowed:
             logger.warning("Blocked deletion outside allowed dirs: %s", file_path)
             return False
-        if path.exists():
-            path.unlink()
+        if resolved.exists():
+            resolved.unlink()
             logger.info("Deleted file: %s", file_path)
             return True
         logger.warning("File not found for deletion: %s", file_path)

@@ -69,3 +69,20 @@ def test_throttle_skips_small_progress_delta(mock_db):
     # 16% — 6% delta from last saved (10%), should go through
     _update_job_db("job-3", progress=16, status_message="bigger")
     assert mock_session.commit.call_count == call_count + 1
+
+
+@patch("app.tasks.helpers._get_sync_db")
+def test_throttle_cleanup_on_cancelled_status(mock_db):
+    """Cancelled jobs should be removed from throttle tracker."""
+    from app.tasks.helpers import _last_progress_update, _update_job_db
+
+    mock_session = MagicMock()
+    mock_job = MagicMock()
+    mock_session.query.return_value.filter.return_value.first.return_value = mock_job
+    mock_db.return_value = mock_session
+
+    _update_job_db("job-cancel", progress=10, status_message="started")
+    assert "job-cancel" in _last_progress_update
+
+    _update_job_db("job-cancel", status="cancelled", error="user_cancelled")
+    assert "job-cancel" not in _last_progress_update

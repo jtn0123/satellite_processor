@@ -120,3 +120,25 @@ def test_validate_path_blocks_symlink_traversal(storage_service):
 
     with pytest.raises(ValueError, match="Path traversal"):
         svc._validate_path(link, svc.upload_dir)
+
+
+def test_delete_file_sibling_prefix_dir_blocked(storage_service):
+    """Sibling directory with similar prefix should not pass containment check."""
+    svc, tmpdir = storage_service
+    sibling_dir = os.path.join(tmpdir, "uploads_evil")
+    os.makedirs(sibling_dir)
+    evil_file = os.path.join(sibling_dir, "file.txt")
+    with open(evil_file, "w") as f:
+        f.write("should not be deletable")
+
+    result = svc.delete_file(evil_file)
+    assert result is False
+    assert os.path.exists(evil_file)
+
+
+def test_get_upload_path_returns_resolved(storage_service):
+    """get_upload_path should return the resolved canonical path."""
+    svc, _ = storage_service
+    path = svc.get_upload_path("image.png")
+    assert path.is_absolute()
+    assert path == path.resolve()

@@ -1,3 +1,10 @@
+## [1.23.4](https://github.com/jtn0123/satellite_processor/compare/v1.23.3...v1.23.4) (2026-02-28)
+
+
+### Bug Fixes
+
+* GEOCOLOR 500 error + band validation tests ([#261](https://github.com/jtn0123/satellite_processor/issues/261)) ([a80aeec](https://github.com/jtn0123/satellite_processor/commit/a80aeec160e55578998f0e5f0460d13e21768a79))
+
 ## [1.23.3](https://github.com/jtn0123/satellite_processor/compare/v1.23.2...v1.23.3) (2026-02-27)
 
 

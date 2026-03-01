@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/jtn0123/satellite_processor/compare/v1.26.0...v1.26.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* mesoscale sectors in Live View ([#273](https://github.com/jtn0123/satellite_processor/issues/273)) ([1aa32e4](https://github.com/jtn0123/satellite_processor/commit/1aa32e4c6d2a5115e4634d691242a57d73a56c1e))
+
 # [1.26.0](https://github.com/jtn0123/satellite_processor/compare/v1.25.0...v1.26.0) (2026-03-01)
 
 

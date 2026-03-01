@@ -43,7 +43,7 @@
 
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 14px;
+  font-size: 15px;
 
   @media (min-width: 640px) {
     font-size: 15px;

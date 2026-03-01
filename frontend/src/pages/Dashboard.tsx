@@ -130,7 +130,7 @@ export default function Dashboard() {
               <s.icon className={`w-5 h-5 ${s.color}`} />
             </div>
             <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{s.value}</p>
-            <p className="text-xs text-gray-600 dark:text-slate-400 mt-0.5">{s.label}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">{s.label}</p>
           </div>
         ))}
 
@@ -146,7 +146,7 @@ export default function Dashboard() {
               style={{ width: `${storagePercent}%` }}
             />
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-400 mt-1.5">
+          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1.5">
             {formatBytes(storageUsed)} / {formatBytes(storageTotal)}
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 text-center">
           <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
           <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Fetch GOES data to see stats here</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">Fetch GOES data to see stats here</p>
           <button
             type="button"
             onClick={handleFetchLatest}
@@ -205,7 +205,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
-              <p className="text-xs text-gray-600 dark:text-slate-400">Total Frames</p>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Total Frames</p>
             </div>
             {goesStats.frames_by_satellite && Object.entries(goesStats.frames_by_satellite).map(([sat, count]) => (
               <div key={sat} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
@@ -222,14 +222,14 @@ export default function Dashboard() {
                     : 'Never'}
                 </p>
               </div>
-              <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Last Fetch</p>
+              <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">Last Fetch</p>
             </div>
             <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{goesStats.active_schedules}</p>
               </div>
-              <p className="text-xs text-gray-600 dark:text-slate-400">Active Schedules</p>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Active Schedules</p>
             </div>
           </div>
 
@@ -305,7 +305,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-medium text-sm text-gray-900 dark:text-white">1. Watch live imagery</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">See real-time GOES satellite feeds</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">See real-time GOES satellite feeds</p>
               </div>
             </Link>
             <Link to="/goes" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors">
@@ -314,7 +314,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-medium text-sm text-gray-900 dark:text-white">2. Browse &amp; fetch frames</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Download and explore satellite imagery</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">Download and explore satellite imagery</p>
               </div>
             </Link>
             <Link to="/jobs" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors">
@@ -323,7 +323,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-medium text-sm text-gray-900 dark:text-white">3. Monitor jobs</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Track fetch and processing jobs</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">Track fetch and processing jobs</p>
               </div>
             </Link>
           </div>

@@ -70,9 +70,9 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
 
     const transform = result.current.style.transform as string;
     const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    expect(match).toBeTruthy();
-    const tx = Number(match![1]);
-    const ty = Number(match![2]);
+    if (!match) throw new Error(`Expected translate in transform: ${transform}`);
+    const tx = Number(match[1]);
+    const ty = Number(match[2]);
     expect(tx).toBeLessThanOrEqual(300);
     expect(ty).toBeLessThanOrEqual(225);
   });
@@ -89,8 +89,9 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
 
     const transform = result.current.style.transform as string;
     const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    const tx = Number(match![1]);
-    const ty = Number(match![2]);
+    if (!match) throw new Error(`Expected translate in transform: ${transform}`);
+    const tx = Number(match[1]);
+    const ty = Number(match[2]);
     expect(tx).toBeLessThanOrEqual(300);
     expect(ty).toBeLessThanOrEqual(225);
   });

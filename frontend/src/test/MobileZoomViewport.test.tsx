@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CdnImage from '../components/GoesData/CdnImage';
 
@@ -42,22 +42,48 @@ describe('CdnImage — no fixed aspect-ratio when unzoomed', () => {
   });
 });
 
-describe('Zoom hint', () => {
+describe('Zoom hint timing', () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
 
-  it('zoom hint concept — shows then fades', () => {
-    // This tests the pattern: a hint that shows for 2s then disappears
-    let visible = false;
-    const show = () => { visible = true; };
-    const hide = () => { visible = false; };
+  it('useZoomHint shows hint on zoom-in and hides after 2s', async () => {
+    // Test the useZoomHint pattern extracted in LiveTab
+    const { renderHook, act } = await import('@testing-library/react');
+    const { useState, useEffect, useRef } = await import('react');
 
-    show();
-    expect(visible).toBe(true);
+    // Reproduce the useZoomHint hook logic
+    function useZoomHint(isZoomed: boolean): boolean {
+      const [visible, setVisible] = useState(false);
+      const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+      const wasZoomed = useRef(false);
+      useEffect(() => {
+        if (isZoomed && !wasZoomed.current) {
+          setVisible(true);
+          clearTimeout(timer.current);
+          timer.current = setTimeout(() => setVisible(false), 2000);
+        }
+        if (!isZoomed) {
+          setVisible(false);
+          clearTimeout(timer.current);
+        }
+        wasZoomed.current = isZoomed;
+        return () => clearTimeout(timer.current);
+      }, [isZoomed]);
+      return visible;
+    }
 
-    // After 2s
-    setTimeout(hide, 2000);
+    const { result, rerender } = renderHook(({ zoomed }) => useZoomHint(zoomed), {
+      initialProps: { zoomed: false },
+    });
+
+    expect(result.current).toBe(false);
+
+    // Zoom in
+    rerender({ zoomed: true });
+    expect(result.current).toBe(true);
+
+    // After 2s it should hide
     act(() => { vi.advanceTimersByTime(2000); });
-    expect(visible).toBe(false);
+    expect(result.current).toBe(false);
   });
 });

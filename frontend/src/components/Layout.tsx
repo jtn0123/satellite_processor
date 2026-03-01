@@ -306,7 +306,9 @@ export default function Layout() {
 
         <main id="main-content" className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-16 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}>
           <ErrorBoundary>
-            <Outlet />
+            <div key={location.pathname} className="animate-fade-in">
+              <Outlet />
+            </div>
           </ErrorBoundary>
           {/* Version moved to Settings — no longer shown in global footer */}
         </main>

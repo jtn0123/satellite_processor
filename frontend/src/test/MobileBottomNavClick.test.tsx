@@ -37,10 +37,10 @@ describe('MobileBottomNav — click handlers', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/goes');
   });
 
-  it('clicking Animate tab navigates to /animate', () => {
+  it('clicking Dashboard tab navigates to /', () => {
     renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'Animate' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/animate');
+    fireEvent.click(screen.getByRole('tab', { name: 'Dashboard' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   it('clicking Jobs tab navigates to /jobs', () => {

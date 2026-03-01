@@ -14,16 +14,16 @@ import {
 const primaryTabs = [
   { to: '/live', label: 'Live', icon: Radio },
   { to: '/goes', label: 'Browse', icon: Grid3X3 },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/jobs', label: 'Jobs', icon: ListTodo },
-  { to: '/animate', label: 'Animate', icon: Sparkles },
 ];
 
 const moreLinks = [
   { to: '/settings', label: 'Settings', icon: Cog },
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/animate', label: 'Animate', icon: Sparkles },
 ];
 
-const moreRoutes = new Set(['/', '/settings', '/upload', '/process', '/presets']);
+const moreRoutes = new Set(['/settings', '/animate', '/upload', '/process', '/presets']);
 
 export default function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -34,16 +34,8 @@ export default function MobileBottomNav() {
 
   const isTabActive = (tab: typeof primaryTabs[number]) => {
     const path = location.pathname;
-
-    // Live tab: active on /live
-    if (tab.to === '/live') return path === '/live';
-    // Animate tab: active on /animate
-    if (tab.to === '/animate') return path === '/animate';
-    // Browse tab: active on /goes (all sub-tabs)
-    if (tab.to === '/goes') return path === '/goes';
-    // Jobs tab: active on /jobs
-    if (tab.to === '/jobs') return path === '/jobs';
-    return false;
+    if (tab.to === '/') return path === '/';
+    return path === tab.to;
   };
 
   const toggleMore = useCallback(() => setMoreOpen((o) => !o), []);

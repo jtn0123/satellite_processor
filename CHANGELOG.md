@@ -1,3 +1,10 @@
+## [1.24.6](https://github.com/jtn0123/satellite_processor/compare/v1.24.5...v1.24.6) (2026-03-01)
+
+
+### Bug Fixes
+
+* restructure mobile nav, add page transitions, fix dead shortcuts ([#270](https://github.com/jtn0123/satellite_processor/issues/270)) ([c17f2ef](https://github.com/jtn0123/satellite_processor/commit/c17f2efe75d116141cfa6d9ba20590702812cfe2))
+
 ## [1.24.5](https://github.com/jtn0123/satellite_processor/compare/v1.24.4...v1.24.5) (2026-03-01)
 
 

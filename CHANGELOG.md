@@ -1,3 +1,10 @@
+## [1.26.4](https://github.com/jtn0123/satellite_processor/compare/v1.26.3...v1.26.4) (2026-03-01)
+
+
+### Bug Fixes
+
+* timezone-aware S3 frame listing + error surfacing ([#276](https://github.com/jtn0123/satellite_processor/issues/276)) ([268c846](https://github.com/jtn0123/satellite_processor/commit/268c846d90c7c4ebaf8fcf038ed7b242df1c52c3))
+
 ## [1.26.3](https://github.com/jtn0123/satellite_processor/compare/v1.26.2...v1.26.3) (2026-03-01)
 
 

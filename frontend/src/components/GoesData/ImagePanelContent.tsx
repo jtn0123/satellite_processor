@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import CdnImage from './CdnImage';
 import CompareSlider from './CompareSlider';
 import ShimmerLoader from './ShimmerLoader';
@@ -18,9 +19,10 @@ export interface ImagePanelContentProps {
   frameTime: string | null;
   prevFrameTime: string | null;
   isZoomed?: boolean;
+  imageRef?: Ref<HTMLImageElement>;
 }
 
-export default function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, isZoomed = false }: Readonly<ImagePanelContentProps>) {
+export default function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, isZoomed = false, imageRef }: Readonly<ImagePanelContentProps>) {
   if (isLoading || (!imageUrl && !isError)) {
     return (
       <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
@@ -62,6 +64,7 @@ export default function ImagePanelContent({ isLoading, isError, imageUrl, compar
       data-satellite={satellite}
       data-band={band}
       data-sector={sector}
+      imageRef={imageRef}
     />
   );
 }

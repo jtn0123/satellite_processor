@@ -4,14 +4,12 @@ import { useSwipeBand } from '../useSwipeBand';
 import type { Product } from '../../components/GoesData/types';
 
 function makeTouchEvent(
-  overrides: Partial<React.TouchEvent> & { touchesLength?: number } = {},
+  overrides: Partial<React.TouchEvent> = {},
 ): React.TouchEvent {
-  const { touchesLength = 1, ...rest } = overrides;
-  const touches = Array.from({ length: touchesLength }, () => ({ clientX: 0, clientY: 0 }));
   return {
-    touches: touches as unknown as React.TouchList,
+    touches: [{ clientX: 0, clientY: 0 }] as unknown as React.TouchList,
     changedTouches: [{ clientX: 0, clientY: 0 }] as unknown as React.TouchList,
-    ...rest,
+    ...overrides,
   } as unknown as React.TouchEvent;
 }
 
@@ -31,7 +29,6 @@ describe('useSwipeBand', () => {
     act(() => {
       result.current.handleTouchStart(makeTouchEvent({
         touches: [{ clientX: 200, clientY: 100 }] as unknown as React.TouchList,
-        touchesLength: 1,
       }));
     });
     act(() => {
@@ -72,7 +69,6 @@ describe('useSwipeBand', () => {
           { clientX: 200, clientY: 100 },
           { clientX: 250, clientY: 100 },
         ] as unknown as React.TouchList,
-        touchesLength: 2,
       }));
     });
 
@@ -97,7 +93,6 @@ describe('useSwipeBand', () => {
           { clientX: 200, clientY: 100 },
           { clientX: 250, clientY: 100 },
         ] as unknown as React.TouchList,
-        touchesLength: 2,
       }));
     });
     act(() => {
@@ -111,7 +106,6 @@ describe('useSwipeBand', () => {
     act(() => {
       result.current.handleTouchStart(makeTouchEvent({
         touches: [{ clientX: 200, clientY: 100 }] as unknown as React.TouchList,
-        touchesLength: 1,
       }));
     });
     act(() => {

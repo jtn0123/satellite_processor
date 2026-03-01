@@ -1,9 +1,39 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { useImageZoom } from '../useImageZoom';
+import type { RefObject } from 'react';
 
 function makeWheelEvent(deltaY: number) {
   return { deltaY, preventDefault: () => {} } as unknown as React.WheelEvent;
+}
+
+function makeContainerRef(width: number, height: number): RefObject<HTMLElement> {
+  return {
+    current: {
+      getBoundingClientRect: () => ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }),
+    } as unknown as HTMLElement,
+  };
+}
+
+function makeImageRef(naturalWidth: number, naturalHeight: number): RefObject<HTMLImageElement> {
+  const listeners: Record<string, Array<() => void>> = {};
+  return {
+    current: {
+      naturalWidth,
+      naturalHeight,
+      addEventListener: (event: string, fn: () => void) => {
+        listeners[event] = listeners[event] ?? [];
+        listeners[event].push(fn);
+      },
+      removeEventListener: (event: string, fn: () => void) => {
+        listeners[event] = (listeners[event] ?? []).filter((f) => f !== fn);
+      },
+    } as unknown as HTMLImageElement,
+  };
+}
+
+function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
+  return { touches, preventDefault: () => {} } as unknown as React.TouchEvent;
 }
 
 
@@ -67,5 +97,44 @@ describe('useImageZoom', () => {
     expect(result.current.style.cursor).toBe('default');
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100)));
     expect(result.current.style.cursor).toBe('grab');
+  });
+
+  it('uses imageRef aspect ratio for pan clamping', () => {
+    const containerRef = makeContainerRef(400, 700);
+    const imageRef = makeImageRef(500, 300); // 5:3 aspect
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
+
+    // Zoom in to 2.5x
+    act(() => result.current.zoomIn());
+
+    // Pan far — should clamp using rendered image dimensions
+    // renderedW=400, renderedH=240, maxX=300, maxY=0
+    act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
+    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])));
+
+    const transform = result.current.style.transform as string;
+    const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    if (!match) throw new Error(`Expected translate in transform: ${transform}`);
+    const tx = Number(match[1]);
+    const ty = Number(match[2]);
+    expect(tx).toBeLessThanOrEqual(300);
+    expect(Math.abs(ty)).toBe(0); // No vertical pan allowed for landscape in tall container
+  });
+
+  it('falls back to 5:3 aspect when imageRef is null', () => {
+    const containerRef = makeContainerRef(400, 700);
+    const imageRef: RefObject<HTMLImageElement | null> = { current: null };
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
+
+    act(() => result.current.zoomIn());
+    act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
+    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])));
+
+    const transform = result.current.style.transform as string;
+    const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    if (!match) throw new Error(`Expected translate in transform: ${transform}`);
+    // Should still clamp correctly using default 5:3
+    expect(Number(match[1])).toBeLessThanOrEqual(300);
+    expect(Math.abs(Number(match[2]))).toBe(0);
   });
 });

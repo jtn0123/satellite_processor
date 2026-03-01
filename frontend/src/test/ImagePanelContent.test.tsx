@@ -1,8 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
+import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
 
+const mockCdnImageProps = vi.fn();
 vi.mock('../components/GoesData/CdnImage', () => ({
-  default: (props: Record<string, unknown>) => <img data-testid="cdn-image" alt={props.alt as string} />,
+  default: (props: Record<string, unknown>) => {
+    mockCdnImageProps(props);
+    return <img data-testid="cdn-image" alt={props.alt as string} />;
+  },
 }));
 vi.mock('../components/GoesData/CompareSlider', () => ({
   default: () => <div data-testid="compare-slider" />,
@@ -64,5 +69,12 @@ describe('ImagePanelContent', () => {
   it('shows image even when error but imageUrl exists', () => {
     render(<ImagePanelContent {...makeProps({ isError: true })} />);
     expect(screen.getByTestId('cdn-image')).toBeInTheDocument();
+  });
+
+  it('forwards imageRef prop to CdnImage', () => {
+    const ref = createRef<HTMLImageElement>();
+    mockCdnImageProps.mockClear();
+    render(<ImagePanelContent {...makeProps({ imageRef: ref })} />);
+    expect(mockCdnImageProps).toHaveBeenCalledWith(expect.objectContaining({ imageRef: ref }));
   });
 });

@@ -11,8 +11,14 @@ export function useSwipeBand(products: Product | undefined, band: string, setBan
   const [swipeToast, setSwipeToast] = useState<string | null>(null);
   const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const wasPinching = useRef(false);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length >= 2) {
+      wasPinching.current = true;
+    } else if (e.touches.length === 1) {
+      wasPinching.current = false;
+    }
     const t = e.touches[0];
     touchStart.current = { x: t.clientX, y: t.clientY };
   }, []);
@@ -23,7 +29,7 @@ export function useSwipeBand(products: Product | undefined, band: string, setBan
     const dx = t.clientX - touchStart.current.x;
     const dy = t.clientY - touchStart.current.y;
     touchStart.current = null;
-    if (isZoomed) return;
+    if (isZoomed || wasPinching.current) return;
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
     const currentIdx = bandKeys.indexOf(band);
     if (currentIdx < 0) return;

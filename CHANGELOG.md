@@ -1,3 +1,10 @@
+## [1.24.5](https://github.com/jtn0123/satellite_processor/compare/v1.24.4...v1.24.5) (2026-03-01)
+
+
+### Bug Fixes
+
+* standardize card styling and fix light mode contrast ([#269](https://github.com/jtn0123/satellite_processor/issues/269)) ([dfea816](https://github.com/jtn0123/satellite_processor/commit/dfea816bede9775dd3377c765e633c28b552838c))
+
 ## [1.24.4](https://github.com/jtn0123/satellite_processor/compare/v1.24.3...v1.24.4) (2026-03-01)
 
 

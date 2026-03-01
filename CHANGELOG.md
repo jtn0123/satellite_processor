@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/jtn0123/satellite_processor/compare/v1.24.6...v1.25.0) (2026-03-01)
+
+
+### Features
+
+* add Live View accessibility and keyboard shortcuts ([#271](https://github.com/jtn0123/satellite_processor/issues/271)) ([0338923](https://github.com/jtn0123/satellite_processor/commit/0338923944fd7213bf9896482ec62d042019b6ae))
+
 ## [1.24.6](https://github.com/jtn0123/satellite_processor/compare/v1.24.5...v1.24.6) (2026-03-01)
 
 

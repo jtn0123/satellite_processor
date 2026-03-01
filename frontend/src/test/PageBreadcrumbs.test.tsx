@@ -55,6 +55,7 @@ describe('Settings page breadcrumb', () => {
     expect(nav).toBeTruthy();
     const homeLink = nav.querySelector('a');
     expect(homeLink?.textContent).toBe('Home');
+    expect(homeLink?.getAttribute('href')).toBe('/');
     const current = nav.querySelector('[aria-current="page"]');
     expect(current?.textContent).toBe('Settings');
   });

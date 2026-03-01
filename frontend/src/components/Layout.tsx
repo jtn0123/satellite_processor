@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { isSignificantVersionBump } from '../utils/versionUtils';
 import {
   LayoutDashboard,
   Cog,
@@ -15,6 +16,7 @@ import {
   Moon,
   HelpCircle,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import KeyboardShortcuts from './KeyboardShortcuts';
@@ -90,10 +92,10 @@ export default function Layout() {
         const commit = d.commit ?? d.build ?? 'dev';
         const sha = commit && commit !== 'dev' ? ` (${commit.slice(0, 7)})` : '';
         setVersionInfo({ version, commit, display: `v${version}${sha}` });
-        // Auto-open on new version
+        // Auto-open only for minor/major version bumps (ignore patch-only changes)
         let lastSeen: string | null = null;
         try { lastSeen = localStorage.getItem('whatsNewLastSeen'); } catch { /* private browsing */ }
-        if (version && version !== (lastSeen ?? '')) {
+        if (version && isSignificantVersionBump(lastSeen ?? '', version)) {
           setHasNewVersion(true);
           setShowWhatsNew(true);
           // Persist immediately so the modal won't re-appear on navigation
@@ -306,9 +308,11 @@ export default function Layout() {
 
         <main id="main-content" className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-16 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}>
           <ErrorBoundary>
-            <div key={location.pathname} className="animate-fade-in">
-              <Outlet />
-            </div>
+            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+              <div key={location.pathname} className="animate-fade-in">
+                <Outlet />
+              </div>
+            </Suspense>
           </ErrorBoundary>
           {/* Version moved to Settings — no longer shown in global footer */}
         </main>

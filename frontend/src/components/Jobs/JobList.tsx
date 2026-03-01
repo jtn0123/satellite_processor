@@ -1,6 +1,8 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useJobs, useDeleteJob } from '../../hooks/useApi';
 import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Download } from 'lucide-react';
+import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
+import type { StatusFilter } from '../../utils/jobFilterUtils';
 
 interface Job {
   id: string;
@@ -28,11 +30,13 @@ interface Props {
 function JobList({ onSelect, limit }: Readonly<Props>) {
   const { data: jobs = [], isLoading } = useJobs();
   const deleteJob = useDeleteJob();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
 
-  const displayed = useMemo(
-    () => (limit ? (jobs as Job[]).slice(0, limit) : (jobs as Job[])),
-    [jobs, limit],
-  );
+  const displayed = useMemo(() => {
+    const allJobs = jobs as Job[];
+    const filtered = filterJobsByStatus(allJobs, statusFilter);
+    return limit ? filtered.slice(0, limit) : filtered;
+  }, [jobs, limit, statusFilter]);
 
   if (isLoading) {
     return (
@@ -50,6 +54,19 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
 
   return (
     <div className="space-y-2">
+      <div className="flex justify-end mb-2">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="text-sm bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700 rounded-lg px-3 py-1.5 text-gray-700 dark:text-slate-300"
+          data-testid="job-status-filter"
+          aria-label="Filter jobs by status"
+        >
+          {STATUS_FILTER_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
       {displayed.map((job) => {
         const cfg = statusConfig[job.status] || statusConfig.pending;
         const Icon = cfg.icon;

@@ -129,7 +129,7 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
   });
 
   it('null containerRef does not crash', () => {
-    const containerRef = { current: null } as RefObject<HTMLElement>;
+    const containerRef: RefObject<HTMLElement | null> = { current: null };
     const { result } = renderHook(() => useImageZoom({ containerRef }));
 
     act(() => result.current.zoomIn());

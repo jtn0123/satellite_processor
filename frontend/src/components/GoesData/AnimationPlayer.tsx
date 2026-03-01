@@ -159,13 +159,13 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
   return (
     <dialog
       ref={containerRef}
-      className={`fixed inset-0 z-50 bg-space-900 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0 ${
+      className={`fixed inset-0 z-50 bg-gray-100 dark:bg-space-900 flex flex-col m-0 w-full h-full max-w-none max-h-none border-none p-0 ${
         fullscreen ? '' : 'bg-black/95'
       }`}
       aria-label="Animation Player"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-space-800/80 border-b border-slate-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-200/80 dark:bg-space-800/80 border-b border-gray-300 dark:border-slate-700">
         <div className="text-sm text-slate-300">
           <span className="font-medium text-white">
             Frame {currentIndex + 1}/{frameCount}
@@ -198,7 +198,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-3 bg-space-800/80 border-t border-slate-700 space-y-2">
+      <div className="px-4 py-3 bg-gray-200/80 dark:bg-space-800/80 border-t border-gray-300 dark:border-slate-700 space-y-2">
         {/* Scrubber */}
         <input
           type="range"

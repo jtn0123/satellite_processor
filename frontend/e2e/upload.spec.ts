@@ -10,13 +10,15 @@ test('upload route redirects to settings', async ({ page }) => {
   await expect(page).toHaveURL(/\/settings/);
 });
 
-test('settings page has Manual Upload section', async ({ page }) => {
+test('settings page has Manual Upload section in Data tab', async ({ page }) => {
   await page.goto('/settings');
+  await page.getByRole('tab', { name: 'Data tab' }).click();
   await expect(page.getByText('Manual Upload')).toBeVisible();
 });
 
-test('upload section is expandable', async ({ page }) => {
+test('upload section is expandable in Data tab', async ({ page }) => {
   await page.goto('/settings');
+  await page.getByRole('tab', { name: 'Data tab' }).click();
   const section = page.getByText('Manual Upload');
   await section.click();
   // After expanding, upload-related content should be visible

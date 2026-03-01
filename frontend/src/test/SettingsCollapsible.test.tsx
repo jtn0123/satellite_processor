@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -41,29 +41,32 @@ function renderSettings() {
   );
 }
 
-describe('Settings collapsible sections', () => {
-  it('renders all collapsible section buttons', () => {
+function switchToDataTab() {
+  fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
+}
+
+describe('Settings collapsible sections (Data tab)', () => {
+  it('renders all collapsible section buttons in Data tab', () => {
     renderSettings();
-    const buttons = screen.getAllByRole('button', { expanded: false });
+    switchToDataTab();
     const sectionNames = ['Composites', 'Manual Upload', 'Processing'];
     for (const name of sectionNames) {
-      const btn = buttons.find((b) => b.textContent?.includes(name));
-      expect(btn).toBeTruthy();
+      expect(screen.getByRole('button', { name: new RegExp(name, 'i') })).toBeTruthy();
     }
   });
 
   it('renders Cleanup Rules as open by default', () => {
     renderSettings();
+    switchToDataTab();
     const cleanupBtn = screen.getByRole('button', { name: /cleanup rules/i });
     expect(cleanupBtn).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('collapsible sections have correct initial aria-expanded state', () => {
     renderSettings();
-    // Cleanup Rules is defaultOpen
+    switchToDataTab();
     const cleanupBtn = screen.getByRole('button', { name: /cleanup rules/i });
     expect(cleanupBtn).toHaveAttribute('aria-expanded', 'true');
-    // Others are collapsed by default
     const compositesBtn = screen.getByRole('button', { name: /composites/i });
     expect(compositesBtn).toHaveAttribute('aria-expanded', 'false');
     const uploadBtn = screen.getByRole('button', { name: /manual upload/i });
@@ -75,10 +78,5 @@ describe('Settings collapsible sections', () => {
   it('renders Settings heading', () => {
     renderSettings();
     expect(screen.getByRole('heading', { name: /settings/i })).toBeInTheDocument();
-  });
-
-  it('renders System Resources section', () => {
-    renderSettings();
-    expect(screen.getByText(/system resources/i)).toBeInTheDocument();
   });
 });

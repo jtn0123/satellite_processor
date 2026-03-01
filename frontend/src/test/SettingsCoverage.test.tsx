@@ -133,13 +133,14 @@ describe('Settings - form interactions', () => {
   });
 });
 
-describe('Settings - storage section with data', () => {
+describe('Settings - storage section with data (System tab)', () => {
   beforeEach(() => {
     setupLoadedMocks();
   });
 
   it('renders satellite breakdown bars', async () => {
     render(<Settings />, { wrapper });
+    fireEvent.click(await screen.findByRole('tab', { name: 'System tab' }));
     await waitFor(() => {
       expect(screen.getByText('GOES-19')).toBeInTheDocument();
       expect(screen.getByText('GOES-18')).toBeInTheDocument();
@@ -148,6 +149,7 @@ describe('Settings - storage section with data', () => {
 
   it('renders band table', async () => {
     render(<Settings />, { wrapper });
+    fireEvent.click(await screen.findByRole('tab', { name: 'System tab' }));
     await waitFor(() => {
       expect(screen.getByText('C02')).toBeInTheDocument();
       expect(screen.getByText('C13')).toBeInTheDocument();
@@ -156,16 +158,18 @@ describe('Settings - storage section with data', () => {
 
   it('shows total frames and size', async () => {
     render(<Settings />, { wrapper });
+    fireEvent.click(await screen.findByRole('tab', { name: 'System tab' }));
     await waitFor(() => {
       expect(screen.getByText(/150/)).toBeInTheDocument();
     });
   });
 });
 
-describe('Settings - storage section empty', () => {
+describe('Settings - storage section empty (System tab)', () => {
   it('does not render satellite section when empty', async () => {
     setupLoadedMocks({ by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } as typeof STORAGE_DATA);
     render(<Settings />, { wrapper });
+    fireEvent.click(await screen.findByRole('tab', { name: 'System tab' }));
     await waitFor(() => {
       expect(screen.getByText('Storage')).toBeInTheDocument();
     });

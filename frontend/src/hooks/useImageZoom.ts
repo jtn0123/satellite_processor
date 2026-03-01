@@ -12,6 +12,7 @@ interface UseImageZoomOptions {
   maxScale?: number;
   doubleTapScale?: number;
   containerRef?: RefObject<HTMLElement | null>;
+  imageRef?: RefObject<HTMLImageElement | null>;
 }
 
 interface UseImageZoomReturn {
@@ -31,18 +32,23 @@ interface UseImageZoomReturn {
 }
 
 const INITIAL_STATE: ZoomState = { scale: 1, translateX: 0, translateY: 0, isInteracting: false };
+const DEFAULT_ASPECT = 5 / 3;
 
-/** Clamp translate values so the image cannot be panned off-screen. */
+/** Clamp translate values so the image cannot be panned off-screen.
+ *  Uses rendered image dimensions (via imageAspect) instead of raw container size. */
 export function clampTranslate(
   tx: number,
   ty: number,
   scale: number,
   containerWidth: number,
   containerHeight: number,
+  imageAspect: number = DEFAULT_ASPECT,
 ): { tx: number; ty: number } {
   if (scale <= 1) return { tx: 0, ty: 0 };
-  const maxX = (containerWidth * (scale - 1)) / 2;
-  const maxY = (containerHeight * (scale - 1)) / 2;
+  const renderedW = Math.min(containerWidth, containerHeight * imageAspect);
+  const renderedH = Math.min(containerHeight, containerWidth / imageAspect);
+  const maxX = Math.max(0, (renderedW * scale - containerWidth) / 2);
+  const maxY = Math.max(0, (renderedH * scale - containerHeight) / 2);
   return {
     tx: Math.min(maxX, Math.max(-maxX, tx)),
     ty: Math.min(maxY, Math.max(-maxY, ty)),
@@ -56,13 +62,28 @@ function getContainerDimensions(containerRef?: RefObject<HTMLElement | null>): {
 }
 
 export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomReturn {
-  const { minScale = 1, maxScale = 5, doubleTapScale = 2.5, containerRef } = options;
+  const { minScale = 1, maxScale = 5, doubleTapScale = 2.5, containerRef, imageRef } = options;
 
   const [state, setState] = useState<ZoomState>(INITIAL_STATE);
   const stateRef = useRef<ZoomState>(INITIAL_STATE);
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
+  const imageAspectRef = useRef<number>(DEFAULT_ASPECT);
+
+  // Update image aspect ratio when the image loads
+  useEffect(() => {
+    const img = imageRef?.current;
+    if (!img) return;
+    const updateAspect = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        imageAspectRef.current = img.naturalWidth / img.naturalHeight;
+      }
+    };
+    updateAspect();
+    img.addEventListener('load', updateAspect);
+    return () => img.removeEventListener('load', updateAspect);
+  }, [imageRef]);
 
   // Keep stateRef in sync
   useEffect(() => {
@@ -74,7 +95,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const clampXY = useCallback((tx: number, ty: number, scale: number): { tx: number; ty: number } => {
     const dims = getContainerDimensions(containerRef);
     if (!dims) return { tx, ty };
-    return clampTranslate(tx, ty, scale, dims.width, dims.height);
+    return clampTranslate(tx, ty, scale, dims.width, dims.height, imageAspectRef.current);
   }, [containerRef]);
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);

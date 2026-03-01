@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createRef } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import CdnImage from './CdnImage';
 
@@ -65,6 +66,13 @@ describe('CdnImage', () => {
     expect(container.className).toContain('h-full');
     const img = screen.getByRole('img');
     expect(img.className).toContain('object-contain');
+  });
+
+  it('forwards imageRef to the img element', () => {
+    const ref = createRef<HTMLImageElement>();
+    render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" imageRef={ref} />);
+    const img = screen.getByRole('img');
+    expect(ref.current).toBe(img);
   });
 
   it('uses h-full and object-cover when zoomed (no fixed aspect-ratio)', () => {

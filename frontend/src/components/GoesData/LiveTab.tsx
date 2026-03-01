@@ -213,10 +213,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const [compareMode, setCompareMode] = useState(false);
   const [comparePosition, setComparePosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
 
-  const zoom = useImageZoom({ containerRef });
+  const zoom = useImageZoom({ containerRef, imageRef });
   const showZoomHint = useZoomHint(zoom.isZoomed);
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
@@ -453,6 +454,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 frameTime={frame?.capture_time ?? null}
                 prevFrameTime={prevFrame?.capture_time ?? null}
                 isZoomed={zoom.isZoomed}
+                imageRef={imageRef}
               />
               );
             })()}

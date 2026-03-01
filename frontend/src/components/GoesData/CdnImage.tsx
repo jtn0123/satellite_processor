@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type Ref } from 'react';
 import { X } from 'lucide-react';
 import { saveCachedImage, loadCachedImage } from './liveTabUtils';
 import type { CachedImageMeta } from './liveTabUtils';
@@ -8,9 +8,10 @@ export interface CdnImageProps extends Readonly<React.ImgHTMLAttributes<HTMLImag
   'data-band'?: string;
   'data-sector'?: string;
   isZoomed?: boolean;
+  imageRef?: Ref<HTMLImageElement>;
 }
 
-export default function CdnImage({ src, alt, className, isZoomed = false, ...props }: Readonly<CdnImageProps>) {
+export default function CdnImage({ src, alt, className, isZoomed = false, imageRef, ...props }: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
@@ -105,6 +106,7 @@ export default function CdnImage({ src, alt, className, isZoomed = false, ...pro
       )}
       <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full h-full bg-slate-900" data-testid="live-image-container">
         <img
+          ref={imageRef}
           src={displaySrc}
           alt={alt}
           onError={handleError}

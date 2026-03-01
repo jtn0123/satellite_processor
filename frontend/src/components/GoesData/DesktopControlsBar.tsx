@@ -80,6 +80,7 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
         type="button"
         role="switch"
         aria-checked={compareMode}
+        aria-pressed={compareMode}
         onClick={() => onCompareModeChange((v) => !v)}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getCompareButtonClass(compareMode)}`}
         title={compareMode ? 'Disable compare' : 'Enable compare'}

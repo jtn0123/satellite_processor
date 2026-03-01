@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
+import { useHotkeys } from '../../hooks/useHotkeys';
 import axios from 'axios';
 import api from '../../api/client';
 
@@ -289,6 +290,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   // Swipe gestures (#10)
   const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
 
+  // Live View keyboard shortcuts — announcement state (hotkeys registered below after toggleFullscreen)
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
   const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
     satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
     frame: frame ?? null, lastAutoFetchTimeRef: lastAutoFetchTime, lastAutoFetchMsRef: lastAutoFetchMs, refetch,
@@ -302,6 +306,43 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, []);
 
   useFullscreenSync(setIsFullscreen, zoom);
+
+  // Live View keyboard shortcuts
+  const liveShortcuts = useMemo(() => {
+    const bandList = extractArray<{ id: string }>(products?.bands);
+    const currentIdx = bandList.findIndex((b) => b.id === band);
+
+    return {
+      ArrowLeft: () => {
+        if (zoom.isZoomed || bandList.length === 0) return;
+        const prevIdx = currentIdx > 0 ? currentIdx - 1 : bandList.length - 1;
+        setBand(bandList[prevIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
+      },
+      ArrowRight: () => {
+        if (zoom.isZoomed || bandList.length === 0) return;
+        const nextIdx = currentIdx < bandList.length - 1 ? currentIdx + 1 : 0;
+        setBand(bandList[nextIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
+      },
+      f: () => {
+        toggleFullscreen();
+        setLiveAnnouncement(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen');
+      },
+      c: () => {
+        setCompareMode((v) => {
+          setLiveAnnouncement(!v ? 'Compare mode on' : 'Compare mode off');
+          return !v;
+        });
+      },
+      m: () => {
+        toggleMonitor();
+        setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
+      },
+    };
+  }, [products?.bands, band, zoom.isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor]);
+
+  useHotkeys(liveShortcuts);
 
   // Double-tap zoom vs single-tap overlay toggle (mobile only)
   const handleImageTap = useDoubleTap(
@@ -323,6 +364,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   return (
     <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-140px)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
+      {/* Accessibility: live announcements for screen readers */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="live-a11y-announcer">
+        {liveAnnouncement}
+      </div>
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}

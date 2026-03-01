@@ -38,7 +38,7 @@ const tabs: readonly TabDef[] = [
   { id: 'system', label: 'System', icon: <Monitor className="w-4 h-4" /> },
 ] as const;
 
-const allTabIds: SettingsTabId[] = tabs.map((t) => t.id);
+const allTabIds = new Set<SettingsTabId>(tabs.map((t) => t.id));
 
 function TabLoadingFallback() {
   return <div className="h-48 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse" />;
@@ -347,7 +347,7 @@ function SystemTabContent() {
 function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as SettingsTabId | null;
-  const activeTab: SettingsTabId = tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'config';
+  const activeTab: SettingsTabId = tabFromUrl && allTabIds.has(tabFromUrl) ? tabFromUrl : 'config';
 
   const changeTab = useCallback((tab: SettingsTabId) => {
     setSearchParams(tab === 'config' ? {} : { tab }, { replace: true });

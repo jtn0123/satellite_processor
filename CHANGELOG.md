@@ -1,3 +1,10 @@
+## [1.26.2](https://github.com/jtn0123/satellite_processor/compare/v1.26.1...v1.26.2) (2026-03-01)
+
+
+### Bug Fixes
+
+* GEOCOLOR + mesoscale interaction bugs with comprehensive combo tests ([#274](https://github.com/jtn0123/satellite_processor/issues/274)) ([26988c7](https://github.com/jtn0123/satellite_processor/commit/26988c74cc3dbb02864c34e99db83a8a1d748cd2))
+
 ## [1.26.1](https://github.com/jtn0123/satellite_processor/compare/v1.26.0...v1.26.1) (2026-03-01)
 
 

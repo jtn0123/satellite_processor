@@ -187,11 +187,11 @@ def catalog_latest(
             latest["thumbnail_url"] = cdn_urls["thumbnail"]
             latest["mobile_url"] = cdn_urls["mobile"]
         else:
-            # Fallback to S3 URL if CDN URL can't be built
-            s3_fallback = f"https://{bucket}.s3.amazonaws.com/{latest['key']}"
-            latest["image_url"] = s3_fallback
-            latest["mobile_url"] = s3_fallback
-            latest["thumbnail_url"] = s3_fallback
+            # Meso sectors have no CDN images — S3 files are NetCDF, not
+            # displayable.  Omit image URLs so the frontend knows to fetch.
+            latest["image_url"] = None
+            latest["mobile_url"] = None
+            latest["thumbnail_url"] = None
 
     return latest
 

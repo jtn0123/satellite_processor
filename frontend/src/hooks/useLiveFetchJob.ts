@@ -48,15 +48,34 @@ export function useLiveFetchJob({
   }, [activeJob, refetch]);
 
   const fetchNow = useCallback(async () => {
-    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
+    const isMeso = sector === 'Mesoscale1' || sector === 'Mesoscale2';
+    let startDate: string;
+    let endDate: string;
+
+    if (catalogLatest?.scan_time) {
+      // Use catalog scan time as the target
+      startDate = catalogLatest.scan_time;
+      endDate = catalogLatest.scan_time;
+    } else if (isMeso) {
+      // Meso without catalog: fetch last 10 minutes (1-min cadence)
+      const now = new Date();
+      const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000);
+      startDate = tenMinAgo.toISOString();
+      endDate = now.toISOString();
+    } else {
+      const now = new Date().toISOString();
+      startDate = now;
+      endDate = now;
+    }
+
     try {
       const res = await api.post('/goes/fetch', {
         satellite: satellite.toUpperCase(), sector, band,
         start_time: startDate,
-        end_time: startDate,
+        end_time: endDate,
       });
       setActiveJobId(res.data.job_id);
-      showToast('success', 'Fetching latest frame…');
+      showToast('success', isMeso ? 'Fetching mesoscale data…' : 'Fetching latest frame…');
     } catch {
       showToast('error', 'Failed to start fetch');
     }
@@ -87,5 +106,24 @@ export function useLiveFetchJob({
     return () => { cancelled = true; };
   }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef, activeJobId]);
 
-  return { activeJobId, activeJob: activeJob ?? null, fetchNow };
+  // Track whether the last fetch job completed but no frame appeared
+  const [lastFetchFailed, setLastFetchFailed] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: derived from async job status */
+  useEffect(() => {
+    if (activeJob?.status === 'completed' && !frame) {
+      setLastFetchFailed(true);
+    } else if (activeJob?.status === 'failed') {
+      setLastFetchFailed(true);
+    } else if (frame) {
+      setLastFetchFailed(false);
+    }
+  }, [activeJob?.status, frame]);
+
+  useEffect(() => {
+    setLastFetchFailed(false);
+  }, [satellite, sector, band]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  return { activeJobId, activeJob: activeJob ?? null, fetchNow, lastFetchFailed };
 }

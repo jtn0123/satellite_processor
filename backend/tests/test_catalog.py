@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from app.services.catalog import build_cdn_urls
+from app.services.catalog import build_cdn_urls, catalog_latest
 
 
 @pytest.mark.asyncio
@@ -172,3 +172,73 @@ class TestBuildCdnUrls:
             # Filename should be just {resolution}.jpg
             filename = url.rsplit("/", 1)[-1]
             assert "_" not in filename, f"{key} URL has timestamp: {url}"
+
+
+class TestCatalogLatestMeso:
+    """Tests for catalog_latest with mesoscale sectors."""
+
+    def test_meso_returns_null_image_urls(self):
+        """Meso catalog_latest should return None image URLs (no CDN)."""
+        mock_entry = {
+            "scan_time": "2025-06-01T12:00:00+00:00",
+            "size": 4000000,
+            "key": "ABI-L2-CMIPM/2025/152/12/OR_ABI-L2-CMIPM1-M6C02_G19_s2025.nc",
+        }
+        with patch("app.services.catalog._collect_matching_entries", return_value=[mock_entry]):
+            result = catalog_latest("GOES-19", "Mesoscale1", "C02")
+            assert result is not None
+            assert result["scan_time"] == "2025-06-01T12:00:00+00:00"
+            assert result["image_url"] is None
+            assert result["mobile_url"] is None
+            assert result["thumbnail_url"] is None
+
+    def test_meso_returns_scan_metadata(self):
+        """Meso catalog_latest includes satellite/sector/band metadata."""
+        mock_entry = {
+            "scan_time": "2025-06-01T12:05:00+00:00",
+            "size": 3500000,
+            "key": "ABI-L2-CMIPM/2025/152/12/OR_ABI-L2-CMIPM2-M6C13_G19_s2025.nc",
+        }
+        with patch("app.services.catalog._collect_matching_entries", return_value=[mock_entry]):
+            result = catalog_latest("GOES-19", "Mesoscale2", "C13")
+            assert result is not None
+            assert result["satellite"] == "GOES-19"
+            assert result["sector"] == "Mesoscale2"
+            assert result["band"] == "C13"
+
+    def test_conus_returns_cdn_image_urls(self):
+        """Non-meso sectors should still get CDN image URLs."""
+        mock_entry = {
+            "scan_time": "2025-06-01T12:00:00+00:00",
+            "size": 8000000,
+            "key": "ABI-L2-CMIPC/2025/152/12/OR_ABI-L2-CMIPC-M6C02_G19_s2025.nc",
+        }
+        with patch("app.services.catalog._collect_matching_entries", return_value=[mock_entry]):
+            result = catalog_latest("GOES-19", "CONUS", "C02")
+            assert result is not None
+            assert result["image_url"] is not None
+            assert "cdn.star.nesdis.noaa.gov" in result["image_url"]
+
+
+@pytest.mark.asyncio
+async def test_catalog_latest_meso_returns_data(client):
+    """API catalog/latest for meso returns scan data with null image URLs."""
+    mock_result = {
+        "scan_time": "2025-06-01T12:00:00+00:00",
+        "size": 4000000,
+        "key": "test.nc",
+        "satellite": "GOES-19",
+        "sector": "Mesoscale1",
+        "band": "C02",
+        "image_url": None,
+        "mobile_url": None,
+        "thumbnail_url": None,
+    }
+    with patch("app.routers.goes.get_cached", return_value=mock_result):
+        resp = await client.get("/api/goes/catalog/latest", params={
+            "satellite": "GOES-19", "sector": "Mesoscale1", "band": "C02",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["scan_time"] == "2025-06-01T12:00:00+00:00"
+        assert data["image_url"] is None

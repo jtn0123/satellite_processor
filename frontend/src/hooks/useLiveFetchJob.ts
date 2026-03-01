@@ -49,6 +49,10 @@ export function useLiveFetchJob({
   }, [activeJob, refetch]);
 
   const fetchNow = useCallback(async () => {
+    if (band === 'GEOCOLOR') {
+      showToast('error', 'GEOCOLOR is a CDN-only composite and cannot be fetched. Select a band (C01–C16).');
+      return;
+    }
     const isMeso = isMesoSector(sector);
     let startDate: string;
     let endDate: string;

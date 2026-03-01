@@ -24,6 +24,7 @@ interface BandPillStripProps {
   sectorName?: string;
   satelliteAvailability?: Readonly<Record<string, SatelliteAvailabilityInfo>>;
   variant?: 'mobile' | 'desktop';
+  disabledBands?: ReadonlyArray<string>;
 }
 
 const VARIANT_CLASSES = {
@@ -46,6 +47,7 @@ export default function BandPillStrip({
   sectorName,
   satelliteAvailability,
   variant = 'mobile',
+  disabledBands = [],
 }: Readonly<BandPillStripProps>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -174,8 +176,11 @@ export default function BandPillStrip({
         {bands.map((b) => {
           const isActive = b.id === activeBand;
           const isGeoColor = b.id === 'GEOCOLOR';
+          const isDisabled = disabledBands.includes(b.id);
           let pillClass: string;
-          if (isGeoColor) {
+          if (isDisabled) {
+            pillClass = 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed';
+          } else if (isGeoColor) {
             pillClass = isActive ? geoColorActiveClass : geoColorInactiveClass;
           } else {
             pillClass = isActive ? activePillClass : inactivePillClass;
@@ -184,12 +189,14 @@ export default function BandPillStrip({
             <button
               key={b.id}
               ref={isActive ? activeRef : undefined}
-              onClick={() => handleBandClick(b.id)}
+              onClick={() => { if (!isDisabled) handleBandClick(b.id); }}
+              disabled={isDisabled}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${pillClass}`}
               style={{ scrollSnapAlign: 'center' }}
               data-testid={`band-pill-${b.id}`}
-              aria-label={`Select band ${getFriendlyBandLabel(b.id, b.description, 'short')}${isActive ? ' (active)' : ''}`}
+              aria-label={`Select band ${getFriendlyBandLabel(b.id, b.description, 'short')}${isActive ? ' (active)' : ''}${isDisabled ? ' (unavailable for mesoscale)' : ''}`}
               aria-pressed={isActive}
+              title={isDisabled ? 'Not available for mesoscale sectors' : undefined}
             >
               {getFriendlyBandLabel(b.id, b.description, 'short')}
             </button>

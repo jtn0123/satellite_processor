@@ -268,7 +268,7 @@ def _list_hour(
                 scan_time = _parse_scan_time(key)
                 if scan_time and start_time <= scan_time <= end_time:
                     results.append({"key": key, "scan_time": scan_time, "size": obj["Size"]})
-    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError, ConnectionError, OSError) as exc:
+    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError, OSError) as exc:
         logger.warning("Failed to list S3 prefix %s/%s: %s", bucket, prefix, exc)
     return results
 

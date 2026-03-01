@@ -3,7 +3,7 @@
  * Returns [0, 0, 0] for unparseable strings.
  */
 export function parseSemver(version: string): readonly [number, number, number] {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)/);
+  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
   if (!match) return [0, 0, 0];
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }

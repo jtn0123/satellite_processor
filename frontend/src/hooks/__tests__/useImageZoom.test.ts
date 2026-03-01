@@ -99,16 +99,21 @@ describe('useImageZoom', () => {
     expect(result.current.style.cursor).toBe('grab');
   });
 
-  it('uses imageRef aspect ratio for pan clamping', () => {
-    const containerRef = makeContainerRef(400, 700);
-    const imageRef = makeImageRef(500, 300); // 5:3 aspect
+  it('uses imageRef aspect ratio for pan clamping (non-default aspect)', () => {
+    // Use a square (1:1) image in a wide container to produce different bounds than 5:3 default
+    const containerRef = makeContainerRef(600, 400);
+    const imageRef = makeImageRef(400, 400); // 1:1 aspect
     const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
-    // Zoom in to 2.5x
-    act(() => result.current.zoomIn());
+    act(() => result.current.zoomIn()); // scale 2.5
 
-    // Pan far — should clamp using rendered image dimensions
-    // renderedW=400, renderedH=240, maxX=300, maxY=0
+    // 1:1 in 600x400: renderedW = min(600, 400*1) = 400, renderedH = min(400, 600/1) = 400
+    // maxX = max(0, (400*2.5 - 600)/2) = max(0, 200) = 200
+    // maxY = max(0, (400*2.5 - 400)/2) = max(0, 300) = 300
+    // With default 5:3: renderedW = min(600, 400*5/3) = min(600, 666.7) = 600, renderedH = min(400, 600/5*3) = min(400, 360) = 360
+    // maxX would be (600*2.5 - 600)/2 = 450, maxY = (360*2.5 - 400)/2 = 250
+    // So maxX=200 (with imageRef) vs 450 (without) — distinct!
+
     act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
     act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])));
 
@@ -117,8 +122,9 @@ describe('useImageZoom', () => {
     if (!match) throw new Error(`Expected translate in transform: ${transform}`);
     const tx = Number(match[1]);
     const ty = Number(match[2]);
-    expect(tx).toBeLessThanOrEqual(300);
-    expect(Math.abs(ty)).toBe(0); // No vertical pan allowed for landscape in tall container
+    // With imageRef (1:1): maxX=200, without (5:3 fallback): maxX=450
+    expect(tx).toBe(200); // Proves imageRef aspect is used, not the 5:3 default
+    expect(ty).toBe(300);
   });
 
   it('falls back to 5:3 aspect when imageRef is null', () => {

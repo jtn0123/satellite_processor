@@ -69,21 +69,6 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
-  const imageAspectRef = useRef<number>(DEFAULT_ASPECT);
-
-  // Update image aspect ratio when the image loads
-  useEffect(() => {
-    const img = imageRef?.current;
-    if (!img) return;
-    const updateAspect = () => {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        imageAspectRef.current = img.naturalWidth / img.naturalHeight;
-      }
-    };
-    updateAspect();
-    img.addEventListener('load', updateAspect);
-    return () => img.removeEventListener('load', updateAspect);
-  }, [imageRef]);
 
   // Keep stateRef in sync
   useEffect(() => {
@@ -95,8 +80,12 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const clampXY = useCallback((tx: number, ty: number, scale: number): { tx: number; ty: number } => {
     const dims = getContainerDimensions(containerRef);
     if (!dims) return { tx, ty };
-    return clampTranslate(tx, ty, scale, dims.width, dims.height, imageAspectRef.current);
-  }, [containerRef]);
+    const img = imageRef?.current;
+    const aspect = (img && img.naturalWidth > 0 && img.naturalHeight > 0)
+      ? img.naturalWidth / img.naturalHeight
+      : DEFAULT_ASPECT;
+    return clampTranslate(tx, ty, scale, dims.width, dims.height, aspect);
+  }, [containerRef, imageRef]);
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
 

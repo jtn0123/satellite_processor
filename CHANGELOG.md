@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/jtn0123/satellite_processor/compare/v1.25.0...v1.26.0) (2026-03-01)
+
+
+### Features
+
+* polish sweep — version bump modal, job filter, font, suspense ([#272](https://github.com/jtn0123/satellite_processor/issues/272)) ([38c4066](https://github.com/jtn0123/satellite_processor/commit/38c40660deea95619ed6167e41a86fda7dbe4334))
+
 # [1.25.0](https://github.com/jtn0123/satellite_processor/compare/v1.24.6...v1.25.0) (2026-03-01)
 
 

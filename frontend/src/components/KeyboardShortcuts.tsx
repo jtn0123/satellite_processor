@@ -5,8 +5,8 @@ import { X, Keyboard } from 'lucide-react';
 
 const shortcutList = [
   { keys: 'g d', label: 'Go to Dashboard' },
-  { keys: 'g u', label: 'Go to Upload' },
-  { keys: 'g p', label: 'Go to Process' },
+  { keys: 'g u', label: 'Go to Settings' },
+  { keys: 'g p', label: 'Go to Settings' },
   { keys: 'g j', label: 'Go to Jobs' },
   { keys: 'g s', label: 'Go to Settings' },
   { keys: 'g f', label: 'Go to GOES Data' },
@@ -38,8 +38,8 @@ export default function KeyboardShortcuts() {
   const shortcuts = useMemo(
     () => ({
       'g d': () => navigate('/'),
-      'g u': () => navigate('/upload'),
-      'g p': () => navigate('/process'),
+      'g u': () => navigate('/settings'),
+      'g p': () => navigate('/settings'),
       'g j': () => navigate('/jobs'),
       'g s': () => navigate('/settings'),
       'g f': () => navigate('/goes'),

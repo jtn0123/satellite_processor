@@ -34,10 +34,10 @@ test.describe('Mobile navigation', () => {
     await expect(nav.getByText('Browse')).toBeVisible();
   });
 
-  test('mobile shows bottom nav with Animate tab', async ({ page }) => {
+  test('mobile shows bottom nav with Dashboard tab', async ({ page }) => {
     await page.goto('/');
     const nav = page.locator('nav[aria-label="Mobile navigation"]');
-    await expect(nav.getByText('Animate')).toBeVisible();
+    await expect(nav.getByText('Dashboard')).toBeVisible();
   });
 
   test('mobile bottom nav navigates to live', async ({ page }) => {

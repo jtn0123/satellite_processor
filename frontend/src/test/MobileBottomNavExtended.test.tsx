@@ -37,9 +37,9 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.getByRole('tab', { name: 'Jobs' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Animate tab active on /animate', () => {
-    renderNav('/animate');
-    expect(screen.getByRole('tab', { name: 'Animate' })).toHaveAttribute('aria-selected', 'true');
+  it('Dashboard tab active on /', () => {
+    renderNav('/');
+    expect(screen.getByRole('tab', { name: 'Dashboard' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('More tab active on /settings route', () => {
@@ -48,8 +48,8 @@ describe('MobileBottomNav — extended', () => {
     expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('More tab active on dashboard /', () => {
-    renderNav('/');
+  it('More tab active on /animate route', () => {
+    renderNav('/animate');
     const moreTab = screen.getByRole('tab', { name: 'More' });
     expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });
@@ -57,7 +57,7 @@ describe('MobileBottomNav — extended', () => {
   it('primary tabs have role=tab', () => {
     renderNav();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(5); // Live, Browse, Jobs, Animate, More
+    expect(tabs.length).toBe(5); // Live, Browse, Dashboard, Jobs, More
   });
 
   it('More menu links navigate and close sheet', () => {

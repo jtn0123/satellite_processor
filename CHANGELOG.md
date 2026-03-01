@@ -1,3 +1,10 @@
+## [1.26.3](https://github.com/jtn0123/satellite_processor/compare/v1.26.2...v1.26.3) (2026-03-01)
+
+
+### Bug Fixes
+
+* stabilize dark theme E2E test by emulating color scheme ([#275](https://github.com/jtn0123/satellite_processor/issues/275)) ([3beef23](https://github.com/jtn0123/satellite_processor/commit/3beef2301613a79a04985ea7d57d82e958869985))
+
 ## [1.26.2](https://github.com/jtn0123/satellite_processor/compare/v1.26.1...v1.26.2) (2026-03-01)
 
 

@@ -115,10 +115,12 @@ describe('buildCdnUrl — satellite × sector × band matrix', () => {
     expect(buildCdnUrl(sat, sector, band)).toBeNull();
   });
 
-  it.each(['', 'GOES-19', 'CONUS'])('returns null when any param is empty (%s)', () => {
-    expect(buildCdnUrl('', 'CONUS', 'C02')).toBeNull();
-    expect(buildCdnUrl('GOES-19', '', 'C02')).toBeNull();
-    expect(buildCdnUrl('GOES-19', 'CONUS', '')).toBeNull();
+  it.each([
+    { label: 'empty satellite', args: ['', 'CONUS', 'C02'] as const },
+    { label: 'empty sector', args: ['GOES-19', '', 'C02'] as const },
+    { label: 'empty band', args: ['GOES-19', 'CONUS', ''] as const },
+  ])('returns null when $label', ({ args }) => {
+    expect(buildCdnUrl(...args)).toBeNull();
   });
 
   it('GEOCOLOR band uses GEOCOLOR in CDN path', () => {
@@ -242,11 +244,9 @@ describe('LiveTab — Fetch to view visibility', () => {
     }, { timeout: 3000 });
   });
 
-  it('shows GEOCOLOR unavailable message for meso + GEOCOLOR combo', async () => {
-    // Override so GEOCOLOR stays active and sector is meso from the start
-    // We'll test the message rendering by simulating the state directly
-    // Since auto-switch kicks in, we test the transient state via the geocolor-meso-message testid
-    // In practice the auto-switch prevents this, but the guard message exists for safety
+  it('auto-switches GEOCOLOR to C02 when switching to Mesoscale1', async () => {
+    // When the user is on GEOCOLOR and switches to a meso sector,
+    // the auto-switch effect changes band to C02 automatically.
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/goes/products')
         return Promise.resolve({

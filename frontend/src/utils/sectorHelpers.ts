@@ -23,10 +23,9 @@ const CDN_RESOLUTIONS: Readonly<Record<string, { desktop: string; mobile: string
 /** Build a direct CDN URL from satellite/sector/band (returns null for meso sectors). */
 export function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
   if (!satellite || !sector || !band) return null;
-  if (!CDN_SECTOR_PATH[sector]) return null;
-  const satPath = satellite.replaceAll('-', '');
   const cdnSector = CDN_SECTOR_PATH[sector];
   if (!cdnSector) return null;
+  const satPath = satellite.replaceAll('-', '');
   let cdnBand = band;
   if (band === 'GEOCOLOR') cdnBand = 'GEOCOLOR';
   else if (band.startsWith('C')) cdnBand = band.slice(1);

@@ -391,10 +391,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
-      <div
+      <section
         ref={containerRef}
         data-testid="live-image-area"
-        role="region"
+        role="application"
         aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
         tabIndex={0}
         className={`relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
@@ -417,13 +417,14 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         }}
         onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
         onClick={handleImageTap}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); } }}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
         <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
           {(() => {
-            const isCdnUnavailable = !imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
+            const isCdnUnavailable = !imageUrl && products?.sectors?.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
             if (isCdnUnavailable && isComposite) {
               return (
                 <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
@@ -582,7 +583,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             disabledBands={isMeso ? ['GEOCOLOR'] : []}
           />
         )}
-      </div>
+      </section>
 
       {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
       {isMobile && products?.bands && !zoom.isZoomed && (

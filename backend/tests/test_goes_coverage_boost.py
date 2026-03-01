@@ -565,7 +565,8 @@ def test_list_available_s3_exception(mock_val, mock_s3, mock_retry):
 def test_list_available_generic_exception(mock_val, mock_s3, mock_retry):
     from app.services.goes_fetcher import list_available
     mock_retry.side_effect = RuntimeError("unexpected")
-    result = list_available("GOES-16", "FullDisk", "C02",
-                            datetime(2026, 1, 1, tzinfo=UTC),
-                            datetime(2026, 1, 2, tzinfo=UTC))
-    assert result == []
+    # Programming errors (RuntimeError) now propagate instead of being silently swallowed
+    with pytest.raises(RuntimeError, match="unexpected"):
+        list_available("GOES-16", "FullDisk", "C02",
+                       datetime(2026, 1, 1, tzinfo=UTC),
+                       datetime(2026, 1, 2, tzinfo=UTC))

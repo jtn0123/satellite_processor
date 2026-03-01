@@ -36,27 +36,26 @@ function wrap(ui: React.ReactNode) {
 }
 
 describe('Jobs page breadcrumb', () => {
-  it('renders breadcrumb with Home > Jobs', () => {
+  it('renders breadcrumb nav with Home link', () => {
     wrap(<JobsPage />);
     const nav = screen.getByLabelText('Breadcrumb');
     expect(nav).toBeTruthy();
-    expect(screen.getByText('Home')).toBeTruthy();
-    expect(screen.getByText('Jobs')).toBeTruthy();
-  });
-
-  it('breadcrumb Home link points to /', () => {
-    wrap(<JobsPage />);
-    const link = screen.getByText('Home');
-    expect(link.closest('a')?.getAttribute('href')).toBe('/');
+    const homeLink = nav.querySelector('a');
+    expect(homeLink?.textContent).toBe('Home');
+    expect(homeLink?.getAttribute('href')).toBe('/');
+    const current = nav.querySelector('[aria-current="page"]');
+    expect(current?.textContent).toBe('Jobs');
   });
 });
 
 describe('Settings page breadcrumb', () => {
-  it('renders breadcrumb with Home > Settings', () => {
+  it('renders breadcrumb nav with Home link', () => {
     wrap(<SettingsPage />);
     const nav = screen.getByLabelText('Breadcrumb');
     expect(nav).toBeTruthy();
-    expect(screen.getByText('Home')).toBeTruthy();
-    expect(screen.getByText('Settings')).toBeTruthy();
+    const homeLink = nav.querySelector('a');
+    expect(homeLink?.textContent).toBe('Home');
+    const current = nav.querySelector('[aria-current="page"]');
+    expect(current?.textContent).toBe('Settings');
   });
 });

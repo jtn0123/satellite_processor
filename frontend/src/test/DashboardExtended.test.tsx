@@ -117,8 +117,8 @@ describe('Dashboard extended', () => {
     expect(screen.getByText('Disk')).toBeInTheDocument();
   });
 
-  it('renders View Live quick-link', () => {
+  it('does not render standalone View Live card (removed in cleanup)', () => {
     renderDashboard();
-    expect(screen.getByText('View Live')).toBeInTheDocument();
+    expect(screen.queryByText('View Live')).not.toBeInTheDocument();
   });
 });

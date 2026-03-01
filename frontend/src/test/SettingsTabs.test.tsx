@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsPage from '../pages/Settings';
@@ -10,6 +10,7 @@ vi.mock('../hooks/useApi', () => ({
     isLoading: false,
   }),
   useUpdateSettings: () => ({ mutate: vi.fn(), isPending: false }),
+  useSystemStatus: () => ({ data: null, isLoading: false }),
 }));
 
 vi.mock('../api/client', () => ({
@@ -31,26 +32,32 @@ function renderSettings(initialRoute = '/settings') {
 }
 
 describe('Settings tabs', () => {
-  it('renders 3 tab buttons', () => {
+  it('renders 3 tab buttons in a tablist', () => {
     renderSettings();
-    const tablist = screen.getByRole('tablist');
+    const tablist = screen.getByRole('tablist', { name: 'Settings tabs' });
     expect(tablist).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Config tab' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Data tab' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'System tab' })).toBeTruthy();
   });
 
-  it('defaults to Config tab showing Processing Defaults', () => {
+  it('defaults to Config tab showing Processing Defaults and About', () => {
     renderSettings();
     expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByText('Processing Defaults')).toBeTruthy();
+    expect(screen.getByText('About')).toBeTruthy();
   });
 
-  it('switches to Data tab on click', () => {
+  it('switches to Data tab showing collapsible sections', async () => {
     renderSettings();
     fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
     expect(screen.getByRole('tab', { name: 'Data tab' }).getAttribute('aria-selected')).toBe('true');
-    expect(screen.getByText('Cleanup Rules')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('Cleanup Rules')).toBeTruthy();
+    });
+    expect(screen.getByText('Composites')).toBeTruthy();
+    expect(screen.getByText('Manual Upload')).toBeTruthy();
+    expect(screen.getByText('Processing')).toBeTruthy();
   });
 
   it('switches to System tab on click', () => {
@@ -59,9 +66,26 @@ describe('Settings tabs', () => {
     expect(screen.getByRole('tab', { name: 'System tab' }).getAttribute('aria-selected')).toBe('true');
   });
 
-  it('Config tab is not selected when switching to Data', () => {
+  it('hides Config content when switching to Data tab', async () => {
+    renderSettings();
+    expect(screen.getByText('Processing Defaults')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
+    await waitFor(() => {
+      expect(screen.queryByText('Processing Defaults')).toBeNull();
+    });
+  });
+
+  it('Config tab deselected when Data tab active', () => {
     renderSettings();
     fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
     expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('renders breadcrumb with Home and Settings', () => {
+    renderSettings();
+    const nav = screen.getByLabelText('Breadcrumb');
+    expect(nav).toBeTruthy();
+    expect(nav.querySelector('a')?.textContent).toBe('Home');
+    expect(nav.querySelector('[aria-current="page"]')?.textContent).toBe('Settings');
   });
 });

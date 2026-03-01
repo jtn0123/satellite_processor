@@ -5,13 +5,19 @@ test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
 });
 
-test('page loads with dark theme by default', async ({ page }) => {
+test('page loads with dark theme when system prefers dark', async ({ page }) => {
+  // Emulate dark color scheme (Playwright defaults to light)
+  await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
-  // The app uses dark mode by default (space theme)
   const html = page.locator('html');
-  const className = await html.getAttribute('class');
-  // Should have dark class or no light class
-  expect(className?.includes('light')).toBeFalsy();
+  await expect(html).toHaveClass(/dark/);
+});
+
+test('page loads with light theme when system prefers light', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  const html = page.locator('html');
+  await expect(html).toHaveClass(/light/);
 });
 
 test('mobile viewport renders page content', async ({ page }) => {

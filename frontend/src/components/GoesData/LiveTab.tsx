@@ -132,6 +132,65 @@ function useZoomHint(isZoomed: boolean): boolean {
   return visible;
 }
 
+interface LiveShortcutsConfig {
+  bands?: Array<{ id: string }>;
+  band: string;
+  isZoomed: boolean;
+  isFullscreen: boolean;
+  monitoring: boolean;
+  setBand: (b: string) => void;
+  toggleFullscreen: () => void;
+  setCompareMode: Dispatch<SetStateAction<boolean>>;
+  toggleMonitor: () => void;
+  setLiveAnnouncement: (msg: string) => void;
+}
+
+function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
+  const { bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement } = config;
+
+  const shortcuts = useMemo(() => {
+    const bandList = extractArray<{ id: string }>(bands);
+    const currentIdx = bandList.findIndex((b) => b.id === band);
+
+    return {
+      ArrowLeft: () => {
+        if (isZoomed || bandList.length === 0) return;
+        const prevIdx = getPrevBandIndex(currentIdx, bandList.length);
+        setBand(bandList[prevIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
+      },
+      ArrowRight: () => {
+        if (isZoomed || bandList.length === 0) return;
+        const nextIdx = getNextBandIndex(currentIdx, bandList.length);
+        setBand(bandList[nextIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
+      },
+      f: () => {
+        toggleFullscreen();
+        setLiveAnnouncement(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen');
+      },
+      c: () => {
+        setCompareMode((v) => {
+          const next = !v;
+          setLiveAnnouncement(next ? 'Compare mode on' : 'Compare mode off');
+          return next;
+        });
+      },
+      m: () => {
+        toggleMonitor();
+        setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
+      },
+    };
+  }, [bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement]);
+
+  useHotkeys(shortcuts);
+}
+
+function buildOuterClassName(isZoomed: boolean): string {
+  const mobileHeight = isZoomed ? 'max-md:h-[100dvh]' : 'max-md:h-[calc(100dvh-112px)]';
+  return `relative md:h-[calc(100dvh-4rem)] ${mobileHeight} flex flex-col bg-black max-md:-mx-4 max-md:px-0`;
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -298,47 +357,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   useFullscreenSync(setIsFullscreen, zoom);
 
   // Live View keyboard shortcuts
-  const liveShortcuts = useMemo(() => {
-    const bandList = extractArray<{ id: string }>(products?.bands);
-    const currentIdx = bandList.findIndex((b) => b.id === band);
-
-    return {
-      ArrowLeft: () => {
-        if (zoom.isZoomed || bandList.length === 0) return;
-        const prevIdx = getPrevBandIndex(currentIdx, bandList.length);
-        setBand(bandList[prevIdx].id);
-        setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
-      },
-      ArrowRight: () => {
-        if (zoom.isZoomed || bandList.length === 0) return;
-        const nextIdx = getNextBandIndex(currentIdx, bandList.length);
-        setBand(bandList[nextIdx].id);
-        setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
-      },
-      f: () => {
-        toggleFullscreen();
-        setLiveAnnouncement(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen');
-      },
-      c: () => {
-        setCompareMode((v) => {
-          const next = !v;
-          setLiveAnnouncement(next ? 'Compare mode on' : 'Compare mode off');
-          return next;
-        });
-      },
-      m: () => {
-        toggleMonitor();
-        setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
-      },
-    };
-  }, [products?.bands, band, zoom.isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor]);
-
-  useHotkeys(liveShortcuts);
+  useLiveShortcuts({
+    bands: products?.bands, band, isZoomed: zoom.isZoomed, isFullscreen, monitoring,
+    setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement,
+  });
 
   // Double-tap zoom vs single-tap overlay toggle (mobile only)
   const handleImageTap = useDoubleTap(
     () => { if (isMobile) toggleOverlay(); },
-    () => { if (zoom.isZoomed) { zoom.reset(); } else { zoom.zoomIn(); } },
+    () => { (zoom.isZoomed ? zoom.reset : zoom.zoomIn)(); },
     300,
   );
 
@@ -355,7 +382,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const isComposite = band === 'GEOCOLOR';
 
   return (
-    <div ref={pullContainerRef} className={`relative md:h-[calc(100dvh-4rem)] ${zoom.isZoomed ? 'max-md:h-[100dvh]' : 'max-md:h-[calc(100dvh-112px)]'} flex flex-col bg-black max-md:-mx-4 max-md:px-0`}>
+    <div ref={pullContainerRef} className={buildOuterClassName(zoom.isZoomed)}>
       {/* Accessibility: live announcements for screen readers */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="live-a11y-announcer">
         {liveAnnouncement}
@@ -366,7 +393,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <div
         ref={containerRef}
         data-testid="live-image-area"
-        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
@@ -561,7 +588,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       </div>
 
       {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
-      {isMobile && !zoom.isZoomed && products?.bands && (
+      {isMobile && products?.bands && !zoom.isZoomed && (
         <BandPillStrip
           bands={products.bands}
           activeBand={band}

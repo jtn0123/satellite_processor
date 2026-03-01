@@ -171,10 +171,10 @@ describe('LiveTab — extended coverage', () => {
     });
   });
 
-  it('renders swipe gesture area', async () => {
+  it('renders image area with gesture handlers', async () => {
     renderWithProviders(<LiveTab />);
     await waitFor(() => {
-      expect(screen.getByTestId('swipe-gesture-area')).toBeInTheDocument();
+      expect(screen.getByTestId('live-image-area')).toBeInTheDocument();
     });
   });
 

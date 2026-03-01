@@ -114,12 +114,12 @@ test.describe('Mobile Live View', () => {
 
   test('pinch zoom changes scale', async ({ page }) => {
     await page.goto('/live');
-    const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
+    const swipeArea = page.locator('[data-testid="live-image-area"]');
     await expect(swipeArea).toBeVisible({ timeout: 10000 });
 
     // Playwright doesn't natively support multi-touch pinch, so dispatch synthetic events
     const scaleAfter = await page.evaluate(() => {
-      const el = document.querySelector('[data-testid="swipe-gesture-area"]');
+      const el = document.querySelector('[data-testid="live-image-area"]');
       if (!el) return null;
 
       // Dispatch a touchstart with two touches
@@ -161,7 +161,7 @@ test.describe('Mobile Live View', () => {
 
   test('double-tap resets zoom', async ({ page }) => {
     await page.goto('/live');
-    const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
+    const swipeArea = page.locator('[data-testid="live-image-area"]');
     await expect(swipeArea).toBeVisible({ timeout: 10000 });
 
     const box = await swipeArea.boundingBox();
@@ -183,7 +183,7 @@ test.describe('Mobile Live View', () => {
 
     // After reset, transform should be identity or scale(1)
     const transform = await page.evaluate(() => {
-      const el = document.querySelector('[data-testid="swipe-gesture-area"]');
+      const el = document.querySelector('[data-testid="live-image-area"]');
       if (!el) return 'none';
       const img = el.querySelector('img') || el;
       return window.getComputedStyle(img).transform;
@@ -196,7 +196,7 @@ test.describe('Mobile Live View', () => {
     await page.goto('/live');
     const pill = page.locator('[data-testid="status-pill"]');
     await expect(pill).toBeVisible({ timeout: 10000 });
-    const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
+    const swipeArea = page.locator('[data-testid="live-image-area"]');
     await expect(swipeArea).toBeVisible();
     const box = await swipeArea.boundingBox();
     expect(box).toBeTruthy();

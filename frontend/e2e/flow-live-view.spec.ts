@@ -225,7 +225,7 @@ test.describe('Live flow', () => {
   test('swipe gesture area exists', async ({ page }) => {
     await page.goto('/live');
     // The swipe gesture area wraps the image panel content
-    const swipeArea = page.locator('[data-testid="swipe-gesture-area"]');
+    const swipeArea = page.locator('[data-testid="live-image-area"]');
     await expect(swipeArea).toBeVisible({ timeout: 10000 });
   });
 

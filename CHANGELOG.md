@@ -1,3 +1,10 @@
+## [1.24.4](https://github.com/jtn0123/satellite_processor/compare/v1.24.3...v1.24.4) (2026-03-01)
+
+
+### Bug Fixes
+
+* consolidate onboarding flows, remove View Live card, add breadcrumbs ([#267](https://github.com/jtn0123/satellite_processor/issues/267)) ([28fed8b](https://github.com/jtn0123/satellite_processor/commit/28fed8ba607bb38e8288648dc4b2b115f6197bcd))
+
 ## [1.24.3](https://github.com/jtn0123/satellite_processor/compare/v1.24.2...v1.24.3) (2026-03-01)
 
 

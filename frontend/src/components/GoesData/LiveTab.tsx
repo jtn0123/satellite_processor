@@ -29,6 +29,7 @@ import ImagePanelContent from './ImagePanelContent';
 import ImageErrorBoundary from './ImageErrorBoundary';
 import MobileControlsFab from './MobileControlsFab';
 import DesktopControlsBar from './DesktopControlsBar';
+import MesoFetchRequiredMessage from './MesoFetchRequiredMessage';
 import StatusPill from './StatusPill';
 import FullscreenButton from './FullscreenButton';
 
@@ -103,38 +104,6 @@ function useFullscreenSync(
 }
 
 
-
-/** Message shown for mesoscale sectors where CDN images are not available */
-function MesoFetchRequiredMessage({ onFetchNow, isFetching, fetchFailed }: Readonly<{
-  onFetchNow: () => void;
-  isFetching: boolean;
-  fetchFailed: boolean;
-}>) {
-  if (isFetching) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="meso-fetch-loading">
-        <RefreshCw className="w-6 h-6 text-white/70 animate-spin" />
-        <p className="text-white/70 text-sm">Fetching mesoscale data from S3…</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="meso-fetch-required">
-      <p className="text-white/70 text-sm">No live preview available for mesoscale sectors — CDN images are not provided by NOAA.</p>
-      {fetchFailed && (
-        <p className="text-red-400 text-xs">No mesoscale data found — try fetching again</p>
-      )}
-      <button
-        type="button"
-        onClick={onFetchNow}
-        className="px-4 py-2 rounded-lg bg-primary/80 hover:bg-primary text-white text-sm font-medium transition-colors"
-      >
-        Fetch to view
-      </button>
-    </div>
-  );
-}
 
 function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
@@ -405,15 +374,19 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onClick={handleImageTap}
         >
           <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
-            {!imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading ? (
-              isComposite ? (
-                <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
-                  <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
-                </div>
-              ) : (
-                <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} />
-              )
-            ) : (
+            {(() => {
+              const isCdnUnavailable = !imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
+              if (isCdnUnavailable && isComposite) {
+                return (
+                  <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
+                    <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
+                  </div>
+                );
+              }
+              if (isCdnUnavailable) {
+                return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
+              }
+              return (
               <ImagePanelContent
                 isLoading={isLoading && !catalogImageUrl}
                 isError={isError && !imageUrl}
@@ -430,7 +403,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                 prevFrameTime={prevFrame?.capture_time ?? null}
                 isZoomed={zoom.isZoomed}
               />
-            )}
+              );
+            })()}
           </ImageErrorBoundary>
         </button>
 

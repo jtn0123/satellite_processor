@@ -23,6 +23,7 @@ import { useMonitorMode } from '../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../hooks/useLiveFetchJob';
 import { useCountdownDisplay } from '../../hooks/useCountdownDisplay';
 import { useSwipeBand } from '../../hooks/useSwipeBand';
+import { isMesoSector } from '../../utils/sectorHelpers';
 import BandPillStrip from './BandPillStrip';
 import ImagePanelContent from './ImagePanelContent';
 import ImageErrorBoundary from './ImageErrorBoundary';
@@ -131,10 +132,26 @@ function useFullscreenSync(
 
 
 /** Message shown for mesoscale sectors where CDN images are not available */
-function MesoFetchRequiredMessage({ onFetchNow }: Readonly<{ onFetchNow: () => void }>) {
+function MesoFetchRequiredMessage({ onFetchNow, isFetching, fetchFailed }: Readonly<{
+  onFetchNow: () => void;
+  isFetching: boolean;
+  fetchFailed: boolean;
+}>) {
+  if (isFetching) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="meso-fetch-loading">
+        <RefreshCw className="w-6 h-6 text-white/70 animate-spin" />
+        <p className="text-white/70 text-sm">Fetching mesoscale data from S3…</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center gap-4 text-center p-8">
+    <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="meso-fetch-required">
       <p className="text-white/70 text-sm">No live preview available for mesoscale sectors — CDN images are not provided by NOAA.</p>
+      {fetchFailed && (
+        <p className="text-red-400 text-xs">No mesoscale data found — try fetching again</p>
+      )}
       <button
         type="button"
         onClick={onFetchNow}
@@ -293,7 +310,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   // Live View keyboard shortcuts — announcement state (hotkeys registered below after toggleFullscreen)
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
 
-  const { activeJobId, activeJob, fetchNow } = useLiveFetchJob({
+  const { activeJobId, activeJob, fetchNow, lastFetchFailed } = useLiveFetchJob({
     satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
     frame: frame ?? null, lastAutoFetchTimeRef: lastAutoFetchTime, lastAutoFetchMsRef: lastAutoFetchMs, refetch,
   });
@@ -358,6 +375,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
+  const isMeso = isMesoSector(sector);
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
@@ -408,7 +426,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         >
           <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
             {!imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading ? (
-              <MesoFetchRequiredMessage onFetchNow={fetchNow} />
+              <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} />
             ) : (
               <ImagePanelContent
                 isLoading={isLoading && !catalogImageUrl}
@@ -452,8 +470,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               onRefreshIntervalChange={setRefreshInterval}
               compareMode={compareMode}
               onCompareModeChange={setCompareMode}
-              autoFetchDisabled={band === 'GEOCOLOR'}
-              autoFetchDisabledReason="Auto-fetch not available for GeoColor — CDN images update automatically"
+              autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
+              autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
             />
 
             <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
@@ -493,8 +511,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           </div>
         )}
 
-        {/* Inline fetch progress overlay */}
-        {activeJobId && activeJob && (
+        {/* Inline fetch progress overlay — hidden when meso fetch message handles it */}
+        {activeJobId && activeJob && (imageUrl || !isMeso) && (
           <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <InlineFetchProgress job={activeJob} />
           </div>
@@ -510,8 +528,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onToggleMonitor={toggleMonitor}
             autoFetch={autoFetch}
             onAutoFetchChange={(v) => setAutoFetch(v)}
-            autoFetchDisabled={band === 'GEOCOLOR'}
-            autoFetchDisabledReason="Auto-fetch not available for GeoColor — CDN images update automatically"
+            autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
+            autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
           />
         </div>
 

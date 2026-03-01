@@ -277,6 +277,79 @@ describe('useLiveFetchJob', () => {
     });
   });
 
+  it('fetchNow uses 10-minute window for mesoscale with no catalogLatest', async () => {
+    const beforeTime = Date.now();
+    const props = makeProps({ sector: 'Mesoscale1', catalogLatest: null });
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    const call = mockPost.mock.calls[0];
+    const startTime = new Date(call[1].start_time).getTime();
+    const endTime = new Date(call[1].end_time).getTime();
+    // Start should be ~10 min before now
+    expect(endTime - startTime).toBeGreaterThanOrEqual(9 * 60 * 1000);
+    expect(endTime - startTime).toBeLessThanOrEqual(11 * 60 * 1000);
+    expect(endTime).toBeGreaterThanOrEqual(beforeTime - 1000);
+    expect(mockShowToast).toHaveBeenCalledWith('success', 'Fetching mesoscale data…');
+  });
+
+  it('fetchNow uses catalog scan_time for mesoscale when available', async () => {
+    const props = makeProps({
+      sector: 'Mesoscale2',
+      catalogLatest: makeCatalog({ scan_time: '2024-06-01T12:00:00Z' }),
+    });
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      start_time: '2024-06-01T12:00:00Z',
+      end_time: '2024-06-01T12:00:00Z',
+    }));
+  });
+
+  it('lastFetchFailed is true when job completes but no frame exists', async () => {
+    vi.useFakeTimers();
+    mockGet.mockResolvedValue({
+      data: { id: 'job-123', status: 'completed', progress: 100, status_message: 'Done' },
+    });
+    const props = makeProps({ frame: null });
+    const { result } = renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.lastFetchFailed).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('lastFetchFailed resets when sector changes', async () => {
+    vi.useFakeTimers();
+    mockGet.mockResolvedValue({
+      data: { id: 'job-123', status: 'failed', progress: 0, status_message: 'Error' },
+    });
+    const props = makeProps({ frame: null });
+    const { result, rerender } = renderHook(
+      (p) => useLiveFetchJob(p),
+      { initialProps: props, wrapper: createWrapper() },
+    );
+    await act(async () => {
+      await result.current.fetchNow();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.lastFetchFailed).toBe(true);
+
+    // Change sector to reset
+    rerender({ ...props, sector: 'FullDisk' });
+    expect(result.current.lastFetchFailed).toBe(false);
+    vi.useRealTimers();
+  });
+
   it('does not auto-fetch when there is an active job', async () => {
     mockPost.mockResolvedValueOnce({ data: { job_id: 'job-active' } });
     const props = makeProps({

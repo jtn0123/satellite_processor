@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/client';
 import { showToast } from '../utils/toast';
+import { isMesoSector } from '../utils/sectorHelpers';
 import type { CatalogLatest, LatestFrame } from '../components/GoesData/types';
 
 function shouldAutoFetch(
@@ -48,15 +49,34 @@ export function useLiveFetchJob({
   }, [activeJob, refetch]);
 
   const fetchNow = useCallback(async () => {
-    const startDate = catalogLatest?.scan_time ?? new Date().toISOString();
+    const isMeso = isMesoSector(sector);
+    let startDate: string;
+    let endDate: string;
+
+    if (catalogLatest?.scan_time) {
+      // Use catalog scan time as the target
+      startDate = catalogLatest.scan_time;
+      endDate = catalogLatest.scan_time;
+    } else if (isMeso) {
+      // Meso without catalog: fetch last 10 minutes (1-min cadence)
+      const now = new Date();
+      const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000);
+      startDate = tenMinAgo.toISOString();
+      endDate = now.toISOString();
+    } else {
+      const now = new Date().toISOString();
+      startDate = now;
+      endDate = now;
+    }
+
     try {
       const res = await api.post('/goes/fetch', {
         satellite: satellite.toUpperCase(), sector, band,
         start_time: startDate,
-        end_time: startDate,
+        end_time: endDate,
       });
       setActiveJobId(res.data.job_id);
-      showToast('success', 'Fetching latest frame…');
+      showToast('success', isMeso ? 'Fetching mesoscale data…' : 'Fetching latest frame…');
     } catch {
       showToast('error', 'Failed to start fetch');
     }
@@ -87,5 +107,23 @@ export function useLiveFetchJob({
     return () => { cancelled = true; };
   }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef, activeJobId]);
 
-  return { activeJobId, activeJob: activeJob ?? null, fetchNow };
+  // Track whether the last fetch job completed but no frame appeared
+  const [lastFetchFailed, setLastFetchFailed] = useState(false);
+
+  // Derive failure from job terminal state and reset on param changes
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: syncs async job status to state */
+  useEffect(() => {
+    setLastFetchFailed(false);
+  }, [satellite, sector, band]);
+
+  useEffect(() => {
+    if (activeJob?.status === 'failed' || (activeJob?.status === 'completed' && !frame)) {
+      setLastFetchFailed(true);
+    } else if (frame) {
+      setLastFetchFailed(false);
+    }
+  }, [activeJob?.status, frame]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  return { activeJobId, activeJob: activeJob ?? null, fetchNow, lastFetchFailed };
 }

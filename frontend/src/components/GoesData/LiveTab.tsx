@@ -109,6 +109,88 @@ function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
 
+/** Shows a "pinch to exit" hint for 2s when first zooming in */
+function useZoomHint(isZoomed: boolean): boolean {
+  const [visible, setVisible] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wasZoomed = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: sync hint visibility with zoom state */
+  useEffect(() => {
+    if (isZoomed && !wasZoomed.current) {
+      setVisible(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setVisible(false), 2000);
+    }
+    if (!isZoomed) {
+      setVisible(false);
+      clearTimeout(timer.current);
+    }
+    wasZoomed.current = isZoomed;
+    return () => clearTimeout(timer.current);
+  }, [isZoomed]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  return visible;
+}
+
+interface LiveShortcutsConfig {
+  bands?: Array<{ id: string }>;
+  band: string;
+  isZoomed: boolean;
+  isFullscreen: boolean;
+  monitoring: boolean;
+  setBand: (b: string) => void;
+  toggleFullscreen: () => void;
+  setCompareMode: Dispatch<SetStateAction<boolean>>;
+  toggleMonitor: () => void;
+  setLiveAnnouncement: (msg: string) => void;
+}
+
+function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
+  const { bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement } = config;
+
+  const shortcuts = useMemo(() => {
+    const bandList = extractArray<{ id: string }>(bands);
+    const currentIdx = bandList.findIndex((b) => b.id === band);
+
+    return {
+      ArrowLeft: () => {
+        if (isZoomed || bandList.length === 0) return;
+        const prevIdx = getPrevBandIndex(currentIdx, bandList.length);
+        setBand(bandList[prevIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
+      },
+      ArrowRight: () => {
+        if (isZoomed || bandList.length === 0) return;
+        const nextIdx = getNextBandIndex(currentIdx, bandList.length);
+        setBand(bandList[nextIdx].id);
+        setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
+      },
+      f: () => {
+        toggleFullscreen();
+        setLiveAnnouncement(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen');
+      },
+      c: () => {
+        setCompareMode((v) => {
+          const next = !v;
+          setLiveAnnouncement(next ? 'Compare mode on' : 'Compare mode off');
+          return next;
+        });
+      },
+      m: () => {
+        toggleMonitor();
+        setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
+      },
+    };
+  }, [bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement]);
+
+  useHotkeys(shortcuts);
+}
+
+function buildOuterClassName(isZoomed: boolean): string {
+  const mobileHeight = isZoomed ? 'max-md:h-[100dvh]' : 'max-md:h-[calc(100dvh-112px)]';
+  return `relative md:h-[calc(100dvh-4rem)] ${mobileHeight} flex flex-col bg-black max-md:-mx-4 max-md:px-0`;
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -134,7 +216,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
 
-  const zoom = useImageZoom();
+  const zoom = useImageZoom({ containerRef });
+  const showZoomHint = useZoomHint(zoom.isZoomed);
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
   const resetCountdownRef = useRef<(() => void) | null>(null);
@@ -274,47 +357,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   useFullscreenSync(setIsFullscreen, zoom);
 
   // Live View keyboard shortcuts
-  const liveShortcuts = useMemo(() => {
-    const bandList = extractArray<{ id: string }>(products?.bands);
-    const currentIdx = bandList.findIndex((b) => b.id === band);
-
-    return {
-      ArrowLeft: () => {
-        if (zoom.isZoomed || bandList.length === 0) return;
-        const prevIdx = getPrevBandIndex(currentIdx, bandList.length);
-        setBand(bandList[prevIdx].id);
-        setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
-      },
-      ArrowRight: () => {
-        if (zoom.isZoomed || bandList.length === 0) return;
-        const nextIdx = getNextBandIndex(currentIdx, bandList.length);
-        setBand(bandList[nextIdx].id);
-        setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
-      },
-      f: () => {
-        toggleFullscreen();
-        setLiveAnnouncement(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen');
-      },
-      c: () => {
-        setCompareMode((v) => {
-          const next = !v;
-          setLiveAnnouncement(next ? 'Compare mode on' : 'Compare mode off');
-          return next;
-        });
-      },
-      m: () => {
-        toggleMonitor();
-        setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
-      },
-    };
-  }, [products?.bands, band, zoom.isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor]);
-
-  useHotkeys(liveShortcuts);
+  useLiveShortcuts({
+    bands: products?.bands, band, isZoomed: zoom.isZoomed, isFullscreen, monitoring,
+    setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement,
+  });
 
   // Double-tap zoom vs single-tap overlay toggle (mobile only)
   const handleImageTap = useDoubleTap(
     () => { if (isMobile) toggleOverlay(); },
-    () => { if (zoom.isZoomed) { zoom.reset(); } else { zoom.zoomIn(); } },
+    () => { (zoom.isZoomed ? zoom.reset : zoom.zoomIn)(); },
     300,
   );
 
@@ -331,7 +382,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const isComposite = band === 'GEOCOLOR';
 
   return (
-    <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-140px)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
+    <div ref={pullContainerRef} className={buildOuterClassName(zoom.isZoomed)}>
       {/* Accessibility: live announcements for screen readers */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="live-a11y-announcer">
         {liveAnnouncement}
@@ -342,7 +393,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <div
         ref={containerRef}
         data-testid="live-image-area"
-        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
@@ -493,6 +544,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           />
         </div>
 
+        {/* Pinch-to-exit zoom hint */}
+        {showZoomHint && (
+          <div
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-30 flex justify-center pointer-events-none animate-fade-out"
+            data-testid="zoom-hint"
+          >
+            <span className="px-4 py-2 rounded-lg bg-black/60 backdrop-blur-md text-white/80 text-sm font-medium">
+              Pinch to exit zoom
+            </span>
+          </div>
+        )}
+
         {/* Zoom reset hint */}
         {zoom.isZoomed && (
           <button
@@ -524,8 +587,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
       </div>
 
-      {/* Mobile band pill strip — pinned above bottom nav */}
-      {isMobile && products?.bands && (
+      {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
+      {isMobile && products?.bands && !zoom.isZoomed && (
         <BandPillStrip
           bands={products.bands}
           activeBand={band}

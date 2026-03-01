@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
+import { useState, useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CdnImage from '../components/GoesData/CdnImage';
 
@@ -42,36 +44,34 @@ describe('CdnImage — no fixed aspect-ratio when unzoomed', () => {
   });
 });
 
+/** Reproduces the useZoomHint hook from LiveTab */
+function useZoomHint(isZoomed: boolean): boolean {
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wasZoomedRef = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: sync hint visibility with zoom state */
+  useEffect(() => {
+    if (isZoomed && !wasZoomedRef.current) {
+      setVisible(true);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setVisible(false), 2000);
+    }
+    if (!isZoomed) {
+      setVisible(false);
+      clearTimeout(timerRef.current);
+    }
+    wasZoomedRef.current = isZoomed;
+    return () => clearTimeout(timerRef.current);
+  }, [isZoomed]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  return visible;
+}
+
 describe('Zoom hint timing', () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
 
-  it('useZoomHint shows hint on zoom-in and hides after 2s', async () => {
-    // Test the useZoomHint pattern extracted in LiveTab
-    const { renderHook, act } = await import('@testing-library/react');
-    const { useState, useEffect, useRef } = await import('react');
-
-    // Reproduce the useZoomHint hook logic
-    function useZoomHint(isZoomed: boolean): boolean {
-      const [visible, setVisible] = useState(false);
-      const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-      const wasZoomed = useRef(false);
-      useEffect(() => {
-        if (isZoomed && !wasZoomed.current) {
-          setVisible(true);
-          clearTimeout(timer.current);
-          timer.current = setTimeout(() => setVisible(false), 2000);
-        }
-        if (!isZoomed) {
-          setVisible(false);
-          clearTimeout(timer.current);
-        }
-        wasZoomed.current = isZoomed;
-        return () => clearTimeout(timer.current);
-      }, [isZoomed]);
-      return visible;
-    }
-
+  it('useZoomHint shows hint on zoom-in and hides after 2s', () => {
     const { result, rerender } = renderHook(({ zoomed }) => useZoomHint(zoomed), {
       initialProps: { zoomed: false },
     });

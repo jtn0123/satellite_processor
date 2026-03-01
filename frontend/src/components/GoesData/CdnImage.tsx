@@ -88,10 +88,10 @@ export default function CdnImage({ src, alt, className, isZoomed = false, imageR
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-900">
-      {/* Cached image banner — inline above image, dismissible */}
+    <div className="relative w-full h-full overflow-hidden md:rounded-lg md:border md:border-white/10 bg-slate-900" data-testid="live-image-container">
+      {/* Cached image banner — absolute overlay, dismissible */}
       {usingCached && cachedMeta && !cachedDismissed && (
-        <div className="w-full flex justify-center px-4 py-1" data-testid="cached-image-banner">
+        <div className="absolute top-0 left-0 right-0 z-10 flex justify-center px-4 py-1" data-testid="cached-image-banner">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px]">
             <span>Cached image · {new Date(cachedMeta.timestamp).toLocaleString()}</span>
             <button onClick={() => setCachedDismissed(true)} className="p-0.5 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
@@ -104,18 +104,16 @@ export default function CdnImage({ src, alt, className, isZoomed = false, imageR
       {!loaded && !error && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
-      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full h-full bg-slate-900" data-testid="live-image-container">
-        <img
-          ref={imageRef}
-          src={displaySrc}
-          alt={alt}
-          onError={handleError}
-          onLoad={handleLoad}
-          loading="eager"
-          className={`${className ?? ''} w-full h-full ${isZoomed ? 'object-cover' : 'object-contain'} md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-          {...props}
-        />
-      </div>
+      <img
+        ref={imageRef}
+        src={displaySrc}
+        alt={alt}
+        onError={handleError}
+        onLoad={handleLoad}
+        loading="eager"
+        className={`${className ?? ''} w-full h-full ${isZoomed ? 'object-cover' : 'object-contain'} md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        {...props}
+      />
     </div>
   );
 }

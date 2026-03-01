@@ -391,75 +391,71 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
-      <div
+      <section
         ref={containerRef}
         data-testid="live-image-area"
-        className={`relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
+        role="application"
+        aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
+        tabIndex={0}
+        className={`relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
+        onWheel={compareMode ? undefined : zoom.handlers.onWheel}
+        onTouchStart={(e) => {
+          if (!compareMode) { zoom.handlers.onTouchStart(e); }
+          handleTouchStart(e);
+        }}
+        onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
+        onTouchEnd={(e) => {
+          if (!compareMode) { zoom.handlers.onTouchEnd(e); }
+          handleTouchEnd(e, zoom.isZoomed);
+        }}
+        onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
+        onMouseMove={(e) => {
+          if (!compareMode) { zoom.handlers.onMouseMove(e); }
+          if (isMobile || overlayVisible) { return; }
+          setOverlayVisible(true);
+          resetOverlayTimer();
+        }}
+        onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
+        onClick={handleImageTap}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); } }}
       >
         {/* Swipe hint (first visit only) */}
         {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
-        {/* Swipe gesture area */}
-        <button
-          type="button"
-          className="w-full h-full flex items-center justify-center bg-transparent border-none p-0 m-0 cursor-default appearance-none"
-          aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
-          data-testid="swipe-gesture-area"
-          onWheel={compareMode ? undefined : zoom.handlers.onWheel}
-          onTouchStart={(e) => {
-            if (!compareMode) { zoom.handlers.onTouchStart(e); }
-            handleTouchStart(e);
-          }}
-          onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
-          onTouchEnd={(e) => {
-            if (!compareMode) { zoom.handlers.onTouchEnd(e); }
-            handleTouchEnd(e, zoom.isZoomed);
-          }}
-          onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
-          onMouseMove={(e) => {
-            if (!compareMode) { zoom.handlers.onMouseMove(e); }
-            if (isMobile || overlayVisible) { return; }
-            setOverlayVisible(true);
-            resetOverlayTimer();
-          }}
-          onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
-          onClick={handleImageTap}
-        >
-          <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
-            {(() => {
-              const isCdnUnavailable = !imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
-              if (isCdnUnavailable && isComposite) {
-                return (
-                  <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
-                    <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
-                  </div>
-                );
-              }
-              if (isCdnUnavailable) {
-                return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
-              }
+        <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
+          {(() => {
+            const isCdnUnavailable = !imageUrl && products?.sectors?.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
+            if (isCdnUnavailable && isComposite) {
               return (
-              <ImagePanelContent
-                isLoading={isLoading && !catalogImageUrl}
-                isError={isError && !imageUrl}
-                imageUrl={imageUrl}
-                compareMode={compareMode}
-                satellite={satellite}
-                band={band}
-                sector={sector}
-                zoomStyle={zoom.style}
-                prevImageUrl={prevImageUrl}
-                comparePosition={comparePosition}
-                onPositionChange={setComparePosition}
-                frameTime={frame?.capture_time ?? null}
-                prevFrameTime={prevFrame?.capture_time ?? null}
-                isZoomed={zoom.isZoomed}
-                imageRef={imageRef}
-              />
+                <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
+                  <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
+                </div>
               );
-            })()}
-          </ImageErrorBoundary>
-        </button>
+            }
+            if (isCdnUnavailable) {
+              return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
+            }
+            return (
+            <ImagePanelContent
+              isLoading={isLoading && !catalogImageUrl}
+              isError={isError && !imageUrl}
+              imageUrl={imageUrl}
+              compareMode={compareMode}
+              satellite={satellite}
+              band={band}
+              sector={sector}
+              zoomStyle={zoom.style}
+              prevImageUrl={prevImageUrl}
+              comparePosition={comparePosition}
+              onPositionChange={setComparePosition}
+              frameTime={frame?.capture_time ?? null}
+              prevFrameTime={prevFrame?.capture_time ?? null}
+              isZoomed={zoom.isZoomed}
+              imageRef={imageRef}
+            />
+            );
+          })()}
+        </ImageErrorBoundary>
 
         {/* Swipe toast */}
         {swipeToast && (
@@ -587,7 +583,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             disabledBands={isMeso ? ['GEOCOLOR'] : []}
           />
         )}
-      </div>
+      </section>
 
       {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
       {isMobile && products?.bands && !zoom.isZoomed && (

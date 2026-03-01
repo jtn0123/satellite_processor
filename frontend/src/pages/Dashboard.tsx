@@ -291,50 +291,41 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* #4: Empty State Onboarding */}
-      {showOnboarding && (
+      {/* Unified Onboarding — shown when no images */}
+      {!statsLoading && stats?.total_images === 0 && (
         <div className="bg-white dark:bg-space-800/70 border border-primary/20 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Rocket className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Get Started</h2>
           </div>
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link to="/live" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                <span className="text-primary font-bold text-sm">1</span>
+                <Radio className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">Go to GOES Data → Fetch tab</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Navigate to the satellite data section</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">1. Watch live imagery</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">See real-time GOES satellite feeds</p>
               </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
+            </Link>
+            <Link to="/goes" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors">
               <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                <span className="text-violet-400 font-bold text-sm">2</span>
+                <Satellite className="w-5 h-5 text-violet-400" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">Select satellite</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Default: GOES-19 (latest active)</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">2. Browse &amp; fetch frames</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Download and explore satellite imagery</p>
               </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
-              <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
-                <span className="text-amber-400 font-bold text-sm">3</span>
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">Use &quot;Last Hour&quot; quick fetch</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">One-click to get recent imagery</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg">
+            </Link>
+            <Link to="/jobs" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors">
               <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-                <span className="text-emerald-400 font-bold text-sm">4</span>
+                <Download className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">Browse your first frames</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">View, organize, and process imagery</p>
+                <p className="font-medium text-sm text-gray-900 dark:text-white">3. Monitor jobs</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Track fetch and processing jobs</p>
               </div>
-            </div>
+            </Link>
           </div>
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
             <button
@@ -348,6 +339,7 @@ export default function Dashboard() {
               {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
             </button>
             <button
+              type="button"
               onClick={() => navigate('/goes')}
               className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
               aria-label="Fetch satellite data now"
@@ -357,59 +349,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Getting Started - original (shown when no images but has GOES frames) */}
-      {stats?.total_images === 0 && totalGoesFrames > 0 && (
-        <div className="bg-white dark:bg-space-800/70 border border-primary/20 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Rocket className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Getting Started</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Link to="/live" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
-              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                <Radio className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">1. Watch live imagery</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">See real-time GOES satellite feeds</p>
-              </div>
-            </Link>
-            <Link to="/goes" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
-              <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                <Satellite className="w-5 h-5 text-violet-400" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">2. Browse & fetch frames</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Download and explore satellite imagery</p>
-              </div>
-            </Link>
-            <Link to="/jobs" className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-space-700 transition-colors">
-              <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-                <Download className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-900 dark:text-white">3. Monitor jobs</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Track fetch and processing jobs</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* View Live quick-link */}
-      <Link
-        to="/live"
-        className="flex items-center gap-4 p-5 bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl hover:bg-gray-50 dark:hover:bg-space-700 transition-colors group"
-      >
-        <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-          <Radio className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <p className="font-semibold text-gray-900 dark:text-white">View Live</p>
-          <p className="text-sm text-gray-500 dark:text-slate-400">Watch real-time satellite imagery</p>
-        </div>
-      </Link>
 
       {/* Quick actions */}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">

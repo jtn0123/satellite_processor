@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -208,6 +209,11 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
+        <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-1">
+          <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span aria-current="page" className="text-gray-900 dark:text-white">Settings</span>
+        </nav>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Application configuration</p>
       </div>

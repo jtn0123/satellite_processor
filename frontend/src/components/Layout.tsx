@@ -318,8 +318,8 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* Global fetch progress indicator */}
-      <FetchProgressBar />
+      {/* Global fetch progress indicator — hidden on /live which has its own InlineFetchProgress */}
+      {!isLivePage && <FetchProgressBar />}
 
       {/* Mobile Bottom Nav */}
       <MobileBottomNav />

@@ -110,9 +110,9 @@ describe('Swipe Gestures', () => {
   it('swipe left triggers next band', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => expect(screen.getByTestId('swipe-gesture-area')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('live-image-area')).toBeInTheDocument());
 
-    const area = screen.getByTestId('swipe-gesture-area');
+    const area = screen.getByTestId('live-image-area');
     fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 200 }] });
 
@@ -126,9 +126,9 @@ describe('Swipe Gestures', () => {
   it('swipe right at first band does nothing', async () => {
     vi.useRealTimers();
     renderWithProviders(<LiveTab />);
-    await waitFor(() => expect(screen.getByTestId('swipe-gesture-area')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('live-image-area')).toBeInTheDocument());
 
-    const area = screen.getByTestId('swipe-gesture-area');
+    const area = screen.getByTestId('live-image-area');
     // Swipe right at first band (GEOCOLOR) should do nothing
     fireEvent.touchStart(area, { touches: [{ clientX: 100, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 300, clientY: 200 }] });
@@ -141,7 +141,7 @@ describe('Swipe Gestures', () => {
     renderWithProviders(<LiveTab />);
     await expectPillBand('GEOCOLOR');
 
-    const area = screen.getByTestId('swipe-gesture-area');
+    const area = screen.getByTestId('live-image-area');
     // Swipe only 30px (below 50px threshold)
     fireEvent.touchStart(area, { touches: [{ clientX: 200, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 170, clientY: 200 }] });
@@ -155,7 +155,7 @@ describe('Swipe Gestures', () => {
     renderWithProviders(<LiveTab />);
     await expectPillBand('GEOCOLOR');
 
-    const area = screen.getByTestId('swipe-gesture-area');
+    const area = screen.getByTestId('live-image-area');
     fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 200 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 200 }] });
 
@@ -171,7 +171,7 @@ describe('Swipe Gestures', () => {
     renderWithProviders(<LiveTab />);
     await expectPillBand('GEOCOLOR');
 
-    const area = screen.getByTestId('swipe-gesture-area');
+    const area = screen.getByTestId('live-image-area');
     // Vertical swipe (dy > dx)
     fireEvent.touchStart(area, { touches: [{ clientX: 200, clientY: 100 }] });
     fireEvent.touchEnd(area, { changedTouches: [{ clientX: 210, clientY: 300 }] });

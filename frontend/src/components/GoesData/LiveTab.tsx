@@ -23,7 +23,7 @@ import { useMonitorMode } from '../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../hooks/useLiveFetchJob';
 import { useCountdownDisplay } from '../../hooks/useCountdownDisplay';
 import { useSwipeBand } from '../../hooks/useSwipeBand';
-import { isMesoSector } from '../../utils/sectorHelpers';
+import { isMesoSector, buildCdnUrl } from '../../utils/sectorHelpers';
 import BandPillStrip from './BandPillStrip';
 import ImagePanelContent from './ImagePanelContent';
 import ImageErrorBoundary from './ImageErrorBoundary';
@@ -37,33 +37,6 @@ import FullscreenButton from './FullscreenButton';
 
 
 /* useOverlayToggle removed — bottom metadata overlay replaced by StatusPill */
-
-/** CDN sector path mapping — mirrors backend CDN_SECTOR_MAP (CDN-available sectors only) */
-const CDN_SECTOR_PATH: Record<string, string> = {
-  CONUS: 'CONUS',
-  FullDisk: 'FD',
-};
-
-/** CDN resolutions per sector — mirrors backend CDN_RESOLUTIONS */
-const CDN_RESOLUTIONS: Record<string, { desktop: string; mobile: string }> = {
-  CONUS: { desktop: '2500x1500', mobile: '1250x750' },
-  FullDisk: { desktop: '1808x1808', mobile: '1808x1808' },
-};
-
-/** Build a direct CDN URL from satellite/sector/band (returns null for meso sectors) */
-function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
-  if (!satellite || !sector || !band) return null;
-  if (!CDN_SECTOR_PATH[sector]) return null;
-  const satPath = satellite.replaceAll('-', '');
-  const cdnSector = CDN_SECTOR_PATH[sector];
-  if (!cdnSector) return null;
-  let cdnBand = band;
-  if (band === 'GEOCOLOR') cdnBand = 'GEOCOLOR';
-  else if (band.startsWith('C')) cdnBand = band.slice(1);
-  const resolutions = CDN_RESOLUTIONS[sector] ?? CDN_RESOLUTIONS.CONUS;
-  const resolution = isMobile ? resolutions.mobile : resolutions.desktop;
-  return `https://cdn.star.nesdis.noaa.gov/${satPath}/ABI/${cdnSector}/${cdnBand}/${resolution}.jpg`;
-}
 
 /** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
 function resolveImageUrls(
@@ -271,6 +244,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       setBand(products.bands[0].id);
     }
   }, [products, band]);
+
+  // Auto-switch away from GEOCOLOR when selecting a mesoscale sector
+  useEffect(() => {
+    if (isMesoSector(sector) && band === 'GEOCOLOR') {
+      setBand('C02');
+    }
+  }, [sector, band]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
@@ -426,7 +406,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         >
           <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
             {!imageUrl && products?.sectors.find((s) => s.id === sector)?.cdn_available === false && !isLoading ? (
-              <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} />
+              isComposite ? (
+                <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
+                  <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
+                </div>
+              ) : (
+                <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} />
+              )
             ) : (
               <ImagePanelContent
                 isLoading={isLoading && !catalogImageUrl}
@@ -559,6 +545,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onSectorChange={setSector}
             sectorName={products.sectors?.find((s) => s.id === sector)?.name}
             satelliteAvailability={products.satellite_availability}
+            disabledBands={isMeso ? ['GEOCOLOR'] : []}
           />
         )}
       </div>
@@ -577,6 +564,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           onSectorChange={setSector}
           sectorName={products.sectors?.find((s) => s.id === sector)?.name}
           satelliteAvailability={products.satellite_availability}
+          disabledBands={isMeso ? ['GEOCOLOR'] : []}
         />
       )}
     </div>

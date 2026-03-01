@@ -35,6 +35,11 @@ class GoesFetchRequest(BaseModel):
     @field_validator("band")
     @classmethod
     def validate_band(cls, v: str) -> str:
+        if v == "GEOCOLOR":
+            raise ValueError(
+                "GEOCOLOR is a pre-rendered composite available via CDN only "
+                "and cannot be fetched from S3. Use bands C01-C16."
+            )
         valid = {f"C{i:02d}" for i in range(1, 17)}
         if v not in valid:
             raise ValueError(f"Invalid band. Must be one of: {sorted(valid)}")

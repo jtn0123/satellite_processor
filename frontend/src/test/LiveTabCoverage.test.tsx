@@ -23,7 +23,7 @@ const PRODUCTS_DATA = {
   satellites: ['GOES-16', 'GOES-18'],
   sectors: [
     { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF', cdn_available: true },
-    { id: 'Meso1', name: 'Mesoscale 1', product: 'ABI-L2-CMIPF', cdn_available: false },
+    { id: 'Mesoscale1', name: 'Mesoscale 1', product: 'ABI-L2-CMIPF', cdn_available: false },
   ],
   bands: [
     { id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' },

@@ -134,7 +134,27 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
 
-  const zoom = useImageZoom();
+  const zoom = useImageZoom({ containerRef });
+
+  // "Pinch to exit" hint — shows for 2s when first zooming in
+  const [showZoomHint, setShowZoomHint] = useState(false);
+  const zoomHintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wasZoomed = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: sync hint visibility with zoom state */
+  useEffect(() => {
+    if (zoom.isZoomed && !wasZoomed.current) {
+      setShowZoomHint(true);
+      clearTimeout(zoomHintTimer.current);
+      zoomHintTimer.current = setTimeout(() => setShowZoomHint(false), 2000);
+    }
+    if (!zoom.isZoomed) {
+      setShowZoomHint(false);
+      clearTimeout(zoomHintTimer.current);
+    }
+    wasZoomed.current = zoom.isZoomed;
+    return () => clearTimeout(zoomHintTimer.current);
+  }, [zoom.isZoomed]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
   const resetCountdownRef = useRef<(() => void) | null>(null);
@@ -331,7 +351,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const isComposite = band === 'GEOCOLOR';
 
   return (
-    <div ref={pullContainerRef} className="relative md:h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-140px)] flex flex-col bg-black max-md:-mx-4 max-md:px-0">
+    <div ref={pullContainerRef} className={`relative md:h-[calc(100dvh-4rem)] ${zoom.isZoomed ? 'max-md:h-[100dvh]' : 'max-md:h-[calc(100dvh-112px)]'} flex flex-col bg-black max-md:-mx-4 max-md:px-0`}>
       {/* Accessibility: live announcements for screen readers */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="live-a11y-announcer">
         {liveAnnouncement}
@@ -493,6 +513,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
           />
         </div>
 
+        {/* Pinch-to-exit zoom hint */}
+        {showZoomHint && (
+          <div
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-30 flex justify-center pointer-events-none animate-fade-out"
+            data-testid="zoom-hint"
+          >
+            <span className="px-4 py-2 rounded-lg bg-black/60 backdrop-blur-md text-white/80 text-sm font-medium">
+              Pinch to exit zoom
+            </span>
+          </div>
+        )}
+
         {/* Zoom reset hint */}
         {zoom.isZoomed && (
           <button
@@ -524,8 +556,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
       </div>
 
-      {/* Mobile band pill strip — pinned above bottom nav */}
-      {isMobile && products?.bands && (
+      {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
+      {isMobile && !zoom.isZoomed && products?.bands && (
         <BandPillStrip
           bands={products.bands}
           activeBand={band}

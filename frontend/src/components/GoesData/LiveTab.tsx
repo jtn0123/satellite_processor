@@ -105,10 +105,11 @@ function useFullscreenSync(
 
 
 /** Message shown for mesoscale sectors where CDN images are not available */
-function MesoFetchRequiredMessage({ onFetchNow, isFetching, fetchFailed }: Readonly<{
+function MesoFetchRequiredMessage({ onFetchNow, isFetching, fetchFailed, errorMessage }: Readonly<{
   onFetchNow: () => void;
   isFetching: boolean;
   fetchFailed: boolean;
+  errorMessage: string | null;
 }>) {
   if (isFetching) {
     return (
@@ -123,7 +124,9 @@ function MesoFetchRequiredMessage({ onFetchNow, isFetching, fetchFailed }: Reado
     <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="meso-fetch-required">
       <p className="text-white/70 text-sm">No live preview available for mesoscale sectors — CDN images are not provided by NOAA.</p>
       {fetchFailed && (
-        <p className="text-red-400 text-xs">No mesoscale data found — try fetching again</p>
+        <p className="text-red-400 text-xs" data-testid="meso-fetch-error">
+          {errorMessage || 'No mesoscale data found — try fetching again'}
+        </p>
       )}
       <button
         type="button"
@@ -411,7 +414,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
                   <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
                 </div>
               ) : (
-                <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} />
+                <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />
               )
             ) : (
               <ImagePanelContent

@@ -268,10 +268,8 @@ def _list_hour(
                 scan_time = _parse_scan_time(key)
                 if scan_time and start_time <= scan_time <= end_time:
                     results.append({"key": key, "scan_time": scan_time, "size": obj["Size"]})
-    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError) as exc:
+    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError, ConnectionError, OSError) as exc:
         logger.warning("Failed to list S3 prefix %s/%s: %s", bucket, prefix, exc)
-    except Exception:
-        logger.warning("Failed to list S3 prefix %s/%s", bucket, prefix, exc_info=True)
     return results
 
 
@@ -287,6 +285,14 @@ def list_available(
     Returns list of dicts with 'key', 'scan_time', 'size' fields.
     """
     validate_params(satellite, sector, band)
+
+    # Ensure timezone-aware datetimes to avoid TypeError when comparing
+    # with UTC-aware scan times from _parse_scan_time()
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=UTC)
+    if end_time.tzinfo is None:
+        end_time = end_time.replace(tzinfo=UTC)
+
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
 

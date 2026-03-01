@@ -23,6 +23,7 @@ import { useMonitorMode } from '../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../hooks/useLiveFetchJob';
 import { useCountdownDisplay } from '../../hooks/useCountdownDisplay';
 import { useSwipeBand } from '../../hooks/useSwipeBand';
+import { isMesoSector } from '../../utils/sectorHelpers';
 import BandPillStrip from './BandPillStrip';
 import ImagePanelContent from './ImagePanelContent';
 import ImageErrorBoundary from './ImageErrorBoundary';
@@ -374,7 +375,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Primary: local frame if available; fallback: catalog CDN URL (responsive)
-  const isMesoSector = sector === 'Mesoscale1' || sector === 'Mesoscale2';
+  const isMeso = isMesoSector(sector);
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
 
   const freshnessInfo = computeFreshness(catalogLatest, frame);
@@ -469,8 +470,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
               onRefreshIntervalChange={setRefreshInterval}
               compareMode={compareMode}
               onCompareModeChange={setCompareMode}
-              autoFetchDisabled={band === 'GEOCOLOR' || isMesoSector}
-              autoFetchDisabledReason={isMesoSector ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
+              autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
+              autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
             />
 
             <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
@@ -511,7 +512,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         )}
 
         {/* Inline fetch progress overlay — hidden when meso fetch message handles it */}
-        {activeJobId && activeJob && (imageUrl || !isMesoSector) && (
+        {activeJobId && activeJob && (imageUrl || !isMeso) && (
           <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
             <InlineFetchProgress job={activeJob} />
           </div>
@@ -527,8 +528,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             onToggleMonitor={toggleMonitor}
             autoFetch={autoFetch}
             onAutoFetchChange={(v) => setAutoFetch(v)}
-            autoFetchDisabled={band === 'GEOCOLOR' || isMesoSector}
-            autoFetchDisabledReason={isMesoSector ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
+            autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
+            autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
           />
         </div>
 

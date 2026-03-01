@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/client';
 import { showToast } from '../utils/toast';
+import { isMesoSector } from '../utils/sectorHelpers';
 import type { CatalogLatest, LatestFrame } from '../components/GoesData/types';
 
 function shouldAutoFetch(
@@ -48,7 +49,7 @@ export function useLiveFetchJob({
   }, [activeJob, refetch]);
 
   const fetchNow = useCallback(async () => {
-    const isMeso = sector === 'Mesoscale1' || sector === 'Mesoscale2';
+    const isMeso = isMesoSector(sector);
     let startDate: string;
     let endDate: string;
 
@@ -109,20 +110,19 @@ export function useLiveFetchJob({
   // Track whether the last fetch job completed but no frame appeared
   const [lastFetchFailed, setLastFetchFailed] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- intentional: derived from async job status */
+  // Derive failure from job terminal state and reset on param changes
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: syncs async job status to state */
   useEffect(() => {
-    if (activeJob?.status === 'completed' && !frame) {
-      setLastFetchFailed(true);
-    } else if (activeJob?.status === 'failed') {
+    setLastFetchFailed(false);
+  }, [satellite, sector, band]);
+
+  useEffect(() => {
+    if (activeJob?.status === 'failed' || (activeJob?.status === 'completed' && !frame)) {
       setLastFetchFailed(true);
     } else if (frame) {
       setLastFetchFailed(false);
     }
   }, [activeJob?.status, frame]);
-
-  useEffect(() => {
-    setLastFetchFailed(false);
-  }, [satellite, sector, band]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   return { activeJobId, activeJob: activeJob ?? null, fetchNow, lastFetchFailed };

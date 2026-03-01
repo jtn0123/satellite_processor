@@ -109,6 +109,29 @@ function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
 
+/** Shows a "pinch to exit" hint for 2s when first zooming in */
+function useZoomHint(isZoomed: boolean): boolean {
+  const [visible, setVisible] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wasZoomed = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: sync hint visibility with zoom state */
+  useEffect(() => {
+    if (isZoomed && !wasZoomed.current) {
+      setVisible(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setVisible(false), 2000);
+    }
+    if (!isZoomed) {
+      setVisible(false);
+      clearTimeout(timer.current);
+    }
+    wasZoomed.current = isZoomed;
+    return () => clearTimeout(timer.current);
+  }, [isZoomed]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  return visible;
+}
+
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
 }
@@ -135,26 +158,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const lastAutoFetchMs = useRef<number>(0);
 
   const zoom = useImageZoom({ containerRef });
-
-  // "Pinch to exit" hint — shows for 2s when first zooming in
-  const [showZoomHint, setShowZoomHint] = useState(false);
-  const zoomHintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const wasZoomed = useRef(false);
-  /* eslint-disable react-hooks/set-state-in-effect -- intentional: sync hint visibility with zoom state */
-  useEffect(() => {
-    if (zoom.isZoomed && !wasZoomed.current) {
-      setShowZoomHint(true);
-      clearTimeout(zoomHintTimer.current);
-      zoomHintTimer.current = setTimeout(() => setShowZoomHint(false), 2000);
-    }
-    if (!zoom.isZoomed) {
-      setShowZoomHint(false);
-      clearTimeout(zoomHintTimer.current);
-    }
-    wasZoomed.current = zoom.isZoomed;
-    return () => clearTimeout(zoomHintTimer.current);
-  }, [zoom.isZoomed]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const showZoomHint = useZoomHint(zoom.isZoomed);
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
   const resetCountdownRef = useRef<(() => void) | null>(null);

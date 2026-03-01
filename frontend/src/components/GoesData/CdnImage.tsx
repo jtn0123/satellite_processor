@@ -103,7 +103,7 @@ export default function CdnImage({ src, alt, className, isZoomed = false, ...pro
       {!loaded && !error && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
       )}
-      <div className={`relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full bg-slate-900 ${isZoomed ? 'h-full' : 'h-full'}`} data-testid="live-image-container">
+      <div className="relative md:rounded-lg overflow-hidden md:border md:border-white/10 w-full h-full bg-slate-900" data-testid="live-image-container">
         <img
           src={displaySrc}
           alt={alt}

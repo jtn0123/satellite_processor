@@ -116,11 +116,11 @@ describe('buildCdnUrl — satellite × sector × band matrix', () => {
   });
 
   it.each([
-    { label: 'empty satellite', args: ['', 'CONUS', 'C02'] as const },
-    { label: 'empty sector', args: ['GOES-19', '', 'C02'] as const },
-    { label: 'empty band', args: ['GOES-19', 'CONUS', ''] as const },
-  ])('returns null when $label', ({ args }) => {
-    expect(buildCdnUrl(...args)).toBeNull();
+    { label: 'empty satellite', sat: '', sector: 'CONUS', band: 'C02' },
+    { label: 'empty sector', sat: 'GOES-19', sector: '', band: 'C02' },
+    { label: 'empty band', sat: 'GOES-19', sector: 'CONUS', band: '' },
+  ])('returns null when $label', ({ sat, sector, band }) => {
+    expect(buildCdnUrl(sat, sector, band)).toBeNull();
   });
 
   it('GEOCOLOR band uses GEOCOLOR in CDN path', () => {

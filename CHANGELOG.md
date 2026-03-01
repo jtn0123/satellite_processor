@@ -1,3 +1,10 @@
+## [1.24.3](https://github.com/jtn0123/satellite_processor/compare/v1.24.2...v1.24.3) (2026-03-01)
+
+
+### Bug Fixes
+
+* prevent pinch-zoom release from triggering accidental band swipe ([#266](https://github.com/jtn0123/satellite_processor/issues/266)) ([accf69a](https://github.com/jtn0123/satellite_processor/commit/accf69a0742f3156a25cc01f6ff033952d1be71d))
+
 ## [1.24.2](https://github.com/jtn0123/satellite_processor/compare/v1.24.1...v1.24.2) (2026-02-28)
 
 

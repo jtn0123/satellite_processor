@@ -391,7 +391,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />
 
       {/* Full-bleed image area */}
-      <section
+      <div
         ref={containerRef}
         data-testid="live-image-area"
         role="application"
@@ -583,7 +583,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
             disabledBands={isMeso ? ['GEOCOLOR'] : []}
           />
         )}
-      </section>
+      </div>
 
       {/* Mobile band pill strip — pinned above bottom nav, hidden when zoomed */}
       {isMobile && products?.bands && !zoom.isZoomed && (

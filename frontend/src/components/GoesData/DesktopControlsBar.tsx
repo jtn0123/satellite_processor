@@ -72,7 +72,7 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${selectClass}`}
         >
           {REFRESH_INTERVALS.map((ri) => (
-            <option key={ri.value} value={ri.value} className="bg-space-900 text-white">{ri.label}</option>
+            <option key={ri.value} value={ri.value} className="bg-white dark:bg-space-900 text-gray-900 dark:text-white">{ri.label}</option>
           ))}
         </select>
       </div>

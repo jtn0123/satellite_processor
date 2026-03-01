@@ -188,6 +188,8 @@ export default function BandPillStrip({
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${pillClass}`}
               style={{ scrollSnapAlign: 'center' }}
               data-testid={`band-pill-${b.id}`}
+              aria-label={`Select band ${getFriendlyBandLabel(b.id, b.description, 'short')}${isActive ? ' (active)' : ''}`}
+              aria-pressed={isActive}
             >
               {getFriendlyBandLabel(b.id, b.description, 'short')}
             </button>

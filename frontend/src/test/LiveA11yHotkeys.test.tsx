@@ -37,7 +37,7 @@ function renderBandStrip() {
 describe('BandPillStrip accessibility', () => {
   it('band pills have aria-label', () => {
     renderBandStrip();
-    const pills = screen.getAllByTestId(/^band-pill-/);
+    const pills = screen.getAllByTestId(/^band-pill-(?!strip)/);
     for (const pill of pills) {
       expect(pill.getAttribute('aria-label')).toBeTruthy();
     }

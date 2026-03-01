@@ -17,7 +17,7 @@ import StaleDataBanner from './StaleDataBanner';
 import InlineFetchProgress from './InlineFetchProgress';
 import { extractArray } from '../../utils/safeData';
 import type { LatestFrame, CatalogLatest, Product } from './types';
-import { timeAgo } from './liveTabUtils';
+import { timeAgo, getPrevBandIndex, getNextBandIndex } from './liveTabUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useMonitorMode } from '../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../hooks/useLiveFetchJob';
@@ -315,13 +315,13 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     return {
       ArrowLeft: () => {
         if (zoom.isZoomed || bandList.length === 0) return;
-        const prevIdx = currentIdx > 0 ? currentIdx - 1 : bandList.length - 1;
+        const prevIdx = getPrevBandIndex(currentIdx, bandList.length);
         setBand(bandList[prevIdx].id);
         setLiveAnnouncement(`Band: ${bandList[prevIdx].id}`);
       },
       ArrowRight: () => {
         if (zoom.isZoomed || bandList.length === 0) return;
-        const nextIdx = currentIdx < bandList.length - 1 ? currentIdx + 1 : 0;
+        const nextIdx = getNextBandIndex(currentIdx, bandList.length);
         setBand(bandList[nextIdx].id);
         setLiveAnnouncement(`Band: ${bandList[nextIdx].id}`);
       },
@@ -331,8 +331,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       },
       c: () => {
         setCompareMode((v) => {
-          setLiveAnnouncement(!v ? 'Compare mode on' : 'Compare mode off');
-          return !v;
+          const next = !v;
+          setLiveAnnouncement(next ? 'Compare mode on' : 'Compare mode off');
+          return next;
         });
       },
       m: () => {

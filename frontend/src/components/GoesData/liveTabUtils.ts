@@ -108,3 +108,21 @@ export function loadCachedImage(satellite?: string, sector?: string, band?: stri
     return null;
   } catch { return null; }
 }
+
+/**
+ * Get the previous band index (wraps around).
+ * Returns -1 if bands list is empty.
+ */
+export function getPrevBandIndex(currentIdx: number, length: number): number {
+  if (length === 0) return -1;
+  return currentIdx > 0 ? currentIdx - 1 : length - 1;
+}
+
+/**
+ * Get the next band index (wraps around).
+ * Returns -1 if bands list is empty.
+ */
+export function getNextBandIndex(currentIdx: number, length: number): number {
+  if (length === 0) return -1;
+  return currentIdx < length - 1 ? currentIdx + 1 : 0;
+}

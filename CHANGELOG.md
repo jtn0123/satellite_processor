@@ -1,3 +1,10 @@
+## [1.26.6](https://github.com/jtn0123/satellite_processor/compare/v1.26.5...v1.26.6) (2026-03-01)
+
+
+### Bug Fixes
+
+* use rendered image dimensions for zoom pan clamping ([#278](https://github.com/jtn0123/satellite_processor/issues/278)) ([ba8a0af](https://github.com/jtn0123/satellite_processor/commit/ba8a0afb67fbe3764265e04e68cafdd68177844f))
+
 ## [1.26.5](https://github.com/jtn0123/satellite_processor/compare/v1.26.4...v1.26.5) (2026-03-01)
 
 

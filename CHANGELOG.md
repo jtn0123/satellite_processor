@@ -1,3 +1,10 @@
+## [1.26.5](https://github.com/jtn0123/satellite_processor/compare/v1.26.4...v1.26.5) (2026-03-01)
+
+
+### Bug Fixes
+
+* mobile zoom viewport — pan clamping, full viewport when zoomed, tighter layout ([#277](https://github.com/jtn0123/satellite_processor/issues/277)) ([2a15a1e](https://github.com/jtn0123/satellite_processor/commit/2a15a1e9da3e001faeed86e7acf43c33079320ec))
+
 ## [1.26.4](https://github.com/jtn0123/satellite_processor/compare/v1.26.3...v1.26.4) (2026-03-01)
 
 

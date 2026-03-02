@@ -12,6 +12,7 @@ from app.tasks.scheduling_tasks import (
     _get_protected_frame_ids,
     _launch_schedule_job,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def _utcnow():
@@ -119,7 +120,7 @@ class TestCheckSchedules:
 
         session = MagicMock()
         mock_db.return_value = session
-        session.query.side_effect = Exception("db error")
+        session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import check_schedules
         check_schedules()
@@ -221,7 +222,7 @@ class TestRunCleanup:
     def test_rollback_on_error(self, mock_db):
         session = MagicMock()
         mock_db.return_value = session
-        session.query.side_effect = Exception("db error")
+        session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import run_cleanup
         run_cleanup()

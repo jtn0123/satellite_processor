@@ -41,7 +41,7 @@ def test_read_max_frames_setting_exception(mock_db):
 
     session = MagicMock()
     mock_db.return_value = session
-    session.query.side_effect = RuntimeError("db error")
+    session.query.side_effect = ValueError("db error")
 
     result = _read_max_frames_setting()
     assert result == 200
@@ -285,7 +285,7 @@ def test_process_single_frame_unexpected_error(mock_dl, tmp_path):
 
     from app.services.goes_fetcher import _process_single_frame
 
-    mock_dl.side_effect = RuntimeError("boom")
+    mock_dl.side_effect = ConnectionError("boom")
     results = []
     ok = _process_single_frame(
         MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",

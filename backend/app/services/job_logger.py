@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 
+import redis.exceptions
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -50,5 +51,5 @@ def log_job_sync(
                 "timestamp": ts.isoformat(),
             })
             redis_client.publish(f"job:{job_id}", payload)
-        except Exception:
+        except (redis.exceptions.RedisError, OSError):
             logger.debug("Redis unavailable, skipping log broadcast for job %s", job_id)

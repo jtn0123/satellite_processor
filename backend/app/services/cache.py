@@ -9,6 +9,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+import redis.exceptions
+
 from ..redis_pool import get_redis_client
 
 logger = logging.getLogger(__name__)
@@ -29,20 +31,20 @@ async def get_cached(
     fetch_fn: Callable[[], Any] | Callable[[], Awaitable[Any]],
 ) -> Any:
     """Return cached value or call fetch_fn, cache result, and return it."""
-    redis = get_redis_client()
+    redis_client = get_redis_client()
     try:
-        cached = await redis.get(key)
+        cached = await redis_client.get(key)
         if cached is not None:
             return json.loads(cached)
-    except Exception:
+    except (redis.exceptions.RedisError, OSError, RuntimeError, json.JSONDecodeError):
         logger.warning("Redis cache read failed for %s", key, exc_info=True)
 
     raw = fetch_fn()
     result = await raw if inspect.isawaitable(raw) else raw
 
     try:
-        await redis.set(key, json.dumps(result, default=str), ex=ttl)
-    except Exception:
+        await redis_client.set(key, json.dumps(result, default=str), ex=ttl)
+    except (redis.exceptions.RedisError, OSError, RuntimeError):
         logger.warning("Redis cache write failed for %s", key, exc_info=True)
 
     return result
@@ -50,14 +52,14 @@ async def get_cached(
 
 async def invalidate(pattern: str) -> int:
     """Delete keys matching a glob pattern. Returns count deleted."""
-    redis = get_redis_client()
+    redis_client = get_redis_client()
     try:
         keys: list[str] = []
-        async for key in redis.scan_iter(match=pattern, count=100):
+        async for key in redis_client.scan_iter(match=pattern, count=100):
             keys.append(key)
         if keys:
-            deleted: int = await redis.delete(*keys)
+            deleted: int = await redis_client.delete(*keys)
             return deleted
-    except Exception:
+    except (redis.exceptions.RedisError, OSError, RuntimeError):
         logger.warning("Redis cache invalidate failed for %s", pattern, exc_info=True)
     return 0

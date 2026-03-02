@@ -49,7 +49,7 @@ async def init_db(max_retries: int = 5, base_delay: float = 1.0):
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database initialized successfully")
             return
-        except Exception:
+        except Exception:  # Startup retry: intentionally broad for DB initialization
             if attempt == max_retries:
                 logger.exception("Failed to initialize database after %d attempts", max_retries)
                 raise

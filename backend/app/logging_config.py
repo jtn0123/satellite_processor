@@ -158,7 +158,7 @@ class RequestLoggingMiddleware:
 
         try:
             await self.app(scope, receive, send_wrapper)
-        except Exception as exc:
+        except Exception as exc:  # Middleware: capture all errors for structured logging, then re-raise
             error_info = _format_error(exc)
             raise
         finally:

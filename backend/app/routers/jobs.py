@@ -257,7 +257,7 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if task_id:
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
+        except OSError:
             logger.warning("Failed to revoke Celery task %s", task_id)
 
     # Clean up partial output files
@@ -302,7 +302,7 @@ async def bulk_delete_jobs(
         if task_id and job.status in ("pending", "processing"):
             try:
                 celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-            except Exception:
+            except OSError:
                 pass
 
         if use_delete_files:
@@ -339,7 +339,7 @@ async def delete_job(
     if task_id and job.status in ("pending", "processing"):
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
+        except OSError:
             pass
 
     bytes_freed = 0

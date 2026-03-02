@@ -6,6 +6,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import redis.exceptions
+from botocore.exceptions import ClientError
+from sqlalchemy.exc import SQLAlchemyError
+
 from ..celery_app import celery_app
 from ..config import settings
 from ..services.job_logger import log_job_sync
@@ -28,7 +32,7 @@ def _read_max_frames_setting() -> int:
         ).first()
         if setting and isinstance(setting.value, (int, float)):
             max_frames_limit = max(1, min(int(setting.value), 1000))
-    except Exception:
+    except (SQLAlchemyError, ValueError, TypeError):
         logger.debug("Could not read max_frames_per_fetch setting, using default")
     finally:
         session.close()
@@ -177,7 +181,7 @@ def _make_job_logger(job_id: str):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except Exception:
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
@@ -271,7 +275,11 @@ def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
     _publish_progress(job_id, 0, f"Error: {error}", "failed")
 
 
-@celery_app.task(bind=True, name="fetch_goes_data")
+@celery_app.task(
+    bind=True, name="fetch_goes_data",
+    autoretry_for=(ConnectionError, TimeoutError, ClientError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def fetch_goes_data(self, job_id: str, params: dict):
     """Download GOES frames for a time range and create Image records."""
     logger.info("Starting GOES fetch job %s", job_id)
@@ -286,7 +294,7 @@ def fetch_goes_data(self, job_id: str, params: dict):
 
     try:
         _execute_goes_fetch(job_id, params, _log)
-    except Exception as e:
+    except Exception as e:  # Task boundary: log + update status, re-raise for retry
         _handle_fetch_failure(job_id, e, _log)
         raise
 
@@ -406,7 +414,11 @@ def _fill_single_gap(
     return len(results)
 
 
-@celery_app.task(bind=True, name="backfill_gaps")
+@celery_app.task(
+    bind=True, name="backfill_gaps",
+    autoretry_for=(ConnectionError, TimeoutError, ClientError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def backfill_gaps(self, job_id: str, params: dict):
     """Run gap detection then fetch missing frames."""
     logger.info("Starting backfill job %s", job_id)
@@ -447,7 +459,7 @@ def backfill_gaps(self, job_id: str, params: dict):
         )
         _publish_progress(job_id, 100, f"Backfilled {total_fetched} frames", "completed")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log + update status, re-raise for retry
         logger.exception("Backfill job %s failed", job_id)
         _update_job_db(
             job_id, status="failed", error=str(e),
@@ -551,7 +563,11 @@ def _mark_composite_failed(composite_id: str, error: str) -> None:
         session.close()
 
 
-@celery_app.task(bind=True, name="generate_composite")
+@celery_app.task(
+    bind=True, name="generate_composite",
+    autoretry_for=(ConnectionError, TimeoutError, ClientError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def generate_composite(self, composite_id: str, job_id: str, params: dict):
     """Generate a band composite image from multiple GOES bands."""
     from ..db.models import Composite
@@ -598,7 +614,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
         )
         _publish_progress(job_id, 100, "Composite generated", "completed")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log + update status, re-raise for retry
         logger.exception("Composite generation %s failed", composite_id)
         _mark_composite_failed(composite_id, str(e))
         _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow())
@@ -606,7 +622,11 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
         raise
 
 
-@celery_app.task(bind=True, name="fetch_composite_data")
+@celery_app.task(
+    bind=True, name="fetch_composite_data",
+    autoretry_for=(ConnectionError, TimeoutError, ClientError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def fetch_composite_data(self, job_id: str, params: dict):
     """Fetch multiple bands sequentially, then auto-queue composite generation."""
     _log = _make_job_logger(job_id)
@@ -707,7 +727,7 @@ def fetch_composite_data(self, job_id: str, params: dict):
         )
         _publish_progress(job_id, 100, "Composite fetch completed", "completed")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log + update status, re-raise for retry
         logger.exception("Composite fetch %s failed", job_id)
         _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow())
         _publish_progress(job_id, 0, f"Error: {e}", "failed")

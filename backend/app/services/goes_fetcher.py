@@ -350,8 +350,8 @@ def _read_cmi_data(nc_path: Path, sector: str) -> np.ndarray | None:
         if hasattr(cmi, "filled"):
             return cmi.filled(np.nan).astype(np.float32)
         return np.asarray(cmi, dtype=np.float32)
-    except Exception:
-        logger.warning("netCDF4 unavailable or read failed")
+    except (ImportError, OSError, ValueError, KeyError):
+        logger.warning("netCDF4 unavailable or read failed", exc_info=True)
         return None
 
 
@@ -527,10 +527,11 @@ def _process_single_frame(
     on_progress: Any | None,
 ) -> bool:
     """Download and convert one frame, appending to *results*. Returns True on success."""
-    try:
-        if index > 0 and index % 10 == 0:
-            _check_disk_space(out, min_gb=0.5)
+    # Disk space check is outside try so OSError from disk full propagates
+    if index > 0 and index % 10 == 0:
+        _check_disk_space(out, min_gb=0.5)
 
+    try:
         frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
         if frame is None:
             return False
@@ -539,10 +540,8 @@ def _process_single_frame(
         if on_progress:
             on_progress(index + 1, total)
         return True
-    except OSError:
-        raise
-    except Exception:
-        logger.exception("Unexpected error fetching %s", item["key"])
+    except (ClientError, OSError, ValueError, KeyError):
+        logger.exception("Error fetching %s", item.get("key", "<unknown>"))
         return False
 
 
@@ -631,6 +630,6 @@ def fetch_single_preview(
             return tmp_path.read_bytes()
         finally:
             tmp_path.unlink(missing_ok=True)
-    except Exception:
+    except (ClientError, OSError, ValueError):
         logger.exception("Failed to fetch preview")
         return None

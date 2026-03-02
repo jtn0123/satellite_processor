@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 
 from .config import settings as app_settings
 from .db.database import init_db
@@ -69,8 +70,10 @@ async def _stale_job_checker():
                 result = await cleanup_all_stale(db)
                 if result["total"]:
                     logger.info("Stale job cleanup: %s", result)
-        except Exception:
+        except (SQLAlchemyError, OSError, TypeError):
             logger.warning("Stale job check failed", exc_info=True)
+        except Exception:
+            logger.exception("Unexpected stale job checker failure")
 
 
 @asynccontextmanager
@@ -94,8 +97,10 @@ async def lifespan(app: FastAPI):
             result = await cleanup_all_stale(db)
             if result["total"]:
                 logger.info("Startup stale job cleanup: %s", result)
-    except Exception:
+    except (SQLAlchemyError, OSError, TypeError):
         logger.warning("Startup stale job check failed", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected startup cleanup failure")
 
     # Start periodic checker
     checker_task = asyncio.create_task(_stale_job_checker())
@@ -202,7 +207,7 @@ async def metrics_endpoint():
         usage = shutil.disk_usage(app_settings.storage_path)
         DISK_FREE_BYTES.set(usage.free)
         DISK_USED_BYTES.set(usage.used)
-    except Exception:
+    except OSError:
         pass
 
     # Update frame count
@@ -215,7 +220,7 @@ async def metrics_endpoint():
         async with async_session() as session:
             count = (await session.execute(select(func.count(GoesFrame.id)))).scalar() or 0
             FRAME_COUNT.set(count)
-    except Exception:
+    except (SQLAlchemyError, ImportError):
         pass
 
     return get_metrics_response()

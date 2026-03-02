@@ -5,9 +5,14 @@ import logging
 import platform
 import sys
 import time
+from typing import Annotated
 
 import psutil
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..db.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +69,7 @@ async def system_info():
             "used": disk.used,
             "percent": disk.percent,
         }
-    except Exception:
+    except OSError:
         disk_info = {"error": "unable to read disk usage"}
 
     # Check celery worker status
@@ -78,7 +83,7 @@ async def system_info():
 
         active = await asyncio.to_thread(_check_celery)
         worker_status = "online" if active else "offline"
-    except Exception:
+    except Exception:  # kombu.exceptions.OperationalError, redis errors, etc.
         worker_status = "offline"
 
     uptime_seconds = time.time() - _start_time
@@ -99,3 +104,45 @@ async def system_info():
     _system_info_cache["data"] = result
     _system_info_cache["expires"] = time.time() + 30  # 30s TTL
     return result
+
+
+@router.get("/failed-jobs")
+async def list_failed_jobs(
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    task_name: Annotated[str | None, Query()] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """List failed Celery tasks from the dead-letter table (paginated)."""
+    from ..models.failed_job import FailedJob
+
+    query = select(FailedJob).order_by(FailedJob.failed_at.desc())
+    count_query = select(func.count()).select_from(FailedJob)
+
+    if task_name:
+        query = query.where(FailedJob.task_name == task_name)
+        count_query = count_query.where(FailedJob.task_name == task_name)
+
+    total = (await db.execute(count_query)).scalar_one()
+    offset = (page - 1) * limit
+    rows = (await db.execute(query.offset(offset).limit(limit))).scalars().all()
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "task_name": r.task_name,
+                "task_id": r.task_id,
+                "args": r.args,
+                "kwargs": r.kwargs,
+                "exception": r.exception,
+                "traceback": r.traceback,
+                "failed_at": r.failed_at.isoformat() if r.failed_at else None,
+                "retried_count": r.retried_count,
+            }
+            for r in rows
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }

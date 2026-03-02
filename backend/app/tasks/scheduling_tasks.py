@@ -6,6 +6,8 @@ import os
 import uuid
 from datetime import timedelta
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from ..celery_app import celery_app
 from ..utils import utcnow
 from .helpers import _get_sync_db
@@ -71,7 +73,7 @@ def check_schedules(self):
         session.commit()
         logger.info("Schedule check complete: %d jobs launched", len(due))
 
-    except Exception:
+    except (SQLAlchemyError, ConnectionError):
         session.rollback()
         logger.exception("Error checking schedules")
     finally:
@@ -184,7 +186,7 @@ def run_cleanup(self):
         session.commit()
         logger.info("Cleanup complete: deleted %d frames, freed %d bytes", total_deleted, total_freed)
 
-    except Exception:
+    except (SQLAlchemyError, OSError):
         session.rollback()
         logger.exception("Error running cleanup")
     finally:

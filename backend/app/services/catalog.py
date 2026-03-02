@@ -5,6 +5,8 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from botocore.exceptions import ClientError
+
 from ..services.goes_fetcher import (
     SATELLITE_BUCKETS,
     _build_s3_prefix,
@@ -131,7 +133,7 @@ def catalog_list(
         prefix = _build_s3_prefix(satellite, sector, band, dt)
         try:
             results.extend(_collect_matching_entries(s3, bucket, prefix, sector, band))
-        except Exception:
+        except (ClientError, ConnectionError, TimeoutError):
             logger.warning("Failed listing %s/%s", bucket, prefix, exc_info=True)
 
     results.sort(key=lambda x: x["scan_time"])
@@ -174,7 +176,7 @@ def catalog_latest(
                         "sector": sector,
                         "band": band,
                     }
-        except Exception:
+        except (ClientError, ConnectionError, TimeoutError):
             logger.warning("Failed listing %s/%s", bucket, prefix, exc_info=True)
         # Early exit: if we found results in this hour, no need to check older hours
         if latest is not None:
@@ -218,7 +220,7 @@ def catalog_available(satellite: str) -> dict[str, Any]:
                 if resp.get("Contents"):
                     found = True
                     break
-            except Exception:
+            except (ClientError, ConnectionError, TimeoutError):
                 logger.warning("Failed checking availability %s/%s", bucket, prefix, exc_info=True)
         if found:
             available_sectors.append(sector)

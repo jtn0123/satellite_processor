@@ -127,7 +127,7 @@ async def update_settings(body: SettingsUpdate, db: AsyncSession = Depends(get_d
         logger.exception("Failed to save settings to DB")
         await db.rollback()
         raise APIError(500, "db_error", "Failed to save settings")
-    except Exception:
+    except (ValueError, TypeError, KeyError):
         logger.exception("Unexpected error saving settings")
         await db.rollback()
         raise

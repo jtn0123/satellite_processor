@@ -7,6 +7,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from ..celery_app import celery_app
 from ..config import settings
 from ..utils import utcnow
@@ -172,11 +174,15 @@ def _mark_animation_failed(session, animation_id: str, error: str):
             anim.error = error
             anim.completed_at = utcnow()
             session.commit()
-    except Exception:
+    except SQLAlchemyError:
         logger.exception("Failed to mark animation %s as failed", animation_id)
 
 
-@celery_app.task(bind=True, name="generate_animation")
+@celery_app.task(
+    bind=True, name="generate_animation",
+    autoretry_for=(ConnectionError, TimeoutError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def generate_animation(self, job_id: str, animation_id: str):
     """Generate an animation (MP4/GIF) from selected GOES frames."""
     from ..db.models import Animation, CropPreset, GoesFrame, Job
@@ -187,6 +193,7 @@ def generate_animation(self, job_id: str, animation_id: str):
     _publish_progress(job_id, 0, "Preparing animation...", "processing")
 
     session = _get_sync_db()
+    work_dir: Path | None = None
     try:
         anim = session.query(Animation).filter(Animation.id == animation_id).first()
         if not anim:
@@ -257,7 +264,7 @@ def generate_animation(self, job_id: str, animation_id: str):
         _publish_progress(job_id, 100,
                           f"Animation complete: {len(frames)} frames", "completed")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
         logger.exception("Animation job %s failed", job_id)
         session.rollback()
         _mark_animation_failed(session, animation_id, str(e))
@@ -269,5 +276,5 @@ def generate_animation(self, job_id: str, animation_id: str):
         raise
     finally:
         session.close()
-        if work_dir.exists():
+        if work_dir and work_dir.exists():
             shutil.rmtree(work_dir, ignore_errors=True)

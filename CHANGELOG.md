@@ -1,3 +1,10 @@
+## [1.26.7](https://github.com/jtn0123/satellite_processor/compare/v1.26.6...v1.26.7) (2026-03-02)
+
+
+### Bug Fixes
+
+* backend reliability — exception narrowing, Celery retries, dead letter tracking ([#296](https://github.com/jtn0123/satellite_processor/issues/296)) ([a6b5d21](https://github.com/jtn0123/satellite_processor/commit/a6b5d213a5a91eb3596617f6fd6a341938dc77ad))
+
 ## [1.26.6](https://github.com/jtn0123/satellite_processor/compare/v1.26.5...v1.26.6) (2026-03-01)
 
 

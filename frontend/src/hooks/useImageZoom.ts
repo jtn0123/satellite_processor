@@ -26,8 +26,11 @@ interface UseImageZoomReturn {
     onMouseMove: (e: MouseEvent) => void;
     onMouseUp: () => void;
   };
+  scale: number;
   reset: () => void;
   zoomIn: () => void;
+  zoomOut: () => void;
+  setScale: (s: number) => void;
   isZoomed: boolean;
 }
 
@@ -93,18 +96,35 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     setState({ scale: doubleTapScale, translateX: 0, translateY: 0, isInteracting: false });
   }, [doubleTapScale]);
 
+  const zoomOut = useCallback(() => {
+    setState(INITIAL_STATE);
+  }, []);
+
+  const setScaleTo = useCallback((s: number) => {
+    if (s < minScale) {
+      setState(INITIAL_STATE);
+    } else {
+      const clamped = clampScale(s);
+      setState((prev) => {
+        const clampedXY = clampXY(prev.translateX, prev.translateY, clamped);
+        return { ...prev, scale: clamped, translateX: clampedXY.tx, translateY: clampedXY.ty };
+      });
+    }
+  }, [clampScale, clampXY, minScale]);
+
   const onWheel = useCallback((e: WheelEvent) => {
     if (stateRef.current.scale > 1) {
       e.preventDefault();
     }
     setState((prev) => {
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const newScale = clampScale(prev.scale * factor);
-      if (newScale <= 1) return INITIAL_STATE;
+      const rawScale = prev.scale * factor;
+      if (rawScale < minScale) return INITIAL_STATE;
+      const newScale = clampScale(rawScale);
       const clamped = clampXY(prev.translateX, prev.translateY, newScale);
       return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
     });
-  }, [clampScale, clampXY]);
+  }, [clampScale, clampXY, minScale]);
 
   const getTouchDist = (e: TouchEvent) => {
     const [a, b] = [e.touches[0], e.touches[1]];
@@ -128,7 +148,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const dist = getTouchDist(e);
       const newScale = clampScale(pinchStartRef.current.scale * (dist / pinchStartRef.current.dist));
       setState((prev) => {
-        if (newScale <= 1) return INITIAL_STATE;
+        if (newScale <= minScale) {
+          const clamped = clampXY(0, 0, minScale);
+          return { ...prev, scale: minScale, translateX: clamped.tx, translateY: clamped.ty };
+        }
         const clamped = clampXY(prev.translateX, prev.translateY, newScale);
         return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
       });
@@ -142,7 +165,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
       setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
     }
-  }, [clampScale, clampXY]);
+  }, [clampScale, clampXY, minScale]);
 
   const onTouchEnd = useCallback(() => {
     pinchStartRef.current = null;
@@ -192,10 +215,13 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   };
 
   return {
+    scale: state.scale,
     style,
     handlers: { onWheel, onTouchStart, onTouchMove, onTouchEnd, onMouseDown, onMouseMove, onMouseUp },
     reset,
     zoomIn,
+    zoomOut,
+    setScale: setScaleTo,
     isZoomed: state.scale > 1,
   };
 }

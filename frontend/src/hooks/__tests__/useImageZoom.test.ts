@@ -127,6 +127,100 @@ describe('useImageZoom', () => {
     expect(ty).toBe(300);
   });
 
+  it('pinch zoom clamps to minScale instead of resetting to INITIAL_STATE', () => {
+    const containerRef = makeContainerRef(400, 400);
+    const imageRef = makeImageRef(400, 400);
+    const { result } = renderHook(() =>
+      useImageZoom({ minScale: 0.5, containerRef, imageRef }),
+    );
+
+    // Zoom in first via zoomIn
+    act(() => result.current.zoomIn());
+    expect(result.current.isZoomed).toBe(true);
+
+    // Simulate pinch that zooms down below minScale
+    act(() =>
+      result.current.handlers.onTouchStart(
+        makeTouchEvent([
+          { clientX: 0, clientY: 0 },
+          { clientX: 100, clientY: 0 },
+        ]),
+      ),
+    );
+    // Pinch fingers very close → newScale will clamp to minScale (0.5)
+    act(() =>
+      result.current.handlers.onTouchMove(
+        makeTouchEvent([
+          { clientX: 0, clientY: 0 },
+          { clientX: 1, clientY: 0 },
+        ]),
+      ),
+    );
+    // Should clamp to minScale, NOT reset to scale=1
+    expect(result.current.scale).toBe(0.5);
+  });
+
+  it('pinch zoom with minScale=0.5 does not snap to 100% at scale 0.7', () => {
+    const containerRef = makeContainerRef(400, 400);
+    const imageRef = makeImageRef(400, 400);
+    const { result } = renderHook(() =>
+      useImageZoom({ minScale: 0.5, containerRef, imageRef }),
+    );
+
+    // Zoom in to scale 2.5
+    act(() => result.current.zoomIn());
+    expect(result.current.scale).toBe(2.5);
+
+    // Simulate pinch that zooms down to ~0.7 (above minScale=0.5)
+    // Start pinch at dist=100, scale=2.5
+    act(() =>
+      result.current.handlers.onTouchStart(
+        makeTouchEvent([
+          { clientX: 0, clientY: 0 },
+          { clientX: 100, clientY: 0 },
+        ]),
+      ),
+    );
+    // Move to dist=28 → newScale = clamp(2.5 * 28/100) = clamp(0.7) = 0.7
+    act(() =>
+      result.current.handlers.onTouchMove(
+        makeTouchEvent([
+          { clientX: 0, clientY: 0 },
+          { clientX: 28, clientY: 0 },
+        ]),
+      ),
+    );
+    // Should stay near 0.7, NOT snap to 1.0
+    expect(result.current.scale).toBeCloseTo(0.7, 5);
+  });
+
+  it('setScale resets to initial when value is below minScale', () => {
+    const { result } = renderHook(() => useImageZoom({ minScale: 0.5 }));
+    act(() => result.current.zoomIn());
+    expect(result.current.isZoomed).toBe(true);
+
+    act(() => result.current.setScale(0.3));
+    expect(result.current.scale).toBe(1);
+    expect(result.current.isZoomed).toBe(false);
+  });
+
+  it('setScale clamps to minScale when value equals minScale', () => {
+    const { result } = renderHook(() => useImageZoom({ minScale: 0.5 }));
+    act(() => result.current.setScale(0.5));
+    expect(result.current.scale).toBe(0.5);
+  });
+
+  it('onWheel resets when raw scale drops below minScale', () => {
+    const { result } = renderHook(() => useImageZoom({ minScale: 0.5 }));
+    // Set scale just above minScale
+    act(() => result.current.setScale(0.55));
+    expect(result.current.scale).toBe(0.55);
+    // Single scroll down: 0.55 / 1.15 ≈ 0.478 < 0.5 → resets to INITIAL_STATE
+    act(() => result.current.handlers.onWheel(makeWheelEvent(100)));
+    expect(result.current.scale).toBe(1);
+    expect(result.current.isZoomed).toBe(false);
+  });
+
   it('falls back to 5:3 aspect when imageRef is null', () => {
     const containerRef = makeContainerRef(400, 700);
     const imageRef: RefObject<HTMLImageElement | null> = { current: null };

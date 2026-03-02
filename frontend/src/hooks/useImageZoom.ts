@@ -101,10 +101,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   }, []);
 
   const setScaleTo = useCallback((s: number) => {
-    const clamped = clampScale(s);
-    if (clamped < minScale) {
+    if (s < minScale) {
       setState(INITIAL_STATE);
     } else {
+      const clamped = clampScale(s);
       setState((prev) => {
         const clampedXY = clampXY(prev.translateX, prev.translateY, clamped);
         return { ...prev, scale: clamped, translateX: clampedXY.tx, translateY: clampedXY.ty };
@@ -118,8 +118,9 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     }
     setState((prev) => {
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const newScale = clampScale(prev.scale * factor);
-      if (newScale < minScale) return INITIAL_STATE;
+      const rawScale = prev.scale * factor;
+      if (rawScale < minScale) return INITIAL_STATE;
+      const newScale = clampScale(rawScale);
       const clamped = clampXY(prev.translateX, prev.translateY, newScale);
       return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
     });
@@ -147,7 +148,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const dist = getTouchDist(e);
       const newScale = clampScale(pinchStartRef.current.scale * (dist / pinchStartRef.current.dist));
       setState((prev) => {
-        if (newScale <= 1) return INITIAL_STATE;
+        if (newScale <= minScale) {
+          const clamped = clampXY(0, 0, minScale);
+          return { ...prev, scale: minScale, translateX: clamped.tx, translateY: clamped.ty };
+        }
         const clamped = clampXY(prev.translateX, prev.translateY, newScale);
         return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
       });
@@ -161,7 +165,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
       setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
     }
-  }, [clampScale, clampXY]);
+  }, [clampScale, clampXY, minScale]);
 
   const onTouchEnd = useCallback(() => {
     pinchStartRef.current = null;

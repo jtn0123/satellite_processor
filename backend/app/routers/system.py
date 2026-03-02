@@ -83,7 +83,7 @@ async def system_info():
 
         active = await asyncio.to_thread(_check_celery)
         worker_status = "online" if active else "offline"
-    except (ConnectionError, TimeoutError, OSError):
+    except Exception:  # kombu.exceptions.OperationalError, redis errors, etc.
         worker_status = "offline"
 
     uptime_seconds = time.time() - _start_time

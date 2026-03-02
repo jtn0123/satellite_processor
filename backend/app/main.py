@@ -70,7 +70,7 @@ async def _stale_job_checker():
                 result = await cleanup_all_stale(db)
                 if result["total"]:
                     logger.info("Stale job cleanup: %s", result)
-        except (SQLAlchemyError, ConnectionError, OSError):
+        except (SQLAlchemyError, ConnectionError, OSError, TypeError):
             logger.warning("Stale job check failed", exc_info=True)
 
 
@@ -95,7 +95,7 @@ async def lifespan(app: FastAPI):
             result = await cleanup_all_stale(db)
             if result["total"]:
                 logger.info("Startup stale job cleanup: %s", result)
-    except (SQLAlchemyError, ConnectionError, OSError):
+    except (SQLAlchemyError, ConnectionError, OSError, TypeError):
         logger.warning("Startup stale job check failed", exc_info=True)
 
     # Start periodic checker

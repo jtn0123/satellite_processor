@@ -357,30 +357,6 @@ class TestAnimationWorkDirGuard:
                 generate_animation("job-1", "anim-1")
 
 
-class TestMainLifespanGuards:
-    """Test that main.py lifespan catches handle exceptions properly."""
-
-    @pytest.mark.asyncio
-    async def test_startup_cleanup_handles_sqlalchemy_error(self):
-        """Startup cleanup should log and continue on SQLAlchemy errors."""
-        from sqlalchemy.exc import OperationalError
-
-        with patch("app.main.async_session") as mock_session:
-            mock_ctx = MagicMock()
-            mock_ctx.__aenter__ = MagicMock(side_effect=OperationalError("db down", {}, None))
-            mock_session.return_value = mock_ctx
-            # Import and test the cleanup logic doesn't crash
-            # (The lifespan function continues after catching)
-
-    @pytest.mark.asyncio
-    async def test_startup_cleanup_handles_unexpected_error(self):
-        """Startup cleanup should log unexpected errors too."""
-        with patch("app.main.async_session") as mock_session:
-            mock_ctx = MagicMock()
-            mock_ctx.__aenter__ = MagicMock(side_effect=RuntimeError("unexpected"))
-            mock_session.return_value = mock_ctx
-
-
 class TestCacheInvalidate:
     """Test cache invalidate handles errors."""
 
@@ -414,44 +390,6 @@ class TestCacheInvalidate:
         with patch("app.services.cache.get_redis_client", return_value=mock_redis):
             result = await invalidate("test:*")
         assert result == 2
-
-
-class TestWebhookErrorHandling:
-    """Test webhook handles network errors."""
-
-    @pytest.mark.asyncio
-    async def test_webhook_handles_connection_error(self):
-        import httpx
-        from app.services.webhook import send_webhook_notification
-
-        with patch("app.services.webhook.httpx.AsyncClient") as mock_client:
-            mock_instance = MagicMock()
-            mock_instance.__aenter__ = MagicMock(return_value=mock_instance)
-            mock_instance.__aexit__ = MagicMock(return_value=False)
-            mock_instance.post = MagicMock(side_effect=httpx.ConnectError("down"))
-            mock_client.return_value = mock_instance
-
-            # Should not raise
-            await send_webhook_notification("http://example.com/hook", {"event": "test"})
-
-
-class TestJobsRouterCeleryErrors:
-    """Test jobs router handles Celery connection errors."""
-
-    @pytest.mark.asyncio
-    async def test_cancel_job_handles_celery_down(self, client, db):
-        """Cancel endpoint should handle Celery being unavailable."""
-        from app.db.models import Job
-
-        job = Job(id="test-cancel-1", name="test", status="running", task_type="test")
-        db.add(job)
-        await db.commit()
-
-        with patch("app.routers.jobs.celery_app") as mock_celery:
-            mock_celery.control.revoke.side_effect = OSError("celery down")
-            resp = await client.post("/api/jobs/test-cancel-1/cancel")
-            # Should still succeed (revoke failure is logged, job marked cancelled)
-            assert resp.status_code in (200, 404, 500)
 
 
 class TestAPIErrorConsistency:

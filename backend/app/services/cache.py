@@ -36,7 +36,7 @@ async def get_cached(
         cached = await redis_client.get(key)
         if cached is not None:
             return json.loads(cached)
-    except (redis.exceptions.RedisError, OSError, RuntimeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError, json.JSONDecodeError):
         logger.warning("Redis cache read failed for %s", key, exc_info=True)
 
     raw = fetch_fn()

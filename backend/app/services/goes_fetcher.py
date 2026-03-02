@@ -541,7 +541,7 @@ def _process_single_frame(
             on_progress(index + 1, total)
         return True
     except (ClientError, OSError, ValueError, KeyError):
-        logger.exception("Error fetching %s", item["key"])
+        logger.exception("Error fetching %s", item.get("key", "<unknown>"))
         return False
 
 

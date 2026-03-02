@@ -72,6 +72,8 @@ async def _stale_job_checker():
                     logger.info("Stale job cleanup: %s", result)
         except (SQLAlchemyError, OSError, TypeError):
             logger.warning("Stale job check failed", exc_info=True)
+        except Exception:
+            logger.exception("Unexpected stale job checker failure")
 
 
 @asynccontextmanager
@@ -97,6 +99,8 @@ async def lifespan(app: FastAPI):
                 logger.info("Startup stale job cleanup: %s", result)
     except (SQLAlchemyError, OSError, TypeError):
         logger.warning("Startup stale job check failed", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected startup cleanup failure")
 
     # Start periodic checker
     checker_task = asyncio.create_task(_stale_job_checker())

@@ -193,6 +193,7 @@ def generate_animation(self, job_id: str, animation_id: str):
     _publish_progress(job_id, 0, "Preparing animation...", "processing")
 
     session = _get_sync_db()
+    work_dir: Path | None = None
     try:
         anim = session.query(Animation).filter(Animation.id == animation_id).first()
         if not anim:
@@ -275,5 +276,5 @@ def generate_animation(self, job_id: str, animation_id: str):
         raise
     finally:
         session.close()
-        if work_dir.exists():
+        if work_dir and work_dir.exists():
             shutil.rmtree(work_dir, ignore_errors=True)

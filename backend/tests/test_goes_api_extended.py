@@ -132,7 +132,7 @@ class TestCompositeRecipes:
 @pytest.mark.asyncio
 class TestCreateComposite:
     async def test_create_composite_success(self, client, db):
-        with patch("app.tasks.goes_tasks.generate_composite") as mock:
+        with patch("app.tasks.composite_task.generate_composite") as mock:
             mock.delay = lambda *a: None
             resp = await client.post("/api/goes/composites", json={
                 "recipe": "true_color",

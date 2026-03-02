@@ -277,9 +277,9 @@ class TestFetchGoesDataTaskParams:
         }
         del full_params[missing_key]
 
-        with patch("app.tasks.goes_tasks._update_job_db"), \
-             patch("app.tasks.goes_tasks._publish_progress"), \
-             patch("app.tasks.goes_tasks._get_redis"):
+        with patch("app.tasks.fetch_task._update_job_db"), \
+             patch("app.tasks.fetch_task._publish_progress"), \
+             patch("app.tasks.fetch_task._get_redis"):
             from app.tasks.goes_tasks import fetch_goes_data
             # The task should raise (KeyError or similar) for missing params
             with pytest.raises((KeyError, ValueError)):
@@ -295,10 +295,10 @@ class TestFetchGoesDataTaskParams:
             "end_time": "2025-06-15T13:00:00+00:00",
         }
 
-        with patch("app.tasks.goes_tasks._update_job_db"), \
-             patch("app.tasks.goes_tasks._publish_progress"), \
-             patch("app.tasks.goes_tasks._get_redis"), \
-             patch("app.tasks.goes_tasks._get_sync_db"), \
+        with patch("app.tasks.fetch_task._update_job_db"), \
+             patch("app.tasks.fetch_task._publish_progress"), \
+             patch("app.tasks.fetch_task._get_redis"), \
+             patch("app.tasks.fetch_task._get_sync_db"), \
              patch("app.services.goes_fetcher.fetch_frames", return_value={"frames": [], "total_available": 0, "capped": False, "attempted": 0, "failed_downloads": 0}) as mock_fetch, \
              patch("app.services.goes_fetcher.list_available", return_value=[]):
             from app.tasks.goes_tasks import fetch_goes_data

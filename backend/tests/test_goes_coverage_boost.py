@@ -290,8 +290,8 @@ def test_process_single_frame_disk_check_raises_oserror(mock_dl, mock_disk, tmp_
 # goes_tasks.py — _make_progress_callback (lines 191-195)
 # ===========================================================================
 
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
 def test_make_progress_callback(mock_pub, mock_update):
     from app.tasks.goes_tasks import _make_progress_callback
     log_calls = []
@@ -412,7 +412,7 @@ class TestComposeRgb:
 # goes_tasks.py — _mark_composite_failed (lines 488-498)
 # ===========================================================================
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.composite_task._get_sync_db")
 def test_mark_composite_failed(mock_db):
     from app.tasks.goes_tasks import _mark_composite_failed
     session = MagicMock()
@@ -427,7 +427,7 @@ def test_mark_composite_failed(mock_db):
     session.close.assert_called_once()
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.composite_task._get_sync_db")
 def test_mark_composite_failed_not_found(mock_db):
     from app.tasks.goes_tasks import _mark_composite_failed
     session = MagicMock()
@@ -445,9 +445,9 @@ def test_mark_composite_failed_not_found(mock_db):
 
 class TestGenerateComposite:
 
-    @patch("app.tasks.goes_tasks._publish_progress")
-    @patch("app.tasks.goes_tasks._update_job_db")
-    @patch("app.tasks.goes_tasks._get_sync_db")
+    @patch("app.tasks.composite_task._publish_progress")
+    @patch("app.tasks.composite_task._update_job_db")
+    @patch("app.tasks.composite_task._get_sync_db")
     def test_success(self, mock_db, mock_update, mock_pub, tmp_path):
         from app.tasks.goes_tasks import generate_composite
 
@@ -457,8 +457,8 @@ class TestGenerateComposite:
         # Mock _load_band_images to return real arrays
         bands = [np.full((5, 5), v, dtype=np.float32) for v in [100, 150, 200]]
 
-        with patch("app.tasks.goes_tasks._load_band_images", return_value=bands), \
-             patch("app.tasks.goes_tasks.settings") as mock_settings:
+        with patch("app.tasks.composite_task._load_band_images", return_value=bands), \
+             patch("app.tasks.composite_task.settings") as mock_settings:
             mock_settings.output_dir = str(tmp_path)
 
             comp = MagicMock()
@@ -473,17 +473,17 @@ class TestGenerateComposite:
             assert comp.file_path is not None
             session.commit.assert_called()
 
-    @patch("app.tasks.goes_tasks._mark_composite_failed")
-    @patch("app.tasks.goes_tasks._publish_progress")
-    @patch("app.tasks.goes_tasks._update_job_db")
-    @patch("app.tasks.goes_tasks._get_sync_db")
+    @patch("app.tasks.composite_task._mark_composite_failed")
+    @patch("app.tasks.composite_task._publish_progress")
+    @patch("app.tasks.composite_task._update_job_db")
+    @patch("app.tasks.composite_task._get_sync_db")
     def test_no_bands_raises(self, mock_db, mock_update, mock_pub, mock_mark):
         from app.tasks.goes_tasks import generate_composite
 
         session = MagicMock()
         mock_db.return_value = session
 
-        with patch("app.tasks.goes_tasks._load_band_images", return_value=[None, None, None]):
+        with patch("app.tasks.composite_task._load_band_images", return_value=[None, None, None]):
             with pytest.raises(ValueError, match="No band images"):
                 generate_composite(
                     "comp-1", "job-1",
@@ -499,9 +499,9 @@ class TestGenerateComposite:
 
 class TestBackfillGaps:
 
-    @patch("app.tasks.goes_tasks._publish_progress")
-    @patch("app.tasks.goes_tasks._update_job_db")
-    @patch("app.tasks.goes_tasks._detect_gaps")
+    @patch("app.tasks.fetch_task._publish_progress")
+    @patch("app.tasks.fetch_task._update_job_db")
+    @patch("app.tasks.fetch_task._detect_gaps")
     def test_no_gaps(self, mock_gaps, mock_update, mock_pub):
         from app.tasks.goes_tasks import backfill_gaps
         mock_gaps.return_value = []
@@ -510,11 +510,11 @@ class TestBackfillGaps:
         calls = [c for c in mock_update.call_args_list if "No gaps found" in str(c)]
         assert len(calls) >= 1
 
-    @patch("app.tasks.goes_tasks._publish_progress")
-    @patch("app.tasks.goes_tasks._update_job_db")
-    @patch("app.tasks.goes_tasks._fill_single_gap")
-    @patch("app.tasks.goes_tasks._detect_gaps")
-    @patch("app.tasks.goes_tasks.settings")
+    @patch("app.tasks.fetch_task._publish_progress")
+    @patch("app.tasks.fetch_task._update_job_db")
+    @patch("app.tasks.fetch_task._fill_single_gap")
+    @patch("app.tasks.fetch_task._detect_gaps")
+    @patch("app.tasks.composite_task.settings")
     def test_with_gaps(self, mock_settings, mock_gaps, mock_fill, mock_update, mock_pub, tmp_path):
         from app.tasks.goes_tasks import backfill_gaps
         mock_settings.output_dir = str(tmp_path)
@@ -530,9 +530,9 @@ class TestBackfillGaps:
         completed_calls = [c for c in mock_update.call_args_list if "completed" in str(c)]
         assert len(completed_calls) >= 1
 
-    @patch("app.tasks.goes_tasks._publish_progress")
-    @patch("app.tasks.goes_tasks._update_job_db")
-    @patch("app.tasks.goes_tasks._detect_gaps")
+    @patch("app.tasks.fetch_task._publish_progress")
+    @patch("app.tasks.fetch_task._update_job_db")
+    @patch("app.tasks.fetch_task._detect_gaps")
     def test_exception(self, mock_gaps, mock_update, mock_pub):
         from app.tasks.goes_tasks import backfill_gaps
         mock_gaps.side_effect = ConnectionError("db down")

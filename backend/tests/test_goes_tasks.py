@@ -43,9 +43,9 @@ def test_update_job_db(mock_sync_db):
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_fetch_goes_data_success(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -73,9 +73,9 @@ def test_fetch_goes_data_success(mock_db, mock_progress, mock_update, mock_fetch
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_fetch_goes_data_failure(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 

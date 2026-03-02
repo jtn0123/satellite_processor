@@ -32,7 +32,7 @@ class TestLaunchScheduleJob:
             id="s1", interval_minutes=30, last_run_at=None, next_run_at=None, name="sched1"
         )
 
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay = MagicMock()
             _launch_schedule_job(session, schedule, preset, now)
             mock_task.delay.assert_called_once()
@@ -56,7 +56,7 @@ class TestLaunchScheduleJob:
         preset = SimpleNamespace(id="p1", satellite="G16", sector="FD", band="C13", name="pname")
         schedule = SimpleNamespace(id="s1", interval_minutes=60, last_run_at=None, next_run_at=None, name="sname")
 
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay = MagicMock()
             _launch_schedule_job(session, schedule, preset, now)
 

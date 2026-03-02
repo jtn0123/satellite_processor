@@ -33,8 +33,12 @@ from .routers import (
     download,
     errors,
     file_download,
-    goes,
-    goes_data,
+    goes_browse,
+    goes_catalog,
+    goes_collections,
+    goes_fetch,
+    goes_frames,
+    goes_tags,
     health,
     images,
     jobs,
@@ -169,9 +173,13 @@ app.include_router(images.router)
 app.include_router(presets.router)
 app.include_router(system.router)
 app.include_router(settings_router.router)
-app.include_router(goes.router)
+app.include_router(goes_catalog.router)
+app.include_router(goes_fetch.router)
+app.include_router(goes_browse.router)
 app.include_router(animations.router)
-app.include_router(goes_data.router)
+app.include_router(goes_frames.router)
+app.include_router(goes_collections.router)
+app.include_router(goes_tags.router)
 app.include_router(health.router)
 app.include_router(stats.router)
 app.include_router(download.router)

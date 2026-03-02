@@ -78,7 +78,7 @@ async def test_fetch_composite_bad_recipe(client):
 @pytest.mark.asyncio
 async def test_fetch_composite_success(client):
     """Fetch-composite creates a job."""
-    with patch("app.tasks.goes_tasks.fetch_composite_data") as mock_task:
+    with patch("app.tasks.composite_task.fetch_composite_data") as mock_task:
         mock_result = MagicMock()
         mock_result.id = "test-task-id"
         mock_task.delay.return_value = mock_result

@@ -99,7 +99,7 @@ async def catalog(
     cache_key = make_cache_key(f"catalog:{satellite}:{sector}:{band}:{effective_date}")
 
     async def _fetch():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         items = await loop.run_in_executor(_s3_executor, lambda: catalog_list(satellite, sector, band, dt))
         return {"items": items, "total": len(items)}
 
@@ -123,7 +123,7 @@ async def catalog_latest(
     cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}:{band}")
 
     async def _fetch():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(_s3_executor, lambda: _catalog_latest(satellite, sector, band))
 
     result = await get_cached(cache_key, ttl=60, fetch_fn=_fetch)
@@ -145,7 +145,7 @@ async def catalog_available(
     cache_key = make_cache_key(f"catalog-available:{satellite}")
 
     async def _fetch():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(_s3_executor, lambda: _catalog_available(satellite))
 
     return await get_cached(cache_key, ttl=120, fetch_fn=_fetch)

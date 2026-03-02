@@ -250,7 +250,7 @@ async def estimate_frame_count(
     if start_time >= end_time:
         raise APIError(400, "invalid_range", "start_time must be before end_time")
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     available = await loop.run_in_executor(
         _s3_executor, lambda: list_available(satellite, sector, band, start_time, end_time)
     )

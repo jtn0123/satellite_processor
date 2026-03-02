@@ -36,15 +36,12 @@ async def create_collection(
     payload: CollectionCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
-    # Check for duplicate name
     logger.info("Creating collection: name=%s", payload.name)
-    from fastapi import HTTPException
-
     existing = await db.execute(
         select(Collection).where(Collection.name == payload.name)
     )
     if existing.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=409, detail=f"Collection '{payload.name}' already exists")
+        raise APIError(409, "conflict", f"Collection '{payload.name}' already exists")
 
     coll = Collection(
         id=str(uuid.uuid4()),

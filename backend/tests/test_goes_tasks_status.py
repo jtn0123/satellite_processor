@@ -66,7 +66,7 @@ class TestMakeJobLogger:
 
     @patch("app.tasks.goes_tasks._get_redis")
     @patch("app.tasks.goes_tasks._get_sync_db")
-    @patch("app.tasks.goes_tasks.log_job_sync", side_effect=Exception("fail"))
+    @patch("app.tasks.goes_tasks.log_job_sync", side_effect=ConnectionError("fail"))
     def test_handles_log_failure(self, mock_log, mock_db, mock_redis):
         from app.tasks.goes_tasks import _make_job_logger
         mock_db.return_value = MagicMock()
@@ -100,7 +100,7 @@ class TestReadMaxFramesSetting:
     def test_returns_default_on_exception(self, mock_db):
         from app.tasks.goes_tasks import _read_max_frames_setting
         mock_db.return_value = MagicMock()
-        mock_db.return_value.query.side_effect = Exception("db error")
+        mock_db.return_value.query.side_effect = ValueError("db error")
         assert _read_max_frames_setting() == 200
 
 

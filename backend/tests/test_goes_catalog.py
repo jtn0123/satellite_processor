@@ -253,7 +253,7 @@ class TestCatalogAvailable:
 
     @patch("app.services.catalog._get_s3_client")
     def test_exception_handled_gracefully(self, mock_s3):
-        mock_s3.return_value.list_objects_v2.side_effect = Exception("S3 error")
+        mock_s3.return_value.list_objects_v2.side_effect = ConnectionError("S3 error")
         result = catalog_available("GOES-19")
         assert result["available_sectors"] == []
 
@@ -293,7 +293,7 @@ class TestCatalogListExceptions:
     @patch("app.services.catalog._get_s3_client")
     def test_s3_exception_handled(self, mock_s3):
         paginator = MagicMock()
-        paginator.paginate.side_effect = Exception("S3 down")
+        paginator.paginate.side_effect = ConnectionError("S3 down")
         mock_s3.return_value.get_paginator.return_value = paginator
 
         result = catalog_list("GOES-19", "CONUS", "C02", datetime(2024, 6, 14, tzinfo=UTC))
@@ -320,7 +320,7 @@ class TestCatalogLatestExceptions:
         from app.services.catalog import catalog_latest
 
         paginator = MagicMock()
-        paginator.paginate.side_effect = Exception("S3 error")
+        paginator.paginate.side_effect = ConnectionError("S3 error")
         mock_s3.return_value.get_paginator.return_value = paginator
 
         result = catalog_latest("GOES-19", "CONUS", "C02")

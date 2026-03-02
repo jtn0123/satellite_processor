@@ -56,7 +56,7 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
                 "job_id": job_id,
                 "message": message,
             }))
-    except Exception:
+    except (ConnectionError, TimeoutError, OSError):
         logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 
 

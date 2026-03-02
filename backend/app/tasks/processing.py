@@ -5,6 +5,8 @@ import sys
 import time
 from pathlib import Path
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from ..celery_app import celery_app
 from ..config import settings
 from ..services.processor import configure_processor
@@ -61,7 +63,11 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
         _publish_progress(job_id, 0, MSG_PROCESSING_FAILED, "failed")
 
 
-@celery_app.task(bind=True, name="process_images")
+@celery_app.task(
+    bind=True, name="process_images",
+    autoretry_for=(ConnectionError, TimeoutError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
     start_time = time.monotonic()
@@ -71,7 +77,7 @@ def process_images_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except Exception:
+        except (SQLAlchemyError, OSError):  # DB or Redis write failure
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
@@ -115,7 +121,7 @@ def process_images_task(self, job_id: str, params: dict):
         logger.info("Job %s completed in %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(MSG_PROCESSING_COMPLETE if result else MSG_PROCESSING_FAILED, "info" if result else "error")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
         duration = time.monotonic() - start_time
         logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Processing failed: {e}", "error")
@@ -130,7 +136,11 @@ def process_images_task(self, job_id: str, params: dict):
             shutil.rmtree(input_path, ignore_errors=True)
 
 
-@celery_app.task(bind=True, name="create_video")
+@celery_app.task(
+    bind=True, name="create_video",
+    autoretry_for=(ConnectionError, TimeoutError),
+    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+)
 def create_video_task(self, job_id: str, params: dict):
     """Video creation task"""
     start_time = time.monotonic()
@@ -140,7 +150,7 @@ def create_video_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except Exception:
+        except (SQLAlchemyError, OSError):  # DB or Redis write failure
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
@@ -210,7 +220,7 @@ def create_video_task(self, job_id: str, params: dict):
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
-    except Exception as e:
+    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
         duration = time.monotonic() - start_time
         logger.exception("Video job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Video creation failed: {e}", "error")

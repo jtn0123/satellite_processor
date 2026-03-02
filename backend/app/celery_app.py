@@ -5,6 +5,7 @@ import traceback as traceback_mod
 
 from celery import Celery
 from celery.signals import task_failure, task_success
+from sqlalchemy.exc import SQLAlchemyError
 
 from .config import settings
 
@@ -62,8 +63,10 @@ celery_app.conf.update(
 
 
 @task_failure.connect
-def on_task_failure(sender=None, task_id=None, exception=None, tb=None, **kwargs):
-    """Log task failures with full stack traces for observability."""
+def on_task_failure(sender=None, task_id=None, exception=None, tb=None, args=None, kwargs=None, **extra):
+    """Log task failures with full stack traces and persist to failed_jobs table."""
+    import json
+
     task_name = sender.name if sender else "unknown"
     tb_str = "".join(traceback_mod.format_list(traceback_mod.extract_tb(exception.__traceback__))) if exception and hasattr(exception, "__traceback__") else str(tb)
     logger.error(
@@ -77,11 +80,42 @@ def on_task_failure(sender=None, task_id=None, exception=None, tb=None, **kwargs
         },
     )
 
+    # Persist to failed_jobs table for dead-letter tracking
+    try:
+        from .tasks.helpers import _get_sync_db
+
+        session = _get_sync_db()
+        try:
+            from .models.failed_job import FailedJob
+
+            retried_count = 0
+            if sender and hasattr(sender, 'request'):
+                retried_count = getattr(sender.request, 'retries', 0)
+
+            entry = FailedJob(
+                task_name=task_name,
+                task_id=str(task_id) if task_id else "unknown",
+                args=json.dumps(list(args) if args else [], default=str),
+                kwargs=json.dumps(dict(kwargs) if kwargs else {}, default=str),
+                exception=str(exception),
+                traceback=tb_str,
+                retried_count=retried_count,
+            )
+            session.add(entry)
+            session.commit()
+        except (SQLAlchemyError, OSError):
+            logger.debug("Failed to persist failed job record", exc_info=True)
+            session.rollback()
+        finally:
+            session.close()
+    except (ImportError, ConnectionError, OSError):
+        logger.debug("Failed to get DB session for failed job tracking", exc_info=True)
+
     # Update metrics
     try:
         from .metrics import TASK_FAILURES
         TASK_FAILURES.labels(task_name=task_name).inc()
-    except Exception:
+    except ImportError:
         pass
 
 
@@ -92,5 +126,5 @@ def on_task_success(sender=None, result=None, **kwargs):
     try:
         from .metrics import TASK_COMPLETIONS
         TASK_COMPLETIONS.labels(task_name=task_name).inc()
-    except Exception:
+    except ImportError:
         pass

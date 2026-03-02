@@ -29,7 +29,7 @@ async def send_webhook_notification(db: AsyncSession, message: str) -> None:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(url, json={"content": message})
             resp.raise_for_status()
-    except Exception:
+    except (httpx.HTTPError, ConnectionError, TimeoutError, OSError):
         logger.warning("Failed to send webhook notification", exc_info=True)
 
 

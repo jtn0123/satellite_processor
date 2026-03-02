@@ -209,7 +209,8 @@ class TestMarkAnimationFailed:
 
     def test_exception_swallowed(self):
         session = MagicMock()
-        session.query.side_effect = Exception("db down")
+        from sqlalchemy.exc import OperationalError
+        session.query.side_effect = OperationalError("db down", {}, None)
         _mark_animation_failed(session, "a1", "boom")  # should not raise
 
 

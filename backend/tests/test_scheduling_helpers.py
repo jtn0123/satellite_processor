@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+
+from sqlalchemy.exc import SQLAlchemyError
 from unittest.mock import MagicMock, patch
 
 from app.tasks.scheduling_tasks import (
@@ -119,7 +121,7 @@ class TestCheckSchedules:
 
         session = MagicMock()
         mock_db.return_value = session
-        session.query.side_effect = Exception("db error")
+        session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import check_schedules
         check_schedules()
@@ -221,7 +223,7 @@ class TestRunCleanup:
     def test_rollback_on_error(self, mock_db):
         session = MagicMock()
         mock_db.return_value = session
-        session.query.side_effect = Exception("db error")
+        session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import run_cleanup
         run_cleanup()

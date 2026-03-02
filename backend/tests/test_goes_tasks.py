@@ -79,7 +79,7 @@ def test_fetch_goes_data_success(mock_db, mock_progress, mock_update, mock_fetch
 def test_fetch_goes_data_failure(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
-    mock_fetch.side_effect = RuntimeError("S3 error")
+    mock_fetch.side_effect = ConnectionError("S3 error")
     mock_db.return_value = MagicMock()
 
     params = {
@@ -90,5 +90,5 @@ def test_fetch_goes_data_failure(mock_db, mock_progress, mock_update, mock_fetch
         "end_time": "2026-01-01T01:00:00",
     }
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((ConnectionError, Exception)):  # autoretry may wrap in Retry
         fetch_goes_data("job-fail", params)

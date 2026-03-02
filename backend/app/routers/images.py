@@ -85,7 +85,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     try:
         with PILImage.open(dest) as img:
             width, height = img.size
-    except Exception:
+    except (OSError, ValueError):
         pass
 
     satellite = None
@@ -210,7 +210,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
         await asyncio.to_thread(_generate_thumbnail)
         return FileResponse(str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
-    except Exception:
+    except (OSError, ValueError):
         raise APIError(500, "thumbnail_error", "Could not generate thumbnail")
 
 

@@ -50,5 +50,5 @@ def log_job_sync(
                 "timestamp": ts.isoformat(),
             })
             redis_client.publish(f"job:{job_id}", payload)
-        except Exception:
+        except (ConnectionError, TimeoutError, OSError):
             logger.debug("Redis unavailable, skipping log broadcast for job %s", job_id)

@@ -160,7 +160,7 @@ async def _check_database() -> dict:
             await session.execute(text("SELECT 1"))
         latency = round((time.monotonic() - t0) * 1000, 1)
         return {"status": "ok", "latency_ms": latency}
-    except Exception as exc:
+    except Exception as exc:  # Health check: intentionally broad to report status
         return {"status": "error", "error": str(exc)}
 
 
@@ -172,7 +172,7 @@ async def _check_redis() -> dict:
         await r.ping()
         latency = round((time.monotonic() - t0) * 1000, 1)
         return {"status": "ok", "latency_ms": latency}
-    except Exception as exc:
+    except Exception as exc:  # Health check: intentionally broad to report status
         return {"status": "error", "error": str(exc)}
 
 
@@ -184,7 +184,7 @@ def _check_disk() -> dict:
         if free_gb < 1.0:
             return {"status": "warning", "free_gb": free_gb}
         return {"status": "ok", "free_gb": free_gb}
-    except Exception as exc:
+    except Exception as exc:  # Health check: intentionally broad to report status
         return {"status": "error", "error": str(exc)}
 
 
@@ -204,7 +204,7 @@ def _check_storage_dirs() -> dict:
             except OSError:
                 return {"status": "error", "error": "Directory missing or not writable"}
         return {"status": "ok"}
-    except Exception as exc:
+    except Exception as exc:  # Health check: intentionally broad to report status
         return {"status": "error", "error": str(exc)}
 
 
@@ -242,7 +242,7 @@ async def _check_worker() -> dict:
             worker_count = len(active)
             return {"status": "ok", "workers": worker_count}
         return {"status": "down", "workers": 0}
-    except Exception as exc:
+    except Exception as exc:  # Health check: intentionally broad to report status
         return {"status": "unknown", "workers": 0, "error": str(exc)}
 
 

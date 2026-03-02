@@ -38,7 +38,7 @@ async def get_stats(request: Request, db: AsyncSession = Depends(get_db)):
             "used": usage.used,
             "free": usage.free,
         }
-    except Exception:
+    except OSError:
         storage = {"total": 0, "used": 0, "free": 0}
 
     return {

@@ -35,7 +35,7 @@ def generate_thumbnail(source_path: str, output_dir: str | None = None) -> str |
             img = img.convert("RGB")
             img.save(str(thumb_path), "JPEG", quality=80)
         return str(thumb_path)
-    except Exception:
+    except (OSError, ValueError):
         logger.exception("Failed to generate thumbnail for %s", source_path)
         return None
 
@@ -47,5 +47,5 @@ def get_image_dimensions(path: str) -> tuple[int | None, int | None]:
 
         with Image.open(path) as img:
             return img.size
-    except Exception:
+    except (OSError, ValueError):
         return None, None

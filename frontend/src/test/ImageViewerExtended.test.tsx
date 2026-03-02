@@ -94,15 +94,16 @@ describe('ImageViewer extended', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
     const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: -100 });
-    // Should increase from 100%
-    expect(screen.getByText('120%')).toBeInTheDocument();
+    // Should increase from 100% (multiplicative zoom: 1 * 1.15 ≈ 1.15)
+    expect(screen.getByText('115%')).toBeInTheDocument();
   });
 
   it('handles wheel zoom out', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
     const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: 100 });
-    expect(screen.getByText('80%')).toBeInTheDocument();
+    // Multiplicative zoom out: 1 / 1.15 ≈ 0.87 → rounds to 87%
+    expect(screen.getByText('87%')).toBeInTheDocument();
   });
 
   it('image is not draggable', () => {

@@ -527,10 +527,11 @@ def _process_single_frame(
     on_progress: Any | None,
 ) -> bool:
     """Download and convert one frame, appending to *results*. Returns True on success."""
-    try:
-        if index > 0 and index % 10 == 0:
-            _check_disk_space(out, min_gb=0.5)
+    # Disk space check is outside try so OSError from disk full propagates
+    if index > 0 and index % 10 == 0:
+        _check_disk_space(out, min_gb=0.5)
 
+    try:
         frame = _download_and_convert_frame(s3, bucket, item, satellite, sector, band, out)
         if frame is None:
             return False
@@ -542,8 +543,6 @@ def _process_single_frame(
     except (ClientError, OSError, ValueError, KeyError):
         logger.exception("Error fetching %s", item["key"])
         return False
-    except OSError:
-        raise
 
 
 def fetch_frames(

@@ -54,9 +54,9 @@ class TestBuildStatusMessage:
 class TestMakeJobLogger:
     """Test _make_job_logger."""
 
-    @patch("app.tasks.goes_tasks._get_redis")
-    @patch("app.tasks.goes_tasks._get_sync_db")
-    @patch("app.tasks.goes_tasks.log_job_sync")
+    @patch("app.tasks.fetch_task._get_redis")
+    @patch("app.tasks.fetch_task._get_sync_db")
+    @patch("app.tasks.fetch_task.log_job_sync")
     def test_logs_without_error(self, mock_log, mock_db, mock_redis):
         from app.tasks.goes_tasks import _make_job_logger
         mock_db.return_value = MagicMock()
@@ -64,9 +64,9 @@ class TestMakeJobLogger:
         _log("test message", "info")
         mock_log.assert_called_once()
 
-    @patch("app.tasks.goes_tasks._get_redis")
-    @patch("app.tasks.goes_tasks._get_sync_db")
-    @patch("app.tasks.goes_tasks.log_job_sync", side_effect=ConnectionError("fail"))
+    @patch("app.tasks.fetch_task._get_redis")
+    @patch("app.tasks.fetch_task._get_sync_db")
+    @patch("app.tasks.fetch_task.log_job_sync", side_effect=ConnectionError("fail"))
     def test_handles_log_failure(self, mock_log, mock_db, mock_redis):
         from app.tasks.goes_tasks import _make_job_logger
         mock_db.return_value = MagicMock()
@@ -78,7 +78,7 @@ class TestMakeJobLogger:
 class TestReadMaxFramesSetting:
     """Test _read_max_frames_setting edge cases."""
 
-    @patch("app.tasks.goes_tasks._get_sync_db")
+    @patch("app.tasks.fetch_task._get_sync_db")
     def test_returns_default_when_no_setting(self, mock_db):
         from app.tasks.goes_tasks import _read_max_frames_setting
         session = MagicMock()
@@ -86,7 +86,7 @@ class TestReadMaxFramesSetting:
         mock_db.return_value = session
         assert _read_max_frames_setting() == 200
 
-    @patch("app.tasks.goes_tasks._get_sync_db")
+    @patch("app.tasks.fetch_task._get_sync_db")
     def test_returns_custom_value(self, mock_db):
         from app.tasks.goes_tasks import _read_max_frames_setting
         session = MagicMock()
@@ -96,7 +96,7 @@ class TestReadMaxFramesSetting:
         mock_db.return_value = session
         assert _read_max_frames_setting() == 500
 
-    @patch("app.tasks.goes_tasks._get_sync_db")
+    @patch("app.tasks.fetch_task._get_sync_db")
     def test_returns_default_on_exception(self, mock_db):
         from app.tasks.goes_tasks import _read_max_frames_setting
         mock_db.return_value = MagicMock()
@@ -107,7 +107,7 @@ class TestReadMaxFramesSetting:
 class TestFillSingleGap:
     """Test _fill_single_gap helper."""
 
-    @patch("app.tasks.goes_tasks._create_backfill_image_records")
+    @patch("app.tasks.fetch_task._create_backfill_image_records")
     @patch("app.services.goes_fetcher.fetch_frames")
     def test_returns_frame_count(self, mock_fetch, mock_create):
         from app.tasks.goes_tasks import _fill_single_gap
@@ -123,7 +123,7 @@ class TestFillSingleGap:
         assert count == 1
         mock_create.assert_called_once()
 
-    @patch("app.tasks.goes_tasks._create_backfill_image_records")
+    @patch("app.tasks.fetch_task._create_backfill_image_records")
     @patch("app.services.goes_fetcher.fetch_frames")
     def test_logs_warning_on_cap(self, mock_fetch, mock_create):
         from app.tasks.goes_tasks import _fill_single_gap

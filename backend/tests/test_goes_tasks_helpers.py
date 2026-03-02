@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 # _read_max_frames_setting
 # ---------------------------------------------------------------------------
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_from_db(mock_db):
     from app.tasks.goes_tasks import _read_max_frames_setting
 
@@ -22,7 +22,7 @@ def test_read_max_frames_setting_from_db(mock_db):
     session.close.assert_called_once()
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_default(mock_db):
     from app.tasks.goes_tasks import _read_max_frames_setting
 
@@ -35,7 +35,7 @@ def test_read_max_frames_setting_default(mock_db):
     session.close.assert_called_once()
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_exception(mock_db):
     from app.tasks.goes_tasks import _read_max_frames_setting
 
@@ -148,7 +148,7 @@ def test_build_status_historical_satellite():
 # _detect_gaps
 # ---------------------------------------------------------------------------
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_finds_gaps(mock_db):
     from app.tasks.goes_tasks import _detect_gaps
 
@@ -169,7 +169,7 @@ def test_detect_gaps_finds_gaps(mock_db):
     assert gaps[0]["duration_minutes"] == 30.0
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_no_gaps(mock_db):
     from app.tasks.goes_tasks import _detect_gaps
 
@@ -298,7 +298,7 @@ def test_process_single_frame_unexpected_error(mock_dl, tmp_path):
 # _detect_gaps edge cases
 # ---------------------------------------------------------------------------
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_empty_timestamps(mock_db):
     from app.tasks.goes_tasks import _detect_gaps
 
@@ -310,7 +310,7 @@ def test_detect_gaps_empty_timestamps(mock_db):
     assert gaps == []
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_single_timestamp(mock_db):
     from app.tasks.goes_tasks import _detect_gaps
 
@@ -324,7 +324,7 @@ def test_detect_gaps_single_timestamp(mock_db):
     assert gaps == []
 
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_no_filter(mock_db):
     """Test _detect_gaps with None satellite/band/sector (no WHERE filters)."""
     from app.tasks.goes_tasks import _detect_gaps
@@ -345,7 +345,7 @@ def test_detect_gaps_no_filter(mock_db):
 # _create_backfill_image_records
 # ---------------------------------------------------------------------------
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_create_backfill_image_records(mock_db, tmp_path):
     from app.tasks.goes_tasks import _create_backfill_image_records
 
@@ -377,7 +377,7 @@ def test_create_backfill_image_records(mock_db, tmp_path):
 
 @patch("app.services.thumbnail.generate_thumbnail", return_value="/tmp/thumb.png")
 @patch("app.services.thumbnail.get_image_dimensions", return_value=(1000, 1000))
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_create_fetch_records(mock_db, mock_dims, mock_thumb, tmp_path):
     from app.tasks.goes_tasks import _create_fetch_records
 
@@ -400,7 +400,7 @@ def test_create_fetch_records(mock_db, mock_dims, mock_thumb, tmp_path):
 
 @patch("app.services.thumbnail.generate_thumbnail", return_value="/tmp/thumb.png")
 @patch("app.services.thumbnail.get_image_dimensions", return_value=(1000, 1000))
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_create_fetch_records_empty(mock_db, mock_dims, mock_thumb):
     from app.tasks.goes_tasks import _create_fetch_records
 
@@ -416,7 +416,7 @@ def test_create_fetch_records_empty(mock_db, mock_dims, mock_thumb):
 # _read_max_frames_setting — non-numeric value
 # ---------------------------------------------------------------------------
 
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_non_numeric(mock_db):
     from app.tasks.goes_tasks import _read_max_frames_setting
 
@@ -447,8 +447,8 @@ def test_on_progress_callback():
     assert results == [(1, 10, 10), (5, 10, 50), (10, 10, 100), (0, 0, 0)]
 
 
-@patch("app.tasks.goes_tasks._get_redis")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._get_redis")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_build_status_message_all_paths(mock_db, mock_redis):
     """Cover additional _build_status_message paths."""
     from app.tasks.goes_tasks import _build_status_message

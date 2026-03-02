@@ -212,7 +212,7 @@ class TestGoesCompositeRecipes:
 class TestGoesFetch:
     @pytest.mark.asyncio
     async def test_fetch_goes_creates_job(self, client, db):
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-123")
             resp = await client.post("/api/goes/fetch", json={
                 "satellite": "GOES-16",
@@ -274,7 +274,7 @@ class TestGoesFetch:
 class TestGoesFetchComposite:
     @pytest.mark.asyncio
     async def test_fetch_composite_creates_job(self, client, db):
-        with patch("app.tasks.goes_tasks.fetch_composite_data") as mock_task:
+        with patch("app.tasks.composite_task.fetch_composite_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-456")
             resp = await client.post("/api/goes/fetch-composite", json={
                 "satellite": "GOES-16",
@@ -302,7 +302,7 @@ class TestGoesFetchComposite:
 class TestGoesBackfill:
     @pytest.mark.asyncio
     async def test_backfill_creates_job(self, client, db):
-        with patch("app.tasks.goes_tasks.backfill_gaps") as mock_task:
+        with patch("app.tasks.fetch_task.backfill_gaps") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-789")
             resp = await client.post("/api/goes/backfill", json={
                 "satellite": "GOES-16",
@@ -350,7 +350,7 @@ class TestGoesBandAvailability:
 class TestGoesCompositesCRUD:
     @pytest.mark.asyncio
     async def test_create_composite(self, client, db):
-        with patch("app.tasks.goes_tasks.generate_composite") as mock_task:
+        with patch("app.tasks.composite_task.generate_composite") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-comp")
             resp = await client.post("/api/goes/composites", json={
                 "recipe": "true_color",
@@ -1102,7 +1102,7 @@ class TestFetchPresets:
         p = make_fetch_preset(db)
         await db.commit()
 
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="t1")
             resp = await client.post(f"/api/goes/fetch-presets/{p.id}/run")
         assert resp.status_code == 200

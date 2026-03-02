@@ -155,7 +155,7 @@ async def test_settings_persistence(client, db):
 @pytest.mark.integration
 async def test_goes_fetch_creates_job(client, db):
     """GOES fetch endpoint should create a job record."""
-    with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_task:
+    with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
         mock_result = MagicMock()
         mock_result.id = "celery-goes-fetch"
         mock_task.delay.return_value = mock_result

@@ -112,7 +112,7 @@ async def test_catalog_latest_returns_image_url(client):
         "band": "C02",
         "image_url": "https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2025/001/12/test.nc",
     }
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get("/api/goes/catalog/latest", params={
             "satellite": "GOES-19", "sector": "CONUS", "band": "C02",
         })

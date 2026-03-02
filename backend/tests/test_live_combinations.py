@@ -109,7 +109,7 @@ class TestFetchEndpointCombinations:
         """Valid combos should return 200 with a job_id."""
         mock_task = MagicMock()
         mock_task.id = "fake-task-id"
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_fetch:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_fetch:
             mock_fetch.delay.return_value = mock_task
             resp = await client.post("/api/goes/fetch", json=_payload(satellite, sector, band))
         assert resp.status_code == 200, f"{satellite}/{sector}/{band}: {resp.text}"
@@ -138,7 +138,7 @@ class TestFetchEndpointCombinations:
         """Every C01-C16 band should be accepted for CONUS."""
         mock_task = MagicMock()
         mock_task.id = "fake-task-id"
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock_fetch:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock_fetch:
             mock_fetch.delay.return_value = mock_task
             resp = await client.post("/api/goes/fetch", json=_payload(satellite, "CONUS", band))
         assert resp.status_code == 200, f"{satellite}/CONUS/{band}: {resp.text}"

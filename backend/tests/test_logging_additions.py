@@ -366,14 +366,14 @@ class TestEndpointLoggingIntegration:
 
     @pytest.mark.asyncio
     async def test_goes_data_frames_list_logs(self, client, caplog):
-        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_data"):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_frames"):
             response = await client.get("/api/goes/frames?page=1&limit=10")
         assert response.status_code == 200
         assert "Listing frames" in caplog.text
 
     @pytest.mark.asyncio
     async def test_goes_data_dashboard_logs(self, client, caplog):
-        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_data"):
+        with caplog.at_level(logging.DEBUG, logger="app.routers.goes_frames"):
             response = await client.get("/api/goes/dashboard-stats")
         assert response.status_code == 200
         assert "Dashboard stats requested" in caplog.text

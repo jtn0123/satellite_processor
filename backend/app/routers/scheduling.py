@@ -138,7 +138,7 @@ async def run_fetch_preset(
     db.add(job)
     await db.commit()
 
-    from ..tasks.goes_tasks import fetch_goes_data
+    from ..tasks.fetch_task import fetch_goes_data
 
     fetch_goes_data.delay(job_id, job.params)
     return {"job_id": job_id, "status": "pending", "preset": preset.name}

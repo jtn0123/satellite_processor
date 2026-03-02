@@ -45,7 +45,7 @@ def _launch_schedule_job(session, schedule, preset, now):
 
     logger.info("Scheduled fetch: job=%s preset=%s schedule=%s", job_id, preset.name, schedule.name)
 
-    from .goes_tasks import fetch_goes_data
+    from .fetch_task import fetch_goes_data
     fetch_goes_data.delay(job_id, job.params)
 
 

@@ -96,7 +96,7 @@ class TestFetchPresetsExtended:
         db.add(p)
         await db.commit()
 
-        with patch("app.tasks.goes_tasks.fetch_goes_data") as mock:
+        with patch("app.tasks.fetch_task.fetch_goes_data") as mock:
             mock.delay = lambda *a: None
             resp = await client.post(f"/api/goes/fetch-presets/{p.id}/run")
         assert resp.status_code == 200

@@ -150,9 +150,9 @@ def test_fetch_frames_retry_exhausted(mock_list, mock_s3_client, mock_disk, tmp_
 # ---------------------------------------------------------------------------
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_completed_partial_status_when_capped(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -191,9 +191,9 @@ def test_completed_partial_status_when_capped(mock_db, mock_progress, mock_updat
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_completed_partial_status_when_some_failed(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -230,9 +230,9 @@ def test_completed_partial_status_when_some_failed(mock_db, mock_progress, mock_
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_completed_status_when_all_succeed(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -270,9 +270,9 @@ def test_completed_status_when_all_succeed(mock_db, mock_progress, mock_update, 
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_failed_status_when_zero_frames(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -304,9 +304,9 @@ def test_failed_status_when_zero_frames(mock_db, mock_progress, mock_update, moc
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_frame_cap_reads_from_settings(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 
@@ -338,9 +338,9 @@ def test_frame_cap_reads_from_settings(mock_db, mock_progress, mock_update, mock
 
 
 @patch("app.services.goes_fetcher.fetch_frames")
-@patch("app.tasks.goes_tasks._update_job_db")
-@patch("app.tasks.goes_tasks._publish_progress")
-@patch("app.tasks.goes_tasks._get_sync_db")
+@patch("app.tasks.fetch_task._update_job_db")
+@patch("app.tasks.fetch_task._publish_progress")
+@patch("app.tasks.fetch_task._get_sync_db")
 def test_frame_cap_default_when_no_setting(mock_db, mock_progress, mock_update, mock_fetch):
     from app.tasks.goes_tasks import fetch_goes_data
 

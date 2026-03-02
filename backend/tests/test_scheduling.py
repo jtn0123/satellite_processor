@@ -71,7 +71,7 @@ async def test_run_fetch_preset(client, monkeypatch):
             called["job_id"] = job_id
             called["params"] = params
 
-    import app.tasks.goes_tasks as goes_mod
+    import app.tasks.fetch_task as goes_mod
     monkeypatch.setattr(goes_mod, "fetch_goes_data", FakeTask())
 
     resp = await client.post("/api/goes/fetch-presets", json={

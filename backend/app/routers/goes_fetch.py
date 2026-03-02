@@ -94,7 +94,7 @@ async def fetch_composite(
     db.add(job)
     await db.commit()
 
-    from ..tasks.goes_tasks import fetch_composite_data
+    from ..tasks.composite_task import fetch_composite_data
     result = fetch_composite_data.delay(job_id, job.params)
     job.task_id = str(result.id)
     await db.commit()
@@ -160,7 +160,7 @@ async def fetch_goes(
     db.add(job)
     await db.commit()
 
-    from ..tasks.goes_tasks import fetch_goes_data
+    from ..tasks.fetch_task import fetch_goes_data
     result = fetch_goes_data.delay(job_id, job.params)
     job.task_id = str(result.id)
     await db.commit()
@@ -221,7 +221,7 @@ async def backfill_gaps(
     db.add(job)
     await db.commit()
 
-    from ..tasks.goes_tasks import backfill_gaps as backfill_task
+    from ..tasks.fetch_task import backfill_gaps as backfill_task
     backfill_task.delay(job_id, job.params)
 
     return GoesFetchResponse(

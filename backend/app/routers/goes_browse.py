@@ -63,7 +63,7 @@ async def create_composite(
     db.add(composite)
     await db.commit()
 
-    from ..tasks.goes_tasks import generate_composite
+    from ..tasks.composite_task import generate_composite
 
     generate_composite.delay(composite_id, job_id, {
         "recipe": recipe,

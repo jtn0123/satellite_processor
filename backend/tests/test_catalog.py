@@ -42,7 +42,7 @@ async def test_catalog_returns_list(client):
     mock_result = [
         {"scan_time": "2025-01-01T12:00:00+00:00", "size": 12345, "key": "test/key.nc"},
     ]
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get("/api/goes/catalog", params={
             "satellite": "GOES-19", "sector": "CONUS", "band": "C02", "date": "2025-01-01",
         })
@@ -55,7 +55,7 @@ async def test_catalog_returns_list(client):
 @pytest.mark.asyncio
 async def test_catalog_latest_not_found(client):
     """Catalog latest returns 404 when no recent frames."""
-    with patch("app.routers.goes.get_cached", return_value=None):
+    with patch("app.routers.goes_catalog.get_cached", return_value=None):
         resp = await client.get("/api/goes/catalog/latest", params={
             "satellite": "GOES-19", "sector": "CONUS",
         })
@@ -234,7 +234,7 @@ async def test_catalog_latest_meso_returns_data(client):
         "mobile_url": None,
         "thumbnail_url": None,
     }
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get("/api/goes/catalog/latest", params={
             "satellite": "GOES-19", "sector": "Mesoscale1", "band": "C02",
         })

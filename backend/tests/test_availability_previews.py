@@ -13,7 +13,7 @@ async def test_catalog_available_returns_sectors(client):
         "available_sectors": ["CONUS", "FullDisk"],
         "checked_at": "2026-01-01T00:00:00+00:00",
     }
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get("/api/goes/catalog/available", params={"satellite": "GOES-19"})
         assert resp.status_code == 200
         data = resp.json()
@@ -31,7 +31,7 @@ async def test_catalog_available_default_satellite(client):
         "available_sectors": [],
         "checked_at": "2026-01-01T00:00:00+00:00",
     }
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get("/api/goes/catalog/available")
         assert resp.status_code == 200
         assert resp.json()["satellite"] == "GOES-19"
@@ -49,7 +49,7 @@ async def test_band_samples_returns_thumbnails(client):
             "C03": None,
         },
     }
-    with patch("app.routers.goes.get_cached", return_value=mock_result):
+    with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get(
             "/api/goes/preview/band-samples",
             params={"satellite": "GOES-19", "sector": "CONUS"},

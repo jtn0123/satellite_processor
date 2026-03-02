@@ -1,14 +1,12 @@
 """Tests for backend reliability: narrowed exceptions, Celery retry config, failed_jobs tracking."""
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 from app.celery_app import celery_app, on_task_failure
 from app.db.database import Base
 from app.models.failed_job import FailedJob
-
 
 # ── Task 1: Narrowed exception tests ─────────────────────────────
 

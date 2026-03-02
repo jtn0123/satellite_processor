@@ -3,6 +3,8 @@
 import json
 import logging
 
+import redis.exceptions
+
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
                 "job_id": job_id,
                 "message": message,
             }))
-    except (ConnectionError, TimeoutError, OSError):
+    except (redis.exceptions.RedisError, ConnectionError, TimeoutError, OSError):
         logger.debug("Redis unavailable, skipping progress publish for job %s", job_id)
 
 

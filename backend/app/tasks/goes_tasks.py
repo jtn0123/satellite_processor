@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import redis.exceptions
 from botocore.exceptions import ClientError
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -180,7 +181,7 @@ def _make_job_logger(job_id: str):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, ConnectionError, OSError):
+        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()

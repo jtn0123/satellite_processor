@@ -5,6 +5,7 @@ import sys
 import time
 from pathlib import Path
 
+import redis.exceptions
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
@@ -77,7 +78,7 @@ def process_images_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, OSError):  # DB or Redis write failure
+        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
@@ -150,7 +151,7 @@ def create_video_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, OSError):  # DB or Redis write failure
+        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()

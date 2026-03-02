@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-
-from sqlalchemy.exc import SQLAlchemyError
 from unittest.mock import MagicMock, patch
 
 from app.tasks.scheduling_tasks import (
@@ -14,6 +12,7 @@ from app.tasks.scheduling_tasks import (
     _get_protected_frame_ids,
     _launch_schedule_job,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def _utcnow():

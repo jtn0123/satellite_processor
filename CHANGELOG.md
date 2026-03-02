@@ -1,3 +1,10 @@
+## [1.26.8](https://github.com/jtn0123/satellite_processor/compare/v1.26.7...v1.26.8) (2026-03-02)
+
+
+### Bug Fixes
+
+* correct ImageViewer zoom/pan edge clipping ([#298](https://github.com/jtn0123/satellite_processor/issues/298)) ([3833950](https://github.com/jtn0123/satellite_processor/commit/3833950fe17b09fae382d19e73d5b4fab2226baa))
+
 ## [1.26.7](https://github.com/jtn0123/satellite_processor/compare/v1.26.6...v1.26.7) (2026-03-02)
 
 

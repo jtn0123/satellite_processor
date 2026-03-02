@@ -1,6 +1,8 @@
 """Tests for backend reliability: narrowed exceptions, Celery retry config, failed_jobs tracking."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -201,6 +203,157 @@ class TestFailedJobsTracking:
 
 
 # ── Task 3: API error consistency ────────────────────────────────
+
+
+class TestFailedJobModel:
+    """Test FailedJob model defaults and field generation."""
+
+    def test_model_defaults(self):
+        job = FailedJob(task_name="t", task_id="tid", exception="err")
+        assert job.args == "[]"
+        assert job.kwargs == "{}"
+        assert job.traceback == ""
+        assert job.retried_count == 0
+
+    def test_uuid_generation(self):
+        job = FailedJob(task_name="t", task_id="tid", exception="err")
+        assert job.id is not None
+        assert len(job.id) == 36  # UUID format
+
+    def test_failed_at_default(self):
+
+        job = FailedJob(task_name="t", task_id="tid", exception="err")
+        assert job.failed_at is not None
+
+
+class TestSignalHandlerEdgeCases:
+    """Test on_task_failure signal handler edge cases."""
+
+    def test_handles_none_sender(self):
+        """Should not crash when sender is None."""
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        sync_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(sync_engine)
+        Session = sessionmaker(bind=sync_engine)
+        session = Session()
+
+        with patch("app.tasks.helpers._get_sync_db", return_value=session):
+            on_task_failure(
+                sender=None,
+                task_id=None,
+                exception=ValueError("test"),
+                tb=None,
+                args=None,
+                kwargs=None,
+            )
+
+        records = session.query(FailedJob).all()
+        assert len(records) == 1
+        assert records[0].task_name == "unknown"
+        assert records[0].task_id == "unknown"
+        session.close()
+
+    def test_handles_db_failure_gracefully(self):
+        """Should not crash when DB write fails."""
+        from sqlalchemy.exc import OperationalError
+
+        mock_session = MagicMock()
+        mock_session.add.side_effect = OperationalError("db down", {}, None)
+
+        with patch("app.tasks.helpers._get_sync_db", return_value=mock_session):
+            # Should not raise
+            on_task_failure(
+                sender=MagicMock(name="test_task"),
+                task_id="t1",
+                exception=ValueError("test"),
+                tb=None,
+                args=[],
+                kwargs={},
+            )
+
+    def test_serializes_complex_args(self):
+        """Should handle non-serializable args gracefully."""
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        sync_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(sync_engine)
+        Session = sessionmaker(bind=sync_engine)
+        session = Session()
+
+        mock_sender = MagicMock()
+        mock_sender.name = "complex_task"
+        mock_sender.request.retries = 0
+
+        with patch("app.tasks.helpers._get_sync_db", return_value=session):
+            on_task_failure(
+                sender=mock_sender,
+                task_id="t2",
+                exception=RuntimeError("boom"),
+                tb=None,
+                args=[{"nested": {"data": True}}],
+                kwargs={"key": "value"},
+            )
+
+        records = session.query(FailedJob).all()
+        assert len(records) == 1
+        parsed_args = json.loads(records[0].args)
+        assert parsed_args[0]["nested"]["data"] is True
+        session.close()
+
+
+class TestCacheJsonDecodeError:
+    """Test cache handles malformed JSON gracefully."""
+
+    def test_corrupted_cache_value_falls_through(self):
+        import asyncio
+
+        from app.services.cache import get_cached
+
+        async def _test():
+            mock_redis = MagicMock()
+            mock_redis.get = MagicMock(return_value="not valid json{{{")
+            mock_redis.set = MagicMock()
+
+            with patch("app.services.cache.get_redis_client", return_value=mock_redis):
+                result = await get_cached("test:key", 60, lambda: {"fresh": True})
+            assert result == {"fresh": True}
+
+        asyncio.get_event_loop().run_until_complete(_test())
+
+
+class TestGosFetcherSafeKeyAccess:
+    """Test that goes_fetcher handles missing 'key' in item dict."""
+
+    def test_process_single_frame_missing_key(self):
+        from app.services.goes_fetcher import _process_single_frame
+
+        with patch("app.services.goes_fetcher._download_and_convert_frame") as mock_dl:
+            mock_dl.side_effect = ValueError("bad data")
+            results = []
+            ok = _process_single_frame(
+                MagicMock(), "bucket", {}, "GOES-16", "FullDisk", "C02",
+                Path("/tmp"), results, 0, 5, None,
+            )
+            assert ok is False
+
+
+class TestAnimationWorkDirGuard:
+    """Test animation task work_dir initialization guard."""
+
+    def test_work_dir_none_when_early_failure(self):
+        """generate_animation should handle early failure without work_dir."""
+        from app.tasks.animation_tasks import generate_animation
+
+        with patch("app.tasks.animation_tasks._get_sync_db") as mock_db:
+            session = MagicMock()
+            session.query.return_value.filter.return_value.first.return_value = None
+            mock_db.return_value = session
+
+            with pytest.raises(RuntimeError, match="not found"):
+                generate_animation("job-1", "anim-1")
 
 
 class TestAPIErrorConsistency:

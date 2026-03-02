@@ -108,7 +108,7 @@ def on_task_failure(sender=None, task_id=None, exception=None, tb=None, args=Non
             session.rollback()
         finally:
             session.close()
-    except (ImportError, ConnectionError, OSError):
+    except (ImportError, OSError):
         logger.debug("Failed to get DB session for failed job tracking", exc_info=True)
 
     # Update metrics

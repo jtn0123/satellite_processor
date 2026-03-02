@@ -268,7 +268,7 @@ def _list_hour(
                 scan_time = _parse_scan_time(key)
                 if scan_time and start_time <= scan_time <= end_time:
                     results.append({"key": key, "scan_time": scan_time, "size": obj["Size"]})
-    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError, ConnectionError, OSError) as exc:
+    except (ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError, OSError) as exc:
         logger.warning("Failed to list S3 prefix %s/%s: %s", bucket, prefix, exc)
     return results
 
@@ -539,7 +539,7 @@ def _process_single_frame(
         if on_progress:
             on_progress(index + 1, total)
         return True
-    except (ClientError, ConnectionError, TimeoutError, ValueError, KeyError):
+    except (ClientError, OSError, ValueError, KeyError):
         logger.exception("Error fetching %s", item["key"])
         return False
     except OSError:
@@ -631,6 +631,6 @@ def fetch_single_preview(
             return tmp_path.read_bytes()
         finally:
             tmp_path.unlink(missing_ok=True)
-    except (ClientError, ConnectionError, TimeoutError, OSError, ValueError):
+    except (ClientError, OSError, ValueError):
         logger.exception("Failed to fetch preview")
         return None

@@ -181,7 +181,7 @@ def _make_job_logger(job_id: str):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()

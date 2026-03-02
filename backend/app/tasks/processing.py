@@ -78,7 +78,7 @@ def process_images_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
@@ -151,7 +151,7 @@ def create_video_task(self, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             log_job_sync(session, job_id, msg, level, redis_client=_get_redis())
-        except (SQLAlchemyError, redis.exceptions.RedisError, ConnectionError, OSError):
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()

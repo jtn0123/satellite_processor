@@ -36,7 +36,7 @@ async def get_cached(
         cached = await redis_client.get(key)
         if cached is not None:
             return json.loads(cached)
-    except (redis.exceptions.RedisError, ConnectionError, TimeoutError, OSError, RuntimeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError):
         logger.warning("Redis cache read failed for %s", key, exc_info=True)
 
     raw = fetch_fn()
@@ -44,7 +44,7 @@ async def get_cached(
 
     try:
         await redis_client.set(key, json.dumps(result, default=str), ex=ttl)
-    except (redis.exceptions.RedisError, ConnectionError, TimeoutError, OSError, RuntimeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError):
         logger.warning("Redis cache write failed for %s", key, exc_info=True)
 
     return result
@@ -60,6 +60,6 @@ async def invalidate(pattern: str) -> int:
         if keys:
             deleted: int = await redis_client.delete(*keys)
             return deleted
-    except (redis.exceptions.RedisError, ConnectionError, TimeoutError, OSError, RuntimeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError):
         logger.warning("Redis cache invalidate failed for %s", pattern, exc_info=True)
     return 0

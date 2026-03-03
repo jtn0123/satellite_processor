@@ -6,7 +6,7 @@
  * Only the HTTP layer is mocked — React components and state run for real.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CompareView from '../../components/GoesData/CompareView';
 import type { GoesFrame } from '../../components/GoesData/types';

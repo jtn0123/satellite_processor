@@ -160,8 +160,19 @@ async def fetch_goes(
     db.add(job)
     await db.commit()
 
-    from ..tasks.fetch_task import fetch_goes_data
-    result = fetch_goes_data.delay(job_id, job.params)
+    # Dispatch to the appropriate fetch task based on satellite type
+    from ..services.satellite_registry import SATELLITE_REGISTRY
+
+    sat_config = SATELLITE_REGISTRY.get(payload.satellite)
+    if sat_config and sat_config.format == "hsd":
+        from ..tasks.himawari_fetch_task import fetch_himawari_data
+        result = fetch_himawari_data.delay(job_id, job.params)
+        message = "Himawari fetch job created"
+    else:
+        from ..tasks.fetch_task import fetch_goes_data
+        result = fetch_goes_data.delay(job_id, job.params)
+        message = "GOES fetch job created"
+
     job.task_id = str(result.id)
     await db.commit()
 
@@ -170,7 +181,7 @@ async def fetch_goes(
     return GoesFetchResponse(
         job_id=job_id,
         status="pending",
-        message="GOES fetch job created",
+        message=message,
     )
 
 

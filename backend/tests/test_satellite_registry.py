@@ -122,9 +122,9 @@ class TestHimawariConfig:
         cfg = get_satellite("Himawari-9")
         assert cfg.format == "hsd"
 
-    def test_himawari_not_fetchable(self):
+    def test_himawari_fetchable(self):
         cfg = get_satellite("Himawari-9")
-        assert cfg.fetchable is False
+        assert cfg.fetchable is True
 
     def test_himawari_bands(self):
         cfg = get_satellite("Himawari-9")

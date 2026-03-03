@@ -1,7 +1,11 @@
 """Tests for WebSocket endpoints."""
 
 import asyncio
+import os
 from unittest.mock import AsyncMock, MagicMock
+
+# Ensure DEBUG mode so the lifespan doesn't require API_KEY
+os.environ.setdefault("DEBUG", "true")
 
 import app.main as main_module
 

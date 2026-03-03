@@ -78,7 +78,7 @@ class TestWsAuthenticate:
 
     @pytest.mark.asyncio
     async def test_correct_key_via_query_param(self):
-        """Correct API key in query params should pass."""
+        """Correct API key in query params should pass (legacy compat)."""
 
         ws = AsyncMock()
         ws.query_params = {"api_key": "secret"}
@@ -99,12 +99,48 @@ class TestWsAuthenticate:
         assert result is True
 
     @pytest.mark.asyncio
+    async def test_correct_key_via_first_message(self):
+        """Correct API key sent as first message should pass."""
+        import asyncio
+
+        ws = AsyncMock()
+        ws.query_params = {}
+        ws.headers = {}
+        ws.receive_json = AsyncMock(
+            return_value={"type": "auth", "api_key": "secret"}
+        )
+        with patch.object(main_module.app_settings, "api_key", "secret"):
+            result = await main_module._ws_authenticate(ws)
+        assert result is True
+        ws.accept.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_wrong_key_via_first_message_fails(self):
+        """Wrong API key in first message should fail and close."""
+
+        ws = AsyncMock()
+        ws.query_params = {}
+        ws.headers = {}
+        ws.receive_json = AsyncMock(
+            return_value={"type": "auth", "api_key": "wrong"}
+        )
+        with patch.object(main_module.app_settings, "api_key", "secret"):
+            result = await main_module._ws_authenticate(ws)
+        assert result is False
+        ws.close.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_wrong_key_fails(self):
-        """Wrong API key should return False and close connection."""
+        """Wrong API key in query params and no first message should fail."""
+        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {"api_key": "wrong"}
         ws.headers = {}
+        # No valid first-message auth either — timeout
+        ws.receive_json = AsyncMock(
+            side_effect=asyncio.TimeoutError()
+        )
         with patch.object(main_module.app_settings, "api_key", "secret"):
             result = await main_module._ws_authenticate(ws)
         assert result is False

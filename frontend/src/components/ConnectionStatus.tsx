@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
-import { buildWsUrl } from '../api/ws';
+import { buildWsUrl, getWsApiKey } from '../api/ws';
 
 type Status = 'connected' | 'reconnecting' | 'disconnected';
 
@@ -37,6 +37,11 @@ function connect() {
   try {
     ws = new WebSocket(buildWsUrl('/ws/status'));
     ws.onopen = () => {
+      // Send API key as first message for authentication
+      const apiKey = getWsApiKey();
+      if (apiKey) {
+        ws?.send(JSON.stringify({ type: 'auth', api_key: apiKey }));
+      }
       setStatus('connected');
       retryCount = 0;
     };

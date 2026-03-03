@@ -79,8 +79,8 @@ async def test_shared_image_path_traversal_returns_404(client, share_setup):
 
 
 @pytest.mark.asyncio
-async def test_api_key_warning_logged_when_empty(caplog):
-    """Startup logs warning when API key is not set."""
+async def test_api_key_fatal_in_production(caplog):
+    """Startup raises SystemExit when API key is not set in production mode."""
     with patch("app.main.app_settings") as mock_settings, \
          patch("app.main.init_db", new_callable=AsyncMock), \
          patch("app.main.close_redis_pool", new_callable=AsyncMock), \
@@ -90,6 +90,31 @@ async def test_api_key_warning_logged_when_empty(caplog):
          patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock):
         mock_settings.api_key = ""
         mock_settings.debug = False
+
+        from app.main import lifespan
+
+        mock_app = AsyncMock()
+        with pytest.raises(SystemExit):
+            async with lifespan(mock_app):
+                pass
+
+
+@pytest.mark.asyncio
+async def test_api_key_warning_in_debug_mode(caplog):
+    """Startup logs warning (not fatal) when API key is not set in debug mode."""
+    with patch("app.main.app_settings") as mock_settings, \
+         patch("app.main.init_db", new_callable=AsyncMock), \
+         patch("app.main.close_redis_pool", new_callable=AsyncMock), \
+         patch("app.main.setup_logging"), \
+         patch("app.main._stale_job_checker", new_callable=AsyncMock), \
+         patch("app.main.asyncio.create_task") as mock_task, \
+         patch("app.db.database.async_session", new_callable=AsyncMock), \
+         patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock):
+        mock_settings.api_key = ""
+        mock_settings.debug = True
+        mock_settings.storage_path = "/tmp"
+        mock_task.return_value = AsyncMock()
+        mock_task.return_value.cancel = lambda: None
 
         from app.main import lifespan
 

@@ -19,23 +19,74 @@ BAND_DESCRIPTIONS = {
 }
 
 BAND_METADATA = {
-    "C01": {"wavelength_um": 0.47, "common_name": "Blue", "category": "visible", "use_case": "Daytime aerosol & smoke detection"},
-    "C02": {"wavelength_um": 0.64, "common_name": "Red", "category": "visible", "use_case": "Primary visible — clouds & surface features"},
-    "C03": {"wavelength_um": 0.86, "common_name": "Veggie", "category": "near_ir", "use_case": "Vegetation health, burn scars"},
-    "C04": {"wavelength_um": 1.37, "common_name": "Cirrus", "category": "near_ir", "use_case": "Cirrus cloud detection"},
-    "C05": {"wavelength_um": 1.61, "common_name": "Snow/Ice", "category": "near_ir", "use_case": "Snow/ice discrimination, cloud phase"},
-    "C06": {"wavelength_um": 2.24, "common_name": "Cloud Particle", "category": "near_ir", "use_case": "Cloud particle size, snow detection"},
-    "C07": {"wavelength_um": 3.9, "common_name": "Shortwave IR", "category": "infrared", "use_case": "Fire/hotspot detection, nighttime fog"},
-    "C08": {"wavelength_um": 6.2, "common_name": "Upper Tropo WV", "category": "infrared", "use_case": "Upper-level water vapor, jet streams"},
-    "C09": {"wavelength_um": 6.9, "common_name": "Mid Tropo WV", "category": "infrared", "use_case": "Mid-level water vapor tracking"},
-    "C10": {"wavelength_um": 7.3, "common_name": "Lower Tropo WV", "category": "infrared", "use_case": "Lower-level water vapor, SO₂ detection"},
-    "C11": {"wavelength_um": 8.4, "common_name": "Cloud-Top Phase", "category": "infrared", "use_case": "Cloud-top phase, dust detection"},
-    "C12": {"wavelength_um": 9.6, "common_name": "Ozone", "category": "infrared", "use_case": "Total column ozone, turbulence"},
-    "C13": {"wavelength_um": 10.3, "common_name": "Clean IR", "category": "infrared", "use_case": "Clean IR window — clouds & SST"},
-    "C14": {"wavelength_um": 11.2, "common_name": "IR Longwave", "category": "infrared", "use_case": "Cloud-top temperature, general IR"},
-    "C15": {"wavelength_um": 12.3, "common_name": "Dirty IR", "category": "infrared", "use_case": "Dirty IR window — volcanic ash"},
-    "C16": {"wavelength_um": 13.3, "common_name": "CO₂ Longwave", "category": "infrared", "use_case": "Cloud-top height estimation"},
-    "GEOCOLOR": {"wavelength_um": None, "common_name": "GeoColor", "category": "composite", "use_case": "True color daytime, multispectral IR nighttime"},
+    "C01": {
+        "wavelength_um": 0.47, "common_name": "Blue",
+        "category": "visible", "use_case": "Daytime aerosol & smoke detection",
+    },
+    "C02": {
+        "wavelength_um": 0.64, "common_name": "Red",
+        "category": "visible", "use_case": "Primary visible — clouds & surface features",
+    },
+    "C03": {
+        "wavelength_um": 0.86, "common_name": "Veggie",
+        "category": "near_ir", "use_case": "Vegetation health, burn scars",
+    },
+    "C04": {
+        "wavelength_um": 1.37, "common_name": "Cirrus",
+        "category": "near_ir", "use_case": "Cirrus cloud detection",
+    },
+    "C05": {
+        "wavelength_um": 1.61, "common_name": "Snow/Ice",
+        "category": "near_ir", "use_case": "Snow/ice discrimination, cloud phase",
+    },
+    "C06": {
+        "wavelength_um": 2.24, "common_name": "Cloud Particle",
+        "category": "near_ir", "use_case": "Cloud particle size, snow detection",
+    },
+    "C07": {
+        "wavelength_um": 3.9, "common_name": "Shortwave IR",
+        "category": "infrared", "use_case": "Fire/hotspot detection, nighttime fog",
+    },
+    "C08": {
+        "wavelength_um": 6.2, "common_name": "Upper Tropo WV",
+        "category": "infrared", "use_case": "Upper-level water vapor, jet streams",
+    },
+    "C09": {
+        "wavelength_um": 6.9, "common_name": "Mid Tropo WV",
+        "category": "infrared", "use_case": "Mid-level water vapor tracking",
+    },
+    "C10": {
+        "wavelength_um": 7.3, "common_name": "Lower Tropo WV",
+        "category": "infrared", "use_case": "Lower-level water vapor, SO₂ detection",
+    },
+    "C11": {
+        "wavelength_um": 8.4, "common_name": "Cloud-Top Phase",
+        "category": "infrared", "use_case": "Cloud-top phase, dust detection",
+    },
+    "C12": {
+        "wavelength_um": 9.6, "common_name": "Ozone",
+        "category": "infrared", "use_case": "Total column ozone, turbulence",
+    },
+    "C13": {
+        "wavelength_um": 10.3, "common_name": "Clean IR",
+        "category": "infrared", "use_case": "Clean IR window — clouds & SST",
+    },
+    "C14": {
+        "wavelength_um": 11.2, "common_name": "IR Longwave",
+        "category": "infrared", "use_case": "Cloud-top temperature, general IR",
+    },
+    "C15": {
+        "wavelength_um": 12.3, "common_name": "Dirty IR",
+        "category": "infrared", "use_case": "Dirty IR window — volcanic ash",
+    },
+    "C16": {
+        "wavelength_um": 13.3, "common_name": "CO₂ Longwave",
+        "category": "infrared", "use_case": "Cloud-top height estimation",
+    },
+    "GEOCOLOR": {
+        "wavelength_um": None, "common_name": "GeoColor",
+        "category": "composite", "use_case": "True color daytime, multispectral IR nighttime",
+    },
 }
 
 SECTOR_DISPLAY_NAMES = {

@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class PresetRename(BaseModel):
     name: str = Field(min_length=1, max_length=100)
 
+
 router = APIRouter(prefix="/api/presets", tags=["presets"])
 
 

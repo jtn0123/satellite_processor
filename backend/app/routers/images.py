@@ -40,6 +40,7 @@ def _validate_file_path(file_path: str) -> Path:
         raise APIError(403, "forbidden", "File path outside storage directory")
     return resolved
 
+
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
@@ -62,7 +63,8 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     ext = os.path.splitext(safe_basename)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
-        raise APIError(400, "invalid_file_type",
+        raise APIError(
+            400, "invalid_file_type",
             f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
 
     file_id = str(uuid.uuid4())
@@ -196,7 +198,8 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path = cache_dir / f"{image_id}.jpg"
     if cache_path.exists():
-        return FileResponse(str(cache_path), media_type="image/jpeg",
+        return FileResponse(
+            str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
     # #204: Run PIL thumbnail generation in a thread to avoid blocking the event loop
     import asyncio
@@ -208,7 +211,8 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
 
     try:
         await asyncio.to_thread(_generate_thumbnail)
-        return FileResponse(str(cache_path), media_type="image/jpeg",
+        return FileResponse(
+            str(cache_path), media_type="image/jpeg",
             headers={"Cache-Control": "public, max-age=86400"})
     except (OSError, ValueError):
         raise APIError(500, "thumbnail_error", "Could not generate thumbnail")

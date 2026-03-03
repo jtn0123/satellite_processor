@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # --- Frame schemas ---
 
+
 class GoesFrameResponse(BaseModel):
     """Response schema for a GOES satellite frame with file info, tags, and collections."""
 

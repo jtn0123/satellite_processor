@@ -20,10 +20,10 @@ except IndexError:
     _project_root = str(Path(__file__).resolve().parents[-1])
 sys.path.insert(0, _project_root)
 
-from satellite_processor.core.processor import SatelliteImageProcessor
+from satellite_processor.core.processor import SatelliteImageProcessor  # noqa: E402
 
-from ..services.job_logger import log_job_sync
-from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db
+from ..services.job_logger import log_job_sync  # noqa: E402
+from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +189,8 @@ def create_video_task(self, job_id: str, params: dict):
 
         # Gather input files and call create_video
         input_files = sorted(Path(input_path).glob("*"))
-        input_files = [str(f) for f in input_files if f.is_file() and f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.tif', '.tiff')]
+        valid_exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
+        input_files = [str(f) for f in input_files if f.is_file() and f.suffix.lower() in valid_exts]
         video_options = {
             "fps": params.get("video", {}).get("fps", 24),
             "codec": params.get("video", {}).get("codec", "h264"),

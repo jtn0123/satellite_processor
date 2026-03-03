@@ -114,6 +114,8 @@ def _parse_changelog(limit: int = 5) -> list:
 
     _changelog_cache = releases
     return _changelog_cache
+
+
 BUILD_COMMIT = os.environ.get("BUILD_COMMIT", "dev")
 BUILD_DATE = os.environ.get("BUILD_DATE", "")
 
@@ -263,4 +265,3 @@ async def health_detailed():
         "version": VERSION,
         "commit": BUILD_COMMIT,
     }
-

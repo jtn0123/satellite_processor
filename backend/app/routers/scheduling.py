@@ -345,7 +345,10 @@ async def preview_cleanup(db: AsyncSession = Depends(get_db)):
         frame_count=len(frames_to_delete),
         total_size_bytes=total_size,
         frames=[
-            {"id": f.id, "file_path": f.file_path, "file_size": f.file_size, "capture_time": f.capture_time.isoformat() if f.capture_time else None}
+            {
+                "id": f.id, "file_path": f.file_path, "file_size": f.file_size,
+                "capture_time": f.capture_time.isoformat() if f.capture_time else None,
+            }
             for f in frames_to_delete[:100]  # Limit preview to 100
         ],
     )

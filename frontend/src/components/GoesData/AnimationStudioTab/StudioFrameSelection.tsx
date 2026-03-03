@@ -1,0 +1,131 @@
+import { Satellite, Film } from 'lucide-react';
+import { BAND_INFO } from '../../../constants/bands';
+import type { Product, CollectionType, PaginatedFrames } from '../types';
+
+interface StudioFrameSelectionProps {
+  readonly selectionMode: 'filters' | 'collection';
+  readonly setSelectionMode: (v: 'filters' | 'collection') => void;
+  readonly satellite: string;
+  readonly setSatellite: (v: string) => void;
+  readonly band: string;
+  readonly setBand: (v: string) => void;
+  readonly sector: string;
+  readonly setSector: (v: string) => void;
+  readonly startDate: string;
+  readonly setStartDate: (v: string) => void;
+  readonly endDate: string;
+  readonly setEndDate: (v: string) => void;
+  readonly collectionId: string;
+  readonly setCollectionId: (v: string) => void;
+  readonly products: Product | undefined;
+  readonly collections: CollectionType[] | undefined;
+  readonly previewFrames: PaginatedFrames | undefined;
+}
+
+export function StudioFrameSelection({
+  selectionMode, setSelectionMode,
+  satellite, setSatellite, band, setBand, sector, setSector,
+  startDate, setStartDate, endDate, setEndDate,
+  collectionId, setCollectionId,
+  products, collections, previewFrames,
+}: StudioFrameSelectionProps) {
+  return (
+    <div className="lg:col-span-2 space-y-4">
+      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Film className="w-5 h-5 text-primary" /> Frame Selection
+        </h3>
+
+        <div className="flex gap-2">
+          <button onClick={() => setSelectionMode('filters')}
+            className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'filters' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            By Filters
+          </button>
+          <button onClick={() => setSelectionMode('collection')}
+            className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'collection' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            From Collection
+          </button>
+        </div>
+
+        {selectionMode === 'filters' ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="anim-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
+              <select id="anim-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                <option value="">All</option>
+                {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="anim-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
+              <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                <option value="">All</option>
+                {(products?.bands ?? []).map((b) => {
+                  const info = BAND_INFO[b.id];
+                  return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : ''}</option>;
+                })}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="anim-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
+              <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+                <option value="">All</option>
+                {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="anim-start-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Start Date</label>
+              <input id="anim-start-date" type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+            </div>
+            <div>
+              <label htmlFor="anim-end-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">End Date</label>
+              <input id="anim-end-date" type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="anim-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
+            <select id="anim-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+              <option value="">Select collection...</option>
+              {(collections ?? []).map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count ?? 0} frames)</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Preview strip */}
+        {previewFrames && previewFrames.total > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 dark:text-slate-400">
+              {previewFrames.total} frames matched (showing first {previewFrames.items.length})
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {previewFrames.items.map((frame) => (
+                <div key={frame.id} className="shrink-0 w-24">
+                  <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
+                    {(frame.thumbnail_url ?? frame.image_url) ? (
+                      <img src={frame.thumbnail_url ?? frame.image_url}
+                        alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Satellite className="w-4 h-4 text-gray-400 dark:text-slate-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 truncate">
+                    {new Date(frame.capture_time).toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

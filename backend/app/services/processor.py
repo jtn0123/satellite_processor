@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Add parent project to path so we can import the core module
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from satellite_processor.core.processor import SatelliteImageProcessor
-from satellite_processor.core.settings_schema import to_core_settings
+from satellite_processor.core.processor import SatelliteImageProcessor  # noqa: E402
+from satellite_processor.core.settings_schema import to_core_settings  # noqa: E402
 
 
 def configure_processor(processor: SatelliteImageProcessor, params: dict):

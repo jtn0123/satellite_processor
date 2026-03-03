@@ -51,7 +51,9 @@ def _create_fetch_records(
 
     session = _get_sync_db()
     try:
-        collection_name = f"GOES Fetch {results[0]['satellite'] if results else ''} {sector} {results[0]['band'] if results else ''}"
+        sat = results[0]['satellite'] if results else ''
+        band = results[0]['band'] if results else ''
+        collection_name = f"GOES Fetch {sat} {sector} {band}"
         existing_coll = session.query(Collection).filter(Collection.name == collection_name).first()
         if existing_coll:
             collection_id = existing_coll.id

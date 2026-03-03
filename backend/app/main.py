@@ -149,10 +149,19 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 async def api_key_auth(request: Request, call_next):
     if app_settings.api_key:
         path = request.url.path
-        if path not in AUTH_SKIP_PATHS and (request.method, path) not in AUTH_SKIP_METHODS_PATHS and not path.startswith("/ws/") and not any(path.startswith(p) for p in AUTH_SKIP_PREFIXES):
+        skip = (
+            path in AUTH_SKIP_PATHS
+            or (request.method, path) in AUTH_SKIP_METHODS_PATHS
+            or path.startswith("/ws/")
+            or any(path.startswith(p) for p in AUTH_SKIP_PREFIXES)
+        )
+        if not skip:
             key = request.headers.get("X-API-Key", "")
             if key != app_settings.api_key:
-                return JSONResponse(status_code=401, content={"error": "unauthorized", "detail": "Invalid or missing API key"})
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "unauthorized", "detail": "Invalid or missing API key"},
+                )
     return await call_next(request)
 
 

@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # --- Fetch Preset schemas ---
 
+
 class FetchPresetCreate(BaseModel):
     """Request schema for creating a fetch preset with satellite/sector/band configuration."""
 

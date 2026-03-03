@@ -56,7 +56,7 @@ describe('Image loading shimmer', () => {
 
 describe('Mobile FAB', () => {
   it('FAB markup exists with sm:hidden for mobile-only', async () => {
-    const liveMod = await import('../components/GoesData/LiveTab?raw');
+    const liveMod = await import('../components/GoesData/LiveTab/LiveImageArea?raw');
     const liveSrc = (liveMod as unknown as { default: string }).default;
     expect(liveSrc).toContain('data-testid="mobile-fab"');
     expect(liveSrc).toContain('sm:hidden');

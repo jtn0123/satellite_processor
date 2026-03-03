@@ -138,10 +138,10 @@ def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path
     if fmt == "gif":
         palette = str(work_dir / "palette.png")
         cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                 "-vf", "palettegen", palette]
+                "-vf", "palettegen", palette]
         _run_ffmpeg(cmd1)
         cmd2 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                 "-i", palette, "-lavfi", "paletteuse", str(output_path)]
+                "-i", palette, "-lavfi", "paletteuse", str(output_path)]
         _run_ffmpeg(cmd2)
     else:
         crf = QUALITY_CRF.get(quality, "23")

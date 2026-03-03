@@ -1,5 +1,7 @@
 /** Shared helpers for LiveTab — extracted for react-refresh compatibility */
 
+import { isHimawariSatellite } from '../../utils/sectorHelpers';
+
 export const FRIENDLY_BAND_NAMES: Record<string, string> = {
   C01: 'Visible Blue',
   C02: 'Visible Red',
@@ -20,8 +22,35 @@ export const FRIENDLY_BAND_NAMES: Record<string, string> = {
   GEOCOLOR: 'GeoColor (True Color)',
 };
 
+export const HIMAWARI_BAND_NAMES: Record<string, string> = {
+  B01: 'Visible Blue',
+  B02: 'Visible Green',
+  B03: 'Visible Red',
+  B04: 'Near-IR Veggie',
+  B05: 'Snow/Ice',
+  B06: 'Cloud Particle',
+  B07: 'Shortwave IR',
+  B08: 'Upper Water Vapor',
+  B09: 'Mid Water Vapor',
+  B10: 'Lower Water Vapor',
+  B11: 'Cloud-Top Phase',
+  B12: 'Ozone',
+  B13: 'Clean IR Longwave',
+  B14: 'IR Longwave',
+  B15: 'Dirty Longwave',
+  B16: 'CO₂ Longwave',
+  TrueColor: 'True Color (RGB)',
+};
+
+/** Get the correct band name mapping for a satellite. */
+function getBandNames(satellite?: string): Record<string, string> {
+  if (satellite && isHimawariSatellite(satellite)) return HIMAWARI_BAND_NAMES;
+  return FRIENDLY_BAND_NAMES;
+}
+
 function formatShort(bandId: string, friendly?: string): string {
   if (bandId === 'GEOCOLOR') return 'GeoColor';
+  if (bandId === 'TrueColor') return 'TrueColor';
   return friendly ? `${bandId} ${friendly}` : bandId;
 }
 
@@ -36,10 +65,11 @@ function formatLong(bandId: string, friendly?: string, description?: string): st
   return formatMedium(bandId, friendly, description);
 }
 
-export function getFriendlyBandLabel(bandId: string, description?: string, format?: 'short' | 'medium' | 'long'): string {
-  const friendly = FRIENDLY_BAND_NAMES[bandId];
+export function getFriendlyBandLabel(bandId: string, description?: string, format?: 'short' | 'medium' | 'long', satellite?: string): string {
+  const names = getBandNames(satellite);
+  const friendly = names[bandId];
 
-  if (bandId === 'GEOCOLOR' && format !== 'short') return friendly ?? bandId;
+  if ((bandId === 'GEOCOLOR' || bandId === 'TrueColor') && format !== 'short') return friendly ?? bandId;
 
   switch (format) {
     case 'short': return formatShort(bandId, friendly);
@@ -48,8 +78,9 @@ export function getFriendlyBandLabel(bandId: string, description?: string, forma
   }
 }
 
-export function getFriendlyBandName(bandId: string): string {
-  return FRIENDLY_BAND_NAMES[bandId] ?? bandId;
+export function getFriendlyBandName(bandId: string, satellite?: string): string {
+  const names = getBandNames(satellite);
+  return names[bandId] ?? bandId;
 }
 
 export interface CachedImageMeta {

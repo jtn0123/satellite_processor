@@ -118,4 +118,33 @@ describe('BandPillStrip', () => {
     render(<BandPillStrip {...defaultProps} sectorName="Full Disk" />);
     expect(screen.getByTestId('pill-strip-sector').textContent).toContain('Full Disk');
   });
+
+  it('renders Himawari bands correctly', () => {
+    const himawariBands = [
+      { id: 'TrueColor', description: 'True Color' },
+      { id: 'B03', description: 'Visible Red' },
+      { id: 'B07', description: 'Shortwave IR' },
+    ];
+    const himawariSectors = [
+      { id: 'FLDK', name: 'Full Disk' },
+      { id: 'Japan', name: 'Japan' },
+    ];
+    render(
+      <BandPillStrip
+        {...defaultProps}
+        bands={himawariBands}
+        activeBand="B03"
+        satellite="Himawari-9"
+        satellites={['GOES-16', 'GOES-18', 'Himawari-9']}
+        sectors={himawariSectors}
+        sectorName="Full Disk"
+      />,
+    );
+    expect(screen.getByTestId('band-pill-TrueColor')).toBeInTheDocument();
+    expect(screen.getByTestId('band-pill-B03')).toBeInTheDocument();
+    expect(screen.getByTestId('band-pill-B07')).toBeInTheDocument();
+    // Active band has correct styling
+    const activePill = screen.getByTestId('band-pill-B03');
+    expect(activePill.className).toContain('bg-primary/20');
+  });
 });

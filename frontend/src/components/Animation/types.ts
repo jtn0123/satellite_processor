@@ -58,8 +58,17 @@ export const SPEED_MULTIPLIERS: Record<SpeedPreset, number> = {
   timelapse: 30,
 };
 
-export const SATELLITES = ['GOES-16', 'GOES-18', 'GOES-19'];
-export const SECTORS = ['FullDisk', 'CONUS', 'Meso1', 'Meso2'];
-export const BANDS = Array.from({ length: 16 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
+export const GOES_SATELLITES = ['GOES-16', 'GOES-18', 'GOES-19'];
+export const HIMAWARI_SATELLITES = ['Himawari-9'];
+export const SATELLITES = [...GOES_SATELLITES, ...HIMAWARI_SATELLITES];
+
+export const GOES_SECTORS = ['FullDisk', 'CONUS', 'Meso1', 'Meso2'];
+export const HIMAWARI_SECTORS = ['FLDK', 'Japan', 'Target'];
+export const SECTORS = [...GOES_SECTORS, ...HIMAWARI_SECTORS];
+
+export const GOES_BANDS = Array.from({ length: 16 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
+export const HIMAWARI_BANDS = Array.from({ length: 16 }, (_, i) => `B${String(i + 1).padStart(2, '0')}`);
+/** @deprecated Use GOES_BANDS or HIMAWARI_BANDS for satellite-specific lists. */
+export const BANDS = GOES_BANDS;
 
 export const QUICK_HOURS = [1, 3, 6, 12, 24];

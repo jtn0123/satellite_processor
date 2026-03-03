@@ -53,36 +53,44 @@ export default function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-haspopup="true"
+        aria-expanded={open}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-4 h-4" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-space-900 border border-gray-200 dark:border-space-700/50 rounded-xl shadow-xl z-50 overflow-hidden dropdown-enter">
+        <div
+          className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-space-900 border border-gray-200 dark:border-space-700/50 rounded-xl shadow-xl z-50 overflow-hidden dropdown-enter"
+          role="menu"
+          aria-label="Notifications"
+        >
           <div className="px-4 py-3 border-b border-gray-200 dark:border-space-700/50">
-            <h3 className="text-sm font-semibold">Notifications</h3>
+            <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
           </div>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
             {(!notifications || notifications.length === 0) ? (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
             ) : (
               notifications.slice(0, 10).map((n) => (
                 <button
                   key={n.id}
+                  role="menuitem"
                   onClick={() => {
                     if (!n.read) markReadMutation.mutate(n.id);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-space-800 transition-colors border-b border-gray-200 dark:border-space-700/50 last:border-0 ${
+                  aria-label={`${n.read ? '' : 'Unread: '}${n.message} — ${new Date(n.created_at).toLocaleString()}`}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-space-800 transition-colors border-b border-gray-200 dark:border-space-700/50 last:border-0 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
                     n.read ? 'opacity-60' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    {!n.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />}
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" aria-hidden="true" />}
                     <div className={n.read ? 'ml-4' : ''}>
                       <p className="text-sm text-gray-600 dark:text-slate-300">{n.message}</p>
                       <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">

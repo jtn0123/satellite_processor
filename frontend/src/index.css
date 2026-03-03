@@ -98,6 +98,16 @@ body {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 0 8px 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
+/* Global focus-visible styles for keyboard navigation */
+button:not(.focus-ring):focus-visible,
+a:not(.focus-ring):focus-visible,
+select:not(.focus-ring):focus-visible,
+input[type="checkbox"]:focus-visible,
+input[type="range"]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+  outline-offset: 2px;
+}
+
 /* Toast slide-in animation */
 @keyframes slide-in {
   from {

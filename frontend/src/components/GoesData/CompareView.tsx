@@ -39,23 +39,27 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold">Compare Frames</h2>
-          <button
-            type="button"
-            onClick={() => setMode('side-by-side')}
-            className={`px-3 py-1 rounded text-sm ${mode === 'side-by-side' ? 'bg-primary text-black' : 'bg-white/10'}`}
-          >
-            Side by Side
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('slider')}
-            className={`px-3 py-1 rounded text-sm ${mode === 'slider' ? 'bg-primary text-black' : 'bg-white/10'}`}
-          >
-            Slider
-          </button>
+          <h2 className="text-lg font-semibold" id="compare-heading">Compare Frames</h2>
+          <div role="group" aria-label="Comparison view mode">
+            <button
+              type="button"
+              onClick={() => setMode('side-by-side')}
+              aria-pressed={mode === 'side-by-side'}
+              className={`px-3 py-1 rounded text-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${mode === 'side-by-side' ? 'bg-primary text-black' : 'bg-white/10'}`}
+            >
+              Side by Side
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('slider')}
+              aria-pressed={mode === 'slider'}
+              className={`px-3 py-1 rounded text-sm ml-2 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${mode === 'slider' ? 'bg-primary text-black' : 'bg-white/10'}`}
+            >
+              Slider
+            </button>
+          </div>
         </div>
-        <button type="button" onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg">
+        <button type="button" onClick={onClose} aria-label="Close comparison view" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden">
           Close
         </button>
       </div>
@@ -77,14 +81,14 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             <div className="flex-1 flex items-center justify-center">
               <img
                 src={`/api/goes/frames/${frameA.id}/image`}
-                alt="Frame A"
+                alt={`${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
               />
             </div>
             <div className="flex-1 flex items-center justify-center">
               <img
                 src={`/api/goes/frames/${frameB.id}/image`}
-                alt="Frame B"
+                alt={`${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
               />
             </div>
@@ -105,7 +109,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             {/* Frame B (full background) */}
             <img
               src={`/api/goes/frames/${frameB.id}/image`}
-              alt="Frame B"
+              alt={`Frame B: ${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
               className="absolute inset-0 w-full h-full object-contain"
             />
             {/* Frame A (clipped) */}
@@ -115,7 +119,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             >
               <img
                 src={`/api/goes/frames/${frameA.id}/image`}
-                alt="Frame A"
+                alt={`Frame A: ${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="absolute inset-0 w-full h-full object-contain"
                 style={{ width: '100%' }}
               />

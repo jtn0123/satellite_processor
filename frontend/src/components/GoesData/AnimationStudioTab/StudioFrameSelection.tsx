@@ -36,13 +36,15 @@ export function StudioFrameSelection({
           <Film className="w-5 h-5 text-primary" /> Frame Selection
         </h3>
 
-        <div className="flex gap-2">
+        <div role="group" aria-label="Frame selection mode" className="flex gap-2">
           <button onClick={() => setSelectionMode('filters')}
-            className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'filters' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            aria-pressed={selectionMode === 'filters'}
+            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'filters' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
             By Filters
           </button>
           <button onClick={() => setSelectionMode('collection')}
-            className={`px-3 py-1.5 text-sm rounded-lg ${selectionMode === 'collection' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            aria-pressed={selectionMode === 'collection'}
+            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'collection' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
             From Collection
           </button>
         </div>

@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/jtn0123/satellite_processor/compare/v1.31.0...v1.32.0) (2026-03-03)
+
+
+### Features
+
+* add Himawari True Color composite and scheduled fetch ([#310](https://github.com/jtn0123/satellite_processor/issues/310)) ([7876abf](https://github.com/jtn0123/satellite_processor/commit/7876abf3cb299358a300f341b38e7d66594e9763))
+
 # [1.31.0](https://github.com/jtn0123/satellite_processor/compare/v1.30.0...v1.31.0) (2026-03-03)
 
 

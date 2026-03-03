@@ -133,6 +133,51 @@ async def test_products_includes_geocolor(client: AsyncClient):
 
 
 @pytest.mark.anyio
+async def test_products_includes_himawari(client: AsyncClient):
+    """GET /api/goes/products must include Himawari-9 in satellites list."""
+    resp = await client.get("/api/goes/products")
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Himawari-9 in top-level satellites list
+    assert "Himawari-9" in data["satellites"]
+
+    # Himawari-9 in satellite_availability
+    assert "Himawari-9" in data["satellite_availability"]
+
+    # satellite_details has Himawari-9
+    details = data.get("satellite_details", {})
+    assert "Himawari-9" in details
+    h9 = details["Himawari-9"]
+
+    # Verify fetchable flag
+    assert h9["fetchable"] is False
+
+    # Verify Himawari bands present
+    h9_band_ids = [b["id"] for b in h9["bands"]]
+    assert "B01" in h9_band_ids
+    assert "B16" in h9_band_ids
+    assert "TrueColor" in h9_band_ids
+
+    # Verify Himawari sectors present
+    h9_sector_ids = [s["id"] for s in h9["sectors"]]
+    assert "FLDK" in h9_sector_ids
+    assert "Japan" in h9_sector_ids
+    assert "Target" in h9_sector_ids
+
+
+@pytest.mark.anyio
+async def test_products_goes_still_fetchable(client: AsyncClient):
+    """GOES satellites must remain fetchable in products response."""
+    resp = await client.get("/api/goes/products")
+    assert resp.status_code == 200
+    details = resp.json().get("satellite_details", {})
+    for goes in ["GOES-16", "GOES-18", "GOES-19"]:
+        assert goes in details
+        assert details[goes]["fetchable"] is True
+
+
+@pytest.mark.anyio
 async def test_all_product_bands_accepted_by_catalog_latest(client: AsyncClient):
     """Contract: every band from /goes/products must not 500 on /catalog/latest.
 

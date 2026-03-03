@@ -6,41 +6,49 @@ from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, field_validator
 
+from ..services.satellite_registry import get_all_valid_bands, get_all_valid_satellites, get_all_valid_sectors
+
 
 class GoesFetchRequest(BaseModel):
-    """Request schema for fetching GOES frames within a time range. Max 24h window."""
+    """Request schema for fetching satellite frames within a time range. Max 24h window."""
 
-    satellite: str = Field(..., description="Satellite name (GOES-16, GOES-18, GOES-19)")
-    sector: str = Field(..., description="Sector (FullDisk, CONUS, Mesoscale1, Mesoscale2)")
-    band: str = Field(..., description="Band (C01-C16)")
+    satellite: str = Field(..., description="Satellite name (e.g. GOES-16, GOES-18, GOES-19, Himawari-9)")
+    sector: str = Field(..., description="Sector (e.g. FullDisk, CONUS, Mesoscale1, Mesoscale2, FLDK, Japan, Target)")
+    band: str = Field(..., description="Band (e.g. C01-C16, B01-B16)")
     start_time: datetime = Field(..., description="Start time (ISO format)")
     end_time: datetime = Field(..., description="End time (ISO format)")
 
     @field_validator("satellite")
     @classmethod
     def validate_satellite(cls, v: str) -> str:
-        valid = {"GOES-16", "GOES-18", "GOES-19"}
+        valid = get_all_valid_satellites()
         if v not in valid:
-            raise ValueError(f"Invalid satellite. Must be one of: {valid}")
+            raise ValueError(f"Invalid satellite. Must be one of: {sorted(valid)}")
         return v
 
     @field_validator("sector")
     @classmethod
     def validate_sector(cls, v: str) -> str:
-        valid = {"FullDisk", "CONUS", "Mesoscale1", "Mesoscale2"}
+        valid = get_all_valid_sectors()
         if v not in valid:
-            raise ValueError(f"Invalid sector. Must be one of: {valid}")
+            raise ValueError(f"Invalid sector. Must be one of: {sorted(valid)}")
         return v
 
     @field_validator("band")
     @classmethod
     def validate_band(cls, v: str) -> str:
+        # GEOCOLOR and TrueColor are composites — block from direct S3 fetch
         if v == "GEOCOLOR":
             raise ValueError(
                 "GEOCOLOR is a pre-rendered composite available via CDN only "
                 "and cannot be fetched from S3. Use bands C01-C16."
             )
-        valid = {f"C{i:02d}" for i in range(1, 17)}
+        if v == "TrueColor":
+            raise ValueError(
+                "TrueColor is a composite (B03+B02+B01) that must be created "
+                "via the composite pipeline. Use bands B01-B16."
+            )
+        valid = get_all_valid_bands() - {"GEOCOLOR", "TrueColor"}
         if v not in valid:
             raise ValueError(f"Invalid band. Must be one of: {sorted(valid)}")
         return v
@@ -124,8 +132,8 @@ class CompositeResponse(BaseModel):
 class FetchCompositeRequest(BaseModel):
     """Request schema for fetching composite imagery (multi-band + auto-composite)."""
 
-    satellite: str = Field(..., description="Satellite name (GOES-16, GOES-18, GOES-19)")
-    sector: str = Field(..., description="Sector (FullDisk, CONUS, Mesoscale1, Mesoscale2)")
+    satellite: str = Field(..., description="Satellite name (e.g. GOES-16, GOES-18, GOES-19, Himawari-9)")
+    sector: str = Field(..., description="Sector (e.g. FullDisk, CONUS, Mesoscale1, Mesoscale2, FLDK, Japan, Target)")
     recipe: str = Field(..., description="Composite recipe (true_color, natural_color)")
     start_time: datetime = Field(..., description="Start time (ISO format)")
     end_time: datetime = Field(..., description="End time (ISO format)")
@@ -133,17 +141,17 @@ class FetchCompositeRequest(BaseModel):
     @field_validator("satellite")
     @classmethod
     def validate_satellite(cls, v: str) -> str:
-        valid = {"GOES-16", "GOES-18", "GOES-19"}
+        valid = get_all_valid_satellites()
         if v not in valid:
-            raise ValueError(f"Invalid satellite. Must be one of: {valid}")
+            raise ValueError(f"Invalid satellite. Must be one of: {sorted(valid)}")
         return v
 
     @field_validator("sector")
     @classmethod
     def validate_sector(cls, v: str) -> str:
-        valid = {"FullDisk", "CONUS", "Mesoscale1", "Mesoscale2"}
+        valid = get_all_valid_sectors()
         if v not in valid:
-            raise ValueError(f"Invalid sector. Must be one of: {valid}")
+            raise ValueError(f"Invalid sector. Must be one of: {sorted(valid)}")
         return v
 
     @field_validator("recipe")

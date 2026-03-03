@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/jtn0123/satellite_processor/compare/v1.28.0...v1.29.0) (2026-03-03)
+
+
+### Features
+
+* add Himawari HSD binary format parser ([#307](https://github.com/jtn0123/satellite_processor/issues/307)) ([add3ee9](https://github.com/jtn0123/satellite_processor/commit/add3ee98f1471fb135dc9f5bb0c8dce76888d380))
+
 # [1.28.0](https://github.com/jtn0123/satellite_processor/compare/v1.27.0...v1.28.0) (2026-03-03)
 
 

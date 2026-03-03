@@ -151,7 +151,7 @@ async def test_products_includes_himawari(client: AsyncClient):
     h9 = details["Himawari-9"]
 
     # Verify fetchable flag
-    assert h9["fetchable"] is False
+    assert h9["fetchable"] is True
 
     # Verify Himawari bands present
     h9_band_ids = [b["id"] for b in h9["bands"]]

@@ -336,7 +336,7 @@ SATELLITE_REGISTRY: dict[str, SatelliteConfig] = {
         availability=dict(_HIMAWARI_AVAILABILITY),
         band_descriptions=dict(_HIMAWARI_BAND_DESCRIPTIONS),
         band_metadata={k: dict(v) for k, v in _HIMAWARI_BAND_METADATA.items()},
-        fetchable=False,  # Fetch pipeline not yet implemented
+        fetchable=True,  # Fetch pipeline implemented in himawari_fetch_task
     ),
 }
 

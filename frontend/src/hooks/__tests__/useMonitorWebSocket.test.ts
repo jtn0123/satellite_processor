@@ -10,6 +10,7 @@ class MockWebSocket {
   onerror: (() => void) | null = null;
   onmessage: ((e: { data: string }) => void) | null = null;
   readyState = 0;
+  send = vi.fn();
   close = vi.fn(() => {
     this.readyState = 3;
     this.onclose?.();
@@ -25,6 +26,7 @@ class MockWebSocket {
 // Mock dependencies
 vi.mock('../../api/ws', () => ({
   buildWsUrl: (path: string) => `ws://localhost${path}`,
+  getWsApiKey: () => '',
 }));
 
 vi.mock('../../utils/toast', () => ({

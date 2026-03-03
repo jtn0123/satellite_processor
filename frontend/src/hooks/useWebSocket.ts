@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { buildWsUrl } from '../api/ws';
+import { buildWsUrl, getWsApiKey } from '../api/ws';
 import { reportError } from '../utils/errorReporter';
 
 interface JobProgress {
@@ -44,6 +44,11 @@ export function useWebSocket(jobId: string | null, maxRetries = DEFAULT_MAX_RETR
     wsRef.current = ws;
 
     ws.onopen = () => {
+      // Send API key as first message for authentication
+      const apiKey = getWsApiKey();
+      if (apiKey) {
+        ws.send(JSON.stringify({ type: 'auth', api_key: apiKey }));
+      }
       setConnected(true);
       setReconnecting(false);
       retriesRef.current = 0;

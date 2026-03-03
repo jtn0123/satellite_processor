@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWebSocket } from '../hooks/useWebSocket';
 
-// Mock buildWsUrl
+// Mock buildWsUrl and getWsApiKey
 vi.mock('../api/ws', () => ({
   buildWsUrl: (path: string) => `ws://localhost${path}`,
+  getWsApiKey: () => '',
 }));
 
 class MockWebSocket {
@@ -18,6 +19,11 @@ class MockWebSocket {
   constructor(url: string) {
     this.url = url;
     MockWebSocket.instances.push(this);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  send(_data: string) {
+    // no-op for tests
   }
 
   close() {

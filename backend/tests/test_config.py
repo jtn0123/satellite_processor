@@ -4,6 +4,7 @@ import importlib
 import logging
 from unittest.mock import patch
 
+import pytest
 from app.config import Settings
 
 
@@ -139,6 +140,75 @@ class TestSQLiteWarning:
                 import app.config as config_module
                 importlib.reload(config_module)
             assert not any("sqlite" in r.message.lower() for r in caplog.records)
+
+
+class TestProductionApiKeyRequired:
+    """In production mode (DEBUG=false), missing API_KEY should prevent startup."""
+
+    @pytest.mark.asyncio
+    async def test_lifespan_exits_without_api_key_in_production(self):
+        """Lifespan should raise SystemExit when DEBUG=false and API_KEY is empty."""
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
+
+        from app.main import app, lifespan
+
+        with sync_patch("app.main.app_settings") as mock_settings, \
+             sync_patch("app.main.init_db", new_callable=AsyncMock), \
+             sync_patch("app.main.setup_logging"):
+            mock_settings.debug = False
+            mock_settings.api_key = ""
+            mock_settings.storage_path = "/tmp"
+
+            with pytest.raises(SystemExit):
+                async with lifespan(app):
+                    pass
+
+    @pytest.mark.asyncio
+    async def test_lifespan_ok_with_api_key_in_production(self):
+        """Lifespan should succeed when API_KEY is set in production."""
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
+
+        from app.main import app, lifespan
+
+        with sync_patch("app.main.app_settings") as mock_settings, \
+             sync_patch("app.main.init_db", new_callable=AsyncMock), \
+             sync_patch("app.main.setup_logging"), \
+             sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}), \
+             sync_patch("app.main.asyncio.create_task") as mock_task:
+            mock_settings.debug = False
+            mock_settings.api_key = "my-secret-key"
+            mock_settings.storage_path = "/tmp"
+            mock_task.return_value = AsyncMock()
+            mock_task.return_value.cancel = lambda: None
+
+            # Should not raise
+            async with lifespan(app):
+                pass
+
+    @pytest.mark.asyncio
+    async def test_lifespan_ok_without_api_key_in_debug(self):
+        """Lifespan should succeed without API_KEY when DEBUG=true."""
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
+
+        from app.main import app, lifespan
+
+        with sync_patch("app.main.app_settings") as mock_settings, \
+             sync_patch("app.main.init_db", new_callable=AsyncMock), \
+             sync_patch("app.main.setup_logging"), \
+             sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}), \
+             sync_patch("app.main.asyncio.create_task") as mock_task:
+            mock_settings.debug = True
+            mock_settings.api_key = ""
+            mock_settings.storage_path = "/tmp"
+            mock_task.return_value = AsyncMock()
+            mock_task.return_value.cancel = lambda: None
+
+            # Should not raise
+            async with lifespan(app):
+                pass
 
 
 class TestExtraFieldsIgnored:

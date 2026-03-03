@@ -87,6 +87,11 @@ async def lifespan(app: FastAPI):
     await init_db()
 
     if not app_settings.api_key:
+        if not app_settings.debug:
+            raise SystemExit(
+                "FATAL: API_KEY environment variable is required in production "
+                "(DEBUG=false). Set API_KEY or enable DEBUG mode for development."
+            )
         logger.warning(
             "API key is not set — authentication is disabled. "
             "Set API_KEY environment variable for production."
@@ -265,19 +270,60 @@ async def _ws_track(ip: str, delta: int) -> bool:
 
 
 async def _ws_authenticate(websocket: WebSocket) -> bool:
-    """Validate API key on WebSocket handshake. Returns False if auth fails."""
+    """Validate API key on WebSocket connection.
+
+    Authentication is performed in two phases:
+    1. Check headers (X-API-Key, Authorization) for non-browser clients.
+    2. If no header key, accept the connection and wait for a first-message
+       auth payload: ``{"type": "auth", "api_key": "..."}``. This avoids
+       exposing credentials in URL query parameters (visible in browser
+       dev tools, server logs, and proxy access logs).
+
+    Legacy query-param auth (``api_key=...``) is still supported for backward
+    compatibility but is deprecated.
+
+    When first-message auth is used, the connection is accepted inside this
+    function; callers must check ``websocket.client_state`` before calling
+    ``accept()`` again.
+
+    Returns False if auth fails (connection is closed with 4401).
+    """
     if not app_settings.api_key:
         return True
-    # Bug #20: Removed cookie-based API key to prevent CSRF attacks
+
+    # Phase 1: Check headers and legacy query params (pre-accept)
     key = (
-        websocket.query_params.get("api_key", "")
-        or websocket.headers.get("x-api-key", "")
+        websocket.headers.get("x-api-key", "")
         or websocket.headers.get("authorization", "").removeprefix("Bearer ")
+        or websocket.query_params.get("api_key", "")  # deprecated, kept for compat
     )
-    if key != app_settings.api_key:
-        await websocket.close(code=4401, reason="Invalid or missing API key")
-        return False
-    return True
+    if key == app_settings.api_key:
+        return True
+
+    # Phase 2: Accept connection and wait for first-message auth
+    await websocket.accept()
+    try:
+        # Wait up to 5 seconds for auth message
+        msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
+        if (
+            isinstance(msg, dict)
+            and msg.get("type") == "auth"
+            and msg.get("api_key") == app_settings.api_key
+        ):
+            return True
+    except (TimeoutError, WebSocketDisconnect, Exception):
+        pass
+
+    await websocket.close(code=4401, reason="Invalid or missing API key")
+    return False
+
+
+async def _ws_accept_if_needed(websocket: WebSocket) -> None:
+    """Accept the WebSocket connection if not already accepted (first-message auth)."""
+    from starlette.websockets import WebSocketState
+
+    if websocket.client_state != WebSocketState.CONNECTED:
+        await websocket.accept()
 
 
 async def _ws_reader(websocket: WebSocket) -> None:
@@ -325,7 +371,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
-    await websocket.accept()
+    await _ws_accept_if_needed(websocket)
     ws_logger.info("WS connected: /ws/jobs/%s from %s", job_id, client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()
@@ -367,7 +413,7 @@ async def global_events_websocket(websocket: WebSocket):
         await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
-    await websocket.accept()
+    await _ws_accept_if_needed(websocket)
     ws_logger.info("WS connected: /ws/events from %s", client_ip)
     r = get_redis_client()
     pubsub = r.pubsub()
@@ -418,7 +464,7 @@ async def status_websocket(websocket: WebSocket):
         await websocket.close(code=4429, reason=WS_TOO_MANY_CONNECTIONS)
         return
 
-    await websocket.accept()
+    await _ws_accept_if_needed(websocket)
     try:
         await websocket.send_json({"type": "connected"})
         # Keep alive with pings; close when client disconnects

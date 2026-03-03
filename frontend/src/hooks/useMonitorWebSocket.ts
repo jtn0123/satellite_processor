@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { buildWsUrl } from '../api/ws';
+import { buildWsUrl, getWsApiKey } from '../api/ws';
 import { showToast } from '../utils/toast';
 import { reportError } from '../utils/errorReporter';
 
@@ -52,6 +52,11 @@ export function useMonitorWebSocket(
 
       ws.onopen = () => {
         if (!disposed) {
+          // Send API key as first message for authentication
+          const apiKey = getWsApiKey();
+          if (apiKey && ws) {
+            ws.send(JSON.stringify({ type: 'auth', api_key: apiKey }));
+          }
           setConnected(true);
           retryCount = 0; // Reset on successful connection
         }

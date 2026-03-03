@@ -63,7 +63,8 @@ export default function FrameGallery() {
         <select
           value={satellite}
           onChange={(e) => { setSatellite(e.target.value); setPage(1); }}
-          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+          aria-label="Filter by satellite"
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
         >
           <option value="">All Satellites</option>
           {satellites.map((s) => (
@@ -73,7 +74,8 @@ export default function FrameGallery() {
         <select
           value={band}
           onChange={(e) => { setBand(e.target.value); setPage(1); }}
-          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+          aria-label="Filter by band"
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
         >
           <option value="">All Bands</option>
           {bands.map((b) => (
@@ -83,13 +85,15 @@ export default function FrameGallery() {
 
         <button
           onClick={() => setCompareMode(!compareMode)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          aria-pressed={compareMode}
+          aria-label={`Compare mode${compareMode && compareFrames.length > 0 ? `, ${compareFrames.length} of 2 selected` : ''}`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
             compareMode
               ? 'bg-primary text-gray-900 dark:text-white'
               : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'
           }`}
         >
-          <Columns2 className="w-4 h-4" />
+          <Columns2 className="w-4 h-4" aria-hidden="true" />
           Compare {compareMode && compareFrames.length > 0 ? `(${compareFrames.length}/2)` : ''}
         </button>
 
@@ -113,14 +117,15 @@ export default function FrameGallery() {
         </div>
       )}
       {!isLoading && frames.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div role="grid" aria-label="Satellite image gallery" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {frames.map((frame) => {
             const isSelected = compareFrames.some((f) => f.id === frame.id);
             return (
               <button
                 key={frame.id}
                 onClick={() => (compareMode ? toggleCompareSelect(frame) : setViewerFrame(frame))}
-                className={`group relative rounded-xl overflow-hidden border transition-all hover:shadow-lg ${
+                aria-label={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}${compareMode ? (isSelected ? ', selected for comparison' : ', select for comparison') : ', click to view'}`}
+                className={`group relative rounded-xl overflow-hidden border transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
                   isSelected
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-gray-200 dark:border-slate-700 hover:border-primary/50'
@@ -129,17 +134,17 @@ export default function FrameGallery() {
                 <div className="aspect-square bg-gray-100 dark:bg-slate-800">
                   <img
                     src={`/api/goes/frames/${frame.id}/thumbnail`}
-                    alt={`${frame.satellite} ${frame.band}`}
+                    alt={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-left">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-left" aria-hidden="true">
                   <p className="text-xs font-medium text-white">{frame.satellite} · {frame.band}</p>
                   <p className="text-[10px] text-white/70">{formatTime(frame.capture_time)}</p>
                 </div>
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-black text-xs font-bold">
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-black text-xs font-bold" aria-hidden="true">
                     {compareFrames.findIndex((f) => f.id === frame.id) + 1}
                   </div>
                 )}
@@ -151,25 +156,27 @@ export default function FrameGallery() {
 
       {/* Pagination -- keeping same structure */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <nav aria-label="Gallery pagination" className="flex items-center justify-center gap-2">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 disabled:opacity-30"
+            aria-label="Previous page"
+            className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
           </button>
-          <span className="text-sm text-gray-600 dark:text-slate-400">
+          <span className="text-sm text-gray-600 dark:text-slate-400" aria-live="polite">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 disabled:opacity-30"
+            aria-label="Next page"
+            className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Viewer overlay */}

@@ -52,10 +52,11 @@ export function StudioSettings({
 
         <div>
           <label htmlFor="anim-format" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Format</label>
-          <div className="flex gap-2">
+          <div role="group" aria-label="Animation format" className="flex gap-2">
             {(['mp4', 'gif'] as const).map((f) => (
               <button key={f} onClick={() => setFormat(f)}
-                className={`px-4 py-1.5 text-sm rounded-lg ${format === f ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+                aria-pressed={format === f}
+                className={`px-4 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${format === f ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
                 {f.toUpperCase()}
               </button>
             ))}
@@ -64,10 +65,11 @@ export function StudioSettings({
 
         <div>
           <label htmlFor="anim-quality" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Quality</label>
-          <div className="flex gap-2">
+          <div role="group" aria-label="Animation quality" className="flex gap-2">
             {(['low', 'medium', 'high'] as const).map((q) => (
               <button key={q} onClick={() => setQuality(q)}
-                className={`px-3 py-1.5 text-sm rounded-lg capitalize ${quality === q ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+                aria-pressed={quality === q}
+                className={`px-3 py-1.5 text-sm rounded-lg capitalize focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${quality === q ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
                 {q}
               </button>
             ))}

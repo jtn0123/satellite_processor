@@ -36,16 +36,17 @@ export function StudioHistory({ animations, onDelete }: StudioHistoryProps) {
                     <span className="px-2 py-1 text-xs bg-emerald-600/20 text-emerald-400 rounded">Done</span>
                     {anim.output_path && (
                       <a href={`/api/download?path=${encodeURIComponent(anim.output_path)}`}
-                        download className="text-xs text-primary hover:underline">Download</a>
+                        download aria-label={`Download ${anim.name}`} className="text-xs text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden rounded">Download</a>
                     )}
                   </>
                 )}
                 {anim.status === 'failed' && (
-                  <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={anim.error}>Failed</span>
+                  <span className="px-2 py-1 text-xs bg-red-600/20 text-red-400 rounded" title={anim.error} role="alert">Failed</span>
                 )}
                 <button onClick={() => onDelete(anim.id)}
-                  className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors">
-                  <Trash2 className="w-4 h-4" />
+                  aria-label={`Delete animation ${anim.name}`}
+                  className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden rounded">
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>

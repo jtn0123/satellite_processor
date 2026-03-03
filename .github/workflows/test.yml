@@ -104,7 +104,7 @@ jobs:
           pytest --splits 4 --group ${{ matrix.shard }} \
             --splitting-algorithm least_duration \
             --cov=app --cov-report=xml:coverage-shard${{ matrix.shard }}.xml \
-            --cov-fail-under=60 -n auto --durations=10 --reruns 1 \
+            --cov-fail-under=61 -n auto --durations=10 \
             -v --tb=short -q \
             --store-durations \
             tests/
@@ -170,12 +170,12 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_sat
           REDIS_URL: redis://localhost:6379/0
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --reruns 1
+        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10
 
       - name: Run core processor tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --reruns 1 --cov-fail-under=60
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --cov-fail-under=61
 
       - name: Upload core coverage artifact
         if: always()

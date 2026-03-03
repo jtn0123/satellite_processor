@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: backend-coverage-shard${{ matrix.shard }}
           path: backend/coverage-shard${{ matrix.shard }}.xml
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload core coverage artifact
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: core-coverage
           path: core-coverage.xml
@@ -282,7 +282,7 @@ jobs:
         run: npx vitest run --coverage --shard=${{ matrix.shard }}/2
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: frontend-coverage-shard${{ matrix.shard }}
           path: frontend/coverage/lcov.info
@@ -312,7 +312,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: frontend-build
           path: frontend/dist/
@@ -372,7 +372,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: playwright-report-shard${{ matrix.shard }}
           path: frontend/playwright-report/
@@ -380,7 +380,7 @@ jobs:
 
       - name: Upload Playwright traces on failure
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: playwright-traces-shard${{ matrix.shard }}
           path: frontend/test-results/
@@ -1033,7 +1033,7 @@ jobs:
 
       - name: Upload merged coverage
         if: needs.backend.result == 'success'
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: backend-coverage-merged
           path: backend/coverage.xml

@@ -101,7 +101,6 @@ class TestWsAuthenticate:
     @pytest.mark.asyncio
     async def test_correct_key_via_first_message(self):
         """Correct API key sent as first message should pass."""
-        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {}
@@ -132,7 +131,6 @@ class TestWsAuthenticate:
     @pytest.mark.asyncio
     async def test_wrong_key_fails(self):
         """Wrong API key in query params and no first message should fail."""
-        import asyncio
 
         ws = AsyncMock()
         ws.query_params = {"api_key": "wrong"}

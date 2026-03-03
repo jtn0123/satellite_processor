@@ -5,7 +5,6 @@ import logging
 from unittest.mock import patch
 
 import pytest
-
 from app.config import Settings
 
 
@@ -149,9 +148,10 @@ class TestProductionApiKeyRequired:
     @pytest.mark.asyncio
     async def test_lifespan_exits_without_api_key_in_production(self):
         """Lifespan should raise SystemExit when DEBUG=false and API_KEY is empty."""
-        from unittest.mock import AsyncMock, patch as sync_patch
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
 
-        from app.main import lifespan, app
+        from app.main import app, lifespan
 
         with sync_patch("app.main.app_settings") as mock_settings, \
              sync_patch("app.main.init_db", new_callable=AsyncMock), \
@@ -167,9 +167,10 @@ class TestProductionApiKeyRequired:
     @pytest.mark.asyncio
     async def test_lifespan_ok_with_api_key_in_production(self):
         """Lifespan should succeed when API_KEY is set in production."""
-        from unittest.mock import AsyncMock, patch as sync_patch
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
 
-        from app.main import lifespan, app
+        from app.main import app, lifespan
 
         with sync_patch("app.main.app_settings") as mock_settings, \
              sync_patch("app.main.init_db", new_callable=AsyncMock), \
@@ -189,9 +190,10 @@ class TestProductionApiKeyRequired:
     @pytest.mark.asyncio
     async def test_lifespan_ok_without_api_key_in_debug(self):
         """Lifespan should succeed without API_KEY when DEBUG=true."""
-        from unittest.mock import AsyncMock, patch as sync_patch
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch as sync_patch
 
-        from app.main import lifespan, app
+        from app.main import app, lifespan
 
         with sync_patch("app.main.app_settings") as mock_settings, \
              sync_patch("app.main.init_db", new_callable=AsyncMock), \

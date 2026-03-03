@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/jtn0123/satellite_processor/compare/v1.26.10...v1.27.0) (2026-03-03)
+
+
+### Features
+
+* accessibility improvements across frontend components ([#302](https://github.com/jtn0123/satellite_processor/issues/302)) ([d5a0025](https://github.com/jtn0123/satellite_processor/commit/d5a0025ede56882ba18fd8493f9d51bfd84ec9f5))
+
 ## [1.26.10](https://github.com/jtn0123/satellite_processor/compare/v1.26.9...v1.26.10) (2026-03-03)
 
 

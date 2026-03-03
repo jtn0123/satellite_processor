@@ -138,9 +138,21 @@ async def run_fetch_preset(
     db.add(job)
     await db.commit()
 
-    from ..tasks.fetch_task import fetch_goes_data
+    # Dispatch to the correct task based on satellite type
+    from ..services.satellite_registry import SATELLITE_REGISTRY
 
-    fetch_goes_data.delay(job_id, job.params)
+    sat_config = SATELLITE_REGISTRY.get(preset.satellite)
+    if sat_config and sat_config.format == "hsd":
+        if preset.band == "TrueColor":
+            from ..tasks.himawari_fetch_task import fetch_himawari_true_color
+            fetch_himawari_true_color.delay(job_id, job.params)
+        else:
+            from ..tasks.himawari_fetch_task import fetch_himawari_data
+            fetch_himawari_data.delay(job_id, job.params)
+    else:
+        from ..tasks.fetch_task import fetch_goes_data
+        fetch_goes_data.delay(job_id, job.params)
+
     return {"job_id": job_id, "status": "pending", "preset": preset.name}
 
 

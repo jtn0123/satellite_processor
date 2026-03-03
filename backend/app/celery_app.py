@@ -15,7 +15,7 @@ celery_app = Celery(
     "satellite_processor",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.processing", "app.tasks.fetch_task", "app.tasks.composite_task", "app.tasks.goes_tasks", "app.tasks.scheduling_tasks", "app.tasks.animation_tasks"],
+    include=["app.tasks.processing", "app.tasks.fetch_task", "app.tasks.composite_task", "app.tasks.goes_tasks", "app.tasks.scheduling_tasks", "app.tasks.animation_tasks", "app.tasks.himawari_fetch_task"],
 )
 
 celery_app.conf.update(
@@ -49,6 +49,8 @@ celery_app.conf.update(
         "generate_composite": {"queue": "default"},
         "check_schedules": {"queue": "default"},
         "run_cleanup": {"queue": "default"},
+        "fetch_himawari_data": {"queue": "default"},
+        "fetch_himawari_true_color": {"queue": "default"},
     },
 
     # Result expiry

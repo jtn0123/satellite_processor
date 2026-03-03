@@ -38,4 +38,5 @@ COMPOSITE_RECIPES = {
     "dust_ash": {"name": "Dust/Ash", "bands": ["C15", "C14", "C13", "C11"]},
     "day_cloud_phase": {"name": "Day Cloud Phase", "bands": ["C13", "C02", "C05"]},
     "airmass": {"name": "Airmass", "bands": ["C08", "C10", "C12", "C13"]},
+    "himawari_true_color": {"name": "Himawari True Color", "bands": ["B03", "B02", "B01"]},
 }

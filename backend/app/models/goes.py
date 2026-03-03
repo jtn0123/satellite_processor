@@ -157,7 +157,7 @@ class FetchCompositeRequest(BaseModel):
     @field_validator("recipe")
     @classmethod
     def validate_recipe(cls, v: str) -> str:
-        valid = {"true_color", "natural_color"}
+        valid = {"true_color", "natural_color", "himawari_true_color"}
         if v not in valid:
             raise ValueError(f"Invalid recipe. Must be one of: {valid}")
         return v

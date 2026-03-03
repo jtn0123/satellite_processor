@@ -45,8 +45,20 @@ def _launch_schedule_job(session, schedule, preset, now):
 
     logger.info("Scheduled fetch: job=%s preset=%s schedule=%s", job_id, preset.name, schedule.name)
 
-    from .fetch_task import fetch_goes_data
-    fetch_goes_data.delay(job_id, job.params)
+    # Dispatch to the correct task based on satellite type
+    from ..services.satellite_registry import SATELLITE_REGISTRY
+
+    sat_config = SATELLITE_REGISTRY.get(preset.satellite)
+    if sat_config and sat_config.format == "hsd":
+        if preset.band == "TrueColor":
+            from .himawari_fetch_task import fetch_himawari_true_color
+            fetch_himawari_true_color.delay(job_id, job.params)
+        else:
+            from .himawari_fetch_task import fetch_himawari_data
+            fetch_himawari_data.delay(job_id, job.params)
+    else:
+        from .fetch_task import fetch_goes_data
+        fetch_goes_data.delay(job_id, job.params)
 
 
 @celery_app.task(bind=True, name="check_schedules")

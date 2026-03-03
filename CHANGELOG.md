@@ -1,3 +1,10 @@
+## [1.26.9](https://github.com/jtn0123/satellite_processor/compare/v1.26.8...v1.26.9) (2026-03-03)
+
+
+### Bug Fixes
+
+* SHA-pin all GitHub Actions and add container scanning ([#299](https://github.com/jtn0123/satellite_processor/issues/299)) ([4d9cd6f](https://github.com/jtn0123/satellite_processor/commit/4d9cd6fe1a14a2cc0b809bdb353efaea2c714c8d))
+
 ## [1.26.8](https://github.com/jtn0123/satellite_processor/compare/v1.26.7...v1.26.8) (2026-03-02)
 
 

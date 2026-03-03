@@ -1,6 +1,6 @@
 /** Shared helpers for LiveTab — extracted for react-refresh compatibility */
 
-import { isHimawariSatellite } from '../../utils/sectorHelpers';
+import { isHimawariSatellite, isCompositeBandAvailable } from '../../utils/sectorHelpers';
 
 export const FRIENDLY_BAND_NAMES: Record<string, string> = {
   C01: 'Visible Blue',
@@ -156,4 +156,87 @@ export function getPrevBandIndex(currentIdx: number, length: number): number {
 export function getNextBandIndex(currentIdx: number, length: number): number {
   if (length === 0) return -1;
   return currentIdx < length - 1 ? currentIdx + 1 : 0;
+}
+
+/* ── Satellite-aware sectors & bands ────────────────────────────── */
+
+export interface SectorOption {
+  id: string;
+  name: string;
+}
+
+export interface BandOption {
+  id: string;
+  description: string;
+}
+
+const GOES_SECTORS: SectorOption[] = [
+  { id: 'FullDisk', name: 'Full Disk' },
+  { id: 'CONUS', name: 'CONUS' },
+  { id: 'Mesoscale1', name: 'Meso 1' },
+  { id: 'Mesoscale2', name: 'Meso 2' },
+];
+
+const HIMAWARI_SECTORS: SectorOption[] = [
+  { id: 'FLDK', name: 'Full Disk' },
+  { id: 'Japan', name: 'Japan' },
+  { id: 'Target', name: 'Target' },
+];
+
+function buildGoesBands(): BandOption[] {
+  return [
+    { id: 'GEOCOLOR', description: 'GeoColor (True Color Day, IR Night)' },
+    ...Array.from({ length: 16 }, (_, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      const id = `C${num}`;
+      return { id, description: FRIENDLY_BAND_NAMES[id] ?? id };
+    }),
+  ];
+}
+
+function buildHimawariBands(): BandOption[] {
+  return [
+    { id: 'TrueColor', description: 'True Color (RGB)' },
+    ...Array.from({ length: 16 }, (_, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      const id = `B${num}`;
+      return { id, description: HIMAWARI_BAND_NAMES[id] ?? id };
+    }),
+  ];
+}
+
+/** Return sectors relevant to the selected satellite.
+ *  For GOES: uses API-provided sectors if available, falls back to defaults.
+ *  For Himawari: always uses client-side constants (API may not have them). */
+export function getSectorsForSatellite(satellite: string, apiSectors?: ReadonlyArray<SectorOption>): SectorOption[] {
+  if (isHimawariSatellite(satellite)) return HIMAWARI_SECTORS;
+  return apiSectors && apiSectors.length > 0 ? [...apiSectors] : GOES_SECTORS;
+}
+
+/** Return bands relevant to the selected satellite.
+ *  For GOES: uses API-provided bands if available, falls back to defaults.
+ *  For Himawari: always uses client-side constants. */
+export function getBandsForSatellite(satellite: string, apiBands?: ReadonlyArray<BandOption>): BandOption[] {
+  if (isHimawariSatellite(satellite)) return buildHimawariBands();
+  return apiBands && apiBands.length > 0 ? [...apiBands] : buildGoesBands();
+}
+
+/** Get the composite band id for a satellite (GEOCOLOR or TrueColor). */
+export function getCompositeBand(satellite: string): string {
+  return isHimawariSatellite(satellite) ? 'TrueColor' : 'GEOCOLOR';
+}
+
+/** Check if a given band is the composite band for the satellite. */
+export function isCompositeBand(band: string, satellite: string): boolean {
+  if (isHimawariSatellite(satellite)) return band === 'TrueColor';
+  return band === 'GEOCOLOR';
+}
+
+/** Get disabled bands for a given satellite/sector combination. */
+export function getDisabledBands(satellite: string, sector: string): string[] {
+  const compositeBand = getCompositeBand(satellite);
+  if (!isCompositeBandAvailable(satellite, sector)) {
+    return [compositeBand];
+  }
+  return [];
 }

@@ -14,7 +14,8 @@ import DesktopControlsBar from '../DesktopControlsBar';
 import MonitorSettingsPanel from '../MonitorSettingsPanel';
 import { RefreshCw } from 'lucide-react';
 import type { MonitorPreset } from '../monitorPresets';
-import { isMesoSector } from '../../../utils/sectorHelpers';
+import { isHimawariSatellite } from '../../../utils/sectorHelpers';
+import type { SectorOption, BandOption } from '../liveTabUtils';
 
 interface LiveImageAreaProps {
   readonly containerRef: RefObject<HTMLDivElement | null>;
@@ -68,6 +69,10 @@ interface LiveImageAreaProps {
   readonly setRefreshInterval: (v: number) => void;
   readonly setCompareMode: (v: boolean | ((v: boolean) => boolean)) => void;
   readonly products: Product | undefined;
+  readonly allSatellites: ReadonlyArray<string>;
+  readonly satelliteSectors: ReadonlyArray<SectorOption>;
+  readonly satelliteBands: ReadonlyArray<BandOption>;
+  readonly disabledBands: ReadonlyArray<string>;
   readonly setSatellite: (v: string) => void;
   readonly setSector: (v: string) => void;
   readonly setBand: (v: string) => void;
@@ -99,7 +104,8 @@ export function LiveImageArea(props: LiveImageAreaProps) {
     imageUrl, catalogImageUrl, localImageUrl, prevImageUrl,
     frame, prevFrame, monitoring, toggleMonitor,
     autoFetch, setAutoFetch, refreshInterval, setRefreshInterval,
-    setCompareMode, products, setSatellite, setSector, setBand,
+    setCompareMode, products, allSatellites, satelliteSectors, satelliteBands, disabledBands: disabledBandsProp,
+    setSatellite, setSector, setBand,
     refetch, resetCountdown, countdownDisplay, toggleFullscreen,
     startMonitor, stopMonitor, applyPreset,
     freshnessInfo, activeJobId, activeJob, fetchNow, lastFetchFailed,
@@ -139,7 +145,19 @@ export function LiveImageArea(props: LiveImageAreaProps) {
 
       <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
         {(() => {
-          const isCdnUnavailable = !imageUrl && products?.sectors?.find((s) => s.id === sector)?.cdn_available === false && !isLoading;
+          const isHimawari = isHimawariSatellite(satellite);
+          const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
+          if (isCdnUnavailable && isHimawari) {
+            return (
+              <div className="flex flex-col items-center justify-center gap-4 text-center p-8 h-full" data-testid="himawari-no-preview">
+                <p className="text-white/70 text-sm">No CDN preview available for Himawari-9. Fetch data to view images.</p>
+                <button type="button" onClick={fetchNow} disabled={!!activeJobId}
+                  className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50">
+                  {activeJobId ? 'Fetching…' : 'Fetch Now'}
+                </button>
+              </div>
+            );
+          }
           if (isCdnUnavailable && isComposite) {
             return (
               <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
@@ -192,8 +210,8 @@ export function LiveImageArea(props: LiveImageAreaProps) {
             onRefreshIntervalChange={setRefreshInterval}
             compareMode={compareMode}
             onCompareModeChange={setCompareMode}
-            autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
-            autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
+            autoFetchDisabled={isHimawariSatellite(satellite) || band === 'GEOCOLOR' || isMeso}
+            autoFetchDisabledReason={isHimawariSatellite(satellite) ? 'Auto-fetch not yet available for Himawari' : isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
           />
 
           <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
@@ -206,9 +224,9 @@ export function LiveImageArea(props: LiveImageAreaProps) {
               onStart={startMonitor}
               onStop={stopMonitor}
               onApplyPreset={applyPreset}
-              satellites={products?.satellites ?? []}
-              sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
-              bands={(products?.bands ?? []).map((b) => ({ id: b.id, description: b.description }))}
+              satellites={[...allSatellites]}
+              sectors={satelliteSectors.map((s) => ({ id: s.id, name: s.name }))}
+              bands={satelliteBands.map((b) => ({ id: b.id, description: b.description }))}
             />
             <button type="button" onClick={() => { refetch(); resetCountdown(); }}
               className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
@@ -246,8 +264,8 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           onToggleMonitor={toggleMonitor}
           autoFetch={autoFetch}
           onAutoFetchChange={(v) => setAutoFetch(v)}
-          autoFetchDisabled={band === 'GEOCOLOR' || isMeso}
-          autoFetchDisabledReason={isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
+          autoFetchDisabled={isHimawariSatellite(satellite) || band === 'GEOCOLOR' || isMeso}
+          autoFetchDisabledReason={isHimawariSatellite(satellite) ? 'Auto-fetch not yet available for Himawari' : isMeso ? 'Auto-fetch not available for mesoscale sectors' : 'Auto-fetch not available for GeoColor — CDN images update automatically'}
         />
       </div>
 
@@ -275,18 +293,18 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       {!isMobile && products?.bands && (
         <BandPillStrip
           variant="desktop"
-          bands={products.bands}
+          bands={satelliteBands}
           activeBand={band}
           onBandChange={setBand}
           satellite={satellite}
           sector={sector}
-          satellites={products?.satellites ?? []}
-          sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
+          satellites={[...allSatellites]}
+          sectors={satelliteSectors.map((s) => ({ id: s.id, name: s.name }))}
           onSatelliteChange={setSatellite}
           onSectorChange={setSector}
-          sectorName={products.sectors?.find((s) => s.id === sector)?.name}
+          sectorName={satelliteSectors.find((s) => s.id === sector)?.name}
           satelliteAvailability={products.satellite_availability}
-          disabledBands={isMesoSector(sector) ? ['GEOCOLOR'] : []}
+          disabledBands={[...disabledBandsProp]}
         />
       )}
     </div>

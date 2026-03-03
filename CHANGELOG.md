@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/jtn0123/satellite_processor/compare/v1.32.0...v1.33.0) (2026-03-03)
+
+
+### Features
+
+* add Himawari band names and satellite-aware sector helpers ([#311](https://github.com/jtn0123/satellite_processor/issues/311)) ([09edc03](https://github.com/jtn0123/satellite_processor/commit/09edc0381b183b05b748c7438f948c4432be96cf))
+
 # [1.32.0](https://github.com/jtn0123/satellite_processor/compare/v1.31.0...v1.32.0) (2026-03-03)
 
 

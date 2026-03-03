@@ -15,12 +15,11 @@ from ..errors import APIError
 from ..rate_limit import limiter
 from ..services.cache import get_cached, make_cache_key
 from ..services.goes_fetcher import (
-    SATELLITE_AVAILABILITY,
-    SATELLITE_BUCKETS,
     SECTOR_INTERVALS,
     SECTOR_PRODUCTS,
     VALID_BANDS,
 )
+from ..services.satellite_registry import SATELLITE_REGISTRY
 from ._goes_shared import (
     BAND_DESCRIPTIONS,
     BAND_METADATA,
@@ -36,15 +35,53 @@ router = APIRouter(prefix="/api/goes", tags=["goes-catalog"])
 
 @router.get("/products")
 async def list_products(response: Response):
-    """List available GOES satellites, sectors, and bands with enhanced metadata."""
-    logger.debug("Listing GOES products")
+    """List available satellites, sectors, and bands with enhanced metadata.
+
+    Returns all registered satellites (GOES + Himawari) with per-satellite
+    sectors, bands, and availability.  Each satellite entry includes a
+    ``fetchable`` flag indicating whether the fetch pipeline supports it.
+    """
+    logger.debug("Listing satellite products")
     response.headers["Cache-Control"] = "public, max-age=300"
     cache_key = make_cache_key("products")
 
+    # Build per-satellite detail blocks
+    satellite_details = {}
+    for name, cfg in SATELLITE_REGISTRY.items():
+        satellite_details[name] = {
+            "bucket": cfg.bucket,
+            "format": cfg.format,
+            "fetchable": cfg.fetchable,
+            "availability": cfg.availability,
+            "sectors": [
+                {
+                    "id": sec_id,
+                    "name": sec_cfg.display_name,
+                    "product": sec_cfg.product_prefix,
+                    "cadence_minutes": sec_cfg.cadence_minutes,
+                    "typical_file_size_kb": sec_cfg.file_size_kb,
+                    "cdn_available": sec_cfg.cdn_available,
+                }
+                for sec_id, sec_cfg in cfg.sectors.items()
+            ],
+            "bands": [
+                {
+                    "id": band,
+                    "description": cfg.band_descriptions.get(band, band),
+                    **(cfg.band_metadata.get(band, {})),
+                }
+                for band in cfg.bands
+            ],
+        }
+
+    # Backward-compatible top-level keys (GOES-centric, for existing frontend)
     cdn_sectors = {"CONUS", "FullDisk"}
     products = {
-        "satellites": list(SATELLITE_BUCKETS),
-        "satellite_availability": dict(SATELLITE_AVAILABILITY),
+        "satellites": list(SATELLITE_REGISTRY),
+        "satellite_availability": {
+            name: cfg.availability for name, cfg in SATELLITE_REGISTRY.items()
+        },
+        "satellite_details": satellite_details,
         "sectors": [
             {
                 "id": k,

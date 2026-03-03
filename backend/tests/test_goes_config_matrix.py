@@ -1,6 +1,7 @@
-"""Comprehensive matrix tests for all GOES satellite/sector/band combinations.
+"""Comprehensive matrix tests for all satellite/sector/band combinations.
 
 Ensures every possible configuration works correctly without hitting real AWS.
+Covers both GOES and Himawari satellites.
 """
 from __future__ import annotations
 
@@ -18,11 +19,21 @@ from app.services.goes_fetcher import (
     list_available,
     validate_params,
 )
+from app.services.satellite_registry import (
+    SATELLITE_REGISTRY,
+    get_satellite,
+)
 
+# GOES-specific test data
 SATELLITES = list(SATELLITE_BUCKETS.keys())
 SECTORS = list(SECTOR_PRODUCTS.keys())
 BANDS = VALID_BANDS
 SAT_CODES = {"GOES-16": "G16", "GOES-18": "G18", "GOES-19": "G19"}
+
+# All-satellite test data
+ALL_SATELLITES = list(SATELLITE_REGISTRY.keys())
+HIMAWARI_SECTORS = ["FLDK", "Japan", "Target"]
+HIMAWARI_BANDS = [f"B{i:02d}" for i in range(1, 17)] + ["TrueColor"]
 
 
 def _make_s3_key(satellite: str, sector: str, band: str, dt: datetime, mode: str = "M6") -> str:
@@ -120,10 +131,33 @@ class TestValidateParamsMatrix:
         with pytest.raises(ValueError, match="Unknown sector"):
             validate_params("GOES-16", bad_sector, "C01")
 
-    @pytest.mark.parametrize("bad_band", ["C00", "C17", "c01", "B01", ""])
+    @pytest.mark.parametrize("bad_band", ["C00", "C17", "c01", ""])
     def test_invalid_band(self, bad_band):
         with pytest.raises(ValueError, match="Unknown band"):
             validate_params("GOES-16", "FullDisk", bad_band)
+
+    def test_goes_rejects_himawari_band(self):
+        """B01 is valid for Himawari but not for GOES."""
+        with pytest.raises(ValueError, match="Unknown band"):
+            validate_params("GOES-16", "FullDisk", "B01")
+
+
+# ---------------------------------------------------------------------------
+# 3b. Himawari validate_params — all valid combos
+# ---------------------------------------------------------------------------
+class TestHimawariValidateParams:
+    @pytest.mark.parametrize("sector", HIMAWARI_SECTORS)
+    @pytest.mark.parametrize("band", HIMAWARI_BANDS)
+    def test_all_himawari_combos(self, sector, band):
+        validate_params("Himawari-9", sector, band)  # should not raise
+
+    def test_himawari_rejects_goes_sector(self):
+        with pytest.raises(ValueError, match="Unknown sector"):
+            validate_params("Himawari-9", "CONUS", "B01")
+
+    def test_himawari_rejects_goes_band(self):
+        with pytest.raises(ValueError, match="Unknown band"):
+            validate_params("Himawari-9", "FLDK", "C01")
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +170,10 @@ class TestBucketMapping:
     )
     def test_bucket_names(self, satellite, expected_bucket):
         assert SATELLITE_BUCKETS[satellite] == expected_bucket
+
+    def test_himawari_bucket_in_registry(self):
+        cfg = get_satellite("Himawari-9")
+        assert cfg.bucket == "noaa-himawari9"
 
 
 # ---------------------------------------------------------------------------

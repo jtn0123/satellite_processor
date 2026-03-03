@@ -28,52 +28,42 @@ S3_BASE_DELAY = 1.0  # seconds
 S3_READ_TIMEOUT = 60  # seconds per object download
 S3_CONNECT_TIMEOUT = 10  # seconds
 
-# Satellite → S3 bucket mapping
+# ---------------------------------------------------------------------------
+# Backward-compatible re-exports from satellite_registry
+# ---------------------------------------------------------------------------
+from .satellite_registry import (  # noqa: E402
+    SATELLITE_REGISTRY,
+)
+
+# Satellite → S3 bucket mapping (GOES-only for backward compat)
 SATELLITE_BUCKETS: dict[str, str] = {
-    "GOES-16": "noaa-goes16",
-    "GOES-18": "noaa-goes18",
-    "GOES-19": "noaa-goes19",
+    name: cfg.bucket
+    for name, cfg in SATELLITE_REGISTRY.items()
+    if cfg.format == "netcdf"
 }
 
-# Satellite availability metadata
+# Satellite availability metadata (all satellites)
 SATELLITE_AVAILABILITY: dict[str, dict[str, Any]] = {
-    "GOES-16": {
-        "available_from": "2017-01-01",
-        "available_to": "2025-04-07",
-        "status": "historical",
-        "description": "GOES-East (historical, replaced by GOES-19)",
-    },
-    "GOES-18": {
-        "available_from": "2022-01-01",
-        "available_to": None,
-        "status": "active",
-        "description": "GOES-West (active)",
-    },
-    "GOES-19": {
-        "available_from": "2024-01-01",
-        "available_to": None,
-        "status": "active",
-        "description": "GOES-East (active, replaced GOES-16)",
-    },
+    name: cfg.availability
+    for name, cfg in SATELLITE_REGISTRY.items()
 }
 
-# Sector → product prefix mapping
+# Sector → product prefix mapping (GOES sectors only for S3 prefix building)
 SECTOR_PRODUCTS: dict[str, str] = {
-    "FullDisk": "ABI-L2-CMIPF",
-    "CONUS": "ABI-L2-CMIPC",
-    "Mesoscale1": "ABI-L2-CMIPM",
-    "Mesoscale2": "ABI-L2-CMIPM",
+    sector_name: sector_cfg.product_prefix
+    for cfg in SATELLITE_REGISTRY.values()
+    if cfg.format == "netcdf"
+    for sector_name, sector_cfg in cfg.sectors.items()
 }
 
-# All 16 ABI bands
+# All 16 ABI bands + GEOCOLOR (GOES bands — kept for backward compat)
 VALID_BANDS: list[str] = [f"C{i:02d}" for i in range(1, 17)] + ["GEOCOLOR"]
 
-# Expected scan intervals per sector (minutes)
+# Expected scan intervals per sector (minutes) — all satellites
 SECTOR_INTERVALS: dict[str, int] = {
-    "FullDisk": 10,
-    "CONUS": 5,
-    "Mesoscale1": 1,
-    "Mesoscale2": 1,
+    sector_name: int(sector_cfg.cadence_minutes)
+    for cfg in SATELLITE_REGISTRY.values()
+    for sector_name, sector_cfg in cfg.sectors.items()
 }
 
 
@@ -238,13 +228,16 @@ def _matches_sector_and_band(key: str, sector: str, band: str) -> bool:
 
 
 def validate_params(satellite: str, sector: str, band: str) -> None:
-    """Validate satellite, sector, and band parameters."""
-    if satellite not in SATELLITE_BUCKETS:
-        raise ValueError(f"Unknown satellite: {satellite}. Valid: {list(SATELLITE_BUCKETS)}")
-    if sector not in SECTOR_PRODUCTS:
-        raise ValueError(f"Unknown sector: {sector}. Valid: {list(SECTOR_PRODUCTS)}")
-    if band not in VALID_BANDS:
-        raise ValueError(f"Unknown band: {band}. Valid: {VALID_BANDS}")
+    """Validate satellite, sector, and band parameters.
+
+    Accepts any satellite/sector/band registered in the satellite registry,
+    including Himawari-9 and its sectors/bands.
+    """
+    from .satellite_registry import validate_band, validate_satellite, validate_sector
+
+    validate_satellite(satellite)
+    validate_sector(satellite, sector)
+    validate_band(satellite, band)
 
 
 def _list_hour(

@@ -45,6 +45,27 @@ class TestValidateParams:
         for band in VALID_BANDS:
             validate_params("GOES-16", "FullDisk", band)
 
+    # --- Himawari validation via the same validate_params function ---
+    def test_himawari_valid_params(self):
+        validate_params("Himawari-9", "FLDK", "B13")
+
+    def test_himawari_all_sectors(self):
+        for sector in ["FLDK", "Japan", "Target"]:
+            validate_params("Himawari-9", sector, "B01")
+
+    def test_himawari_all_bands(self):
+        for i in range(1, 17):
+            validate_params("Himawari-9", "FLDK", f"B{i:02d}")
+        validate_params("Himawari-9", "FLDK", "TrueColor")
+
+    def test_himawari_rejects_goes_sector(self):
+        with pytest.raises(ValueError, match="Unknown sector"):
+            validate_params("Himawari-9", "CONUS", "B01")
+
+    def test_himawari_rejects_goes_band(self):
+        with pytest.raises(ValueError, match="Unknown band"):
+            validate_params("Himawari-9", "FLDK", "C01")
+
 
 class TestBuildS3Prefix:
     def test_fulldisk_prefix(self):

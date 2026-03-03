@@ -218,3 +218,21 @@ class TestExtraFieldsIgnored:
         with patch.dict("os.environ", {"TOTALLY_UNKNOWN_VAR_XYZ": "whatever"}, clear=True):
             s = Settings(_env_file=None)
         assert s.app_name == "Satellite Processor API"
+
+
+class TestSatelliteRegistry:
+    """Satellite registry validates all registered satellites."""
+
+    def test_registry_accepts_goes_satellites(self):
+        from app.services.satellite_registry import validate_satellite
+        for name in ["GOES-16", "GOES-18", "GOES-19"]:
+            validate_satellite(name)
+
+    def test_registry_accepts_himawari(self):
+        from app.services.satellite_registry import validate_satellite
+        validate_satellite("Himawari-9")
+
+    def test_registry_rejects_unknown(self):
+        from app.services.satellite_registry import validate_satellite
+        with pytest.raises(ValueError):
+            validate_satellite("GOES-99")

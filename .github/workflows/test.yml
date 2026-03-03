@@ -349,7 +349,7 @@ jobs:
         run: npm ci
 
       - name: Download build artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           name: frontend-build
           path: frontend/dist/
@@ -432,7 +432,7 @@ jobs:
 
       - name: Download backend coverage shards
         id: dl-backend
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         continue-on-error: true
         with:
           pattern: backend-coverage-shard*
@@ -444,7 +444,7 @@ jobs:
 
       - name: Download frontend coverage shards
         id: dl-frontend
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         continue-on-error: true
         with:
           pattern: frontend-coverage-shard*
@@ -460,7 +460,7 @@ jobs:
 
       - name: Download core coverage
         id: dl-core
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         continue-on-error: true
         with:
           name: core-coverage
@@ -994,7 +994,7 @@ jobs:
 
       - name: Download backend coverage shards
         if: needs.backend.result == 'success'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         continue-on-error: true
         with:
           pattern: backend-coverage-*
@@ -1003,7 +1003,7 @@ jobs:
 
       - name: Download frontend coverage shards
         if: needs.frontend.result == 'success'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         continue-on-error: true
         with:
           pattern: frontend-coverage-shard*

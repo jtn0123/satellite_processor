@@ -41,6 +41,7 @@ async def fetch_composite(
     recipe_bands = {
         "true_color": ["C01", "C02", "C03"],
         "natural_color": ["C02", "C06", "C07"],
+        "himawari_true_color": ["B03", "B02", "B01"],
     }
     bands = recipe_bands.get(payload.recipe)
     if not bands:
@@ -94,8 +95,19 @@ async def fetch_composite(
     db.add(job)
     await db.commit()
 
-    from ..tasks.composite_task import fetch_composite_data
-    result = fetch_composite_data.delay(job_id, job.params)
+    # Dispatch to the appropriate composite task based on satellite type
+    from ..services.satellite_registry import SATELLITE_REGISTRY
+
+    sat_config = SATELLITE_REGISTRY.get(payload.satellite)
+    if sat_config and sat_config.format == "hsd" and payload.recipe == "himawari_true_color":
+        from ..tasks.himawari_fetch_task import fetch_himawari_true_color
+        result = fetch_himawari_true_color.delay(job_id, job.params)
+        message = f"Himawari True Color fetch job created ({len(bands)} bands)"
+    else:
+        from ..tasks.composite_task import fetch_composite_data
+        result = fetch_composite_data.delay(job_id, job.params)
+        message = f"Composite fetch job created ({payload.recipe}, {len(bands)} bands)"
+
     job.task_id = str(result.id)
     await db.commit()
 
@@ -104,7 +116,7 @@ async def fetch_composite(
     return GoesFetchResponse(
         job_id=job_id,
         status="pending",
-        message=f"Composite fetch job created ({payload.recipe}, {len(bands)} bands)",
+        message=message,
     )
 
 

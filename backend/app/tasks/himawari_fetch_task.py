@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 from botocore.exceptions import ClientError
 
 from ..celery_app import celery_app
@@ -382,6 +383,294 @@ def _make_job_logger(job_id: str):
 # ---------------------------------------------------------------------------
 # Celery task
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# True Color composite helpers
+# ---------------------------------------------------------------------------
+
+# Himawari True Color band mapping: R=B03 (0.64µm), G=B02 (0.51µm), B=B01 (0.47µm)
+_TRUE_COLOR_BANDS = ["B03", "B02", "B01"]
+
+
+def _fetch_and_assemble_band(
+    bucket: str,
+    sector: str,
+    band: str,
+    scan_time: datetime,
+) -> np.ndarray | None:
+    """Fetch all segments for a single band and assemble into a full-disk array.
+
+    Returns the raw calibrated float32 array, or None on failure.
+    """
+    from ..services.himawari_reader import assemble_segments, parse_hsd_data, parse_hsd_header
+
+    segment_keys = _list_segments_for_timestamp(bucket, sector, band, scan_time)
+    if not segment_keys:
+        logger.warning("No segments found for %s at %s", band, scan_time)
+        return None
+
+    segment_data = _download_segments_parallel(bucket, segment_keys)
+    valid_count = sum(1 for s in segment_data if s)
+    if valid_count == 0:
+        logger.warning("All segment downloads failed for %s at %s", band, scan_time)
+        return None
+
+    logger.info("Downloaded %d/%d segments for %s at %s", valid_count, len(segment_keys), band, scan_time)
+
+    # Parse each segment
+    parsed: list[np.ndarray | None] = []
+    expected_cols: int | None = None
+    for i, seg_bytes in enumerate(segment_data):
+        if not seg_bytes:
+            parsed.append(None)
+            continue
+        try:
+            import bz2
+            decompressed = bz2.decompress(seg_bytes)
+            header = parse_hsd_header(decompressed)
+            arr = parse_hsd_data(decompressed, header)
+            parsed.append(arr)
+            if expected_cols is None:
+                expected_cols = header.num_columns
+        except Exception:
+            logger.warning("Failed to parse segment %d for %s", i + 1, band, exc_info=True)
+            parsed.append(None)
+
+    # Pad to 10 if needed
+    while len(parsed) < 10:
+        parsed.append(None)
+
+    return assemble_segments(parsed, expected_columns=expected_cols)
+
+
+def _normalize_channel_percentile(
+    data: np.ndarray,
+    pct_low: float = 2.0,
+    pct_high: float = 98.0,
+) -> np.ndarray:
+    """Normalize a single channel to 0–255 uint8 using percentile stretch."""
+    valid = data[np.isfinite(data)]
+    if len(valid) == 0:
+        return np.zeros(data.shape, dtype=np.uint8)
+
+    vmin, vmax = np.nanpercentile(valid, [pct_low, pct_high])
+    if vmax - vmin < 1e-6:
+        vmax = vmin + 1.0
+
+    stretched = np.clip(data, vmin, vmax)
+    stretched = (stretched - vmin) * (255.0 / (vmax - vmin))
+    np.nan_to_num(stretched, nan=0.0, copy=False)
+    return stretched.astype(np.uint8)
+
+
+def _composite_true_color(
+    bands: list[np.ndarray],
+    output_path: Path,
+) -> Path:
+    """Composite three band arrays (R, G, B) into an RGB PNG.
+
+    Each channel is independently normalized using 2nd–98th percentile.
+    Bands may have different resolutions (VIS=11000 cols, IR=5500 cols);
+    all are resized to match the largest.
+
+    Parameters
+    ----------
+    bands : list[np.ndarray]
+        Three float32 arrays [Red, Green, Blue].
+    output_path : Path
+        Where to write the PNG.
+
+    Returns
+    -------
+    Path
+        The output_path written.
+    """
+    from PIL import Image as PILImage
+
+    # Find the largest dimensions (B03/B02/B01 are all VIS so same res, but be safe)
+    max_h = max(b.shape[0] for b in bands)
+    max_w = max(b.shape[1] for b in bands)
+
+    channels = []
+    for band_arr in bands:
+        normalized = _normalize_channel_percentile(band_arr)
+        if normalized.shape[0] != max_h or normalized.shape[1] != max_w:
+            img = PILImage.fromarray(normalized).resize((max_w, max_h), PILImage.BILINEAR)
+            normalized = np.array(img)
+        channels.append(normalized)
+
+    rgb = np.stack(channels, axis=-1)
+    img = PILImage.fromarray(rgb, "RGB")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(str(output_path))
+    return output_path
+
+
+def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
+    """Fetch B03, B02, B01 for each timestamp and composite into True Color RGB."""
+    satellite = params["satellite"]
+    sector = params["sector"]
+    start_time = datetime.fromisoformat(params["start_time"])
+    end_time = datetime.fromisoformat(params["end_time"])
+    output_dir = str(Path(settings.output_dir) / f"himawari_tc_{job_id}")
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    bucket = SATELLITE_REGISTRY["Himawari-9"].bucket
+
+    # Use B03 (red) to discover available timestamps
+    all_timestamps: list[dict] = []
+    current_date = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = end_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    while current_date < end_date:
+        day_timestamps = list_himawari_timestamps(sector, "B03", current_date)
+        for ts in day_timestamps:
+            scan_dt = datetime.fromisoformat(ts["scan_time"])
+            if start_time <= scan_dt <= end_time:
+                all_timestamps.append(ts)
+        current_date += timedelta(days=1)
+
+    _log(f"Found {len(all_timestamps)} available timestamps for True Color")
+    logger.info(
+        "Found %d timestamps for Himawari TrueColor [%s → %s]",
+        len(all_timestamps), start_time.isoformat(), end_time.isoformat(),
+    )
+
+    if not all_timestamps:
+        msg = (
+            f"No frames found on S3 for {satellite} {sector} TrueColor "
+            f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
+            f"{end_time.strftime('%Y-%m-%d %H:%M')}."
+        )
+        _log(msg, "warning")
+        _update_job_db(
+            job_id, status="failed", progress=100,
+            completed_at=utcnow(), status_message=msg,
+        )
+        _publish_progress(job_id, 100, msg, "failed")
+        return
+
+    max_frames_limit = _read_max_frames_setting()
+    was_capped = len(all_timestamps) > max_frames_limit
+    timestamps_to_fetch = all_timestamps[:max_frames_limit]
+
+    results: list[dict] = []
+    failed_downloads = 0
+
+    for i, ts in enumerate(timestamps_to_fetch):
+        scan_time = datetime.fromisoformat(ts["scan_time"])
+
+        pct = int((i / len(timestamps_to_fetch)) * 100)
+        msg = f"Processing TrueColor frame {i + 1}/{len(timestamps_to_fetch)}"
+        _publish_progress(job_id, pct, msg)
+        _update_job_db(job_id, progress=pct, status_message=msg)
+        _log(msg)
+
+        try:
+            # Fetch all 3 bands (30 segments total)
+            band_arrays: list[np.ndarray | None] = []
+            for band_name in _TRUE_COLOR_BANDS:
+                arr = _fetch_and_assemble_band(bucket, sector, band_name, scan_time)
+                band_arrays.append(arr)
+
+            # Need at least all 3 bands
+            if any(b is None for b in band_arrays):
+                missing = [n for n, b in zip(_TRUE_COLOR_BANDS, band_arrays, strict=False) if b is None]
+                logger.warning("Missing bands %s for TrueColor at %s", missing, scan_time)
+                failed_downloads += 1
+                continue
+
+            # Composite to RGB PNG
+            time_str = scan_time.strftime("%Y%m%d_%H%M")
+            output_path = Path(output_dir) / f"{satellite}_{sector}_TrueColor_{time_str}.png"
+            _composite_true_color(band_arrays, output_path)
+
+            results.append({
+                "satellite": satellite,
+                "sector": sector,
+                "band": "TrueColor",
+                "scan_time": scan_time,
+                "path": str(output_path),
+            })
+
+        except Exception:
+            logger.exception("Failed to process TrueColor frame at %s", scan_time)
+            failed_downloads += 1
+
+    # Create DB records
+    if results:
+        _create_himawari_fetch_records(job_id, sector, output_dir, results)
+
+    # Build status message
+    fetched_count = len(results)
+    total_available = len(all_timestamps)
+
+    if fetched_count == 0:
+        if total_available > 0:
+            status_msg = f"All {total_available} TrueColor frames failed"
+        else:
+            status_msg = f"No frames found for {satellite} {sector} TrueColor"
+        final_status = "failed"
+    elif failed_downloads == 0 and not was_capped:
+        status_msg = f"Fetched {fetched_count} TrueColor frames"
+        final_status = "completed"
+    else:
+        parts = [f"Fetched {fetched_count} TrueColor frames"]
+        if failed_downloads > 0:
+            parts.append(f"{failed_downloads} failed")
+        if was_capped:
+            beyond = total_available - max_frames_limit
+            parts.append(f"{beyond} beyond frame limit of {max_frames_limit}")
+        status_msg = f"{parts[0]} ({', '.join(parts[1:])})"
+        final_status = "completed_partial"
+
+    _log(status_msg, level="info" if final_status == "completed" else "warning")
+    _update_job_db(
+        job_id, status=final_status, progress=100, output_path=output_dir,
+        completed_at=utcnow(), status_message=status_msg,
+        **({"error": status_msg} if final_status == "completed_partial" else {}),
+    )
+    _publish_progress(job_id, 100, status_msg, final_status)
+
+
+@celery_app.task(
+    bind=True,
+    name="fetch_himawari_true_color",
+    autoretry_for=(ConnectionError, TimeoutError, ClientError),
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
+def fetch_himawari_true_color(self, job_id: str, params: dict):
+    """Fetch Himawari True Color composite (B03+B02+B01) for a time range."""
+    logger.info("Starting Himawari True Color job %s", job_id)
+    _update_job_db(
+        job_id,
+        status="processing",
+        task_id=self.request.id,
+        started_at=utcnow(),
+        status_message="Fetching Himawari True Color...",
+    )
+    _publish_progress(job_id, 0, "Fetching Himawari True Color...", "processing")
+
+    _log = _make_job_logger(job_id)
+    _log(f"Himawari True Color started — {params.get('satellite')} {params.get('sector')}")
+
+    try:
+        _execute_himawari_true_color(job_id, params, _log)
+    except Exception as e:
+        logger.exception("Himawari True Color job %s failed", job_id)
+        _log(f"Himawari True Color failed: {e}", "error")
+        _update_job_db(
+            job_id,
+            status="failed",
+            error=str(e),
+            completed_at=utcnow(),
+            status_message=f"Error: {e}",
+        )
+        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        raise
 
 
 @celery_app.task(

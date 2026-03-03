@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/jtn0123/satellite_processor/compare/v1.30.0...v1.31.0) (2026-03-03)
+
+
+### Features
+
+* add Himawari fetch task with S3 segment download ([#309](https://github.com/jtn0123/satellite_processor/issues/309)) ([353cf84](https://github.com/jtn0123/satellite_processor/commit/353cf84973318f7be7dc041da0601037be920f72))
+
 # [1.30.0](https://github.com/jtn0123/satellite_processor/compare/v1.29.0...v1.30.0) (2026-03-03)
 
 

@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/jtn0123/satellite_processor/compare/v1.27.0...v1.28.0) (2026-03-03)
+
+
+### Features
+
+* add satellite registry with Himawari-9 support ([#306](https://github.com/jtn0123/satellite_processor/issues/306)) ([0103991](https://github.com/jtn0123/satellite_processor/commit/0103991f64e379538b8fdaee02f584980c70456f))
+
 # [1.27.0](https://github.com/jtn0123/satellite_processor/compare/v1.26.10...v1.27.0) (2026-03-03)
 
 

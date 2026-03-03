@@ -1,3 +1,10 @@
+## [1.26.10](https://github.com/jtn0123/satellite_processor/compare/v1.26.9...v1.26.10) (2026-03-03)
+
+
+### Bug Fixes
+
+* resolve npm vulns, enforce prod auth, secure WebSocket API key ([#300](https://github.com/jtn0123/satellite_processor/issues/300)) ([f4bc2fa](https://github.com/jtn0123/satellite_processor/commit/f4bc2fabff56537dda5f9dbc79d22cde835f6c89))
+
 ## [1.26.9](https://github.com/jtn0123/satellite_processor/compare/v1.26.8...v1.26.9) (2026-03-03)
 
 

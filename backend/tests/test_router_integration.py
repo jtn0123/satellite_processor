@@ -553,7 +553,7 @@ class TestGoesFrameExport:
     """Note: /api/goes/frames/export is shadowed by /api/goes/frames/{frame_id}
     due to route ordering. 'export' gets matched as frame_id and fails UUID validation.
     These tests document the current (broken) behavior.
-    TODO: Fix route ordering — place /api/goes/frames/export before /{frame_id} in the router."""
+    See #303 for route ordering history."""
 
     @pytest.mark.asyncio
     async def test_export_shadowed_by_frame_id_route(self, client, db):

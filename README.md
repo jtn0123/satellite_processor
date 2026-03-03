@@ -71,15 +71,31 @@ Interactive API docs are available at the `/docs` endpoint (Swagger UI) or `/red
 
 ## Development
 
+### Prerequisites
+
+- Python 3.12+
+- Node.js 20+
+- Docker & Docker Compose (for full-stack dev)
+- Redis (or use Docker)
+- PostgreSQL (or use SQLite for local dev)
+
+### Running Locally
+
 ```bash
-# Dev mode with hot-reload
+# Dev mode with hot-reload (all services via Docker)
 make dev
 
 # Run tests
 make test
 
+# Backend tests only
+cd backend && pytest -v
+
 # Frontend dev server (outside Docker)
 cd frontend && npm install && npm run dev
+
+# Frontend tests
+cd frontend && npx vitest run
 ```
 
 ### Pre-commit Hooks
@@ -90,10 +106,40 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+### Project Structure
+
+```
+├── backend/           # FastAPI application
+│   ├── app/           # API routers, models, config
+│   ├── alembic/       # Database migrations
+│   └── tests/         # Backend test suite
+├── frontend/          # React SPA
+│   ├── src/           # Components, hooks, pages
+│   └── src/test/      # Frontend test suite
+├── satellite_processor/  # Core processing engine
+│   ├── core/          # Image processing, pipeline, file management
+│   └── utils/         # Shared utilities (config, timestamps, presets)
+└── docker-compose.yml # Full-stack orchestration
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | SQLite (dev only) |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
+| `API_KEY` | API key for authentication (empty = auth disabled) | — |
+| `CORS_ORIGINS` | Allowed CORS origins (JSON array) | `["http://localhost:3000"]` |
+| `GOES_DEFAULT_SATELLITE` | Default GOES satellite | `GOES-19` |
+
 ## CI/CD
 
 - **PRs** → runs Python tests, frontend build check, linting (`.github/workflows/test.yml`)
 - **Push to `release`** → builds and pushes Docker images to GHCR (`.github/workflows/docker.yml`)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on commit messages, branching, and code style.
 
 ## License
 

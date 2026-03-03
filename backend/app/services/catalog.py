@@ -15,6 +15,10 @@ from ..services.goes_fetcher import (
     _parse_scan_time,
     validate_params,
 )
+from ..services.himawari_catalog import (
+    himawari_catalog_latest,
+    list_himawari_timestamps,
+)
 
 # CDN sector mapping: internal sector names → CDN path segments
 CDN_SECTOR_MAP: dict[str, str] = {
@@ -121,6 +125,10 @@ def catalog_list(
     validate_params(satellite, sector, band)
     date = _normalize_date(date)
 
+    # Dispatch Himawari to its own catalog implementation
+    if satellite.startswith("Himawari"):
+        return list_himawari_timestamps(sector, band, date)
+
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
     results: list[dict[str, Any]] = []
@@ -155,6 +163,11 @@ def catalog_latest(
 ) -> dict[str, Any] | None:
     """Find the most recent available frame (checks last 2 hours)."""
     validate_params(satellite, sector, band)
+
+    # Dispatch Himawari to its own catalog implementation
+    if satellite.startswith("Himawari"):
+        return himawari_catalog_latest(sector, band)
+
     bucket = SATELLITE_BUCKETS[satellite]
     s3 = _get_s3_client()
 

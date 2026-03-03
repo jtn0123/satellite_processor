@@ -22,9 +22,6 @@ from app.services.goes_fetcher import (
 from app.services.satellite_registry import (
     SATELLITE_REGISTRY,
     get_satellite,
-    validate_band,
-    validate_satellite,
-    validate_sector,
 )
 
 # GOES-specific test data

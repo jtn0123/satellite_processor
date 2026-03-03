@@ -15,8 +15,6 @@ from ..errors import APIError
 from ..rate_limit import limiter
 from ..services.cache import get_cached, make_cache_key
 from ..services.goes_fetcher import (
-    SATELLITE_AVAILABILITY,
-    SATELLITE_BUCKETS,
     SECTOR_INTERVALS,
     SECTOR_PRODUCTS,
     VALID_BANDS,

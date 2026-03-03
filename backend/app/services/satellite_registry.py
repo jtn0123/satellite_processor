@@ -6,7 +6,7 @@ legacy constants in goes_fetcher.py and _goes_shared.py re-export from here.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 

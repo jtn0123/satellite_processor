@@ -33,9 +33,6 @@ S3_CONNECT_TIMEOUT = 10  # seconds
 # ---------------------------------------------------------------------------
 from .satellite_registry import (  # noqa: E402
     SATELLITE_REGISTRY,
-    get_all_valid_bands,
-    get_all_valid_satellites,
-    get_all_valid_sectors,
 )
 
 # Satellite → S3 bucket mapping (GOES-only for backward compat)

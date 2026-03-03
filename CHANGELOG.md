@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/jtn0123/satellite_processor/compare/v1.29.0...v1.30.0) (2026-03-03)
+
+
+### Features
+
+* add Himawari S3 catalog with dispatch ([#308](https://github.com/jtn0123/satellite_processor/issues/308)) ([a2a2e9a](https://github.com/jtn0123/satellite_processor/commit/a2a2e9a1b48a4615beee56d2b33f50bcb7053aca))
+
 # [1.29.0](https://github.com/jtn0123/satellite_processor/compare/v1.28.0...v1.29.0) (2026-03-03)
 
 

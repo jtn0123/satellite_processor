@@ -139,7 +139,7 @@ class TestWsAuthenticate:
         ws.headers = {}
         # No valid first-message auth either — timeout
         ws.receive_json = AsyncMock(
-            side_effect=asyncio.TimeoutError()
+            side_effect=TimeoutError()
         )
         with patch.object(main_module.app_settings, "api_key", "secret"):
             result = await main_module._ws_authenticate(ws)

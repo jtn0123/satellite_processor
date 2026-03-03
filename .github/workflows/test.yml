@@ -99,6 +99,7 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}
+          DEBUG: "true"
         run: |
           pytest --splits 4 --group ${{ matrix.shard }} \
             --splitting-algorithm least_duration \

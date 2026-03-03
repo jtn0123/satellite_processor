@@ -311,7 +311,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
             and msg.get("api_key") == app_settings.api_key
         ):
             return True
-    except (asyncio.TimeoutError, WebSocketDisconnect, Exception):
+    except (TimeoutError, WebSocketDisconnect, Exception):
         pass
 
     await websocket.close(code=4401, reason="Invalid or missing API key")

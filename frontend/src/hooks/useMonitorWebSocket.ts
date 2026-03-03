@@ -54,7 +54,7 @@ export function useMonitorWebSocket(
         if (!disposed) {
           // Send API key as first message for authentication
           const apiKey = getWsApiKey();
-          if (apiKey) {
+          if (apiKey && ws) {
             ws.send(JSON.stringify({ type: 'auth', api_key: apiKey }));
           }
           setConnected(true);

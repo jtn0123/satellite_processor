@@ -8,7 +8,7 @@ from app.db.models import GoesFrame
 
 @pytest.mark.asyncio
 async def test_products_structure(client):
-    resp = await client.get("/api/goes/products")
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     data = resp.json()
     assert "satellites" in data
@@ -24,7 +24,7 @@ async def test_products_structure(client):
 
 @pytest.mark.asyncio
 async def test_latest_frame_not_found(client):
-    resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+    resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
     assert resp.status_code == 404
     assert resp.json()["error"] == "not_found"
 
@@ -43,7 +43,7 @@ async def test_latest_frame_found(client, db):
     db.add(frame)
     await db.commit()
 
-    resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+    resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == "f1"
@@ -60,14 +60,14 @@ async def test_latest_returns_most_recent(client, db):
         ))
     await db.commit()
 
-    resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+    resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
     assert resp.status_code == 200
     assert resp.json()["id"] == "f1"  # hour=12 is most recent
 
 
 @pytest.mark.asyncio
 async def test_composite_recipes_list(client):
-    resp = await client.get("/api/goes/composite-recipes")
+    resp = await client.get("/api/satellite/composite-recipes")
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, list)
@@ -79,7 +79,7 @@ async def test_composite_recipes_list(client):
 
 @pytest.mark.asyncio
 async def test_create_composite_missing_recipe(client):
-    resp = await client.post("/api/goes/composites", json={
+    resp = await client.post("/api/satellite/composites", json={
         "satellite": "GOES-16", "sector": "CONUS",
         "capture_time": "2024-01-01T12:00:00",
     })
@@ -88,7 +88,7 @@ async def test_create_composite_missing_recipe(client):
 
 @pytest.mark.asyncio
 async def test_composites_list_empty(client):
-    resp = await client.get("/api/goes/composites")
+    resp = await client.get("/api/satellite/composites")
     assert resp.status_code == 200
     data = resp.json()
     assert data["items"] == []
@@ -97,32 +97,32 @@ async def test_composites_list_empty(client):
 
 @pytest.mark.asyncio
 async def test_composites_pagination(client):
-    resp = await client.get("/api/goes/composites?page=1&limit=5")
+    resp = await client.get("/api/satellite/composites?page=1&limit=5")
     assert resp.status_code == 200
     assert resp.json()["limit"] == 5
 
 
 @pytest.mark.asyncio
 async def test_composite_detail_not_found(client):
-    resp = await client.get("/api/goes/composites/nonexistent")
+    resp = await client.get("/api/satellite/composites/nonexistent")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_gaps_endpoint(client):
-    resp = await client.get("/api/goes/gaps")
+    resp = await client.get("/api/satellite/gaps")
     assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_gaps_with_filters(client):
-    resp = await client.get("/api/goes/gaps?satellite=GOES-16&band=C02&expected_interval=15.0")
+    resp = await client.get("/api/satellite/gaps?satellite=GOES-16&band=C02&expected_interval=15.0")
     assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_gaps_invalid_interval(client):
-    resp = await client.get("/api/goes/gaps?expected_interval=0.1")
+    resp = await client.get("/api/satellite/gaps?expected_interval=0.1")
     assert resp.status_code == 422
 
 

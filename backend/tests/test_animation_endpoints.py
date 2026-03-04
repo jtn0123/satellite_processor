@@ -9,7 +9,7 @@ from app.db.models import AnimationPreset, CropPreset, GoesFrame
 
 @pytest.mark.asyncio
 async def test_create_crop_preset(client, db):
-    resp = await client.post("/api/goes/crop-presets", json={
+    resp = await client.post("/api/satellite/crop-presets", json={
         "name": "Test Crop",
         "x": 100,
         "y": 200,
@@ -32,48 +32,48 @@ async def test_list_crop_presets(client, db):
         session.add(CropPreset(name="B", x=10, y=10, width=200, height=200))
         await session.commit()
 
-    resp = await client.get("/api/goes/crop-presets")
+    resp = await client.get("/api/satellite/crop-presets")
     assert resp.status_code == 200
     assert len(resp.json()) >= 2
 
 
 @pytest.mark.asyncio
 async def test_update_crop_preset(client, db):
-    resp = await client.post("/api/goes/crop-presets", json={
+    resp = await client.post("/api/satellite/crop-presets", json={
         "name": "Old Name",
         "x": 0, "y": 0, "width": 100, "height": 100,
     })
     preset_id = resp.json()["id"]
 
-    resp2 = await client.put(f"/api/goes/crop-presets/{preset_id}", json={"name": "New Name"})
+    resp2 = await client.put(f"/api/satellite/crop-presets/{preset_id}", json={"name": "New Name"})
     assert resp2.status_code == 200
     assert resp2.json()["name"] == "New Name"
 
 
 @pytest.mark.asyncio
 async def test_delete_crop_preset(client, db):
-    resp = await client.post("/api/goes/crop-presets", json={
+    resp = await client.post("/api/satellite/crop-presets", json={
         "name": "Delete Me",
         "x": 0, "y": 0, "width": 100, "height": 100,
     })
     preset_id = resp.json()["id"]
 
-    resp2 = await client.delete(f"/api/goes/crop-presets/{preset_id}")
+    resp2 = await client.delete(f"/api/satellite/crop-presets/{preset_id}")
     assert resp2.status_code == 200
 
-    resp3 = await client.get("/api/goes/crop-presets")
+    resp3 = await client.get("/api/satellite/crop-presets")
     assert not any(p["id"] == preset_id for p in resp3.json())
 
 
 @pytest.mark.asyncio
 async def test_delete_crop_preset_not_found(client, db):
-    resp = await client.delete("/api/goes/crop-presets/00000000-0000-0000-0000-000000000099")
+    resp = await client.delete("/api/satellite/crop-presets/00000000-0000-0000-0000-000000000099")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_create_animation_preset(client, db):
-    resp = await client.post("/api/goes/animation-presets", json={
+    resp = await client.post("/api/satellite/animation-presets", json={
         "name": "Sunset Loop",
         "satellite": "GOES-16",
         "sector": "CONUS",
@@ -97,59 +97,59 @@ async def test_list_animation_presets(client, db):
         session.add(AnimationPreset(name="P2", fps=20))
         await session.commit()
 
-    resp = await client.get("/api/goes/animation-presets")
+    resp = await client.get("/api/satellite/animation-presets")
     assert resp.status_code == 200
     assert len(resp.json()) >= 2
 
 
 @pytest.mark.asyncio
 async def test_get_animation_preset(client, db):
-    resp = await client.post("/api/goes/animation-presets", json={
+    resp = await client.post("/api/satellite/animation-presets", json={
         "name": "Get Me",
         "fps": 5,
     })
     pid = resp.json()["id"]
 
-    resp2 = await client.get(f"/api/goes/animation-presets/{pid}")
+    resp2 = await client.get(f"/api/satellite/animation-presets/{pid}")
     assert resp2.status_code == 200
     assert resp2.json()["name"] == "Get Me"
 
 
 @pytest.mark.asyncio
 async def test_get_animation_preset_not_found(client, db):
-    resp = await client.get("/api/goes/animation-presets/00000000-0000-0000-0000-000000000099")
+    resp = await client.get("/api/satellite/animation-presets/00000000-0000-0000-0000-000000000099")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_update_animation_preset(client, db):
-    resp = await client.post("/api/goes/animation-presets", json={
+    resp = await client.post("/api/satellite/animation-presets", json={
         "name": "Old",
         "fps": 5,
     })
     pid = resp.json()["id"]
 
-    resp2 = await client.put(f"/api/goes/animation-presets/{pid}", json={"name": "New"})
+    resp2 = await client.put(f"/api/satellite/animation-presets/{pid}", json={"name": "New"})
     assert resp2.status_code == 200
     assert resp2.json()["name"] == "New"
 
 
 @pytest.mark.asyncio
 async def test_delete_animation_preset(client, db):
-    resp = await client.post("/api/goes/animation-presets", json={
+    resp = await client.post("/api/satellite/animation-presets", json={
         "name": "Kill Me",
         "fps": 10,
     })
     pid = resp.json()["id"]
 
-    resp2 = await client.delete(f"/api/goes/animation-presets/{pid}")
+    resp2 = await client.delete(f"/api/satellite/animation-presets/{pid}")
     assert resp2.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_create_animation_no_frames(client, db):
     """Creating animation with empty frame_ids should 400."""
-    resp = await client.post("/api/goes/animations", json={
+    resp = await client.post("/api/satellite/animations", json={
         "frame_ids": [],
         "fps": 10,
         "format": "mp4",
@@ -160,7 +160,7 @@ async def test_create_animation_no_frames(client, db):
 @pytest.mark.asyncio
 async def test_create_animation_from_range_no_frames(client, db):
     """from-range with no matching frames → 400."""
-    resp = await client.post("/api/goes/animations/from-range", json={
+    resp = await client.post("/api/satellite/animations/from-range", json={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
@@ -173,7 +173,7 @@ async def test_create_animation_from_range_no_frames(client, db):
 @pytest.mark.asyncio
 async def test_create_animation_recent_no_frames(client, db):
     """recent with no matching frames → 400."""
-    resp = await client.post("/api/goes/animations/recent", json={
+    resp = await client.post("/api/satellite/animations/recent", json={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
@@ -184,7 +184,7 @@ async def test_create_animation_recent_no_frames(client, db):
 
 @pytest.mark.asyncio
 async def test_list_animations_empty(client, db):
-    resp = await client.get("/api/goes/animations")
+    resp = await client.get("/api/satellite/animations")
     assert resp.status_code == 200
     data = resp.json()
     assert data["items"] == []
@@ -193,20 +193,20 @@ async def test_list_animations_empty(client, db):
 
 @pytest.mark.asyncio
 async def test_get_animation_not_found(client, db):
-    resp = await client.get("/api/goes/animations/00000000-0000-0000-0000-000000000099")
+    resp = await client.get("/api/satellite/animations/00000000-0000-0000-0000-000000000099")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_delete_animation_not_found(client, db):
-    resp = await client.delete("/api/goes/animations/00000000-0000-0000-0000-000000000099")
+    resp = await client.delete("/api/satellite/animations/00000000-0000-0000-0000-000000000099")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_batch_animation_empty_configs(client, db):
     """Batch with empty configs list should 400 or 422."""
-    resp = await client.post("/api/goes/animations/batch", json={"configs": []})
+    resp = await client.post("/api/satellite/animations/batch", json={"configs": []})
     assert resp.status_code in (400, 422)
 
 
@@ -234,7 +234,7 @@ async def test_create_animation_with_frames(client, db):
     with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
         mock_task.delay.return_value = MagicMock(id="task-anim-test")
 
-        resp = await client.post("/api/goes/animations", json={
+        resp = await client.post("/api/satellite/animations", json={
             "frame_ids": frame_ids,
             "fps": 10,
             "format": "mp4",

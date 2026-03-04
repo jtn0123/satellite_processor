@@ -8,7 +8,7 @@ test.describe('Image rendering after fetch', () => {
     await waitForApiHealth(request);
     // Trigger a fetch so we have frames to render
     const fetchReq = buildFetchRequest();
-    const res = await apiPost(request, '/api/goes/fetch', fetchReq);
+    const res = await apiPost(request, '/api/satellite/fetch', fetchReq);
     if (res.status < 300) {
       const body = res.body as Record<string, unknown>;
       const jobId = (body.job_id ?? body.id) as string | undefined;
@@ -20,7 +20,7 @@ test.describe('Image rendering after fetch', () => {
 
   test('browse page shows images with valid src attributes', async ({ page, request }) => {
     // Check if we have frames first
-    const framesRes = await apiGet(request, '/api/goes/frames');
+    const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
     const items = (framesBody.items ?? framesBody) as unknown[];
     if (!Array.isArray(items) || items.length === 0) {
@@ -47,7 +47,7 @@ test.describe('Image rendering after fetch', () => {
   });
 
   test('thumbnail URLs return image content', async ({ request }) => {
-    const framesRes = await apiGet(request, '/api/goes/frames');
+    const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
     const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
     if (!Array.isArray(items) || items.length === 0) {
@@ -57,7 +57,7 @@ test.describe('Image rendering after fetch', () => {
 
     const frame = items[0];
     const frameId = frame.id as string;
-    const res = await request.get(`${API_BASE}/api/goes/frames/${frameId}/thumbnail`, {
+    const res = await request.get(`${API_BASE}/api/satellite/frames/${frameId}/thumbnail`, {
       headers: { 'X-API-Key': API_KEY },
       timeout: 15_000,
     });
@@ -77,7 +77,7 @@ test.describe('Image rendering after fetch', () => {
     // Inject a broken image to test fallback behavior
     await page.evaluate(() => {
       const img = document.createElement('img');
-      img.src = '/api/goes/frames/nonexistent-id/thumbnail';
+      img.src = '/api/satellite/frames/nonexistent-id/thumbnail';
       img.alt = 'test-broken';
       img.onerror = () => {
         img.dataset['broken'] = 'true';

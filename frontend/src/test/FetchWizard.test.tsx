@@ -6,7 +6,7 @@ import FetchTab from '../components/GoesData/FetchTab';
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn().mockImplementation((url: string) => {
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({
           data: {
             satellites: ['GOES-19', 'GOES-18', 'GOES-16'],
@@ -26,7 +26,7 @@ vi.mock('../api/client', () => ({
           },
         });
       }
-      if (url === '/goes/catalog') {
+      if (url === '/satellite/catalog') {
         return Promise.resolve({ data: [] });
       }
       if (url === '/jobs') {

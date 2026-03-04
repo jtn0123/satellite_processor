@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 _FETCH_PRESET_NOT_FOUND = "Fetch preset not found"
 _SCHEDULE_NOT_FOUND = "Schedule not found"
 
-router = APIRouter(prefix="/api/goes", tags=["scheduling"])
+router = APIRouter(prefix="/api/satellite", tags=["scheduling"])
 
 
 # ── Fetch Presets ─────────────────────────────────────────

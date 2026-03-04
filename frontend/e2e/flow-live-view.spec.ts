@@ -121,8 +121,8 @@ test.describe('Live flow', () => {
 
   test('error state appears on image load failure', async ({ page }) => {
     // Override image routes to return 404 to trigger error state
-    await page.route('**/api/goes/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
-    await page.route('**/api/goes/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     // Also block CDN fallback images so error state appears
     await page.route('**/cdn.star.nesdis.noaa.gov/**', (route) => route.abort('connectionrefused'));
     await page.goto('/live');
@@ -191,9 +191,9 @@ test.describe('Live flow', () => {
       }));
     });
     // Make the live image fail so it falls back to cached
-    await page.route('**/api/goes/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
     // Also make thumbnail/image URLs fail
-    await page.route('**/api/goes/frames/*/image', (route) => route.fulfill({ status: 500 }));
+    await page.route('**/api/satellite/frames/*/image', (route) => route.fulfill({ status: 500 }));
     await page.goto('/live');
     const banner = page.locator('[data-testid="cached-image-banner"]');
     // Banner may appear if cache fallback triggers — depends on timing and CdnImage internal state

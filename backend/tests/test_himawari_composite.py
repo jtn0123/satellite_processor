@@ -401,7 +401,7 @@ class TestFetchCompositeDispatch:
     @patch("app.tasks.himawari_fetch_task.fetch_himawari_true_color.delay")
     async def test_himawari_true_color_dispatches_to_himawari_task(self, mock_delay, client):
         """POST /fetch-composite with himawari_true_color recipe should dispatch to Himawari task."""
-        resp = await client.post("/api/goes/fetch-composite", json={
+        resp = await client.post("/api/satellite/fetch-composite", json={
             "satellite": "Himawari-9",
             "sector": "FLDK",
             "recipe": "himawari_true_color",
@@ -416,7 +416,7 @@ class TestFetchCompositeDispatch:
     @patch("app.tasks.composite_task.fetch_composite_data.delay")
     async def test_goes_true_color_dispatches_to_goes_task(self, mock_delay, client):
         """GOES true_color recipe should still dispatch to the GOES composite task."""
-        resp = await client.post("/api/goes/fetch-composite", json={
+        resp = await client.post("/api/satellite/fetch-composite", json={
             "satellite": "GOES-18",
             "sector": "CONUS",
             "recipe": "true_color",
@@ -430,7 +430,7 @@ class TestFetchCompositeDispatch:
         """The himawari_true_color recipe should be accepted by the validator."""
         # We just need it to not be a 422 validation error
         with patch("app.tasks.himawari_fetch_task.fetch_himawari_true_color.delay"):
-            resp = await client.post("/api/goes/fetch-composite", json={
+            resp = await client.post("/api/satellite/fetch-composite", json={
                 "satellite": "Himawari-9",
                 "sector": "FLDK",
                 "recipe": "himawari_true_color",
@@ -447,14 +447,14 @@ class TestFetchCompositeDispatch:
 @pytest.mark.asyncio
 class TestCompositeRecipeEndpoint:
     async def test_himawari_recipe_in_list(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         assert resp.status_code == 200
         recipes = resp.json()
         ids = [r["id"] for r in recipes]
         assert "himawari_true_color" in ids
 
     async def test_himawari_recipe_has_correct_bands(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         for recipe in resp.json():
             if recipe["id"] == "himawari_true_color":
                 assert recipe["bands"] == ["B03", "B02", "B01"]
@@ -540,7 +540,7 @@ class TestSchedulingDispatch:
 class TestSchedulingEndpointDispatch:
     async def test_create_himawari_preset(self, client):
         """Should be able to create a Himawari preset with TrueColor band."""
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "Himawari FLDK TrueColor",
             "satellite": "Himawari-9",
             "sector": "FLDK",
@@ -554,7 +554,7 @@ class TestSchedulingEndpointDispatch:
 
     async def test_create_himawari_single_band_preset(self, client):
         """Should be able to create a Himawari preset with a single band."""
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "Himawari FLDK B13",
             "satellite": "Himawari-9",
             "sector": "FLDK",
@@ -568,7 +568,7 @@ class TestSchedulingEndpointDispatch:
     async def test_create_himawari_schedule(self, client):
         """Should be able to create a schedule with a Himawari preset."""
         # Create preset
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "Sched Preset",
             "satellite": "Himawari-9",
             "sector": "FLDK",
@@ -577,7 +577,7 @@ class TestSchedulingEndpointDispatch:
         preset_id = resp.json()["id"]
 
         # Create schedule
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "Every 10 min",
             "preset_id": preset_id,
             "interval_minutes": 10,
@@ -598,14 +598,14 @@ class TestSchedulingEndpointDispatch:
         import app.tasks.himawari_fetch_task as h_mod
         monkeypatch.setattr(h_mod, "fetch_himawari_true_color", FakeTask())
 
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "Run TC",
             "satellite": "Himawari-9",
             "sector": "FLDK",
             "band": "TrueColor",
         })
         pid = resp.json()["id"]
-        resp = await client.post(f"/api/goes/fetch-presets/{pid}/run")
+        resp = await client.post(f"/api/satellite/fetch-presets/{pid}/run")
         assert resp.status_code == 200
         assert "job_id" in called
         assert called["params"]["band"] == "TrueColor"
@@ -622,14 +622,14 @@ class TestSchedulingEndpointDispatch:
         import app.tasks.himawari_fetch_task as h_mod
         monkeypatch.setattr(h_mod, "fetch_himawari_data", FakeTask())
 
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "Run B13",
             "satellite": "Himawari-9",
             "sector": "FLDK",
             "band": "B13",
         })
         pid = resp.json()["id"]
-        resp = await client.post(f"/api/goes/fetch-presets/{pid}/run")
+        resp = await client.post(f"/api/satellite/fetch-presets/{pid}/run")
         assert resp.status_code == 200
         assert "job_id" in called
         assert called["params"]["band"] == "B13"
@@ -643,7 +643,7 @@ class TestSchedulingEndpointDispatch:
 class TestTrueColorBandValidation:
     async def test_truecolor_blocked_in_direct_fetch(self, client):
         """TrueColor should NOT be allowed in the direct /fetch endpoint."""
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "Himawari-9",
             "sector": "FLDK",
             "band": "TrueColor",

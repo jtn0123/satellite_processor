@@ -51,30 +51,30 @@ async def test_job_list_pagination(client, db):
 @pytest.mark.asyncio
 async def test_create_and_delete_tag(client, db):
     """Full lifecycle: create tag, list, delete."""
-    resp = await client.post("/api/goes/tags", json={"name": "test-tag", "color": "#ff0000"})
+    resp = await client.post("/api/satellite/tags", json={"name": "test-tag", "color": "#ff0000"})
     assert resp.status_code == 200
     tag_id = resp.json()["id"]
 
-    resp2 = await client.get("/api/goes/tags")
+    resp2 = await client.get("/api/satellite/tags")
     assert resp2.status_code == 200
     assert any(t["id"] == tag_id for t in resp2.json()["items"])
 
-    resp3 = await client.delete(f"/api/goes/tags/{tag_id}")
+    resp3 = await client.delete(f"/api/satellite/tags/{tag_id}")
     assert resp3.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_create_collection_lifecycle(client, db):
     """Create, update, delete a collection."""
-    resp = await client.post("/api/goes/collections", json={"name": "Test Collection", "description": "desc"})
+    resp = await client.post("/api/satellite/collections", json={"name": "Test Collection", "description": "desc"})
     assert resp.status_code == 200
     coll_id = resp.json()["id"]
 
-    resp2 = await client.put(f"/api/goes/collections/{coll_id}", json={"name": "Updated"})
+    resp2 = await client.put(f"/api/satellite/collections/{coll_id}", json={"name": "Updated"})
     assert resp2.status_code == 200
     assert resp2.json()["name"] == "Updated"
 
-    resp3 = await client.delete(f"/api/goes/collections/{coll_id}")
+    resp3 = await client.delete(f"/api/satellite/collections/{coll_id}")
     assert resp3.status_code == 200
 
 
@@ -162,7 +162,7 @@ async def test_goes_fetch_creates_job(client, db):
 
         from datetime import UTC, datetime, timedelta
         now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C02",
@@ -207,7 +207,7 @@ async def test_collection_full_lifecycle(client, db):
         await session.commit()
 
     # Create collection
-    resp = await client.post("/api/goes/collections", json={
+    resp = await client.post("/api/satellite/collections", json={
         "name": "Integration Collection",
         "description": "Testing",
     })
@@ -216,22 +216,22 @@ async def test_collection_full_lifecycle(client, db):
 
     # Add frames
     resp2 = await client.post(
-        f"/api/goes/collections/{coll_id}/frames",
+        f"/api/satellite/collections/{coll_id}/frames",
         json={"frame_ids": frame_ids},
     )
     assert resp2.status_code == 200
 
     # List frames
-    resp3 = await client.get(f"/api/goes/collections/{coll_id}/frames")
+    resp3 = await client.get(f"/api/satellite/collections/{coll_id}/frames")
     assert resp3.status_code == 200
     assert resp3.json()["total"] >= 3
 
     # Delete collection
-    resp4 = await client.delete(f"/api/goes/collections/{coll_id}")
+    resp4 = await client.delete(f"/api/satellite/collections/{coll_id}")
     assert resp4.status_code == 200
 
     # Verify gone
-    resp5 = await client.get(f"/api/goes/collections/{coll_id}/frames")
+    resp5 = await client.get(f"/api/satellite/collections/{coll_id}/frames")
     assert resp5.status_code == 404
 
 
@@ -264,7 +264,7 @@ async def test_animation_workflow(client, db):
     with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
         mock_task.delay.return_value = MagicMock(id="task-anim-integration")
 
-        resp = await client.post("/api/goes/animations", json={
+        resp = await client.post("/api/satellite/animations", json={
             "frame_ids": frame_ids,
             "fps": 10,
             "format": "mp4",
@@ -273,11 +273,11 @@ async def test_animation_workflow(client, db):
     anim_id = resp.json()["id"]
 
     # Verify in list
-    resp2 = await client.get("/api/goes/animations")
+    resp2 = await client.get("/api/satellite/animations")
     assert resp2.status_code == 200
     assert any(a["id"] == anim_id for a in resp2.json()["items"])
 
     # Verify by ID
-    resp3 = await client.get(f"/api/goes/animations/{anim_id}")
+    resp3 = await client.get(f"/api/satellite/animations/{anim_id}")
     assert resp3.status_code == 200
     assert resp3.json()["frame_count"] == 4

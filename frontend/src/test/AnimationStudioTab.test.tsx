@@ -26,11 +26,11 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-    if (url === '/goes/collections') return Promise.resolve({ data: [] });
-    if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
-    if (url === '/goes/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
-    if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+    if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
+    if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
     return Promise.resolve({ data: {} });
   });
 });
@@ -63,11 +63,11 @@ describe('AnimationStudioTab', () => {
 
   it('handles collections API returning paginated object instead of array', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({ data: { items: [{ id: '1', name: 'Test Col', frame_count: 10 }], total: 1 } });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
-      if (url === '/goes/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/collections') return Promise.resolve({ data: { items: [{ id: '1', name: 'Test Col', frame_count: 10 }], total: 1 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
+      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -83,11 +83,11 @@ describe('AnimationStudioTab', () => {
 
   it('handles crop-presets API returning paginated object', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/crop-presets') return Promise.resolve({ data: { items: [{ id: '1', name: 'Center Crop', x: 0, y: 0, width: 100, height: 100, created_at: '2024-01-01' }], total: 1 } });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url === '/goes/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/crop-presets') return Promise.resolve({ data: { items: [{ id: '1', name: 'Center Crop', x: 0, y: 0, width: 100, height: 100, created_at: '2024-01-01' }], total: 1 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -98,11 +98,11 @@ describe('AnimationStudioTab', () => {
 
   it('handles products API returning null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: null });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
-      if (url === '/goes/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: null });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+      if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
+      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<AnimationStudioTab />);
@@ -113,11 +113,11 @@ describe('AnimationStudioTab', () => {
 
   it('handles animations API returning null items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/animations') return Promise.resolve({ data: { items: null, total: 0 } });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/animations') return Promise.resolve({ data: { items: null, total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+      if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -130,7 +130,7 @@ describe('AnimationStudioTab', () => {
 
   it('renders animation history items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/animations') {
+      if (url === '/satellite/animations') {
         return Promise.resolve({
           data: {
             items: [
@@ -143,10 +143,10 @@ describe('AnimationStudioTab', () => {
           },
         });
       }
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+      if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);

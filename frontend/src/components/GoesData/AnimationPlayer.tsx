@@ -34,7 +34,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
   const currentFrame = frames[currentIndex];
 
   const imageUrl = useCallback(
-    (frame: GoesFrame) => `/api/goes/frames/${frame.id}/image`,
+    (frame: GoesFrame) => `/api/satellite/frames/${frame.id}/image`,
     [],
   );
 

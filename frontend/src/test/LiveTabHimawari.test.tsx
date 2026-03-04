@@ -36,8 +36,8 @@ const FRAME = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
   capture_time: new Date(Date.now() - 600000).toISOString(),
   file_size: 1024, width: 5424, height: 3000,
-  image_url: '/api/goes/frames/test-id/image',
-  thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 function renderLiveTab() {
@@ -55,9 +55,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-    if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+    if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+    if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
     return Promise.resolve({ data: {} });
   });
 });
@@ -197,15 +197,15 @@ describe('LiveTab - Himawari satellite switching', () => {
   it('CDN preview is not available for Himawari (shows no-preview message)', async () => {
     // No local frame for Himawari
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) {
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) {
         const axiosError = Object.assign(new Error('Not found'), {
           isAxiosError: true,
           response: { status: 404 },
         });
         return Promise.reject(axiosError);
       }
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
 

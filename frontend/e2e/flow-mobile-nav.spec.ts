@@ -4,7 +4,7 @@ import { setupMockApi } from './helpers/mock-api';
 test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
   // Dashboard needs goes/dashboard-stats endpoint
-  await page.route('**/api/goes/dashboard-stats', async (route) => {
+  await page.route('**/api/satellite/dashboard-stats', async (route) => {
     await route.fulfill({
       json: {
         total_frames: 0,

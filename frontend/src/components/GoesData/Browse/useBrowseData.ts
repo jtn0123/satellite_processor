@@ -12,18 +12,18 @@ export function useBrowseData(filterParams: Record<string, string>) {
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const { data: collections, isError: collectionsError } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => extractArray(r.data)),
+    queryFn: () => api.get('/satellite/collections').then((r) => extractArray(r.data)),
     retry: 2,
   });
 
   const { data: tags, isError: tagsError } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => extractArray(r.data)),
+    queryFn: () => api.get('/satellite/tags').then((r) => extractArray(r.data)),
     retry: 2,
   });
 
@@ -36,7 +36,7 @@ export function useBrowseData(filterParams: Record<string, string>) {
   } = useInfiniteQuery<PaginatedFrames>({
     queryKey: ['goes-frames', filterParams],
     queryFn: ({ pageParam }) =>
-      api.get('/goes/frames', { params: { ...filterParams, page: pageParam, limit: PAGE_LIMIT } }).then((r) => r.data),
+      api.get('/satellite/frames', { params: { ...filterParams, page: pageParam, limit: PAGE_LIMIT } }).then((r) => r.data),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const totalPages = Math.ceil((lastPage.total ?? 0) / (lastPage.limit || PAGE_LIMIT));
@@ -55,7 +55,7 @@ export function useBrowseData(filterParams: Record<string, string>) {
   }, [queryClient]);
 
   const deleteMutation = useMutation({
-    mutationFn: (ids: string[]) => api.delete('/goes/frames', { data: { ids } }),
+    mutationFn: (ids: string[]) => api.delete('/satellite/frames', { data: { ids } }),
     onSuccess: (_data, ids) => {
       queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
       showToast('success', `Deleted ${ids.length} frame(s)`);
@@ -65,7 +65,7 @@ export function useBrowseData(filterParams: Record<string, string>) {
 
   const processMutation = useMutation({
     mutationFn: (frameIds: string[]) =>
-      api.post('/goes/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
+      api.post('/satellite/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
     onSuccess: (data) => showToast('success', `Processing job created: ${data.job_id}`),
     onError: () => showToast('error', 'Failed to create processing job'),
   });

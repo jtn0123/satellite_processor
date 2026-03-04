@@ -12,7 +12,7 @@ test.describe('Dashboard', () => {
   });
 
   test('dashboard stats API returns data', async ({ request }) => {
-    const res = await apiGet(request, '/api/goes/dashboard-stats');
+    const res = await apiGet(request, '/api/satellite/dashboard-stats');
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { total_frames: number };
     expect(body.total_frames).toBeGreaterThanOrEqual(0);

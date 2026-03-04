@@ -43,42 +43,42 @@ export default function CleanupTab() {
 
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],
-    queryFn: () => api.get('/goes/cleanup-rules').then(r => {
+    queryFn: () => api.get('/satellite/cleanup-rules').then(r => {
       return extractArray(r.data);
     }),
   });
 
   const { data: stats } = useQuery<FrameStats>({
     queryKey: ['goes-frame-stats'],
-    queryFn: () => api.get('/goes/frames/stats').then(r => r.data),
+    queryFn: () => api.get('/satellite/frames/stats').then(r => r.data),
   });
 
   const { data: preview, refetch: refetchPreview, isFetching: previewLoading } = useQuery<CleanupPreview>({
     queryKey: ['cleanup-preview'],
-    queryFn: () => api.get('/goes/cleanup/preview').then(r => r.data),
+    queryFn: () => api.get('/satellite/cleanup/preview').then(r => r.data),
     enabled: false,
   });
 
   const createRule = useMutation({
-    mutationFn: (data: typeof form) => api.post('/goes/cleanup-rules', data).then(r => r.data),
+    mutationFn: (data: typeof form) => api.post('/satellite/cleanup-rules', data).then(r => r.data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); setShowCreate(false); showToast('success', 'Cleanup rule created'); },
     onError: () => showToast('error', 'Failed to create cleanup rule'),
   });
 
   const deleteRule = useMutation({
-    mutationFn: (id: string) => api.delete(`/goes/cleanup-rules/${id}`),
+    mutationFn: (id: string) => api.delete(`/satellite/cleanup-rules/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); showToast('success', 'Cleanup rule deleted'); },
     onError: () => showToast('error', 'Failed to delete cleanup rule'),
   });
 
   const toggleRule = useMutation({
-    mutationFn: (rule: CleanupRule) => api.put(`/goes/cleanup-rules/${rule.id}`, { is_active: !rule.is_active }).then(r => r.data),
+    mutationFn: (rule: CleanupRule) => api.put(`/satellite/cleanup-rules/${rule.id}`, { is_active: !rule.is_active }).then(r => r.data),
     onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); showToast('success', `Rule ${data.is_active ? 'activated' : 'deactivated'}`); },
     onError: () => showToast('error', 'Failed to toggle cleanup rule'),
   });
 
   const runCleanup = useMutation({
-    mutationFn: () => api.post('/goes/cleanup/run').then(r => r.data),
+    mutationFn: () => api.post('/satellite/cleanup/run').then(r => r.data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-frame-stats'] });
       queryClient.invalidateQueries({ queryKey: ['cleanup-preview'] });

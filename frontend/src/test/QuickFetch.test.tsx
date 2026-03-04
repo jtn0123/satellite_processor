@@ -55,7 +55,7 @@ function setupDashboardMocks(overrides: Record<string, unknown> = {}) {
   const stats = overrides.dashboardStats ?? dashboardStats;
   const appStats = overrides.stats ?? defaultStats;
   (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
-    if (url === '/goes/dashboard-stats') return Promise.resolve({ data: stats });
+    if (url === '/satellite/dashboard-stats') return Promise.resolve({ data: stats });
     if (url === '/stats') return Promise.resolve({ data: appStats });
     if (url === '/health/detailed') return Promise.resolve({ data: { status: 'ok', checks: {} } });
     if (url === '/jobs') return Promise.resolve({ data: { items: [], total: 0 } });
@@ -76,7 +76,7 @@ describe('Dashboard Fetch Latest', () => {
     const btn = await screen.findByTestId('dashboard-fetch-latest');
     fireEvent.click(btn);
     await waitFor(() => {
-      expect(mockApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'GOES-19',
         sector: 'CONUS',
         band: 'C02',
@@ -146,8 +146,8 @@ describe('Dashboard Fetch Latest', () => {
 describe('FetchTab Quick Fetch', () => {
   beforeEach(() => {
     (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
-      if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
+      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     });
   });
@@ -165,7 +165,7 @@ describe('FetchTab Quick Fetch', () => {
     const chip = await screen.findByText('CONUS Last Hour');
     fireEvent.click(chip);
     await waitFor(() => {
-      expect(mockApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'GOES-19',
         sector: 'CONUS',
         band: 'C02',
@@ -178,7 +178,7 @@ describe('FetchTab Quick Fetch', () => {
     const chip = await screen.findByText('Full Disk Latest');
     fireEvent.click(chip);
     await waitFor(() => {
-      expect(mockApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'GOES-19',
         sector: 'FullDisk',
         band: 'C02',
@@ -235,8 +235,8 @@ describe('FetchTab Quick Fetch', () => {
 
   it('renders preset chips when presets exist', async () => {
     (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
-      if (url === '/goes/fetch-presets') return Promise.resolve({ data: [{ id: 1, name: 'My CONUS Preset' }, { id: 2, name: 'Night Watch' }] });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
+      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [{ id: 1, name: 'My CONUS Preset' }, { id: 2, name: 'Night Watch' }] });
       return Promise.resolve({ data: {} });
     });
     wrap(<FetchTab />);
@@ -246,15 +246,15 @@ describe('FetchTab Quick Fetch', () => {
 
   it('clicking a preset chip calls the preset run endpoint', async () => {
     (mockApi.get as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
-      if (url === '/goes/fetch-presets') return Promise.resolve({ data: [{ id: 42, name: 'Storm Watch' }] });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-19'], satellite_availability: {}, sectors: [], bands: [], default_satellite: 'GOES-19' } });
+      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [{ id: 42, name: 'Storm Watch' }] });
       return Promise.resolve({ data: {} });
     });
     wrap(<FetchTab />);
     const preset = await screen.findByText('Storm Watch');
     fireEvent.click(preset);
     await waitFor(() => {
-      expect(mockApi.post).toHaveBeenCalledWith('/goes/fetch-presets/42/run');
+      expect(mockApi.post).toHaveBeenCalledWith('/satellite/fetch-presets/42/run');
     });
   });
 });

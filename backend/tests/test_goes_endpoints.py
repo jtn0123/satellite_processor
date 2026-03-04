@@ -28,7 +28,7 @@ def _make_frame(db, **overrides):
 @pytest.mark.asyncio
 class TestProducts:
     async def test_returns_satellites(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         assert resp.status_code == 200
         data = resp.json()
         assert "satellites" in data
@@ -36,7 +36,7 @@ class TestProducts:
         assert "GOES-18" in data["satellites"]
 
     async def test_returns_sectors(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert "sectors" in data
         assert len(data["sectors"]) > 0
@@ -45,7 +45,7 @@ class TestProducts:
         assert "CONUS" in sector_ids
 
     async def test_returns_bands(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert "bands" in data
         assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
@@ -54,13 +54,13 @@ class TestProducts:
         assert "C16" in band_ids
 
     async def test_bands_have_descriptions(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         for band in resp.json()["bands"]:
             assert "description" in band
             assert len(band["description"]) > 0
 
     async def test_sectors_have_product(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         for sector in resp.json()["sectors"]:
             assert "product" in sector
 
@@ -70,7 +70,7 @@ class TestFetchGoes:
     @patch("app.tasks.goes_tasks.fetch_goes_data.delay")
     async def test_valid_fetch(self, mock_delay, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
@@ -85,7 +85,7 @@ class TestFetchGoes:
 
     async def test_invalid_satellite(self, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-99",
             "sector": "CONUS",
             "band": "C02",
@@ -96,7 +96,7 @@ class TestFetchGoes:
 
     async def test_invalid_band(self, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C99",
@@ -107,7 +107,7 @@ class TestFetchGoes:
 
     async def test_invalid_sector(self, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "INVALID",
             "band": "C02",
@@ -118,7 +118,7 @@ class TestFetchGoes:
 
     async def test_time_range_exceeds_24h(self, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
@@ -129,7 +129,7 @@ class TestFetchGoes:
 
     async def test_end_before_start(self, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "CONUS",
             "band": "C02",
@@ -139,7 +139,7 @@ class TestFetchGoes:
         assert resp.status_code == 422
 
     async def test_missing_fields(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
         })
         assert resp.status_code == 422
@@ -147,7 +147,7 @@ class TestFetchGoes:
     @patch("app.tasks.goes_tasks.fetch_goes_data.delay")
     async def test_fetch_goes18(self, mock_delay, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-18",
             "sector": "CONUS",
             "band": "C02",
@@ -159,7 +159,7 @@ class TestFetchGoes:
     @patch("app.tasks.goes_tasks.fetch_goes_data.delay")
     async def test_fetch_fulldisk(self, mock_delay, client):
         now = datetime.now(UTC)
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-19",
             "sector": "FullDisk",
             "band": "C02",
@@ -172,37 +172,37 @@ class TestFetchGoes:
 @pytest.mark.asyncio
 class TestGaps:
     async def test_gaps_empty_db(self, client):
-        resp = await client.get("/api/goes/gaps")
+        resp = await client.get("/api/satellite/gaps")
         assert resp.status_code == 200
 
     async def test_gaps_with_satellite_filter(self, client, db):
         _make_frame(db)
         await db.commit()
-        resp = await client.get("/api/goes/gaps?satellite=GOES-16")
+        resp = await client.get("/api/satellite/gaps?satellite=GOES-16")
         assert resp.status_code == 200
 
     async def test_gaps_with_band_filter(self, client, db):
         _make_frame(db)
         await db.commit()
-        resp = await client.get("/api/goes/gaps?band=C02")
+        resp = await client.get("/api/satellite/gaps?band=C02")
         assert resp.status_code == 200
 
     async def test_gaps_with_both_filters(self, client, db):
         _make_frame(db)
         await db.commit()
-        resp = await client.get("/api/goes/gaps?satellite=GOES-16&band=C02")
+        resp = await client.get("/api/satellite/gaps?satellite=GOES-16&band=C02")
         assert resp.status_code == 200
 
     async def test_gaps_custom_interval(self, client):
-        resp = await client.get("/api/goes/gaps?expected_interval=15.0")
+        resp = await client.get("/api/satellite/gaps?expected_interval=15.0")
         assert resp.status_code == 200
 
     async def test_gaps_invalid_interval_too_low(self, client):
-        resp = await client.get("/api/goes/gaps?expected_interval=0.1")
+        resp = await client.get("/api/satellite/gaps?expected_interval=0.1")
         assert resp.status_code == 422
 
     async def test_gaps_invalid_interval_too_high(self, client):
-        resp = await client.get("/api/goes/gaps?expected_interval=100")
+        resp = await client.get("/api/satellite/gaps?expected_interval=100")
         assert resp.status_code == 422
 
 
@@ -211,21 +211,21 @@ class TestLatest:
     async def test_latest_with_data(self, client, db):
         _make_frame(db, satellite="GOES-16", sector="CONUS", band="C02")
         await db.commit()
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "GOES-16"
         assert data["band"] == "C02"
 
     async def test_latest_no_frames(self, client):
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 404
 
     async def test_latest_returns_most_recent(self, client, db):
         _make_frame(db, capture_time=datetime(2024, 1, 1, tzinfo=UTC))
         _make_frame(db, capture_time=datetime(2024, 6, 1, tzinfo=UTC))
         await db.commit()
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 200
         # Should return the most recent one
         data = resp.json()
@@ -235,19 +235,19 @@ class TestLatest:
         _make_frame(db, satellite="GOES-19", sector="CONUS", band="C02")
         await db.commit()
         # Defaults: satellite=GOES-19, sector=CONUS, band=C02
-        resp = await client.get("/api/goes/latest")
+        resp = await client.get("/api/satellite/latest")
         assert resp.status_code == 200
 
     async def test_latest_wrong_satellite(self, client, db):
         _make_frame(db, satellite="GOES-16")
         await db.commit()
-        resp = await client.get("/api/goes/latest?satellite=GOES-18&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-18&sector=CONUS&band=C02")
         assert resp.status_code == 404
 
     async def test_latest_response_fields(self, client, db):
         _make_frame(db, width=5424, height=5424, thumbnail_path="/tmp/thumb.png")
         await db.commit()
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         data = resp.json()
         assert data["width"] == 5424
         assert data["height"] == 5424
@@ -259,7 +259,7 @@ class TestLatest:
 class TestBackfill:
     @patch("app.tasks.goes_tasks.backfill_gaps.delay")
     async def test_backfill_valid(self, mock_delay, client):
-        resp = await client.post("/api/goes/backfill", json={
+        resp = await client.post("/api/satellite/backfill", json={
             "satellite": "GOES-19",
             "band": "C02",
             "sector": "CONUS",

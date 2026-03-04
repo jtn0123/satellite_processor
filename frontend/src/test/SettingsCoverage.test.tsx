@@ -52,7 +52,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 function setupLoadedMocks(storage = STORAGE_DATA) {
   mockGet.mockImplementation((url: string) => {
     if (url === '/settings') return Promise.resolve({ data: SETTINGS_DATA });
-    if (url === '/goes/frames/stats') return Promise.resolve({ data: storage });
+    if (url === '/satellite/frames/stats') return Promise.resolve({ data: storage });
     return Promise.resolve({ data: {} });
   });
   mockPut.mockResolvedValue({ data: SETTINGS_DATA });

@@ -80,14 +80,14 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
           <div className="flex gap-2 h-full">
             <div className="flex-1 flex items-center justify-center">
               <img
-                src={`/api/goes/frames/${frameA.id}/image`}
+                src={`/api/satellite/frames/${frameA.id}/image`}
                 alt={`${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
               />
             </div>
             <div className="flex-1 flex items-center justify-center">
               <img
-                src={`/api/goes/frames/${frameB.id}/image`}
+                src={`/api/satellite/frames/${frameB.id}/image`}
                 alt={`${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
               />
@@ -108,7 +108,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             />
             {/* Frame B (full background) */}
             <img
-              src={`/api/goes/frames/${frameB.id}/image`}
+              src={`/api/satellite/frames/${frameB.id}/image`}
               alt={`Frame B: ${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
               className="absolute inset-0 w-full h-full object-contain"
             />
@@ -118,7 +118,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
               style={{ width: `${sliderPos}%` }}
             >
               <img
-                src={`/api/goes/frames/${frameA.id}/image`}
+                src={`/api/satellite/frames/${frameA.id}/image`}
                 alt={`Frame A: ${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="absolute inset-0 w-full h-full object-contain"
                 style={{ width: '100%' }}

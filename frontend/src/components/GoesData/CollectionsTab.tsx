@@ -19,13 +19,13 @@ export default function CollectionsTab() {
 
   const { data: collections, isLoading, isError } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => {
+    queryFn: () => api.get('/satellite/collections').then((r) => {
       return extractArray(r.data);
     }),
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/goes/collections', { name: newName }),
+    mutationFn: () => api.post('/satellite/collections', { name: newName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
       setNewName('');
@@ -36,7 +36,7 @@ export default function CollectionsTab() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
-      api.put(`/goes/collections/${id}`, { name }),
+      api.put(`/satellite/collections/${id}`, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
       setEditingId(null);
@@ -46,7 +46,7 @@ export default function CollectionsTab() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/goes/collections/${id}`),
+    mutationFn: (id: string) => api.delete(`/satellite/collections/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
       showToast('success', 'Collection deleted');
@@ -57,7 +57,7 @@ export default function CollectionsTab() {
   const handleAnimate = async (collectionId: string) => {
     setLoadingAnimateId(collectionId);
     try {
-      const res = await api.get(`/goes/collections/${collectionId}/frames`);
+      const res = await api.get(`/satellite/collections/${collectionId}/frames`);
       const raw = res.data;
       const itemsArray = Array.isArray(raw?.items) ? raw.items : [];
       const frames: GoesFrame[] = Array.isArray(raw) ? raw : itemsArray;
@@ -125,7 +125,7 @@ export default function CollectionsTab() {
                       <Play className="w-3 h-3 inline" /> {loadingAnimateId === c.id ? '...' : 'Animate'}
                     </button>
                     <button
-                      onClick={() => globalThis.open(`/api/goes/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
+                      onClick={() => globalThis.open(`/api/satellite/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
                     >

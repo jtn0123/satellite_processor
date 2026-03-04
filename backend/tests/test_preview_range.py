@@ -33,7 +33,7 @@ async def _seed_frames(count: int = 5, satellite: str = "GOES-16",
 async def test_preview_range_basic(client, db):
     await _seed_frames(5)
 
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
@@ -51,7 +51,7 @@ async def test_preview_range_basic(client, db):
 @pytest.mark.asyncio
 async def test_preview_range_empty(client, db):
     """No frames match → empty result."""
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
@@ -71,7 +71,7 @@ async def test_preview_range_filters_satellite(client, db):
     await _seed_frames(3, satellite="GOES-16")
     await _seed_frames(2, satellite="GOES-18")
 
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-18",
         "sector": "CONUS",
         "band": "C02",
@@ -87,7 +87,7 @@ async def test_preview_range_filters_band(client, db):
     await _seed_frames(3, band="C02")
     await _seed_frames(2, band="C13")
 
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C13",
@@ -101,7 +101,7 @@ async def test_preview_range_filters_band(client, db):
 @pytest.mark.asyncio
 async def test_preview_range_invalid_time_format(client, db):
     """Invalid time format → 422."""
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",
@@ -114,7 +114,7 @@ async def test_preview_range_invalid_time_format(client, db):
 @pytest.mark.asyncio
 async def test_preview_range_missing_params(client, db):
     """Missing required params → 422."""
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
     })
     assert resp.status_code == 422
@@ -125,7 +125,7 @@ async def test_preview_range_sample_frames(client, db):
     """Verify first/middle/last sample frames are returned."""
     await _seed_frames(5)
 
-    resp = await client.get("/api/goes/frames/preview-range", params={
+    resp = await client.get("/api/satellite/frames/preview-range", params={
         "satellite": "GOES-16",
         "sector": "CONUS",
         "band": "C02",

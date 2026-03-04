@@ -34,8 +34,8 @@ class GoesFrameResponse(BaseModel):
         """Override to inject image/thumbnail URLs from the ORM object."""
         instance = super().model_validate(obj, **kwargs)
         if instance.id:
-            instance.image_url = f"/api/goes/frames/{instance.id}/image"
-            instance.thumbnail_url = f"/api/goes/frames/{instance.id}/thumbnail"
+            instance.image_url = f"/api/satellite/frames/{instance.id}/image"
+            instance.thumbnail_url = f"/api/satellite/frames/{instance.id}/thumbnail"
         return instance
 
 

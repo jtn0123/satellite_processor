@@ -37,8 +37,8 @@ function makeFrame(overrides: Partial<GoesFrame> = {}): GoesFrame {
     sector: 'CONUS',
     band: 'C02',
     capture_time: '2026-01-15T12:00:00Z',
-    image_url: '/api/goes/frames/test/image',
-    thumbnail_url: '/api/goes/frames/test/thumbnail',
+    image_url: '/api/satellite/frames/test/image',
+    thumbnail_url: '/api/satellite/frames/test/thumbnail',
     file_size: 1024,
     width: 500,
     height: 500,
@@ -62,7 +62,7 @@ const defaultStats: FrameStats = {
 function setupApiResponses(frames: GoesFrame[] = [], stats: FrameStats = defaultStats) {
   mockedGet.mockImplementation((url: string) => {
     if (url.includes('stats')) return Promise.resolve({ data: stats });
-    if (url.startsWith('/goes/frames') || url === '/goes/frames') {
+    if (url.startsWith('/satellite/frames') || url === '/satellite/frames') {
       return Promise.resolve({ data: paginated(frames) });
     }
     return Promise.resolve({ data: {} });
@@ -128,7 +128,7 @@ describe('FrameGallery filter → display integration', () => {
     // Should trigger new frame fetch with satellite param
     await waitFor(() => {
       const frameCalls = mockedGet.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('/goes/frames') && !call[0].includes('stats'),
+        (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames') && !call[0].includes('stats'),
       );
       const hasFilteredCall = frameCalls.some(
         (call) => call[1]?.params?.satellite === 'GOES-18',
@@ -156,7 +156,7 @@ describe('FrameGallery filter → display integration', () => {
 
     await waitFor(() => {
       const frameCalls = mockedGet.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('/goes/frames') && !call[0].includes('stats'),
+        (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames') && !call[0].includes('stats'),
       );
       const hasFilteredCall = frameCalls.some(
         (call) => call[1]?.params?.band === 'C13',

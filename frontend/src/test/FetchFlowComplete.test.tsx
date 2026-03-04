@@ -8,7 +8,7 @@ const mockShowToast = vi.fn();
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn().mockImplementation((url: string) => {
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({
           data: {
             satellites: ['GOES-16', 'GOES-19'],
@@ -28,7 +28,7 @@ vi.mock('../api/client', () => ({
           },
         });
       }
-      if (url === '/goes/catalog') return Promise.resolve({ data: [] });
+      if (url === '/satellite/catalog') return Promise.resolve({ data: [] });
       if (url === '/jobs') return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     }),

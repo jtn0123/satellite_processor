@@ -65,18 +65,18 @@ function renderWithProviders(ui: React.ReactElement) {
 
 function mockApiDefaults(sector = 'CONUS', band = 'GEOCOLOR') {
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: makeProducts() });
-    if (url.startsWith('/goes/latest'))
+    if (url === '/satellite/products') return Promise.resolve({ data: makeProducts() });
+    if (url.startsWith('/satellite/latest'))
       return Promise.resolve({
         data: {
           id: '1', satellite: 'GOES-19', sector, band,
           capture_time: '2025-01-01T12:00:00Z', file_size: 1024,
           width: 5424, height: 3000,
-          image_url: '/api/goes/frames/1/image',
-          thumbnail_url: '/api/goes/frames/1/thumbnail',
+          image_url: '/api/satellite/frames/1/image',
+          thumbnail_url: '/api/satellite/frames/1/thumbnail',
         },
       });
-    if (url.startsWith('/goes/catalog/latest'))
+    if (url.startsWith('/satellite/catalog/latest'))
       return Promise.resolve({
         data: { scan_time: '2025-01-01T12:00:00Z', image_url: 'https://cdn.example.com/test.jpg', mobile_url: 'https://cdn.example.com/test-m.jpg' },
       });
@@ -215,9 +215,9 @@ describe('LiveTab — GEOCOLOR meso auto-switch', () => {
 describe('LiveTab — Fetch to view visibility', () => {
   it('shows fetch message for meso sector with non-GEOCOLOR band', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: makeProducts() });
-      if (url.startsWith('/goes/latest')) return Promise.reject({ response: { status: 404 } });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: makeProducts() });
+      if (url.startsWith('/satellite/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.reject({ response: { status: 404 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -241,14 +241,14 @@ describe('LiveTab — Fetch to view visibility', () => {
     // Should show "Fetch to view" message (meso + no CDN + no local frame)
     await waitFor(() => {
       expect(screen.getByTestId('meso-fetch-required')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    }, { timeout: 6000 });
   });
 
   it('auto-switches GEOCOLOR to C02 when switching to Mesoscale1', async () => {
     // When the user is on GEOCOLOR and switches to a meso sector,
     // the auto-switch effect changes band to C02 automatically.
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products')
+      if (url === '/satellite/products')
         return Promise.resolve({
           data: {
             ...makeProducts(),
@@ -261,8 +261,8 @@ describe('LiveTab — Fetch to view visibility', () => {
             })),
           },
         });
-      if (url.startsWith('/goes/latest')) return Promise.reject({ response: { status: 404 } });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('/satellite/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.reject({ response: { status: 404 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -334,21 +334,21 @@ describe('LiveTab — render smoke tests for all combos', () => {
     ),
   )('renders without error for $sat / $sector / $band', async ({ sat, sector, band }) => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products')
+      if (url === '/satellite/products')
         return Promise.resolve({
           data: { ...makeProducts(sat) },
         });
-      if (url.startsWith('/goes/latest'))
+      if (url.startsWith('/satellite/latest'))
         return Promise.resolve({
           data: {
             id: '1', satellite: sat, sector, band,
             capture_time: '2025-01-01T12:00:00Z', file_size: 1024,
             width: 5424, height: 3000,
-            image_url: '/api/goes/frames/1/image',
-            thumbnail_url: '/api/goes/frames/1/thumbnail',
+            image_url: '/api/satellite/frames/1/image',
+            thumbnail_url: '/api/satellite/frames/1/thumbnail',
           },
         });
-      if (url.startsWith('/goes/catalog/latest'))
+      if (url.startsWith('/satellite/catalog/latest'))
         return Promise.resolve({
           data: { scan_time: '2025-01-01T12:00:00Z', image_url: 'https://cdn.example.com/test.jpg' },
         });

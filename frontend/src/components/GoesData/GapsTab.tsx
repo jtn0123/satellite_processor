@@ -21,18 +21,18 @@ export default function GapsTab() {
 
   const { data: products } = useQuery<{ satellites: string[]; bands: { id: string; description: string }[] }>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const { data: coverage, isLoading, refetch, isError } = useQuery<CoverageStats>({
     queryKey: ['goes-gaps', satellite, band, expectedInterval],
     queryFn: () =>
-      api.get('/goes/gaps', { params: { satellite, band, expected_interval: expectedInterval } }).then((r) => r.data),
+      api.get('/satellite/gaps', { params: { satellite, band, expected_interval: expectedInterval } }).then((r) => r.data),
     enabled: false,
   });
 
   const backfillMutation = useMutation({
-    mutationFn: (payload: BackfillPayload) => api.post('/goes/backfill', payload).then((r) => r.data),
+    mutationFn: (payload: BackfillPayload) => api.post('/satellite/backfill', payload).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-gaps'] });
       setConfirmGap(null);

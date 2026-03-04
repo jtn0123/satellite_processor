@@ -60,8 +60,8 @@ const FRAME_DATA = {
   width: 5424,
   height: 3000,
   thumbnail_path: null,
-  image_url: '/api/goes/frames/test-id/image',
-  thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG_DATA = {
@@ -87,11 +87,11 @@ function renderWithProviders(ui: React.ReactElement) {
 
 function setupDefaultMocks() {
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME_DATA });
-    if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG_DATA });
-    if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS', 'FD'], checked_at: new Date().toISOString() } });
-    if (url.startsWith('/goes/frames')) return Promise.resolve({ data: [] });
+    if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME_DATA });
+    if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG_DATA });
+    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS', 'FD'], checked_at: new Date().toISOString() } });
+    if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
 }
@@ -264,16 +264,16 @@ describe('Cached Image Banner', () => {
 
     // Make the real image fail so it falls back to cache
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({
         data: {
           ...FRAME_DATA,
           image_url: 'http://broken-url/image.png',
           thumbnail_url: 'http://broken-url/thumb.png',
         },
       });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
-      if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
+      if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
       return Promise.resolve({ data: {} });
     });
 
@@ -309,16 +309,16 @@ describe('Cached Image Banner', () => {
     localStorage.setItem('live-cache:GOES-16:CONUS:GEOCOLOR', JSON.stringify(cachedData));
 
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({
         data: {
           ...FRAME_DATA,
           image_url: 'http://broken-url/image.png',
           thumbnail_url: 'http://broken-url/thumb.png',
         },
       });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
-      if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
+      if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
       return Promise.resolve({ data: {} });
     });
 

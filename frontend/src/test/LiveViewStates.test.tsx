@@ -82,7 +82,7 @@ const FRAME = {
   file_size: 4096,
   width: 5424,
   height: 3000,
-  thumbnail_path: '/data/thumb.jpg', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  thumbnail_path: '/data/thumb.jpg', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG_LATEST = {
@@ -110,19 +110,19 @@ function setupMocks(overrides: {
   frames?: unknown;
 } = {}) {
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: overrides.products ?? PRODUCTS });
-    if (url.startsWith('/goes/latest')) {
+    if (url === '/satellite/products') return Promise.resolve({ data: overrides.products ?? PRODUCTS });
+    if (url.startsWith('/satellite/latest')) {
       if (overrides.frameError) return Promise.reject(make404());
       return Promise.resolve({ data: overrides.frame ?? FRAME });
     }
-    if (url.startsWith('/goes/catalog/latest')) {
+    if (url.startsWith('/satellite/catalog/latest')) {
       if (overrides.catalogError) return Promise.reject(new Error('503'));
       return Promise.resolve({ data: overrides.catalog ?? CATALOG_LATEST });
     }
-    if (url.startsWith('/goes/catalog/available')) {
+    if (url.startsWith('/satellite/catalog/available')) {
       return Promise.resolve({ data: { satellite: 'GOES-19', available_sectors: ['CONUS', 'FullDisk'], checked_at: new Date().toISOString() } });
     }
-    if (url.startsWith('/goes/frames')) return Promise.resolve({ data: overrides.frames ?? [FRAME] });
+    if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: overrides.frames ?? [FRAME] });
     return Promise.resolve({ data: {} });
   });
 }
@@ -135,9 +135,9 @@ beforeEach(() => {
 describe('LiveViewStates', () => {
   it('renders loading skeleton while frame query is loading', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return new Promise(() => {}); // never resolves
-      if (url.startsWith('/goes/catalog')) return Promise.resolve({ data: CATALOG_LATEST });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return new Promise(() => {}); // never resolves
+      if (url.startsWith('/satellite/catalog')) return Promise.resolve({ data: CATALOG_LATEST });
       return Promise.resolve({ data: {} });
     });
     renderLive();
@@ -164,7 +164,7 @@ describe('LiveViewStates', () => {
     await waitFor(() => {
       const img = screen.getByAltText('GOES-19 GEOCOLOR CONUS');
       expect(img).toBeInTheDocument();
-      expect(img.getAttribute('src')).toContain('/api/goes/frames/');
+      expect(img.getAttribute('src')).toContain('/api/satellite/frames/');
     });
   });
 
@@ -232,15 +232,15 @@ describe('LiveViewStates', () => {
       const fetchBtn = screen.queryByText('Fetch Now');
       if (fetchBtn) {
         fireEvent.click(fetchBtn);
-        expect(mockedApi.post).toHaveBeenCalledWith('/goes/fetch', expect.any(Object));
+        expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.any(Object));
       }
     });
   });
 
   it('error state when products API fails', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.reject(new Error('500'));
-      if (url.startsWith('/goes/latest')) return Promise.reject(new Error('no products'));
+      if (url === '/satellite/products') return Promise.reject(new Error('500'));
+      if (url.startsWith('/satellite/latest')) return Promise.reject(new Error('no products'));
       return Promise.resolve({ data: {} });
     });
     renderLive();
@@ -315,7 +315,7 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     renderLive();
     await waitFor(() => {
       const img = screen.getByRole('img');
-      expect(img.getAttribute('src')).toContain('/api/goes/frames/');
+      expect(img.getAttribute('src')).toContain('/api/satellite/frames/');
       expect(img.getAttribute('src')).not.toContain('s3.amazonaws.com');
     });
   });
@@ -376,7 +376,7 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     // After change, catalog query should be called again with new satellite
     await waitFor(() => {
       const catalogCalls = mockedApi.get.mock.calls.filter(
-        (c: string[]) => c[0].startsWith('/goes/catalog/latest')
+        (c: string[]) => c[0].startsWith('/satellite/catalog/latest')
       );
       expect(catalogCalls.length).toBeGreaterThanOrEqual(2);
     });

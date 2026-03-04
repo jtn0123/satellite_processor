@@ -104,7 +104,7 @@ export default function ImageViewer({ frame, frames, onClose, onNavigate }: Read
         >
           <img
             ref={imageRef}
-            src={`/api/goes/frames/${frame.id}/image`}
+            src={`/api/satellite/frames/${frame.id}/image`}
             alt={`${frame.satellite} ${frame.band} — Use zoom buttons to zoom`}
             className="max-h-full max-w-full select-none"
             style={style}

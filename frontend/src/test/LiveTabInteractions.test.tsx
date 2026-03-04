@@ -38,7 +38,7 @@ const FRAME = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
   capture_time: new Date(Date.now() - 600000).toISOString(),
   file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: '/tmp/thumb.png', image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  thumbnail_path: '/tmp/thumb.png', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG = {
@@ -56,11 +56,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-    if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
-    if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
-    if (url.startsWith('/goes/frames')) return Promise.resolve({ data: [FRAME, { ...FRAME, id: '2', capture_time: new Date(Date.now() - 1200000).toISOString() }] });
+    if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+    if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
+    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+    if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: [FRAME, { ...FRAME, id: '2', capture_time: new Date(Date.now() - 1200000).toISOString() }] });
     if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' } });
     return Promise.resolve({ data: {} });
   });
@@ -150,9 +150,9 @@ describe('LiveTab - Interactions', () => {
 
   it('renders without crashing when catalog is loading', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/latest')) return new Promise(() => {}); // never resolves
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+      if (url.startsWith('/satellite/catalog/latest')) return new Promise(() => {}); // never resolves
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -163,9 +163,9 @@ describe('LiveTab - Interactions', () => {
 
   it('renders without crashing when catalog errors', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.reject(new Error('fail'));
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.reject(new Error('fail'));
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -185,9 +185,9 @@ describe('LiveTab - Interactions', () => {
     const oldFrame = { ...FRAME, capture_time: new Date(Date.now() - 7200000).toISOString() };
     const newCatalog = { ...CATALOG, scan_time: new Date(Date.now() - 60000).toISOString() };
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: oldFrame });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: newCatalog });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: oldFrame });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: newCatalog });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -216,31 +216,31 @@ describe('LiveTab - Interactions', () => {
     await waitFor(() => {
       const img = document.querySelector('img');
       expect(img).toBeTruthy();
-      expect(img!.src).toContain('/api/goes/frames/');
+      expect(img!.src).toContain('/api/satellite/frames/');
     });
   });
 
   it('renders image with file_path when no thumbnail', async () => {
-    const noThumbFrame = { ...FRAME, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' };
+    const noThumbFrame = { ...FRAME, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail' };
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: noThumbFrame });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: noThumbFrame });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
     await waitFor(() => {
       const img = document.querySelector('img');
       expect(img).toBeTruthy();
-      expect(img!.src).toContain('/api/goes/frames/');
+      expect(img!.src).toContain('/api/satellite/frames/');
     });
   });
 
   it('renders without crashing when catalog is null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -275,9 +275,9 @@ describe('LiveTab - Interactions', () => {
   it('timeAgo returns correct values', async () => {
     const justNow = { ...FRAME, capture_time: new Date().toISOString() };
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: justNow });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: justNow });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -290,9 +290,9 @@ describe('LiveTab - Interactions', () => {
   it('timeAgo shows hours for older frames', async () => {
     const hoursAgo = { ...FRAME, capture_time: new Date(Date.now() - 7200000).toISOString() };
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: hoursAgo });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: hoursAgo });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();
@@ -305,9 +305,9 @@ describe('LiveTab - Interactions', () => {
   it('timeAgo shows days for very old frames', async () => {
     const daysAgo = { ...FRAME, capture_time: new Date(Date.now() - 172800000).toISOString() };
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: daysAgo });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: daysAgo });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderLiveTab();

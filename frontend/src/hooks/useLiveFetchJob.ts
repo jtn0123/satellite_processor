@@ -74,7 +74,7 @@ export function useLiveFetchJob({
     }
 
     try {
-      const res = await api.post('/goes/fetch', {
+      const res = await api.post('/satellite/fetch', {
         satellite: satellite.toUpperCase(), sector, band,
         start_time: startDate,
         end_time: endDate,
@@ -94,7 +94,7 @@ export function useLiveFetchJob({
     let cancelled = false;
     const doAutoFetch = async () => {
       try {
-        const res = await api.post('/goes/fetch', {
+        const res = await api.post('/satellite/fetch', {
           satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
           sector: sector || catalogLatest!.sector,
           band: band || catalogLatest!.band,

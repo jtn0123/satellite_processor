@@ -19,7 +19,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
 
   const { data: presets } = useQuery<AnimationPreset[]>({
     queryKey: ['animation-presets'],
-    queryFn: () => api.get('/goes/animation-presets').then((r) => extractArray<AnimationPreset>(r.data)),
+    queryFn: () => api.get('/satellite/animation-presets').then((r) => extractArray<AnimationPreset>(r.data)),
   });
 
   const saveMutation = useMutation({
@@ -27,7 +27,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { start_date: _s, end_date: _e, name: _n, ...presetConfig } = config;
       return api
-        .post('/goes/animation-presets', { name: newName || 'Untitled Preset', ...presetConfig })
+        .post('/satellite/animation-presets', { name: newName || 'Untitled Preset', ...presetConfig })
         .then((r) => r.data);
     },
     onSuccess: () => {
@@ -40,7 +40,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
-      api.put(`/goes/animation-presets/${id}`, { name }).then((r) => r.data),
+      api.put(`/satellite/animation-presets/${id}`, { name }).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['animation-presets'] });
       setEditingId(null);
@@ -50,7 +50,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/goes/animation-presets/${id}`),
+    mutationFn: (id: string) => api.delete(`/satellite/animation-presets/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['animation-presets'] });
       showToast('success', 'Preset deleted');

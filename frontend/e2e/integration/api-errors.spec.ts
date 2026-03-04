@@ -7,7 +7,7 @@ test.describe('API error responses', () => {
   });
 
   test('malformed JSON returns proper error JSON, not HTML 500', async ({ request }) => {
-    const res = await apiPostRaw(request, '/api/goes/fetch', {
+    const res = await apiPostRaw(request, '/api/satellite/fetch', {
       data: '{invalid json!!!',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
     });
@@ -21,7 +21,7 @@ test.describe('API error responses', () => {
   });
 
   test('invalid satellite name returns 400 with clear error', async ({ request }) => {
-    const res = await apiPost(request, '/api/goes/fetch', {
+    const res = await apiPost(request, '/api/satellite/fetch', {
       satellite: 'INVALID-SAT-999',
       sector: 'CONUS',
       band: 'C02',
@@ -36,7 +36,7 @@ test.describe('API error responses', () => {
   });
 
   test('missing required fields returns 422 validation error', async ({ request }) => {
-    const res = await apiPost(request, '/api/goes/fetch', {});
+    const res = await apiPost(request, '/api/satellite/fetch', {});
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThanOrEqual(422);
@@ -44,7 +44,7 @@ test.describe('API error responses', () => {
   });
 
   test('error responses have consistent shape', async ({ request }) => {
-    const res = await apiPost(request, '/api/goes/fetch', {});
+    const res = await apiPost(request, '/api/satellite/fetch', {});
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     const body = res.body as Record<string, unknown>;

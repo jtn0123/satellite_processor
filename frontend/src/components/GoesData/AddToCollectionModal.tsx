@@ -14,14 +14,14 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => {
+    queryFn: () => api.get('/satellite/collections').then((r) => {
       return extractArray(r.data);
     }),
   });
 
   const addMutation = useMutation({
     mutationFn: async (collId: string) => {
-      await api.post(`/goes/collections/${collId}/frames`, { frame_ids: frameIds });
+      await api.post(`/satellite/collections/${collId}/frames`, { frame_ids: frameIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });
@@ -33,8 +33,8 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
 
   const createAndAddMutation = useMutation({
     mutationFn: async () => {
-      const resp = await api.post('/goes/collections', { name: newName });
-      await api.post(`/goes/collections/${resp.data.id}/frames`, { frame_ids: frameIds });
+      const resp = await api.post('/satellite/collections', { name: newName });
+      await api.post(`/satellite/collections/${resp.data.id}/frames`, { frame_ids: frameIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-collections'] });

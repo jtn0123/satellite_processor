@@ -37,7 +37,7 @@ test.describe('Stack Health', () => {
   });
 
   test('GOES products endpoint returns satellite data', async ({ request }) => {
-    const res = await apiGet(request, '/api/goes/products');
+    const res = await apiGet(request, '/api/satellite/products');
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { satellites: string[] };
     expect(body.satellites.length).toBeGreaterThan(0);
@@ -72,7 +72,7 @@ test.describe('Stack Health', () => {
   });
 
   test('GOES catalog endpoint is accessible', async ({ request }) => {
-    const res = await apiGet(request, '/api/goes/catalog');
+    const res = await apiGet(request, '/api/satellite/catalog');
     // May return 200 or other status — just verify it responds
     expect(res.status()).toBeGreaterThanOrEqual(200);
     expect(res.status()).toBeLessThan(500);

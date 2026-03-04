@@ -29,8 +29,8 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
-    if (url === '/goes/schedules') return Promise.resolve({ data: [] });
+    if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
+    if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
 });
@@ -61,7 +61,7 @@ describe('PresetsTab', () => {
 
   it('renders presets when data exists', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/fetch-presets') {
+      if (url === '/satellite/fetch-presets') {
         return Promise.resolve({
           data: [{
             id: '1', name: 'CONUS Red', satellite: 'GOES-16',
@@ -70,7 +70,7 @@ describe('PresetsTab', () => {
           }],
         });
       }
-      if (url === '/goes/schedules') return Promise.resolve({ data: [] });
+      if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<PresetsTab />);
@@ -81,12 +81,12 @@ describe('PresetsTab', () => {
 
   it('renders schedules when data exists', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/fetch-presets') {
+      if (url === '/satellite/fetch-presets') {
         return Promise.resolve({
           data: [{ id: '1', name: 'P1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', description: '', created_at: '2024-01-01' }],
         });
       }
-      if (url === '/goes/schedules') {
+      if (url === '/satellite/schedules') {
         return Promise.resolve({
           data: [{
             id: 's1', name: 'Hourly', preset_id: '1', interval_minutes: 60,

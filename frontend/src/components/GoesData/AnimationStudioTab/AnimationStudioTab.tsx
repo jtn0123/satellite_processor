@@ -30,17 +30,17 @@ export default function AnimationStudioTab() {
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => extractArray(r.data)),
+    queryFn: () => api.get('/satellite/collections').then((r) => extractArray(r.data)),
   });
 
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
-    queryFn: () => api.get('/goes/crop-presets').then((r) => extractArray(r.data)),
+    queryFn: () => api.get('/satellite/crop-presets').then((r) => extractArray(r.data)),
   });
 
   const previewParams: Record<string, string | number> = { page: 1, limit: 20, sort: 'capture_time', order: 'asc' };
@@ -54,13 +54,13 @@ export default function AnimationStudioTab() {
 
   const { data: previewFrames } = useQuery<PaginatedFrames>({
     queryKey: ['anim-preview-frames', previewParams],
-    queryFn: () => api.get('/goes/frames', { params: previewParams }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames', { params: previewParams }).then((r) => r.data),
     enabled: selectionMode === 'collection' ? !!collectionId : !!(satellite || band || sector),
   });
 
   const { data: animations } = useQuery<PaginatedAnimations>({
     queryKey: ['animations'],
-    queryFn: () => api.get('/goes/animations').then((r) => r.data),
+    queryFn: () => api.get('/satellite/animations').then((r) => r.data),
     refetchInterval: 5000,
   });
 
@@ -80,14 +80,14 @@ export default function AnimationStudioTab() {
       } else if (collectionId) {
         payload.collection_id = collectionId;
       }
-      return api.post('/goes/animations', payload).then((r) => r.data);
+      return api.post('/satellite/animations', payload).then((r) => r.data);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation job created!'); },
     onError: () => showToast('error', 'Failed to create animation'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/goes/animations/${id}`),
+    mutationFn: (id: string) => api.delete(`/satellite/animations/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation deleted'); },
     onError: () => showToast('error', 'Failed to delete animation'),
   });

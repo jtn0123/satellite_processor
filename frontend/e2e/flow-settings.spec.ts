@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
     });
   });
   // Dashboard needs goes/dashboard-stats endpoint
-  await page.route('**/api/goes/dashboard-stats', async (route) => {
+  await page.route('**/api/satellite/dashboard-stats', async (route) => {
     await route.fulfill({
       json: {
         total_frames: 0,

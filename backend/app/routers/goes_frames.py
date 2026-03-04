@@ -44,7 +44,7 @@ _FRAME_NOT_FOUND = "Frame not found"
 
 MAX_EXPORT_LIMIT = 5000
 
-router = APIRouter(prefix="/api/goes", tags=["goes-frames"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-frames"])
 
 
 # ── Dashboard Stats ───────────────────────────────────────────────────

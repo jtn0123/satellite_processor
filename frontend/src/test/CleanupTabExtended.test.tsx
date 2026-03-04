@@ -28,8 +28,8 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/cleanup-rules') return Promise.resolve({ data: [] });
-    if (url === '/goes/frames/stats') {
+    if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
+    if (url === '/satellite/frames/stats') {
       return Promise.resolve({
         data: { total_frames: 500, total_size_bytes: 5368709120, by_satellite: { 'GOES-16': { count: 300, size: 3e9 } }, by_band: { C02: { count: 200, size: 2e9 } } },
       });
@@ -59,7 +59,7 @@ describe('CleanupTab - confirm before cleanup', () => {
     fireEvent.click(screen.getByText('Run Now'));
     expect(confirmMock).toHaveBeenCalled();
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/goes/cleanup/run');
+      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/cleanup/run');
     });
     vi.unstubAllGlobals();
   });

@@ -4,7 +4,7 @@ import ImageViewer from '../components/GoesData/ImageViewer';
 
 const makeFrame = (id: string) => ({
   id, satellite: 'GOES-16', band: 'C02', sector: 'CONUS',
-  capture_time: '2026-01-01T00:00:00Z', file_path: '/img.nc', thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  capture_time: '2026-01-01T00:00:00Z', file_path: '/img.nc', thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
   file_size: 1024, width: 1920, height: 1080, tags: [], collections: [],
 });
 
@@ -48,7 +48,7 @@ describe('ImageViewer extended', () => {
   it('renders correct image src', () => {
     render(<ImageViewer frame={frame as never} frames={frames as never} onClose={vi.fn()} onNavigate={vi.fn()} />);
     const img = screen.getByRole('img');
-    expect(img).toHaveAttribute('src', '/api/goes/frames/f1/image');
+    expect(img).toHaveAttribute('src', '/api/satellite/frames/f1/image');
   });
 
   it('renders correct image alt', () => {

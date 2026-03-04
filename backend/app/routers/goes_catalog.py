@@ -30,7 +30,7 @@ from ._goes_shared import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/goes", tags=["goes-catalog"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-catalog"])
 
 
 @router.get("/products")
@@ -216,7 +216,7 @@ async def band_sample_thumbnails(
             )
             row = result.first()
             if row and row.thumbnail_path:
-                results[band_id] = f"/api/goes/frames/{row.id}/thumbnail"
+                results[band_id] = f"/api/satellite/frames/{row.id}/thumbnail"
             else:
                 results[band_id] = None
         return {
@@ -277,7 +277,7 @@ async def get_latest_frame(
         raise APIError(404, "not_found", "No frames found for the given parameters")
     from ..services.catalog import build_cdn_urls
     cdn_urls = build_cdn_urls(frame.satellite, frame.sector, frame.band)
-    mobile_url = cdn_urls["mobile"] if cdn_urls else f"/api/goes/frames/{frame.id}/image"
+    mobile_url = cdn_urls["mobile"] if cdn_urls else f"/api/satellite/frames/{frame.id}/image"
 
     return {
         "id": frame.id,
@@ -288,7 +288,7 @@ async def get_latest_frame(
         "file_size": frame.file_size,
         "width": frame.width,
         "height": frame.height,
-        "image_url": f"/api/goes/frames/{frame.id}/image",
-        "thumbnail_url": f"/api/goes/frames/{frame.id}/thumbnail",
+        "image_url": f"/api/satellite/frames/{frame.id}/image",
+        "thumbnail_url": f"/api/satellite/frames/{frame.id}/thumbnail",
         "mobile_url": mobile_url,
     }

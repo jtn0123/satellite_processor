@@ -76,15 +76,15 @@ const HIMAWARI_PRODUCTS = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-    if (url === '/goes/frames') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-    if (url === '/goes/collections') return Promise.resolve({ data: [] });
-    if (url === '/goes/fetch-presets') return Promise.resolve({ data: [] });
-    if (url === '/goes/schedules') return Promise.resolve({ data: [] });
-    if (url === '/goes/composite-recipes') return Promise.resolve({ data: [] });
-    if (url === '/goes/composites') return Promise.resolve({ data: { items: [], total: 0 } });
-    if (url === '/goes/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
-    if (url === '/goes/crop-presets') return Promise.resolve({ data: [] });
+    if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
+    if (url === '/satellite/frames') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
+    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+    if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
+    if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
+    if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [] });
+    if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
+    if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
 });
@@ -265,7 +265,7 @@ describe('FetchTab Himawari support', () => {
 
     await waitFor(() => {
       // Should use fetch-composite endpoint for TrueColor
-      expect(mockedApi.post).toHaveBeenCalledWith('/goes/fetch-composite', expect.objectContaining({
+      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch-composite', expect.objectContaining({
         satellite: 'Himawari-9',
         sector: 'Japan',
         recipe: 'true_color',
@@ -285,7 +285,7 @@ describe('FetchTab Himawari support', () => {
     fireEvent.click(fldkBtn);
 
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'Himawari-9',
         sector: 'FLDK',
         band: 'B13',
@@ -414,9 +414,9 @@ describe('CompositesTab Himawari support', () => {
     const CompositesTab = (await import('../components/GoesData/CompositesTab')).default;
 
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
-      if (url === '/goes/composites') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
+      if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -441,9 +441,9 @@ describe('CompositesTab Himawari support', () => {
     const CompositesTab = (await import('../components/GoesData/CompositesTab')).default;
 
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
-      if (url === '/goes/composites') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
+      if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
 

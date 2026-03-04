@@ -11,7 +11,7 @@ test.describe.serial('GOES Fetch Flow', () => {
   test('trigger a GOES fetch via API', async ({ request }) => {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const res = await apiPost(request, '/api/goes/fetch', {
+    const res = await apiPost(request, '/api/satellite/fetch', {
       satellite: 'GOES-19',
       sector: 'CONUS',
       band: 'C02',
@@ -46,14 +46,14 @@ test.describe.serial('GOES Fetch Flow', () => {
   });
 
   test('frames endpoint returns data', async ({ request }) => {
-    const res = await apiGet(request, '/api/goes/frames?limit=10');
+    const res = await apiGet(request, '/api/satellite/frames?limit=10');
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { items: unknown[]; total: number };
     expect(body.total).toBeGreaterThanOrEqual(0);
   });
 
   test('products endpoint lists available satellites and bands', async ({ request }) => {
-    const res = await apiGet(request, '/api/goes/products');
+    const res = await apiGet(request, '/api/satellite/products');
     expect(res.ok()).toBeTruthy();
     const body = await res.json() as { satellites: string[] };
     expect(body.satellites).toBeTruthy();
@@ -63,7 +63,7 @@ test.describe.serial('GOES Fetch Flow', () => {
   test('fetch with different satellite returns valid response', async ({ request }) => {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const res = await apiPost(request, '/api/goes/fetch', {
+    const res = await apiPost(request, '/api/satellite/fetch', {
       satellite: 'GOES-18',
       sector: 'CONUS',
       band: 'C02',

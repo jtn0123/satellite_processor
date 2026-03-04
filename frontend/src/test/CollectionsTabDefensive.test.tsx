@@ -32,7 +32,7 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/collections') return Promise.resolve({ data: [] });
+    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
 });
@@ -67,7 +67,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('handles collections API returning paginated object', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({
+      if (url === '/satellite/collections') return Promise.resolve({
         data: { items: [{ id: '1', name: 'Test', description: 'desc', frame_count: 5, created_at: '2024-01-01' }], total: 1 },
       });
       return Promise.resolve({ data: {} });
@@ -81,7 +81,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('handles collections API returning null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({ data: null });
+      if (url === '/satellite/collections') return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);
@@ -92,7 +92,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('handles collections API returning undefined', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({ data: undefined });
+      if (url === '/satellite/collections') return Promise.resolve({ data: undefined });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);
@@ -103,7 +103,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('renders collection with zero frame_count', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({
+      if (url === '/satellite/collections') return Promise.resolve({
         data: [{ id: '1', name: 'Empty Col', description: '', frame_count: 0, created_at: '2024-01-01' }],
       });
       return Promise.resolve({ data: {} });
@@ -117,7 +117,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('renders collection with null frame_count', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({
+      if (url === '/satellite/collections') return Promise.resolve({
         data: [{ id: '1', name: 'Null Count', description: '', frame_count: null, created_at: '2024-01-01' }],
       });
       return Promise.resolve({ data: {} });
@@ -145,7 +145,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('shows edit/delete buttons on collection cards', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({
+      if (url === '/satellite/collections') return Promise.resolve({
         data: [{ id: '1', name: 'Test', description: '', frame_count: 3, created_at: '2024-01-01' }],
       });
       return Promise.resolve({ data: {} });
@@ -159,7 +159,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('animate button disabled when frame_count is 0', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/collections') return Promise.resolve({
+      if (url === '/satellite/collections') return Promise.resolve({
         data: [{ id: '1', name: 'Empty', description: '', frame_count: 0, created_at: '2024-01-01' }],
       });
       return Promise.resolve({ data: {} });

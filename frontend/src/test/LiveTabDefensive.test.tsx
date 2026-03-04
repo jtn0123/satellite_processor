@@ -24,8 +24,8 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' } });
+    if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail' } });
     return Promise.resolve({ data: {} });
   });
 });
@@ -33,8 +33,8 @@ beforeEach(() => {
 describe('LiveTab - Defensive Scenarios', () => {
   it('handles products API returning null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: null });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: null });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<LiveTab />);
@@ -45,8 +45,8 @@ describe('LiveTab - Defensive Scenarios', () => {
 
   it('handles products with empty arrays', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<LiveTab />);
@@ -57,8 +57,8 @@ describe('LiveTab - Defensive Scenarios', () => {
 
   it('handles latest frame API returning null (no crash)', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<LiveTab />);
@@ -70,8 +70,8 @@ describe('LiveTab - Defensive Scenarios', () => {
 
   it('handles latest frame API error', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-      if (url.startsWith('/goes/latest')) return Promise.reject(make404());
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
+      if (url.startsWith('/satellite/latest')) return Promise.reject(make404());
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<LiveTab />);
@@ -93,8 +93,8 @@ describe('LiveTab - Defensive Scenarios', () => {
 
   it('handles frame with null dimensions', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail' } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: { id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc', file_size: 0, width: null, height: null, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail' } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<LiveTab />);
@@ -105,8 +105,8 @@ describe('LiveTab - Defensive Scenarios', () => {
 
   it('handles products with missing fields', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: {} });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: {} });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<LiveTab />);

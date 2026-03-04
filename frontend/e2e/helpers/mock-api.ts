@@ -37,15 +37,15 @@ export async function handleApiRoute(route: Route): Promise<void> {
     return void (await route.fulfill({ json: { video_fps: 24, max_frames_per_fetch: 200 } }));
 
   // GOES endpoints
-  if (url.includes('/api/goes/catalog/latest'))
+  if (url.includes('/api/satellite/catalog/latest'))
     return void (await route.fulfill({ json: { scan_time: '2025-01-01T12:00:00Z', size: 12345, key: 'test.nc', satellite: 'GOES-19', sector: 'CONUS', band: 'C02' } }));
-  if (url.includes('/api/goes/catalog'))
+  if (url.includes('/api/satellite/catalog'))
     return void (await route.fulfill({ json: [] }));
-  if (url.includes('/api/goes/fetch-composite'))
+  if (url.includes('/api/satellite/fetch-composite'))
     return void (await route.fulfill({ json: { job_id: 'composite-job-1', status: 'pending', message: 'ok' } }));
-  if (url.includes('/api/goes/frame-count'))
+  if (url.includes('/api/satellite/frame-count'))
     return void (await route.fulfill({ json: { estimate: 0 } }));
-  if (url.includes('/api/goes/products'))
+  if (url.includes('/api/satellite/products'))
     return void (await route.fulfill({
       json: {
         satellites: ['GOES-19', 'GOES-18', 'GOES-16'],
@@ -66,27 +66,27 @@ export async function handleApiRoute(route: Route): Promise<void> {
         default_satellite: 'GOES-19',
       },
     }));
-  if (url.includes('/api/goes/dashboard-stats'))
+  if (url.includes('/api/satellite/dashboard-stats'))
     return void (await route.fulfill({ json: { total_frames: 50, frames_by_satellite: {}, last_fetch_time: null, active_schedules: 0, recent_jobs: [], storage_by_satellite: {}, storage_by_band: {} } }));
-  if (url.includes('/api/goes/stats'))
+  if (url.includes('/api/satellite/stats'))
     return void (await route.fulfill({ json: { by_satellite: {}, by_band: {}, total_size: 0, total_frames: 0 } }));
-  if (url.includes('/api/goes/frames/stats'))
+  if (url.includes('/api/satellite/frames/stats'))
     return void (await route.fulfill({ json: { total_frames: 50, total_size_bytes: 2500000, by_satellite: {}, by_band: {} } }));
-  if (url.includes('/api/goes/frames/preview-range'))
+  if (url.includes('/api/satellite/frames/preview-range'))
     return void (await route.fulfill({ json: { frames: [], total_count: 0, capture_interval_minutes: 10 } }));
-  if (url.includes('/api/goes/frames'))
+  if (url.includes('/api/satellite/frames'))
     return void (await route.fulfill({ json: { items: [], total: 0, page: 1, limit: 50 } }));
-  if (url.includes('/api/goes/collections'))
+  if (url.includes('/api/satellite/collections'))
     return void (await route.fulfill({ json: [] }));
-  if (url.includes('/api/goes/tags'))
+  if (url.includes('/api/satellite/tags'))
     return void (await route.fulfill({ json: [] }));
-  if (url.includes('/api/goes/crop-presets'))
+  if (url.includes('/api/satellite/crop-presets'))
     return void (await route.fulfill({ json: [] }));
-  if (url.includes('/api/goes/animation-presets'))
+  if (url.includes('/api/satellite/animation-presets'))
     return void (await route.fulfill({ json: [] }));
-  if (url.includes('/api/goes/animations'))
+  if (url.includes('/api/satellite/animations'))
     return void (await route.fulfill({ json: { items: [], total: 0, page: 1, limit: 20 } }));
-  if (url.includes('/api/goes/fetch-presets'))
+  if (url.includes('/api/satellite/fetch-presets'))
     return void (await route.fulfill({ json: [] }));
 
   // Presets / jobs / images / system

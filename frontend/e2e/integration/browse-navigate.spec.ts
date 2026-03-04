@@ -8,7 +8,7 @@ test.describe('Frame filtering E2E', () => {
     await waitForApiHealth(request);
     // Ensure we have frames
     const fetchReq = buildFetchRequest();
-    const res = await apiPost(request, '/api/goes/fetch', fetchReq);
+    const res = await apiPost(request, '/api/satellite/fetch', fetchReq);
     if (res.status < 300) {
       const body = res.body as Record<string, unknown>;
       const jobId = (body.job_id ?? body.id) as string | undefined;

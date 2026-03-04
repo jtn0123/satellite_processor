@@ -27,7 +27,7 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16'],
@@ -36,7 +36,7 @@ beforeEach(() => {
         },
       });
     }
-    if (url === '/goes/composite-recipes') {
+    if (url === '/satellite/composite-recipes') {
       return Promise.resolve({
         data: [
           { id: 'true_color', name: 'True Color', bands: ['C02', 'C03', 'C01'] },
@@ -44,7 +44,7 @@ beforeEach(() => {
         ],
       });
     }
-    if (url.startsWith('/goes/composites')) {
+    if (url.startsWith('/satellite/composites')) {
       return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
     }
     return Promise.resolve({ data: {} });
@@ -77,12 +77,12 @@ describe('CompositesTab', () => {
 
   it('shows composites when data exists', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') {
+      if (url === '/satellite/composite-recipes') {
         return Promise.resolve({
           data: [{ id: 'true_color', name: 'True Color', bands: ['C02'] }],
         });
       }
-      if (url.startsWith('/goes/composites')) {
+      if (url.startsWith('/satellite/composites')) {
         return Promise.resolve({
           data: {
             items: [{
@@ -95,7 +95,7 @@ describe('CompositesTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [], bands: [] } });
       }
       return Promise.resolve({ data: {} });

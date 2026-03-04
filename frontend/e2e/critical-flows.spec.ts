@@ -24,7 +24,7 @@ test.describe('New user flow', () => {
 
   test('dashboard fetch latest button triggers fetch', async ({ page }) => {
     // Mock the fetch endpoint
-    await page.route('**/api/goes/fetch', (route) =>
+    await page.route('**/api/satellite/fetch', (route) =>
       route.fulfill({ json: { job_id: 'test-job-1', status: 'pending' } }),
     );
     await page.goto('/', { waitUntil: 'networkidle' });

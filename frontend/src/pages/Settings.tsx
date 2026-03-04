@@ -79,7 +79,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false }: Read
 function StorageSection() {
   const { data: storage } = useQuery<StorageBreakdown>({
     queryKey: ['goes-storage-breakdown'],
-    queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames/stats').then((r) => r.data),
     staleTime: 60_000,
     retry: 1,
   });

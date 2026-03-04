@@ -29,13 +29,13 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/cleanup-rules') return Promise.resolve({ data: [] });
-    if (url === '/goes/frames/stats') {
+    if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
+    if (url === '/satellite/frames/stats') {
       return Promise.resolve({
         data: { total_frames: 100, total_size_bytes: 1024000, by_satellite: {}, by_band: {} },
       });
     }
-    if (url === '/goes/cleanup/preview') {
+    if (url === '/satellite/cleanup/preview') {
       return Promise.resolve({ data: { frame_count: 0, total_size_bytes: 0, frames: [] } });
     }
     return Promise.resolve({ data: {} });
@@ -59,7 +59,7 @@ describe('CleanupTab', () => {
 
   it('renders rules list when data exists', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/cleanup-rules') {
+      if (url === '/satellite/cleanup-rules') {
         return Promise.resolve({
           data: [{
             id: '1', name: 'Age Rule', rule_type: 'max_age_days', value: 30,
@@ -67,7 +67,7 @@ describe('CleanupTab', () => {
           }],
         });
       }
-      if (url === '/goes/frames/stats') {
+      if (url === '/satellite/frames/stats') {
         return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
       }
       return Promise.resolve({ data: {} });

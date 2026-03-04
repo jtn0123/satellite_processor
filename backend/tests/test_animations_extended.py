@@ -26,7 +26,7 @@ def _frame(**kw):
 @pytest.mark.asyncio
 class TestCropPresetsExtended:
     async def test_create_crop_preset(self, client):
-        resp = await client.post("/api/goes/crop-presets", json={
+        resp = await client.post("/api/satellite/crop-presets", json={
             "name": "Region A",
             "x": 100, "y": 200, "width": 500, "height": 400,
         })
@@ -37,13 +37,13 @@ class TestCropPresetsExtended:
         db.add(CropPreset(id=str(uuid.uuid4()), name="Dup", x=0, y=0, width=100, height=100))
         await db.commit()
 
-        resp = await client.post("/api/goes/crop-presets", json={
+        resp = await client.post("/api/satellite/crop-presets", json={
             "name": "Dup", "x": 0, "y": 0, "width": 100, "height": 100,
         })
         assert resp.status_code == 409
 
     async def test_list_crop_presets_empty(self, client):
-        resp = await client.get("/api/goes/crop-presets")
+        resp = await client.get("/api/satellite/crop-presets")
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -52,12 +52,12 @@ class TestCropPresetsExtended:
         db.add(CropPreset(id=str(uuid.uuid4()), name="Alpha", x=0, y=0, width=100, height=100))
         await db.commit()
 
-        resp = await client.get("/api/goes/crop-presets")
+        resp = await client.get("/api/satellite/crop-presets")
         names = [p["name"] for p in resp.json()]
         assert names == ["Alpha", "Zebra"]
 
     async def test_update_crop_preset_not_found(self, client):
-        resp = await client.put("/api/goes/crop-presets/fake", json={"name": "X"})
+        resp = await client.put("/api/satellite/crop-presets/fake", json={"name": "X"})
         assert resp.status_code == 404
 
     async def test_update_crop_preset_partial(self, client, db):
@@ -65,13 +65,13 @@ class TestCropPresetsExtended:
         db.add(cp)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/crop-presets/{cp.id}", json={"width": 500})
+        resp = await client.put(f"/api/satellite/crop-presets/{cp.id}", json={"width": 500})
         assert resp.status_code == 200
         assert resp.json()["width"] == 500
         assert resp.json()["x"] == 10  # unchanged
 
     async def test_delete_crop_preset_not_found(self, client):
-        resp = await client.delete("/api/goes/crop-presets/fake")
+        resp = await client.delete("/api/satellite/crop-presets/fake")
         assert resp.status_code == 404
 
     async def test_delete_crop_preset_success(self, client, db):
@@ -79,7 +79,7 @@ class TestCropPresetsExtended:
         db.add(cp)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/crop-presets/{cp.id}")
+        resp = await client.delete(f"/api/satellite/crop-presets/{cp.id}")
         assert resp.status_code == 200
 
 
@@ -88,7 +88,7 @@ class TestAnimationsExtended:
     async def test_create_animation_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "Test Anim",
                 "frame_ids": [],
                 "satellite": "GOES-16",
@@ -105,7 +105,7 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "My Animation",
                 "frame_ids": [f1.id, f2.id],
                 "fps": 10,
@@ -124,7 +124,7 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "Filtered",
                 "satellite": "GOES-16",
                 "band": "C02",
@@ -142,7 +142,7 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "Col Anim",
                 "collection_id": "c1",
             })
@@ -150,7 +150,7 @@ class TestAnimationsExtended:
         assert resp.json()["frame_count"] == 1
 
     async def test_list_animations_empty(self, client):
-        resp = await client.get("/api/goes/animations")
+        resp = await client.get("/api/satellite/animations")
         assert resp.status_code == 200
         assert resp.json()["items"] == []
         assert resp.json()["total"] == 0
@@ -163,13 +163,13 @@ class TestAnimationsExtended:
             ))
         await db.commit()
 
-        resp = await client.get("/api/goes/animations?page=1&limit=2")
+        resp = await client.get("/api/satellite/animations?page=1&limit=2")
         data = resp.json()
         assert data["total"] == 5
         assert len(data["items"]) == 2
 
     async def test_get_animation_not_found(self, client):
-        resp = await client.get("/api/goes/animations/fake")
+        resp = await client.get("/api/satellite/animations/fake")
         assert resp.status_code == 404
 
     async def test_get_animation_success(self, client, db):
@@ -177,12 +177,12 @@ class TestAnimationsExtended:
         db.add(Animation(id=aid, name="Test", status="completed", frame_count=5, fps=10))
         await db.commit()
 
-        resp = await client.get(f"/api/goes/animations/{aid}")
+        resp = await client.get(f"/api/satellite/animations/{aid}")
         assert resp.status_code == 200
         assert resp.json()["id"] == aid
 
     async def test_delete_animation_not_found(self, client):
-        resp = await client.delete("/api/goes/animations/fake")
+        resp = await client.delete("/api/satellite/animations/fake")
         assert resp.status_code == 404
 
     async def test_delete_animation_success(self, client, db):
@@ -190,7 +190,7 @@ class TestAnimationsExtended:
         db.add(Animation(id=aid, name="Del", status="completed", frame_count=5, fps=10))
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/animations/{aid}")
+        resp = await client.delete(f"/api/satellite/animations/{aid}")
         assert resp.status_code == 200
         assert resp.json()["deleted"] == aid
 
@@ -203,7 +203,7 @@ class TestAnimationsExtended:
         ))
         await db.commit()
 
-        resp = await client.get(f"/api/goes/animations/{aid}")
+        resp = await client.get(f"/api/satellite/animations/{aid}")
         data = resp.json()
         assert data["fps"] == 24
         assert data["format"] == "mp4"

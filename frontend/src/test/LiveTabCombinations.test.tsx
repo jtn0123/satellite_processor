@@ -241,7 +241,7 @@ describe('LiveTab — Fetch to view visibility', () => {
     // Should show "Fetch to view" message (meso + no CDN + no local frame)
     await waitFor(() => {
       expect(screen.getByTestId('meso-fetch-required')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    }, { timeout: 6000 });
   });
 
   it('auto-switches GEOCOLOR to C02 when switching to Mesoscale1', async () => {

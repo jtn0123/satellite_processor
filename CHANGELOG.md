@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/jtn0123/satellite_processor/compare/v1.33.0...v1.34.0) (2026-03-04)
+
+
+### Features
+
+* add Himawari satellite switching to Live Tab ([#312](https://github.com/jtn0123/satellite_processor/issues/312)) ([10baad8](https://github.com/jtn0123/satellite_processor/commit/10baad858dd4b05a1c6e2f40354a70f08fcd7c0b))
+
 # [1.33.0](https://github.com/jtn0123/satellite_processor/compare/v1.32.0...v1.33.0) (2026-03-03)
 
 

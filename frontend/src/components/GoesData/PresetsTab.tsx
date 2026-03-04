@@ -4,6 +4,8 @@ import { Plus, Play, Trash2, Edit2, Clock, Save, X } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
+import { isHimawariSatellite, getDefaultSector } from '../../utils/sectorHelpers';
+import { getSectorsForSatellite, getBandsForSatellite } from './liveTabUtils';
 
 interface FetchPreset {
   id: string;
@@ -90,7 +92,7 @@ export default function PresetsTab() {
     onError: () => showToast('error', 'Failed to delete schedule'),
   });
 
-  const resetForm = () => setForm({ name: '', satellite: 'GOES-16', sector: 'FullDisk', band: 'C02', description: '' });
+  const resetForm = () => setForm({ name: '', satellite: 'GOES-19', sector: 'FullDisk', band: 'C02', description: '' });
 
   const intervals = [
     { label: 'Every 1h', value: 60 },
@@ -229,28 +231,38 @@ function PresetForm({ form, setForm, onSubmit, onCancel, loading, title }: Reado
   loading: boolean;
   title: string;
 }>) {
+  const sectorOptions = getSectorsForSatellite(form.satellite);
+  const bandOptions = getBandsForSatellite(form.satellite);
+
+  const handleSatelliteChange = (newSat: string) => {
+    const newSector = getDefaultSector(newSat);
+    const newBand = isHimawariSatellite(newSat) ? 'B13' : 'C02';
+    setForm(f => ({ ...f, satellite: newSat, sector: newSector, band: newBand }));
+  };
+
   return (
     <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
       <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">{title}</h3>
       <input aria-label="Preset name" placeholder="Preset name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
         className="w-full rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm" />
       <div className="grid grid-cols-3 gap-3">
-        <select aria-label="Form" value={form.satellite} onChange={e => setForm(f => ({ ...f, satellite: e.target.value }))}
+        <select aria-label="Satellite" value={form.satellite} onChange={e => handleSatelliteChange(e.target.value)}
           className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
           <option value="GOES-16">GOES-16</option>
           <option value="GOES-18">GOES-18</option>
+          <option value="GOES-19">GOES-19</option>
+          <option value="Himawari-9">Himawari-9</option>
         </select>
-        <select aria-label="Form" value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
+        <select aria-label="Sector" value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
           className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
-          <option value="FullDisk">Full Disk</option>
-          <option value="CONUS">CONUS</option>
-          <option value="Mesoscale-1">Mesoscale-1</option>
-          <option value="Mesoscale-2">Mesoscale-2</option>
+          {sectorOptions.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
         </select>
-        <select aria-label="Form" value={form.band} onChange={e => setForm(f => ({ ...f, band: e.target.value }))}
+        <select aria-label="Band" value={form.band} onChange={e => setForm(f => ({ ...f, band: e.target.value }))}
           className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
-          {['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12','C13','C14','C15','C16'].map(b => (
-            <option key={b} value={b}>{b}</option>
+          {bandOptions.map(b => (
+            <option key={b.id} value={b.id}>{b.id}{b.description ? ` — ${b.description}` : ''}</option>
           ))}
         </select>
       </div>

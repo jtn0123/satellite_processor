@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ImageOff, Download } from 'lucide-react';
-import { BAND_INFO } from '../../constants/bands';
+import { BAND_INFO, HIMAWARI_BAND_INFO, getBandInfoForSatellite } from '../../constants/bands';
+import { isHimawariSatellite } from '../../utils/sectorHelpers';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 
@@ -13,22 +14,42 @@ interface BandPickerProps {
   disabled?: boolean;
 }
 
-const BAND_IDS = Object.keys(BAND_INFO);
+const GOES_BAND_IDS = Object.keys(BAND_INFO);
+const HIMAWARI_BAND_IDS = Object.keys(HIMAWARI_BAND_INFO);
 
-const GROUPS: { label: string; category: string; bands: string[] }[] = [
+const GOES_GROUPS: { label: string; category: string; bands: string[] }[] = [
   { label: 'Visible', category: 'Visible', bands: ['C01', 'C02'] },
   { label: 'Near-IR', category: 'Near-IR', bands: ['C03', 'C04', 'C05', 'C06'] },
   { label: 'Infrared', category: 'IR', bands: ['C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16'] },
 ];
 
-const FILTERS: { label: string; bands: string[] }[] = [
-  { label: 'All', bands: BAND_IDS },
+const HIMAWARI_GROUPS: { label: string; category: string; bands: string[] }[] = [
+  { label: 'Visible', category: 'Visible', bands: ['B01', 'B02', 'B03'] },
+  { label: 'Near-IR', category: 'Near-IR', bands: ['B04', 'B05', 'B06'] },
+  { label: 'Infrared', category: 'IR', bands: ['B07', 'B08', 'B09', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16'] },
+];
+
+const GOES_FILTERS: { label: string; bands: string[] }[] = [
+  { label: 'All', bands: GOES_BAND_IDS },
   { label: 'Weather', bands: ['C02', 'C08', 'C09', 'C10', 'C13', 'C14'] },
   { label: 'Storms', bands: ['C02', 'C07', 'C08', 'C13', 'C14', 'C15'] },
   { label: 'Vegetation', bands: ['C02', 'C03', 'C05', 'C06'] },
 ];
 
+const HIMAWARI_FILTERS: { label: string; bands: string[] }[] = [
+  { label: 'All', bands: HIMAWARI_BAND_IDS },
+  { label: 'Weather', bands: ['B03', 'B08', 'B09', 'B10', 'B13', 'B14'] },
+  { label: 'Storms', bands: ['B03', 'B07', 'B08', 'B13', 'B14', 'B15'] },
+  { label: 'Vegetation', bands: ['B03', 'B04', 'B05', 'B06'] },
+];
+
 export default function BandPicker({ value, onChange, satellite, sector, disabled }: Readonly<BandPickerProps>) {
+  const isHimawari = satellite ? isHimawariSatellite(satellite) : false;
+  const bandInfoMap = satellite ? getBandInfoForSatellite(satellite) : BAND_INFO;
+  const GROUPS = isHimawari ? HIMAWARI_GROUPS : GOES_GROUPS;
+  const FILTERS = isHimawari ? HIMAWARI_FILTERS : GOES_FILTERS;
+  const BAND_IDS = isHimawari ? HIMAWARI_BAND_IDS : GOES_BAND_IDS;
+
   const [filter, setFilter] = useState('All');
   const [fetchingBand, setFetchingBand] = useState<string | null>(null);
 
@@ -60,7 +81,7 @@ export default function BandPicker({ value, onChange, satellite, sector, disable
   const activeBands = useMemo(() => {
     const f = FILTERS.find((x) => x.label === filter);
     return new Set(f ? f.bands : BAND_IDS);
-  }, [filter]);
+  }, [filter, FILTERS, BAND_IDS]);
 
   return (
     <div className="space-y-3">
@@ -94,7 +115,7 @@ export default function BandPicker({ value, onChange, satellite, sector, disable
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {visibleBands.map((bandId) => {
-                const info = BAND_INFO[bandId];
+                const info = bandInfoMap[bandId];
                 if (!info) return null;
                 const selected = value === bandId;
                 return (

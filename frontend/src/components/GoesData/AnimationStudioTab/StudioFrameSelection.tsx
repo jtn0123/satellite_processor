@@ -1,5 +1,7 @@
 import { Satellite, Film } from 'lucide-react';
-import { BAND_INFO } from '../../../constants/bands';
+import { BAND_INFO, HIMAWARI_BAND_INFO } from '../../../constants/bands';
+import { isHimawariSatellite } from '../../../utils/sectorHelpers';
+import { getSectorsForSatellite, getBandsForSatellite } from '../liveTabUtils';
 import type { Product, CollectionType, PaginatedFrames } from '../types';
 
 interface StudioFrameSelectionProps {
@@ -29,6 +31,11 @@ export function StudioFrameSelection({
   collectionId, setCollectionId,
   products, collections, previewFrames,
 }: StudioFrameSelectionProps) {
+  const isHimawari = satellite ? isHimawariSatellite(satellite) : false;
+  const bandInfoMap = isHimawari ? HIMAWARI_BAND_INFO : BAND_INFO;
+  const sectorOptions = satellite ? getSectorsForSatellite(satellite, products?.sectors) : (products?.sectors ?? []);
+  const bandOptions = satellite ? getBandsForSatellite(satellite, products?.bands) : (products?.bands ?? []);
+
   return (
     <div className="lg:col-span-2 space-y-4">
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
@@ -64,9 +71,9 @@ export function StudioFrameSelection({
               <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
                 className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                 <option value="">All</option>
-                {(products?.bands ?? []).map((b) => {
-                  const info = BAND_INFO[b.id];
-                  return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : ''}</option>;
+                {bandOptions.map((b) => {
+                  const info = bandInfoMap[b.id];
+                  return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : (b.description ? ` — ${b.description}` : '')}</option>;
                 })}
               </select>
             </div>
@@ -75,7 +82,7 @@ export function StudioFrameSelection({
               <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                 className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
                 <option value="">All</option>
-                {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sectorOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>

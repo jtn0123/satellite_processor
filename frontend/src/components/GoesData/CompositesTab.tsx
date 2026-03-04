@@ -4,6 +4,8 @@ import { Layers, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
+import { isHimawariSatellite, getDefaultSector } from '../../utils/sectorHelpers';
+import { getSectorsForSatellite } from './liveTabUtils';
 
 interface Product {
   satellites: string[];
@@ -40,7 +42,7 @@ function formatBytes(bytes: number): string {
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-const RECIPE_DESCRIPTIONS: Record<string, string> = {
+const GOES_RECIPE_DESCRIPTIONS: Record<string, string> = {
   true_color: 'Natural-looking color using visible bands (C02 + C03 + C01)',
   natural_color: 'Enhanced natural color with near-IR vegetation (C07 + C06 + C02)',
   fire_detection: 'Highlights active fires using shortwave IR (C07 + C06 + C02)',
@@ -49,17 +51,38 @@ const RECIPE_DESCRIPTIONS: Record<string, string> = {
   airmass: 'Shows air mass boundaries using water vapor channels',
 };
 
+const HIMAWARI_RECIPE_DESCRIPTIONS: Record<string, string> = {
+  true_color: 'Natural-looking color using visible bands (B03 + B02 + B01)',
+  natural_color: 'Enhanced natural color with near-IR vegetation (B07 + B06 + B03)',
+  fire_detection: 'Highlights active fires using shortwave IR (B07 + B06 + B03)',
+  dust_ash: 'Detects dust and volcanic ash using IR differences',
+  day_cloud_phase: 'Shows cloud phase (ice vs water) using IR and visible',
+  airmass: 'Shows air mass boundaries using water vapor channels',
+};
+
+function getRecipeDescription(recipeId: string, satellite: string): string {
+  const descs = isHimawariSatellite(satellite) ? HIMAWARI_RECIPE_DESCRIPTIONS : GOES_RECIPE_DESCRIPTIONS;
+  return descs[recipeId] ?? '';
+}
+
 export default function CompositesTab() {
   const queryClient = useQueryClient();
   const [selectedRecipe, setSelectedRecipe] = useState('');
-  const [satellite, setSatellite] = useState('GOES-19');
+  const [satellite, setSatelliteRaw] = useState('GOES-19');
   const [sector, setSector] = useState('CONUS');
   const [captureTime, setCaptureTime] = useState('');
+
+  const handleSatelliteChange = (newSat: string) => {
+    setSatelliteRaw(newSat);
+    setSector(getDefaultSector(newSat));
+  };
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/goes/products').then((r) => r.data),
   });
+
+  const sectorOptions = getSectorsForSatellite(satellite, products?.sectors);
 
   const { data: recipes } = useQuery<CompositeRecipe[]>({
     queryKey: ['composite-recipes'],
@@ -107,7 +130,7 @@ export default function CompositesTab() {
             >
               <div className="font-medium text-gray-900 dark:text-white text-sm">{recipe.name}</div>
               <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                {RECIPE_DESCRIPTIONS[recipe.id] || `Bands: ${recipe.bands.join(', ')}`}
+                {getRecipeDescription(recipe.id, satellite) || `Bands: ${recipe.bands.join(', ')}`}
               </div>
               <div className="flex gap-1 mt-2">
                 {recipe.bands.map((b) => (
@@ -128,7 +151,7 @@ export default function CompositesTab() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="comp-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
-              <select id="comp-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
+              <select id="comp-satellite" value={satellite} onChange={(e) => handleSatelliteChange(e.target.value)}
                 className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
                 {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -137,7 +160,7 @@ export default function CompositesTab() {
               <label htmlFor="comp-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
               <select id="comp-sector" value={sector} onChange={(e) => setSector(e.target.value)}
                 className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-                {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sectorOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>

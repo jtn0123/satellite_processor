@@ -1,10 +1,16 @@
 import { Zap } from 'lucide-react';
 import api from '../../../api/client';
 import { showToast } from '../../../utils/toast';
+import { isHimawariSatellite } from '../../../utils/sectorHelpers';
 
 interface FetchPreset {
   id: number;
   name: string;
+}
+
+interface QuickFetchChip {
+  label: string;
+  fetches: Array<{ satellite: string; sector: string; band: string; hours: number; recipe?: string }>;
 }
 
 interface QuickFetchSectionProps {
@@ -14,8 +20,8 @@ interface QuickFetchSectionProps {
   readonly fetchPresets: FetchPreset[] | undefined;
 }
 
-export function QuickFetchSection({ defaultSat, quickFetching, setQuickFetching, fetchPresets }: QuickFetchSectionProps) {
-  const quickChips = [
+function buildGoesChips(defaultSat: string): QuickFetchChip[] {
+  return [
     { label: 'CONUS Last Hour', fetches: [{ satellite: defaultSat, sector: 'CONUS', band: 'C02', hours: 1 }] },
     { label: 'CONUS Last 6hr', fetches: [{ satellite: defaultSat, sector: 'CONUS', band: 'C02', hours: 6 }] },
     { label: 'Full Disk Latest', fetches: [{ satellite: defaultSat, sector: 'FullDisk', band: 'C02', hours: 1 }] },
@@ -25,17 +31,41 @@ export function QuickFetchSection({ defaultSat, quickFetching, setQuickFetching,
       { satellite: defaultSat, sector: 'CONUS', band: 'C03', hours: 1 },
     ]},
   ];
+}
 
-  const quickFetch = async (label: string, fetches: Array<{ satellite: string; sector: string; band: string; hours: number }>) => {
+function buildHimawariChips(): QuickFetchChip[] {
+  return [
+    { label: '🌏 FLDK B13 Last Hour', fetches: [{ satellite: 'Himawari-9', sector: 'FLDK', band: 'B13', hours: 1 }] },
+    { label: '🗾 Japan TrueColor', fetches: [{ satellite: 'Himawari-9', sector: 'Japan', band: 'TrueColor', hours: 1, recipe: 'true_color' }] },
+    { label: '🌏 FLDK TrueColor', fetches: [{ satellite: 'Himawari-9', sector: 'FLDK', band: 'TrueColor', hours: 1, recipe: 'true_color' }] },
+    { label: '🎯 Target B03 Last Hour', fetches: [{ satellite: 'Himawari-9', sector: 'Target', band: 'B03', hours: 1 }] },
+  ];
+}
+
+export function QuickFetchSection({ defaultSat, quickFetching, setQuickFetching, fetchPresets }: QuickFetchSectionProps) {
+  const goesChips = buildGoesChips(defaultSat);
+  const himawariChips = buildHimawariChips();
+  const quickChips = [...goesChips, ...himawariChips];
+
+  const quickFetch = async (label: string, fetches: Array<{ satellite: string; sector: string; band: string; hours: number; recipe?: string }>) => {
     setQuickFetching(label);
     try {
       const now = new Date();
       for (const f of fetches) {
         const start = new Date(now.getTime() - f.hours * 3600000);
-        await api.post('/goes/fetch', {
-          satellite: f.satellite, sector: f.sector, band: f.band,
-          start_time: start.toISOString(), end_time: now.toISOString(),
-        });
+        const isComposite = f.recipe || (isHimawariSatellite(f.satellite) && f.band === 'TrueColor');
+        if (isComposite) {
+          await api.post('/goes/fetch-composite', {
+            satellite: f.satellite, sector: f.sector,
+            recipe: f.recipe ?? 'true_color',
+            start_time: start.toISOString(), end_time: now.toISOString(),
+          });
+        } else {
+          await api.post('/goes/fetch', {
+            satellite: f.satellite, sector: f.sector, band: f.band,
+            start_time: start.toISOString(), end_time: now.toISOString(),
+          });
+        }
       }
       showToast('success', `Quick fetch started: ${label}`);
     } catch {

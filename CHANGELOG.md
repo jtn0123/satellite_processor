@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/jtn0123/satellite_processor/compare/v1.35.0...v1.36.0) (2026-03-04)
+
+
+### Features
+
+* rename /api/goes/ to /api/satellite/ with backward-compat aliases ([#314](https://github.com/jtn0123/satellite_processor/issues/314)) ([f8f9504](https://github.com/jtn0123/satellite_processor/commit/f8f95046a2d5d38201d8a92d0fd46de21b15634a))
+
 # [1.35.0](https://github.com/jtn0123/satellite_processor/compare/v1.34.0...v1.35.0) (2026-03-04)
 
 

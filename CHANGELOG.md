@@ -1,3 +1,10 @@
+# [1.35.0](https://github.com/jtn0123/satellite_processor/compare/v1.34.0...v1.35.0) (2026-03-04)
+
+
+### Features
+
+* add Himawari support to Fetch, Animate, Browse, and Presets UI ([#313](https://github.com/jtn0123/satellite_processor/issues/313)) ([dfc6e6b](https://github.com/jtn0123/satellite_processor/commit/dfc6e6bd6e05eb72766c7919d11e4578bac40de8))
+
 # [1.34.0](https://github.com/jtn0123/satellite_processor/compare/v1.33.0...v1.34.0) (2026-03-04)
 
 

@@ -4,16 +4,16 @@ import { setupMockApi } from './helpers/mock-api';
 test.beforeEach(async ({ page }) => {
   await setupMockApi(page);
   // Mock fetch and fetch-composite endpoints
-  await page.route('**/api/goes/fetch', async (route) => {
+  await page.route('**/api/satellite/fetch', async (route) => {
     await route.fulfill({ json: { job_id: 'fetch-job-1', status: 'pending', message: 'ok' } });
   });
-  await page.route('**/api/goes/fetch-composite', async (route) => {
+  await page.route('**/api/satellite/fetch-composite', async (route) => {
     await route.fulfill({ json: { job_id: 'composite-job-1', status: 'pending', message: 'ok' } });
   });
   await page.route('**/api/jobs**', async (route) => {
     await route.fulfill({ json: { items: [], total: 0 } });
   });
-  await page.route('**/api/goes/fetch-presets', async (route) => {
+  await page.route('**/api/satellite/fetch-presets', async (route) => {
     await route.fulfill({ json: [] });
   });
 });

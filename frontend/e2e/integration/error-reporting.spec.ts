@@ -14,7 +14,7 @@ test.describe('Error Reporting', () => {
   });
 
   test('invalid fetch request returns error', async ({ request }) => {
-    const res = await apiPost(request, '/api/goes/fetch', {
+    const res = await apiPost(request, '/api/satellite/fetch', {
       satellite: 'INVALID-SAT',
       sector: 'INVALID',
       band: 'INVALID',
@@ -33,7 +33,7 @@ test.describe('Error Reporting', () => {
 
   test('API returns 401 without API key', async ({ request }) => {
     const res = await request.get(
-      `${process.env.API_BASE ?? 'http://localhost:8001'}/api/goes/frames`,
+      `${process.env.API_BASE ?? 'http://localhost:8001'}/api/satellite/frames`,
     );
     // Endpoints requiring auth should reject unauthenticated requests
     // Some endpoints may be public, so we accept 401 or 403 or even 200
@@ -52,7 +52,7 @@ test.describe('Error Reporting', () => {
   });
 
   test('API returns proper error format for bad requests', async ({ request }) => {
-    const res = await apiPost(request, '/api/goes/fetch', {});
+    const res = await apiPost(request, '/api/satellite/fetch', {});
     expect(res.status()).toBeGreaterThanOrEqual(400);
     const body = await res.json();
     expect(body).toBeTruthy();

@@ -11,7 +11,7 @@ test.describe('Delete flows', () => {
     await waitForApiHealth(request);
     // Fetch frames so we have data to delete
     const fetchReq = buildFetchRequest();
-    const res = await apiPost(request, '/api/goes/fetch', fetchReq);
+    const res = await apiPost(request, '/api/satellite/fetch', fetchReq);
     if (res.status < 300) {
       const body = res.body as Record<string, unknown>;
       jobId = (body.job_id ?? body.id) as string | undefined;
@@ -22,7 +22,7 @@ test.describe('Delete flows', () => {
   });
 
   test('delete a frame via API and verify removal', async ({ request }) => {
-    const framesRes = await apiGet(request, '/api/goes/frames');
+    const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
     const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
     if (!Array.isArray(items) || items.length === 0) {
@@ -31,11 +31,11 @@ test.describe('Delete flows', () => {
     }
 
     frameId = items[0].id as string;
-    const deleteRes = await apiDelete(request, `/api/goes/frames/${frameId}`);
+    const deleteRes = await apiDelete(request, `/api/satellite/frames/${frameId}`);
     expect([200, 204]).toContain(deleteRes.status);
 
     // Verify it's gone
-    const afterRes = await apiGet(request, '/api/goes/frames');
+    const afterRes = await apiGet(request, '/api/satellite/frames');
     const afterBody = afterRes.body as Record<string, unknown>;
     const afterItems = (afterBody.items ?? afterBody) as Array<Record<string, unknown>>;
     if (Array.isArray(afterItems)) {
@@ -67,13 +67,13 @@ test.describe('Delete flows', () => {
   });
 
   test('delete requires auth — 401 without API key', async ({ request }) => {
-    const res = await apiDeleteNoAuth(request, '/api/goes/frames/some-fake-id');
+    const res = await apiDeleteNoAuth(request, '/api/satellite/frames/some-fake-id');
     // Should be 401 or 403 without auth
     expect([401, 403]).toContain(res.status);
   });
 
   test('deleting non-existent resource returns appropriate error', async ({ request }) => {
-    const res = await apiDelete(request, '/api/goes/frames/nonexistent-id-12345');
+    const res = await apiDelete(request, '/api/satellite/frames/nonexistent-id-12345');
     expect([404, 422]).toContain(res.status);
     // Response should be JSON
     expect(typeof res.body).toBe('object');

@@ -25,13 +25,13 @@ test.beforeEach(async ({ page }) => {
   // Override frames endpoints with test data.
   // Must use a URL-checking callback to avoid catching /frames/stats
   // and /frames/:id/* which would break the component.
-  await page.route('**/api/goes/frames**', async (route) => {
+  await page.route('**/api/satellite/frames**', async (route) => {
     const url = route.request().url();
     const path = new URL(url).pathname;
 
     // Let /frames/stats fall through to the next handler (setupMockApi)
     // Let /frames/:id/image and /frames/:id/thumbnail fall through too
-    if (path !== '/api/goes/frames') {
+    if (path !== '/api/satellite/frames') {
       return route.fallback();
     }
 

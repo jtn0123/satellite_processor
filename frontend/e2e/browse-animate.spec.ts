@@ -12,7 +12,7 @@ function mockFrames(page: Page) {
   page.route('**/api/download*', async (route: Route) => {
     return route.fulfill({ contentType: 'image/png', body: PIXEL });
   });
-  return page.route('**/api/goes/frames*', async (route: Route) => {
+  return page.route('**/api/satellite/frames*', async (route: Route) => {
     const url = route.request().url();
     // Image/thumbnail endpoints
     if (url.match(/\/frames\/[^/]+\/(image|thumbnail)/)) {
@@ -33,8 +33,8 @@ function mockFrames(page: Page) {
       file_size: 4000,
       width: 1000,
       height: 800,
-      image_url: `/api/goes/frames/frame-${i}/image`,
-      thumbnail_url: `/api/goes/frames/frame-${i}/thumbnail`,
+      image_url: `/api/satellite/frames/frame-${i}/image`,
+      thumbnail_url: `/api/satellite/frames/frame-${i}/thumbnail`,
     }));
     return route.fulfill({ json: { items, total: 50, page: 1, limit: 50 } });
   });

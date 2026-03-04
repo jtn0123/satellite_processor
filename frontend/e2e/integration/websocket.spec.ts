@@ -62,7 +62,7 @@ test.describe('WebSocket job progress', () => {
 
     // Trigger a fetch
     const fetchReq = buildFetchRequest();
-    await apiPost(request, '/api/goes/fetch', fetchReq);
+    await apiPost(request, '/api/satellite/fetch', fetchReq);
 
     const messages = await messagesPromise;
     // Messages may or may not arrive depending on job activity
@@ -110,7 +110,7 @@ test.describe('WebSocket job progress', () => {
     await page.goto('about:blank');
     // Trigger a fetch first
     const fetchReq = buildFetchRequest();
-    await apiPost(request, '/api/goes/fetch', fetchReq);
+    await apiPost(request, '/api/satellite/fetch', fetchReq);
 
     const firstMessage = await page.evaluate((url: string) => {
       return new Promise<string | null>((resolve) => {

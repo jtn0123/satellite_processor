@@ -11,7 +11,7 @@ test.describe('Fetch → Animate pipeline', () => {
     await waitForApiHealth(request);
 
     const fetchReq = buildFetchRequest();
-    const res = await apiPost(request, '/api/goes/fetch', fetchReq);
+    const res = await apiPost(request, '/api/satellite/fetch', fetchReq);
     expect(res.status).toBeLessThan(500);
 
     if (res.status < 300) {
@@ -68,7 +68,7 @@ test.describe('Fetch → Animate pipeline', () => {
 
   test('create animation job and verify it appears in jobs list', async ({ request }) => {
     // Check if we have frames first
-    const framesRes = await apiGet(request, '/api/goes/frames');
+    const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
     const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
     if (!Array.isArray(items) || items.length < 2) {
@@ -78,7 +78,7 @@ test.describe('Fetch → Animate pipeline', () => {
 
     // Try to create an animation via the API
     const frameIds = items.slice(0, Math.min(5, items.length)).map((f) => f.id as string);
-    const animRes = await apiPost(request, '/api/goes/fetch', {
+    const animRes = await apiPost(request, '/api/satellite/fetch', {
       ...buildFetchRequest(),
       animate: true,
       frame_ids: frameIds,

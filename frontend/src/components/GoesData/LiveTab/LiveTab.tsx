@@ -106,7 +106,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   /* eslint-disable react-hooks/set-state-in-effect -- intentional init from async data */
@@ -151,7 +151,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
     retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
@@ -161,14 +161,14 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   const { data: recentFrames } = useQuery<LatestFrame[]>({
     queryKey: ['goes-frames-compare', satellite, sector, band],
-    queryFn: () => api.get('/goes/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite && compareMode,
   });
 
   const { data: catalogLatest } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest-live', satellite, sector, band],
-    queryFn: () => api.get('/goes/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
     retry: 1,

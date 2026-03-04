@@ -27,7 +27,7 @@ api.interceptors.response.use(
       error.userMessage = message;
     }
     // Don't report 404s on GOES endpoints — they're expected for empty data states (e.g., no frames yet)
-    const isExpected404 = error.response?.status === 404 && error.config?.url?.startsWith('/goes/');
+    const isExpected404 = error.response?.status === 404 && error.config?.url?.startsWith('/satellite/');
     if (!isExpected404) {
       reportError(error, `API ${error.config?.method?.toUpperCase()} ${error.config?.url} [${error.response?.status ?? 'network'}]`);
     }

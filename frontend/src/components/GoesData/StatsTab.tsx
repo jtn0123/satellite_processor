@@ -8,7 +8,7 @@ import type { FrameStats } from './types';
 export default function StatsTab() {
   const { data: stats, isLoading, isError } = useQuery<FrameStats>({
     queryKey: ['goes-frame-stats'],
-    queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames/stats').then((r) => r.data),
   });
 
   if (isLoading) {

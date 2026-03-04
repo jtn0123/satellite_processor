@@ -10,7 +10,7 @@ function makeFrame(id: string): GoesFrame {
     sector: 'CONUS',
     band: '02',
     capture_time: '2024-01-01T00:00:00Z',
-    image_url: `/api/goes/frames/${id}/image`,
+    image_url: `/api/satellite/frames/${id}/image`,
     thumbnail_url: null,
     file_size: 1000,
     width: 1000,

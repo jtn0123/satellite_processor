@@ -79,25 +79,25 @@ export default function CompositesTab() {
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const sectorOptions = getSectorsForSatellite(satellite, products?.sectors);
 
   const { data: recipes } = useQuery<CompositeRecipe[]>({
     queryKey: ['composite-recipes'],
-    queryFn: () => api.get('/goes/composite-recipes').then((r) => extractArray<CompositeRecipe>(r.data)),
+    queryFn: () => api.get('/satellite/composite-recipes').then((r) => extractArray<CompositeRecipe>(r.data)),
   });
 
   const { data: composites } = useQuery<{ items: CompositeItem[]; total: number }>({
     queryKey: ['composites'],
-    queryFn: () => api.get('/goes/composites').then((r) => r.data),
+    queryFn: () => api.get('/satellite/composites').then((r) => r.data),
     refetchInterval: 5000,
   });
 
   const createMutation = useMutation({
     mutationFn: () =>
-      api.post('/goes/composites', {
+      api.post('/satellite/composites', {
         recipe: selectedRecipe,
         satellite,
         sector,

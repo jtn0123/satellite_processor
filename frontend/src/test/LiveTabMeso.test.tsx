@@ -51,7 +51,7 @@ describe('isMesoSector helper', () => {
 describe('LiveTab renders', () => {
   beforeEach(() => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({
           data: {
             satellites: ['GOES-19'],
@@ -68,12 +68,12 @@ describe('LiveTab renders', () => {
           },
         });
       }
-      if (url.startsWith('/goes/latest')) {
+      if (url.startsWith('/satellite/latest')) {
         return Promise.resolve({
           data: {
             id: 1, satellite: 'GOES-19', sector: 'CONUS', band: 'C02',
             capture_time: '2025-06-01T12:00:00', file_size: 1024, width: 5424, height: 3000,
-            image_url: '/api/goes/frames/1/image', thumbnail_url: '/api/goes/frames/1/thumb',
+            image_url: '/api/satellite/frames/1/image', thumbnail_url: '/api/satellite/frames/1/thumb',
           },
         });
       }
@@ -87,6 +87,6 @@ describe('LiveTab renders', () => {
       expect(screen.getByTestId('live-image-area')).toBeInTheDocument();
     });
     // Verify products API was called (includes meso sectors)
-    expect(mockedApi.get).toHaveBeenCalledWith('/goes/products');
+    expect(mockedApi.get).toHaveBeenCalledWith('/satellite/products');
   });
 });

@@ -55,13 +55,13 @@ export function QuickFetchSection({ defaultSat, quickFetching, setQuickFetching,
         const start = new Date(now.getTime() - f.hours * 3600000);
         const isComposite = f.recipe || (isHimawariSatellite(f.satellite) && f.band === 'TrueColor');
         if (isComposite) {
-          await api.post('/goes/fetch-composite', {
+          await api.post('/satellite/fetch-composite', {
             satellite: f.satellite, sector: f.sector,
             recipe: f.recipe ?? 'true_color',
             start_time: start.toISOString(), end_time: now.toISOString(),
           });
         } else {
-          await api.post('/goes/fetch', {
+          await api.post('/satellite/fetch', {
             satellite: f.satellite, sector: f.sector, band: f.band,
             start_time: start.toISOString(), end_time: now.toISOString(),
           });
@@ -78,7 +78,7 @@ export function QuickFetchSection({ defaultSat, quickFetching, setQuickFetching,
   const runPreset = async (preset: FetchPreset) => {
     setQuickFetching(preset.name);
     try {
-      await api.post(`/goes/fetch-presets/${preset.id}/run`);
+      await api.post(`/satellite/fetch-presets/${preset.id}/run`);
       showToast('success', `Preset "${preset.name}" started`);
     } catch {
       showToast('error', `Failed to run preset "${preset.name}"`);

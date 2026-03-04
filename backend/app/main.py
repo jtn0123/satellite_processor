@@ -13,6 +13,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from .config import settings as app_settings
 from .db.database import init_db
@@ -54,6 +55,21 @@ from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
 ws_logger = logging.getLogger("websocket")
+
+
+class GoesToSatelliteRewriteMiddleware:
+    """Backward-compat ASGI middleware: rewrite /api/goes/* → /api/satellite/* transparently."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket"):
+            path: str = scope.get("path", "")
+            if path.startswith("/api/goes/") or path == "/api/goes":
+                scope = dict(scope)
+                scope["path"] = "/api/satellite" + path[len("/api/goes"):]
+        await self.app(scope, receive, send)
 
 # Paths that skip API key auth
 AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
@@ -180,6 +196,8 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
     max_age=600,
 )
+# Backward-compat: /api/goes/* → /api/satellite/* (innermost — runs before routing)
+app.add_middleware(GoesToSatelliteRewriteMiddleware)
 
 # Register routers
 app.include_router(jobs.router)
@@ -204,15 +222,15 @@ app.include_router(file_download.router)
 app.include_router(errors.router)
 
 
-# Alias: /api/frames → /api/goes/frames (Bug #6)
+# Alias: /api/frames → /api/satellite/frames (Bug #6)
 from fastapi.responses import RedirectResponse  # noqa: E402
 
 
 @app.get("/api/frames", include_in_schema=False)
 async def frames_alias(request: Request):
-    """Redirect /api/frames to /api/goes/frames, preserving query params."""
+    """Redirect /api/frames to /api/satellite/frames, preserving query params."""
     query = str(request.query_params)
-    url = "/api/goes/frames"
+    url = "/api/satellite/frames"
     if query:
         url += f"?{query}"
     return RedirectResponse(url=url, status_code=307)

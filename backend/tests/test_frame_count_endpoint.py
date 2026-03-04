@@ -10,7 +10,7 @@ import pytest
 @patch("app.services.goes_fetcher.list_available")
 async def test_estimate_frame_count(mock_list, client):
     mock_list.return_value = [{"key": f"k{i}"} for i in range(42)]
-    resp = await client.get("/api/goes/frame-count", params={
+    resp = await client.get("/api/satellite/frame-count", params={
         "satellite": "GOES-16",
         "sector": "FullDisk",
         "band": "C02",
@@ -25,7 +25,7 @@ async def test_estimate_frame_count(mock_list, client):
 @patch("app.services.goes_fetcher.list_available")
 async def test_estimate_frame_count_empty(mock_list, client):
     mock_list.return_value = []
-    resp = await client.get("/api/goes/frame-count", params={
+    resp = await client.get("/api/satellite/frame-count", params={
         "satellite": "GOES-16",
         "sector": "FullDisk",
         "band": "C02",
@@ -38,7 +38,7 @@ async def test_estimate_frame_count_empty(mock_list, client):
 
 @pytest.mark.asyncio
 async def test_estimate_frame_count_invalid_range(client):
-    resp = await client.get("/api/goes/frame-count", params={
+    resp = await client.get("/api/satellite/frame-count", params={
         "satellite": "GOES-16",
         "sector": "FullDisk",
         "band": "C02",

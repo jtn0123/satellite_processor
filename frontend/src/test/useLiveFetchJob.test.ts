@@ -102,7 +102,7 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
       satellite: 'GOES-18',
       sector: 'CONUS',
       band: 'Band02',
@@ -126,7 +126,7 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
       start_time: '2024-06-01T12:00:00Z',
       end_time: '2024-06-01T12:00:00Z',
     }));
@@ -198,7 +198,7 @@ describe('useLiveFetchJob', () => {
     renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'GOES-18',
         sector: 'CONUS',
         band: 'Band02',
@@ -303,7 +303,7 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
       start_time: '2024-06-01T12:00:00Z',
       end_time: '2024-06-01T12:00:00Z',
     }));

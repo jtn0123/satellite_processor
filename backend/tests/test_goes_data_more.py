@@ -8,7 +8,7 @@ from app.db.models import GoesFrame
 
 @pytest.mark.asyncio
 async def test_frames_empty(client):
-    resp = await client.get("/api/goes/frames")
+    resp = await client.get("/api/satellite/frames")
     assert resp.status_code == 200
     data = resp.json()
     assert data["items"] == []
@@ -24,7 +24,7 @@ async def test_frames_pagination(client, db):
         ))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames?page=1&limit=2")
+    resp = await client.get("/api/satellite/frames?page=1&limit=2")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["items"]) == 2
@@ -39,7 +39,7 @@ async def test_frames_filter_satellite(client, db):
                      capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=100))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames?satellite=GOES-16")
+    resp = await client.get("/api/satellite/frames?satellite=GOES-16")
     assert resp.json()["total"] == 1
     assert resp.json()["items"][0]["satellite"] == "GOES-16"
 
@@ -51,7 +51,7 @@ async def test_frames_sort_asc(client, db):
                          capture_time=datetime(2024, 1, 1, i), file_path=f"/t/{i}.nc", file_size=i*100))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames?sort=file_size&order=asc")
+    resp = await client.get("/api/satellite/frames?sort=file_size&order=asc")
     items = resp.json()["items"]
     sizes = [it["file_size"] for it in items]
     assert sizes == sorted(sizes)
@@ -59,7 +59,7 @@ async def test_frames_sort_asc(client, db):
 
 @pytest.mark.asyncio
 async def test_frame_detail_not_found(client):
-    resp = await client.get("/api/goes/frames/nonexistent")
+    resp = await client.get("/api/satellite/frames/nonexistent")
     assert resp.status_code == 404
 
 
@@ -69,14 +69,14 @@ async def test_frame_detail(client, db):
                      capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames/40b8f45e-7bd1-5131-9043-bb2d8253153d")
+    resp = await client.get("/api/satellite/frames/40b8f45e-7bd1-5131-9043-bb2d8253153d")
     assert resp.status_code == 200
     assert resp.json()["id"] == "40b8f45e-7bd1-5131-9043-bb2d8253153d"
 
 
 @pytest.mark.asyncio
 async def test_frame_stats_empty(client):
-    resp = await client.get("/api/goes/frames/stats")
+    resp = await client.get("/api/satellite/frames/stats")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_frames"] == 0
@@ -91,7 +91,7 @@ async def test_frame_stats_with_data(client, db):
                      capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=300))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames/stats")
+    resp = await client.get("/api/satellite/frames/stats")
     data = resp.json()
     assert data["total_frames"] == 2
     assert data["total_size_bytes"] == 800
@@ -101,89 +101,89 @@ async def test_frame_stats_with_data(client, db):
 
 @pytest.mark.asyncio
 async def test_bulk_delete_empty_ids(client):
-    resp = await client.request("DELETE", "/api/goes/frames", json={"ids": []})
+    resp = await client.request("DELETE", "/api/satellite/frames", json={"ids": []})
     assert resp.status_code in (200, 422)
 
 
 @pytest.mark.asyncio
 async def test_collection_crud(client):
     # Create
-    resp = await client.post("/api/goes/collections", json={"name": "Test Col", "description": "desc"})
+    resp = await client.post("/api/satellite/collections", json={"name": "Test Col", "description": "desc"})
     assert resp.status_code == 200
     coll_id = resp.json()["id"]
     assert resp.json()["name"] == "Test Col"
 
     # List
-    resp = await client.get("/api/goes/collections")
+    resp = await client.get("/api/satellite/collections")
     assert resp.status_code == 200
     data = resp.json()
     items = data.get("items", data) if isinstance(data, dict) else data
     assert len(items) == 1
 
     # Update
-    resp = await client.put(f"/api/goes/collections/{coll_id}", json={"name": "Renamed"})
+    resp = await client.put(f"/api/satellite/collections/{coll_id}", json={"name": "Renamed"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Renamed"
 
     # Delete
-    resp = await client.delete(f"/api/goes/collections/{coll_id}")
+    resp = await client.delete(f"/api/satellite/collections/{coll_id}")
     assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_update_nonexistent_collection(client):
-    resp = await client.put("/api/goes/collections/fake", json={"name": "x"})
+    resp = await client.put("/api/satellite/collections/fake", json={"name": "x"})
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_delete_nonexistent_collection(client):
-    resp = await client.delete("/api/goes/collections/fake")
+    resp = await client.delete("/api/satellite/collections/fake")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_add_frames_to_nonexistent_collection(client):
-    resp = await client.post("/api/goes/collections/fake/frames", json={"frame_ids": ["f1"]})
+    resp = await client.post("/api/satellite/collections/fake/frames", json={"frame_ids": ["f1"]})
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_tag_crud(client):
     # Create
-    resp = await client.post("/api/goes/tags", json={"name": "urgent", "color": "#ff0000"})
+    resp = await client.post("/api/satellite/tags", json={"name": "urgent", "color": "#ff0000"})
     assert resp.status_code == 200
     tag_id = resp.json()["id"]
     assert resp.json()["name"] == "urgent"
 
     # List
-    resp = await client.get("/api/goes/tags")
+    resp = await client.get("/api/satellite/tags")
     assert resp.status_code == 200
     data = resp.json()
     items = data.get("items", data) if isinstance(data, dict) else data
     assert len(items) == 1
 
     # Delete
-    resp = await client.delete(f"/api/goes/tags/{tag_id}")
+    resp = await client.delete(f"/api/satellite/tags/{tag_id}")
     assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_duplicate_tag(client):
-    await client.post("/api/goes/tags", json={"name": "dup", "color": "#000"})
-    resp = await client.post("/api/goes/tags", json={"name": "dup", "color": "#111"})
+    await client.post("/api/satellite/tags", json={"name": "dup", "color": "#000"})
+    resp = await client.post("/api/satellite/tags", json={"name": "dup", "color": "#111"})
     assert resp.status_code == 409
 
 
 @pytest.mark.asyncio
 async def test_delete_nonexistent_tag(client):
-    resp = await client.delete("/api/goes/tags/fake")
+    resp = await client.delete("/api/satellite/tags/fake")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_process_frames_no_match(client):
-    resp = await client.post("/api/goes/frames/process", json={
+    resp = await client.post("/api/satellite/frames/process", json={
         "frame_ids": ["nonexistent"],
         "params": {},
     })
@@ -198,6 +198,6 @@ async def test_frames_date_filter(client, db):
                      capture_time=datetime(2024, 6, 1), file_path="/t/2.nc", file_size=100))
     await db.commit()
 
-    resp = await client.get("/api/goes/frames?start_date=2024-03-01T00:00:00")
+    resp = await client.get("/api/satellite/frames?start_date=2024-03-01T00:00:00")
     assert resp.json()["total"] == 1
     assert resp.json()["items"][0]["id"] == "2f0ef28f-ecc6-51f7-9295-0094dd96ac29"

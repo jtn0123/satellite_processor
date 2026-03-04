@@ -40,8 +40,8 @@ const PRODUCTS_DATA = {
 const FRAME_DATA = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
   capture_time: new Date().toISOString(), file_size: 1024,
-  width: 5424, height: 3000, image_url: '/api/goes/frames/1/image',
-  thumbnail_url: '/api/goes/frames/1/thumbnail',
+  width: 5424, height: 3000, image_url: '/api/satellite/frames/1/image',
+  thumbnail_url: '/api/satellite/frames/1/thumbnail',
 };
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -56,9 +56,9 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME_DATA });
-    if (url.startsWith('/goes/catalog/latest')) {
+    if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME_DATA });
+    if (url.startsWith('/satellite/catalog/latest')) {
       return Promise.resolve({
         data: {
           scan_time: new Date().toISOString(), size: 2048, key: 'test',
@@ -92,15 +92,15 @@ describe('LiveTab — extended coverage', () => {
   it('shows MesoFetchRequiredMessage for meso sectors without CDN', async () => {
     // Override latest to return 404 for meso sector
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/goes/latest')) {
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
+      if (url.startsWith('/satellite/latest')) {
         const axiosError = Object.assign(new Error('Not found'), {
           isAxiosError: true,
           response: { status: 404 },
         });
         return Promise.reject(axiosError);
       }
-      if (url.startsWith('/goes/catalog/latest')) {
+      if (url.startsWith('/satellite/catalog/latest')) {
         return Promise.reject(new Error('Not found'));
       }
       return Promise.resolve({ data: {} });

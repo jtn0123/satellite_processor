@@ -39,8 +39,8 @@ function makeFrame(overrides: Partial<GoesFrame> = {}): GoesFrame {
     sector: 'CONUS',
     band: 'C02',
     capture_time: '2026-01-15T12:00:00Z',
-    image_url: '/api/goes/frames/test/image',
-    thumbnail_url: '/api/goes/frames/test/thumbnail',
+    image_url: '/api/satellite/frames/test/image',
+    thumbnail_url: '/api/satellite/frames/test/thumbnail',
     file_size: 1024,
     width: 500,
     height: 500,
@@ -68,11 +68,11 @@ const defaultProducts: Product = {
 
 function setupApiResponses(frames: GoesFrame[] = [], products: Product = defaultProducts) {
   mockedGet.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: products });
-    if (url === '/goes/tags') return Promise.resolve({ data: [] });
-    if (url === '/goes/collections') return Promise.resolve({ data: [] });
+    if (url === '/satellite/products') return Promise.resolve({ data: products });
+    if (url === '/satellite/tags') return Promise.resolve({ data: [] });
+    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     // Default frames endpoint — filter-aware
-    if (url.startsWith('/goes/frames') || url === '/goes/frames') {
+    if (url.startsWith('/satellite/frames') || url === '/satellite/frames') {
       return Promise.resolve({ data: paginated(frames) });
     }
     return Promise.resolve({ data: {} });
@@ -147,7 +147,7 @@ describe('BrowseTab filter → display integration', () => {
     // The API should be called again — the query key includes filterParams
     await waitFor(() => {
       const frameCalls = mockedGet.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('/goes/frames'),
+        (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames'),
       );
       // At least one call should include satellite=GOES-18 in params
       const hasFilteredCall = frameCalls.some(
@@ -166,10 +166,10 @@ describe('BrowseTab filter → display integration', () => {
     const filteredFrames = allFrames.filter((f) => f.satellite === 'GOES-16');
 
     mockedGet.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: defaultProducts });
-      if (url === '/goes/tags') return Promise.resolve({ data: [] });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
-      if (url.startsWith('/goes/frames') || url === '/goes/frames') {
+      if (url === '/satellite/products') return Promise.resolve({ data: defaultProducts });
+      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+      if (url.startsWith('/satellite/frames') || url === '/satellite/frames') {
         callCount++;
         const data = callCount <= 1 ? paginated(allFrames, 5) : paginated(filteredFrames, 2);
         return Promise.resolve({ data });

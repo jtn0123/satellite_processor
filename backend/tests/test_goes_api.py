@@ -11,7 +11,7 @@ from app.db.models import GoesFrame
 @pytest.mark.asyncio
 class TestGoesProducts:
     async def test_list_products(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         assert resp.status_code == 200
         data = resp.json()
         assert "GOES-16" in data["satellites"]
@@ -23,7 +23,7 @@ class TestGoesProducts:
 class TestGoesFetch:
     @patch("app.tasks.goes_tasks.fetch_goes_data.delay")
     async def test_create_fetch_job(self, mock_delay, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "FullDisk",
             "band": "C02",
@@ -37,7 +37,7 @@ class TestGoesFetch:
         mock_delay.assert_called_once()
 
     async def test_invalid_satellite(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-99",
             "sector": "FullDisk",
             "band": "C02",
@@ -47,7 +47,7 @@ class TestGoesFetch:
         assert resp.status_code == 422
 
     async def test_invalid_band(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "FullDisk",
             "band": "C99",
@@ -57,7 +57,7 @@ class TestGoesFetch:
         assert resp.status_code == 422
 
     async def test_end_before_start(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "FullDisk",
             "band": "C02",
@@ -70,7 +70,7 @@ class TestGoesFetch:
 @pytest.mark.asyncio
 class TestGoesGaps:
     async def test_gaps_empty_db(self, client):
-        resp = await client.get("/api/goes/gaps")
+        resp = await client.get("/api/satellite/gaps")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_frames"] == 0
@@ -101,7 +101,7 @@ class TestGoesGaps:
         db.add(frame)
         await db.commit()
 
-        resp = await client.get("/api/goes/gaps", params={"expected_interval": 10})
+        resp = await client.get("/api/satellite/gaps", params={"expected_interval": 10})
         assert resp.status_code == 200
         data = resp.json()
         assert data["gap_count"] == 1
@@ -111,7 +111,7 @@ class TestGoesGaps:
 class TestGoesBackfill:
     @patch("app.tasks.goes_tasks.backfill_gaps.delay")
     async def test_create_backfill_job(self, mock_delay, client):
-        resp = await client.post("/api/goes/backfill", json={
+        resp = await client.post("/api/satellite/backfill", json={
             "satellite": "GOES-16",
             "band": "C02",
             "sector": "FullDisk",

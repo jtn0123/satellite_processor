@@ -33,7 +33,7 @@ class TestRouterUsesSettings:
     """Integration: the /goes/config endpoint should reflect Settings defaults."""
 
     async def test_goes_config_returns_settings_default(self, client):
-        resp = await client.get("/api/goes/config")
+        resp = await client.get("/api/satellite/config")
         if resp.status_code == 200:
             data = resp.json()
             from app.config import settings

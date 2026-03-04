@@ -26,7 +26,7 @@ def _frame(**kw):
 @pytest.mark.asyncio
 class TestProducts:
     async def test_products_returns_satellites(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         assert resp.status_code == 200
         data = resp.json()
         assert "satellites" in data
@@ -34,7 +34,7 @@ class TestProducts:
         assert len(data["satellites"]) > 0
 
     async def test_products_returns_sectors(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert "sectors" in data
         for s in data["sectors"]:
@@ -43,7 +43,7 @@ class TestProducts:
             assert "product" in s
 
     async def test_products_returns_bands(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert "bands" in data
         for b in data["bands"]:
@@ -51,7 +51,7 @@ class TestProducts:
             assert "description" in b
 
     async def test_products_band_count(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert len(data["bands"]) == 17  # C01-C16 + GEOCOLOR
 
@@ -59,7 +59,7 @@ class TestProducts:
 @pytest.mark.asyncio
 class TestLatestFrame:
     async def test_latest_frame_not_found(self, client):
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 404
 
     async def test_latest_frame_returns_most_recent(self, client, db):
@@ -69,7 +69,7 @@ class TestLatestFrame:
         db.add(new)
         await db.commit()
 
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == new.id
@@ -79,7 +79,7 @@ class TestLatestFrame:
         db.add(_frame(satellite="GOES-18"))
         await db.commit()
 
-        resp = await client.get("/api/goes/latest?satellite=GOES-18&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-18&sector=CONUS&band=C02")
         assert resp.status_code == 200
         assert resp.json()["satellite"] == "GOES-18"
 
@@ -87,7 +87,7 @@ class TestLatestFrame:
         db.add(_frame(band="C02"))
         await db.commit()
 
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C13")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C13")
         assert resp.status_code == 404
 
     async def test_latest_frame_response_shape(self, client, db):
@@ -95,7 +95,7 @@ class TestLatestFrame:
         db.add(f)
         await db.commit()
 
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         data = resp.json()
         assert data["width"] == 5424
         assert data["height"] == 3000
@@ -106,14 +106,14 @@ class TestLatestFrame:
         """Default params are GOES-19, CONUS, C02."""
         db.add(_frame(satellite="GOES-19"))
         await db.commit()
-        resp = await client.get("/api/goes/latest")
+        resp = await client.get("/api/satellite/latest")
         assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 class TestCompositeRecipes:
     async def test_list_recipes(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
@@ -123,7 +123,7 @@ class TestCompositeRecipes:
         assert "fire_detection" in names
 
     async def test_recipe_has_bands(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         for recipe in resp.json():
             assert "bands" in recipe
             assert len(recipe["bands"]) >= 2
@@ -134,7 +134,7 @@ class TestCreateComposite:
     async def test_create_composite_success(self, client, db):
         with patch("app.tasks.composite_task.generate_composite") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/goes/composites", json={
+            resp = await client.post("/api/satellite/composites", json={
                 "recipe": "true_color",
                 "satellite": "GOES-16",
                 "sector": "CONUS",
@@ -147,14 +147,14 @@ class TestCreateComposite:
         assert "job_id" in data
 
     async def test_create_composite_unknown_recipe(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "nonexistent",
             "capture_time": "2024-06-01T12:00:00",
         })
         assert resp.status_code in (400, 422)
 
     async def test_create_composite_missing_capture_time(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "true_color",
         })
         assert resp.status_code in (400, 422)
@@ -163,7 +163,7 @@ class TestCreateComposite:
 @pytest.mark.asyncio
 class TestListComposites:
     async def test_list_composites_empty(self, client):
-        resp = await client.get("/api/goes/composites")
+        resp = await client.get("/api/satellite/composites")
         assert resp.status_code == 200
         data = resp.json()
         assert data["items"] == []
@@ -182,7 +182,7 @@ class TestListComposites:
             ))
         await db.commit()
 
-        resp = await client.get("/api/goes/composites?page=1&limit=2")
+        resp = await client.get("/api/satellite/composites?page=1&limit=2")
         data = resp.json()
         assert data["total"] == 5
         assert len(data["items"]) == 2
@@ -201,7 +201,7 @@ class TestListComposites:
             ))
         await db.commit()
 
-        resp = await client.get("/api/goes/composites?page=3&limit=2")
+        resp = await client.get("/api/satellite/composites?page=3&limit=2")
         data = resp.json()
         assert len(data["items"]) == 1  # 5 items, page 3 of 2 = 1 item
 
@@ -209,7 +209,7 @@ class TestListComposites:
 @pytest.mark.asyncio
 class TestGetComposite:
     async def test_get_composite_not_found(self, client):
-        resp = await client.get("/api/goes/composites/nonexistent")
+        resp = await client.get("/api/satellite/composites/nonexistent")
         assert resp.status_code == 404
 
     async def test_get_composite_success(self, client, db):
@@ -222,7 +222,7 @@ class TestGetComposite:
         ))
         await db.commit()
 
-        resp = await client.get(f"/api/goes/composites/{cid}")
+        resp = await client.get(f"/api/satellite/composites/{cid}")
         assert resp.status_code == 200
         assert resp.json()["id"] == cid
         assert resp.json()["recipe"] == "true_color"

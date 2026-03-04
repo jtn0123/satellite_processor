@@ -172,14 +172,14 @@ def make_animation_preset(db, **kw):
 
 
 # ════════════════════════════════════════════════════════════
-# GOES Router Tests (/api/goes/...)
+# GOES Router Tests (/api/satellite/...)
 # ════════════════════════════════════════════════════════════
 
 
 class TestGoesProducts:
     @pytest.mark.asyncio
     async def test_list_products(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         assert resp.status_code == 200
         data = resp.json()
         assert "satellites" in data
@@ -189,7 +189,7 @@ class TestGoesProducts:
 
     @pytest.mark.asyncio
     async def test_products_has_metadata(self, client):
-        resp = await client.get("/api/goes/products")
+        resp = await client.get("/api/satellite/products")
         data = resp.json()
         assert "sectors" in data
         assert data["default_satellite"] == "GOES-19"
@@ -200,7 +200,7 @@ class TestGoesProducts:
 class TestGoesCompositeRecipes:
     @pytest.mark.asyncio
     async def test_list_composite_recipes(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) >= 2
@@ -214,7 +214,7 @@ class TestGoesFetch:
     async def test_fetch_goes_creates_job(self, client, db):
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-123")
-            resp = await client.post("/api/goes/fetch", json={
+            resp = await client.post("/api/satellite/fetch", json={
                 "satellite": "GOES-16",
                 "sector": "CONUS",
                 "band": "C02",
@@ -228,7 +228,7 @@ class TestGoesFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_goes_invalid_satellite(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-99",
             "sector": "CONUS",
             "band": "C02",
@@ -239,7 +239,7 @@ class TestGoesFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_goes_invalid_band(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C99",
@@ -250,7 +250,7 @@ class TestGoesFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_goes_end_before_start(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C02",
@@ -261,7 +261,7 @@ class TestGoesFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_goes_range_exceeds_24h(self, client):
-        resp = await client.post("/api/goes/fetch", json={
+        resp = await client.post("/api/satellite/fetch", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "band": "C02",
@@ -276,7 +276,7 @@ class TestGoesFetchComposite:
     async def test_fetch_composite_creates_job(self, client, db):
         with patch("app.tasks.composite_task.fetch_composite_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-456")
-            resp = await client.post("/api/goes/fetch-composite", json={
+            resp = await client.post("/api/satellite/fetch-composite", json={
                 "satellite": "GOES-16",
                 "sector": "CONUS",
                 "recipe": "true_color",
@@ -289,7 +289,7 @@ class TestGoesFetchComposite:
 
     @pytest.mark.asyncio
     async def test_fetch_composite_invalid_recipe(self, client):
-        resp = await client.post("/api/goes/fetch-composite", json={
+        resp = await client.post("/api/satellite/fetch-composite", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "recipe": "nonexistent_recipe",
@@ -304,7 +304,7 @@ class TestGoesBackfill:
     async def test_backfill_creates_job(self, client, db):
         with patch("app.tasks.fetch_task.backfill_gaps") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-789")
-            resp = await client.post("/api/goes/backfill", json={
+            resp = await client.post("/api/satellite/backfill", json={
                 "satellite": "GOES-16",
                 "sector": "CONUS",
                 "band": "C02",
@@ -321,14 +321,14 @@ class TestGoesLatest:
         make_frame(db, satellite="GOES-16", sector="CONUS", band="C02")
         await db.commit()
 
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "GOES-16"
 
     @pytest.mark.asyncio
     async def test_latest_not_found(self, client):
-        resp = await client.get("/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C16")
+        resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C16")
         assert resp.status_code == 404
 
 
@@ -340,7 +340,7 @@ class TestGoesBandAvailability:
         make_frame(db, satellite="GOES-16", sector="CONUS", band="C13")
         await db.commit()
 
-        resp = await client.get("/api/goes/band-availability?satellite=GOES-16&sector=CONUS")
+        resp = await client.get("/api/satellite/band-availability?satellite=GOES-16&sector=CONUS")
         assert resp.status_code == 200
         data = resp.json()
         assert data["counts"]["C02"] == 2
@@ -352,7 +352,7 @@ class TestGoesCompositesCRUD:
     async def test_create_composite(self, client, db):
         with patch("app.tasks.composite_task.generate_composite") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-comp")
-            resp = await client.post("/api/goes/composites", json={
+            resp = await client.post("/api/satellite/composites", json={
                 "recipe": "true_color",
                 "satellite": "GOES-16",
                 "sector": "CONUS",
@@ -364,7 +364,7 @@ class TestGoesCompositesCRUD:
 
     @pytest.mark.asyncio
     async def test_create_composite_invalid_recipe(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "fake_recipe",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -378,7 +378,7 @@ class TestGoesCompositesCRUD:
         make_composite(db, name="Natural Color", recipe="natural_color")
         await db.commit()
 
-        resp = await client.get("/api/goes/composites")
+        resp = await client.get("/api/satellite/composites")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 2
@@ -388,18 +388,18 @@ class TestGoesCompositesCRUD:
         c = make_composite(db)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/composites/{c.id}")
+        resp = await client.get(f"/api/satellite/composites/{c.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == c.id
 
     @pytest.mark.asyncio
     async def test_get_composite_not_found(self, client):
-        resp = await client.get(f"/api/goes/composites/{make_id()}")
+        resp = await client.get(f"/api/satellite/composites/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
     async def test_get_composite_invalid_id(self, client):
-        resp = await client.get("/api/goes/composites/not-a-uuid")
+        resp = await client.get("/api/satellite/composites/not-a-uuid")
         assert resp.status_code == 404
 
 
@@ -408,7 +408,7 @@ class TestGoesBandSamples:
     async def test_band_sample_thumbnails(self, client, db):
         make_frame(db, band="C02", thumbnail_path="/data/thumb.png")
         await db.commit()
-        resp = await client.get("/api/goes/preview/band-samples?satellite=GOES-16&sector=CONUS")
+        resp = await client.get("/api/satellite/preview/band-samples?satellite=GOES-16&sector=CONUS")
         assert resp.status_code == 200
         data = resp.json()
         assert "thumbnails" in data
@@ -418,19 +418,19 @@ class TestGoesBandSamples:
 class TestGoesGaps:
     @pytest.mark.asyncio
     async def test_detect_gaps_empty(self, client, db):
-        resp = await client.get("/api/goes/gaps?expected_interval=10")
+        resp = await client.get("/api/satellite/gaps?expected_interval=10")
         assert resp.status_code == 200
 
 
 # ════════════════════════════════════════════════════════════
-# GOES Data Router Tests (/api/goes/frames, collections, tags)
+# GOES Data Router Tests (/api/satellite/frames, collections, tags)
 # ════════════════════════════════════════════════════════════
 
 
 class TestGoesFrames:
     @pytest.mark.asyncio
     async def test_list_frames_empty(self, client):
-        resp = await client.get("/api/goes/frames")
+        resp = await client.get("/api/satellite/frames")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 0
@@ -442,7 +442,7 @@ class TestGoesFrames:
         make_frame(db, satellite="GOES-18", band="C13")
         await db.commit()
 
-        resp = await client.get("/api/goes/frames")
+        resp = await client.get("/api/satellite/frames")
         assert resp.status_code == 200
         assert resp.json()["total"] == 2
 
@@ -452,7 +452,7 @@ class TestGoesFrames:
         make_frame(db, satellite="GOES-18")
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?satellite=GOES-16")
+        resp = await client.get("/api/satellite/frames?satellite=GOES-16")
         assert resp.status_code == 200
         assert resp.json()["total"] == 1
 
@@ -462,7 +462,7 @@ class TestGoesFrames:
         make_frame(db, band="C13")
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?band=C02")
+        resp = await client.get("/api/satellite/frames?band=C02")
         assert resp.json()["total"] == 1
 
     @pytest.mark.asyncio
@@ -471,7 +471,7 @@ class TestGoesFrames:
         make_frame(db, sector="FullDisk")
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?sector=CONUS")
+        resp = await client.get("/api/satellite/frames?sector=CONUS")
         assert resp.json()["total"] == 1
 
     @pytest.mark.asyncio
@@ -480,12 +480,12 @@ class TestGoesFrames:
             make_frame(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?page=1&limit=2")
+        resp = await client.get("/api/satellite/frames?page=1&limit=2")
         data = resp.json()
         assert data["total"] == 5
         assert len(data["items"]) == 2
 
-        resp2 = await client.get("/api/goes/frames?page=3&limit=2")
+        resp2 = await client.get("/api/satellite/frames?page=3&limit=2")
         assert len(resp2.json()["items"]) == 1
 
     @pytest.mark.asyncio
@@ -494,7 +494,7 @@ class TestGoesFrames:
         make_frame(db, file_size=500)
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?sort=file_size&order=asc")
+        resp = await client.get("/api/satellite/frames?sort=file_size&order=asc")
         items = resp.json()["items"]
         assert items[0]["file_size"] <= items[1]["file_size"]
 
@@ -504,7 +504,7 @@ class TestGoesFrames:
         make_frame(db, capture_time=datetime(2025, 1, 20))
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?start_date=2025-01-15T00:00:00")
+        resp = await client.get("/api/satellite/frames?start_date=2025-01-15T00:00:00")
         assert resp.json()["total"] == 1
 
     @pytest.mark.asyncio
@@ -512,18 +512,18 @@ class TestGoesFrames:
         f = make_frame(db)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/frames/{f.id}")
+        resp = await client.get(f"/api/satellite/frames/{f.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == f.id
 
     @pytest.mark.asyncio
     async def test_get_frame_not_found(self, client):
-        resp = await client.get(f"/api/goes/frames/{make_id()}")
+        resp = await client.get(f"/api/satellite/frames/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
     async def test_get_frame_invalid_uuid(self, client):
-        resp = await client.get("/api/goes/frames/not-valid")
+        resp = await client.get("/api/satellite/frames/not-valid")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -532,7 +532,7 @@ class TestGoesFrames:
         f2 = make_frame(db)
         await db.commit()
 
-        resp = await client.request("DELETE", "/api/goes/frames", json={"ids": [f1.id, f2.id]})
+        resp = await client.request("DELETE", "/api/satellite/frames", json={"ids": [f1.id, f2.id]})
         assert resp.status_code == 200
         assert resp.json()["deleted"] == 2
 
@@ -542,7 +542,7 @@ class TestGoesFrames:
         make_frame(db, satellite="GOES-16", band="C13", file_size=2000)
         await db.commit()
 
-        resp = await client.get("/api/goes/frames/stats")
+        resp = await client.get("/api/satellite/frames/stats")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_frames"] == 2
@@ -550,7 +550,7 @@ class TestGoesFrames:
 
 
 class TestGoesFrameExport:
-    """Note: /api/goes/frames/export is shadowed by /api/goes/frames/{frame_id}
+    """Note: /api/satellite/frames/export is shadowed by /api/satellite/frames/{frame_id}
     due to route ordering. 'export' gets matched as frame_id and fails UUID validation.
     These tests document the current (broken) behavior.
     See #303 for route ordering history."""
@@ -560,7 +560,7 @@ class TestGoesFrameExport:
         """The export route is unreachable due to {frame_id} route taking priority."""
         make_frame(db)
         await db.commit()
-        resp = await client.get("/api/goes/frames/export?format=json")
+        resp = await client.get("/api/satellite/frames/export?format=json")
         # Route ordering is now fixed — export route is reachable
         assert resp.status_code == 200
 
@@ -568,7 +568,7 @@ class TestGoesFrameExport:
 class TestGoesCollections:
     @pytest.mark.asyncio
     async def test_create_collection(self, client):
-        resp = await client.post("/api/goes/collections", json={
+        resp = await client.post("/api/satellite/collections", json={
             "name": "My Collection",
             "description": "Test description",
         })
@@ -583,7 +583,7 @@ class TestGoesCollections:
         make_collection(db, name="Col B")
         await db.commit()
 
-        resp = await client.get("/api/goes/collections")
+        resp = await client.get("/api/satellite/collections")
         assert resp.status_code == 200
         assert resp.json()["total"] == 2
 
@@ -592,13 +592,13 @@ class TestGoesCollections:
         c = make_collection(db)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/collections/{c.id}", json={"name": "Updated"})
+        resp = await client.put(f"/api/satellite/collections/{c.id}", json={"name": "Updated"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "Updated"
 
     @pytest.mark.asyncio
     async def test_update_collection_not_found(self, client):
-        resp = await client.put(f"/api/goes/collections/{make_id()}", json={"name": "X"})
+        resp = await client.put(f"/api/satellite/collections/{make_id()}", json={"name": "X"})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -606,13 +606,13 @@ class TestGoesCollections:
         c = make_collection(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/collections/{c.id}")
+        resp = await client.delete(f"/api/satellite/collections/{c.id}")
         assert resp.status_code == 200
         assert resp.json()["deleted"] == c.id
 
     @pytest.mark.asyncio
     async def test_delete_collection_not_found(self, client):
-        resp = await client.delete(f"/api/goes/collections/{make_id()}")
+        resp = await client.delete(f"/api/satellite/collections/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -621,7 +621,7 @@ class TestGoesCollections:
         f = make_frame(db)
         await db.commit()
 
-        resp = await client.post(f"/api/goes/collections/{c.id}/frames", json={"frame_ids": [f.id]})
+        resp = await client.post(f"/api/satellite/collections/{c.id}/frames", json={"frame_ids": [f.id]})
         assert resp.status_code == 200
         assert resp.json()["added"] == 1
 
@@ -630,7 +630,7 @@ class TestGoesCollections:
         f = make_frame(db)
         await db.commit()
 
-        resp = await client.post(f"/api/goes/collections/{make_id()}/frames", json={"frame_ids": [f.id]})
+        resp = await client.post(f"/api/satellite/collections/{make_id()}/frames", json={"frame_ids": [f.id]})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -641,13 +641,13 @@ class TestGoesCollections:
         db.add(CollectionFrame(collection_id=c.id, frame_id=f.id))
         await db.commit()
 
-        resp = await client.get(f"/api/goes/collections/{c.id}/frames")
+        resp = await client.get(f"/api/satellite/collections/{c.id}/frames")
         assert resp.status_code == 200
         assert resp.json()["total"] == 1
 
     @pytest.mark.asyncio
     async def test_list_collection_frames_not_found(self, client):
-        resp = await client.get(f"/api/goes/collections/{make_id()}/frames")
+        resp = await client.get(f"/api/satellite/collections/{make_id()}/frames")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -658,7 +658,7 @@ class TestGoesCollections:
         db.add(CollectionFrame(collection_id=c.id, frame_id=f.id))
         await db.commit()
 
-        resp = await client.request("DELETE", f"/api/goes/collections/{c.id}/frames", json={"frame_ids": [f.id]})
+        resp = await client.request("DELETE", f"/api/satellite/collections/{c.id}/frames", json={"frame_ids": [f.id]})
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
@@ -669,7 +669,7 @@ class TestGoesCollections:
         db.add(CollectionFrame(collection_id=c.id, frame_id=f.id))
         await db.commit()
 
-        resp = await client.get(f"/api/goes/collections/{c.id}/export?format=json")
+        resp = await client.get(f"/api/satellite/collections/{c.id}/export?format=json")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
@@ -677,19 +677,19 @@ class TestGoesCollections:
         c = make_collection(db)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/collections/{c.id}/export?format=csv")
+        resp = await client.get(f"/api/satellite/collections/{c.id}/export?format=csv")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_export_collection_not_found(self, client):
-        resp = await client.get(f"/api/goes/collections/{make_id()}/export")
+        resp = await client.get(f"/api/satellite/collections/{make_id()}/export")
         assert resp.status_code == 404
 
 
 class TestGoesTags:
     @pytest.mark.asyncio
     async def test_create_tag(self, client):
-        resp = await client.post("/api/goes/tags", json={"name": "hurricane", "color": "#ff0000"})
+        resp = await client.post("/api/satellite/tags", json={"name": "hurricane", "color": "#ff0000"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "hurricane"
 
@@ -698,7 +698,7 @@ class TestGoesTags:
         make_tag(db, name="dupe")
         await db.commit()
 
-        resp = await client.post("/api/goes/tags", json={"name": "dupe"})
+        resp = await client.post("/api/satellite/tags", json={"name": "dupe"})
         assert resp.status_code == 409
 
     @pytest.mark.asyncio
@@ -707,7 +707,7 @@ class TestGoesTags:
         make_tag(db, name="b-tag")
         await db.commit()
 
-        resp = await client.get("/api/goes/tags")
+        resp = await client.get("/api/satellite/tags")
         assert resp.status_code == 200
         assert resp.json()["total"] == 2
 
@@ -716,12 +716,12 @@ class TestGoesTags:
         t = make_tag(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/tags/{t.id}")
+        resp = await client.delete(f"/api/satellite/tags/{t.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_tag_not_found(self, client):
-        resp = await client.delete(f"/api/goes/tags/{make_id()}")
+        resp = await client.delete(f"/api/satellite/tags/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -730,7 +730,7 @@ class TestGoesTags:
         t = make_tag(db)
         await db.commit()
 
-        resp = await client.post("/api/goes/frames/tag", json={
+        resp = await client.post("/api/satellite/frames/tag", json={
             "frame_ids": [f.id],
             "tag_ids": [t.id],
         })
@@ -745,14 +745,14 @@ class TestDashboardStats:
         make_job(db, job_type="goes_fetch", status="completed")
         await db.commit()
 
-        resp = await client.get("/api/goes/dashboard-stats")
+        resp = await client.get("/api/satellite/dashboard-stats")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_frames"] == 1
 
     @pytest.mark.asyncio
     async def test_quick_fetch_options(self, client):
-        resp = await client.get("/api/goes/quick-fetch-options")
+        resp = await client.get("/api/satellite/quick-fetch-options")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 4
@@ -767,7 +767,7 @@ class TestGoesProcessFrames:
 
         with patch("app.tasks.processing.process_images_task") as mock_task:
             mock_task.delay.return_value = MagicMock(id="ptask")
-            resp = await client.post("/api/goes/frames/process", json={
+            resp = await client.post("/api/satellite/frames/process", json={
                 "frame_ids": [f.id],
                 "params": {},
             })
@@ -776,7 +776,7 @@ class TestGoesProcessFrames:
 
     @pytest.mark.asyncio
     async def test_process_frames_not_found(self, client):
-        resp = await client.post("/api/goes/frames/process", json={
+        resp = await client.post("/api/satellite/frames/process", json={
             "frame_ids": [make_id()],
             "params": {},
         })
@@ -1050,7 +1050,7 @@ class TestStats:
 class TestFetchPresets:
     @pytest.mark.asyncio
     async def test_create_fetch_preset(self, client):
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "My Preset",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -1066,7 +1066,7 @@ class TestFetchPresets:
         make_fetch_preset(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/fetch-presets")
+        resp = await client.get("/api/satellite/fetch-presets")
         assert resp.status_code == 200
         assert len(resp.json()) == 2
 
@@ -1075,13 +1075,13 @@ class TestFetchPresets:
         p = make_fetch_preset(db)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/fetch-presets/{p.id}", json={"name": "Updated"})
+        resp = await client.put(f"/api/satellite/fetch-presets/{p.id}", json={"name": "Updated"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "Updated"
 
     @pytest.mark.asyncio
     async def test_update_fetch_preset_not_found(self, client):
-        resp = await client.put(f"/api/goes/fetch-presets/{make_id()}", json={"name": "X"})
+        resp = await client.put(f"/api/satellite/fetch-presets/{make_id()}", json={"name": "X"})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1089,12 +1089,12 @@ class TestFetchPresets:
         p = make_fetch_preset(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/fetch-presets/{p.id}")
+        resp = await client.delete(f"/api/satellite/fetch-presets/{p.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_fetch_preset_not_found(self, client):
-        resp = await client.delete(f"/api/goes/fetch-presets/{make_id()}")
+        resp = await client.delete(f"/api/satellite/fetch-presets/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1104,13 +1104,13 @@ class TestFetchPresets:
 
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="t1")
-            resp = await client.post(f"/api/goes/fetch-presets/{p.id}/run")
+            resp = await client.post(f"/api/satellite/fetch-presets/{p.id}/run")
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending"
 
     @pytest.mark.asyncio
     async def test_run_fetch_preset_not_found(self, client):
-        resp = await client.post(f"/api/goes/fetch-presets/{make_id()}/run")
+        resp = await client.post(f"/api/satellite/fetch-presets/{make_id()}/run")
         assert resp.status_code == 404
 
 
@@ -1120,7 +1120,7 @@ class TestSchedules:
         p = make_fetch_preset(db)
         await db.commit()
 
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "Hourly CONUS",
             "preset_id": p.id,
             "interval_minutes": 60,
@@ -1133,7 +1133,7 @@ class TestSchedules:
 
     @pytest.mark.asyncio
     async def test_create_schedule_invalid_preset(self, client):
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "Bad Schedule",
             "preset_id": make_id(),
             "interval_minutes": 60,
@@ -1148,7 +1148,7 @@ class TestSchedules:
         db.add(s)
         await db.commit()
 
-        resp = await client.get("/api/goes/schedules")
+        resp = await client.get("/api/satellite/schedules")
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
@@ -1160,13 +1160,13 @@ class TestSchedules:
         db.add(s)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/schedules/{s.id}", json={"name": "Updated Schedule"})
+        resp = await client.put(f"/api/satellite/schedules/{s.id}", json={"name": "Updated Schedule"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "Updated Schedule"
 
     @pytest.mark.asyncio
     async def test_update_schedule_not_found(self, client):
-        resp = await client.put(f"/api/goes/schedules/{make_id()}", json={"name": "X"})
+        resp = await client.put(f"/api/satellite/schedules/{make_id()}", json={"name": "X"})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1177,12 +1177,12 @@ class TestSchedules:
         db.add(s)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/schedules/{s.id}")
+        resp = await client.delete(f"/api/satellite/schedules/{s.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_schedule_not_found(self, client):
-        resp = await client.delete(f"/api/goes/schedules/{make_id()}")
+        resp = await client.delete(f"/api/satellite/schedules/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1193,20 +1193,20 @@ class TestSchedules:
         db.add(s)
         await db.commit()
 
-        resp = await client.post(f"/api/goes/schedules/{s.id}/toggle")
+        resp = await client.post(f"/api/satellite/schedules/{s.id}/toggle")
         assert resp.status_code == 200
         assert resp.json()["is_active"] is True
 
     @pytest.mark.asyncio
     async def test_toggle_schedule_not_found(self, client):
-        resp = await client.post(f"/api/goes/schedules/{make_id()}/toggle")
+        resp = await client.post(f"/api/satellite/schedules/{make_id()}/toggle")
         assert resp.status_code == 404
 
 
 class TestCleanupRules:
     @pytest.mark.asyncio
     async def test_create_cleanup_rule(self, client):
-        resp = await client.post("/api/goes/cleanup-rules", json={
+        resp = await client.post("/api/satellite/cleanup-rules", json={
             "name": "Delete old frames",
             "rule_type": "max_age_days",
             "value": 30,
@@ -1216,7 +1216,7 @@ class TestCleanupRules:
 
     @pytest.mark.asyncio
     async def test_create_cleanup_rule_storage(self, client):
-        resp = await client.post("/api/goes/cleanup-rules", json={
+        resp = await client.post("/api/satellite/cleanup-rules", json={
             "name": "Max 10GB",
             "rule_type": "max_storage_gb",
             "value": 10.0,
@@ -1225,7 +1225,7 @@ class TestCleanupRules:
 
     @pytest.mark.asyncio
     async def test_create_cleanup_rule_invalid_type(self, client):
-        resp = await client.post("/api/goes/cleanup-rules", json={
+        resp = await client.post("/api/satellite/cleanup-rules", json={
             "name": "Bad",
             "rule_type": "invalid_type",
             "value": 10,
@@ -1237,7 +1237,7 @@ class TestCleanupRules:
         make_cleanup_rule(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/cleanup-rules")
+        resp = await client.get("/api/satellite/cleanup-rules")
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
@@ -1246,13 +1246,13 @@ class TestCleanupRules:
         r = make_cleanup_rule(db)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/cleanup-rules/{r.id}", json={"value": 60})
+        resp = await client.put(f"/api/satellite/cleanup-rules/{r.id}", json={"value": 60})
         assert resp.status_code == 200
         assert resp.json()["value"] == 60
 
     @pytest.mark.asyncio
     async def test_update_cleanup_rule_not_found(self, client):
-        resp = await client.put(f"/api/goes/cleanup-rules/{make_id()}", json={"value": 5})
+        resp = await client.put(f"/api/satellite/cleanup-rules/{make_id()}", json={"value": 5})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1260,17 +1260,17 @@ class TestCleanupRules:
         r = make_cleanup_rule(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/cleanup-rules/{r.id}")
+        resp = await client.delete(f"/api/satellite/cleanup-rules/{r.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_cleanup_rule_not_found(self, client):
-        resp = await client.delete(f"/api/goes/cleanup-rules/{make_id()}")
+        resp = await client.delete(f"/api/satellite/cleanup-rules/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
     async def test_preview_cleanup_empty(self, client):
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         assert resp.status_code == 200
         assert resp.json()["frame_count"] == 0
 
@@ -1280,13 +1280,13 @@ class TestCleanupRules:
         make_frame(db, created_at=datetime(2020, 1, 1))
         await db.commit()
 
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         assert resp.status_code == 200
         assert resp.json()["frame_count"] >= 1
 
     @pytest.mark.asyncio
     async def test_run_cleanup(self, client, db):
-        resp = await client.post("/api/goes/cleanup/run")
+        resp = await client.post("/api/satellite/cleanup/run")
         assert resp.status_code == 200
         assert resp.json()["deleted_frames"] == 0
 
@@ -1299,7 +1299,7 @@ class TestCleanupRules:
 class TestCropPresets:
     @pytest.mark.asyncio
     async def test_create_crop_preset(self, client):
-        resp = await client.post("/api/goes/crop-presets", json={
+        resp = await client.post("/api/satellite/crop-presets", json={
             "name": "Northeast US",
             "x": 100, "y": 200, "width": 500, "height": 400,
         })
@@ -1311,7 +1311,7 @@ class TestCropPresets:
         make_crop_preset(db, name="Dupe")
         await db.commit()
 
-        resp = await client.post("/api/goes/crop-presets", json={
+        resp = await client.post("/api/satellite/crop-presets", json={
             "name": "Dupe", "x": 0, "y": 0, "width": 10, "height": 10,
         })
         assert resp.status_code == 409
@@ -1321,7 +1321,7 @@ class TestCropPresets:
         make_crop_preset(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/crop-presets")
+        resp = await client.get("/api/satellite/crop-presets")
         assert resp.status_code == 200
         assert len(resp.json()) >= 1
 
@@ -1330,13 +1330,13 @@ class TestCropPresets:
         p = make_crop_preset(db)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/crop-presets/{p.id}", json={"width": 999})
+        resp = await client.put(f"/api/satellite/crop-presets/{p.id}", json={"width": 999})
         assert resp.status_code == 200
         assert resp.json()["width"] == 999
 
     @pytest.mark.asyncio
     async def test_update_crop_preset_not_found(self, client):
-        resp = await client.put(f"/api/goes/crop-presets/{make_id()}", json={"width": 1})
+        resp = await client.put(f"/api/satellite/crop-presets/{make_id()}", json={"width": 1})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1344,12 +1344,12 @@ class TestCropPresets:
         p = make_crop_preset(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/crop-presets/{p.id}")
+        resp = await client.delete(f"/api/satellite/crop-presets/{p.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_crop_preset_not_found(self, client):
-        resp = await client.delete(f"/api/goes/crop-presets/{make_id()}")
+        resp = await client.delete(f"/api/satellite/crop-presets/{make_id()}")
         assert resp.status_code == 404
 
 
@@ -1358,7 +1358,7 @@ class TestAnimations:
     async def test_create_animation_no_frames(self, client):
         """Creating animation with no matching frames should fail."""
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "Test Anim",
                 "satellite": "GOES-16",
                 "sector": "CONUS",
@@ -1374,7 +1374,7 @@ class TestAnimations:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
             mock_task.delay.return_value = MagicMock(id="anim-task")
-            resp = await client.post("/api/goes/animations", json={
+            resp = await client.post("/api/satellite/animations", json={
                 "name": "Test Anim",
                 "frame_ids": [f1.id, f2.id],
             })
@@ -1388,7 +1388,7 @@ class TestAnimations:
         make_animation(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/animations")
+        resp = await client.get("/api/satellite/animations")
         assert resp.status_code == 200
         assert resp.json()["total"] == 2
 
@@ -1397,13 +1397,13 @@ class TestAnimations:
         a = make_animation(db)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/animations/{a.id}")
+        resp = await client.get(f"/api/satellite/animations/{a.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == a.id
 
     @pytest.mark.asyncio
     async def test_get_animation_not_found(self, client):
-        resp = await client.get(f"/api/goes/animations/{make_id()}")
+        resp = await client.get(f"/api/satellite/animations/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1411,18 +1411,18 @@ class TestAnimations:
         a = make_animation(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/animations/{a.id}")
+        resp = await client.delete(f"/api/satellite/animations/{a.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_animation_not_found(self, client):
-        resp = await client.delete(f"/api/goes/animations/{make_id()}")
+        resp = await client.delete(f"/api/satellite/animations/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
     async def test_create_animation_from_range_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/goes/animations/from-range", json={
+            resp = await client.post("/api/satellite/animations/from-range", json={
                 "satellite": "GOES-16",
                 "sector": "CONUS",
                 "band": "C02",
@@ -1434,7 +1434,7 @@ class TestAnimations:
     @pytest.mark.asyncio
     async def test_create_animation_recent_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/goes/animations/recent", json={
+            resp = await client.post("/api/satellite/animations/recent", json={
                 "satellite": "GOES-16",
                 "sector": "CONUS",
                 "band": "C02",
@@ -1445,7 +1445,7 @@ class TestAnimations:
     @pytest.mark.asyncio
     async def test_animation_batch_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/goes/animations/batch", json={
+            resp = await client.post("/api/satellite/animations/batch", json={
                 "animations": [{
                     "satellite": "GOES-16",
                     "sector": "CONUS",
@@ -1461,7 +1461,7 @@ class TestFrameRangePreview:
     @pytest.mark.asyncio
     async def test_preview_empty(self, client):
         resp = await client.get(
-            "/api/goes/frames/preview-range"
+            "/api/satellite/frames/preview-range"
             "?satellite=GOES-16&sector=CONUS&band=C02"
             "&start_time=2025-01-01T00:00:00&end_time=2025-01-01T01:00:00"
         )
@@ -1475,7 +1475,7 @@ class TestFrameRangePreview:
         await db.commit()
 
         resp = await client.get(
-            "/api/goes/frames/preview-range"
+            "/api/satellite/frames/preview-range"
             "?satellite=GOES-16&sector=CONUS&band=C02"
             "&start_time=2025-01-15T00:00:00&end_time=2025-01-16T00:00:00"
         )
@@ -1489,7 +1489,7 @@ class TestFrameRangePreview:
 class TestAnimationPresets:
     @pytest.mark.asyncio
     async def test_create_animation_preset(self, client):
-        resp = await client.post("/api/goes/animation-presets", json={
+        resp = await client.post("/api/satellite/animation-presets", json={
             "name": "My Preset",
             "satellite": "GOES-16",
             "fps": 15,
@@ -1502,7 +1502,7 @@ class TestAnimationPresets:
         make_animation_preset(db, name="Dupe")
         await db.commit()
 
-        resp = await client.post("/api/goes/animation-presets", json={"name": "Dupe"})
+        resp = await client.post("/api/satellite/animation-presets", json={"name": "Dupe"})
         assert resp.status_code == 409
 
     @pytest.mark.asyncio
@@ -1510,7 +1510,7 @@ class TestAnimationPresets:
         make_animation_preset(db)
         await db.commit()
 
-        resp = await client.get("/api/goes/animation-presets")
+        resp = await client.get("/api/satellite/animation-presets")
         assert resp.status_code == 200
         assert len(resp.json()) >= 1
 
@@ -1519,12 +1519,12 @@ class TestAnimationPresets:
         p = make_animation_preset(db)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/animation-presets/{p.id}")
+        resp = await client.get(f"/api/satellite/animation-presets/{p.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_get_animation_preset_not_found(self, client):
-        resp = await client.get(f"/api/goes/animation-presets/{make_id()}")
+        resp = await client.get(f"/api/satellite/animation-presets/{make_id()}")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1532,13 +1532,13 @@ class TestAnimationPresets:
         p = make_animation_preset(db)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/animation-presets/{p.id}", json={"fps": 25})
+        resp = await client.put(f"/api/satellite/animation-presets/{p.id}", json={"fps": 25})
         assert resp.status_code == 200
         assert resp.json()["fps"] == 25
 
     @pytest.mark.asyncio
     async def test_update_animation_preset_not_found(self, client):
-        resp = await client.put(f"/api/goes/animation-presets/{make_id()}", json={"fps": 5})
+        resp = await client.put(f"/api/satellite/animation-presets/{make_id()}", json={"fps": 5})
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1546,12 +1546,12 @@ class TestAnimationPresets:
         p = make_animation_preset(db)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/animation-presets/{p.id}")
+        resp = await client.delete(f"/api/satellite/animation-presets/{p.id}")
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_delete_animation_preset_not_found(self, client):
-        resp = await client.delete(f"/api/goes/animation-presets/{make_id()}")
+        resp = await client.delete(f"/api/satellite/animation-presets/{make_id()}")
         assert resp.status_code == 404
 
 

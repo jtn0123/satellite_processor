@@ -14,7 +14,7 @@ async def test_catalog_available_returns_sectors(client):
         "checked_at": "2026-01-01T00:00:00+00:00",
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/goes/catalog/available", params={"satellite": "GOES-19"})
+        resp = await client.get("/api/satellite/catalog/available", params={"satellite": "GOES-19"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "GOES-19"
@@ -32,7 +32,7 @@ async def test_catalog_available_default_satellite(client):
         "checked_at": "2026-01-01T00:00:00+00:00",
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/goes/catalog/available")
+        resp = await client.get("/api/satellite/catalog/available")
         assert resp.status_code == 200
         assert resp.json()["satellite"] == "GOES-19"
 
@@ -45,13 +45,13 @@ async def test_band_samples_returns_thumbnails(client):
         "sector": "CONUS",
         "thumbnails": {
             "C01": None,
-            "C02": "/api/goes/frames/abc/thumbnail",
+            "C02": "/api/satellite/frames/abc/thumbnail",
             "C03": None,
         },
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
         resp = await client.get(
-            "/api/goes/preview/band-samples",
+            "/api/satellite/preview/band-samples",
             params={"satellite": "GOES-19", "sector": "CONUS"},
         )
         assert resp.status_code == 200
@@ -59,14 +59,14 @@ async def test_band_samples_returns_thumbnails(client):
         assert data["satellite"] == "GOES-19"
         assert data["sector"] == "CONUS"
         assert "thumbnails" in data
-        assert data["thumbnails"]["C02"] == "/api/goes/frames/abc/thumbnail"
+        assert data["thumbnails"]["C02"] == "/api/satellite/frames/abc/thumbnail"
 
 
 @pytest.mark.asyncio
 async def test_export_frames_with_collection_id(client):
     """Export endpoint accepts collection_id filter without errors."""
     resp = await client.get(
-        "/api/goes/frames/export",
+        "/api/satellite/frames/export",
         params={"format": "json", "collection_id": "00000000-0000-0000-0000-000000000000", "limit": 10},
     )
     # 200 with empty results or 404 if not found — just verify no 500/422
@@ -77,7 +77,7 @@ async def test_export_frames_with_collection_id(client):
 async def test_export_frames_with_satellite_filter(client):
     """Export endpoint accepts satellite filter without errors."""
     resp = await client.get(
-        "/api/goes/frames/export",
+        "/api/satellite/frames/export",
         params={"format": "csv", "satellite": "GOES-19", "limit": 10},
     )
     assert resp.status_code in (200, 404)

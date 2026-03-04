@@ -25,9 +25,9 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
-    if (url === '/goes/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C02', 'C03', 'C01'] }] });
-    if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }], bands: [{ id: 'C02', description: 'Red' }] } });
+    if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C02', 'C03', 'C01'] }] });
+    if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
     return Promise.resolve({ data: {} });
   });
 });
@@ -35,9 +35,9 @@ beforeEach(() => {
 describe('CompositesTab - Defensive Scenarios', () => {
   it('handles recipes API returning null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: null });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: null });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<CompositesTab />);
@@ -48,9 +48,9 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('handles composites API returning null items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [] });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: null, total: 0 } });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [] });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: null, total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<CompositesTab />);
@@ -61,9 +61,9 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('handles products API returning null', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: null });
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [] });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: null });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [] });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<CompositesTab />);
@@ -82,8 +82,8 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('renders composites with various statuses', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C02'] }] });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C02'] }] });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({
         data: {
           items: [
             { id: '1', name: 'True Color', recipe: 'true_color', satellite: 'GOES-16', sector: 'CONUS', capture_time: '2024-06-01T12:00:00', file_path: '/tmp/c.png', file_size: 1024, status: 'completed', error: '', created_at: '2024-06-01' },
@@ -93,7 +93,7 @@ describe('CompositesTab - Defensive Scenarios', () => {
           total: 3, page: 1, limit: 20,
         },
       });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [], bands: [] } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [], bands: [] } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CompositesTab />);
@@ -104,9 +104,9 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('handles recipes returned as object with items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: { items: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] } });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI' }], bands: [] } });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: { items: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['GOES-16'], sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI' }], bands: [] } });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CompositesTab />);
@@ -117,9 +117,9 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('handles empty recipes list', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/composite-recipes') return Promise.resolve({ data: [] });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
-      if (url.startsWith('/goes/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [] });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], sectors: [], bands: [] } });
+      if (url.startsWith('/satellite/composites')) return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<CompositesTab />);

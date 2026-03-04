@@ -35,7 +35,7 @@ def _make_composite(db, **overrides):
 @pytest.mark.asyncio
 class TestCompositeRecipes:
     async def test_list_recipes(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         assert resp.status_code == 200
         recipes = resp.json()
         assert isinstance(recipes, list)
@@ -45,13 +45,13 @@ class TestCompositeRecipes:
         assert "fire_detection" in names
 
     async def test_recipe_has_bands(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         for recipe in resp.json():
             assert "bands" in recipe
             assert len(recipe["bands"]) >= 2
 
     async def test_recipe_has_name(self, client):
-        resp = await client.get("/api/goes/composite-recipes")
+        resp = await client.get("/api/satellite/composite-recipes")
         for recipe in resp.json():
             assert "name" in recipe
             assert len(recipe["name"]) > 0
@@ -61,7 +61,7 @@ class TestCompositeRecipes:
 class TestCreateComposite:
     @patch("app.tasks.goes_tasks.generate_composite.delay")
     async def test_create_valid_composite(self, mock_delay, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "true_color",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -75,7 +75,7 @@ class TestCreateComposite:
         mock_delay.assert_called_once()
 
     async def test_create_invalid_recipe(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "nonexistent_recipe",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -85,7 +85,7 @@ class TestCreateComposite:
         assert "Unknown recipe" in resp.json()["detail"]
 
     async def test_create_missing_capture_time(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "true_color",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -98,7 +98,7 @@ class TestCreateComposite:
             assert "capture_time" in str(detail)
 
     async def test_create_missing_recipe(self, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "satellite": "GOES-16",
             "sector": "CONUS",
             "capture_time": "2024-03-15T14:00:00",
@@ -107,7 +107,7 @@ class TestCreateComposite:
 
     @patch("app.tasks.goes_tasks.generate_composite.delay")
     async def test_create_defaults_satellite(self, mock_delay, client):
-        resp = await client.post("/api/goes/composites", json={
+        resp = await client.post("/api/satellite/composites", json={
             "recipe": "natural_color",
             "capture_time": "2024-03-15T14:00:00",
         })
@@ -117,7 +117,7 @@ class TestCreateComposite:
     async def test_create_all_recipes(self, mock_delay, client):
         recipes = ["true_color", "natural_color", "fire_detection", "dust_ash", "day_cloud_phase", "airmass"]
         for recipe in recipes:
-            resp = await client.post("/api/goes/composites", json={
+            resp = await client.post("/api/satellite/composites", json={
                 "recipe": recipe,
                 "capture_time": "2024-03-15T14:00:00",
             })
@@ -127,7 +127,7 @@ class TestCreateComposite:
 @pytest.mark.asyncio
 class TestListComposites:
     async def test_list_empty(self, client):
-        resp = await client.get("/api/goes/composites")
+        resp = await client.get("/api/satellite/composites")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 0
@@ -136,7 +136,7 @@ class TestListComposites:
     async def test_list_with_data(self, client, db):
         _make_composite(db)
         await db.commit()
-        resp = await client.get("/api/goes/composites")
+        resp = await client.get("/api/satellite/composites")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 1
@@ -146,7 +146,7 @@ class TestListComposites:
         for _i in range(5):
             _make_composite(db, id=str(uuid.uuid4()))
         await db.commit()
-        resp = await client.get("/api/goes/composites?page=1&limit=2")
+        resp = await client.get("/api/satellite/composites?page=1&limit=2")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 5
@@ -158,7 +158,7 @@ class TestListComposites:
         for _i in range(5):
             _make_composite(db, id=str(uuid.uuid4()))
         await db.commit()
-        resp = await client.get("/api/goes/composites?page=2&limit=2")
+        resp = await client.get("/api/satellite/composites?page=2&limit=2")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 2
@@ -166,7 +166,7 @@ class TestListComposites:
     async def test_list_pagination_beyond_last(self, client, db):
         _make_composite(db)
         await db.commit()
-        resp = await client.get("/api/goes/composites?page=100&limit=20")
+        resp = await client.get("/api/satellite/composites?page=100&limit=20")
         assert resp.status_code == 200
         assert resp.json()["items"] == []
 
@@ -174,7 +174,7 @@ class TestListComposites:
         _make_composite(db, id=str(uuid.uuid4()), recipe="true_color", name="True Color")
         _make_composite(db, id=str(uuid.uuid4()), recipe="fire_detection", name="Fire Detection")
         await db.commit()
-        resp = await client.get("/api/goes/composites")
+        resp = await client.get("/api/satellite/composites")
         recipes = {c["recipe"] for c in resp.json()["items"]}
         assert "true_color" in recipes
         assert "fire_detection" in recipes
@@ -185,7 +185,7 @@ class TestGetComposite:
     async def test_get_found(self, client, db):
         comp = _make_composite(db)
         await db.commit()
-        resp = await client.get(f"/api/goes/composites/{comp.id}")
+        resp = await client.get(f"/api/satellite/composites/{comp.id}")
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == comp.id
@@ -193,13 +193,13 @@ class TestGetComposite:
         assert data["satellite"] == "GOES-16"
 
     async def test_get_not_found(self, client):
-        resp = await client.get("/api/goes/composites/nonexistent")
+        resp = await client.get("/api/satellite/composites/nonexistent")
         assert resp.status_code == 404
 
     async def test_get_returns_all_fields(self, client, db):
         comp = _make_composite(db, file_size=4096)
         await db.commit()
-        resp = await client.get(f"/api/goes/composites/{comp.id}")
+        resp = await client.get(f"/api/satellite/composites/{comp.id}")
         data = resp.json()
         for field in ("id", "name", "recipe", "satellite", "sector", "status", "file_size"):
             assert field in data
@@ -208,7 +208,7 @@ class TestGetComposite:
     async def test_get_with_error_status(self, client, db):
         comp = _make_composite(db, status="failed", error="Band data not found")
         await db.commit()
-        resp = await client.get(f"/api/goes/composites/{comp.id}")
+        resp = await client.get(f"/api/satellite/composites/{comp.id}")
         data = resp.json()
         assert data["status"] == "failed"
         assert data["error"] == "Band data not found"

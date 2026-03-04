@@ -17,7 +17,7 @@ from ..models.pagination import PaginatedResponse
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/goes", tags=["goes-tags"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-tags"])
 
 
 @router.post("/tags", response_model=TagResponse)

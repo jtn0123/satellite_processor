@@ -27,7 +27,7 @@ def _make_frame(**overrides):
 @pytest.mark.asyncio
 class TestFrames:
     async def test_list_frames_empty(self, client):
-        resp = await client.get("/api/goes/frames")
+        resp = await client.get("/api/satellite/frames")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 0
@@ -38,7 +38,7 @@ class TestFrames:
         db.add(frame)
         await db.commit()
 
-        resp = await client.get("/api/goes/frames")
+        resp = await client.get("/api/satellite/frames")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 1
@@ -49,7 +49,7 @@ class TestFrames:
         db.add(_make_frame(satellite="GOES-18"))
         await db.commit()
 
-        resp = await client.get("/api/goes/frames?satellite=GOES-18")
+        resp = await client.get("/api/satellite/frames?satellite=GOES-18")
         assert resp.status_code == 200
         assert resp.json()["total"] == 1
 
@@ -58,12 +58,12 @@ class TestFrames:
         db.add(frame)
         await db.commit()
 
-        resp = await client.get(f"/api/goes/frames/{frame.id}")
+        resp = await client.get(f"/api/satellite/frames/{frame.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == frame.id
 
     async def test_get_frame_not_found(self, client):
-        resp = await client.get("/api/goes/frames/nonexistent")
+        resp = await client.get("/api/satellite/frames/nonexistent")
         assert resp.status_code == 404
 
     async def test_bulk_delete_frames(self, client, db):
@@ -74,13 +74,13 @@ class TestFrames:
         await db.commit()
 
         resp = await client.request(
-            "DELETE", "/api/goes/frames", json={"ids": [f1.id, f2.id]}
+            "DELETE", "/api/satellite/frames", json={"ids": [f1.id, f2.id]}
         )
         assert resp.status_code == 200
         assert resp.json()["deleted"] == 2
 
     async def test_frame_stats_empty(self, client):
-        resp = await client.get("/api/goes/frames/stats")
+        resp = await client.get("/api/satellite/frames/stats")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_frames"] == 0
@@ -90,7 +90,7 @@ class TestFrames:
         db.add(_make_frame(satellite="GOES-18", file_size=2000))
         await db.commit()
 
-        resp = await client.get("/api/goes/frames/stats")
+        resp = await client.get("/api/satellite/frames/stats")
         data = resp.json()
         assert data["total_frames"] == 2
         assert data["total_size_bytes"] == 3000
@@ -99,7 +99,7 @@ class TestFrames:
 @pytest.mark.asyncio
 class TestCollections:
     async def test_create_collection(self, client):
-        resp = await client.post("/api/goes/collections", json={
+        resp = await client.post("/api/satellite/collections", json={
             "name": "Test Collection",
             "description": "A test",
         })
@@ -112,7 +112,7 @@ class TestCollections:
         db.add(Collection(id="c1", name="Col1"))
         await db.commit()
 
-        resp = await client.get("/api/goes/collections")
+        resp = await client.get("/api/satellite/collections")
         assert resp.status_code == 200
         data = resp.json()
         items = data.get("items", data) if isinstance(data, dict) else data
@@ -122,7 +122,7 @@ class TestCollections:
         db.add(Collection(id="c1", name="Old"))
         await db.commit()
 
-        resp = await client.put("/api/goes/collections/c1", json={"name": "New"})
+        resp = await client.put("/api/satellite/collections/c1", json={"name": "New"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "New"
 
@@ -130,7 +130,7 @@ class TestCollections:
         db.add(Collection(id="c1", name="Del"))
         await db.commit()
 
-        resp = await client.delete("/api/goes/collections/c1")
+        resp = await client.delete("/api/satellite/collections/c1")
         assert resp.status_code == 200
 
     async def test_add_frames_to_collection(self, client, db):
@@ -139,7 +139,7 @@ class TestCollections:
         db.add(frame)
         await db.commit()
 
-        resp = await client.post("/api/goes/collections/c1/frames", json={
+        resp = await client.post("/api/satellite/collections/c1/frames", json={
             "frame_ids": [frame.id]
         })
         assert resp.status_code == 200
@@ -154,7 +154,7 @@ class TestCollections:
         await db.commit()
 
         resp = await client.request(
-            "DELETE", "/api/goes/collections/c1/frames", json={"frame_ids": [frame.id]}
+            "DELETE", "/api/satellite/collections/c1/frames", json={"frame_ids": [frame.id]}
         )
         assert resp.status_code == 200
 
@@ -162,7 +162,7 @@ class TestCollections:
 @pytest.mark.asyncio
 class TestTags:
     async def test_create_tag(self, client):
-        resp = await client.post("/api/goes/tags", json={
+        resp = await client.post("/api/satellite/tags", json={
             "name": "favorite",
             "color": "#ff0000",
         })
@@ -173,7 +173,7 @@ class TestTags:
         db.add(Tag(id="t1", name="dup", color="#000000"))
         await db.commit()
 
-        resp = await client.post("/api/goes/tags", json={"name": "dup"})
+        resp = await client.post("/api/satellite/tags", json={"name": "dup"})
         assert resp.status_code == 409
 
     async def test_list_tags(self, client, db):
@@ -181,7 +181,7 @@ class TestTags:
         db.add(Tag(id="t2", name="b", color="#fff"))
         await db.commit()
 
-        resp = await client.get("/api/goes/tags")
+        resp = await client.get("/api/satellite/tags")
         assert resp.status_code == 200
         data = resp.json()
         items = data.get("items", data) if isinstance(data, dict) else data
@@ -191,7 +191,7 @@ class TestTags:
         db.add(Tag(id="t1", name="del", color="#000"))
         await db.commit()
 
-        resp = await client.delete("/api/goes/tags/t1")
+        resp = await client.delete("/api/satellite/tags/t1")
         assert resp.status_code == 200
 
     async def test_bulk_tag_frames(self, client, db):
@@ -200,7 +200,7 @@ class TestTags:
         db.add(Tag(id="t1", name="tag1", color="#000"))
         await db.commit()
 
-        resp = await client.post("/api/goes/frames/tag", json={
+        resp = await client.post("/api/satellite/frames/tag", json={
             "frame_ids": [frame.id],
             "tag_ids": ["t1"],
         })

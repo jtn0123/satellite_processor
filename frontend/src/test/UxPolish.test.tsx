@@ -93,10 +93,10 @@ describe('BrowseTab — clear filters button', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/goes/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-      if (url === '/goes/products') return Promise.resolve({ data: { satellites: ['G16', 'G18'], bands: [{ id: 'C01' }], sectors: [{ id: 'CONUS', name: 'CONUS' }] } });
-      if (url === '/goes/tags') return Promise.resolve({ data: [] });
-      if (url === '/goes/collections') return Promise.resolve({ data: [] });
+      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
+      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['G16', 'G18'], bands: [{ id: 'C01' }], sectors: [{ id: 'CONUS', name: 'CONUS' }] } });
+      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
+      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     });
   });

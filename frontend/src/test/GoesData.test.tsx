@@ -37,7 +37,7 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-18'],
@@ -46,16 +46,16 @@ beforeEach(() => {
         },
       });
     }
-    if (url === '/goes/frames') {
+    if (url === '/satellite/frames') {
       return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
     }
-    if (url === '/goes/frames/stats') {
+    if (url === '/satellite/frames/stats') {
       return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
     }
-    if (url === '/goes/collections') {
+    if (url === '/satellite/collections') {
       return Promise.resolve({ data: [] });
     }
-    if (url === '/goes/tags') {
+    if (url === '/satellite/tags') {
       return Promise.resolve({ data: [] });
     }
     return Promise.resolve({ data: {} });

@@ -102,7 +102,7 @@ class TestCatalogLatestImageUrl:
 
 @pytest.mark.asyncio
 async def test_catalog_latest_returns_image_url(client):
-    """GET /api/goes/catalog/latest returns image_url with S3 URL."""
+    """GET /api/satellite/catalog/latest returns image_url with S3 URL."""
     mock_result = {
         "scan_time": "2025-01-01T12:00:00+00:00",
         "size": 5000,
@@ -113,7 +113,7 @@ async def test_catalog_latest_returns_image_url(client):
         "image_url": "https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2025/001/12/test.nc",
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/goes/catalog/latest", params={
+        resp = await client.get("/api/satellite/catalog/latest", params={
             "satellite": "GOES-19", "sector": "CONUS", "band": "C02",
         })
         assert resp.status_code == 200
@@ -192,8 +192,8 @@ class TestCatalogList:
 
 
 async def test_products_endpoint(client):
-    """GET /api/goes/products returns satellite/sector/band info."""
-    resp = await client.get("/api/goes/products")
+    """GET /api/satellite/products returns satellite/sector/band info."""
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     data = resp.json()
     assert "satellites" in data
@@ -204,14 +204,14 @@ async def test_products_endpoint(client):
 
 async def test_products_has_default_satellite(client):
     """Products response should include default_satellite."""
-    resp = await client.get("/api/goes/products")
+    resp = await client.get("/api/satellite/products")
     data = resp.json()
     assert data["default_satellite"] == "GOES-19"
 
 
 async def test_composite_recipes_endpoint(client):
-    """GET /api/goes/composite-recipes returns valid recipes."""
-    resp = await client.get("/api/goes/composite-recipes")
+    """GET /api/satellite/composite-recipes returns valid recipes."""
+    resp = await client.get("/api/satellite/composite-recipes")
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, list)
@@ -221,8 +221,8 @@ async def test_composite_recipes_endpoint(client):
 
 
 async def test_latest_frame_404(client):
-    """GET /api/goes/latest with no data returns 404."""
-    resp = await client.get("/api/goes/latest?satellite=GOES-19&sector=CONUS&band=C02")
+    """GET /api/satellite/latest with no data returns 404."""
+    resp = await client.get("/api/satellite/latest?satellite=GOES-19&sector=CONUS&band=C02")
     assert resp.status_code == 404
 
 
@@ -328,8 +328,8 @@ class TestCatalogLatestExceptions:
 
 
 async def test_band_availability_empty(client):
-    """GET /api/goes/band-availability with no data returns empty counts."""
-    resp = await client.get("/api/goes/band-availability?satellite=GOES-19&sector=CONUS")
+    """GET /api/satellite/band-availability with no data returns empty counts."""
+    resp = await client.get("/api/satellite/band-availability?satellite=GOES-19&sector=CONUS")
     assert resp.status_code == 200
     data = resp.json()
     assert "counts" in data

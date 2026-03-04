@@ -90,7 +90,7 @@ export default function BrowseTab() {
     if (filters.filterBand) exportParams.set('band', filters.filterBand);
     if (filters.filterSector) exportParams.set('sector', filters.filterSector);
     exportParams.set('format', 'csv');
-    globalThis.open(`/api/goes/frames/export?${exportParams.toString()}`, '_blank');
+    globalThis.open(`/api/satellite/frames/export?${exportParams.toString()}`, '_blank');
   }, [filters.filterSat, filters.filterBand, filters.filterSector]);
 
   const selectAll = useCallback(() => {

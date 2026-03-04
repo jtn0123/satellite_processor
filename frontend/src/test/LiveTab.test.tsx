@@ -28,7 +28,7 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-18'],
@@ -37,12 +37,12 @@ beforeEach(() => {
         },
       });
     }
-    if (url.startsWith('/goes/latest')) {
+    if (url.startsWith('/satellite/latest')) {
       return Promise.resolve({
         data: {
           id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
           capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc',
-          file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+          file_size: 1024, width: 5424, height: 3000, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
         },
       });
     }
@@ -102,7 +102,7 @@ describe('LiveTab', () => {
 
   it('shows error state when no frame data', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url.startsWith('/goes/latest')) {
+      if (url.startsWith('/satellite/latest')) {
         // Must look like an Axios 404 so the component's custom retry skips retries
         const axiosError = Object.assign(new Error('Not found'), {
           isAxiosError: true,
@@ -110,7 +110,7 @@ describe('LiveTab', () => {
         });
         return Promise.reject(axiosError);
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({
           data: {
             satellites: ['GOES-16'],

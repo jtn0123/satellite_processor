@@ -57,7 +57,7 @@ export default function BandPicker({ value, onChange, satellite, sector, disable
   const { data: bandCounts } = useQuery<Record<string, number>>({
     queryKey: ['band-counts', satellite, sector],
     queryFn: () =>
-      api.get('/goes/band-availability', { params: { satellite, sector } }).then((r) => r.data?.counts ?? {}),
+      api.get('/satellite/band-availability', { params: { satellite, sector } }).then((r) => r.data?.counts ?? {}),
     enabled: !!satellite && !!sector,
     staleTime: 60000,
   });
@@ -66,7 +66,7 @@ export default function BandPicker({ value, onChange, satellite, sector, disable
     e.stopPropagation();
     if (!satellite || !sector) return;
     setFetchingBand(bandId);
-    api.post('/goes/fetch', {
+    api.post('/satellite/fetch', {
       satellite,
       sector,
       band: bandId,

@@ -9,7 +9,7 @@ import OverviewTab from '../components/GoesData/OverviewTab';
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn().mockImplementation((url: string) => {
-      if (url === '/goes/catalog/latest') {
+      if (url === '/satellite/catalog/latest') {
         return Promise.resolve({
           data: {
             scan_time: new Date().toISOString(),
@@ -21,7 +21,7 @@ vi.mock('../api/client', () => ({
           },
         });
       }
-      if (url === '/goes/dashboard-stats') {
+      if (url === '/satellite/dashboard-stats') {
         return Promise.resolve({
           data: {
             total_frames: 150,

@@ -23,7 +23,7 @@ function renderWithProviders(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-19'],
@@ -49,7 +49,7 @@ describe('GapsTab', () => {
 
   it('shows coverage percentage after scan', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/gaps') {
+      if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
             coverage_percent: 87.5,
@@ -64,7 +64,7 @@ describe('GapsTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
       }
       return Promise.resolve({ data: {} });
@@ -82,7 +82,7 @@ describe('GapsTab', () => {
 
   it('renders gap list items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/gaps') {
+      if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
             coverage_percent: 90,
@@ -96,7 +96,7 @@ describe('GapsTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
       }
       return Promise.resolve({ data: {} });
@@ -114,7 +114,7 @@ describe('GapsTab', () => {
 
   it('shows no-gaps message when coverage is 100%', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/gaps') {
+      if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
             coverage_percent: 100,
@@ -126,7 +126,7 @@ describe('GapsTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
       }
       return Promise.resolve({ data: {} });
@@ -142,7 +142,7 @@ describe('GapsTab', () => {
 
   it('backfill button shows confirmation dialog', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/gaps') {
+      if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
             coverage_percent: 90,
@@ -156,7 +156,7 @@ describe('GapsTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
       }
       return Promise.resolve({ data: {} });
@@ -177,7 +177,7 @@ describe('GapsTab', () => {
 
   it('confirm backfill calls API', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/gaps') {
+      if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
             coverage_percent: 90, gap_count: 1, total_frames: 100, expected_frames: 110, time_range: null,
@@ -185,7 +185,7 @@ describe('GapsTab', () => {
           },
         });
       }
-      if (url === '/goes/products') {
+      if (url === '/satellite/products') {
         return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
       }
       return Promise.resolve({ data: {} });
@@ -201,7 +201,7 @@ describe('GapsTab', () => {
     fireEvent.click(screen.getByText('Confirm Backfill'));
 
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/goes/backfill', expect.objectContaining({
+      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/backfill', expect.objectContaining({
         satellite: 'GOES-19',
         band: 'C02',
         sector: 'FullDisk',

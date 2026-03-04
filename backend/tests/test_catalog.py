@@ -9,7 +9,7 @@ from app.services.catalog import build_cdn_urls, catalog_latest
 @pytest.mark.asyncio
 async def test_products_enhanced(client):
     """Products endpoint returns cadence and band metadata."""
-    resp = await client.get("/api/goes/products")
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     data = resp.json()
     # Check sectors have cadence
@@ -32,7 +32,7 @@ async def test_products_enhanced(client):
 @pytest.mark.asyncio
 async def test_catalog_invalid_date(client):
     """Catalog rejects invalid date format."""
-    resp = await client.get("/api/goes/catalog", params={"date": "not-a-date"})
+    resp = await client.get("/api/satellite/catalog", params={"date": "not-a-date"})
     assert resp.status_code == 400
 
 
@@ -43,7 +43,7 @@ async def test_catalog_returns_list(client):
         {"scan_time": "2025-01-01T12:00:00+00:00", "size": 12345, "key": "test/key.nc"},
     ]
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/goes/catalog", params={
+        resp = await client.get("/api/satellite/catalog", params={
             "satellite": "GOES-19", "sector": "CONUS", "band": "C02", "date": "2025-01-01",
         })
         assert resp.status_code == 200
@@ -56,7 +56,7 @@ async def test_catalog_returns_list(client):
 async def test_catalog_latest_not_found(client):
     """Catalog latest returns 404 when no recent frames."""
     with patch("app.routers.goes_catalog.get_cached", return_value=None):
-        resp = await client.get("/api/goes/catalog/latest", params={
+        resp = await client.get("/api/satellite/catalog/latest", params={
             "satellite": "GOES-19", "sector": "CONUS",
         })
         assert resp.status_code == 404
@@ -65,7 +65,7 @@ async def test_catalog_latest_not_found(client):
 @pytest.mark.asyncio
 async def test_fetch_composite_bad_recipe(client):
     """Fetch-composite rejects unknown recipe."""
-    resp = await client.post("/api/goes/fetch-composite", json={
+    resp = await client.post("/api/satellite/fetch-composite", json={
         "satellite": "GOES-19",
         "sector": "CONUS",
         "recipe": "invalid_recipe",
@@ -83,7 +83,7 @@ async def test_fetch_composite_success(client):
         mock_result.id = "test-task-id"
         mock_task.delay.return_value = mock_result
 
-        resp = await client.post("/api/goes/fetch-composite", json={
+        resp = await client.post("/api/satellite/fetch-composite", json={
             "satellite": "GOES-19",
             "sector": "CONUS",
             "recipe": "true_color",
@@ -100,7 +100,7 @@ async def test_fetch_composite_success(client):
 @pytest.mark.asyncio
 async def test_fetch_composite_invalid_satellite(client):
     """Fetch-composite rejects invalid satellite."""
-    resp = await client.post("/api/goes/fetch-composite", json={
+    resp = await client.post("/api/satellite/fetch-composite", json={
         "satellite": "GOES-99",
         "sector": "CONUS",
         "recipe": "true_color",
@@ -113,7 +113,7 @@ async def test_fetch_composite_invalid_satellite(client):
 @pytest.mark.asyncio
 async def test_fetch_composite_end_before_start(client):
     """Fetch-composite rejects end_time before start_time."""
-    resp = await client.post("/api/goes/fetch-composite", json={
+    resp = await client.post("/api/satellite/fetch-composite", json={
         "satellite": "GOES-19",
         "sector": "CONUS",
         "recipe": "true_color",
@@ -235,7 +235,7 @@ async def test_catalog_latest_meso_returns_data(client):
         "thumbnail_url": None,
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/goes/catalog/latest", params={
+        resp = await client.get("/api/satellite/catalog/latest", params={
             "satellite": "GOES-19", "sector": "Mesoscale1", "band": "C02",
         })
         assert resp.status_code == 200

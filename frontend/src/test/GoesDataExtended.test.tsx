@@ -36,7 +36,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-18'],
@@ -48,9 +48,9 @@ beforeEach(() => {
     if (url.includes('/frames')) {
       return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
     }
-    if (url === '/goes/collections') return Promise.resolve({ data: [] });
-    if (url === '/goes/tags') return Promise.resolve({ data: [] });
-    if (url === '/goes/frames/stats') {
+    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
+    if (url === '/satellite/tags') return Promise.resolve({ data: [] });
+    if (url === '/satellite/frames/stats') {
       return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
     }
     return Promise.resolve({ data: {} });

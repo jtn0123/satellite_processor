@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   const { data: goesStats, isLoading: goesLoading, isError: goesError } = useQuery<DashboardStats>({
     queryKey: ['goes-dashboard-stats'],
-    queryFn: () => api.get('/goes/dashboard-stats').then((r) => r.data),
+    queryFn: () => api.get('/satellite/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
     retry: 1,
   });
@@ -90,7 +90,7 @@ export default function Dashboard() {
     try {
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 3600000);
-      const res = await api.post('/goes/fetch', {
+      const res = await api.post('/satellite/fetch', {
         satellite: 'GOES-19',
         sector: 'CONUS',
         band: 'C02',

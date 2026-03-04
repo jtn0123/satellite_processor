@@ -27,7 +27,7 @@ const FRAME = {
   id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
   capture_time: new Date(Date.now() - 7200000).toISOString(), // 2h old
   file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: null, image_url: '/api/goes/frames/test-id/image', thumbnail_url: '/api/goes/frames/test-id/thumbnail',
+  thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG = {
@@ -46,10 +46,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-    if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-    if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
-    if (url.startsWith('/goes/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+    if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+    if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+    if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
+    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
     if (url.startsWith('/jobs/job-1')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' } });
     return Promise.resolve({ data: {} });
   });
@@ -76,7 +76,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Wait for the auto-fetch effect to fire
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
         satellite: 'GOES-16',
         sector: 'CONUS',
         band: 'C02',
@@ -99,7 +99,7 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
       expect(mockedApi.post).toHaveBeenCalled();
     });
 
-    const call = mockedApi.post.mock.calls.find((c: unknown[]) => c[0] === '/goes/fetch');
+    const call = mockedApi.post.mock.calls.find((c: unknown[]) => c[0] === '/satellite/fetch');
     expect(call).toBeDefined();
     const payload = call![1];
     expect(payload).toHaveProperty('start_time');
@@ -113,9 +113,9 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     // Set up job that completes
     let jobStatus = 'running';
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
       if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, status_message: jobStatus } });
       return Promise.resolve({ data: {} });
     });
@@ -194,9 +194,9 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
   it('inline fetch progress shows when job is active', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/products') return Promise.resolve({ data: PRODUCTS });
-      if (url.startsWith('/goes/latest')) return Promise.resolve({ data: FRAME });
-      if (url.startsWith('/goes/catalog/latest')) return Promise.resolve({ data: CATALOG });
+      if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
+      if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
+      if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
       if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading frame' } });
       return Promise.resolve({ data: {} });
     });

@@ -26,7 +26,7 @@ from ._goes_shared import _s3_executor
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/goes", tags=["goes-fetch"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-fetch"])
 
 
 @router.post("/fetch-composite", response_model=GoesFetchResponse)

@@ -50,7 +50,7 @@ export default function DesktopBatchActions({ selectedIds, frames, deleteMutatio
         <button type="button" onClick={async () => {
           const frameId = [...selectedIds][0];
           try {
-            const res = await api.post(`/goes/frames/${frameId}/share`);
+            const res = await api.post(`/satellite/frames/${frameId}/share`);
             const url = `${globalThis.location.origin}${res.data.url}`;
             await navigator.clipboard.writeText(url);
             showToast('success', 'Share link copied to clipboard!');

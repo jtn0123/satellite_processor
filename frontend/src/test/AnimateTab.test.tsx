@@ -62,16 +62,16 @@ function renderWithProviders(ui: React.ReactElement) {
 
 function setupDefaultMocks(animations: unknown[] = []) {
   mockGet.mockImplementation((url: string) => {
-    if (url === '/goes/animations') {
+    if (url === '/satellite/animations') {
       return Promise.resolve({ data: { items: animations, total: animations.length, page: 1, limit: 20 } });
     }
-    if (url === '/goes/collections') {
+    if (url === '/satellite/collections') {
       return Promise.resolve({ data: [{ id: 'col-1', name: 'My Collection', frame_count: 50 }] });
     }
-    if (url === '/goes/frames/preview-range') {
+    if (url === '/satellite/frames/preview-range') {
       return Promise.resolve({ data: { frames: [], total_count: 10, capture_interval_minutes: 10 } });
     }
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({ data: { satellites: ['GOES-16', 'GOES-18', 'GOES-19'], default_satellite: 'GOES-19' } });
     }
     return Promise.resolve({ data: {} });
@@ -268,7 +268,7 @@ describe('AnimateTab (Unified)', () => {
     if (trash) {
       fireEvent.click(trash);
       await waitFor(() => {
-        expect(mockDelete).toHaveBeenCalledWith('/goes/animations/anim-1');
+        expect(mockDelete).toHaveBeenCalledWith('/satellite/animations/anim-1');
       });
     }
   });
@@ -317,7 +317,7 @@ describe('AnimateTab (Unified)', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/goes/animations/from-range', expect.objectContaining({
+      expect(mockPost).toHaveBeenCalledWith('/satellite/animations/from-range', expect.objectContaining({
         sector: 'CONUS',
         band: 'C02',
         fps: 10,
@@ -344,7 +344,7 @@ describe('AnimateTab (Unified)', () => {
     fireEvent.change(select, { target: { value: 'col-1' } });
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/goes/animations', expect.objectContaining({
+      expect(mockPost).toHaveBeenCalledWith('/satellite/animations', expect.objectContaining({
         collection_id: 'col-1',
       }));
     });

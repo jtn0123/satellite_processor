@@ -61,12 +61,12 @@ export default function MapTab() {
 
   const { data: products } = useQuery<Product>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const { data: frame, isLoading: frameLoading, isError: frameError } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () => api.get('/goes/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     retry: false,
   });
 

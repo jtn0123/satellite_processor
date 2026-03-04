@@ -37,7 +37,7 @@ from ..models.pagination import PaginatedResponse
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/goes", tags=["animation-studio"])
+router = APIRouter(prefix="/api/satellite", tags=["animation-studio"])
 
 _ANIMATION_PRESET_NOT_FOUND = "Animation preset not found"
 
@@ -435,11 +435,11 @@ async def preview_frame_range(
             "file_size": f.file_size,
             "width": f.width,
             "height": f.height,
-            "image_url": f"/api/goes/frames/{f.id}/image",
+            "image_url": f"/api/satellite/frames/{f.id}/image",
         }
 
     def _thumb(f: GoesFrame) -> str:
-        return f"/api/goes/frames/{f.id}/thumbnail"
+        return f"/api/satellite/frames/{f.id}/thumbnail"
 
     return FrameRangePreview(
         total_frames=total,

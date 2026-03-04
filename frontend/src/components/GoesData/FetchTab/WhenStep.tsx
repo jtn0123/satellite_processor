@@ -36,7 +36,7 @@ export function WhenStep({
   const { data: catalogData, isFetching: catalogFetching } = useQuery<CatalogEntry[]>({
     queryKey: ['goes-catalog', satellite, sector, band, dateStr],
     queryFn: () =>
-      api.get('/goes/catalog', { params: { satellite, sector, band, date: dateStr } }).then((r) => r.data),
+      api.get('/satellite/catalog', { params: { satellite, sector, band, date: dateStr } }).then((r) => r.data),
     enabled: !!dateStr,
     staleTime: 300000,
   });

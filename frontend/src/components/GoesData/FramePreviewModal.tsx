@@ -47,14 +47,14 @@ export default function FramePreviewModal({
 
   const { data: cropPresets } = useQuery<CropPreset[]>({
     queryKey: ['crop-presets'],
-    queryFn: () => api.get('/goes/crop-presets').then((r) => {
+    queryFn: () => api.get('/satellite/crop-presets').then((r) => {
       return extractArray(r.data);
     }),
   });
 
   const saveCropPresetMutation = useMutation({
     mutationFn: (data: { name: string; x: number; y: number; width: number; height: number }) =>
-      api.post('/goes/crop-presets', data).then((r) => r.data),
+      api.post('/satellite/crop-presets', data).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['crop-presets'] });
       setShowSavePreset(false);

@@ -32,7 +32,7 @@ function renderLiveTab() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/products') {
+    if (url === '/satellite/products') {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-18'],
@@ -45,13 +45,13 @@ beforeEach(() => {
         },
       });
     }
-    if (url.startsWith('/goes/latest')) {
+    if (url.startsWith('/satellite/latest')) {
       return Promise.resolve({
         data: {
           id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
           capture_time: '2024-06-01T12:00:00', file_path: '/tmp/test.nc',
           file_size: 1024, width: 5424, height: 3000, thumbnail_path: null,
-          image_url: '/api/goes/frames/1/image', thumbnail_url: '/api/goes/frames/1/thumbnail',
+          image_url: '/api/satellite/frames/1/image', thumbnail_url: '/api/satellite/frames/1/thumbnail',
         },
       });
     }
@@ -75,7 +75,7 @@ describe('LiveTab keyboard hotkeys', () => {
 
     // Wait for products to load
     await waitFor(() => {
-      expect(mockedApi.get).toHaveBeenCalledWith('/goes/products');
+      expect(mockedApi.get).toHaveBeenCalledWith('/satellite/products');
     });
 
     // Press ArrowRight
@@ -108,7 +108,7 @@ describe('LiveTab keyboard hotkeys', () => {
     });
 
     await waitFor(() => {
-      expect(mockedApi.get).toHaveBeenCalledWith('/goes/products');
+      expect(mockedApi.get).toHaveBeenCalledWith('/satellite/products');
     });
 
     fireEvent.keyDown(document, { key: 'ArrowLeft' });

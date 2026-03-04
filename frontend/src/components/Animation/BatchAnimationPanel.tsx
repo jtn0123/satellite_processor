@@ -26,7 +26,7 @@ export default function BatchAnimationPanel({ currentConfig }: Readonly<Props>) 
   const batchMutation = useMutation({
     mutationFn: () =>
       api
-        .post('/goes/animations/batch', {
+        .post('/satellite/animations/batch', {
           animations: items.map((item) => ({
             satellite: item.config.satellite,
             sector: item.config.sector,

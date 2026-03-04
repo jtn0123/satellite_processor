@@ -40,7 +40,7 @@ export default function AnimateTab() {
 
   const { data: productsData } = useQuery<{ default_satellite?: string }>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
     staleTime: 300_000,
   });
   const defaultSatellite = productsData?.default_satellite ?? 'GOES-19';
@@ -82,7 +82,7 @@ export default function AnimateTab() {
 
   const { data: collections } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/goes/collections').then((r) => extractArray(r.data)),
+    queryFn: () => api.get('/satellite/collections').then((r) => extractArray(r.data)),
   });
 
   const previewEnabled = sourceMode === 'collection'
@@ -97,7 +97,7 @@ export default function AnimateTab() {
 
   const { data: previewData, isLoading: previewLoading, isError: previewError } = useQuery<PreviewRangeResponse>({
     queryKey: ['frame-preview-range', previewParams],
-    queryFn: () => api.get('/goes/frames/preview-range', { params: previewParams }).then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames/preview-range', { params: previewParams }).then((r) => r.data),
     enabled: sourceMode === 'filters' && previewEnabled,
   });
 
@@ -110,7 +110,7 @@ export default function AnimateTab() {
           quality: config.quality, resolution: config.resolution,
           loop_style: config.loop_style, overlays: config.overlays,
         };
-        return api.post('/goes/animations', payload).then((r) => r.data);
+        return api.post('/satellite/animations', payload).then((r) => r.data);
       }
       const payload = {
         name: config.name || `${config.satellite} ${config.band} ${config.sector}`,
@@ -120,7 +120,7 @@ export default function AnimateTab() {
         fps: config.fps, format: config.format, quality: config.quality,
         resolution: config.resolution, loop_style: config.loop_style, overlays: config.overlays,
       };
-      return api.post('/goes/animations/from-range', payload).then((r) => r.data);
+      return api.post('/satellite/animations/from-range', payload).then((r) => r.data);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation generation started!'); },
     onError: () => showToast('error', 'Failed to start animation generation'),
@@ -128,12 +128,12 @@ export default function AnimateTab() {
 
   const { data: animations } = useQuery<PaginatedAnimations>({
     queryKey: ['animations'],
-    queryFn: () => api.get('/goes/animations').then((r) => r.data),
+    queryFn: () => api.get('/satellite/animations').then((r) => r.data),
     refetchInterval: 5000,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/goes/animations/${id}`),
+    mutationFn: (id: string) => api.delete(`/satellite/animations/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation deleted'); },
     onError: () => showToast('error', 'Failed to delete animation'),
   });

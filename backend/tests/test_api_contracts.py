@@ -24,7 +24,7 @@ GET_200_ENDPOINTS = [
     "/api/health",
     "/api/health/detailed",
     "/api/settings",
-    "/api/goes/products",
+    "/api/satellite/products",
     "/api/stats",
     "/api/system/info",
     "/api/notifications",
@@ -72,10 +72,10 @@ async def test_jobs_accepts_goes_fetch_type(client: AsyncClient):
 
 @pytest.mark.anyio
 async def test_frames_alias_redirects(client: AsyncClient):
-    """Bug #6 regression: /api/frames should redirect to /api/goes/frames."""
+    """Bug #6 regression: /api/frames should redirect to /api/satellite/frames."""
     resp = await client.get("/api/frames", follow_redirects=False)
     assert resp.status_code == 307
-    assert "/api/goes/frames" in resp.headers.get("location", "")
+    assert "/api/satellite/frames" in resp.headers.get("location", "")
 
 
 @pytest.mark.anyio
@@ -113,9 +113,9 @@ def test_valid_bands_includes_geocolor():
 
 @pytest.mark.anyio
 async def test_catalog_latest_geocolor_no_500(client: AsyncClient):
-    """GET /api/goes/catalog/latest?band=GEOCOLOR must not return 500."""
+    """GET /api/satellite/catalog/latest?band=GEOCOLOR must not return 500."""
     resp = await client.get(
-        "/api/goes/catalog/latest",
+        "/api/satellite/catalog/latest",
         params={"satellite": "GOES-19", "sector": "CONUS", "band": "GEOCOLOR"},
     )
     # 404 is fine (no S3 data for GEOCOLOR), 500 is not
@@ -124,8 +124,8 @@ async def test_catalog_latest_geocolor_no_500(client: AsyncClient):
 
 @pytest.mark.anyio
 async def test_products_includes_geocolor(client: AsyncClient):
-    """GET /api/goes/products must list GEOCOLOR in bands."""
-    resp = await client.get("/api/goes/products")
+    """GET /api/satellite/products must list GEOCOLOR in bands."""
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     data = resp.json()
     band_ids = [b["id"] if isinstance(b, dict) else b for b in data.get("bands", [])]
@@ -134,8 +134,8 @@ async def test_products_includes_geocolor(client: AsyncClient):
 
 @pytest.mark.anyio
 async def test_products_includes_himawari(client: AsyncClient):
-    """GET /api/goes/products must include Himawari-9 in satellites list."""
-    resp = await client.get("/api/goes/products")
+    """GET /api/satellite/products must include Himawari-9 in satellites list."""
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     data = resp.json()
 
@@ -169,7 +169,7 @@ async def test_products_includes_himawari(client: AsyncClient):
 @pytest.mark.anyio
 async def test_products_goes_still_fetchable(client: AsyncClient):
     """GOES satellites must remain fetchable in products response."""
-    resp = await client.get("/api/goes/products")
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     details = resp.json().get("satellite_details", {})
     for goes in ["GOES-16", "GOES-18", "GOES-19"]:
@@ -183,7 +183,7 @@ async def test_all_product_bands_accepted_by_catalog_latest(client: AsyncClient)
 
     This is the test that would have caught the GEOCOLOR bug.
     """
-    resp = await client.get("/api/goes/products")
+    resp = await client.get("/api/satellite/products")
     assert resp.status_code == 200
     raw_bands = resp.json().get("bands", [])
     bands = [b["id"] if isinstance(b, dict) else b for b in raw_bands]
@@ -192,7 +192,7 @@ async def test_all_product_bands_accepted_by_catalog_latest(client: AsyncClient)
     failures = []
     for band in bands:
         r = await client.get(
-            "/api/goes/catalog/latest",
+            "/api/satellite/catalog/latest",
             params={"satellite": "GOES-19", "sector": "CONUS", "band": band},
         )
         if r.status_code == 500:

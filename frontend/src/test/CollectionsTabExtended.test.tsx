@@ -44,7 +44,7 @@ describe('CollectionsTab extended', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGet.mockImplementation((url?: string) => {
-      if (url === '/goes/collections') return Promise.resolve({ data: collections });
+      if (url === '/satellite/collections') return Promise.resolve({ data: collections });
       if (url?.includes('/frames')) return Promise.resolve({ data: [{ id: 'f1' }, { id: 'f2' }] });
       return Promise.resolve({ data: [] });
     });
@@ -62,7 +62,7 @@ describe('CollectionsTab extended', () => {
     const input = screen.getByPlaceholderText('New collection name');
     fireEvent.change(input, { target: { value: 'New Coll' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() => expect(mockPost).toHaveBeenCalledWith('/goes/collections', { name: 'New Coll' }));
+    await waitFor(() => expect(mockPost).toHaveBeenCalledWith('/satellite/collections', { name: 'New Coll' }));
   });
 
   it('creates a collection on button click', async () => {
@@ -85,7 +85,7 @@ describe('CollectionsTab extended', () => {
     const editInput = screen.getByLabelText('Edit collection name');
     fireEvent.change(editInput, { target: { value: 'Renamed' } });
     fireEvent.keyDown(editInput, { key: 'Enter' });
-    await waitFor(() => expect(mockPut).toHaveBeenCalledWith('/goes/collections/c1', { name: 'Renamed' }));
+    await waitFor(() => expect(mockPut).toHaveBeenCalledWith('/satellite/collections/c1', { name: 'Renamed' }));
   });
 
   it('cancels edit mode', async () => {
@@ -109,7 +109,7 @@ describe('CollectionsTab extended', () => {
     renderWith(<CollectionsTab />);
     await waitFor(() => expect(screen.getByText('Collection A')).toBeInTheDocument());
     fireEvent.click(screen.getAllByText('Delete')[0]);
-    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith('/goes/collections/c1'));
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith('/satellite/collections/c1'));
   });
 
   it('opens animation player on animate click', async () => {

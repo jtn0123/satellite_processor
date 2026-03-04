@@ -58,7 +58,7 @@ export default function FetchTab() {
 
   const { data: products, isLoading: productsLoading } = useQuery<EnhancedProduct>({
     queryKey: ['goes-products'],
-    queryFn: () => api.get('/goes/products').then((r) => r.data),
+    queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
   const defaultSat = products?.default_satellite ?? 'GOES-19';
@@ -107,7 +107,7 @@ export default function FetchTab() {
     mutationFn: () => {
       const ts = (v: string) => (v.includes('Z') || v.includes('+') ? v : v + 'Z');
       if (imageType !== 'single') {
-        return api.post('/goes/fetch-composite', {
+        return api.post('/satellite/fetch-composite', {
           satellite, sector, recipe: imageType,
           start_time: ts(startTime), end_time: ts(endTime),
         }).then((r) => r.data);
@@ -120,7 +120,7 @@ export default function FetchTab() {
       if (isHimawariSatellite(satellite)) {
         fetchPayload.format = 'hsd';
       }
-      return api.post('/goes/fetch', fetchPayload).then((r) => r.data);
+      return api.post('/satellite/fetch', fetchPayload).then((r) => r.data);
     },
     onSuccess: (data) => {
       showToast('success', `Fetch job created: ${data.job_id}`);
@@ -134,7 +134,7 @@ export default function FetchTab() {
 
   const { data: fetchPresets } = useQuery<FetchPreset[]>({
     queryKey: ['fetch-presets'],
-    queryFn: () => api.get('/goes/fetch-presets').then((r) => r.data),
+    queryFn: () => api.get('/satellite/fetch-presets').then((r) => r.data),
     staleTime: 60_000,
     retry: 1,
   });

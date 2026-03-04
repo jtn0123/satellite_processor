@@ -17,7 +17,7 @@ from ._goes_shared import COMPOSITE_RECIPES
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/goes", tags=["goes-browse"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-browse"])
 
 
 @router.get("/composite-recipes")
@@ -110,7 +110,7 @@ async def list_composites(
             status=c.status,
             error=c.error,
             created_at=c.created_at.isoformat() if c.created_at else None,
-            image_url=f"/api/goes/composites/{c.id}/image" if c.file_path else None,
+            image_url=f"/api/satellite/composites/{c.id}/image" if c.file_path else None,
         )
         for c in composites
     ]
@@ -137,7 +137,7 @@ async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
         "status": c.status,
         "error": c.error,
         "created_at": c.created_at.isoformat() if c.created_at else None,
-        "image_url": f"/api/goes/composites/{c.id}/image" if c.file_path else None,
+        "image_url": f"/api/satellite/composites/{c.id}/image" if c.file_path else None,
     }
 
 

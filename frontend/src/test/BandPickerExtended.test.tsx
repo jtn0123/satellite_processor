@@ -27,7 +27,7 @@ function renderBandPicker(props: Partial<React.ComponentProps<typeof BandPicker>
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/goes/band-availability') {
+    if (url === '/satellite/band-availability') {
       return Promise.resolve({ data: { counts: { C02: 10, C13: 5 } } });
     }
     return Promise.resolve({ data: {} });
@@ -56,7 +56,7 @@ describe('BandPicker - Extended', () => {
     await waitFor(() => expect(screen.getAllByTitle(/Fetch sample for/).length).toBeGreaterThan(0));
     const fetchBtn = screen.getAllByTitle(/Fetch sample for/)[0];
     fireEvent.click(fetchBtn);
-    expect(mockedApi.post).toHaveBeenCalledWith('/goes/fetch', expect.objectContaining({
+    expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
       satellite: 'GOES-16',
       sector: 'CONUS',
     }));
@@ -119,7 +119,7 @@ describe('BandPicker - Extended', () => {
 
   it('handles band-availability returning empty counts', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/band-availability') return Promise.resolve({ data: { counts: {} } });
+      if (url === '/satellite/band-availability') return Promise.resolve({ data: { counts: {} } });
       return Promise.resolve({ data: {} });
     });
     renderBandPicker();
@@ -135,7 +135,7 @@ describe('BandPicker - Extended', () => {
     const allCounts: Record<string, number> = {};
     ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12','C13','C14','C15','C16'].forEach(b => allCounts[b] = 10);
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/goes/band-availability') return Promise.resolve({ data: { counts: allCounts } });
+      if (url === '/satellite/band-availability') return Promise.resolve({ data: { counts: allCounts } });
       return Promise.resolve({ data: {} });
     });
     renderBandPicker();

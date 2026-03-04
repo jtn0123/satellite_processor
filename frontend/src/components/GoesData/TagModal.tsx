@@ -15,13 +15,13 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/goes/tags').then((r) => {
+    queryFn: () => api.get('/satellite/tags').then((r) => {
       return extractArray(r.data);
     }),
   });
 
   const tagMutation = useMutation({
-    mutationFn: () => api.post('/goes/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
+    mutationFn: () => api.post('/satellite/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
       showToast('success', `Tagged ${frameIds.length} frame(s)`);
@@ -31,7 +31,7 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   });
 
   const createTagMutation = useMutation({
-    mutationFn: () => api.post('/goes/tags', { name: newTagName, color: newTagColor }).then((r) => r.data),
+    mutationFn: () => api.post('/satellite/tags', { name: newTagName, color: newTagColor }).then((r) => r.data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-tags'] });
       setSelectedTags((prev) => [...prev, data.id]);

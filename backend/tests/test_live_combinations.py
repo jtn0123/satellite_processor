@@ -111,7 +111,7 @@ class TestFetchEndpointCombinations:
         mock_task.id = "fake-task-id"
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_fetch:
             mock_fetch.delay.return_value = mock_task
-            resp = await client.post("/api/goes/fetch", json=_payload(satellite, sector, band))
+            resp = await client.post("/api/satellite/fetch", json=_payload(satellite, sector, band))
         assert resp.status_code == 200, f"{satellite}/{sector}/{band}: {resp.text}"
         data = resp.json()
         assert "job_id" in data
@@ -124,7 +124,7 @@ class TestFetchEndpointCombinations:
         self, client: AsyncClient, mock_redis, satellite, sector,
     ):
         """GEOCOLOR must be rejected for every satellite × sector combo."""
-        resp = await client.post("/api/goes/fetch", json=_payload(satellite, sector, "GEOCOLOR"))
+        resp = await client.post("/api/satellite/fetch", json=_payload(satellite, sector, "GEOCOLOR"))
         assert resp.status_code == 422, f"{satellite}/{sector}/GEOCOLOR should be 422: {resp.text}"
         body = resp.text.lower()
         assert "geocolor" in body
@@ -140,20 +140,20 @@ class TestFetchEndpointCombinations:
         mock_task.id = "fake-task-id"
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_fetch:
             mock_fetch.delay.return_value = mock_task
-            resp = await client.post("/api/goes/fetch", json=_payload(satellite, "CONUS", band))
+            resp = await client.post("/api/satellite/fetch", json=_payload(satellite, "CONUS", band))
         assert resp.status_code == 200, f"{satellite}/CONUS/{band}: {resp.text}"
 
     @pytest.mark.anyio
     async def test_invalid_satellite_returns_422(self, client: AsyncClient, mock_redis):
-        resp = await client.post("/api/goes/fetch", json=_payload("GOES-15", "CONUS", "C02"))
+        resp = await client.post("/api/satellite/fetch", json=_payload("GOES-15", "CONUS", "C02"))
         assert resp.status_code == 422
 
     @pytest.mark.anyio
     async def test_invalid_sector_returns_422(self, client: AsyncClient, mock_redis):
-        resp = await client.post("/api/goes/fetch", json=_payload("GOES-19", "Invalid", "C02"))
+        resp = await client.post("/api/satellite/fetch", json=_payload("GOES-19", "Invalid", "C02"))
         assert resp.status_code == 422
 
     @pytest.mark.anyio
     async def test_invalid_band_returns_422(self, client: AsyncClient, mock_redis):
-        resp = await client.post("/api/goes/fetch", json=_payload("GOES-19", "CONUS", "X99"))
+        resp = await client.post("/api/satellite/fetch", json=_payload("GOES-19", "CONUS", "X99"))
         assert resp.status_code == 422

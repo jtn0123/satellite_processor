@@ -42,7 +42,7 @@ class SharedFrameResponse(BaseModel):
     expires_at: str
 
 
-@router.post("/api/goes/frames/{frame_id}/share", response_model=ShareLinkResponse)
+@router.post("/api/satellite/frames/{frame_id}/share", response_model=ShareLinkResponse)
 async def create_share_link(
     frame_id: str,
     hours: int = 72,

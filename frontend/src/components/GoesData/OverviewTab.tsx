@@ -73,7 +73,7 @@ export default function OverviewTab() {
   // AWS catalog latest — not available in dashboard-stats
   const { data: catalogLatest, isLoading: catalogLoading, isError: catalogError } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest'],
-    queryFn: () => api.get('/goes/catalog/latest').then((r) => r.data),
+    queryFn: () => api.get('/satellite/catalog/latest').then((r) => r.data),
     staleTime: 120_000,
     retry: 1,
   });
@@ -81,7 +81,7 @@ export default function OverviewTab() {
   // Unified dashboard stats (replaces /goes/frames/stats + /jobs?limit=5)
   const { data: dashboard, isLoading: dashboardLoading } = useQuery<DashboardStats>({
     queryKey: ['goes-dashboard-stats'],
-    queryFn: () => api.get('/goes/dashboard-stats').then((r) => r.data),
+    queryFn: () => api.get('/satellite/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
   });
 

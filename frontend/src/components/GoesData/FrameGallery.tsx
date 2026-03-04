@@ -18,7 +18,7 @@ export default function FrameGallery() {
     queryKey: ['gallery-frames', satellite, band, page],
     queryFn: () =>
       api
-        .get('/goes/frames', {
+        .get('/satellite/frames', {
           params: {
             page,
             limit: 24,
@@ -36,7 +36,7 @@ export default function FrameGallery() {
 
   const { data: statsData } = useQuery({
     queryKey: ['frame-stats-filters'],
-    queryFn: () => api.get('/goes/frames/stats').then((r) => r.data),
+    queryFn: () => api.get('/satellite/frames/stats').then((r) => r.data),
   });
 
   const satellites = statsData ? Object.keys(statsData.by_satellite) : [];
@@ -133,7 +133,7 @@ export default function FrameGallery() {
               >
                 <div className="aspect-square bg-gray-100 dark:bg-slate-800">
                   <img
-                    src={`/api/goes/frames/${frame.id}/thumbnail`}
+                    src={`/api/satellite/frames/${frame.id}/thumbnail`}
                     alt={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}`}
                     className="w-full h-full object-cover"
                     loading="lazy"

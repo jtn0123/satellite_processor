@@ -46,7 +46,7 @@ def _frame(**kw):
 @pytest.mark.asyncio
 class TestFetchPresetsExtended:
     async def test_create_preset(self, client):
-        resp = await client.post("/api/goes/fetch-presets", json={
+        resp = await client.post("/api/satellite/fetch-presets", json={
             "name": "My Preset",
             "satellite": "GOES-16",
             "sector": "CONUS",
@@ -56,12 +56,12 @@ class TestFetchPresetsExtended:
         assert resp.json()["name"] == "My Preset"
 
     async def test_list_presets_empty(self, client):
-        resp = await client.get("/api/goes/fetch-presets")
+        resp = await client.get("/api/satellite/fetch-presets")
         assert resp.status_code == 200
         assert resp.json() == []
 
     async def test_update_preset_not_found(self, client):
-        resp = await client.put("/api/goes/fetch-presets/fake", json={"name": "X"})
+        resp = await client.put("/api/satellite/fetch-presets/fake", json={"name": "X"})
         assert resp.status_code == 404
 
     async def test_update_preset_partial(self, client, db):
@@ -69,13 +69,13 @@ class TestFetchPresetsExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/fetch-presets/{p.id}", json={"band": "C13"})
+        resp = await client.put(f"/api/satellite/fetch-presets/{p.id}", json={"band": "C13"})
         assert resp.status_code == 200
         assert resp.json()["band"] == "C13"
         assert resp.json()["satellite"] == "GOES-16"  # unchanged
 
     async def test_delete_preset_not_found(self, client):
-        resp = await client.delete("/api/goes/fetch-presets/fake")
+        resp = await client.delete("/api/satellite/fetch-presets/fake")
         assert resp.status_code == 404
 
     async def test_delete_preset_success(self, client, db):
@@ -83,12 +83,12 @@ class TestFetchPresetsExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/fetch-presets/{p.id}")
+        resp = await client.delete(f"/api/satellite/fetch-presets/{p.id}")
         assert resp.status_code == 200
         assert resp.json()["deleted"] == p.id
 
     async def test_run_preset_not_found(self, client):
-        resp = await client.post("/api/goes/fetch-presets/fake/run")
+        resp = await client.post("/api/satellite/fetch-presets/fake/run")
         assert resp.status_code == 404
 
     async def test_run_preset_success(self, client, db):
@@ -98,7 +98,7 @@ class TestFetchPresetsExtended:
 
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post(f"/api/goes/fetch-presets/{p.id}/run")
+            resp = await client.post(f"/api/satellite/fetch-presets/{p.id}/run")
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending"
 
@@ -109,7 +109,7 @@ class TestFetchPresetsExtended:
         db.add(p2)
         await db.commit()
 
-        resp = await client.get("/api/goes/fetch-presets")
+        resp = await client.get("/api/satellite/fetch-presets")
         # Ordered by created_at desc
         assert len(resp.json()) == 2
 
@@ -117,7 +117,7 @@ class TestFetchPresetsExtended:
 @pytest.mark.asyncio
 class TestSchedulesExtended:
     async def test_create_schedule_preset_not_found(self, client):
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "Sched",
             "preset_id": "fake",
             "interval_minutes": 30,
@@ -129,7 +129,7 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "My Schedule",
             "preset_id": p.id,
             "interval_minutes": 60,
@@ -146,7 +146,7 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.post("/api/goes/schedules", json={
+        resp = await client.post("/api/satellite/schedules", json={
             "name": "Inactive",
             "preset_id": p.id,
             "interval_minutes": 60,
@@ -156,12 +156,12 @@ class TestSchedulesExtended:
         assert data["is_active"] is False
 
     async def test_list_schedules_empty(self, client):
-        resp = await client.get("/api/goes/schedules")
+        resp = await client.get("/api/satellite/schedules")
         assert resp.status_code == 200
         assert resp.json() == []
 
     async def test_update_schedule_not_found(self, client):
-        resp = await client.put("/api/goes/schedules/fake", json={"name": "X"})
+        resp = await client.put("/api/satellite/schedules/fake", json={"name": "X"})
         assert resp.status_code == 404
 
     async def test_update_schedule_change_preset(self, client, db):
@@ -178,7 +178,7 @@ class TestSchedulesExtended:
         db.add(sched)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/schedules/{sched.id}", json={
+        resp = await client.put(f"/api/satellite/schedules/{sched.id}", json={
             "preset_id": p2.id,
         })
         assert resp.status_code == 200
@@ -194,13 +194,13 @@ class TestSchedulesExtended:
         db.add(sched)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/schedules/{sched.id}", json={
+        resp = await client.put(f"/api/satellite/schedules/{sched.id}", json={
             "preset_id": "nonexistent",
         })
         assert resp.status_code == 404
 
     async def test_delete_schedule_not_found(self, client):
-        resp = await client.delete("/api/goes/schedules/fake")
+        resp = await client.delete("/api/satellite/schedules/fake")
         assert resp.status_code == 404
 
     async def test_delete_schedule_success(self, client, db):
@@ -214,7 +214,7 @@ class TestSchedulesExtended:
         db.add(sched)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/schedules/{sched.id}")
+        resp = await client.delete(f"/api/satellite/schedules/{sched.id}")
         assert resp.status_code == 200
 
     async def test_toggle_schedule(self, client, db):
@@ -228,23 +228,23 @@ class TestSchedulesExtended:
         db.add(sched)
         await db.commit()
 
-        resp = await client.post(f"/api/goes/schedules/{sched.id}/toggle")
+        resp = await client.post(f"/api/satellite/schedules/{sched.id}/toggle")
         assert resp.status_code == 200
         assert resp.json()["is_active"] is True
 
         # Toggle back
-        resp = await client.post(f"/api/goes/schedules/{sched.id}/toggle")
+        resp = await client.post(f"/api/satellite/schedules/{sched.id}/toggle")
         assert resp.json()["is_active"] is False
 
     async def test_toggle_schedule_not_found(self, client):
-        resp = await client.post("/api/goes/schedules/fake/toggle")
+        resp = await client.post("/api/satellite/schedules/fake/toggle")
         assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 class TestCleanupRulesExtended:
     async def test_create_rule(self, client):
-        resp = await client.post("/api/goes/cleanup-rules", json={
+        resp = await client.post("/api/satellite/cleanup-rules", json={
             "name": "Age Rule",
             "rule_type": "max_age_days",
             "value": 30,
@@ -253,12 +253,12 @@ class TestCleanupRulesExtended:
         assert resp.json()["name"] == "Age Rule"
 
     async def test_list_rules_empty(self, client):
-        resp = await client.get("/api/goes/cleanup-rules")
+        resp = await client.get("/api/satellite/cleanup-rules")
         assert resp.status_code == 200
         assert resp.json() == []
 
     async def test_update_rule_not_found(self, client):
-        resp = await client.put("/api/goes/cleanup-rules/fake", json={"name": "X"})
+        resp = await client.put("/api/satellite/cleanup-rules/fake", json={"name": "X"})
         assert resp.status_code == 404
 
     async def test_update_rule_partial(self, client, db):
@@ -272,13 +272,13 @@ class TestCleanupRulesExtended:
         db.add(rule)
         await db.commit()
 
-        resp = await client.put(f"/api/goes/cleanup-rules/{rule.id}", json={"value": 60})
+        resp = await client.put(f"/api/satellite/cleanup-rules/{rule.id}", json={"value": 60})
         assert resp.status_code == 200
         assert resp.json()["value"] == 60
         assert resp.json()["name"] == "Old"
 
     async def test_delete_rule_not_found(self, client):
-        resp = await client.delete("/api/goes/cleanup-rules/fake")
+        resp = await client.delete("/api/satellite/cleanup-rules/fake")
         assert resp.status_code == 404
 
     async def test_delete_rule_success(self, client, db):
@@ -291,14 +291,14 @@ class TestCleanupRulesExtended:
         db.add(rule)
         await db.commit()
 
-        resp = await client.delete(f"/api/goes/cleanup-rules/{rule.id}")
+        resp = await client.delete(f"/api/satellite/cleanup-rules/{rule.id}")
         assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 class TestCleanupPreview:
     async def test_preview_no_rules(self, client):
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         assert resp.status_code == 200
         assert resp.json()["frame_count"] == 0
 
@@ -322,7 +322,7 @@ class TestCleanupPreview:
         db.add(rule)
         await db.commit()
 
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         data = resp.json()
         assert data["frame_count"] == 1  # Only old frame
 
@@ -343,7 +343,7 @@ class TestCleanupPreview:
         db.add(rule)
         await db.commit()
 
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         assert resp.json()["frame_count"] == 0  # Protected!
 
     async def test_preview_inactive_rules_ignored(self, client, db):
@@ -359,14 +359,14 @@ class TestCleanupPreview:
         db.add(rule)
         await db.commit()
 
-        resp = await client.get("/api/goes/cleanup/preview")
+        resp = await client.get("/api/satellite/cleanup/preview")
         assert resp.json()["frame_count"] == 0
 
 
 @pytest.mark.asyncio
 class TestCleanupRun:
     async def test_run_no_rules(self, client):
-        resp = await client.post("/api/goes/cleanup/run")
+        resp = await client.post("/api/satellite/cleanup/run")
         assert resp.status_code == 200
         assert resp.json()["deleted_frames"] == 0
         assert resp.json()["freed_bytes"] == 0
@@ -388,7 +388,7 @@ class TestCleanupRun:
         db.add(rule)
         await db.commit()
 
-        resp = await client.post("/api/goes/cleanup/run")
+        resp = await client.post("/api/satellite/cleanup/run")
         data = resp.json()
         assert data["deleted_frames"] == 1
         assert data["freed_bytes"] == 5000

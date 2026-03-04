@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 _COLLECTION_NOT_FOUND = "Collection not found"
 
-router = APIRouter(prefix="/api/goes", tags=["goes-collections"])
+router = APIRouter(prefix="/api/satellite", tags=["satellite-collections"])
 
 
 @router.post("/collections", response_model=CollectionResponse)

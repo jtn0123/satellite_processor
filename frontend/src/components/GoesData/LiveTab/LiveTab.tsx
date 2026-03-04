@@ -13,8 +13,9 @@ import { useMonitorMode } from '../../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../../hooks/useLiveFetchJob';
 import { useCountdownDisplay } from '../../../hooks/useCountdownDisplay';
 import { useSwipeBand } from '../../../hooks/useSwipeBand';
-import { isMesoSector } from '../../../utils/sectorHelpers';
+import { isMesoSector, isHimawariSatellite, getDefaultSector, getDefaultBand } from '../../../utils/sectorHelpers';
 import BandPillStrip from '../BandPillStrip';
+import { getSectorsForSatellite, getBandsForSatellite, isCompositeBand, getDisabledBands } from '../liveTabUtils';
 
 import { resolveImageUrls, computeFreshness, exitFullscreenSafe, enterFullscreenSafe, buildOuterClassName } from './liveHelpers';
 import { isNotFoundError, useZoomHint, useFullscreenSync, useLiveShortcuts } from './useLiveHooks';
@@ -117,17 +118,35 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   useEffect(() => {
     if (!products?.bands?.length) return;
+    // Only validate band against API products for GOES satellites;
+    // Himawari bands come from client-side constants and won't be in the API response
+    if (isHimawariSatellite(satellite)) return;
     const bandExists = products.bands.some((b) => b.id === band);
     if (!bandExists) {
       setBand(products.bands[0].id);
     }
-  }, [products, band]);
+  }, [products, band, satellite]);
 
   useEffect(() => {
     if (isMesoSector(sector) && band === 'GEOCOLOR') {
       setBand('C02');
     }
   }, [sector, band]);
+
+  // When satellite changes (user action), reset sector and band to satellite-appropriate defaults.
+  // We track whether satellite was set via user action vs API init to avoid resetting on first load.
+  const satelliteInitialized = useRef(false);
+  useEffect(() => {
+    if (!satellite) return;
+    if (!satelliteInitialized.current) {
+      // First time satellite is set (from API init) — don't reset band/sector
+      satelliteInitialized.current = true;
+      return;
+    }
+    // User changed the satellite — reset to defaults for the new satellite
+    setSector(getDefaultSector(satellite));
+    setBand(getDefaultBand(satellite));
+  }, [satellite]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
@@ -194,7 +213,21 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const isMeso = isMesoSector(sector);
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
   const freshnessInfo = computeFreshness(catalogLatest, frame);
-  const isComposite = band === 'GEOCOLOR';
+  const isComposite = isCompositeBand(band, satellite);
+
+  // Satellite-aware sectors and bands (prefer API data for GOES, use constants for Himawari)
+  const apiSectors = products?.sectors?.map((s) => ({ id: s.id, name: s.name }));
+  const apiBands = products?.bands?.map((b) => ({ id: b.id, description: b.description }));
+  const satelliteSectors = getSectorsForSatellite(satellite, apiSectors);
+  const satelliteBands = getBandsForSatellite(satellite, apiBands);
+  const disabledBands = getDisabledBands(satellite, sector);
+
+  // Merge Himawari-9 into the satellite list from products if not already present
+  const allSatellites = (() => {
+    const fromApi = products?.satellites ?? [];
+    if (fromApi.includes('Himawari-9')) return fromApi;
+    return [...fromApi, 'Himawari-9'];
+  })();
 
   return (
     <div ref={pullContainerRef} className={buildOuterClassName(zoom.isZoomed)}>
@@ -241,6 +274,10 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         setRefreshInterval={setRefreshInterval}
         setCompareMode={setCompareMode}
         products={products}
+        allSatellites={allSatellites}
+        satelliteSectors={satelliteSectors}
+        satelliteBands={satelliteBands}
+        disabledBands={disabledBands}
         setSatellite={setSatellite}
         setSector={setSector}
         setBand={setBand}
@@ -262,18 +299,18 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
       {isMobile && products?.bands && !zoom.isZoomed && (
         <BandPillStrip
-          bands={products.bands}
+          bands={satelliteBands}
           activeBand={band}
           onBandChange={setBand}
           satellite={satellite}
           sector={sector}
-          satellites={products?.satellites ?? []}
-          sectors={(products?.sectors ?? []).map((s) => ({ id: s.id, name: s.name }))}
+          satellites={allSatellites}
+          sectors={satelliteSectors}
           onSatelliteChange={setSatellite}
           onSectorChange={setSector}
-          sectorName={products.sectors?.find((s) => s.id === sector)?.name}
+          sectorName={satelliteSectors.find((s) => s.id === sector)?.name}
           satelliteAvailability={products.satellite_availability}
-          disabledBands={isMeso ? ['GEOCOLOR'] : []}
+          disabledBands={disabledBands}
         />
       )}
     </div>

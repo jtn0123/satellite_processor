@@ -9,8 +9,8 @@
 | 3 | Himawari S3 catalog | ✅ Done | #308 | 2026-03-03 18:08 UTC |
 | 4 | Himawari fetch task | 🔨 Building | — | — |
 | 5 | True Color composite + scheduled fetch | ⏳ Waiting | — | — |
-| 6 | Frontend band names + sector helpers | ⏳ Waiting | — | — |
-| 7 | Live Tab satellite switching | ⏳ Waiting | — | — |
+| 6 | Frontend band names + sector helpers | ✅ Done | #311 | 2026-03-03 19:57 UTC |
+| 7 | Live Tab satellite switching | 🔨 Building | — | — |
 | 8 | Fetch, Animate, Browse, Presets | ⏳ Waiting | — | — |
 | 9 | API rename /api/goes/ → /api/satellite/ | ⏳ Waiting | — | — |
 | 10 | Auto-prune + disk management | ⏳ Waiting | — | — |

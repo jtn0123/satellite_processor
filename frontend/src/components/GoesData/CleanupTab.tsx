@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive } from 'lucide-react';
+import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive, Satellite } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
@@ -10,6 +10,7 @@ interface CleanupRule {
   name: string;
   rule_type: 'max_age_days' | 'max_storage_gb';
   value: number;
+  satellite: string | null;
   protect_collections: boolean;
   is_active: boolean;
   created_at: string;
@@ -28,6 +29,25 @@ interface FrameStats {
   by_band: Record<string, { count: number; size: number }>;
 }
 
+interface SectorStats {
+  count: number;
+  size: number;
+  oldest: string | null;
+  newest: string | null;
+}
+
+interface SatelliteCleanupStats {
+  total_frames: number;
+  total_size: number;
+  sectors: Record<string, SectorStats>;
+}
+
+interface CleanupStorageStats {
+  total_frames: number;
+  total_size: number;
+  satellites: Record<string, SatelliteCleanupStats>;
+}
+
 function formatBytes(bytes: number) {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -36,10 +56,32 @@ function formatBytes(bytes: number) {
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+function formatDate(iso: string | null) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const SATELLITE_COLORS: Record<string, string> = {
+  'GOES-16': 'bg-blue-500',
+  'GOES-18': 'bg-cyan-500',
+  'GOES-19': 'bg-indigo-500',
+  'Himawari-9': 'bg-orange-500',
+};
+
+function getSatColor(sat: string) {
+  return SATELLITE_COLORS[sat] ?? 'bg-gray-500';
+}
+
 export default function CleanupTab() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState<{ name: string; rule_type: 'max_age_days' | 'max_storage_gb'; value: number; protect_collections: boolean }>({ name: '', rule_type: 'max_age_days', value: 30, protect_collections: true });
+  const [form, setForm] = useState<{
+    name: string;
+    rule_type: 'max_age_days' | 'max_storage_gb';
+    value: number;
+    satellite: string;
+    protect_collections: boolean;
+  }>({ name: '', rule_type: 'max_age_days', value: 30, satellite: '', protect_collections: true });
 
   const { data: rules = [] } = useQuery<CleanupRule[]>({
     queryKey: ['cleanup-rules'],
@@ -53,6 +95,11 @@ export default function CleanupTab() {
     queryFn: () => api.get('/satellite/frames/stats').then(r => r.data),
   });
 
+  const { data: storageStats } = useQuery<CleanupStorageStats>({
+    queryKey: ['cleanup-storage-stats'],
+    queryFn: () => api.get('/satellite/cleanup/stats').then(r => r.data),
+  });
+
   const { data: preview, refetch: refetchPreview, isFetching: previewLoading } = useQuery<CleanupPreview>({
     queryKey: ['cleanup-preview'],
     queryFn: () => api.get('/satellite/cleanup/preview').then(r => r.data),
@@ -60,7 +107,10 @@ export default function CleanupTab() {
   });
 
   const createRule = useMutation({
-    mutationFn: (data: typeof form) => api.post('/satellite/cleanup-rules', data).then(r => r.data),
+    mutationFn: (data: typeof form) => {
+      const payload = { ...data, satellite: data.satellite || null };
+      return api.post('/satellite/cleanup-rules', payload).then(r => r.data);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cleanup-rules'] }); setShowCreate(false); showToast('success', 'Cleanup rule created'); },
     onError: () => showToast('error', 'Failed to create cleanup rule'),
   });
@@ -82,10 +132,13 @@ export default function CleanupTab() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-frame-stats'] });
       queryClient.invalidateQueries({ queryKey: ['cleanup-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['cleanup-storage-stats'] });
       showToast('success', `Cleaned up ${data.deleted_frames} frames, freed ${formatBytes(data.freed_bytes)}`);
     },
     onError: () => showToast('error', 'Failed to run cleanup'),
   });
+
+  const satellites = storageStats?.satellites ? Object.keys(storageStats.satellites) : [];
 
   return (
     <div className="space-y-6">
@@ -122,6 +175,75 @@ export default function CleanupTab() {
           </div>
         )}
       </div>
+
+      {/* Per-Satellite Breakdown */}
+      {storageStats && satellites.length > 0 && (
+        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Satellite className="w-5 h-5" /> Storage by Satellite</h2>
+
+          {/* Storage bar */}
+          {storageStats.total_size > 0 && (
+            <div className="mb-4">
+              <div className="flex rounded-full h-4 overflow-hidden bg-gray-200 dark:bg-slate-700">
+                {satellites.map(sat => {
+                  const pct = (storageStats.satellites[sat].total_size / storageStats.total_size) * 100;
+                  if (pct <= 0) return null;
+                  return (
+                    <div
+                      key={sat}
+                      className={`${getSatColor(sat)} transition-all`}
+                      style={{ width: `${pct}%` }}
+                      title={`${sat}: ${formatBytes(storageStats.satellites[sat].total_size)} (${pct.toFixed(1)}%)`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {satellites.map(sat => (
+                  <div key={sat} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
+                    <span className={`w-2.5 h-2.5 rounded-full ${getSatColor(sat)}`} />
+                    {sat}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {satellites.map(sat => {
+              const satData = storageStats.satellites[sat];
+              const sectors = Object.entries(satData.sectors);
+              return (
+                <div key={sat} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`w-3 h-3 rounded-full ${getSatColor(sat)}`} />
+                    <span className="font-semibold">{sat}</span>
+                    <span className="ml-auto text-sm text-gray-500 dark:text-slate-400">{formatBytes(satData.total_size)}</span>
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-2">
+                    {satData.total_frames.toLocaleString()} frames
+                  </div>
+                  {sectors.length > 0 && (
+                    <div className="space-y-1">
+                      {sectors.map(([sector, sectorData]) => (
+                        <div key={sector} className="flex justify-between text-xs text-gray-500 dark:text-slate-400">
+                          <span>{sector}</span>
+                          <span>{sectorData.count.toLocaleString()} frames · {formatBytes(sectorData.size)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {sectors.length > 0 && sectors[0][1].oldest && (
+                    <div className="mt-2 text-xs text-gray-400 dark:text-slate-500">
+                      {formatDate(sectors[0][1].oldest)} — {formatDate(sectors[0][1].newest)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Cleanup Rules */}
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
@@ -171,6 +293,14 @@ export default function CleanupTab() {
               <input aria-label="Value" type="number" placeholder="Value" value={form.value} onChange={e => setForm({ ...form, value: Number(e.target.value) })}
                 className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm" min={0} step={form.rule_type === 'max_storage_gb' ? 0.1 : 1} />
             </div>
+            <select aria-label="Satellite filter" value={form.satellite} onChange={e => setForm({ ...form, satellite: e.target.value })}
+              className="w-full rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
+              <option value="">All Satellites</option>
+              <option value="GOES-16">GOES-16</option>
+              <option value="GOES-18">GOES-18</option>
+              <option value="GOES-19">GOES-19</option>
+              <option value="Himawari-9">Himawari-9</option>
+            </select>
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
               <input type="checkbox" checked={form.protect_collections} onChange={e => setForm({ ...form, protect_collections: e.target.checked })}
                 className="rounded" />
@@ -196,6 +326,8 @@ export default function CleanupTab() {
                 <div className="font-medium">{rule.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">
                   {rule.rule_type === 'max_age_days' ? `Delete frames older than ${rule.value} days` : `Keep storage under ${rule.value} GB`}
+                  {rule.satellite && <span className="ml-2 text-xs bg-gray-200 dark:bg-slate-600 rounded px-1.5 py-0.5">{rule.satellite}</span>}
+                  {!rule.satellite && <span className="ml-2 text-xs text-gray-400 dark:text-slate-500">all satellites</span>}
                   {rule.protect_collections && <span className="ml-2 text-xs text-green-400">🛡 Collections protected</span>}
                 </div>
               </div>

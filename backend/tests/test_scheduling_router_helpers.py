@@ -67,7 +67,7 @@ class TestCollectAgeDeletions:
         db = AsyncMock()
         db.execute.return_value = result_obj
 
-        rule = SimpleNamespace(value=30)
+        rule = SimpleNamespace(value=30, satellite=None)
         result = await _collect_age_deletions(db, rule, {"protected1"})
         assert result == {"old1"}
 
@@ -82,7 +82,7 @@ class TestCollectAgeDeletions:
         db = AsyncMock()
         db.execute.return_value = result_obj
 
-        result = await _collect_age_deletions(db, SimpleNamespace(value=30), set())
+        result = await _collect_age_deletions(db, SimpleNamespace(value=30, satellite=None), set())
         assert result == set()
 
     @pytest.mark.asyncio
@@ -97,7 +97,7 @@ class TestCollectAgeDeletions:
         db = AsyncMock()
         db.execute.return_value = result_obj
 
-        result = await _collect_age_deletions(db, SimpleNamespace(value=30), {"f1"})
+        result = await _collect_age_deletions(db, SimpleNamespace(value=30, satellite=None), {"f1"})
         assert result == set()
 
 
@@ -112,7 +112,7 @@ class TestCollectStorageDeletions:
         db = AsyncMock()
         db.execute.return_value = total_result
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = await _collect_storage_deletions(db, rule, set())
         assert result == set()
 
@@ -130,7 +130,7 @@ class TestCollectStorageDeletions:
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = await _collect_storage_deletions(db, rule, set())
         assert result == {"f1"}
 
@@ -148,7 +148,7 @@ class TestCollectStorageDeletions:
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = await _collect_storage_deletions(db, rule, {"f1"})
         assert result == {"f2"}
 
@@ -166,7 +166,7 @@ class TestCollectStorageDeletions:
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = await _collect_storage_deletions(db, rule, set())
         assert "f1" in result
         assert "f2" in result
@@ -179,7 +179,7 @@ class TestCollectStorageDeletions:
         db = AsyncMock()
         db.execute.return_value = total_result
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = await _collect_storage_deletions(db, rule, set())
         assert result == set()
 

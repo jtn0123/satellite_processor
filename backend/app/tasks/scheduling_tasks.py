@@ -109,7 +109,10 @@ def _collect_age_based_deletions(session, rule, protected_ids: set[str]) -> list
     from ..db.models import GoesFrame
 
     cutoff = utcnow() - timedelta(days=rule.value)
-    frames = session.query(GoesFrame).filter(GoesFrame.created_at < cutoff).all()
+    query = session.query(GoesFrame).filter(GoesFrame.created_at < cutoff)
+    if rule.satellite:
+        query = query.filter(GoesFrame.satellite == rule.satellite)
+    frames = query.all()
     return [f for f in frames if f.id not in protected_ids]
 
 
@@ -120,9 +123,10 @@ def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> 
 
     from ..db.models import GoesFrame
 
-    total_bytes = session.execute(
-        sa_select(sa_func.coalesce(sa_func.sum(GoesFrame.file_size), 0))
-    ).scalar() or 0
+    size_query = sa_select(sa_func.coalesce(sa_func.sum(GoesFrame.file_size), 0))
+    if rule.satellite:
+        size_query = size_query.where(GoesFrame.satellite == rule.satellite)
+    total_bytes = session.execute(size_query).scalar() or 0
     max_bytes = rule.value * 1024 * 1024 * 1024
 
     if total_bytes <= max_bytes:
@@ -134,13 +138,10 @@ def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> 
     batch_size = 500
     offset = 0
     while freed < excess:
-        batch = (
-            session.query(GoesFrame)
-            .order_by(GoesFrame.created_at.asc())
-            .offset(offset)
-            .limit(batch_size)
-            .all()
-        )
+        query = session.query(GoesFrame).order_by(GoesFrame.created_at.asc())
+        if rule.satellite:
+            query = query.filter(GoesFrame.satellite == rule.satellite)
+        batch = query.offset(offset).limit(batch_size).all()
         if not batch:
             break
         for f in batch:

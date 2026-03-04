@@ -296,6 +296,7 @@ async def create_cleanup_rule(
         name=payload.name,
         rule_type=payload.rule_type,
         value=payload.value,
+        satellite=payload.satellite,
         protect_collections=payload.protect_collections,
         is_active=payload.is_active,
     )
@@ -323,7 +324,7 @@ async def update_cleanup_rule(
     rule = result.scalars().first()
     if not rule:
         raise APIError(404, "not_found", "Cleanup rule not found")
-    for field in ("name", "rule_type", "value", "protect_collections", "is_active"):
+    for field in ("name", "rule_type", "value", "satellite", "protect_collections", "is_active"):
         val = getattr(payload, field)
         if val is not None:
             setattr(rule, field, val)
@@ -345,6 +346,46 @@ async def delete_cleanup_rule(
     await db.delete(rule)
     await db.commit()
     return {"deleted": rule_id}
+
+
+@router.get("/cleanup/stats")
+async def cleanup_storage_stats(db: AsyncSession = Depends(get_db)):
+    """Per-satellite storage breakdown for the cleanup dashboard."""
+    logger.debug("Cleanup storage stats requested")
+    rows = (await db.execute(
+        select(
+            GoesFrame.satellite,
+            GoesFrame.sector,
+            func.count(GoesFrame.id).label("count"),
+            func.coalesce(func.sum(GoesFrame.file_size), 0).label("size"),
+            func.min(GoesFrame.capture_time).label("oldest"),
+            func.max(GoesFrame.capture_time).label("newest"),
+        ).group_by(GoesFrame.satellite, GoesFrame.sector)
+    )).all()
+
+    satellites: dict = {}
+    total_frames = 0
+    total_size = 0
+
+    for sat, sector, count, size, oldest, newest in rows:
+        total_frames += count
+        total_size += size
+        if sat not in satellites:
+            satellites[sat] = {"total_frames": 0, "total_size": 0, "sectors": {}}
+        satellites[sat]["total_frames"] += count
+        satellites[sat]["total_size"] += size
+        satellites[sat]["sectors"][sector] = {
+            "count": count,
+            "size": size,
+            "oldest": oldest.isoformat() if oldest else None,
+            "newest": newest.isoformat() if newest else None,
+        }
+
+    return {
+        "total_frames": total_frames,
+        "total_size": total_size,
+        "satellites": satellites,
+    }
 
 
 @router.get("/cleanup/preview", response_model=CleanupPreviewResponse)
@@ -397,6 +438,8 @@ async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]
     cutoff = utcnow() - timedelta(days=rule.value)
     # Bug #10: Select only IDs instead of full objects to avoid OOM
     query = select(GoesFrame.id).where(GoesFrame.created_at < cutoff)
+    if rule.satellite:
+        query = query.where(GoesFrame.satellite == rule.satellite)
     if protected_ids:
         query = query.where(GoesFrame.id.notin_(protected_ids))
     res = await db.execute(query)
@@ -405,7 +448,10 @@ async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]
 
 async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
     """Find oldest frame IDs to delete to bring storage under the limit."""
-    total_result = await db.execute(select(func.coalesce(func.sum(GoesFrame.file_size), 0)))
+    size_query = select(func.coalesce(func.sum(GoesFrame.file_size), 0))
+    if rule.satellite:
+        size_query = size_query.where(GoesFrame.satellite == rule.satellite)
+    total_result = await db.execute(size_query)
     total_bytes = total_result.scalar() or 0
     max_bytes = rule.value * 1024 * 1024 * 1024
 
@@ -414,6 +460,8 @@ async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[
 
     # Bug #10: Select only ID and file_size columns instead of full objects
     query = select(GoesFrame.id, GoesFrame.file_size).order_by(GoesFrame.created_at.asc())
+    if rule.satellite:
+        query = query.where(GoesFrame.satellite == rule.satellite)
     if protected_ids:
         query = query.where(GoesFrame.id.notin_(protected_ids))
     res = await db.execute(query)

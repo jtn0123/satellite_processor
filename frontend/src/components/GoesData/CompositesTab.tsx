@@ -68,12 +68,12 @@ function getRecipeDescription(recipeId: string, satellite: string): string {
 export default function CompositesTab() {
   const queryClient = useQueryClient();
   const [selectedRecipe, setSelectedRecipe] = useState('');
-  const [satellite, setSatelliteRaw] = useState('GOES-19');
+  const [satellite, setSatellite] = useState('GOES-19');
   const [sector, setSector] = useState('CONUS');
   const [captureTime, setCaptureTime] = useState('');
 
   const handleSatelliteChange = (newSat: string) => {
-    setSatelliteRaw(newSat);
+    setSatellite(newSat);
     setSector(getDefaultSector(newSat));
   };
 

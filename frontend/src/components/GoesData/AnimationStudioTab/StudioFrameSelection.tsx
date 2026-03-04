@@ -73,7 +73,8 @@ export function StudioFrameSelection({
                 <option value="">All</option>
                 {bandOptions.map((b) => {
                   const info = bandInfoMap[b.id];
-                  return <option key={b.id} value={b.id}>{b.id}{info ? ` — ${info.name} (${info.wavelength})` : (b.description ? ` — ${b.description}` : '')}</option>;
+                  const suffix = info ? ` — ${info.name} (${info.wavelength})` : b.description ? ` — ${b.description}` : '';
+                  return <option key={b.id} value={b.id}>{b.id}{suffix}</option>;
                 })}
               </select>
             </div>

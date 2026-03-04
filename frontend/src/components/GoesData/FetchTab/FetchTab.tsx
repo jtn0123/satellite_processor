@@ -4,6 +4,7 @@ import { parseApiError } from '../../../utils/parseApiError';
 import { ChevronDown, Save } from 'lucide-react';
 import api from '../../../api/client';
 import { showToast } from '../../../utils/toast';
+import { isHimawariSatellite, getDefaultSector, getDefaultBand } from '../../../utils/sectorHelpers';
 
 import { QuickFetchSection } from './QuickFetchSection';
 import { SatelliteStep } from './SatelliteStep';
@@ -69,6 +70,19 @@ export default function FetchTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
 
+  // When satellite changes, reset sector/band to appropriate defaults
+  const handleSatelliteChange = (newSat: string) => {
+    setSatellite(newSat);
+    setSector(getDefaultSector(newSat));
+    const defaultBand = getDefaultBand(newSat);
+    // If composite band selected, switch to single band mode appropriate to satellite
+    if (defaultBand === 'GEOCOLOR' || defaultBand === 'TrueColor') {
+      setBand(isHimawariSatellite(newSat) ? 'B13' : 'C02');
+    } else {
+      setBand(defaultBand);
+    }
+  };
+
   const currentAvail = products?.satellite_availability?.[satellite];
   const sectorInfo = products?.sectors?.find((s) => s.id === sector);
 
@@ -98,10 +112,15 @@ export default function FetchTab() {
           start_time: ts(startTime), end_time: ts(endTime),
         }).then((r) => r.data);
       }
-      return api.post('/goes/fetch', {
+      const fetchPayload: Record<string, string> = {
         satellite, sector, band,
         start_time: ts(startTime), end_time: ts(endTime),
-      }).then((r) => r.data);
+      };
+      // Himawari single-band fetches use HSD format
+      if (isHimawariSatellite(satellite)) {
+        fetchPayload.format = 'hsd';
+      }
+      return api.post('/goes/fetch', fetchPayload).then((r) => r.data);
     },
     onSuccess: (data) => {
       showToast('success', `Fetch job created: ${data.job_id}`);
@@ -176,7 +195,7 @@ export default function FetchTab() {
       </div>
 
       {step === 0 && (
-        <SatelliteStep satellite={satellite} setSatellite={setSatellite} products={products} onNext={() => setStep(1)} />
+        <SatelliteStep satellite={satellite} setSatellite={handleSatelliteChange} products={products} onNext={() => setStep(1)} />
       )}
 
       {step === 1 && (

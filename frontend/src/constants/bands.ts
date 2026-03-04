@@ -25,8 +25,38 @@ export const BAND_INFO: Record<string, BandInfo> = {
   C16: { name: "CO₂ Longwave", wavelength: "13.3μm", category: "IR", color: "#78716c", description: "CO₂ longwave, cloud-top height" },
 };
 
-export function getBandLabel(bandId: string): string {
-  const info = BAND_INFO[bandId];
+export const HIMAWARI_BAND_INFO: Record<string, BandInfo> = {
+  B01: { name: "Blue", wavelength: "0.47μm", category: "Visible", color: "#3b82f6", description: "Daytime aerosol, smoke detection" },
+  B02: { name: "Green", wavelength: "0.51μm", category: "Visible", color: "#22c55e", description: "True color green component" },
+  B03: { name: "Red", wavelength: "0.64μm", category: "Visible", color: "#ef4444", description: "Primary visible band, clouds & surface" },
+  B04: { name: "Veggie", wavelength: "0.86μm", category: "Near-IR", color: "#16a34a", description: "Vegetation, burn scars, aerosols" },
+  B05: { name: "Snow/Ice", wavelength: "1.6μm", category: "Near-IR", color: "#0ea5e9", description: "Snow/ice discrimination, cloud phase" },
+  B06: { name: "Cloud Particle", wavelength: "2.3μm", category: "Near-IR", color: "#f97316", description: "Cloud particle size, snow" },
+  B07: { name: "Shortwave IR", wavelength: "3.9μm", category: "IR", color: "#dc2626", description: "Fire detection, fog at night" },
+  B08: { name: "Upper Water Vapor", wavelength: "6.2μm", category: "IR", color: "#6366f1", description: "Upper-level water vapor, jets" },
+  B09: { name: "Mid Water Vapor", wavelength: "6.9μm", category: "IR", color: "#8b5cf6", description: "Mid-level water vapor" },
+  B10: { name: "Lower Water Vapor", wavelength: "7.3μm", category: "IR", color: "#a78bfa", description: "Lower-level water vapor, SO₂" },
+  B11: { name: "Cloud-Top Phase", wavelength: "8.6μm", category: "IR", color: "#14b8a6", description: "Cloud-top phase, dust" },
+  B12: { name: "Ozone", wavelength: "9.6μm", category: "IR", color: "#84cc16", description: "Total ozone, turbulence" },
+  B13: { name: "Clean IR", wavelength: "10.4μm", category: "IR", color: "#eab308", description: "Clean IR window, clouds & surface temp" },
+  B14: { name: "IR Longwave", wavelength: "11.2μm", category: "IR", color: "#f59e0b", description: "IR longwave window, cloud-top temp" },
+  B15: { name: "Dirty IR", wavelength: "12.4μm", category: "IR", color: "#d97706", description: "Dirty IR, volcanic ash" },
+  B16: { name: "CO₂ Longwave", wavelength: "13.3μm", category: "IR", color: "#78716c", description: "CO₂ longwave, cloud-top height" },
+};
+
+/** All band info merged (GOES + Himawari). Satellite-specific lookup preferred via getBandInfoForSatellite(). */
+export const ALL_BAND_INFO: Record<string, BandInfo> = { ...BAND_INFO, ...HIMAWARI_BAND_INFO };
+
+/** Return the band info map for a given satellite. */
+export function getBandInfoForSatellite(satellite: string): Record<string, BandInfo> {
+  const s = satellite.toLowerCase();
+  if (s.startsWith('himawari') || s === 'h9' || s === 'h8') return HIMAWARI_BAND_INFO;
+  return BAND_INFO;
+}
+
+export function getBandLabel(bandId: string, satellite?: string): string {
+  const infoMap = satellite ? getBandInfoForSatellite(satellite) : { ...BAND_INFO, ...HIMAWARI_BAND_INFO };
+  const info = infoMap[bandId];
   if (!info) return bandId;
   return `${bandId} — ${info.name} (${info.wavelength})`;
 }

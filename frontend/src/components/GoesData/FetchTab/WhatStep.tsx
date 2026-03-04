@@ -1,6 +1,7 @@
 import { Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import BandPicker from '../BandPicker';
 import SectorPicker from '../SectorPicker';
+import { isHimawariSatellite } from '../../../utils/sectorHelpers';
 
 type ImageType = 'single' | 'true_color' | 'natural_color';
 
@@ -52,13 +53,17 @@ export function WhatStep({ satellite, sector, setSector, band, setBand, imageTyp
         {imageType === 'true_color' && (
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 shrink-0" />
-            Fetches bands C01 + C02 + C03 and composites automatically
+            {isHimawariSatellite(satellite)
+              ? 'Fetches bands B01 + B02 + B03 and composites automatically'
+              : 'Fetches bands C01 + C02 + C03 and composites automatically'}
           </div>
         )}
         {imageType === 'natural_color' && (
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 shrink-0" />
-            Fetches bands C02 + C06 + C07 and composites automatically
+            {isHimawariSatellite(satellite)
+              ? 'Fetches bands B02 + B06 + B07 and composites automatically'
+              : 'Fetches bands C02 + C06 + C07 and composites automatically'}
           </div>
         )}
       </div>

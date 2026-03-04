@@ -6,6 +6,9 @@ const SECTOR_DETAILS: Record<string, { description: string }> = {
   CONUS: { description: 'Continental United States' },
   Mesoscale1: { description: 'Storm tracking region 1' },
   Mesoscale2: { description: 'Secondary target region' },
+  FLDK: { description: 'Full disk — East Asia, Australia, W. Pacific' },
+  Japan: { description: 'Japan region (2.5 min cadence)' },
+  Target: { description: 'Target area (30 sec cadence)' },
 };
 
 interface SectorPickerProps {

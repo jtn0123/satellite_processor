@@ -111,9 +111,19 @@ describe('MonitorSettingsPanel', () => {
 
 describe('MONITOR_PRESETS', () => {
   it('has expected presets', () => {
-    expect(MONITOR_PRESETS).toHaveLength(3);
+    expect(MONITOR_PRESETS).toHaveLength(6);
+    // GOES presets
     expect(MONITOR_PRESETS[0].sector).toBe('CONUS');
     expect(MONITOR_PRESETS[1].sector).toBe('FULL');
     expect(MONITOR_PRESETS[2].sector).toBe('M1');
+    // Himawari presets
+    expect(MONITOR_PRESETS[3].satellite).toBe('Himawari-9');
+    expect(MONITOR_PRESETS[3].sector).toBe('Japan');
+    expect(MONITOR_PRESETS[3].band).toBe('TrueColor');
+    expect(MONITOR_PRESETS[4].satellite).toBe('Himawari-9');
+    expect(MONITOR_PRESETS[4].sector).toBe('FLDK');
+    expect(MONITOR_PRESETS[4].band).toBe('B13');
+    expect(MONITOR_PRESETS[5].satellite).toBe('Himawari-9');
+    expect(MONITOR_PRESETS[5].sector).toBe('Target');
   });
 });

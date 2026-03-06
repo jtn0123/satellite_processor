@@ -45,6 +45,47 @@ _SCHEDULE_NOT_FOUND = "Schedule not found"
 router = APIRouter(prefix="/api/satellite", tags=["scheduling"])
 
 
+# ── Default preset definitions ────────────────────────────
+
+DEFAULT_FETCH_PRESETS = [
+    {
+        "name": "Himawari FLDK True Color",
+        "satellite": "Himawari-9",
+        "sector": "FLDK",
+        "band": "TrueColor",
+        "description": "Full disk true color composite",
+    },
+]
+
+
+# ── Seed Defaults ─────────────────────────────────────────
+
+@router.post("/fetch-presets/seed-defaults")
+async def seed_default_presets(db: AsyncSession = Depends(get_db)):
+    """Create default fetch presets if they don't already exist."""
+    logger.info("Seeding default fetch presets")
+    created = []
+    for preset_def in DEFAULT_FETCH_PRESETS:
+        result = await db.execute(
+            select(FetchPreset).where(FetchPreset.name == preset_def["name"])
+        )
+        if result.scalars().first():
+            continue
+        preset = FetchPreset(
+            id=str(uuid.uuid4()),
+            name=preset_def["name"],
+            satellite=preset_def["satellite"],
+            sector=preset_def["sector"],
+            band=preset_def["band"],
+            description=preset_def["description"],
+        )
+        db.add(preset)
+        created.append(preset_def["name"])
+    if created:
+        await db.commit()
+    return {"seeded": created, "total": len(created)}
+
+
 # ── Fetch Presets ─────────────────────────────────────────
 
 @router.post("/fetch-presets", response_model=FetchPresetResponse)

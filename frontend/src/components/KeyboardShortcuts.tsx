@@ -9,11 +9,11 @@ const shortcutList = [
   { keys: 'g p', label: 'Go to Settings' },
   { keys: 'g j', label: 'Go to Jobs' },
   { keys: 'g s', label: 'Go to Settings' },
-  { keys: 'g f', label: 'Go to GOES Data' },
+  { keys: 'g f', label: 'Go to Satellite Data' },
   { keys: '?', label: 'Show shortcuts' },
   { keys: 'Escape', label: 'Close any open modal' },
   { keys: '← →', label: 'Navigate frames in preview' },
-  { keys: '1-0', label: 'Switch GOES Data tabs' },
+  { keys: '1-0', label: 'Switch Satellite Data tabs' },
   { keys: 'Space', label: 'Play/pause animation preview' },
 ];
 

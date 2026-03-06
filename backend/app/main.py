@@ -129,18 +129,19 @@ async def lifespan(app: FastAPI):
 
     # Seed default fetch presets on startup
     try:
-        from .db.database import async_session as _seed_session
-        from .routers.scheduling import DEFAULT_FETCH_PRESETS
+        import uuid as _uuid
 
         from sqlalchemy import select as _sel
+
+        from .db.database import async_session as _seed_session
         from .db.models import FetchPreset as _FP
+        from .routers.scheduling import DEFAULT_FETCH_PRESETS
 
         async with _seed_session() as _db:
             for _pdef in DEFAULT_FETCH_PRESETS:
                 _res = await _db.execute(_sel(_FP).where(_FP.name == _pdef["name"]))
                 if _res.scalars().first():
                     continue
-                import uuid as _uuid
                 _db.add(_FP(
                     id=str(_uuid.uuid4()),
                     name=_pdef["name"],

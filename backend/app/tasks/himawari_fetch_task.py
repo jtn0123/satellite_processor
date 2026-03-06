@@ -226,6 +226,109 @@ def _read_max_frames_setting() -> int:
     return max_frames_limit
 
 
+
+def _collect_timestamps_in_range(
+    sector: str, band: str, start_time: datetime, end_time: datetime,
+) -> list[dict]:
+    """Collect available timestamps across all days in the time range."""
+    all_timestamps: list[dict] = []
+    current_date = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = end_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    while current_date < end_date:
+        day_timestamps = list_himawari_timestamps(sector, band, current_date)
+        for ts in day_timestamps:
+            scan_dt = datetime.fromisoformat(ts["scan_time"])
+            if start_time <= scan_dt <= end_time:
+                all_timestamps.append(ts)
+        current_date += timedelta(days=1)
+    return all_timestamps
+
+
+def _handle_no_timestamps(
+    job_id: str, satellite: str, sector: str, band: str,
+    start_time: datetime, end_time: datetime, _log,
+) -> None:
+    """Handle the case when no timestamps are found — update job as failed."""
+    msg = (
+        f"No frames found on S3 for {satellite} {sector} {band} "
+        f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
+        f"{end_time.strftime('%Y-%m-%d %H:%M')}."
+    )
+    _log(msg, "warning")
+    _update_job_db(
+        job_id, status="failed", progress=100,
+        completed_at=utcnow(), status_message=msg,
+    )
+    _publish_progress(job_id, 100, msg, "failed")
+
+
+def _build_final_status(
+    fetched_count: int, total_available: int, failed_downloads: int,
+    was_capped: bool, max_frames_limit: int, label: str = "frames",
+    satellite: str = "", sector: str = "", band: str = "",
+) -> tuple[str, str]:
+    """Build (status_msg, final_status) from fetch result counts."""
+    if fetched_count == 0:
+        if total_available > 0:
+            return f"All {total_available} {label} failed to download", "failed"
+        return f"No frames found for {satellite} {sector} {band}", "failed"
+
+    if failed_downloads == 0 and not was_capped:
+        return f"Fetched {fetched_count} {label}", "completed"
+
+    parts = [f"Fetched {fetched_count} {label}"]
+    if failed_downloads > 0:
+        parts.append(f"{failed_downloads} failed to download")
+    if was_capped:
+        beyond = total_available - max_frames_limit
+        parts.append(f"{beyond} beyond frame limit of {max_frames_limit}")
+    return f"{parts[0]} ({', '.join(parts[1:])})", "completed_partial"
+
+
+def _finalize_job(
+    job_id: str, output_dir: str, status_msg: str, final_status: str, _log,
+) -> None:
+    """Write the final job status to DB and publish progress."""
+    _log(status_msg, level="info" if final_status == "completed" else "warning")
+    _update_job_db(
+        job_id, status=final_status, progress=100, output_path=output_dir,
+        completed_at=utcnow(), status_message=status_msg,
+        **({"error": status_msg} if final_status == "completed_partial" else {}),
+    )
+    _publish_progress(job_id, 100, status_msg, final_status)
+
+
+def _process_single_band_frame(
+    bucket: str, satellite: str, sector: str, band: str,
+    scan_time: datetime, output_dir: str,
+) -> dict | None:
+    """Download segments for one timestamp, assemble to PNG. Returns result dict or None."""
+    segment_keys = _list_segments_for_timestamp(bucket, sector, band, scan_time)
+    if not segment_keys:
+        logger.warning("No segments found for %s %s %s at %s", satellite, sector, band, scan_time)
+        return None
+
+    segment_data = _download_segments_parallel(bucket, segment_keys)
+    valid_segments = sum(1 for s in segment_data if s)
+    if valid_segments == 0:
+        logger.warning("All segment downloads failed for %s at %s", band, scan_time)
+        return None
+
+    logger.info("Downloaded %d/%d segments for %s at %s", valid_segments, len(segment_keys), band, scan_time)
+
+    time_str = scan_time.strftime("%Y%m%d_%H%M")
+    output_path = Path(output_dir) / f"{satellite}_{sector}_{band}_{time_str}.png"
+    hsd_to_png(segment_data, output_path)
+
+    return {
+        "satellite": satellite,
+        "sector": sector,
+        "band": band,
+        "scan_time": scan_time,
+        "path": str(output_path),
+    }
+
+
 def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     """Run the core Himawari fetch logic: list timestamps, download segments, process, store."""
     satellite = params["satellite"]
@@ -237,18 +340,7 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     bucket = SATELLITE_REGISTRY["Himawari-9"].bucket
-
-    # Collect timestamps across all days in the time range
-    all_timestamps: list[dict] = []
-    current_date = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_date = end_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    while current_date < end_date:
-        day_timestamps = list_himawari_timestamps(sector, band, current_date)
-        for ts in day_timestamps:
-            scan_dt = datetime.fromisoformat(ts["scan_time"])
-            if start_time <= scan_dt <= end_time:
-                all_timestamps.append(ts)
-        current_date += timedelta(days=1)
+    all_timestamps = _collect_timestamps_in_range(sector, band, start_time, end_time)
 
     _log(f"Found {len(all_timestamps)} available timestamps on S3")
     logger.info(
@@ -258,17 +350,7 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     )
 
     if not all_timestamps:
-        msg = (
-            f"No frames found on S3 for {satellite} {sector} {band} "
-            f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
-            f"{end_time.strftime('%Y-%m-%d %H:%M')}."
-        )
-        _log(msg, "warning")
-        _update_job_db(
-            job_id, status="failed", progress=100,
-            completed_at=utcnow(), status_message=msg,
-        )
-        _publish_progress(job_id, 100, msg, "failed")
+        _handle_no_timestamps(job_id, satellite, sector, band, start_time, end_time, _log)
         return
 
     max_frames_limit = _read_max_frames_setting()
@@ -281,7 +363,6 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     for i, ts in enumerate(timestamps_to_fetch):
         scan_time = datetime.fromisoformat(ts["scan_time"])
 
-        # Progress
         pct = int((i / len(timestamps_to_fetch)) * 100)
         msg = f"Processing frame {i + 1}/{len(timestamps_to_fetch)}"
         _publish_progress(job_id, pct, msg)
@@ -289,76 +370,24 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
         _log(msg)
 
         try:
-            # List segment keys for this timestamp
-            segment_keys = _list_segments_for_timestamp(bucket, sector, band, scan_time)
-            if not segment_keys:
-                logger.warning("No segments found for %s %s %s at %s", satellite, sector, band, scan_time)
+            result = _process_single_band_frame(bucket, satellite, sector, band, scan_time, output_dir)
+            if result is None:
                 failed_downloads += 1
-                continue
-
-            # Download all segments in parallel
-            segment_data = _download_segments_parallel(bucket, segment_keys)
-
-            # Check if we got any actual data
-            valid_segments = sum(1 for s in segment_data if s)
-            if valid_segments == 0:
-                logger.warning("All segment downloads failed for %s at %s", band, scan_time)
-                failed_downloads += 1
-                continue
-
-            logger.info("Downloaded %d/%d segments for %s at %s", valid_segments, len(segment_keys), band, scan_time)
-
-            # Process segments → PNG
-            time_str = scan_time.strftime("%Y%m%d_%H%M")
-            output_path = Path(output_dir) / f"{satellite}_{sector}_{band}_{time_str}.png"
-            hsd_to_png(segment_data, output_path)
-
-            results.append({
-                "satellite": satellite,
-                "sector": sector,
-                "band": band,
-                "scan_time": scan_time,
-                "path": str(output_path),
-            })
-
+            else:
+                results.append(result)
         except Exception:
             logger.exception("Failed to process frame at %s", scan_time)
             failed_downloads += 1
 
-    # Create DB records
     if results:
         _create_himawari_fetch_records(job_id, sector, output_dir, results)
 
-    # Build status message
-    fetched_count = len(results)
-    total_available = len(all_timestamps)
-
-    if fetched_count == 0:
-        if total_available > 0:
-            status_msg = f"All {total_available} frames failed to download"
-        else:
-            status_msg = f"No frames found for {satellite} {sector} {band}"
-        final_status = "failed"
-    elif failed_downloads == 0 and not was_capped:
-        status_msg = f"Fetched {fetched_count} frames"
-        final_status = "completed"
-    else:
-        parts = [f"Fetched {fetched_count} frames"]
-        if failed_downloads > 0:
-            parts.append(f"{failed_downloads} failed to download")
-        if was_capped:
-            beyond = total_available - max_frames_limit
-            parts.append(f"{beyond} beyond frame limit of {max_frames_limit}")
-        status_msg = f"{parts[0]} ({', '.join(parts[1:])})"
-        final_status = "completed_partial"
-
-    _log(status_msg, level="info" if final_status == "completed" else "warning")
-    _update_job_db(
-        job_id, status=final_status, progress=100, output_path=output_dir,
-        completed_at=utcnow(), status_message=status_msg,
-        **({"error": status_msg} if final_status == "completed_partial" else {}),
+    status_msg, final_status = _build_final_status(
+        len(results), len(all_timestamps), failed_downloads,
+        was_capped, max_frames_limit, label="frames",
+        satellite=satellite, sector=sector, band=band,
     )
-    _publish_progress(job_id, 100, status_msg, final_status)
+    _finalize_job(job_id, output_dir, status_msg, final_status, _log)
 
 
 def _make_job_logger(job_id: str):
@@ -507,6 +536,37 @@ def _composite_true_color(
     return output_path
 
 
+def _process_true_color_frame(
+    bucket: str, satellite: str, sector: str,
+    scan_time: datetime, output_dir: str,
+) -> dict | None:
+    """Fetch all 3 bands for one timestamp and composite to True Color PNG.
+
+    Returns result dict or None on failure.
+    """
+    band_arrays: list[np.ndarray | None] = []
+    for band_name in _TRUE_COLOR_BANDS:
+        arr = _fetch_and_assemble_band(bucket, sector, band_name, scan_time)
+        band_arrays.append(arr)
+
+    if any(b is None for b in band_arrays):
+        missing = [n for n, b in zip(_TRUE_COLOR_BANDS, band_arrays, strict=False) if b is None]
+        logger.warning("Missing bands %s for TrueColor at %s", missing, scan_time)
+        return None
+
+    time_str = scan_time.strftime("%Y%m%d_%H%M")
+    output_path = Path(output_dir) / f"{satellite}_{sector}_TrueColor_{time_str}.png"
+    _composite_true_color(band_arrays, output_path)
+
+    return {
+        "satellite": satellite,
+        "sector": sector,
+        "band": "TrueColor",
+        "scan_time": scan_time,
+        "path": str(output_path),
+    }
+
+
 def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
     """Fetch B03, B02, B01 for each timestamp and composite into True Color RGB."""
     satellite = params["satellite"]
@@ -517,18 +577,7 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     bucket = SATELLITE_REGISTRY["Himawari-9"].bucket
-
-    # Use B03 (red) to discover available timestamps
-    all_timestamps: list[dict] = []
-    current_date = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_date = end_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    while current_date < end_date:
-        day_timestamps = list_himawari_timestamps(sector, "B03", current_date)
-        for ts in day_timestamps:
-            scan_dt = datetime.fromisoformat(ts["scan_time"])
-            if start_time <= scan_dt <= end_time:
-                all_timestamps.append(ts)
-        current_date += timedelta(days=1)
+    all_timestamps = _collect_timestamps_in_range(sector, "B03", start_time, end_time)
 
     _log(f"Found {len(all_timestamps)} available timestamps for True Color")
     logger.info(
@@ -537,17 +586,7 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
     )
 
     if not all_timestamps:
-        msg = (
-            f"No frames found on S3 for {satellite} {sector} TrueColor "
-            f"between {start_time.strftime('%Y-%m-%d %H:%M')} and "
-            f"{end_time.strftime('%Y-%m-%d %H:%M')}."
-        )
-        _log(msg, "warning")
-        _update_job_db(
-            job_id, status="failed", progress=100,
-            completed_at=utcnow(), status_message=msg,
-        )
-        _publish_progress(job_id, 100, msg, "failed")
+        _handle_no_timestamps(job_id, satellite, sector, "TrueColor", start_time, end_time, _log)
         return
 
     max_frames_limit = _read_max_frames_setting()
@@ -567,70 +606,24 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
         _log(msg)
 
         try:
-            # Fetch all 3 bands (30 segments total)
-            band_arrays: list[np.ndarray | None] = []
-            for band_name in _TRUE_COLOR_BANDS:
-                arr = _fetch_and_assemble_band(bucket, sector, band_name, scan_time)
-                band_arrays.append(arr)
-
-            # Need at least all 3 bands
-            if any(b is None for b in band_arrays):
-                missing = [n for n, b in zip(_TRUE_COLOR_BANDS, band_arrays, strict=False) if b is None]
-                logger.warning("Missing bands %s for TrueColor at %s", missing, scan_time)
+            result = _process_true_color_frame(bucket, satellite, sector, scan_time, output_dir)
+            if result is None:
                 failed_downloads += 1
-                continue
-
-            # Composite to RGB PNG
-            time_str = scan_time.strftime("%Y%m%d_%H%M")
-            output_path = Path(output_dir) / f"{satellite}_{sector}_TrueColor_{time_str}.png"
-            _composite_true_color(band_arrays, output_path)
-
-            results.append({
-                "satellite": satellite,
-                "sector": sector,
-                "band": "TrueColor",
-                "scan_time": scan_time,
-                "path": str(output_path),
-            })
-
+            else:
+                results.append(result)
         except Exception:
             logger.exception("Failed to process TrueColor frame at %s", scan_time)
             failed_downloads += 1
 
-    # Create DB records
     if results:
         _create_himawari_fetch_records(job_id, sector, output_dir, results)
 
-    # Build status message
-    fetched_count = len(results)
-    total_available = len(all_timestamps)
-
-    if fetched_count == 0:
-        if total_available > 0:
-            status_msg = f"All {total_available} TrueColor frames failed"
-        else:
-            status_msg = f"No frames found for {satellite} {sector} TrueColor"
-        final_status = "failed"
-    elif failed_downloads == 0 and not was_capped:
-        status_msg = f"Fetched {fetched_count} TrueColor frames"
-        final_status = "completed"
-    else:
-        parts = [f"Fetched {fetched_count} TrueColor frames"]
-        if failed_downloads > 0:
-            parts.append(f"{failed_downloads} failed")
-        if was_capped:
-            beyond = total_available - max_frames_limit
-            parts.append(f"{beyond} beyond frame limit of {max_frames_limit}")
-        status_msg = f"{parts[0]} ({', '.join(parts[1:])})"
-        final_status = "completed_partial"
-
-    _log(status_msg, level="info" if final_status == "completed" else "warning")
-    _update_job_db(
-        job_id, status=final_status, progress=100, output_path=output_dir,
-        completed_at=utcnow(), status_message=status_msg,
-        **({"error": status_msg} if final_status == "completed_partial" else {}),
+    status_msg, final_status = _build_final_status(
+        len(results), len(all_timestamps), failed_downloads,
+        was_capped, max_frames_limit, label="TrueColor frames",
+        satellite=satellite, sector=sector, band="TrueColor",
     )
-    _publish_progress(job_id, 100, status_msg, final_status)
+    _finalize_job(job_id, output_dir, status_msg, final_status, _log)
 
 
 @celery_app.task(

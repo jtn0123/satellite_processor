@@ -146,6 +146,117 @@ def _extract_segment_number(data: bytes) -> int:
 # Public API
 # ---------------------------------------------------------------------------
 
+
+def _parse_block1(data: bytes) -> dict:
+    """Parse Block 1 (282 bytes) — satellite name, obs time, area."""
+    b1_num, b1_len = _read_block_header(data, 0)
+    if b1_num != 1:
+        raise ValueError(f"Expected block 1, got block {b1_num}")
+
+    return {
+        "b1_len": b1_len,
+        "total_header_blocks": struct.unpack_from("<H", data, 3)[0],
+        "satellite_name": data[6:22].rstrip(b"\x00").decode("ascii", errors="replace"),
+        "observation_area": data[38:42].rstrip(b"\x00").decode("ascii", errors="replace"),
+        "observation_start": _mjd_to_datetime(struct.unpack_from("<d", data, 46)[0]),
+        "observation_end": _mjd_to_datetime(struct.unpack_from("<d", data, 54)[0]),
+        "total_header_length": struct.unpack_from("<I", data, 70)[0],
+        "data_length": struct.unpack_from("<I", data, 74)[0],
+        "segment_number": _extract_segment_number(data),
+    }
+
+
+def _parse_block2(data: bytes, offset: int) -> dict:
+    """Parse Block 2 (50 bytes) — data dimensions."""
+    if len(data) < offset + 50:
+        raise ValueError(f"Data too short for Block 2 at offset {offset}")
+    b2_num, b2_len = _read_block_header(data, offset)
+    if b2_num != 2:
+        raise ValueError(f"Expected block 2 at offset {offset}, got block {b2_num}")
+
+    return {
+        "b2_len": b2_len,
+        "bits_per_pixel": struct.unpack_from("<H", data, offset + 3)[0],
+        "num_columns": struct.unpack_from("<H", data, offset + 5)[0],
+        "num_lines": struct.unpack_from("<H", data, offset + 7)[0],
+    }
+
+
+def _parse_block3(data: bytes, offset: int) -> dict:
+    """Parse Block 3 (127 bytes) — projection parameters."""
+    if len(data) < offset + 127:
+        raise ValueError(f"Data too short for Block 3 at offset {offset}")
+    b3_num, b3_len = _read_block_header(data, offset)
+    if b3_num != 3:
+        raise ValueError(f"Expected block 3 at offset {offset}, got block {b3_num}")
+
+    return {
+        "b3_len": b3_len,
+        "sub_satellite_longitude": struct.unpack_from("<d", data, offset + 3)[0],
+        "cfac": struct.unpack_from("<I", data, offset + 11)[0],
+        "lfac": struct.unpack_from("<I", data, offset + 15)[0],
+        "coff": struct.unpack_from("<f", data, offset + 19)[0],
+        "loff": struct.unpack_from("<f", data, offset + 23)[0],
+        "satellite_distance": struct.unpack_from("<d", data, offset + 27)[0],
+        "earth_equatorial_radius": struct.unpack_from("<d", data, offset + 35)[0],
+        "earth_polar_radius": struct.unpack_from("<d", data, offset + 43)[0],
+    }
+
+
+def _parse_block5_calibration(data: bytes, offset: int) -> dict:
+    """Parse Block 5 (calibration) — band, wavelength, gain/offset, correction coefficients."""
+    if len(data) < offset + 35:
+        raise ValueError(f"Data too short for Block 5 at offset {offset}")
+    b5_num, b5_len = _read_block_header(data, offset)
+    if b5_num != 5:
+        raise ValueError(f"Expected block 5 at offset {offset}, got block {b5_num}")
+
+    band_number = struct.unpack_from("<H", data, offset + 3)[0]
+    result = {
+        "b5_len": b5_len,
+        "band_number": band_number,
+        "central_wavelength": struct.unpack_from("<d", data, offset + 5)[0],
+        "count_error": struct.unpack_from("<H", data, offset + 15)[0],
+        "count_outside": struct.unpack_from("<H", data, offset + 17)[0],
+        "gain": struct.unpack_from("<d", data, offset + 19)[0],
+        "offset": struct.unpack_from("<d", data, offset + 27)[0],
+        "ir_c0": 0.0,
+        "ir_c1": 0.0,
+        "ir_c2": 0.0,
+        "vis_coeff": 0.0,
+    }
+
+    if band_number in _VIS_BANDS:
+        if len(data) >= offset + 43:
+            result["vis_coeff"] = struct.unpack_from("<d", data, offset + 35)[0]
+        result["ir_c1"] = 1.0  # identity
+    elif len(data) >= offset + 59:
+        result["ir_c0"] = struct.unpack_from("<d", data, offset + 35)[0]
+        result["ir_c1"] = struct.unpack_from("<d", data, offset + 43)[0]
+        result["ir_c2"] = struct.unpack_from("<d", data, offset + 51)[0]
+
+    return result
+
+
+def _find_segment_info(data: bytes, offset: int, num_remaining_blocks: int, segment_number: int) -> tuple[int, int]:
+    """Walk remaining header blocks to find segment info (block 7).
+
+    Returns (total_segments, segment_number).
+    """
+    total_segments = 10  # default
+    off = offset
+    for _ in range(num_remaining_blocks):
+        if off + 3 > len(data):
+            break
+        bn, bl = _read_block_header(data, off)
+        if bn == 7 and bl >= 7:
+            total_segments = data[off + 3]
+            if segment_number == 0:
+                segment_number = data[off + 4]
+        off += bl
+    return total_segments, segment_number
+
+
 def parse_hsd_header(data: bytes) -> HSDHeader:
     """Parse the header blocks of an HSD segment file.
 
@@ -167,136 +278,51 @@ def parse_hsd_header(data: bytes) -> HSDHeader:
     if len(data) < 282:
         raise ValueError(f"Data too short for Block 1: {len(data)} bytes (need ≥282)")
 
-    # ── Block 1 (282 bytes) ──────────────────────────────────────────────
-    b1_num, b1_len = _read_block_header(data, 0)
-    if b1_num != 1:
-        raise ValueError(f"Expected block 1, got block {b1_num}")
+    b1 = _parse_block1(data)
+    b2 = _parse_block2(data, b1["b1_len"])
+    b3 = _parse_block3(data, b1["b1_len"] + b2["b2_len"])
 
-    total_header_blocks = struct.unpack_from("<H", data, 3)[0]
-    satellite_name = data[6:22].rstrip(b"\x00").decode("ascii", errors="replace")
-    observation_area = data[38:42].rstrip(b"\x00").decode("ascii", errors="replace")
-    obs_start_mjd = struct.unpack_from("<d", data, 46)[0]
-    obs_end_mjd = struct.unpack_from("<d", data, 54)[0]
-    total_header_length = struct.unpack_from("<I", data, 70)[0]
-    data_length = struct.unpack_from("<I", data, 74)[0]
-
-    observation_start = _mjd_to_datetime(obs_start_mjd)
-    observation_end = _mjd_to_datetime(obs_end_mjd)
-
-    segment_number = _extract_segment_number(data)
-
-    # ── Block 2 (50 bytes) ───────────────────────────────────────────────
-    off2 = b1_len
-    if len(data) < off2 + 50:
-        raise ValueError(f"Data too short for Block 2 at offset {off2}")
-    b2_num, b2_len = _read_block_header(data, off2)
-    if b2_num != 2:
-        raise ValueError(f"Expected block 2 at offset {off2}, got block {b2_num}")
-
-    bits_per_pixel = struct.unpack_from("<H", data, off2 + 3)[0]
-    num_columns = struct.unpack_from("<H", data, off2 + 5)[0]
-    num_lines = struct.unpack_from("<H", data, off2 + 7)[0]
-
-    # ── Block 3 (127 bytes) ──────────────────────────────────────────────
-    off3 = off2 + b2_len
-    if len(data) < off3 + 127:
-        raise ValueError(f"Data too short for Block 3 at offset {off3}")
-    b3_num, b3_len = _read_block_header(data, off3)
-    if b3_num != 3:
-        raise ValueError(f"Expected block 3 at offset {off3}, got block {b3_num}")
-
-    sub_lon = struct.unpack_from("<d", data, off3 + 3)[0]
-    cfac = struct.unpack_from("<I", data, off3 + 11)[0]
-    lfac = struct.unpack_from("<I", data, off3 + 15)[0]
-    coff = struct.unpack_from("<f", data, off3 + 19)[0]
-    loff = struct.unpack_from("<f", data, off3 + 23)[0]
-    satellite_distance = struct.unpack_from("<d", data, off3 + 27)[0]
-    earth_eq_radius = struct.unpack_from("<d", data, off3 + 35)[0]
-    earth_pol_radius = struct.unpack_from("<d", data, off3 + 43)[0]
-
-    # ── Skip Block 4 (navigation) ────────────────────────────────────────
-    off4 = off3 + b3_len
+    # Skip Block 4 (navigation)
+    off4 = b1["b1_len"] + b2["b2_len"] + b3["b3_len"]
     _b4_num, b4_len = _read_block_header(data, off4)
 
-    # ── Block 5 (calibration) ────────────────────────────────────────────
-    off5 = off4 + b4_len
-    if len(data) < off5 + 35:
-        raise ValueError(f"Data too short for Block 5 at offset {off5}")
-    b5_num, b5_len = _read_block_header(data, off5)
-    if b5_num != 5:
-        raise ValueError(f"Expected block 5 at offset {off5}, got block {b5_num}")
+    b5 = _parse_block5_calibration(data, off4 + b4_len)
 
-    band_number = struct.unpack_from("<H", data, off5 + 3)[0]
-    central_wavelength = struct.unpack_from("<d", data, off5 + 5)[0]
-    count_error = struct.unpack_from("<H", data, off5 + 15)[0]
-    count_outside = struct.unpack_from("<H", data, off5 + 17)[0]
-    gain = struct.unpack_from("<d", data, off5 + 19)[0]
-    cal_offset = struct.unpack_from("<d", data, off5 + 27)[0]
-
-    # IR correction coefficients (for bands ≥ 7)
-    ir_c0 = ir_c1 = ir_c2 = 0.0
-    vis_coeff = 0.0
-    if band_number in _VIS_BANDS:
-        # VIS bands: Block 5 stores a coefficient for count→reflectance
-        # At offset +35 there's a speed-of-light factor for VIS conversion
-        # The VIS pipeline: radiance * (π * d²) / (E_sun * cos_zenith)
-        # For simplicity we use the radiance directly and skip reflectance
-        # (normalisation to 8-bit handles display just fine).
-        # If the file contains a VIS coefficient, capture it.
-        if len(data) >= off5 + 43:
-            vis_coeff = struct.unpack_from("<d", data, off5 + 35)[0]
-        ir_c1 = 1.0  # identity
-    else:
-        # IR bands: c0, c1, c2 correction at offsets +35, +43, +51
-        if len(data) >= off5 + 59:
-            ir_c0 = struct.unpack_from("<d", data, off5 + 35)[0]
-            ir_c1 = struct.unpack_from("<d", data, off5 + 43)[0]
-            ir_c2 = struct.unpack_from("<d", data, off5 + 51)[0]
-
-    # Walk remaining blocks to get total_segments from block 7 (segment info)
-    total_segments = 10  # default
-    off = off5 + b5_len
-    for _ in range(total_header_blocks - 5):
-        if off + 3 > len(data):
-            break
-        bn, bl = _read_block_header(data, off)
-        if bn == 7 and bl >= 7:
-            # Block 7 segment info: +3 = total_segments (uint8), +4 = segment_seq (uint8)
-            total_segments = data[off + 3]
-            if segment_number == 0:
-                segment_number = data[off + 4]
-        off += bl
+    off_after_b5 = off4 + b4_len + b5["b5_len"]
+    total_segments, segment_number = _find_segment_info(
+        data, off_after_b5, b1["total_header_blocks"] - 5, b1["segment_number"],
+    )
 
     return HSDHeader(
-        satellite_name=satellite_name,
-        observation_area=observation_area,
-        observation_start=observation_start,
-        observation_end=observation_end,
-        band_number=band_number,
+        satellite_name=b1["satellite_name"],
+        observation_area=b1["observation_area"],
+        observation_start=b1["observation_start"],
+        observation_end=b1["observation_end"],
+        band_number=b5["band_number"],
         total_segments=total_segments,
         segment_number=segment_number,
-        total_header_length=total_header_length,
-        data_length=data_length,
-        num_columns=num_columns,
-        num_lines=num_lines,
-        bits_per_pixel=bits_per_pixel,
-        sub_satellite_longitude=sub_lon,
-        cfac=cfac,
-        lfac=lfac,
-        coff=coff,
-        loff=loff,
-        earth_equatorial_radius=earth_eq_radius,
-        earth_polar_radius=earth_pol_radius,
-        satellite_distance=satellite_distance,
-        central_wavelength=central_wavelength,
-        gain=gain,
-        offset=cal_offset,
-        count_error=count_error,
-        count_outside=count_outside,
-        ir_c0=ir_c0,
-        ir_c1=ir_c1,
-        ir_c2=ir_c2,
-        vis_coeff=vis_coeff,
+        total_header_length=b1["total_header_length"],
+        data_length=b1["data_length"],
+        num_columns=b2["num_columns"],
+        num_lines=b2["num_lines"],
+        bits_per_pixel=b2["bits_per_pixel"],
+        sub_satellite_longitude=b3["sub_satellite_longitude"],
+        cfac=b3["cfac"],
+        lfac=b3["lfac"],
+        coff=b3["coff"],
+        loff=b3["loff"],
+        earth_equatorial_radius=b3["earth_equatorial_radius"],
+        earth_polar_radius=b3["earth_polar_radius"],
+        satellite_distance=b3["satellite_distance"],
+        central_wavelength=b5["central_wavelength"],
+        gain=b5["gain"],
+        offset=b5["offset"],
+        count_error=b5["count_error"],
+        count_outside=b5["count_outside"],
+        ir_c0=b5["ir_c0"],
+        ir_c1=b5["ir_c1"],
+        ir_c2=b5["ir_c2"],
+        vis_coeff=b5["vis_coeff"],
     )
 
 
@@ -420,6 +446,24 @@ def assemble_segments(
     return np.vstack(strips)
 
 
+def _decompress_and_parse_segment(seg_bytes: bytes, index: int) -> tuple[np.ndarray | None, int | None]:
+    """Decompress and parse a single HSD segment.
+
+    Returns (parsed_array, num_columns) or (None, None) on failure.
+    """
+    if not seg_bytes:
+        return None, None
+    try:
+        decompressed = bz2.decompress(seg_bytes)
+    except (OSError, ValueError) as exc:
+        logger.warning("Segment %d bz2 decompression failed: %s", index + 1, exc)
+        return None, None
+
+    header = parse_hsd_header(decompressed)
+    arr = parse_hsd_data(decompressed, header)
+    return arr, header.num_columns
+
+
 def hsd_to_png(
     segments: list[bytes],
     output_path: Path,
@@ -453,21 +497,10 @@ def hsd_to_png(
     expected_cols: int | None = None
 
     for i, seg_bytes in enumerate(segments):
-        if not seg_bytes:
-            parsed.append(None)
-            continue
-        try:
-            decompressed = bz2.decompress(seg_bytes)
-        except (OSError, ValueError) as exc:
-            logger.warning("Segment %d bz2 decompression failed: %s", i + 1, exc)
-            parsed.append(None)
-            continue
-
-        header = parse_hsd_header(decompressed)
-        arr = parse_hsd_data(decompressed, header)
+        arr, cols = _decompress_and_parse_segment(seg_bytes, i)
         parsed.append(arr)
-        if expected_cols is None:
-            expected_cols = header.num_columns
+        if cols is not None and expected_cols is None:
+            expected_cols = cols
 
     # Pad to 10 segments if fewer supplied
     while len(parsed) < 10:

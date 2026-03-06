@@ -1,3 +1,10 @@
+# [1.37.0](https://github.com/jtn0123/satellite_processor/compare/v1.36.0...v1.37.0) (2026-03-06)
+
+
+### Features
+
+* extend auto-prune and disk management to Himawari frames ([#315](https://github.com/jtn0123/satellite_processor/issues/315)) ([e4b1b09](https://github.com/jtn0123/satellite_processor/commit/e4b1b0959d3d34e1f0b608cbfb41daa263418ebf))
+
 # [1.36.0](https://github.com/jtn0123/satellite_processor/compare/v1.35.0...v1.36.0) (2026-03-04)
 
 

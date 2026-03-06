@@ -286,7 +286,7 @@ class TestCollectAgeBasedDeletions:
         session = MagicMock()
         session.query.return_value.filter.return_value.all.return_value = [old_frame, protected_frame]
 
-        rule = SimpleNamespace(value=30)
+        rule = SimpleNamespace(value=30, satellite=None)
         result = _collect_age_based_deletions(session, rule, {"f3"})
         assert result == [old_frame]
 
@@ -296,7 +296,7 @@ class TestCollectAgeBasedDeletions:
         session = MagicMock()
         session.query.return_value.filter.return_value.all.return_value = []
 
-        result = _collect_age_based_deletions(session, SimpleNamespace(value=30), set())
+        result = _collect_age_based_deletions(session, SimpleNamespace(value=30, satellite=None), set())
         assert result == []
 
     @patch("app.tasks.scheduling_tasks.utcnow")
@@ -307,7 +307,7 @@ class TestCollectAgeBasedDeletions:
         session = MagicMock()
         session.query.return_value.filter.return_value.all.return_value = [f1]
 
-        result = _collect_age_based_deletions(session, SimpleNamespace(value=30), {"f1"})
+        result = _collect_age_based_deletions(session, SimpleNamespace(value=30, satellite=None), {"f1"})
         assert result == []
 
 
@@ -317,7 +317,7 @@ class TestCollectStorageBasedDeletions:
     def test_under_limit(self):
         session = MagicMock()
         session.execute.return_value.scalar.return_value = 500
-        rule = SimpleNamespace(value=1)  # 1 GB
+        rule = SimpleNamespace(value=1, satellite=None)  # 1 GB
         assert _collect_storage_based_deletions(session, rule, set()) == []
 
     def test_over_limit_deletes_oldest(self):
@@ -328,7 +328,7 @@ class TestCollectStorageBasedDeletions:
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
         assert result == [f1]
 
@@ -340,14 +340,14 @@ class TestCollectStorageBasedDeletions:
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, {"f1"})
         assert result == [f2]
 
     def test_zero_total_bytes(self):
         session = MagicMock()
         session.execute.return_value.scalar.return_value = 0
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         assert _collect_storage_based_deletions(session, rule, set()) == []
 
     def test_none_file_size(self):
@@ -358,7 +358,7 @@ class TestCollectStorageBasedDeletions:
         f2 = SimpleNamespace(id="f2", file_size=2 * 1024 * 1024 * 1024, created_at=_utcnow())
         session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
         # f1 has None file_size (counted as 0), so f2 should also be included
         assert f1 in result
@@ -369,7 +369,7 @@ class TestCollectStorageBasedDeletions:
         session.execute.return_value.scalar.return_value = 2 * 1024 * 1024 * 1024
         session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = []
 
-        rule = SimpleNamespace(value=1)
+        rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
         assert result == []
 

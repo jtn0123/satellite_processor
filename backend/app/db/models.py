@@ -328,6 +328,7 @@ class CleanupRule(Base):
     name = Column(String(200), nullable=False)
     rule_type = Column(String(20), nullable=False)  # 'max_age_days' or 'max_storage_gb'
     value = Column(Float, nullable=False)
+    satellite = Column(String(20), nullable=True)  # None = all satellites
     protect_collections = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utcnow)

@@ -80,6 +80,7 @@ class CleanupRuleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     rule_type: str = Field(..., pattern="^(max_age_days|max_storage_gb)$")
     value: float = Field(..., gt=0)
+    satellite: str | None = Field(None, max_length=20, description="Target satellite (null = all)")
     protect_collections: bool = True
     is_active: bool = True
 
@@ -88,6 +89,7 @@ class CleanupRuleUpdate(BaseModel):
     name: str | None = None
     rule_type: str | None = Field(None, pattern="^(max_age_days|max_storage_gb)$")
     value: float | None = Field(None, gt=0)
+    satellite: str | None = Field(None, max_length=20)
     protect_collections: bool | None = None
     is_active: bool | None = None
 
@@ -99,6 +101,7 @@ class CleanupRuleResponse(BaseModel):
     name: str
     rule_type: str
     value: float
+    satellite: str | None = None
     protect_collections: bool
     is_active: bool
     created_at: datetime | None = None

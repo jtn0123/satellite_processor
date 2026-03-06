@@ -48,20 +48,26 @@ export async function handleApiRoute(route: Route): Promise<void> {
   if (url.includes('/api/satellite/products'))
     return void (await route.fulfill({
       json: {
-        satellites: ['GOES-19', 'GOES-18', 'GOES-16'],
+        satellites: ['GOES-19', 'GOES-18', 'GOES-16', 'Himawari-9'],
         satellite_availability: {
           'GOES-19': { available_from: '2024-01-01', available_to: null, status: 'active', description: 'GOES-East (active)' },
           'GOES-18': { available_from: '2022-01-01', available_to: null, status: 'active', description: 'GOES-West (active)' },
           'GOES-16': { available_from: '2017-01-01', available_to: '2025-04-07', status: 'historical', description: 'GOES-East (historical)' },
+          'Himawari-9': { available_from: '2022-12-13', available_to: null, status: 'active', description: 'Himawari-9 (JMA)' },
         },
         sectors: [
           { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPC', cadence_minutes: 5, typical_file_size_kb: 4000 },
           { id: 'FullDisk', name: 'FullDisk', product: 'ABI-L2-CMIPF', cadence_minutes: 10, typical_file_size_kb: 12000 },
+          { id: 'FLDK', name: 'Full Disk', product: 'AHI-L1b-FLDK', cadence_minutes: 10, typical_file_size_kb: 15000 },
+          { id: 'Japan', name: 'Japan', product: 'AHI-L1b-Japan', cadence_minutes: 2.5, typical_file_size_kb: 3000 },
+          { id: 'Target', name: 'Target', product: 'AHI-L1b-Target', cadence_minutes: 2.5, typical_file_size_kb: 3000 },
         ],
         bands: [
           { id: 'GEOCOLOR', description: 'GeoColor (True Color Day / IR Night)', wavelength_um: 0, common_name: 'GeoColor', category: 'composite', use_case: 'True color composite' },
           { id: 'C02', description: 'Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' },
           { id: 'C13', description: 'IR (10.3µm)', wavelength_um: 10.3, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
+          { id: 'TrueColor', description: 'True Color (RGB Composite)', wavelength_um: 0, common_name: 'TrueColor', category: 'composite', use_case: 'True color composite' },
+          { id: 'B13', description: 'Clean IR Longwave (10.4µm)', wavelength_um: 10.4, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
         ],
         default_satellite: 'GOES-19',
       },

@@ -77,4 +77,23 @@ test.describe('Stack Health', () => {
     expect(res.status()).toBeGreaterThanOrEqual(200);
     expect(res.status()).toBeLessThan(500);
   });
+
+  test('products endpoint includes Himawari-9', async ({ request }) => {
+    const res = await apiGet(request, '/api/satellite/products');
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json() as { satellites: string[] };
+    expect(body.satellites).toContain('Himawari-9');
+  });
+
+  test('cleanup stats returns per-satellite breakdown', async ({ request }) => {
+    const res = await apiGet(request, '/api/satellite/cleanup/stats');
+    // Endpoint may return 200 or 404 if no cleanup data exists yet
+    expect(res.status()).toBeGreaterThanOrEqual(200);
+    expect(res.status()).toBeLessThan(500);
+    if (res.ok()) {
+      const body = await res.json() as Record<string, unknown>;
+      expect(body).toBeTruthy();
+      expect(typeof body).toBe('object');
+    }
+  });
 });

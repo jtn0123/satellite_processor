@@ -1,3 +1,10 @@
+# [1.38.0](https://github.com/jtn0123/satellite_processor/compare/v1.37.0...v1.38.0) (2026-03-06)
+
+
+### Features
+
+* add Himawari E2E tests and documentation ([#316](https://github.com/jtn0123/satellite_processor/issues/316)) ([2240e49](https://github.com/jtn0123/satellite_processor/commit/2240e498076c142e86c7d8b111f93d740be3e2bf))
+
 # [1.37.0](https://github.com/jtn0123/satellite_processor/compare/v1.36.0...v1.37.0) (2026-03-06)
 
 

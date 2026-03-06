@@ -120,12 +120,11 @@ test.describe('Live Tab — Himawari satellite switching', () => {
     await page.locator('[data-testid="satellite-option-Himawari-9"]').click();
     await expect(satelliteChip).toContainText('Himawari-9', { timeout: 5_000 });
 
-    // Should show the no CDN preview message for Himawari
-    const noPreview = page.getByText(/No CDN preview available/i);
+    // Should show the Himawari empty state container
+    const emptyState = page.locator('[data-testid="himawari-no-preview"]');
     const noFrames = page.getByText(/No local frames/i);
-    const fetchPrompt = page.getByText(/Fetch data to view/i);
-    // Either the specific Himawari message or the generic no-frames message
-    await expect(noPreview.or(noFrames).or(fetchPrompt)).toBeVisible({ timeout: 10_000 });
+    // Either the specific Himawari empty state or the generic no-frames message
+    await expect(emptyState.or(noFrames)).toBeVisible({ timeout: 10_000 });
   });
 
   test('band pill strip shows Himawari bands after switching', async ({ page }) => {

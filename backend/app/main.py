@@ -127,6 +127,34 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("Unexpected startup cleanup failure")
 
+    # Seed default fetch presets on startup
+    try:
+        import uuid as _uuid
+
+        from sqlalchemy import select as _sel
+
+        from .db.database import async_session as _seed_session
+        from .db.models import FetchPreset as _FP
+        from .routers.scheduling import DEFAULT_FETCH_PRESETS
+
+        async with _seed_session() as _db:
+            for _pdef in DEFAULT_FETCH_PRESETS:
+                _res = await _db.execute(_sel(_FP).where(_FP.name == _pdef["name"]))
+                if _res.scalars().first():
+                    continue
+                _db.add(_FP(
+                    id=str(_uuid.uuid4()),
+                    name=_pdef["name"],
+                    satellite=_pdef["satellite"],
+                    sector=_pdef["sector"],
+                    band=_pdef["band"],
+                    description=_pdef["description"],
+                ))
+            await _db.commit()
+            logger.info("Default fetch presets seeded")
+    except Exception:
+        logger.warning("Failed to seed default presets", exc_info=True)
+
     # Start periodic checker
     checker_task = asyncio.create_task(_stale_job_checker())
 

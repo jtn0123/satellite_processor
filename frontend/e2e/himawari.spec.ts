@@ -176,7 +176,8 @@ test.describe('Fetch Tab — Himawari', () => {
     await advancedBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await advancedBtn.click();
 
-    await expect(page.getByText('Himawari-9')).toBeVisible({ timeout: 5_000 });
+    // Use exact match to avoid matching the description text "Himawari-9 (JMA)"
+    await expect(page.getByText('Himawari-9', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('Himawari quick fetch chips are shown on Fetch tab', async ({ page }) => {

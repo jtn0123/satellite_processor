@@ -1,3 +1,10 @@
+# [1.39.0](https://github.com/jtn0123/satellite_processor/compare/v1.38.0...v1.39.0) (2026-03-06)
+
+
+### Features
+
+* Himawari default preset, improved empty state & nav branding ([#317](https://github.com/jtn0123/satellite_processor/issues/317)) ([6e699e5](https://github.com/jtn0123/satellite_processor/commit/6e699e52139ff16c565b6c030a8458653a50eac5))
+
 # [1.38.0](https://github.com/jtn0123/satellite_processor/compare/v1.37.0...v1.38.0) (2026-03-06)
 
 

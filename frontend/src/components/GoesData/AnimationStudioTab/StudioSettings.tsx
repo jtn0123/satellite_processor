@@ -52,7 +52,7 @@ export function StudioSettings({
 
         <div>
           <label htmlFor="anim-format" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Format</label>
-          <div role="group" aria-label="Animation format" className="flex gap-2">
+          <fieldset aria-label="Animation format" className="flex gap-2 border-0 p-0 m-0">
             {(['mp4', 'gif'] as const).map((f) => (
               <button key={f} onClick={() => setFormat(f)}
                 aria-pressed={format === f}
@@ -60,12 +60,12 @@ export function StudioSettings({
                 {f.toUpperCase()}
               </button>
             ))}
-          </div>
+          </fieldset>
         </div>
 
         <div>
           <label htmlFor="anim-quality" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Quality</label>
-          <div role="group" aria-label="Animation quality" className="flex gap-2">
+          <fieldset aria-label="Animation quality" className="flex gap-2 border-0 p-0 m-0">
             {(['low', 'medium', 'high'] as const).map((q) => (
               <button key={q} onClick={() => setQuality(q)}
                 aria-pressed={quality === q}
@@ -73,7 +73,7 @@ export function StudioSettings({
                 {q}
               </button>
             ))}
-          </div>
+          </fieldset>
         </div>
 
         <div>

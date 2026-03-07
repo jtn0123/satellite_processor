@@ -84,7 +84,7 @@ export default function NotificationBell() {
           <div className="px-4 py-3 border-b border-gray-200 dark:border-space-700/50">
             <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
           </div>
-          <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
+          <div className="max-h-64 overflow-y-auto" aria-labelledby="notification-heading">
             {isError && (
               <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
             )}

@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/jtn0123/satellite_processor/compare/v1.39.0...v1.40.0) (2026-03-07)
+
+
+### Features
+
+* Himawari UX — one-click scheduling, sector cadence, S3 availability ([#319](https://github.com/jtn0123/satellite_processor/issues/319)) ([af4c22c](https://github.com/jtn0123/satellite_processor/commit/af4c22c9ea2be2ba3bf38acf65951f28404ace9d))
+
 # [1.39.0](https://github.com/jtn0123/satellite_processor/compare/v1.38.0...v1.39.0) (2026-03-06)
 
 

@@ -160,7 +160,7 @@ describe('Himawari UX: S3 availability indicator', () => {
     await switchToHimawari();
     await waitFor(() => {
       const calls = mockedApi.get.mock.calls.filter(
-        (c: [string, Record<string, unknown>]) => c[0] === '/satellite/catalog/latest' && c[1]?.params?.satellite === 'Himawari-9',
+        (c: unknown[]) => c[0] === '/satellite/catalog/latest' && (c[1] as Record<string, Record<string, string>> | undefined)?.params?.satellite === 'Himawari-9',
       );
       expect(calls.length).toBeGreaterThan(0);
     });

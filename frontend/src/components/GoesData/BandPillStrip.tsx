@@ -18,7 +18,7 @@ interface BandPillStripProps {
   satellite: string;
   sector: string;
   satellites: ReadonlyArray<string>;
-  sectors: ReadonlyArray<Readonly<{ id: string; name: string }>>;
+  sectors: ReadonlyArray<Readonly<{ id: string; name: string; description?: string }>>;
   onSatelliteChange: (sat: string) => void;
   onSectorChange: (sector: string) => void;
   sectorName?: string;
@@ -160,8 +160,12 @@ export default function BandPillStrip({
                   isActive ? activePillClass : inactivePillClass
                 }`}
                 data-testid={`sector-option-${s.id}`}
+                title={s.description ?? undefined}
               >
                 {isActive ? `${s.name} ✓` : s.name}
+                {s.description && (
+                  <span className="ml-1 text-[10px] opacity-60">{s.description}</span>
+                )}
               </button>
             );
           })}

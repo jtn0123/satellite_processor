@@ -1,5 +1,4 @@
 import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { LatestFrame, Product } from '../types';
 import ImageErrorBoundary from '../ImageErrorBoundary';
 import ImagePanelContent from '../ImagePanelContent';
@@ -13,7 +12,8 @@ import FullscreenButton from '../FullscreenButton';
 import BandPillStrip from '../BandPillStrip';
 import DesktopControlsBar from '../DesktopControlsBar';
 import MonitorSettingsPanel from '../MonitorSettingsPanel';
-import { RefreshCw, Satellite } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import HimawariEmptyState from './HimawariEmptyState';
 import type { MonitorPreset } from '../monitorPresets';
 import { isHimawariSatellite } from '../../../utils/sectorHelpers';
 import type { SectorOption, BandOption } from '../liveTabUtils';
@@ -112,7 +112,6 @@ export function LiveImageArea(props: LiveImageAreaProps) {
     freshnessInfo, activeJobId, activeJob, fetchNow, lastFetchFailed,
     catalogLatest,
   } = props;
-  const navigate = useNavigate();
 
   return (
     <div
@@ -151,29 +150,13 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
           if (isCdnUnavailable && isHimawari) {
             return (
-              <div className="flex flex-col items-center justify-center gap-6 text-center p-8 h-full" data-testid="himawari-no-preview">
-                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <Satellite className="w-8 h-8 text-primary/70" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-white text-lg font-semibold">No Himawari-9 data yet</h3>
-                  <p className="text-white/60 text-sm max-w-xs">
-                    Fetch data to get started — images update automatically once available
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={fetchNow} disabled={!!activeJobId}
-                    className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50">
-                    {activeJobId ? 'Fetching…' : 'Fetch Now'}
-                  </button>
-                  <button type="button" onClick={() => navigate('/goes?tab=fetch')}
-                    className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
-                    data-testid="himawari-go-to-fetch"
-                  >
-                    Go to Fetch
-                  </button>
-                </div>
-              </div>
+              <HimawariEmptyState
+                satellite={satellite}
+                sector={sector}
+                band={band}
+                activeJobId={activeJobId}
+                fetchNow={fetchNow}
+              />
             );
           }
           if (isCdnUnavailable && isComposite) {
@@ -317,7 +300,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           satellite={satellite}
           sector={sector}
           satellites={[...allSatellites]}
-          sectors={satelliteSectors.map((s) => ({ id: s.id, name: s.name }))}
+          sectors={satelliteSectors.map((s) => ({ id: s.id, name: s.name, description: s.description }))}
           onSatelliteChange={setSatellite}
           onSectorChange={setSector}
           sectorName={satelliteSectors.find((s) => s.id === sector)?.name}

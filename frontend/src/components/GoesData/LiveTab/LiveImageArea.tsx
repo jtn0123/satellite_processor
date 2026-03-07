@@ -114,6 +114,12 @@ export function LiveImageArea(props: LiveImageAreaProps) {
   } = props;
   const navigate = useNavigate();
 
+  // Himawari staleness: compute age from capture_time (no catalogLatest available)
+  // eslint-disable-next-line react-hooks/purity -- Date.now() is intentionally impure for staleness display
+  const himawariStaleMin = isHimawariSatellite(satellite) && !freshnessInfo && frame?.capture_time && !activeJobId
+    ? Math.floor((Date.now() - new Date(frame.capture_time).getTime()) / 60000)
+    : null;
+
   return (
     <div
       ref={containerRef}
@@ -265,6 +271,15 @@ export function LiveImageArea(props: LiveImageAreaProps) {
             activeJobId={activeJobId}
             onFetchNow={fetchNow}
           />
+        </div>
+      )}
+
+      {himawariStaleMin != null && himawariStaleMin > 20 && (
+        <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/15 border border-yellow-500/30 text-yellow-200 text-xs">
+            <span>Last fetched: {himawariStaleMin} min ago — data may be stale</span>
+            <button type="button" onClick={fetchNow} className="ml-auto underline hover:text-yellow-100 transition-colors">Fetch now</button>
+          </div>
         </div>
       )}
 

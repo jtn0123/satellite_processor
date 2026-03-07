@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import type { Product } from '../components/GoesData/types';
-import { FRIENDLY_BAND_NAMES, getFriendlyBandName } from '../components/GoesData/liveTabUtils';
+import { getFriendlyBandLabel, getBandsForSatellite } from '../components/GoesData/liveTabUtils';
 
-export function useSwipeBand(products: Product | undefined, band: string, setBand: (b: string) => void) {
+export function useSwipeBand(products: Product | undefined, band: string, setBand: (b: string) => void, satellite?: string) {
   const bandKeys = useMemo(() => {
-    if (products?.bands?.length) return products.bands.map((b) => b.id);
-    return Object.keys(FRIENDLY_BAND_NAMES);
-  }, [products]);
+    const bands = getBandsForSatellite(satellite ?? '', products?.bands?.map((b) => ({ id: b.id, description: b.description })));
+    return bands.map((b) => b.id);
+  }, [products, satellite]);
 
   const [swipeToast, setSwipeToast] = useState<string | null>(null);
   const swipeToastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -37,11 +37,11 @@ export function useSwipeBand(products: Product | undefined, band: string, setBan
     if (nextIdx < 0 || nextIdx >= bandKeys.length) return;
     const nextBand = bandKeys[nextIdx];
     setBand(nextBand);
-    const label = getFriendlyBandName(nextBand);
+    const label = getFriendlyBandLabel(nextBand, undefined, 'short', satellite);
     clearTimeout(swipeToastTimer.current);
     setSwipeToast(`${nextBand} — ${label}`);
     swipeToastTimer.current = setTimeout(() => setSwipeToast(null), 2000);
-  }, [band, bandKeys, setBand]);
+  }, [band, bandKeys, setBand, satellite]);
 
   // Clean up timer on unmount to prevent setState on unmounted component
   useEffect(() => {

@@ -163,6 +163,7 @@ export function getNextBandIndex(currentIdx: number, length: number): number {
 export interface SectorOption {
   id: string;
   name: string;
+  description?: string;
 }
 
 export interface BandOption {
@@ -178,9 +179,9 @@ const GOES_SECTORS: SectorOption[] = [
 ];
 
 const HIMAWARI_SECTORS: SectorOption[] = [
-  { id: 'FLDK', name: 'Full Disk' },
-  { id: 'Japan', name: 'Japan' },
-  { id: 'Target', name: 'Target' },
+  { id: 'FLDK', name: 'Full Disk', description: '10-min cadence' },
+  { id: 'Japan', name: 'Japan', description: '2.5-min cadence' },
+  { id: 'Target', name: 'Target', description: '2.5-min cadence' },
 ];
 
 function buildGoesBands(): BandOption[] {

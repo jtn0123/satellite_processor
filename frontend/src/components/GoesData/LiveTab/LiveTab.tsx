@@ -177,7 +177,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const { display: countdownDisplay, resetCountdown } = useCountdownDisplay(refreshInterval);
   useEffect(() => { resetCountdownRef.current = resetCountdown; }, [resetCountdown]);
 
-  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand);
+  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand, satellite);
 
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
 

@@ -40,7 +40,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold" id="compare-heading">Compare Frames</h2>
-          <div role="group" aria-label="Comparison view mode">
+          <fieldset aria-label="Comparison view mode" className="border-0 p-0 m-0">
             <button
               type="button"
               onClick={() => setMode('side-by-side')}
@@ -57,7 +57,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             >
               Slider
             </button>
-          </div>
+          </fieldset>
         </div>
         <button type="button" onClick={onClose} aria-label="Close comparison view" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden">
           Close

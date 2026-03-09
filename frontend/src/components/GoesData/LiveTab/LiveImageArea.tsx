@@ -95,6 +95,73 @@ interface LiveImageAreaProps {
   readonly liveAnnouncement?: string;
 }
 
+interface ImageContentProps {
+  readonly imageUrl: string | null;
+  readonly catalogImageUrl: string | null;
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly isComposite: boolean;
+  readonly satellite: string;
+  readonly sector: string;
+  readonly band: string;
+  readonly products: Product | undefined;
+  readonly activeJobId: string | null;
+  readonly activeJob: { id: string; status: string; progress: number; status_message: string } | null;
+  readonly lastFetchFailed: boolean;
+  readonly fetchNow: () => void;
+  readonly compareMode: boolean;
+  readonly prevImageUrl: string | null;
+  readonly comparePosition: number;
+  readonly setComparePosition: (v: number) => void;
+  readonly frame: LatestFrame | null | undefined;
+  readonly prevFrame: LatestFrame | null | undefined;
+  readonly zoom: LiveImageAreaProps['zoom'];
+  readonly imageRef: RefObject<HTMLImageElement | null>;
+}
+
+function ImageContent(props: ImageContentProps) {
+  const {
+    imageUrl, catalogImageUrl, isLoading, isError, isComposite,
+    satellite, sector, band, products, activeJobId, activeJob,
+    lastFetchFailed, fetchNow, compareMode, prevImageUrl,
+    comparePosition, setComparePosition, frame, prevFrame, zoom, imageRef,
+  } = props;
+  const isHimawari = isHimawariSatellite(satellite);
+  const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
+  if (isCdnUnavailable && isHimawari) {
+    return <HimawariEmptyState satellite={satellite} sector={sector} band={band} activeJobId={activeJobId} fetchNow={fetchNow} />;
+  }
+  if (isCdnUnavailable && isComposite) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
+        <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
+      </div>
+    );
+  }
+  if (isCdnUnavailable) {
+    return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
+  }
+  return (
+    <ImagePanelContent
+      isLoading={isLoading && !catalogImageUrl}
+      isError={isError && !imageUrl}
+      imageUrl={imageUrl}
+      compareMode={compareMode}
+      satellite={satellite}
+      band={band}
+      sector={sector}
+      zoomStyle={zoom.style}
+      prevImageUrl={prevImageUrl}
+      comparePosition={comparePosition}
+      onPositionChange={setComparePosition}
+      frameTime={frame?.capture_time ?? null}
+      prevFrameTime={prevFrame?.capture_time ?? null}
+      isZoomed={zoom.isZoomed}
+      imageRef={imageRef}
+    />
+  );
+}
+
 export function LiveImageArea(props: LiveImageAreaProps) {
   const {
     containerRef, imageRef, isMobile, zoom, showZoomHint,
@@ -160,50 +227,29 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
       <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
-        {(() => {
-          const isHimawari = isHimawariSatellite(satellite);
-          const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
-          if (isCdnUnavailable && isHimawari) {
-            return (
-              <HimawariEmptyState
-                satellite={satellite}
-                sector={sector}
-                band={band}
-                activeJobId={activeJobId}
-                fetchNow={fetchNow}
-              />
-            );
-          }
-          if (isCdnUnavailable && isComposite) {
-            return (
-              <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
-                <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
-              </div>
-            );
-          }
-          if (isCdnUnavailable) {
-            return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
-          }
-          return (
-            <ImagePanelContent
-              isLoading={isLoading && !catalogImageUrl}
-              isError={isError && !imageUrl}
-              imageUrl={imageUrl}
-              compareMode={compareMode}
-              satellite={satellite}
-              band={band}
-              sector={sector}
-              zoomStyle={zoom.style}
-              prevImageUrl={prevImageUrl}
-              comparePosition={comparePosition}
-              onPositionChange={setComparePosition}
-              frameTime={frame?.capture_time ?? null}
-              prevFrameTime={prevFrame?.capture_time ?? null}
-              isZoomed={zoom.isZoomed}
-              imageRef={imageRef}
-            />
-          );
-        })()}
+        <ImageContent
+          imageUrl={imageUrl}
+          catalogImageUrl={catalogImageUrl}
+          isLoading={isLoading}
+          isError={isError}
+          isComposite={isComposite}
+          satellite={satellite}
+          sector={sector}
+          band={band}
+          products={products}
+          activeJobId={activeJobId}
+          activeJob={activeJob}
+          lastFetchFailed={lastFetchFailed}
+          fetchNow={fetchNow}
+          compareMode={compareMode}
+          prevImageUrl={prevImageUrl}
+          comparePosition={comparePosition}
+          setComparePosition={setComparePosition}
+          frame={frame}
+          prevFrame={prevFrame}
+          zoom={zoom}
+          imageRef={imageRef}
+        />
       </ImageErrorBoundary>
 
       {swipeToast && (

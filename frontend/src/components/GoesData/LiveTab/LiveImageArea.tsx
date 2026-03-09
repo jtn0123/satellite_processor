@@ -1,4 +1,5 @@
 import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useEffect } from 'react';
 import type { LatestFrame, Product } from '../types';
 import ImageErrorBoundary from '../ImageErrorBoundary';
 import ImagePanelContent from '../ImagePanelContent';
@@ -114,11 +115,19 @@ export function LiveImageArea(props: LiveImageAreaProps) {
     catalogLatest,
   } = props;
 
-  // Himawari staleness: compute age from capture_time (no catalogLatest available)
-  // eslint-disable-next-line react-hooks/purity -- Date.now() is intentionally impure for staleness display
-  const himawariStaleMin = isHimawariSatellite(satellite) && !freshnessInfo && frame?.capture_time && !activeJobId
-    ? Math.floor((Date.now() - new Date(frame.capture_time).getTime()) / 60000)
-    : null;
+  // Himawari staleness: track age from capture_time (no catalogLatest available).
+  // nowMs is initialised lazily (Date.now() only runs once per mount) and then
+  // refreshed every minute via an interval — never called synchronously in render.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const himawariStaleMin =
+    isHimawariSatellite(satellite) && !freshnessInfo && frame?.capture_time && !activeJobId
+      ? Math.floor((nowMs - new Date(frame.capture_time).getTime()) / 60000)
+      : null;
 
   return (
     <div

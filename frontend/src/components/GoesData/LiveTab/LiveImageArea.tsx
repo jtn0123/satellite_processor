@@ -1,4 +1,4 @@
-import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent } from 'react';
+import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useState, useEffect } from 'react';
 import type { LatestFrame, Product } from '../types';
 import ImageErrorBoundary from '../ImageErrorBoundary';
@@ -196,6 +196,30 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       ? Math.floor((nowMs - new Date(frame.capture_time).getTime()) / 60000)
       : null;
 
+  const containerClass = `relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`;
+
+  function handleContainerTouchStart(e: ReactTouchEvent) {
+    if (!compareMode) { zoom.handlers.onTouchStart(e); }
+    handleTouchStart(e);
+  }
+
+  function handleContainerTouchEnd(e: ReactTouchEvent) {
+    if (!compareMode) { zoom.handlers.onTouchEnd(e); }
+    handleTouchEnd(e, zoom.isZoomed);
+  }
+
+  function handleContainerMouseMove(e: ReactMouseEvent) {
+    if (!compareMode) { zoom.handlers.onMouseMove(e); }
+    if (!isMobile && !overlayVisible) {
+      setOverlayVisible(true);
+      resetOverlayTimer();
+    }
+  }
+
+  function handleContainerKeyDown(e: ReactKeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); }
+  }
+
   return (
     <div
       ref={containerRef}
@@ -203,27 +227,16 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       role="application"
       aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
       tabIndex={0}
-      className={`relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
+      className={containerClass}
       onWheel={compareMode ? undefined : zoom.handlers.onWheel}
-      onTouchStart={(e) => {
-        if (!compareMode) { zoom.handlers.onTouchStart(e); }
-        handleTouchStart(e);
-      }}
+      onTouchStart={handleContainerTouchStart}
       onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
-      onTouchEnd={(e) => {
-        if (!compareMode) { zoom.handlers.onTouchEnd(e); }
-        handleTouchEnd(e, zoom.isZoomed);
-      }}
+      onTouchEnd={handleContainerTouchEnd}
       onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
-      onMouseMove={(e) => {
-        if (!compareMode) { zoom.handlers.onMouseMove(e); }
-        if (isMobile || overlayVisible) { return; }
-        setOverlayVisible(true);
-        resetOverlayTimer();
-      }}
+      onMouseMove={handleContainerMouseMove}
       onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
       onClick={handleImageTap}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); } }}
+      onKeyDown={handleContainerKeyDown}
     >
       {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 

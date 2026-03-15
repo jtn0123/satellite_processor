@@ -92,8 +92,10 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                     <label className="text-xs text-gray-500 dark:text-slate-400 uppercase">{key}</label>
                     <input
                       type="number"
+                      min={0}
                       value={crop[key]}
                       onChange={(e) => setCrop({ ...crop, [key]: Number(e.target.value) })}
+                      aria-label={`Crop ${key === 'x' ? 'X coordinate' : key === 'y' ? 'Y coordinate' : key === 'w' ? 'width' : 'height'}`}
                       className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>

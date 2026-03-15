@@ -14,13 +14,15 @@ interface Job {
   created_at: string;
 }
 
+import { JOB_STATUS } from '../../utils/jobStatus';
+
 const statusConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-  processing: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-  completed: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
-  completed_partial: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
-  cancelled: { icon: AlertTriangle, color: 'text-gray-500 dark:text-slate-400', bg: 'bg-slate-400/10' },
+  [JOB_STATUS.PENDING]: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+  [JOB_STATUS.PROCESSING]: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  [JOB_STATUS.COMPLETED]: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
+  [JOB_STATUS.COMPLETED_PARTIAL]: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  [JOB_STATUS.FAILED]: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
+  [JOB_STATUS.CANCELLED]: { icon: AlertTriangle, color: 'text-gray-500 dark:text-slate-400', bg: 'bg-slate-400/10' },
 };
 
 interface Props {
@@ -70,7 +72,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
         </select>
       </div>
       {displayed.map((job) => {
-        const cfg = statusConfig[job.status] || statusConfig.pending;
+        const cfg = statusConfig[job.status] || statusConfig[JOB_STATUS.PENDING];
         const Icon = cfg.icon;
         return (
           <button
@@ -81,7 +83,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon
-                className={`w-4 h-4 ${cfg.color} ${job.status === 'processing' ? 'animate-spin' : ''}`}
+                className={`w-4 h-4 ${cfg.color} ${job.status === JOB_STATUS.PROCESSING ? 'animate-spin' : ''}`}
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -95,7 +97,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 {job.status_message || `Job ${job.id.slice(0, 8)}`}
               </p>
             </div>
-            {job.status === 'processing' && (
+            {job.status === JOB_STATUS.PROCESSING && (
               <div className="w-20 h-1.5 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
@@ -107,7 +109,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
               {new Date(job.created_at).toLocaleString()}
             </span>
             <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-              {(job.status === 'completed' || job.status === 'completed_partial') && (
+              {(job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.COMPLETED_PARTIAL) && (
                 <a
                   href={`/api/jobs/${job.id}/download`}
                   download

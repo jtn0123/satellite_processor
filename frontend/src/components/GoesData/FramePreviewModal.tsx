@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Crop, Save } from 'lucide-react';
 import api from '../../api/client';
 import { formatBytes } from './utils';
+import { showToast } from '../../utils/toast';
 import Modal from './Modal';
 import type { GoesFrame, CropPreset } from './types';
 import { extractArray } from '../../utils/safeData';
@@ -60,6 +61,7 @@ export default function FramePreviewModal({
       setShowSavePreset(false);
       setPresetName('');
     },
+    onError: () => showToast('error', 'Failed to save crop preset'),
   });
 
   const screenToImage = useCallback((clientX: number, clientY: number) => {

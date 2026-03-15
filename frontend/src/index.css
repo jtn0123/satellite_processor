@@ -72,6 +72,11 @@ body {
   }
 }
 
+/* Disabled buttons should show not-allowed cursor */
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Light mode overrides — consolidated (single :root:not(.dark) block below) */
 
 /* Dark theme scrollbar */

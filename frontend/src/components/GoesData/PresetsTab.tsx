@@ -138,13 +138,13 @@ export default function PresetsTab() {
                 {preset.description && <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">{preset.description}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => runPreset.mutate(preset.id)} disabled={runPreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400 ${runPreset.isPending ? 'opacity-50' : ''}`} title="Run Now">
+                <button onClick={() => runPreset.mutate(preset.id)} disabled={runPreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400 ${runPreset.isPending ? 'opacity-50' : ''}`} aria-label={`Run preset ${preset.name}`}>
                   {runPreset.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 </button>
-                <button onClick={() => setEditingPreset(preset)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400" title="Edit">
+                <button onClick={() => setEditingPreset(preset)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label={`Edit preset ${preset.name}`}>
                   <Edit2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => deletePreset.mutate(preset.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400" title="Delete">
+                <button onClick={() => deletePreset.mutate(preset.id)} disabled={deletePreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400 ${deletePreset.isPending ? 'opacity-50' : ''}`} aria-label={`Delete preset ${preset.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -211,7 +211,7 @@ export default function PresetsTab() {
                 >
                   {sched.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteSchedule.mutate(sched.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400">
+                <button type="button" onClick={() => deleteSchedule.mutate(sched.id)} disabled={deleteSchedule.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400 ${deleteSchedule.isPending ? 'opacity-50' : ''}`} aria-label={`Delete schedule ${sched.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

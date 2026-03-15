@@ -252,15 +252,15 @@ export default function CleanupTab() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Cleanup Rules</h2>
           <div className="flex gap-2">
-            <button onClick={() => refetchPreview()} disabled={previewLoading}
+            <button type="button" onClick={() => refetchPreview()} disabled={previewLoading}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
-            <button onClick={() => setShowCleanupConfirm(true)} disabled={runCleanup.isPending}
+            <button type="button" onClick={() => setShowCleanupConfirm(true)} disabled={runCleanup.isPending}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg text-sm font-medium hover:bg-red-500 disabled:opacity-50">
               <Play className="w-4 h-4" /> Run Now
             </button>
-            <button onClick={() => setShowCreate(true)}
+            <button type="button" onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80">
               <Plus className="w-4 h-4" /> New Rule
             </button>
@@ -309,11 +309,11 @@ export default function CleanupTab() {
               <Shield className="w-4 h-4" /> Protect frames in collections
             </label>
             <div className="flex gap-2">
-              <button onClick={() => { if (form.name) createRule.mutate(form); }} disabled={!form.name}
+              <button type="button" onClick={() => { if (form.name) createRule.mutate(form); }} disabled={!form.name}
                 className="px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80 disabled:opacity-50">
                 <Save className="w-4 h-4 inline mr-1" /> Create
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
+              <button type="button" onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
                 <X className="w-4 h-4 inline mr-1" /> Cancel
               </button>
             </div>
@@ -334,11 +334,12 @@ export default function CleanupTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => toggleRule.mutate(rule)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'}`}>
+                <button type="button" onClick={() => toggleRule.mutate(rule)} disabled={toggleRule.isPending}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'} ${toggleRule.isPending ? 'opacity-50' : ''}`}
+                  aria-label={`Toggle rule ${rule.name} ${rule.is_active ? 'off' : 'on'}`}>
                   {rule.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400">
+                <button onClick={() => deleteRule.mutate(rule.id)} disabled={deleteRule.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400 ${deleteRule.isPending ? 'opacity-50' : ''}`} aria-label={`Delete rule ${rule.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

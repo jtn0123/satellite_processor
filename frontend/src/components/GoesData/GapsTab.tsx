@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, AlertTriangle, Play, PlayCircle, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import api from '../../api/client';
+import { showToast } from '../../utils/toast';
 import type { CoverageStats, Gap } from './types';
 
 interface BackfillPayload {
@@ -38,6 +39,7 @@ export default function GapsTab() {
       setConfirmGap(null);
       setConfirmAll(false);
     },
+    onError: () => showToast('error', 'Failed to start backfill job'),
   });
 
   const handleBackfillOne = (gap: Gap) => {
@@ -96,7 +98,7 @@ export default function GapsTab() {
             className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
         </div>
         <div className="flex items-end">
-          <button onClick={() => refetch()} disabled={isLoading}
+          <button type="button" onClick={() => refetch()} disabled={isLoading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors disabled:opacity-50">
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             Detect Gaps
@@ -181,15 +183,15 @@ export default function GapsTab() {
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
               <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Detected Gaps</h3>
-                <button onClick={handleBackfillAll} disabled={backfillMutation.isPending}
+                <button type="button" onClick={handleBackfillAll} disabled={backfillMutation.isPending}
                   className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50">
                   <PlayCircle className="w-4 h-4" />
                   Backfill All ({coverage.gap_count})
                 </button>
               </div>
               <div className="divide-y divide-gray-200 dark:divide-slate-800">
-                {coverage.gaps.map((gap, i) => (
-                  <div key={`${gap.start}-${i}`} className="flex items-center justify-between px-6 py-3">
+                {coverage.gaps.map((gap) => (
+                  <div key={gap.start} className="flex items-center justify-between px-6 py-3">
                     <div className="flex items-center gap-4">
                       <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                       <div>
@@ -201,7 +203,7 @@ export default function GapsTab() {
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => handleBackfillOne(gap)} disabled={backfillMutation.isPending}
+                    <button type="button" onClick={() => handleBackfillOne(gap)} disabled={backfillMutation.isPending}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm hover:bg-primary/20 disabled:opacity-50">
                       <Play className="w-3 h-3" />
                       Backfill

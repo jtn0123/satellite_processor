@@ -53,7 +53,7 @@ describe('InfiniteScrollSentinel', () => {
 describe('DesktopBatchActions', () => {
   const baseProps = {
     frames: [makeFrame('a'), makeFrame('b')],
-    deleteMutation: { mutate: vi.fn() },
+    onDelete: vi.fn(),
     processMutation: { mutate: vi.fn(), isPending: false },
     setCollectionFrameIds: vi.fn(),
     setShowAddToCollection: vi.fn(),
@@ -123,12 +123,10 @@ describe('DesktopBatchActions', () => {
     expect(screen.queryByText('Compare')).not.toBeInTheDocument();
   });
 
-  it('calls delete with confirm', () => {
-    globalThis.confirm = vi.fn(() => true);
-    const props = { ...baseProps, deleteMutation: { mutate: vi.fn() } };
+  it('calls onDelete with selected ids', () => {
+    const props = { ...baseProps, onDelete: vi.fn() };
     render(<DesktopBatchActions {...props} selectedIds={new Set(['a'])} />);
     fireEvent.click(screen.getByLabelText('Delete selected frames'));
-    expect(globalThis.confirm).toHaveBeenCalled();
-    expect(props.deleteMutation.mutate).toHaveBeenCalledWith(['a']);
+    expect(props.onDelete).toHaveBeenCalledWith(['a']);
   });
 });

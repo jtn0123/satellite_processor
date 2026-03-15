@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, field_validator
 
+from ..config import DEFAULT_SATELLITE
 from ..services.satellite_registry import get_all_valid_bands, get_all_valid_satellites, get_all_valid_sectors
 
 
@@ -107,7 +108,7 @@ class CompositeCreateRequest(BaseModel):
     """Request schema for creating a band composite image."""
 
     recipe: str = Field(..., description="Composite recipe name")
-    satellite: str = Field(default="GOES-16")
+    satellite: str = Field(default=DEFAULT_SATELLITE)
     sector: str = Field(default="CONUS")
     capture_time: str = Field(..., description="Capture time (ISO format)")
 

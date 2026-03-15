@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
-from ..config import settings
+from ..config import DEFAULT_SATELLITE, settings
 from ..services.job_logger import log_job_sync
 from ..utils import utcnow
 from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db
@@ -429,7 +429,7 @@ def backfill_gaps(self, job_id: str, params: dict):
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
 
     try:
-        satellite = params.get("satellite") or "GOES-16"
+        satellite = params.get("satellite") or DEFAULT_SATELLITE
         band = params.get("band") or "C02"
         sector = params.get("sector", "FullDisk")
         expected_interval = params.get("expected_interval", 10.0)

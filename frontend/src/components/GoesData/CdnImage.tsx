@@ -94,7 +94,7 @@ export default function CdnImage({ src, alt, className, isZoomed = false, imageR
         <div className="absolute top-0 left-0 right-0 z-10 flex justify-center px-4 py-1" data-testid="cached-image-banner">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px]">
             <span>Cached image · {new Date(cachedMeta.timestamp).toLocaleString()}</span>
-            <button onClick={() => setCachedDismissed(true)} className="p-0.5 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
+            <button onClick={() => setCachedDismissed(true)} className="p-2 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
               <X className="w-3 h-3" />
             </button>
           </div>

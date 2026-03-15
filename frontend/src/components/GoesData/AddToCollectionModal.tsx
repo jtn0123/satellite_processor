@@ -41,7 +41,7 @@ export default function AddToCollectionModal({ frameIds, onClose }: Readonly<{ f
       showToast('success', `Created "${newName}" and added ${frameIds.length} frame(s)`);
       onClose();
     },
-    onError: () => showToast('error', 'Failed to create collection'),
+    onError: () => showToast('error', 'Failed to create collection or add frames'),
   });
 
   return (

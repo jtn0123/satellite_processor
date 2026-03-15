@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Play, Trash2, Edit2, Clock, Save, X } from 'lucide-react';
+import { Plus, Play, Trash2, Edit2, Clock, Save, X, Loader2 } from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
@@ -138,8 +138,8 @@ export default function PresetsTab() {
                 {preset.description && <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">{preset.description}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => runPreset.mutate(preset.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400" title="Run Now">
-                  <Play className="w-4 h-4" />
+                <button onClick={() => runPreset.mutate(preset.id)} disabled={runPreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400 ${runPreset.isPending ? 'opacity-50' : ''}`} title="Run Now">
+                  {runPreset.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 </button>
                 <button onClick={() => setEditingPreset(preset)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400" title="Edit">
                   <Edit2 className="w-4 h-4" />

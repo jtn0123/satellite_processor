@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import api from '../api/client';
 import { extractArray } from '../utils/safeData';
+import { showToast } from '../utils/toast';
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ export default function NotificationBell() {
   const markReadMutation = useMutation({
     mutationFn: (id: string) => api.post(`/notifications/${id}/read`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onError: () => showToast('error', 'Failed to mark notification as read'),
   });
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;

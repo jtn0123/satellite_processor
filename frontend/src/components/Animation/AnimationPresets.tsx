@@ -112,7 +112,8 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(preset.id)}
-                    className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
+                    disabled={deleteMutation.isPending}
+                    className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors ${deleteMutation.isPending ? 'opacity-50' : ''}`}
                     aria-label="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

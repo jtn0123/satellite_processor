@@ -4,6 +4,7 @@ import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive, Satellite } from '
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface CleanupRule {
   id: string;
@@ -75,6 +76,7 @@ function getSatColor(sat: string) {
 export default function CleanupTab() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [form, setForm] = useState<{
     name: string;
     rule_type: 'max_age_days' | 'max_storage_gb';
@@ -254,7 +256,7 @@ export default function CleanupTab() {
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
-            <button onClick={() => { if (globalThis.confirm('Run cleanup now? This will permanently delete frames matching your active rules.')) runCleanup.mutate(); }} disabled={runCleanup.isPending}
+            <button onClick={() => setShowCleanupConfirm(true)} disabled={runCleanup.isPending}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg text-sm font-medium hover:bg-red-500 disabled:opacity-50">
               <Play className="w-4 h-4" /> Run Now
             </button>
@@ -344,6 +346,18 @@ export default function CleanupTab() {
           ))}
         </div>
       </div>
+
+      {showCleanupConfirm && (
+        <ConfirmDialog
+          title="Run cleanup now?"
+          message="This will permanently delete frames matching your active rules."
+          confirmLabel="Run Cleanup"
+          isPending={runCleanup.isPending}
+          onConfirm={() => { runCleanup.mutate(); setShowCleanupConfirm(false); }}
+          onCancel={() => setShowCleanupConfirm(false)}
+          variant="warning"
+        />
+      )}
     </div>
   );
 }

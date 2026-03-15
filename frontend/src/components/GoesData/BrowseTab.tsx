@@ -5,7 +5,7 @@ import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import type { GoesFrame } from './types';
 import FloatingBatchBar from './FloatingBatchBar';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
-import ConfirmDeleteDialog from './ConfirmDeleteDialog';
+import ConfirmDialog from '../ConfirmDialog';
 import { useBrowseFilters } from './Browse/useBrowseFilters';
 import { useBrowseData } from './Browse/useBrowseData';
 import FilterSidebar from './Browse/FilterSidebar';
@@ -187,8 +187,10 @@ export default function BrowseTab() {
           tags={data.tags} tagsError={data.tagsError} />
 
         {deleteTargetIds && (
-          <ConfirmDeleteDialog
-            count={deleteTargetIds.length}
+          <ConfirmDialog
+            title={`Delete ${deleteTargetIds.length === 1 ? '1 frame' : `${deleteTargetIds.length} frames`}?`}
+            message="This action cannot be undone."
+            confirmLabel="Delete"
             isPending={data.deleteMutation.isPending}
             onConfirm={() => data.deleteMutation.mutate(deleteTargetIds)}
             onCancel={() => setDeleteTargetIds(null)}

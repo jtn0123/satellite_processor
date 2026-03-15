@@ -53,8 +53,8 @@ export default function DevErrorOverlay() {
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 bg-gray-800">
             <span className="font-semibold">Errors ({errors.length})</span>
             <div className="flex gap-1">
-              <button onClick={handleClear} className="p-1 hover:text-red-400" title="Clear"><Trash2 className="w-3.5 h-3.5" /></button>
-              <button onClick={toggle} className="p-1 hover:text-white" title="Close"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={handleClear} className="p-2 hover:text-red-400" title="Clear"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={toggle} className="p-2 hover:text-white" title="Close"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
           <div className="overflow-y-auto p-2 space-y-2 flex-1">

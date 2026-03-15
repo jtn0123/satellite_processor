@@ -3,6 +3,7 @@ import { useJobs, useDeleteJob } from '../../hooks/useApi';
 import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface Job {
   id: string;
@@ -31,6 +32,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
   const { data: jobs = [], isLoading } = useJobs();
   const deleteJob = useDeleteJob();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   const displayed = useMemo(() => {
     const allJobs = jobs as Job[];
@@ -129,9 +131,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (globalThis.confirm('Delete this job? This cannot be undone.')) {
-                    deleteJob.mutate(job.id);
-                  }
+                  setDeleteJobId(job.id);
                 }}
                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
                 aria-label={`Delete job ${job.id.slice(0, 8)}`}
@@ -142,6 +142,16 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
           </button>
         );
       })}
+      {deleteJobId && (
+        <ConfirmDialog
+          title="Delete this job?"
+          message="This cannot be undone."
+          confirmLabel="Delete"
+          isPending={deleteJob.isPending}
+          onConfirm={() => { deleteJob.mutate(deleteJobId); setDeleteJobId(null); }}
+          onCancel={() => setDeleteJobId(null)}
+        />
+      )}
     </div>
   );
 }

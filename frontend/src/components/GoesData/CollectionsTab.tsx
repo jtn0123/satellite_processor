@@ -55,6 +55,7 @@ export default function CollectionsTab() {
   });
 
   const handleAnimate = async (collectionId: string) => {
+    if (loadingAnimateId) return;
     setLoadingAnimateId(collectionId);
     try {
       const res = await api.get(`/satellite/collections/${collectionId}/frames`);

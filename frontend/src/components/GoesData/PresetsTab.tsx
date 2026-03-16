@@ -6,6 +6,7 @@ import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
 import { isHimawariSatellite, getDefaultSector } from '../../utils/sectorHelpers';
 import { getSectorsForSatellite, getBandsForSatellite } from './liveTabUtils';
+import { SATELLITES } from '../Animation/types';
 
 interface FetchPreset {
   id: string;
@@ -248,10 +249,7 @@ function PresetForm({ form, setForm, onSubmit, onCancel, loading, title }: Reado
       <div className="grid grid-cols-3 gap-3">
         <select aria-label="Satellite" value={form.satellite} onChange={e => handleSatelliteChange(e.target.value)}
           className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
-          <option value="GOES-16">GOES-16</option>
-          <option value="GOES-18">GOES-18</option>
-          <option value="GOES-19">GOES-19</option>
-          <option value="Himawari-9">Himawari-9</option>
+          {SATELLITES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select aria-label="Sector" value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
           className="rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">

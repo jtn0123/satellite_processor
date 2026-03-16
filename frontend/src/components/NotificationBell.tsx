@@ -18,11 +18,11 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: notifications } = useQuery<Notification[]>({
+  const { data: notifications, isError } = useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: () => api.get('/notifications').then((r) => {
       return extractArray<Notification>(r.data);
-    }).catch((): Notification[] => []),
+    }),
     refetchInterval: 30_000,
     staleTime: 15_000,
     retry: false,
@@ -59,7 +59,12 @@ export default function NotificationBell() {
         aria-expanded={open}
       >
         <Bell className="w-4 h-4" aria-hidden="true" />
-        {unreadCount > 0 && (
+        {isError && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true" title="Unable to load notifications">
+            !
+          </span>
+        )}
+        {!isError && unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -76,7 +81,9 @@ export default function NotificationBell() {
             <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
           </div>
           <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
-            {(!notifications || notifications.length === 0) ? (
+            {isError ? (
+              <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
+            ) : (!notifications || notifications.length === 0) ? (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
             ) : (
               notifications.slice(0, 10).map((n) => (

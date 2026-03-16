@@ -62,7 +62,14 @@ export const GOES_SATELLITES = ['GOES-16', 'GOES-18', 'GOES-19'];
 export const HIMAWARI_SATELLITES = ['Himawari-9'];
 export const SATELLITES = [...GOES_SATELLITES, ...HIMAWARI_SATELLITES];
 
-export const GOES_SECTORS = ['FullDisk', 'CONUS', 'Meso1', 'Meso2'];
+export const SATELLITE_COLORS: Record<string, string> = {
+  'GOES-16': 'bg-blue-500',
+  'GOES-18': 'bg-cyan-500',
+  'GOES-19': 'bg-indigo-500',
+  'Himawari-9': 'bg-orange-500',
+};
+
+export const GOES_SECTORS = ['FullDisk', 'CONUS', 'Mesoscale1', 'Mesoscale2'];
 export const HIMAWARI_SECTORS = ['FLDK', 'Japan', 'Target'];
 export const SECTORS = [...GOES_SECTORS, ...HIMAWARI_SECTORS];
 

@@ -4,6 +4,7 @@ import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive, Satellite } from '
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
+import { SATELLITES, SATELLITE_COLORS } from '../Animation/types';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface CleanupRule {
@@ -61,13 +62,6 @@ function formatDate(iso: string | null) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
-
-const SATELLITE_COLORS: Record<string, string> = {
-  'GOES-16': 'bg-blue-500',
-  'GOES-18': 'bg-cyan-500',
-  'GOES-19': 'bg-indigo-500',
-  'Himawari-9': 'bg-orange-500',
-};
 
 function getSatColor(sat: string) {
   return SATELLITE_COLORS[sat] ?? 'bg-gray-500';
@@ -298,10 +292,7 @@ export default function CleanupTab() {
             <select aria-label="Satellite filter" value={form.satellite} onChange={e => setForm({ ...form, satellite: e.target.value })}
               className="w-full rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
               <option value="">All Satellites</option>
-              <option value="GOES-16">GOES-16</option>
-              <option value="GOES-18">GOES-18</option>
-              <option value="GOES-19">GOES-19</option>
-              <option value="Himawari-9">Himawari-9</option>
+              {SATELLITES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
               <input type="checkbox" checked={form.protect_collections} onChange={e => setForm({ ...form, protect_collections: e.target.checked })}
@@ -351,7 +342,9 @@ export default function CleanupTab() {
       {showCleanupConfirm && (
         <ConfirmDialog
           title="Run cleanup now?"
-          message="This will permanently delete frames matching your active rules."
+          message={preview
+            ? `This will permanently delete ${preview.frame_count} frames (${formatBytes(preview.total_size_bytes)}) matching your active rules.`
+            : 'This will permanently delete frames matching your active rules. Use Preview first to see what will be affected.'}
           confirmLabel="Run Cleanup"
           isPending={runCleanup.isPending}
           onConfirm={() => { runCleanup.mutate(); setShowCleanupConfirm(false); }}

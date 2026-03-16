@@ -109,7 +109,7 @@ export default function PresetsTab() {
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Fetch Presets</h2>
-          <button onClick={() => { setShowCreate(true); resetForm(); }} className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80">
+          <button type="button" onClick={() => { setShowCreate(true); resetForm(); }} className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80">
             <Plus className="w-4 h-4" /> New Preset
           </button>
         </div>
@@ -139,13 +139,13 @@ export default function PresetsTab() {
                 {preset.description && <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">{preset.description}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => runPreset.mutate(preset.id)} disabled={runPreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400 ${runPreset.isPending ? 'opacity-50' : ''}`} aria-label={`Run preset ${preset.name}`}>
+                <button type="button" onClick={() => runPreset.mutate(preset.id)} disabled={runPreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-green-400 ${runPreset.isPending ? 'opacity-50' : ''}`} aria-label={`Run preset ${preset.name}`}>
                   {runPreset.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 </button>
-                <button onClick={() => setEditingPreset(preset)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label={`Edit preset ${preset.name}`}>
+                <button type="button" onClick={() => setEditingPreset(preset)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label={`Edit preset ${preset.name}`}>
                   <Edit2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => deletePreset.mutate(preset.id)} disabled={deletePreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400 ${deletePreset.isPending ? 'opacity-50' : ''}`} aria-label={`Delete preset ${preset.name}`}>
+                <button type="button" onClick={() => deletePreset.mutate(preset.id)} disabled={deletePreset.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-200 dark:bg-slate-700 rounded-lg text-red-400 ${deletePreset.isPending ? 'opacity-50' : ''}`} aria-label={`Delete preset ${preset.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -158,7 +158,7 @@ export default function PresetsTab() {
       <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Clock className="w-5 h-5" /> Schedules</h2>
-          <button onClick={() => setShowScheduleCreate(true)} disabled={presets.length === 0}
+          <button type="button" onClick={() => setShowScheduleCreate(true)} disabled={presets.length === 0}
             className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80 disabled:opacity-50">
             <Plus className="w-4 h-4" /> New Schedule
           </button>
@@ -180,11 +180,11 @@ export default function PresetsTab() {
               </select>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => { if (schedForm.name && schedForm.preset_id) createSchedule.mutate(schedForm); }}
+              <button type="button" onClick={() => { if (schedForm.name && schedForm.preset_id) createSchedule.mutate(schedForm); }}
                 className="px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80" disabled={!schedForm.name || !schedForm.preset_id}>
                 <Save className="w-4 h-4 inline mr-1" /> Create
               </button>
-              <button onClick={() => setShowScheduleCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
+              <button type="button" onClick={() => setShowScheduleCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
                 <X className="w-4 h-4 inline mr-1" /> Cancel
               </button>
             </div>

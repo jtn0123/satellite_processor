@@ -39,7 +39,7 @@ export default function ConfirmDialog({
       onClose={onCancel}
       aria-labelledby="confirm-dialog-title"
     >
-      <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={onCancel} aria-label="Close dialog" tabIndex={-1} />
+      <button type="button" className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={onCancel} aria-label="Close dialog" tabIndex={-1} />
       <div ref={trapRef} className="relative bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>

@@ -75,7 +75,7 @@ export default function BottomSheet({ open, onClose, title, children }: Readonly
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-3 border-b border-gray-200 dark:border-slate-800">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800" aria-label="Close">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800" aria-label="Close">
             <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
           </button>
         </div>

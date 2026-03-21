@@ -49,11 +49,9 @@ export default function NotificationBell() {
     }
   }, [open, handleClickOutside]);
 
-  const buttonLabel = isError
-    ? 'Notifications, unable to load'
-    : unreadCount > 0
-      ? `Notifications, ${unreadCount} unread`
-      : 'Notifications';
+  let buttonLabel = 'Notifications';
+  if (isError) buttonLabel = 'Notifications, unable to load';
+  else if (unreadCount > 0) buttonLabel = `Notifications, ${unreadCount} unread`;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -87,13 +85,16 @@ export default function NotificationBell() {
             <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
           </div>
           <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
-            {isError ? (
+            {isError && (
               <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
-            ) : isLoading ? (
+            )}
+            {!isError && isLoading && (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">Loading…</div>
-            ) : !notifications || notifications.length === 0 ? (
+            )}
+            {!isError && !isLoading && (!notifications || notifications.length === 0) && (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
-            ) : (
+            )}
+            {!isError && !isLoading && notifications && notifications.length > 0 && (
               notifications.slice(0, 10).map((n) => (
                 <button
                   key={n.id}

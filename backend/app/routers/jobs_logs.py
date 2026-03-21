@@ -17,7 +17,6 @@ from ..db.models import (
     JobLog,
 )
 from ..errors import APIError, validate_uuid
-from ..utils.path_validation import validate_file_path
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +62,13 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.status != "completed":
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
-    # #52: Use stored output_path from job record
-    output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    validate_file_path(output_path)
+    # #52: Use stored output_path from job record, sanitize against path traversal
+    raw_path = job.output_path or str(Path(settings.output_dir) / job_id)
+    allowed_root = str(Path(settings.output_dir).resolve())
+    output_path = str(Path(raw_path).resolve())
+    if not output_path.startswith(allowed_root):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
+
     if not os.path.exists(output_path):
         raise APIError(404, "not_found", "Output not found")
 
@@ -79,13 +82,15 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                file_path = os.path.join(output_path, f)
-                validate_file_path(file_path)
+                file_path = str(Path(output_path, f).resolve())
+                if not file_path.startswith(allowed_root):
+                    continue
                 return FileResponse(file_path, filename=f)
 
     first = files[0]
-    first_path = os.path.join(output_path, first)
-    validate_file_path(first_path)
+    first_path = str(Path(output_path, first).resolve())
+    if not first_path.startswith(allowed_root):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
     return FileResponse(first_path, filename=first)
 
 

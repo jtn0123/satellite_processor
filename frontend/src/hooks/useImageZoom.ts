@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type CSSProperties, type TouchEvent, type WheelEvent, type MouseEvent, type RefObject } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, type CSSProperties, type TouchEvent, type WheelEvent, type MouseEvent, type RefObject } from 'react';
 
 interface ZoomState {
   scale: number;
@@ -88,6 +88,33 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
 
+  // Cache container dimensions and image aspect in state so render doesn't access refs.
+  // Also updated by event handlers (onWheel, onTouchStart etc.) for immediate accuracy.
+  const [layoutInfo, setLayoutInfo] = useState({ cw: 0, ch: 0, aspect: DEFAULT_ASPECT });
+
+  const syncLayout = useCallback(() => {
+    const rect = containerRef?.current?.getBoundingClientRect();
+    const img = imageRef?.current;
+    const aspect = (img && img.naturalWidth > 0 && img.naturalHeight > 0)
+      ? img.naturalWidth / img.naturalHeight
+      : DEFAULT_ASPECT;
+    setLayoutInfo({ cw: rect?.width ?? 0, ch: rect?.height ?? 0, aspect });
+  }, [containerRef, imageRef]);
+
+  useEffect(() => {
+    syncLayout(); // eslint-disable-line react-hooks/set-state-in-effect -- initial dimension read from refs
+    const el = containerRef?.current;
+    if (!el) return;
+    const ro = new ResizeObserver(syncLayout);
+    ro.observe(el);
+    const imgEl = imageRef?.current;
+    if (imgEl?.addEventListener) imgEl.addEventListener('load', syncLayout);
+    return () => {
+      ro.disconnect();
+      if (imgEl?.removeEventListener) imgEl.removeEventListener('load', syncLayout);
+    };
+  }, [containerRef, imageRef, syncLayout]);
+
   // Keep stateRef in sync
   useEffect(() => {
     stateRef.current = state;
@@ -95,23 +122,13 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
 
   const clampScale = useCallback((s: number) => Math.min(maxScale, Math.max(minScale, s)), [minScale, maxScale]);
 
+  // Event-time helpers that read refs (only called from event handlers, not render)
   const getAspect = useCallback((): number => {
     const img = imageRef?.current;
     return (img && img.naturalWidth > 0 && img.naturalHeight > 0)
       ? img.naturalWidth / img.naturalHeight
       : DEFAULT_ASPECT;
   }, [imageRef]);
-
-  /** Compute effective scale: when eliminateLetterbox is on and zoomed,
-   *  the visual scale is at least the cover scale (no letterbox bars). */
-  const getEffectiveScale = useCallback((rawScale: number): number => {
-    if (!eliminateLetterbox || rawScale <= 1) return rawScale;
-    const dims = getContainerDimensions(containerRef);
-    if (!dims) return rawScale;
-    const aspect = getAspect();
-    const cover = getCoverScale(dims.width, dims.height, aspect);
-    return Math.max(rawScale, cover);
-  }, [containerRef, getAspect, eliminateLetterbox]);
 
   const clampXY = useCallback((tx: number, ty: number, scale: number): { tx: number; ty: number } => {
     const dims = getContainerDimensions(containerRef);
@@ -149,6 +166,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     if (stateRef.current.scale > 1) {
       e.preventDefault();
     }
+    syncLayout();
     const rect = containerRef?.current?.getBoundingClientRect();
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
@@ -170,7 +188,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const clamped = clampXY(newTx, newTy, newScale);
       return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
     });
-  }, [clampScale, clampXY, containerRef, minScale]);
+  }, [clampScale, clampXY, containerRef, minScale, syncLayout]);
 
   const getTouchDist = (e: TouchEvent) => {
     const [a, b] = [e.touches[0], e.touches[1]];
@@ -178,6 +196,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   };
 
   const onTouchStart = useCallback((e: TouchEvent) => {
+    syncLayout();
     const s = stateRef.current;
     setState((prev) => ({ ...prev, isInteracting: true }));
     if (e.touches.length === 2) {
@@ -190,7 +209,7 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
       const touch = e.touches[0];
       panRef.current = { startX: touch.clientX, startY: touch.clientY, tx: s.translateX, ty: s.translateY };
     }
-  }, [containerRef]);
+  }, [containerRef, syncLayout]);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
     if (e.touches.length === 2 && pinchStartRef.current) {
@@ -262,16 +281,27 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     });
   }, [clampXY]);
 
-  const effectiveScale = getEffectiveScale(state.scale);
-  const effectiveXY = state.scale > 1 ? clampXY(state.translateX, state.translateY, state.scale) : { tx: 0, ty: 0 };
-
-  const style: CSSProperties = {
-    transform: `translate(${effectiveXY.tx}px, ${effectiveXY.ty}px) scale(${effectiveScale})`,
-    transformOrigin: 'center center',
-    cursor: state.scale > 1 ? 'grab' : 'default',
-    touchAction: 'none',
-    transition: state.isInteracting ? 'none' : 'transform 0.1s ease-out',
-  };
+  // Compute style from state only (no ref access during render)
+  const style: CSSProperties = useMemo(() => {
+    const { cw, ch, aspect } = layoutInfo;
+    let effectiveScale = state.scale;
+    if (eliminateLetterbox && state.scale > 1 && cw > 0 && ch > 0) {
+      effectiveScale = Math.max(state.scale, getCoverScale(cw, ch, aspect));
+    }
+    let tx = 0, ty = 0;
+    if (state.scale > 1 && cw > 0 && ch > 0) {
+      const clamped = clampTranslate(state.translateX, state.translateY, effectiveScale, cw, ch, aspect);
+      tx = clamped.tx;
+      ty = clamped.ty;
+    }
+    return {
+      transform: `translate(${tx}px, ${ty}px) scale(${effectiveScale})`,
+      transformOrigin: 'center center',
+      cursor: state.scale > 1 ? 'grab' : 'default',
+      touchAction: 'none',
+      transition: state.isInteracting ? 'none' : 'transform 0.1s ease-out',
+    };
+  }, [state, layoutInfo, eliminateLetterbox]);
 
   return {
     scale: state.scale,

@@ -11,8 +11,8 @@ function makeMouseEvent(clientX: number, clientY: number) {
   return { clientX, clientY } as unknown as React.MouseEvent;
 }
 
-function makeWheelEvent(deltaY: number) {
-  return { deltaY, preventDefault: () => {} } as unknown as React.WheelEvent;
+function makeWheelEvent(deltaY: number, clientX = 0, clientY = 0) {
+  return { deltaY, clientX, clientY, preventDefault: () => {} } as unknown as React.WheelEvent;
 }
 
 function makeContainerRef(width: number, height: number): RefObject<HTMLElement> {
@@ -180,12 +180,16 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
     const containerRef = makeContainerRef(200, 200);
     const { result } = renderHook(() => useImageZoom({ containerRef, maxScale: 3 }));
 
-    // Zoom in via wheel
+    // Zoom in via wheel at center (clientX/Y = 100,100 = center of 200x200)
     for (let i = 0; i < 10; i++) {
-      act(() => result.current.handlers.onWheel(makeWheelEvent(-100)));
+      act(() => result.current.handlers.onWheel(makeWheelEvent(-100, 100, 100)));
     }
     expect(result.current.isZoomed).toBe(true);
-    // Translate should be within bounds (0,0 since we haven't panned)
-    expect(result.current.style.transform).toContain('translate(0px, 0px)');
+    // Zooming at center should keep translate near zero
+    const transform = result.current.style.transform as string;
+    const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    expect(match).not.toBeNull();
+    expect(Math.abs(Number(match![1]))).toBeLessThan(5);
+    expect(Math.abs(Number(match![2]))).toBeLessThan(5);
   });
 });

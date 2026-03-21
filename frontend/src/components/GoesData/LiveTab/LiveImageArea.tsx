@@ -24,6 +24,7 @@ interface LiveImageAreaProps {
   readonly isMobile: boolean;
   readonly zoom: {
     isZoomed: boolean;
+    scale: number;
     style: CSSProperties;
     reset: () => void;
     zoomIn: () => void;
@@ -184,7 +185,6 @@ export function LiveImageArea(props: LiveImageAreaProps) {
               onPositionChange={setComparePosition}
               frameTime={frame?.capture_time ?? null}
               prevFrameTime={prevFrame?.capture_time ?? null}
-              isZoomed={zoom.isZoomed}
               imageRef={imageRef}
             />
           );
@@ -282,13 +282,23 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       )}
 
       {zoom.isZoomed && (
-        <button
-          type="button"
-          onClick={zoom.reset}
-          className="absolute top-20 right-4 z-10 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-        >
-          Reset zoom
-        </button>
+        <div className="absolute top-20 right-4 z-10 flex items-center gap-2">
+          <span
+            className="bg-black/60 text-white/70 text-xs px-2.5 py-1.5 rounded-lg pointer-events-none min-h-[44px] flex items-center"
+            aria-live="polite"
+            aria-label={`Zoom level ${Math.round(zoom.scale * 100)}%`}
+            data-testid="zoom-level-indicator"
+          >
+            {Math.round(zoom.scale * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={zoom.reset}
+            className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
+            Reset zoom
+          </button>
+        </div>
       )}
 
       {!isMobile && products?.bands && (

@@ -16,6 +16,9 @@ depends_on = None
 
 def upgrade():
     conn = op.get_bind()
+    # SQLite doesn't support ALTER COLUMN TYPE — skip (column is created correctly in fresh DBs)
+    if conn.dialect.name == "sqlite":
+        return
     # Idempotent: check current column type before altering
     inspector = sa.inspect(conn)
     columns = {c["name"]: c for c in inspector.get_columns("animations")}

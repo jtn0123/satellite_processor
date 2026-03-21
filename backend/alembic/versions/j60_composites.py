@@ -15,13 +15,7 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    result = conn.execute(
-        sa.text(
-            "SELECT 1 FROM information_schema.tables "
-            "WHERE table_name='composites'"
-        )
-    )
-    if result.fetchone():
+    if sa.inspect(conn).has_table("composites"):
         return
     op.create_table(
         "composites",

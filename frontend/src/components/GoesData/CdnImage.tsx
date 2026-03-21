@@ -7,11 +7,10 @@ export interface CdnImageProps extends Readonly<React.ImgHTMLAttributes<HTMLImag
   'data-satellite'?: string;
   'data-band'?: string;
   'data-sector'?: string;
-  isZoomed?: boolean;
   imageRef?: Ref<HTMLImageElement>;
 }
 
-export default function CdnImage({ src, alt, className, isZoomed = false, imageRef, ...props }: Readonly<CdnImageProps>) {
+export default function CdnImage({ src, alt, className, imageRef, ...props }: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
@@ -111,7 +110,7 @@ export default function CdnImage({ src, alt, className, isZoomed = false, imageR
         onError={handleError}
         onLoad={handleLoad}
         loading="eager"
-        className={`${className ?? ''} w-full h-full ${isZoomed ? 'object-cover' : 'object-contain'} md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         {...props}
       />
     </div>

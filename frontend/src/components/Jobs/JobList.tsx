@@ -37,7 +37,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   const displayed = useMemo(() => {
-    const allJobs = jobs as Job[];
+    const allJobs = Array.isArray(jobs) ? (jobs as Job[]) : [];
     const filtered = filterJobsByStatus(allJobs, statusFilter);
     return limit ? filtered.slice(0, limit) : filtered;
   }, [jobs, limit, statusFilter]);

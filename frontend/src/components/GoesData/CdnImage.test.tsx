@@ -75,13 +75,13 @@ describe('CdnImage', () => {
     expect(ref.current).toBe(img);
   });
 
-  it('uses h-full and object-cover when zoomed (no fixed aspect-ratio)', () => {
-    render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" isZoomed />);
+  it('always uses object-contain (no object-cover) for correct zoom panning', () => {
+    render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" />);
     const container = screen.getByTestId('live-image-container');
     expect(container.style.aspectRatio).toBeFalsy();
     expect(container.className).toContain('h-full');
     const img = screen.getByRole('img');
-    expect(img.className).toContain('object-cover');
-    expect(img.className).not.toContain('object-contain');
+    expect(img.className).toContain('object-contain');
+    expect(img.className).not.toContain('object-cover');
   });
 });

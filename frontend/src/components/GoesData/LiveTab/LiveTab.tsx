@@ -46,7 +46,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
 
-  const zoom = useImageZoom({ containerRef, imageRef });
+  const zoom = useImageZoom({ containerRef, imageRef, eliminateLetterbox: true });
   const showZoomHint = useZoomHint(zoom.isZoomed);
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
@@ -198,6 +198,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   useLiveShortcuts({
     bands: products?.bands, band, isZoomed: zoom.isZoomed, isFullscreen, monitoring,
     setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement,
+    zoomIn: zoom.zoomIn, zoomOut: zoom.zoomOut, zoomReset: zoom.reset,
   });
 
   const handleImageTap = useDoubleTap(

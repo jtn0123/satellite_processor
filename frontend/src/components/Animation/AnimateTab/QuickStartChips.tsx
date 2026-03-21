@@ -10,7 +10,7 @@ export function QuickStartChips({ onApply, defaultSatellite }: QuickStartChipsPr
   const chips = [
     { label: '🌀 Hurricane Watch', satellite: sat, sector: 'CONUS', band: 'C13', hours: 24, quality: 'high' as const },
     { label: '🌅 Visible Timelapse', satellite: sat, sector: 'CONUS', band: 'C02', hours: 12, quality: 'medium' as const },
-    { label: '⚡ Storm Cell', satellite: sat, sector: 'Meso1', band: 'C13', hours: 3, quality: 'high' as const },
+    { label: '⚡ Storm Cell', satellite: sat, sector: 'Mesoscale1', band: 'C13', hours: 3, quality: 'high' as const },
     { label: '🌍 Full Disk', satellite: sat, sector: 'FullDisk', band: 'C13', hours: 6, quality: 'medium' as const },
     { label: '🔥 Fire Watch', satellite: sat, sector: 'CONUS', band: 'C07', hours: 6, quality: 'high' as const },
   ];

@@ -14,7 +14,8 @@ export interface JobLogEntry {
   timestamp: string;
 }
 
-const TERMINAL_STATES = new Set(['completed', 'failed', 'cancelled']);
+import { TERMINAL_STATUSES } from '../utils/jobStatus';
+const TERMINAL_STATES = TERMINAL_STATUSES;
 const MAX_BACKOFF_MS = 30_000;
 const DEFAULT_MAX_RETRIES = 10;
 

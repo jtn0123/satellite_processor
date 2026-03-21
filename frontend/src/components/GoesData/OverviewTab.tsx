@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { JOB_STATUS } from '../../utils/jobStatus';
 import {
   LayoutDashboard,
   Download,
@@ -55,12 +56,12 @@ function timeAgo(dateStr: string): string {
 
 function statusBadge(status: string) {
   const map: Record<string, { color: string; icon: React.ReactNode }> = {
-    completed: { color: 'bg-green-500/10 text-green-400 border-green-500/20', icon: <CheckCircle2 className="w-3 h-3" /> },
-    failed: { color: 'bg-red-500/10 text-red-400 border-red-500/20', icon: <XCircle className="w-3 h-3" /> },
+    [JOB_STATUS.COMPLETED]: { color: 'bg-green-500/10 text-green-400 border-green-500/20', icon: <CheckCircle2 className="w-3 h-3" /> },
+    [JOB_STATUS.FAILED]: { color: 'bg-red-500/10 text-red-400 border-red-500/20', icon: <XCircle className="w-3 h-3" /> },
     running: { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-    pending: { color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: <Clock className="w-3 h-3" /> },
+    [JOB_STATUS.PENDING]: { color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: <Clock className="w-3 h-3" /> },
   };
-  const m = map[status] ?? map.pending;
+  const m = map[status] ?? map[JOB_STATUS.PENDING];
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${m.color}`}>
       {m.icon}

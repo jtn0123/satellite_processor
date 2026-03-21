@@ -73,7 +73,7 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
               )}
             </div>
           </div>
-          <button onClick={close} autoFocus className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
+          <button type="button" onClick={close} autoFocus className="p-2 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>

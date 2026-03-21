@@ -16,13 +16,8 @@ depends_on = None
 
 def upgrade():
     conn = op.get_bind()
-    result = conn.execute(
-        sa.text(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name='jobs' AND column_name='name'"
-        )
-    )
-    if not result.fetchone():
+    columns = [c["name"] for c in sa.inspect(conn).get_columns("jobs")]
+    if "name" not in columns:
         try:
             op.add_column("jobs", sa.Column("name", sa.String(255), nullable=True))
         except (sa.exc.ProgrammingError, sa.exc.OperationalError):

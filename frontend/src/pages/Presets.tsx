@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { usePresets, useDeletePreset, useRenamePreset } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { BookOpen, Trash2, Pencil, Check, X } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface Preset {
   id: string;
@@ -18,6 +19,7 @@ export default function PresetsPage() {
 
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [deletePresetName, setDeletePresetName] = useState<string | null>(null);
 
   const handleRename = (oldName: string) => {
     if (!newName.trim() || newName === oldName) {
@@ -85,13 +87,16 @@ export default function PresetsPage() {
                     />
                     <button
                       onClick={() => handleRename(p.name)}
-                      className="p-1.5 text-green-400 hover:text-green-300"
+                      disabled={renamePreset.isPending}
+                      className="p-2 text-green-400 hover:text-green-300 disabled:opacity-50"
+                      aria-label="Confirm rename"
                     >
                       <Check className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setEditingName(null)}
-                      className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                      className="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                      aria-label="Cancel rename"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -114,18 +119,14 @@ export default function PresetsPage() {
                       setNewName(p.name);
                     }}
                     className="p-2 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
-                    title="Rename"
+                    aria-label={`Rename preset ${p.name}`}
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (globalThis.confirm(`Delete preset "${p.name}"?`)) {
-                        deletePreset.mutate(p.name);
-                      }
-                    }}
+                    onClick={() => setDeletePresetName(p.name)}
                     className="p-2 hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-400"
-                    title="Delete"
+                    aria-label={`Delete preset ${p.name}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -134,6 +135,17 @@ export default function PresetsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {deletePresetName && (
+        <ConfirmDialog
+          title={`Delete preset "${deletePresetName}"?`}
+          message="You can recreate it later."
+          confirmLabel="Delete"
+          isPending={deletePreset.isPending}
+          onConfirm={() => { deletePreset.mutate(deletePresetName); setDeletePresetName(null); }}
+          onCancel={() => setDeletePresetName(null)}
+        />
       )}
     </div>
   );

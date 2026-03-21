@@ -118,17 +118,20 @@ describe('PresetManager', () => {
 
   it('deletes preset with confirmation', () => {
     vi.mocked(apiHooks.usePresets).mockReturnValue({ data: mockPresets } as never);
-    globalThis.confirm = vi.fn(() => true);
     renderWith(<PresetManager currentParams={currentParams} onLoadPreset={onLoadPreset} />);
     fireEvent.click(screen.getAllByTitle('Delete')[0]);
+    // Confirm dialog should appear
+    expect(screen.getByText('Delete preset "Preset A"?')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Delete'));
     expect(mockDeleteMutate).toHaveBeenCalledWith('Preset A');
   });
 
   it('does not delete when confirmation is cancelled', () => {
     vi.mocked(apiHooks.usePresets).mockReturnValue({ data: mockPresets } as never);
-    globalThis.confirm = vi.fn(() => false);
     renderWith(<PresetManager currentParams={currentParams} onLoadPreset={onLoadPreset} />);
     fireEvent.click(screen.getAllByTitle('Delete')[0]);
+    expect(screen.getByText('Delete preset "Preset A"?')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Cancel'));
     expect(mockDeleteMutate).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ import type { GoesFrame } from '../types';
 interface DesktopBatchActionsProps {
   selectedIds: Set<string>;
   frames: GoesFrame[];
-  deleteMutation: { mutate: (ids: string[]) => void };
+  onDelete: (ids: string[]) => void;
   processMutation: { mutate: (ids: string[]) => void; isPending: boolean };
   setCollectionFrameIds: (ids: string[]) => void;
   setShowAddToCollection: (v: boolean) => void;
@@ -15,12 +15,12 @@ interface DesktopBatchActionsProps {
   setCompareFrames: (v: [GoesFrame, GoesFrame] | null) => void;
 }
 
-export default function DesktopBatchActions({ selectedIds, frames, deleteMutation, processMutation, setCollectionFrameIds, setShowAddToCollection, setTagFrameIds, setShowTagModal, setCompareFrames }: Readonly<DesktopBatchActionsProps>) {
+export default function DesktopBatchActions({ selectedIds, frames, onDelete, processMutation, setCollectionFrameIds, setShowAddToCollection, setTagFrameIds, setShowTagModal, setCompareFrames }: Readonly<DesktopBatchActionsProps>) {
   if (selectedIds.size === 0) return null;
 
   return (
     <div className="hidden md:contents">
-      <button type="button" onClick={() => { if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)? This action cannot be undone.`)) deleteMutation.mutate([...selectedIds]); }} aria-label="Delete selected frames"
+      <button type="button" onClick={() => onDelete([...selectedIds])} aria-label="Delete selected frames"
         className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors min-h-[44px]">
         <Trash2 className="w-3.5 h-3.5" /> Delete
       </button>

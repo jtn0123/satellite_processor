@@ -3,7 +3,15 @@ import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
+const backendOrigin = process.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:8000';
+
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api': backendOrigin,
+      '/ws': { target: backendOrigin.replace(/^http/, 'ws'), ws: true },
+    },
+  },
   plugins: [
     react(),
     ...(process.env.ANALYZE

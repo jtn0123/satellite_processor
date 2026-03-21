@@ -5,6 +5,7 @@ import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import type { GoesFrame } from './types';
 import FloatingBatchBar from './FloatingBatchBar';
 import PullToRefreshIndicator from './PullToRefreshIndicator';
+import ConfirmDialog from '../ConfirmDialog';
 import { useBrowseFilters } from './Browse/useBrowseFilters';
 import { useBrowseData } from './Browse/useBrowseData';
 import FilterSidebar from './Browse/FilterSidebar';
@@ -31,6 +32,7 @@ export default function BrowseTab() {
   const [compareFrames, setCompareFrames] = useState<[GoesFrame, GoesFrame] | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [deleteTargetIds, setDeleteTargetIds] = useState<string[] | null>(null);
 
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -108,17 +110,20 @@ export default function BrowseTab() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') { e.preventDefault(); selectAll(); }
       else if (e.key === 'Delete' && selectedIds.size > 0) {
         e.preventDefault();
-        if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)?`)) data.deleteMutation.mutate([...selectedIds]);
+        setDeleteTargetIds([...selectedIds]);
       } else if (e.key === 'Escape' && selectedIds.size > 0) { setSelectedIds(new Set()); }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   });
 
-  // Clear selection on delete
+  // Clear selection and close dialog on delete success
   /* eslint-disable react-hooks/set-state-in-effect -- intentional: reset selection after successful delete */
   useEffect(() => {
-    if (data.deleteMutation.isSuccess) setSelectedIds(new Set());
+    if (data.deleteMutation.isSuccess) {
+      setSelectedIds(new Set());
+      setDeleteTargetIds(null);
+    }
   }, [data.deleteMutation.isSuccess]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -141,7 +146,7 @@ export default function BrowseTab() {
           <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
 
           <BrowseToolbar selectedIds={selectedIds} frames={data.frames} viewMode={viewMode} setViewMode={setViewMode}
-            selectAll={selectAll} deleteMutation={data.deleteMutation} processMutation={data.processMutation}
+            selectAll={selectAll} onDelete={(ids) => setDeleteTargetIds(ids)} processMutation={data.processMutation}
             setCollectionFrameIds={setCollectionFrameIds} setShowAddToCollection={setShowAddToCollection}
             setTagFrameIds={setTagFrameIds} setShowTagModal={setShowTagModal} setCompareFrames={setCompareFrames}
             onExport={handleExport} />
@@ -155,7 +160,7 @@ export default function BrowseTab() {
             onCompare={(f) => { toggleSelect(f.id); showToast('info', 'Select one more frame to compare'); }}
             onTag={(f) => { setTagFrameIds([f.id]); setShowTagModal(true); }}
             onAddToCollection={(f) => { setCollectionFrameIds([f.id]); setShowAddToCollection(true); }}
-            onDelete={(f) => { if (globalThis.confirm('Delete this frame?')) data.deleteMutation.mutate([f.id]); }} />
+            onDelete={(f) => { setDeleteTargetIds([f.id]); }} />
 
           <InfiniteScrollSentinel ref={sentinelRef} hasNextPage={data.hasNextPage} isFetchingNextPage={data.isFetchingNextPage} fetchNextPage={data.fetchNextPage} />
 
@@ -173,13 +178,24 @@ export default function BrowseTab() {
           onAnimate={() => { globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'animate' })); globalThis.dispatchEvent(new CustomEvent('animate-frames', { detail: [...selectedIds] })); }}
           onTag={() => { setTagFrameIds([...selectedIds]); setShowTagModal(true); }}
           onAddToCollection={() => { setCollectionFrameIds([...selectedIds]); setShowAddToCollection(true); }}
-          onDelete={() => { if (globalThis.confirm(`Delete ${selectedIds.size} frame(s)?`)) data.deleteMutation.mutate([...selectedIds]); }}
+          onDelete={() => { setDeleteTargetIds([...selectedIds]); }}
           onDownload={() => { data.frames.filter((f) => selectedIds.has(f.id)).forEach((f) => handleDownload(f)); }}
           onClear={() => setSelectedIds(new Set())} />
 
         <MobileFilterSheet open={showBottomSheet} onClose={() => setShowBottomSheet(false)} filters={filters}
           products={data.products} collections={data.collections} collectionsError={data.collectionsError}
           tags={data.tags} tagsError={data.tagsError} />
+
+        {deleteTargetIds && (
+          <ConfirmDialog
+            title={`Delete ${deleteTargetIds.length === 1 ? '1 frame' : `${deleteTargetIds.length} frames`}?`}
+            message="This action cannot be undone."
+            confirmLabel="Delete"
+            isPending={data.deleteMutation.isPending}
+            onConfirm={() => data.deleteMutation.mutate(deleteTargetIds)}
+            onCancel={() => setDeleteTargetIds(null)}
+          />
+        )}
       </div>
     </div>
   );

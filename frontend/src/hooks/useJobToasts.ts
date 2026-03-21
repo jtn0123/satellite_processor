@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useJobs } from './useApi';
 import { showToast } from '../utils/toast';
+import { JOB_STATUS } from '../utils/jobStatus';
 
 interface Job {
   id: string;
@@ -25,9 +26,9 @@ export function useJobToasts() {
       for (const job of jobList) {
         const oldStatus = prev.get(job.id);
         if (oldStatus && oldStatus !== job.status) {
-          if (job.status === 'completed') {
+          if (job.status === JOB_STATUS.COMPLETED) {
             showToast('success', `Job "${job.job_type}" (${job.id.slice(0, 8)}) completed`);
-          } else if (job.status === 'failed') {
+          } else if (job.status === JOB_STATUS.FAILED) {
             showToast('error', `Job "${job.job_type}" (${job.id.slice(0, 8)}) failed`);
           }
         }

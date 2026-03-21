@@ -19,9 +19,13 @@ export default function Modal({
   const dialogRef = useFocusTrap(onClose);
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden';
     const handler = () => onClose();
     globalThis.addEventListener('close-modal', handler);
-    return () => globalThis.removeEventListener('close-modal', handler);
+    return () => {
+      document.body.style.overflow = '';
+      globalThis.removeEventListener('close-modal', handler);
+    };
   }, [onClose]);
 
   return (

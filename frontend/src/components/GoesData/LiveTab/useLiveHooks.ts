@@ -57,14 +57,19 @@ interface LiveShortcutsConfig {
   setCompareMode: Dispatch<SetStateAction<boolean>>;
   toggleMonitor: () => void;
   setLiveAnnouncement: (msg: string) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomReset: () => void;
 }
 
 export function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
-  const { bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement } = config;
+  const { bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement, zoomIn, zoomOut, zoomReset } = config;
 
   const shortcuts = useMemo(() => {
     const bandList = extractArray<{ id: string }>(bands);
     const currentIdx = bandList.findIndex((b) => b.id === band);
+
+    const handleZoomIn = () => { zoomIn(); setLiveAnnouncement('Zoomed in'); };
 
     return {
       ArrowLeft: () => {
@@ -94,8 +99,22 @@ export function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
         toggleMonitor();
         setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
       },
+      '+': handleZoomIn,
+      '=': handleZoomIn,
+      '-': () => {
+        if (isZoomed) {
+          zoomOut();
+          setLiveAnnouncement('Zoomed out');
+        }
+      },
+      '0': () => {
+        if (isZoomed) {
+          zoomReset();
+          setLiveAnnouncement('Zoom reset');
+        }
+      },
     };
-  }, [bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement]);
+  }, [bands, band, isZoomed, isFullscreen, monitoring, setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement, zoomIn, zoomOut, zoomReset]);
 
   useHotkeys(shortcuts);
 }

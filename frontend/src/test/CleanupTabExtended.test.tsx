@@ -40,39 +40,32 @@ beforeEach(() => {
 
 describe('CleanupTab - confirm before cleanup', () => {
   it('shows confirm dialog before running cleanup', async () => {
-    const confirmMock = vi.fn(() => false);
-    vi.stubGlobal('confirm', confirmMock);
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
-    
+
     fireEvent.click(screen.getByText('Run Now'));
-    expect(confirmMock).toHaveBeenCalledWith(expect.stringContaining('permanently delete'));
-    vi.unstubAllGlobals();
+    expect(screen.getByText('Run cleanup now?')).toBeInTheDocument();
+    expect(screen.getByText(/permanently delete/)).toBeInTheDocument();
   });
 
   it('runs cleanup when confirmed', async () => {
-    const confirmMock = vi.fn(() => true);
-    vi.stubGlobal('confirm', confirmMock);
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
-    
+
     fireEvent.click(screen.getByText('Run Now'));
-    expect(confirmMock).toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Run Cleanup'));
     await waitFor(() => {
       expect(mockedApi.post).toHaveBeenCalledWith('/satellite/cleanup/run');
     });
-    vi.unstubAllGlobals();
   });
 
   it('does not run cleanup when cancelled', async () => {
-    const confirmMock = vi.fn(() => false);
-    vi.stubGlobal('confirm', confirmMock);
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
-    
+
     fireEvent.click(screen.getByText('Run Now'));
+    fireEvent.click(screen.getByText('Cancel'));
     expect(mockedApi.post).not.toHaveBeenCalled();
-    vi.unstubAllGlobals();
   });
 });
 

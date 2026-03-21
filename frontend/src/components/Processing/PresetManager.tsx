@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePresets, useCreatePreset, useDeletePreset, useRenamePreset } from '../../hooks/useApi';
 import { Save, Trash2, Pencil, Check, X, BookOpen } from 'lucide-react';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface Preset {
   id: string;
@@ -23,6 +24,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
   const [saveName, setSaveName] = useState('');
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [deletePresetName, setDeletePresetName] = useState<string | null>(null);
 
   const handleSave = () => {
     if (!saveName.trim()) return;
@@ -124,11 +126,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (globalThis.confirm(`Delete preset "${p.name}"?`)) {
-                          deletePreset.mutate(p.name);
-                        }
-                      }}
+                      onClick={() => setDeletePresetName(p.name)}
                       className="p-1 text-gray-500 dark:text-slate-400 hover:text-red-400"
                       title="Delete"
                     >
@@ -140,6 +138,17 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
             </div>
           ))}
         </div>
+      )}
+
+      {deletePresetName && (
+        <ConfirmDialog
+          title={`Delete preset "${deletePresetName}"?`}
+          message="You can recreate it later."
+          confirmLabel="Delete"
+          isPending={deletePreset.isPending}
+          onConfirm={() => { deletePreset.mutate(deletePresetName); setDeletePresetName(null); }}
+          onCancel={() => setDeletePresetName(null)}
+        />
       )}
     </div>
   );

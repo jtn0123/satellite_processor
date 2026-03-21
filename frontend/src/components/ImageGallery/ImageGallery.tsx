@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useImages, useDeleteImage } from '../../hooks/useApi';
 import { formatBytes } from '../../utils/format';
 import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface SatImage {
   id: string;
@@ -29,6 +30,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
   const { data: images = [], isLoading } = useImages();
   const deleteImage = useDeleteImage();
   const [preview, setPreview] = useState<SatImage | null>(null);
+  const [deleteImageId, setDeleteImageId] = useState<string | null>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -229,9 +231,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (globalThis.confirm(`Delete "${img.original_name}"? This cannot be undone.`)) {
-                    deleteImage.mutate(img.id);
-                  }
+                  setDeleteImageId(img.id);
                 }}
                 className="absolute top-2 right-2 p-1.5 bg-white dark:bg-space-900/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 dark:text-slate-400 hover:text-red-400"
               >
@@ -241,6 +241,20 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           </div>
         ))}
       </div>
+
+      {deleteImageId && (() => {
+        const img = allImages.find((i) => i.id === deleteImageId);
+        return (
+          <ConfirmDialog
+            title={`Delete "${img?.original_name ?? 'image'}"?`}
+            message="This cannot be undone."
+            confirmLabel="Delete"
+            isPending={deleteImage.isPending}
+            onConfirm={() => { deleteImage.mutate(deleteImageId); setDeleteImageId(null); }}
+            onCancel={() => setDeleteImageId(null)}
+          />
+        );
+      })()}
 
       {/* Lightbox Preview Modal */}
       {preview && (

@@ -25,7 +25,7 @@ describe('CdnImage — no fixed aspect-ratio when unzoomed', () => {
     const qc = makeQueryClient();
     render(
       <QueryClientProvider client={qc}>
-        <CdnImage src="https://example.com/img.jpg" alt="test" isZoomed />
+        <CdnImage src="https://example.com/img.jpg" alt="test" />
       </QueryClientProvider>,
     );
     const container = screen.getByTestId('live-image-container');

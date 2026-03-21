@@ -18,8 +18,15 @@ def _table_exists(conn, table_name: str) -> bool:
     return sa.inspect(conn).has_table(table_name)
 
 
+def _is_sqlite(conn) -> bool:
+    """Check if the database dialect is SQLite."""
+    return conn.dialect.name == "sqlite"
+
+
 def _safe_add_constraint(conn, table: str, sql: str) -> None:
-    """Add a constraint only if the table exists."""
+    """Add a constraint only if the table exists. Skip on SQLite (doesn't support ALTER TABLE ADD CONSTRAINT)."""
+    if _is_sqlite(conn):
+        return
     if _table_exists(conn, table):
         op.execute(sql)
 

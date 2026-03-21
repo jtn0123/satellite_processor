@@ -8,7 +8,7 @@ interface BrowseToolbarProps {
   viewMode: 'grid' | 'list';
   setViewMode: (mode: 'grid' | 'list') => void;
   selectAll: () => void;
-  deleteMutation: { mutate: (ids: string[]) => void };
+  onDelete: (ids: string[]) => void;
   processMutation: { mutate: (ids: string[]) => void; isPending: boolean };
   setCollectionFrameIds: (ids: string[]) => void;
   setShowAddToCollection: (v: boolean) => void;
@@ -24,7 +24,7 @@ export default function BrowseToolbar({
   viewMode,
   setViewMode,
   selectAll,
-  deleteMutation,
+  onDelete,
   processMutation,
   setCollectionFrameIds,
   setShowAddToCollection,
@@ -50,7 +50,7 @@ export default function BrowseToolbar({
         <DesktopBatchActions
           selectedIds={selectedIds}
           frames={frames}
-          deleteMutation={deleteMutation}
+          onDelete={onDelete}
           processMutation={processMutation}
           setCollectionFrameIds={setCollectionFrameIds}
           setShowAddToCollection={setShowAddToCollection}

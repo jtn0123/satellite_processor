@@ -4,6 +4,8 @@ import { Plus, Trash2, Play, Eye, Save, X, Shield, HardDrive, Satellite } from '
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
+import { SATELLITES, SATELLITE_COLORS } from '../Animation/types';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface CleanupRule {
   id: string;
@@ -61,13 +63,6 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-const SATELLITE_COLORS: Record<string, string> = {
-  'GOES-16': 'bg-blue-500',
-  'GOES-18': 'bg-cyan-500',
-  'GOES-19': 'bg-indigo-500',
-  'Himawari-9': 'bg-orange-500',
-};
-
 function getSatColor(sat: string) {
   return SATELLITE_COLORS[sat] ?? 'bg-gray-500';
 }
@@ -75,6 +70,7 @@ function getSatColor(sat: string) {
 export default function CleanupTab() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [form, setForm] = useState<{
     name: string;
     rule_type: 'max_age_days' | 'max_storage_gb';
@@ -250,15 +246,15 @@ export default function CleanupTab() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Cleanup Rules</h2>
           <div className="flex gap-2">
-            <button onClick={() => refetchPreview()} disabled={previewLoading}
+            <button type="button" onClick={() => refetchPreview()} disabled={previewLoading}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50">
               <Eye className="w-4 h-4" /> Preview
             </button>
-            <button onClick={() => { if (globalThis.confirm('Run cleanup now? This will permanently delete frames matching your active rules.')) runCleanup.mutate(); }} disabled={runCleanup.isPending}
+            <button type="button" onClick={() => setShowCleanupConfirm(true)} disabled={runCleanup.isPending}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg text-sm font-medium hover:bg-red-500 disabled:opacity-50">
               <Play className="w-4 h-4" /> Run Now
             </button>
-            <button onClick={() => setShowCreate(true)}
+            <button type="button" onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80">
               <Plus className="w-4 h-4" /> New Rule
             </button>
@@ -296,10 +292,7 @@ export default function CleanupTab() {
             <select aria-label="Satellite filter" value={form.satellite} onChange={e => setForm({ ...form, satellite: e.target.value })}
               className="w-full rounded-lg bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white px-3 py-2 text-sm">
               <option value="">All Satellites</option>
-              <option value="GOES-16">GOES-16</option>
-              <option value="GOES-18">GOES-18</option>
-              <option value="GOES-19">GOES-19</option>
-              <option value="Himawari-9">Himawari-9</option>
+              {SATELLITES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
               <input type="checkbox" checked={form.protect_collections} onChange={e => setForm({ ...form, protect_collections: e.target.checked })}
@@ -307,11 +300,11 @@ export default function CleanupTab() {
               <Shield className="w-4 h-4" /> Protect frames in collections
             </label>
             <div className="flex gap-2">
-              <button onClick={() => { if (form.name) createRule.mutate(form); }} disabled={!form.name}
+              <button type="button" onClick={() => { if (form.name) createRule.mutate(form); }} disabled={!form.name}
                 className="px-3 py-1.5 bg-primary rounded-lg text-sm font-medium hover:bg-primary/80 disabled:opacity-50">
                 <Save className="w-4 h-4 inline mr-1" /> Create
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
+              <button type="button" onClick={() => setShowCreate(false)} className="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600">
                 <X className="w-4 h-4 inline mr-1" /> Cancel
               </button>
             </div>
@@ -332,11 +325,12 @@ export default function CleanupTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => toggleRule.mutate(rule)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'}`}>
+                <button type="button" onClick={() => toggleRule.mutate(rule)} disabled={toggleRule.isPending}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${rule.is_active ? 'bg-green-600 text-gray-900 dark:text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'} ${toggleRule.isPending ? 'opacity-50' : ''}`}
+                  aria-label={`Toggle rule ${rule.name} ${rule.is_active ? 'off' : 'on'}`}>
                   {rule.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteRule.mutate(rule.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400">
+                <button onClick={() => deleteRule.mutate(rule.id)} disabled={deleteRule.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400 ${deleteRule.isPending ? 'opacity-50' : ''}`} aria-label={`Delete rule ${rule.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -344,6 +338,20 @@ export default function CleanupTab() {
           ))}
         </div>
       </div>
+
+      {showCleanupConfirm && (
+        <ConfirmDialog
+          title="Run cleanup now?"
+          message={preview
+            ? `This will permanently delete ${preview.frame_count} frames (${formatBytes(preview.total_size_bytes)}) matching your active rules.`
+            : 'This will permanently delete frames matching your active rules. Use Preview first to see what will be affected.'}
+          confirmLabel="Run Cleanup"
+          isPending={runCleanup.isPending}
+          onConfirm={() => { runCleanup.mutate(); setShowCleanupConfirm(false); }}
+          onCancel={() => setShowCleanupConfirm(false)}
+          variant="warning"
+        />
+      )}
     </div>
   );
 }

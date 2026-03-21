@@ -80,15 +80,15 @@ export default function ComparisonModal({
       <div className="flex-1 overflow-auto p-4">
         {mode === 'side-by-side' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
-            {[left, right].map((frame, idx) => (
-              <div key={frame.id + idx} className="flex flex-col">
+            {[left, right].map((frame) => (
+              <div key={frame.id} className="flex flex-col">
                 <div className="text-xs text-gray-500 dark:text-slate-400 mb-2 text-center">
                   <span className="font-medium text-gray-900 dark:text-white">{frame.satellite}</span> · {frame.band} · {frame.sector}
                   <br />
                   {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                 </div>
                 <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                  <img src={getUrl(frame)} alt={`Frame ${idx + 1}`} loading="lazy" decoding="async"
+                  <img src={getUrl(frame)} alt={`${frame.satellite} ${frame.band}`} loading="lazy" decoding="async"
                     className="max-w-full max-h-[60vh] object-contain" />
                 </div>
               </div>

@@ -5,11 +5,13 @@ interface JobLike {
   readonly status: string;
 }
 
+import { JOB_STATUS } from './jobStatus';
+
 const STATUS_FILTER_MAP: Readonly<Record<StatusFilter, ReadonlyArray<string>>> = {
   All: [],
-  Running: ['pending', 'processing'],
-  Completed: ['completed', 'completed_partial'],
-  Failed: ['failed', 'cancelled'],
+  Running: [JOB_STATUS.PENDING, JOB_STATUS.PROCESSING],
+  Completed: [JOB_STATUS.COMPLETED, JOB_STATUS.COMPLETED_PARTIAL],
+  Failed: [JOB_STATUS.FAILED, JOB_STATUS.CANCELLED],
 };
 
 export function filterJobsByStatus<T extends JobLike>(jobs: ReadonlyArray<T>, filter: StatusFilter): ReadonlyArray<T> {

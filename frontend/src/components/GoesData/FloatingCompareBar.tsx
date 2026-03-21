@@ -28,8 +28,9 @@ export default function FloatingCompareBar({
 
       {selectedFrames.length === 2 && (
         <button
+          type="button"
           onClick={onCompare}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-full transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm bg-indigo-600 hover:bg-indigo-500 rounded-full transition-colors"
           aria-label="Compare selected frames"
         >
           <GitCompare className="w-4 h-4" />
@@ -39,8 +40,9 @@ export default function FloatingCompareBar({
 
       {selectedFrames.length >= 2 && (
         <button
+          type="button"
           onClick={onAnimate}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-500 rounded-full transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm bg-emerald-600 hover:bg-emerald-500 rounded-full transition-colors"
           aria-label="Animate selected frames"
         >
           <Play className="w-4 h-4" />
@@ -49,8 +51,9 @@ export default function FloatingCompareBar({
       )}
 
       <button
+        type="button"
         onClick={onClear}
-        className="p-1.5 hover:bg-white/10 rounded-full transition-colors ml-1"
+        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-white/10 rounded-full transition-colors ml-1"
         aria-label="Clear selection"
       >
         <X className="w-4 h-4" />

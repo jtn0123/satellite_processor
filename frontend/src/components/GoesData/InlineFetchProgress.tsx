@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { JOB_STATUS } from '../../utils/jobStatus';
 
 interface Job {
   id: string;
@@ -12,10 +13,10 @@ interface InlineFetchProgressProps {
 }
 
 function getStatusContent(job: Job) {
-  if (job.status === 'completed') {
+  if (job.status === JOB_STATUS.COMPLETED) {
     return <span className="text-sm text-emerald-600 dark:text-emerald-300 font-medium">✓ Fetch complete</span>;
   }
-  if (job.status === 'failed') {
+  if (job.status === JOB_STATUS.FAILED) {
     return <span className="text-sm text-red-600 dark:text-red-300 font-medium">✗ Fetch failed</span>;
   }
   return null;

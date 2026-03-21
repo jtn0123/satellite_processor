@@ -379,15 +379,26 @@ class ImageOperations:
             pass
 
     @staticmethod
-    def _process_image_subprocess(
+    def process_image_subprocess(
         image_path: str, options: dict
     ) -> np.ndarray | None:
-        """Process a single image with proper dimension handling"""
+        """Process a single image in a subprocess with full pipeline support.
+
+        Applies the following steps in order (each gated by options):
+        1. Read image and ensure BGR format
+        2. Crop (if crop_enabled)
+        3. Timestamp overlay (if add_timestamp)
+        4. False color via Sanchez (if false_color_enabled)
+        5. Interpolation / resize (if interpolation_enabled)
+        6. Validate final dimensions
+        """
         try:
             logger.debug(
-                f"Processing {image_path} on process {multiprocessing.current_process().name}"
+                f"Processing {image_path} on process "
+                f"{multiprocessing.current_process().name}"
             )
 
+            # 1. Read image
             img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
             if img is None:
                 logger.error(f"Failed to read image: {image_path}")
@@ -397,6 +408,7 @@ class ImageOperations:
                 logger.debug(f"Converting image format for {image_path}")
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
+            # 2. Crop
             if options.get("crop_enabled"):
                 img = ImageOperations.crop_image(
                     img,
@@ -406,10 +418,13 @@ class ImageOperations:
                     options.get("crop_height", img.shape[0]),
                 )
 
-            if options.get("add_timestamp", True):
+            # 3. Timestamp
+            if options.get("add_timestamp", False):
                 img = ImageOperations.add_timestamp(img, Path(image_path))
 
+            # 4. False color (uses apply_false_color_and_read for correctness)
             if options.get("false_color_enabled"):
+                logger.debug("Applying false color with Sanchez")
                 result = ImageOperations.apply_false_color_and_read(
                     str(image_path),
                     str(Path(options.get("temp_dir"))),
@@ -417,73 +432,44 @@ class ImageOperations:
                     str(options.get("underlay_path")),
                 )
                 if result is None:
-                    raise ValueError("Failed to apply false color")
-                img = result
-
-            if img is None or len(img.shape) != 3 or img.shape[2] != 3:
-                logger.error(f"Invalid image dimensions after processing: {image_path}")
-                return None
-
-            return img
-
-        except Exception as e:
-            logger.error(f"Error processing {image_path}: {e}", exc_info=True)
-            return None
-
-    @staticmethod
-    def process_image_subprocess(
-        image_path: str, options: dict
-    ) -> np.ndarray | None:
-        """Process image in subprocess with interpolation support"""
-        try:
-            logger.debug(f"Processing {image_path} with options: {options}")
-
-            img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
-            if img is None:
-                logger.error(f"Failed to read image: {image_path}")
-                return None
-
-            if options.get("false_color_enabled"):
-                logger.debug("Applying false color with Sanchez")
-                img = ImageOperations.apply_false_color(
-                    img,
-                    options["temp_dir"],
-                    Path(image_path).stem,
-                    options["sanchez_path"],
-                    options["underlay_path"],
-                )
-                if img is None:
                     logger.error("False color application failed")
                     return None
+                img = result
 
+            # 5. Interpolation (resize)
             if options.get("interpolation_enabled"):
-                logger.debug(
-                    f"Applying interpolation: {options.get('interpolation_method')}"
-                )
+                method = options.get("interpolation_method", "Linear")
+                factor = options.get("interpolation_factor", 2)
+                logger.debug(f"Applying interpolation: {method}")
                 try:
-                    if options["interpolation_method"] == "Linear":
+                    if method == "Linear":
                         img = cv2.resize(
                             img,
                             None,
-                            fx=options["interpolation_factor"],
-                            fy=options["interpolation_factor"],
+                            fx=factor,
+                            fy=factor,
                             interpolation=cv2.INTER_LINEAR,
                         )
-                    elif options["interpolation_method"] == "Cubic":
+                    elif method == "Cubic":
                         img = cv2.resize(
                             img,
                             None,
-                            fx=options["interpolation_factor"],
-                            fy=options["interpolation_factor"],
+                            fx=factor,
+                            fy=factor,
                             interpolation=cv2.INTER_CUBIC,
                         )
-                    elif options["interpolation_method"] in ["RIFE", "DAIN"]:
-                        logger.debug(
-                            f"Using AI interpolation: {options['interpolation_method']}"
-                        )
+                    elif method in ["RIFE", "DAIN"]:
+                        logger.debug(f"Using AI interpolation: {method}")
                 except Exception as e:
                     logger.error(f"Interpolation failed: {e}", exc_info=True)
                     return None
+
+            # 6. Validate output
+            if img is None or len(img.shape) != 3 or img.shape[2] != 3:
+                logger.error(
+                    f"Invalid image dimensions after processing: {image_path}"
+                )
+                return None
 
             return img
 

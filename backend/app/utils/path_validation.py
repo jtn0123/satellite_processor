@@ -15,6 +15,11 @@ def validate_file_path(file_path: str) -> Path:
     storage_root = Path(settings.storage_path).resolve()
     output_root = Path(settings.output_dir).resolve()
     resolved = Path(file_path).resolve()
-    if not (str(resolved).startswith(str(storage_root)) or str(resolved).startswith(str(output_root))):
-        raise APIError(403, "forbidden", "File path outside allowed directories")
+    try:
+        resolved.relative_to(storage_root)
+    except ValueError:
+        try:
+            resolved.relative_to(output_root)
+        except ValueError:
+            raise APIError(403, "forbidden", "File path outside allowed directories")
     return resolved

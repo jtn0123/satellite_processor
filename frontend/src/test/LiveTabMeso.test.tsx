@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithRouter } from './testUtils';
 import { isMesoSector } from '../utils/sectorHelpers';
 
 vi.mock('../api/client', () => ({
@@ -17,14 +16,7 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <MemoryRouter><QueryClientProvider client={qc}>{ui}</QueryClientProvider></MemoryRouter>,
-  );
-}
+const renderWithProviders = renderWithRouter;
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -29,7 +29,7 @@ class StorageService:
         """Ensure resolved path stays within the expected base directory."""
         resolved = path.resolve()
         base_resolved = base_dir.resolve()
-        if not str(resolved).startswith(str(base_resolved) + "/") and resolved != base_resolved:
+        if not self._is_within(resolved, base_resolved):
             raise ValueError(f"Path traversal detected: {path}")
         return resolved
 

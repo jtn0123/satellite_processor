@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +22,8 @@ from ..models.goes_data import (
     GoesFrameResponse,
 )
 from ..models.pagination import PaginatedResponse
-from .goes_frames import MAX_EXPORT_LIMIT, _frames_to_csv, _frames_to_json_list
+from ..rate_limit import limiter
+from .goes_frames_bulk import MAX_EXPORT_LIMIT, _frames_to_csv, _frames_to_json_list
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,9 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-collections"])
 
 
 @router.post("/collections", response_model=CollectionResponse)
+@limiter.limit("30/minute")
 async def create_collection(
+    request: Request,
     payload: CollectionCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -62,7 +65,9 @@ async def create_collection(
 
 
 @router.get("/collections", response_model=PaginatedResponse[CollectionResponse])
+@limiter.limit("60/minute")
 async def list_collections(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
@@ -96,7 +101,9 @@ async def list_collections(
 
 
 @router.put("/collections/{collection_id}", response_model=CollectionResponse)
+@limiter.limit("30/minute")
 async def update_collection(
+    request: Request,
     collection_id: str,
     payload: CollectionUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
@@ -131,7 +138,9 @@ async def update_collection(
 
 
 @router.delete("/collections/{collection_id}")
+@limiter.limit("30/minute")
 async def delete_collection(
+    request: Request,
     collection_id: str,
     db: AsyncSession = Depends(get_db),
 ):
@@ -146,7 +155,9 @@ async def delete_collection(
 
 
 @router.post("/collections/{collection_id}/frames")
+@limiter.limit("30/minute")
 async def add_frames_to_collection(
+    request: Request,
     collection_id: str,
     payload: CollectionFramesRequest = Body(...),
     db: AsyncSession = Depends(get_db),
@@ -174,7 +185,9 @@ async def add_frames_to_collection(
 
 
 @router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
+@limiter.limit("60/minute")
 async def list_collection_frames(
+    request: Request,
     collection_id: str,
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -212,7 +225,9 @@ async def list_collection_frames(
 
 
 @router.get("/collections/{collection_id}/export")
+@limiter.limit("60/minute")
 async def export_collection(
+    request: Request,
     collection_id: str,
     format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
     db: AsyncSession = Depends(get_db),
@@ -252,7 +267,9 @@ async def export_collection(
 
 
 @router.delete("/collections/{collection_id}/frames")
+@limiter.limit("30/minute")
 async def remove_frames_from_collection(
+    request: Request,
     collection_id: str,
     payload: CollectionFramesRequest = Body(...),
     db: AsyncSession = Depends(get_db),

@@ -53,7 +53,6 @@ from .pipeline import (
 )
 from .resource_monitor import ResourceMonitor
 from .settings_manager import SettingsManager
-from .utils import is_closing
 from .video_handler import VideoHandler
 
 logger = logging.getLogger(__name__)
@@ -294,12 +293,6 @@ class SatelliteImageProcessor:
 
         if timestamped_files:
             return self.file_manager.keep_file_order(timestamped_files)
-        return current_files
-
-    def _stage_scale(
-        self, current_files: list[Path], _dirs: dict[str, Path], _pool: multiprocessing.pool.Pool
-    ) -> list[Path]:
-        """Stage: Scale images (placeholder for future scaling stage)"""
         return current_files
 
     def process(self) -> bool:
@@ -777,26 +770,6 @@ class SatelliteImageProcessor:
     def _default_status_callback(self, status: str):
         """Default status callback if none is provided."""
         self.logger.info(status)
-
-    def some_other_method(self):
-        """Example method where callbacks are invoked."""
-        try:
-            self._emit_status("Processing started.")
-            self._emit_progress("Loading images", 10)
-            self._emit_progress("Processing images", 50)
-            self._emit_progress("Finalizing", 90)
-            self._emit_status("Processing finished.")
-            self._emit_finished()
-        except Exception as e:
-            self._emit_error(str(e))
-
-    def run_processing(self):
-        """Run processing with closing check"""
-        if is_closing(None):
-            self.cancel()
-
-    def some_method(self):
-        """No-op placeholder for future extension."""
 
     def update_resource_usage(self):
         """Update resource usage metrics."""

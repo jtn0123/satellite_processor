@@ -1,10 +1,13 @@
 """Simple circuit breaker for S3 and external service calls.
 
 States: CLOSED (normal) → OPEN (failing, reject calls) → HALF_OPEN (test one call).
+
+Provides both sync (CircuitBreaker) and async (AsyncCircuitBreaker) variants.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 import time
@@ -87,6 +90,73 @@ class CircuitBreaker:
                 )
 
 
+class AsyncCircuitBreaker:
+    """Async-safe circuit breaker for use in FastAPI/async code."""
+
+    def __init__(
+        self,
+        name: str = "default",
+        failure_threshold: int = 5,
+        recovery_timeout: float = 60.0,
+        half_open_max_calls: int = 1,
+    ):
+        self.name = name
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.half_open_max_calls = half_open_max_calls
+
+        self._state = CircuitState.CLOSED
+        self._failure_count = 0
+        self._last_failure_time: float = 0
+        self._half_open_calls = 0
+        self._lock = asyncio.Lock()
+
+    @property
+    def state(self) -> CircuitState:
+        """Non-locking state read (use allow_request for safe checks)."""
+        if self._state == CircuitState.OPEN:
+            if time.monotonic() - self._last_failure_time >= self.recovery_timeout:
+                return CircuitState.HALF_OPEN
+        return self._state
+
+    async def allow_request(self) -> bool:
+        async with self._lock:
+            if self._state == CircuitState.OPEN:
+                if time.monotonic() - self._last_failure_time >= self.recovery_timeout:
+                    self._state = CircuitState.HALF_OPEN
+                    self._half_open_calls = 0
+                    logger.info("Circuit breaker '%s' transitioning to HALF_OPEN", self.name)
+            if self._state == CircuitState.CLOSED:
+                return True
+            if self._state == CircuitState.HALF_OPEN:
+                if self._half_open_calls < self.half_open_max_calls:
+                    self._half_open_calls += 1
+                    return True
+                return False
+            return False
+
+    async def record_success(self) -> None:
+        async with self._lock:
+            if self._state == CircuitState.HALF_OPEN:
+                self._state = CircuitState.CLOSED
+                logger.info("Circuit breaker '%s' recovered → CLOSED", self.name)
+            self._failure_count = 0
+
+    async def record_failure(self) -> None:
+        async with self._lock:
+            self._failure_count += 1
+            self._last_failure_time = time.monotonic()
+            if self._state == CircuitState.HALF_OPEN:
+                self._state = CircuitState.OPEN
+                logger.warning("Circuit breaker '%s' still failing → OPEN", self.name)
+            elif self._failure_count >= self.failure_threshold:
+                self._state = CircuitState.OPEN
+                logger.warning(
+                    "Circuit breaker '%s' opened after %d failures",
+                    self.name, self._failure_count,
+                )
+
+
 class CircuitBreakerOpen(Exception):
     """Raised when circuit breaker is open and rejecting calls."""
 
@@ -95,9 +165,17 @@ class CircuitBreakerOpen(Exception):
         self.breaker_name = breaker_name
 
 
-# Global S3 circuit breaker instance
+# Global S3 circuit breaker instances
+# Use s3_circuit_breaker (sync) in Celery tasks
+# Use s3_async_circuit_breaker in FastAPI async routes
 s3_circuit_breaker = CircuitBreaker(
     name="s3",
+    failure_threshold=5,
+    recovery_timeout=60.0,
+)
+
+s3_async_circuit_breaker = AsyncCircuitBreaker(
+    name="s3_async",
     failure_threshold=5,
     recovery_timeout=60.0,
 )

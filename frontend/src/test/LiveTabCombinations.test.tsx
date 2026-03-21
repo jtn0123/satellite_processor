@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { renderWithRouter } from './testUtils';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -54,14 +53,7 @@ function makeProducts(defaultSat = 'GOES-19') {
   };
 }
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return render(
-    <MemoryRouter>
-      <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
-    </MemoryRouter>,
-  );
-}
+const renderWithProviders = renderWithRouter;
 
 function mockApiDefaults(sector = 'CONUS', band = 'GEOCOLOR') {
   mockedApi.get.mockImplementation((url: string) => {

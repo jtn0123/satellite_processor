@@ -8,7 +8,7 @@ from satellite_processor.core.resource_monitor import ResourceMonitor
 class TestResourceMonitor:
     def test_init(self):
         rm = ResourceMonitor()
-        assert rm._running is False
+        assert not rm._stop_event.is_set()
         assert rm.on_resource_update is None
         rm.cleanup()
 
@@ -21,10 +21,10 @@ class TestResourceMonitor:
     def test_start_stop(self):
         rm = ResourceMonitor()
         rm.start()
-        assert rm._running is True
+        assert not rm._stop_event.is_set()
         assert rm._thread is not None
         rm.stop()
-        assert rm._running is False
+        assert rm._stop_event.is_set()
 
     def test_start_idempotent(self):
         rm = ResourceMonitor()
@@ -57,7 +57,7 @@ class TestResourceMonitor:
         rm = ResourceMonitor()
         rm.start()
         rm.cleanup()
-        assert rm._running is False
+        assert rm._stop_event.is_set()
 
     def test_del_doesnt_raise(self):
         rm = ResourceMonitor()

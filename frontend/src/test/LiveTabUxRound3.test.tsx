@@ -7,9 +7,8 @@
  * - Controls FAB label
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { renderWithRouter } from './testUtils';
 
 /** Shared assertion: verify status pill shows expected band */
 async function expectPillBand(bandId: string) {
@@ -74,16 +73,7 @@ const CATALOG_DATA = {
   image_url: 'https://cdn.example.com/image.png',
 };
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <MemoryRouter>
-      <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
-    </MemoryRouter>,
-  );
-}
+const renderWithProviders = renderWithRouter;
 
 function setupDefaultMocks() {
   mockedApi.get.mockImplementation((url: string) => {

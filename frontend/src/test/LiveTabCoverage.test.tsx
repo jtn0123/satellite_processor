@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { renderWithRouter } from './testUtils';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -44,14 +43,7 @@ const FRAME_DATA = {
   thumbnail_url: '/api/satellite/frames/1/thumbnail',
 };
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <MemoryRouter><QueryClientProvider client={qc}>{ui}</QueryClientProvider></MemoryRouter>,
-  );
-}
+const renderWithProviders = renderWithRouter;
 
 beforeEach(() => {
   vi.clearAllMocks();

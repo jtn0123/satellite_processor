@@ -30,7 +30,7 @@ class ResourceMonitor:
 
     def __init__(self, parent=None):
         self.logger = logging.getLogger(__name__)
-        self._running = False
+        self._stop_event = threading.Event()
         self._interval = DEFAULT_MONITOR_INTERVAL_SECONDS
         self._last_net_io = psutil.net_io_counters()
         self._last_check = time.time()
@@ -47,15 +47,15 @@ class ResourceMonitor:
 
     def start(self):
         """Start monitoring in a background thread"""
-        if self._running:
+        if not self._stop_event.is_set() and self._thread and self._thread.is_alive():
             return
-        self._running = True
+        self._stop_event.clear()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
     def _run(self):
         """Main monitoring loop"""
-        while self._running:
+        while not self._stop_event.is_set():
             try:
                 stats = {
                     "cpu": psutil.cpu_percent(interval=None),
@@ -65,11 +65,11 @@ class ResourceMonitor:
 
                 if self.on_resource_update:
                     self.on_resource_update(stats)
-                time.sleep(self._interval)
+                self._stop_event.wait(self._interval)
 
             except Exception as e:
                 self.logger.error(f"Resource monitor error: {e}", exc_info=True)
-                time.sleep(ERROR_RETRY_DELAY_SECONDS)
+                self._stop_event.wait(ERROR_RETRY_DELAY_SECONDS)
 
     def should_throttle(self) -> bool:
         """Return True if system resources are under pressure (#17).
@@ -83,7 +83,7 @@ class ResourceMonitor:
 
     def stop(self):
         """Stop monitoring safely"""
-        self._running = False
+        self._stop_event.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=2)
 

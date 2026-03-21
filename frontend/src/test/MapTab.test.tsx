@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderWithProviders } from './testUtils';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -32,14 +31,6 @@ vi.mock('leaflet', () => ({
 
 import MapTab from '../components/GoesData/MapTab';
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
-  );
-}
 
 describe('MapTab', () => {
   it('renders without crashing', () => {

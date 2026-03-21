@@ -236,21 +236,6 @@ class TestResourceUsage:
         assert "cpu" in data[0]
 
 
-class TestSomeOtherMethod:
-    def test_runs(self, processor):
-        msgs = []
-        processor.on_status_update = lambda m: msgs.append(m)
-        processor.on_progress = lambda *a: None
-        processor.on_finished = lambda: None
-        processor.some_other_method()
-        assert len(msgs) >= 2
-
-
-class TestRunProcessing:
-    def test_with_none_window(self, processor):
-        processor.run_processing()  # Should not raise
-
-
 class TestParallelCrop:
     def test_crop_worker(self, frame_dir, tmp_path):
         output_dir = tmp_path / "cropped"

@@ -2,8 +2,8 @@ line-length = 120
 target-version = "py311"
 
 [lint]
-select = ["E", "F", "I", "UP", "B"]
-ignore = ["E501", "B008", "B904"]
+select = ["E", "F", "I", "UP", "B", "S"]
+ignore = ["E501", "B008", "B904", "S101", "S104", "S108", "S311", "S603", "S607"]
 
 [lint.per-file-ignores]
 # sys.path manipulation required before importing core modules

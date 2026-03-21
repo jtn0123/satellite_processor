@@ -21,6 +21,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
+import QueryErrorBox from '../components/QueryErrorBox';
 import { formatBytes } from '../utils/format';
 import { showToast } from '../utils/toast';
 import api from '../api/client';
@@ -59,10 +60,10 @@ interface DashboardStats {
 export default function Dashboard() {
   usePageTitle('Dashboard');
   const navigate = useNavigate();
-  const { data: stats, isLoading: statsLoading, isError: statsError } = useStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useStats();
   const { data: health } = useHealthDetailed();
 
-  const { data: goesStats, isLoading: goesLoading, isError: goesError } = useQuery<DashboardStats>({
+  const { data: goesStats, isLoading: goesLoading, isError: goesError, refetch: refetchGoes } = useQuery<DashboardStats>({
     queryKey: ['goes-dashboard-stats'],
     queryFn: () => api.get('/satellite/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
@@ -112,6 +113,15 @@ export default function Dashboard() {
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Satellite image processing overview</p>
       </div>
 
+      {/* Stats error fallback */}
+      {statsError && (
+        <QueryErrorBox
+          message="Could not load system stats"
+          icon={Server}
+          onRetry={() => refetchStats()}
+        />
+      )}
+
       {/* Stats cards */}
       {statsLoading && !statsError && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -154,10 +164,11 @@ export default function Dashboard() {
 
       {/* GOES stats error fallback */}
       {goesError && (
-        <div className="bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 text-center">
-          <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 dark:text-slate-400">Could not load satellite data</p>
-        </div>
+        <QueryErrorBox
+          message="Could not load satellite data"
+          icon={Satellite}
+          onRetry={() => refetchGoes()}
+        />
       )}
 
       {/* GOES stats loading skeleton (#9) */}

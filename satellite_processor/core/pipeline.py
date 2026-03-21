@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import multiprocessing.pool
+import threading
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -167,7 +168,7 @@ class Pipeline:
     def __init__(self, resource_monitor: ResourceMonitor | None = None) -> None:
         self._stages: list[Stage] = []
         self._resource_monitor = resource_monitor
-        self._cancelled = False
+        self._cancel_event = threading.Event()
 
     def add_stage(self, stage: Stage) -> Pipeline:
         """Add a stage to the pipeline. Returns self for chaining."""
@@ -175,7 +176,7 @@ class Pipeline:
         return self
 
     def cancel(self) -> None:
-        self._cancelled = True
+        self._cancel_event.set()
 
     @property
     def stages(self) -> list[Stage]:
@@ -190,7 +191,7 @@ class Pipeline:
         """Run all stages sequentially, passing image_paths through each."""
         current = image_paths
         for stage in self._stages:
-            if self._cancelled or not current:
+            if self._cancel_event.is_set() or not current:
                 return []
 
             # Throttle if system is under pressure

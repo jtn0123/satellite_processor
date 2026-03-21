@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +23,7 @@ from ..db.models import (
 )
 from ..errors import APIError, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
-from ..models.pagination import PaginatedResponse
+from ..models.pagination import PaginatedResponse, PaginationParams
 from ..rate_limit import limiter
 from ..utils import utcnow
 
@@ -189,25 +188,23 @@ async def create_job(request: Request, job_in: JobCreate, db: AsyncSession = Dep
 
 @router.get("", response_model=PaginatedResponse[JobResponse])
 async def list_jobs(
-    page: Annotated[int, Query(ge=1)] = 1,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    pagination: PaginationParams = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
     """List jobs with pagination"""
     count_result = await db.execute(select(func.count()).select_from(Job))
     total = count_result.scalar_one()
 
-    offset = (page - 1) * limit
     result = await db.execute(
-        select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit)
+        select(Job).order_by(Job.created_at.desc()).offset(pagination.offset).limit(pagination.limit)
     )
     jobs = result.scalars().all()
 
     return PaginatedResponse[JobResponse](
         items=[JobResponse.model_validate(j) for j in jobs],
         total=total,
-        page=page,
-        limit=limit,
+        page=pagination.page,
+        limit=pagination.limit,
     )
 
 
@@ -350,70 +347,3 @@ async def delete_job(
     await db.commit()
 
     return {"deleted": True, "bytes_freed": bytes_freed}
-
-
-@router.get("/{job_id}/logs")
-async def get_job_logs(
-    job_id: str,
-    level: Annotated[str | None, Query()] = None,
-    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
-    db: AsyncSession = Depends(get_db),
-):
-    """Return logs for a job ordered by timestamp."""
-    validate_uuid(job_id, "job_id")
-    query = select(JobLog).where(JobLog.job_id == job_id)
-    if level:
-        query = query.where(JobLog.level == level)
-    query = query.order_by(JobLog.timestamp.asc()).limit(limit)
-    result = await db.execute(query)
-    logs = result.scalars().all()
-    return [
-        {
-            "id": log.id,
-            "level": log.level,
-            "message": log.message,
-            "timestamp": log.timestamp.isoformat(),
-        }
-        for log in logs
-    ]
-
-
-@router.get("/{job_id}/output")
-async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
-    """Download job output"""
-    validate_uuid(job_id, "job_id")
-    result = await db.execute(select(Job).where(Job.id == job_id))
-    job = result.scalar_one_or_none()
-    if not job:
-        raise APIError(404, "not_found", _JOB_NOT_FOUND)
-    if job.status != "completed":
-        raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
-
-    # #52: Use stored output_path from job record
-    output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    if not os.path.exists(output_path):
-        raise APIError(404, "not_found", "Output not found")
-
-    if os.path.isfile(output_path):
-        return FileResponse(output_path, filename=os.path.basename(output_path))
-
-    files = sorted(os.listdir(output_path))
-    if not files:
-        raise APIError(404, "not_found", "No output files found")
-
-    for ext in [".mp4", ".avi", ".mkv", ".zip"]:
-        for f in files:
-            if f.endswith(ext):
-                return FileResponse(os.path.join(output_path, f), filename=f)
-
-    first = files[0]
-    return FileResponse(os.path.join(output_path, first), filename=first)
-
-
-@router.post("/cleanup-stale")
-async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
-    """Mark stale processing and pending jobs as failed."""
-    from ..services.stale_jobs import cleanup_all_stale
-
-    result = await cleanup_all_stale(db)
-    return result

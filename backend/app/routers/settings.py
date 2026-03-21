@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import sqlalchemy.exc
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from ..config import settings
 from ..db.database import get_db
 from ..db.models import AppSetting
 from ..errors import APIError
+from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,8 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
 
 
 @router.get("")
-async def get_settings(db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_settings(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         return await _load_from_db(db)
     except sqlalchemy.exc.SQLAlchemyError:
@@ -112,7 +114,8 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
 
 
 @router.put("")
-async def update_settings(body: SettingsUpdate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def update_settings(request: Request, body: SettingsUpdate, db: AsyncSession = Depends(get_db)):
     try:
         current = await _load_from_db(db)
         update_data = body.model_dump(exclude_none=True)

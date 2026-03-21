@@ -50,6 +50,7 @@ class Job(Base):
 
     __table_args__ = (
         Index("ix_jobs_status_created_at", "status", "created_at"),
+        Index("ix_jobs_status_updated_at", "status", "updated_at"),
         CheckConstraint("progress >= 0 AND progress <= 100", name="ck_jobs_progress"),
         CheckConstraint(
             "status IN ('pending', 'processing', 'completed', 'completed_partial', 'failed', 'cancelled')",
@@ -203,6 +204,10 @@ class Animation(Base):
 
     crop_preset = relationship("CropPreset", foreign_keys=[crop_preset_id])
     job = relationship("Job", foreign_keys=[job_id])
+
+    __table_args__ = (
+        Index("ix_animations_status_created_at", "status", "created_at"),
+    )
 
 
 class AnimationPreset(Base):

@@ -5,7 +5,7 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,7 @@ from ..models.animation import (
     FrameRangePreview,
 )
 from ..models.pagination import PaginatedResponse
+from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +165,9 @@ async def _query_frame_ids(
 
 
 @router.post("/crop-presets", response_model=CropPresetResponse)
+@limiter.limit("30/minute")
 async def create_crop_preset(
+    request: Request,
     payload: CropPresetCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -187,14 +190,17 @@ async def create_crop_preset(
 
 
 @router.get("/crop-presets", response_model=list[CropPresetResponse])
-async def list_crop_presets(db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def list_crop_presets(request: Request, db: AsyncSession = Depends(get_db)):
     logger.debug("Listing crop presets")
     result = await db.execute(select(CropPreset).order_by(CropPreset.name))
     return [CropPresetResponse.model_validate(p) for p in result.scalars().all()]
 
 
 @router.put("/crop-presets/{preset_id}", response_model=CropPresetResponse)
+@limiter.limit("30/minute")
 async def update_crop_preset(
+    request: Request,
     preset_id: str,
     payload: CropPresetUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
@@ -213,7 +219,9 @@ async def update_crop_preset(
 
 
 @router.delete("/crop-presets/{preset_id}")
+@limiter.limit("30/minute")
 async def delete_crop_preset(
+    request: Request,
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):
@@ -231,7 +239,9 @@ async def delete_crop_preset(
 
 
 @router.post("/animations", response_model=AnimationResponse)
+@limiter.limit("10/minute")
 async def create_animation(
+    request: Request,
     payload: AnimationCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -278,7 +288,9 @@ async def create_animation(
 
 
 @router.post("/animations/from-range", response_model=AnimationResponse)
+@limiter.limit("10/minute")
 async def create_animation_from_range(
+    request: Request,
     payload: AnimationFromRange = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -298,7 +310,9 @@ async def create_animation_from_range(
 
 
 @router.post("/animations/recent", response_model=AnimationResponse)
+@limiter.limit("10/minute")
 async def create_animation_recent(
+    request: Request,
     payload: AnimationRecent = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -320,7 +334,9 @@ async def create_animation_recent(
 
 
 @router.post("/animations/batch", response_model=list[AnimationResponse])
+@limiter.limit("10/minute")
 async def create_animation_batch(
+    request: Request,
     payload: BatchAnimationRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -343,7 +359,9 @@ async def create_animation_batch(
 
 
 @router.get("/animations", response_model=PaginatedResponse[AnimationResponse])
+@limiter.limit("60/minute")
 async def list_animations(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -359,7 +377,8 @@ async def list_animations(
 
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
-async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_animation(request: Request, animation_id: str, db: AsyncSession = Depends(get_db)):
     logger.debug("Animation requested: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -370,7 +389,8 @@ async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/animations/{animation_id}")
-async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def delete_animation(request: Request, animation_id: str, db: AsyncSession = Depends(get_db)):
     logger.info("Deleting animation: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -391,7 +411,9 @@ async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/frames/preview-range", response_model=FrameRangePreview)
+@limiter.limit("60/minute")
 async def preview_frame_range(
+    request: Request,
     satellite: str = Query(...),
     sector: str = Query(...),
     band: str = Query(...),
@@ -456,7 +478,8 @@ async def preview_frame_range(
 
 
 @router.get("/animation-presets", response_model=list[AnimationPresetResponse])
-async def list_animation_presets(db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def list_animation_presets(request: Request, db: AsyncSession = Depends(get_db)):
     logger.debug("Listing animation presets")
     result = await db.execute(
         select(AnimationPreset).order_by(AnimationPreset.name)
@@ -465,7 +488,9 @@ async def list_animation_presets(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/animation-presets", response_model=AnimationPresetResponse)
+@limiter.limit("30/minute")
 async def create_animation_preset(
+    request: Request,
     payload: AnimationPresetCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -494,7 +519,9 @@ async def create_animation_preset(
 
 
 @router.get("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
+@limiter.limit("60/minute")
 async def get_animation_preset(
+    request: Request,
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):
@@ -509,7 +536,9 @@ async def get_animation_preset(
 
 
 @router.put("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
+@limiter.limit("30/minute")
 async def update_animation_preset(
+    request: Request,
     preset_id: str,
     payload: AnimationPresetUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
@@ -533,7 +562,9 @@ async def update_animation_preset(
 
 
 @router.delete("/animation-presets/{preset_id}")
+@limiter.limit("30/minute")
 async def delete_animation_preset(
+    request: Request,
     preset_id: str,
     db: AsyncSession = Depends(get_db),
 ):

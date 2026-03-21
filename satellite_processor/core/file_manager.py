@@ -203,6 +203,13 @@ class FileManager:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return base_dir / f"{prefix}_{timestamp}{ext}"
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
+        return False
+
     def __del__(self):
         """Ensure cleanup on deletion"""
         try:

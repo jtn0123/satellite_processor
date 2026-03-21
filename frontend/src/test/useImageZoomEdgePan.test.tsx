@@ -10,8 +10,7 @@
  * after the fix is applied.
  */
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import { renderHook, act } from '@testing-library/react';
+import { render, renderHook, act } from '@testing-library/react';
 import { clampTranslate, useImageZoom } from '../hooks/useImageZoom';
 import CdnImage from '../components/GoesData/CdnImage';
 import type { RefObject } from 'react';

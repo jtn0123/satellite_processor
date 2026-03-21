@@ -69,6 +69,8 @@ export function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
     const bandList = extractArray<{ id: string }>(bands);
     const currentIdx = bandList.findIndex((b) => b.id === band);
 
+    const handleZoomIn = () => { zoomIn(); setLiveAnnouncement('Zoomed in'); };
+
     return {
       ArrowLeft: () => {
         if (isZoomed || bandList.length === 0) return;
@@ -97,14 +99,8 @@ export function useLiveShortcuts(config: Readonly<LiveShortcutsConfig>) {
         toggleMonitor();
         setLiveAnnouncement(monitoring ? 'Monitor mode off' : 'Monitor mode on');
       },
-      '+': () => {
-        zoomIn();
-        setLiveAnnouncement('Zoomed in');
-      },
-      '=': () => {
-        zoomIn();
-        setLiveAnnouncement('Zoomed in');
-      },
+      '+': handleZoomIn,
+      '=': handleZoomIn,
       '-': () => {
         if (isZoomed) {
           zoomOut();

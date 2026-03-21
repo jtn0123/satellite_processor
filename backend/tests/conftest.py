@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from app.db import models as _models  # noqa: F401 — registers all models with Base.metadata
 from app.db.database import Base, get_db
 from app.main import app
 from app.rate_limit import limiter

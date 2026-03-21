@@ -6,9 +6,10 @@ import re
 import uuid
 from datetime import datetime as dt
 from pathlib import Path
+from typing import Annotated
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
 from sqlalchemy import func, select
@@ -19,7 +20,7 @@ from ..db.models import Image
 from ..errors import APIError, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.image import ImageResponse
-from ..models.pagination import PaginatedResponse, PaginationParams
+from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
 
@@ -35,9 +36,7 @@ def _validate_file_path(file_path: str) -> Path:
     from ..config import settings as app_settings
     storage_root = Path(app_settings.storage_path).resolve()
     resolved = Path(file_path).resolve()
-    try:
-        resolved.relative_to(storage_root)
-    except ValueError:
+    if not str(resolved).startswith(str(storage_root)):
         raise APIError(403, "forbidden", "File path outside storage directory")
     return resolved
 
@@ -121,24 +120,26 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
 
 @router.get("", response_model=PaginatedResponse[ImageResponse])
 async def list_images(
-    pagination: PaginationParams = Depends(),
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
     db: AsyncSession = Depends(get_db),
 ):
     """List uploaded images with pagination"""
-    logger.debug("Listing images: page=%d, limit=%d", pagination.page, pagination.limit)
+    logger.debug("Listing images: page=%d, limit=%d", page, limit)
     count_result = await db.execute(select(func.count()).select_from(Image))
     total = count_result.scalar_one()
 
+    offset = (page - 1) * limit
     result = await db.execute(
-        select(Image).order_by(Image.uploaded_at.desc()).offset(pagination.offset).limit(pagination.limit)
+        select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)
     )
     images = result.scalars().all()
 
     return PaginatedResponse[ImageResponse](
         items=[ImageResponse.model_validate(img) for img in images],
         total=total,
-        page=pagination.page,
-        limit=pagination.limit,
+        page=page,
+        limit=limit,
     )
 
 

@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.database import get_db
 from ..db.models import Notification
 from ..errors import APIError
-from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +37,7 @@ class NotificationResponse(BaseModel):
 
 
 @router.get("", response_model=list[NotificationResponse])
-@limiter.limit("60/minute")
-async def list_notifications(request: Request, db: AsyncSession = Depends(get_db)):
+async def list_notifications(db: AsyncSession = Depends(get_db)):
     """Return last 50 notifications, newest first."""
     logger.debug("Listing notifications")
     result = await db.execute(
@@ -49,8 +47,7 @@ async def list_notifications(request: Request, db: AsyncSession = Depends(get_db
 
 
 @router.post("/{notification_id}/read")
-@limiter.limit("30/minute")
-async def mark_read(request: Request, notification_id: str, db: AsyncSession = Depends(get_db)):
+async def mark_read(notification_id: str, db: AsyncSession = Depends(get_db)):
     """Mark a notification as read."""
     logger.info("Marking notification read: id=%s", notification_id)
     result = await db.execute(

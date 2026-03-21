@@ -6,7 +6,7 @@ import logging
 import secrets
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -17,7 +17,6 @@ from ..config import settings
 from ..db.database import get_db
 from ..db.models import GoesFrame, ShareLink
 from ..errors import APIError, validate_safe_path
-from ..rate_limit import limiter
 from ..utils import utcnow
 
 logger = logging.getLogger(__name__)
@@ -44,9 +43,7 @@ class SharedFrameResponse(BaseModel):
 
 
 @router.post("/api/satellite/frames/{frame_id}/share", response_model=ShareLinkResponse)
-@limiter.limit("30/minute")
 async def create_share_link(
-    request: Request,
     frame_id: str,
     hours: int = 72,
     db: AsyncSession = Depends(get_db),
@@ -73,8 +70,7 @@ async def create_share_link(
 
 
 @router.get("/api/shared/{token}", response_model=SharedFrameResponse)
-@limiter.limit("30/minute")
-async def get_shared_frame(request: Request, token: str, db: AsyncSession = Depends(get_db)):
+async def get_shared_frame(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — retrieve frame info by share token."""
     logger.info("Shared frame requested: token=%s...", token[:8])
     link = await _get_valid_link(token, db)
@@ -93,8 +89,7 @@ async def get_shared_frame(request: Request, token: str, db: AsyncSession = Depe
 
 
 @router.get("/api/shared/{token}/image")
-@limiter.limit("30/minute")
-async def get_shared_image(request: Request, token: str, db: AsyncSession = Depends(get_db)):
+async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — serve the actual image for a share token."""
     logger.info("Shared image requested: token=%s...", token[:8])
     link = await _get_valid_link(token, db)

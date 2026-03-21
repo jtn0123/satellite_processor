@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +14,6 @@ from ..db.models import FrameTag, Tag
 from ..errors import APIError
 from ..models.goes_data import TagCreate, TagResponse
 from ..models.pagination import PaginatedResponse
-from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +21,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-tags"])
 
 
 @router.post("/tags", response_model=TagResponse)
-@limiter.limit("30/minute")
 async def create_tag(
-    request: Request,
     payload: TagCreate = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -41,9 +38,7 @@ async def create_tag(
 
 
 @router.get("/tags", response_model=PaginatedResponse[TagResponse])
-@limiter.limit("60/minute")
 async def list_tags(
-    request: Request,
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),
@@ -58,8 +53,7 @@ async def list_tags(
 
 
 @router.delete("/tags/{tag_id}")
-@limiter.limit("30/minute")
-async def delete_tag(request: Request, tag_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
     logger.info("Deleting tag: id=%s", tag_id)
     result = await db.execute(select(Tag).where(Tag.id == tag_id))
     tag = result.scalars().first()

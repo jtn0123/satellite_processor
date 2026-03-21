@@ -6,12 +6,12 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from app.routers.scheduling import _schedule_response
-from app.routers.scheduling_cleanup import (
+from app.routers.scheduling import (
     _collect_age_deletions,
     _collect_storage_deletions,
     _get_frames_to_cleanup,
     _get_protected_ids,
+    _schedule_response,
 )
 
 
@@ -54,7 +54,7 @@ class TestGetProtectedIds:
 
 class TestCollectAgeDeletions:
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup.utcnow")
+    @patch("app.routers.scheduling.utcnow")
     async def test_returns_unprotected_old_frames(self, mock_now):
         now = datetime.now(tz=UTC)
         mock_now.return_value = now
@@ -72,7 +72,7 @@ class TestCollectAgeDeletions:
         assert result == {"old1"}
 
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup.utcnow")
+    @patch("app.routers.scheduling.utcnow")
     async def test_empty_when_no_old_frames(self, mock_now):
         mock_now.return_value = datetime.now(tz=UTC)
 
@@ -86,7 +86,7 @@ class TestCollectAgeDeletions:
         assert result == set()
 
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup.utcnow")
+    @patch("app.routers.scheduling.utcnow")
     async def test_all_protected(self, mock_now):
         mock_now.return_value = datetime.now(tz=UTC)
 
@@ -188,9 +188,9 @@ class TestCollectStorageDeletions:
 
 class TestGetFramesToCleanup:
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup._collect_storage_deletions")
-    @patch("app.routers.scheduling_cleanup._collect_age_deletions")
-    @patch("app.routers.scheduling_cleanup._get_protected_ids")
+    @patch("app.routers.scheduling._collect_storage_deletions")
+    @patch("app.routers.scheduling._collect_age_deletions")
+    @patch("app.routers.scheduling._get_protected_ids")
     async def test_no_rules(self, mock_prot, mock_age, mock_storage):
         rules_result = MagicMock()
         scalars = MagicMock()
@@ -204,8 +204,8 @@ class TestGetFramesToCleanup:
         assert result == []
 
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup._collect_age_deletions")
-    @patch("app.routers.scheduling_cleanup._get_protected_ids")
+    @patch("app.routers.scheduling._collect_age_deletions")
+    @patch("app.routers.scheduling._get_protected_ids")
     async def test_age_rule(self, mock_prot, mock_age):
         rule = SimpleNamespace(rule_type="max_age_days", protect_collections=False)
         rules_result = MagicMock()
@@ -230,8 +230,8 @@ class TestGetFramesToCleanup:
         assert len(result) == 2
 
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup._collect_storage_deletions")
-    @patch("app.routers.scheduling_cleanup._get_protected_ids")
+    @patch("app.routers.scheduling._collect_storage_deletions")
+    @patch("app.routers.scheduling._get_protected_ids")
     async def test_storage_rule(self, mock_prot, mock_storage):
         rule = SimpleNamespace(rule_type="max_storage_gb", protect_collections=False)
         rules_result = MagicMock()
@@ -255,7 +255,7 @@ class TestGetFramesToCleanup:
         assert len(result) == 1
 
     @pytest.mark.asyncio
-    @patch("app.routers.scheduling_cleanup._get_protected_ids")
+    @patch("app.routers.scheduling._get_protected_ids")
     async def test_no_deletions_returns_empty(self, mock_prot):
         rule = SimpleNamespace(rule_type="max_age_days", protect_collections=False)
         rules_result = MagicMock()
@@ -274,7 +274,7 @@ class TestGetFramesToCleanup:
         age_result.scalars.return_value = age_scalars
         db.execute.side_effect = [rules_result, age_result]
 
-        with patch("app.routers.scheduling_cleanup._collect_age_deletions", return_value=set()):
+        with patch("app.routers.scheduling._collect_age_deletions", return_value=set()):
             result = await _get_frames_to_cleanup(db)
         assert result == []
 

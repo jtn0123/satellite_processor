@@ -4,7 +4,7 @@ import logging
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,8 +12,7 @@ from ..db.database import get_db
 from ..db.models import Composite, Job
 from ..errors import APIError, validate_uuid
 from ..models.goes import CompositeCreateRequest, CompositeResponse
-from ..models.pagination import PaginatedResponse, PaginationParams
-from ..rate_limit import limiter
+from ..models.pagination import PaginatedResponse
 from ._goes_shared import COMPOSITE_RECIPES
 
 logger = logging.getLogger(__name__)
@@ -22,8 +21,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-browse"])
 
 
 @router.get("/composite-recipes")
-@limiter.limit("60/minute")
-async def list_composite_recipes(request: Request):
+def list_composite_recipes():
     """List available composite recipes."""
     return [
         {"id": k, "name": v["name"], "bands": v["bands"]}
@@ -32,9 +30,7 @@ async def list_composite_recipes(request: Request):
 
 
 @router.post("/composites")
-@limiter.limit("30/minute")
 async def create_composite(
-    request: Request,
     payload: CompositeCreateRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -86,11 +82,10 @@ async def create_composite(
 
 
 @router.get("/composites", response_model=PaginatedResponse[CompositeResponse])
-@limiter.limit("60/minute")
 async def list_composites(
-    request: Request,
     db: AsyncSession = Depends(get_db),
-    pagination: PaginationParams = Depends(),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
 ):
     """List generated composites."""
     logger.debug("Listing composites")
@@ -98,8 +93,8 @@ async def list_composites(
     result = await db.execute(
         select(Composite)
         .order_by(Composite.created_at.desc())
-        .offset(pagination.offset)
-        .limit(pagination.limit)
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
     composites = result.scalars().all()
     items = [
@@ -119,12 +114,11 @@ async def list_composites(
         )
         for c in composites
     ]
-    return PaginatedResponse(items=items, total=total, page=pagination.page, limit=pagination.limit)
+    return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
 @router.get("/composites/{composite_id}")
-@limiter.limit("60/minute")
-async def get_composite(request: Request, composite_id: str, db: AsyncSession = Depends(get_db)):
+async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Get composite detail."""
     logger.debug("Composite requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")
@@ -149,8 +143,7 @@ async def get_composite(request: Request, composite_id: str, db: AsyncSession = 
 
 # Bug #11: Dedicated composite image endpoint
 @router.get("/composites/{composite_id}/image")
-@limiter.limit("60/minute")
-async def get_composite_image(request: Request, composite_id: str, db: AsyncSession = Depends(get_db)):
+async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_db)):
     """Serve the composite image file."""
     logger.debug("Composite image requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")

@@ -13,6 +13,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from .config import settings as app_settings
 from .db.database import init_db
@@ -38,17 +39,13 @@ from .routers import (
     goes_collections,
     goes_fetch,
     goes_frames,
-    goes_frames_bulk,
     goes_tags,
     health,
     images,
     jobs,
-    jobs_logs,
     notifications,
     presets,
     scheduling,
-    scheduling_cleanup,
-    scheduling_presets,
     share,
     stats,
     system,
@@ -60,6 +57,19 @@ logger = logging.getLogger(__name__)
 ws_logger = logging.getLogger("websocket")
 
 
+class GoesToSatelliteRewriteMiddleware:
+    """Backward-compat ASGI middleware: rewrite /api/goes/* → /api/satellite/* transparently."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket"):
+            path: str = scope.get("path", "")
+            if path.startswith("/api/goes/") or path == "/api/goes":
+                scope = dict(scope)
+                scope["path"] = "/api/satellite" + path[len("/api/goes"):]
+        await self.app(scope, receive, send)
 
 # Paths that skip API key auth
 AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
@@ -90,11 +100,6 @@ async def _stale_job_checker():
 async def lifespan(app: FastAPI):
     """Startup/shutdown events"""
     setup_logging(debug=app_settings.debug)
-
-    # Initialize OpenTelemetry tracing (opt-in via OTEL_EXPORTER_OTLP_ENDPOINT)
-    from .tracing import setup_tracing
-    setup_tracing(app)
-
     await init_db()
 
     if not app_settings.api_key:
@@ -130,7 +135,7 @@ async def lifespan(app: FastAPI):
 
         from .db.database import async_session as _seed_session
         from .db.models import FetchPreset as _FP
-        from .routers.scheduling_presets import DEFAULT_FETCH_PRESETS
+        from .routers.scheduling import DEFAULT_FETCH_PRESETS
 
         async with _seed_session() as _db:
             for _pdef in DEFAULT_FETCH_PRESETS:
@@ -219,10 +224,11 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
     max_age=600,
 )
+# Backward-compat: /api/goes/* → /api/satellite/* (innermost — runs before routing)
+app.add_middleware(GoesToSatelliteRewriteMiddleware)
 
 # Register routers
 app.include_router(jobs.router)
-app.include_router(jobs_logs.router)
 app.include_router(images.router)
 app.include_router(presets.router)
 app.include_router(system.router)
@@ -231,16 +237,13 @@ app.include_router(goes_catalog.router)
 app.include_router(goes_fetch.router)
 app.include_router(goes_browse.router)
 app.include_router(animations.router)
-app.include_router(goes_frames_bulk.router)
 app.include_router(goes_frames.router)
 app.include_router(goes_collections.router)
 app.include_router(goes_tags.router)
 app.include_router(health.router)
 app.include_router(stats.router)
 app.include_router(download.router)
-app.include_router(scheduling_presets.router)
 app.include_router(scheduling.router)
-app.include_router(scheduling_cleanup.router)
 app.include_router(notifications.router)
 app.include_router(share.router)
 app.include_router(file_download.router)
@@ -294,16 +297,10 @@ async def metrics_endpoint():
 # ── OpenAPI JSON fix (#2) ─────────────────────────────────────────
 
 
-_openapi_cache: dict | None = None
-
-
 @app.get("/openapi.json", include_in_schema=False)
 async def openapi_json():
-    """Return cached OpenAPI JSON (fixes broken /openapi.json response)."""
-    global _openapi_cache  # noqa: PLW0603
-    if _openapi_cache is None:
-        _openapi_cache = app.openapi()
-    return JSONResponse(content=_openapi_cache)
+    """Return raw OpenAPI JSON (fixes broken /openapi.json response)."""
+    return JSONResponse(content=app.openapi())
 
 
 # ── WebSocket ─────────────────────────────────────────────────────

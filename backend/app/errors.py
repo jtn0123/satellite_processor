@@ -36,15 +36,6 @@ def validate_uuid(value: str, name: str = "id") -> str:
     return value
 
 
-def _is_within(path: Path, base: Path) -> bool:
-    """Check if resolved path is within base directory using pathlib."""
-    try:
-        path.relative_to(base)
-        return True
-    except ValueError:
-        return False
-
-
 def validate_safe_path(file_path: str, allowed_root: str) -> Path:
     """Validate that a file path doesn't escape the allowed root directory.
 
@@ -54,6 +45,6 @@ def validate_safe_path(file_path: str, allowed_root: str) -> Path:
     """
     root = Path(allowed_root).resolve()
     resolved = Path(file_path).resolve()
-    if not _is_within(resolved, root):
+    if not str(resolved).startswith(str(root)):
         raise APIError(403, "forbidden", "Path traversal detected")
     return resolved

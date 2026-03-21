@@ -13,10 +13,6 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 # 10 MB default request body limit
 MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024
 
-
-class _BodyTooLargeError(Exception):
-    """Internal signal: streaming request body exceeded size limit."""
-
 # Security headers applied to every response
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -72,7 +68,7 @@ class RequestBodyLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Check content-length header (fast path)
+        # Check content-length header
         headers = {
             k.decode("latin-1"): v.decode("latin-1")
             for k, v in scope.get("headers", [])
@@ -86,24 +82,4 @@ class RequestBodyLimitMiddleware:
             await response(scope, receive, send)
             return
 
-        # Wrap receive to count bytes for chunked/streaming requests
-        bytes_received = 0
-
-        async def receive_with_limit() -> Message:
-            nonlocal bytes_received
-            message = await receive()
-            if message.get("type") == "http.request":
-                body = message.get("body", b"")
-                bytes_received += len(body)
-                if bytes_received > MAX_REQUEST_BODY_BYTES:
-                    raise _BodyTooLargeError
-            return message
-
-        try:
-            await self.app(scope, receive_with_limit, send)
-        except _BodyTooLargeError:
-            response = JSONResponse(
-                status_code=413,
-                content={"error": "request_too_large", "detail": "Request body exceeds 10MB limit"},
-            )
-            await response(scope, receive, send)
+        await self.app(scope, receive, send)

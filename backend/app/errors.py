@@ -45,6 +45,8 @@ def validate_safe_path(file_path: str, allowed_root: str) -> Path:
     """
     root = Path(allowed_root).resolve()
     resolved = Path(file_path).resolve()
-    if not str(resolved).startswith(str(root)):
-        raise APIError(403, "forbidden", "Path traversal detected")
+    root_str = str(root)
+    resolved_str = str(resolved)
+    if resolved_str != root_str and not resolved_str.startswith(root_str + "/"):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
     return resolved

@@ -391,23 +391,30 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
 
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    if not os.path.exists(output_path):
+
+    # Inline path-injection guard: resolve and confine to allowed root
+    _allowed_root = str(Path(settings.output_dir).resolve())
+    _resolved_output = str(Path(output_path).resolve())
+    if not _resolved_output.startswith(_allowed_root + os.sep) and _resolved_output != _allowed_root:
+        raise APIError(403, "forbidden", "Path outside allowed directory")
+
+    if not os.path.exists(_resolved_output):
         raise APIError(404, "not_found", "Output not found")
 
-    if os.path.isfile(output_path):
-        return FileResponse(output_path, filename=os.path.basename(output_path))
+    if os.path.isfile(_resolved_output):
+        return FileResponse(_resolved_output, filename=os.path.basename(_resolved_output))
 
-    files = sorted(os.listdir(output_path))
+    files = sorted(os.listdir(_resolved_output))
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(output_path, f), filename=f)
+                return FileResponse(os.path.join(_resolved_output, f), filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(output_path, first), filename=first)
+    return FileResponse(os.path.join(_resolved_output, first), filename=first)
 
 
 @router.post("/cleanup-stale")

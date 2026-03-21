@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
 
 from ..config import settings
-from ..errors import APIError, validate_safe_path
+from ..errors import APIError
 from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,12 @@ async def download_file(
     # If path is not absolute, resolve it relative to storage root
     if not path.startswith("/"):
         path = str(Path(storage_root) / path)
-    resolved = validate_safe_path(path, storage_root)
+
+    # Inline path-injection guard: resolve and confine to allowed root
+    _allowed_root = str(Path(storage_root).resolve())
+    resolved = Path(path).resolve()
+    if not str(resolved).startswith(_allowed_root + "/") and str(resolved) != _allowed_root:
+        raise APIError(403, "forbidden", "Path outside allowed directory")
 
     if not resolved.exists():
         raise APIError(404, "not_found", "File not found")

@@ -18,7 +18,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: notifications, isError } = useQuery<Notification[]>({
+  const { data: notifications, isError, isLoading } = useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: () => api.get('/notifications').then((r) => {
       return extractArray<Notification>(r.data);
@@ -54,7 +54,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen((v) => !v)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
-        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-label={isError ? 'Notifications, unable to load' : unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         aria-haspopup="true"
         aria-expanded={open}
       >
@@ -83,7 +83,9 @@ export default function NotificationBell() {
           <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
             {isError ? (
               <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
-            ) : (!notifications || notifications.length === 0) ? (
+            ) : isLoading ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">Loading…</div>
+            ) : notifications.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
             ) : (
               notifications.slice(0, 10).map((n) => (

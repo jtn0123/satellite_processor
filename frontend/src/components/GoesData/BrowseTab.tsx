@@ -188,7 +188,7 @@ export default function BrowseTab() {
 
         {deleteTargetIds && (
           <ConfirmDialog
-            title={`Delete ${deleteTargetIds.length === 1 ? '1 frame' : `${deleteTargetIds.length} frames`}?`}
+            title={deleteTargetIds.length === 1 ? 'Delete 1 frame?' : `Delete ${deleteTargetIds.length} frames?`}
             message="This action cannot be undone."
             confirmLabel="Delete"
             isPending={data.deleteMutation.isPending}

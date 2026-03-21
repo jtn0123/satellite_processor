@@ -57,6 +57,10 @@ def _find_output_file(output_path: str, allowed_root: str) -> tuple[str, str]:
 
     Returns (file_path, filename) or raises APIError.
     """
+    # Validate output_path is within allowed root (redundant with caller, needed for CodeQL taint tracking)
+    output_path = str(Path(output_path).resolve())
+    if not output_path.startswith(str(Path(allowed_root).resolve())):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
     files = sorted(os.listdir(output_path))
     if not files:
         raise APIError(404, "not_found", "No output files found")

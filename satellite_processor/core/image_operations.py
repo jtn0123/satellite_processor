@@ -424,6 +424,18 @@ class ImageOperations:
         return result
 
     @staticmethod
+    def _read_image(image_path: str) -> np.ndarray | None:
+        """Read an image and ensure BGR format."""
+        img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        if img is None:
+            logger.error(f"Failed to read image: {image_path}")
+            return None
+        if len(img.shape) != 3 or img.shape[2] != 3:
+            logger.debug(f"Converting image format for {image_path}")
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        return img
+
+    @staticmethod
     def process_image_subprocess(
         image_path: str, options: dict
     ) -> np.ndarray | None:
@@ -443,15 +455,9 @@ class ImageOperations:
                 f"{multiprocessing.current_process().name}"
             )
 
-            # 1. Read image
-            img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+            img = ImageOperations._read_image(image_path)
             if img is None:
-                logger.error(f"Failed to read image: {image_path}")
                 return None
-
-            if len(img.shape) != 3 or img.shape[2] != 3:
-                logger.debug(f"Converting image format for {image_path}")
-                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
             # 2. Crop
             if options.get("crop_enabled"):

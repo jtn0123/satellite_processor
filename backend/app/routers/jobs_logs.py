@@ -52,6 +52,29 @@ async def get_job_logs(
     ]
 
 
+def _find_output_file(output_path: str, allowed_root: str) -> tuple[str, str]:
+    """Find the best output file in a directory, preferring video/archive formats.
+
+    Returns (file_path, filename) or raises APIError.
+    """
+    files = sorted(os.listdir(output_path))
+    if not files:
+        raise APIError(404, "not_found", "No output files found")
+
+    for ext in [".mp4", ".avi", ".mkv", ".zip"]:
+        for f in files:
+            if f.endswith(ext):
+                file_path = str(Path(output_path, f).resolve())
+                if file_path.startswith(allowed_root):
+                    return file_path, f
+
+    first = files[0]
+    first_path = str(Path(output_path, first).resolve())
+    if not first_path.startswith(allowed_root):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
+    return first_path, first
+
+
 @router.get("/{job_id}/output")
 async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     """Download job output"""
@@ -63,36 +86,18 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.status != "completed":
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
-    # #52: Use stored output_path from job record, sanitize against path traversal
     raw_path = job.output_path or str(Path(settings.output_dir) / job_id)
     allowed_root = str(Path(settings.output_dir).resolve())
     output_path = str(Path(raw_path).resolve())
     if not output_path.startswith(allowed_root):
         raise APIError(403, "forbidden", "Path outside allowed directory")
-
     if not os.path.exists(output_path):
         raise APIError(404, "not_found", "Output not found")
-
     if os.path.isfile(output_path):
         return FileResponse(output_path, filename=os.path.basename(output_path))
 
-    files = sorted(os.listdir(output_path))
-    if not files:
-        raise APIError(404, "not_found", "No output files found")
-
-    for ext in [".mp4", ".avi", ".mkv", ".zip"]:
-        for f in files:
-            if f.endswith(ext):
-                file_path = str(Path(output_path, f).resolve())
-                if not file_path.startswith(allowed_root):
-                    continue
-                return FileResponse(file_path, filename=f)
-
-    first = files[0]
-    first_path = str(Path(output_path, first).resolve())
-    if not first_path.startswith(allowed_root):
-        raise APIError(403, "forbidden", "Path outside allowed directory")
-    return FileResponse(first_path, filename=first)
+    file_path, filename = _find_output_file(output_path, allowed_root)
+    return FileResponse(file_path, filename=filename)
 
 
 @router.post("/cleanup-stale")

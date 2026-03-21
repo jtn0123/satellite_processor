@@ -28,6 +28,7 @@ from ..models.scheduling import (
     CleanupRunResponse,
 )
 from ..rate_limit import limiter
+from ..services.cache import invalidate
 from ..utils import utcnow
 
 logger = logging.getLogger(__name__)
@@ -198,6 +199,7 @@ async def run_cleanup_now(request: Request, db: AsyncSession = Depends(get_db)):
         except OSError:
             logger.warning("Failed to remove file during cleanup: %s", path)
 
+    await invalidate("cache:dashboard-stats*")
     return CleanupRunResponse(deleted_frames=len(frames_to_delete), freed_bytes=freed)
 
 

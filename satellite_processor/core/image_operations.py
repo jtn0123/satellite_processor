@@ -399,6 +399,31 @@ class ImageOperations:
         return img
 
     @staticmethod
+    def _apply_false_color(img: np.ndarray, image_path: str, options: dict) -> np.ndarray | None:
+        """Apply Sanchez false color, preserving prior edits via a temp file."""
+        import tempfile as _tempfile
+
+        logger.debug("Applying false color with Sanchez")
+        temp_dir = options.get("temp_dir") or _tempfile.gettempdir()
+        Path(temp_dir).mkdir(parents=True, exist_ok=True)
+        temp_fc_path = str(Path(temp_dir) / f"fc_input_{Path(image_path).stem}.png")
+        cv2.imwrite(temp_fc_path, img)
+        result = ImageOperations.apply_false_color_and_read(
+            temp_fc_path,
+            str(temp_dir),
+            str(options.get("sanchez_path")),
+            str(options.get("underlay_path")),
+        )
+        try:
+            os.remove(temp_fc_path)
+        except OSError:
+            pass
+        if result is None:
+            logger.error("False color application failed")
+            return None
+        return result
+
+    @staticmethod
     def process_image_subprocess(
         image_path: str, options: dict
     ) -> np.ndarray | None:
@@ -445,27 +470,11 @@ class ImageOperations:
             if options.get("add_timestamp", False):
                 img = ImageOperations.add_timestamp(img, Path(image_path))
 
-            # 4. False color (uses apply_false_color_and_read for correctness)
+            # 4. False color
             if options.get("false_color_enabled"):
-                logger.debug("Applying false color with Sanchez")
-                # Write current img (with crop/timestamp edits) to a temp file
-                # so Sanchez processes the edited version, not the original.
-                temp_fc_path = str(Path(options.get("temp_dir")) / f"fc_input_{Path(image_path).stem}.png")
-                cv2.imwrite(temp_fc_path, img)
-                result = ImageOperations.apply_false_color_and_read(
-                    temp_fc_path,
-                    str(Path(options.get("temp_dir"))),
-                    str(options.get("sanchez_path")),
-                    str(options.get("underlay_path")),
-                )
-                try:
-                    os.remove(temp_fc_path)
-                except OSError:
-                    pass
-                if result is None:
-                    logger.error("False color application failed")
+                img = ImageOperations._apply_false_color(img, image_path, options)
+                if img is None:
                     return None
-                img = result
 
             # 5. Interpolation (resize)
             if options.get("interpolation_enabled"):

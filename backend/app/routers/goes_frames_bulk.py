@@ -54,19 +54,31 @@ async def bulk_delete_frames(
     )
     frames = result.scalars().all()
 
+    # 1. Validate and collect safe file paths
+    from pathlib import Path
+
+    allowed_root = str(Path(settings.storage_path).resolve())
+    safe_paths: list[str] = []
     for frame in frames:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
-                    await asyncio.to_thread(os.remove, path)
-                except OSError:
-                    pass
+                resolved = str(Path(path).resolve())
+                if resolved.startswith(allowed_root):
+                    safe_paths.append(resolved)
 
-    # Bug #17: Delete FK references before deleting frames
+    # 2. Delete DB records first (atomically)
     await db.execute(delete(CollectionFrame).where(CollectionFrame.frame_id.in_(payload.ids)))
     await db.execute(delete(FrameTag).where(FrameTag.frame_id.in_(payload.ids)))
     await db.execute(delete(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
     await db.commit()
+
+    # 3. Delete files after commit, logging failures
+    for path in safe_paths:
+        try:
+            await asyncio.to_thread(os.remove, path)
+        except OSError:
+            logger.warning("Failed to remove file during bulk delete: %s", path)
+
     await invalidate("cache:dashboard-stats*")
     return {"deleted": len(frames)}
 

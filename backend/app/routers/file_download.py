@@ -36,10 +36,12 @@ async def download_file(
     if not path.startswith("/"):
         path = str(Path(storage_root) / path)
 
-    # Inline path-injection guard: resolve and confine to allowed root
-    _allowed_root = str(Path(storage_root).resolve())
+    # Path-injection guard: resolve and confine to allowed root
+    _allowed_root = Path(storage_root).resolve()
     resolved = Path(path).resolve()
-    if not str(resolved).startswith(_allowed_root + "/") and str(resolved) != _allowed_root:
+    try:
+        resolved.relative_to(_allowed_root)
+    except ValueError:
         raise APIError(403, "forbidden", "Path outside allowed directory")
 
     if not resolved.exists():

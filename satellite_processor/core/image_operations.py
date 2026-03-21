@@ -392,7 +392,7 @@ class ImageOperations:
             if method in interp_map:
                 img = cv2.resize(img, None, fx=factor, fy=factor, interpolation=interp_map[method])
             elif method in ["RIFE", "DAIN"]:
-                logger.debug(f"Using AI interpolation: {method}")
+                logger.warning(f"AI interpolation method '{method}' is not implemented")
         except Exception as e:
             logger.error(f"Interpolation failed: {e}", exc_info=True)
             return None
@@ -404,20 +404,19 @@ class ImageOperations:
         import tempfile as _tempfile
 
         logger.debug("Applying false color with Sanchez")
-        temp_dir = options.get("temp_dir") or _tempfile.gettempdir()
-        Path(temp_dir).mkdir(parents=True, exist_ok=True)
-        temp_fc_path = str(Path(temp_dir) / f"fc_input_{Path(image_path).stem}.png")
+        base_dir = options.get("temp_dir") or _tempfile.gettempdir()
+        Path(base_dir).mkdir(parents=True, exist_ok=True)
+        # Use a unique per-invocation workspace to avoid collisions across concurrent jobs
+        unique_dir = _tempfile.mkdtemp(dir=base_dir, prefix="fc_")
+        temp_fc_path = str(Path(unique_dir) / f"fc_input_{Path(image_path).stem}.png")
         cv2.imwrite(temp_fc_path, img)
         result = ImageOperations.apply_false_color_and_read(
             temp_fc_path,
-            str(temp_dir),
+            unique_dir,
             str(options.get("sanchez_path")),
             str(options.get("underlay_path")),
         )
-        try:
-            os.remove(temp_fc_path)
-        except OSError:
-            pass
+        shutil.rmtree(unique_dir, ignore_errors=True)
         if result is None:
             logger.error("False color application failed")
             return None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
@@ -195,7 +196,7 @@ async def run_cleanup_now(request: Request, db: AsyncSession = Depends(get_db)):
     # 3. Delete files after commit, logging failures without raising
     for path in safe_paths:
         try:
-            os.remove(path)
+            await asyncio.to_thread(os.remove, path)
         except OSError:
             logger.warning("Failed to remove file during cleanup: %s", path)
 

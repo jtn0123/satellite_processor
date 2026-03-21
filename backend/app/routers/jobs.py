@@ -386,35 +386,38 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", _JOB_NOT_FOUND)
-    if job.status != "completed":
+    if job.status not in ("completed", "completed_partial"):
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
 
-    # Inline path-injection guard: resolve and confine to allowed root
-    _allowed_root = str(Path(settings.output_dir).resolve())
-    _resolved_output = str(Path(output_path).resolve())
-    if not _resolved_output.startswith(_allowed_root + os.sep) and _resolved_output != _allowed_root:
+    # Path-injection guard: resolve and confine to allowed root
+    _allowed_root = Path(settings.output_dir).resolve()
+    _resolved_output = Path(output_path).resolve()
+    try:
+        _resolved_output.relative_to(_allowed_root)
+    except ValueError:
         raise APIError(403, "forbidden", "Path outside allowed directory")
 
-    if not os.path.exists(_resolved_output):
+    _resolved_str = str(_resolved_output)
+    if not os.path.exists(_resolved_str):
         raise APIError(404, "not_found", "Output not found")
 
-    if os.path.isfile(_resolved_output):
-        return FileResponse(_resolved_output, filename=os.path.basename(_resolved_output))
+    if os.path.isfile(_resolved_str):
+        return FileResponse(_resolved_str, filename=os.path.basename(_resolved_str))
 
-    files = sorted(os.listdir(_resolved_output))
+    files = [f for f in sorted(os.listdir(_resolved_str)) if os.path.isfile(os.path.join(_resolved_str, f))]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(_resolved_output, f), filename=f)
+                return FileResponse(os.path.join(_resolved_str, f), filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(_resolved_output, first), filename=first)
+    return FileResponse(os.path.join(_resolved_str, first), filename=first)
 
 
 @router.post("/cleanup-stale")

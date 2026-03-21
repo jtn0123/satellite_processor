@@ -144,7 +144,14 @@ async def process_frames(
 
     from ..tasks.processing import process_images_task
 
-    process_images_task.delay(job_id, job.params)
+    try:
+        process_images_task.delay(job_id, job.params)
+    except Exception:
+        logger.error("Failed to enqueue processing task for job %s", job_id, exc_info=True)
+        job.status = "error"
+        job.error = "Failed to enqueue task to broker"
+        await db.commit()
+        raise APIError(503, "broker_unavailable", "Task broker is unavailable")
     return {"job_id": job_id, "status": "pending", "frame_count": len(paths)}
 
 

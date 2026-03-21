@@ -63,11 +63,14 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
     """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
 
-    # Inline path-injection guard: resolve and confine to allowed root
-    _allowed_root = str(Path(settings.storage_path).resolve())
-    _resolved = str(Path(output_path).resolve())
-    if not _resolved.startswith(_allowed_root + os.sep) and _resolved != _allowed_root:
+    # Path-injection guard: resolve and confine to allowed root
+    _allowed_root = Path(settings.storage_path).resolve()
+    _resolved_path = Path(output_path).resolve()
+    try:
+        _resolved_path.relative_to(_allowed_root)
+    except ValueError:
         return []
+    _resolved = str(_resolved_path)
 
     if not os.path.exists(_resolved):
         return []
@@ -92,15 +95,18 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", "Job not found")
-    if job.status != "completed":
+    if job.status not in ("completed", "completed_partial"):
         raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    # Inline path-injection guard: resolve and confine to allowed root
-    _allowed_root = str(Path(settings.storage_path).resolve())
-    _resolved_output = str(Path(output_path).resolve())
-    if not _resolved_output.startswith(_allowed_root + os.sep) and _resolved_output != _allowed_root:
+    # Path-injection guard: resolve and confine to allowed root
+    _allowed_root = Path(settings.storage_path).resolve()
+    _resolved_path = Path(output_path).resolve()
+    try:
+        _resolved_path.relative_to(_allowed_root)
+    except ValueError:
         raise APIError(403, "forbidden", "Path outside allowed directory")
+    _resolved_output = str(_resolved_path)
 
     if not os.path.exists(_resolved_output):
         raise APIError(404, "not_found", "Output not found on disk")

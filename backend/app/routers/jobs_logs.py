@@ -22,6 +22,7 @@ from ..rate_limit import limiter
 logger = logging.getLogger(__name__)
 
 _JOB_NOT_FOUND = "Job not found"
+_PATH_OUTSIDE_ALLOWED = "Path outside allowed directory"
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -52,31 +53,42 @@ async def get_job_logs(
     ]
 
 
-def _find_output_file(output_path: str, allowed_root: str) -> tuple[str, str]:
+def _find_output_file(output_path: str, allowed_root: Path) -> tuple[str, str]:
     """Find the best output file in a directory, preferring video/archive formats.
 
     Returns (file_path, filename) or raises APIError.
     """
-    # Validate output_path is within allowed root (redundant with caller, needed for CodeQL taint tracking)
-    output_path = str(Path(output_path).resolve())
-    if not output_path.startswith(str(Path(allowed_root).resolve())):
-        raise APIError(403, "forbidden", "Path outside allowed directory")
-    files = sorted(os.listdir(output_path))
+    # Path-injection guard: resolve and confine to allowed root
+    resolved_output = Path(output_path).resolve()
+    try:
+        resolved_output.relative_to(allowed_root)
+    except ValueError:
+        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
+
+    resolved_str = str(resolved_output)
+    entries = sorted(os.listdir(resolved_str))
+    # Filter to actual files only — directories would break FileResponse
+    files = [f for f in entries if os.path.isfile(os.path.join(resolved_str, f))]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                file_path = str(Path(output_path, f).resolve())
-                if file_path.startswith(allowed_root):
-                    return file_path, f
+                file_path = Path(resolved_str, f).resolve()
+                try:
+                    file_path.relative_to(allowed_root)
+                except ValueError:
+                    continue
+                return str(file_path), f
 
     first = files[0]
-    first_path = str(Path(output_path, first).resolve())
-    if not first_path.startswith(allowed_root):
-        raise APIError(403, "forbidden", "Path outside allowed directory")
-    return first_path, first
+    first_path = Path(resolved_str, first).resolve()
+    try:
+        first_path.relative_to(allowed_root)
+    except ValueError:
+        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
+    return str(first_path), first
 
 
 @router.get("/{job_id}/output")
@@ -87,20 +99,24 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", _JOB_NOT_FOUND)
-    if job.status != "completed":
+    if job.status not in ("completed", "completed_partial"):
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     raw_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    allowed_root = str(Path(settings.output_dir).resolve())
-    output_path = str(Path(raw_path).resolve())
-    if not output_path.startswith(allowed_root):
-        raise APIError(403, "forbidden", "Path outside allowed directory")
-    if not os.path.exists(output_path):
-        raise APIError(404, "not_found", "Output not found")
-    if os.path.isfile(output_path):
-        return FileResponse(output_path, filename=os.path.basename(output_path))
+    allowed_root = Path(settings.output_dir).resolve()
+    output_path = Path(raw_path).resolve()
+    try:
+        output_path.relative_to(allowed_root)
+    except ValueError:
+        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
 
-    file_path, filename = _find_output_file(output_path, allowed_root)
+    output_str = str(output_path)
+    if not os.path.exists(output_str):
+        raise APIError(404, "not_found", "Output not found")
+    if os.path.isfile(output_str):
+        return FileResponse(output_str, filename=os.path.basename(output_str))
+
+    file_path, filename = _find_output_file(output_str, allowed_root)
     return FileResponse(file_path, filename=filename)
 
 

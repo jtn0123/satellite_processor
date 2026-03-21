@@ -191,10 +191,12 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
-    # Inline path-injection guard: resolve and confine to storage root
-    _allowed_root = str(Path(app_settings.storage_path).resolve())
+    # Path-injection guard: resolve and confine to storage root
+    _allowed_root = Path(app_settings.storage_path).resolve()
     fp = Path(image.file_path).resolve()
-    if not str(fp).startswith(_allowed_root + os.sep) and str(fp) != _allowed_root:
+    try:
+        fp.relative_to(_allowed_root)
+    except ValueError:
         raise APIError(403, "forbidden", "Path outside allowed directory")
 
     if not fp.exists():
@@ -232,11 +234,13 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
-    # Inline path-injection guard: resolve and confine to storage root
+    # Path-injection guard: resolve and confine to storage root
     from ..config import settings as app_settings_full
-    _allowed_root_full = str(Path(app_settings_full.storage_path).resolve())
+    _allowed_root_full = Path(app_settings_full.storage_path).resolve()
     fp = Path(image.file_path).resolve()
-    if not str(fp).startswith(_allowed_root_full + os.sep) and str(fp) != _allowed_root_full:
+    try:
+        fp.relative_to(_allowed_root_full)
+    except ValueError:
         raise APIError(403, "forbidden", "Path outside allowed directory")
 
     if not fp.exists():

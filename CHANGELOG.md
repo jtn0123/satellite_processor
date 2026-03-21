@@ -1,3 +1,10 @@
+## [1.40.1](https://github.com/jtn0123/satellite_processor/compare/v1.40.0...v1.40.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* live tab zoom polish and dev environment fixes ([#345](https://github.com/jtn0123/satellite_processor/issues/345)) ([2edb49c](https://github.com/jtn0123/satellite_processor/commit/2edb49c66030ff79d0036cb8877d2c796a84b2a3))
+
 # [1.40.0](https://github.com/jtn0123/satellite_processor/compare/v1.39.0...v1.40.0) (2026-03-07)
 
 

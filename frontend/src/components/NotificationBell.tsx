@@ -49,12 +49,18 @@ export default function NotificationBell() {
     }
   }, [open, handleClickOutside]);
 
+  const buttonLabel = isError
+    ? 'Notifications, unable to load'
+    : unreadCount > 0
+      ? `Notifications, ${unreadCount} unread`
+      : 'Notifications';
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
-        aria-label={isError ? 'Notifications, unable to load' : unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-label={buttonLabel}
         aria-haspopup="true"
         aria-expanded={open}
       >
@@ -85,7 +91,7 @@ export default function NotificationBell() {
               <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
             ) : isLoading ? (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">Loading…</div>
-            ) : notifications.length === 0 ? (
+            ) : !notifications || notifications.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
             ) : (
               notifications.slice(0, 10).map((n) => (

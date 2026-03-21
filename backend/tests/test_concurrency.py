@@ -8,7 +8,6 @@ read tests use asyncio.gather for true parallelism.
 import asyncio
 from unittest.mock import MagicMock, patch
 
-import pytest
 import pytest_asyncio
 from app.db.database import Base, get_db
 from app.db.models import GoesFrame, Job, gen_uuid

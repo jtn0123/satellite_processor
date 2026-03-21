@@ -31,7 +31,7 @@ async def share_setup(db):
     await db.flush()
 
     link = ShareLink(
-        token="valid-token",
+        token="valid-token",  # noqa: S106
         frame_id="test-frame-1",
         expires_at=utcnow() + timedelta(hours=72),
     )

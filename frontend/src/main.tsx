@@ -28,4 +28,5 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // ── Web Vitals (async, non-blocking) ────────────────────────────────
-import('./utils/webVitals').then(({ reportWebVitals }) => reportWebVitals());
+const { reportWebVitals } = await import('./utils/webVitals');
+reportWebVitals();

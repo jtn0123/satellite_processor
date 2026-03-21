@@ -47,5 +47,5 @@ def downgrade():
     for name, _table, _columns in _INDEXES:
         try:
             op.drop_index(name)
-        except Exception:
+        except (sa.exc.OperationalError, sa.exc.ProgrammingError):
             pass

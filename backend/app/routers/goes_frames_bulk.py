@@ -12,7 +12,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -29,8 +29,8 @@ from ..models.goes_data import (
     BulkTagRequest,
     ProcessFramesRequest,
 )
-from ..services.cache import invalidate
 from ..rate_limit import limiter
+from ..services.cache import invalidate
 
 logger = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ Revision ID: e17_data_integrity
 Revises: d05abc123456
 Create Date: 2026-02-13 12:00:00.000000
 """
+import sqlalchemy as sa
 from alembic import op
 
 revision = "e17_data_integrity"
@@ -80,5 +81,5 @@ def downgrade() -> None:
         if _table_exists(conn, table):
             try:
                 op.drop_constraint(name, table)
-            except Exception:
+            except (sa.exc.OperationalError, sa.exc.ProgrammingError):
                 pass

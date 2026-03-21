@@ -16,7 +16,7 @@ export default function QueryErrorBox({
   onRetry,
   icon: Icon = AlertTriangle,
   compact = false,
-}: QueryErrorBoxProps) {
+}: Readonly<QueryErrorBoxProps>) {
   if (compact) {
     return (
       <div className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400">

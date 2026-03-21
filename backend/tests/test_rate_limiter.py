@@ -92,6 +92,7 @@ class TestRateLimitBehavior:
     def client(self):
         """Async HTTP client for testing."""
         import asyncio
+
         from app.db.database import Base, get_db
         from app.main import app
         from httpx import ASGITransport, AsyncClient

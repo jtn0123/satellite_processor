@@ -379,6 +379,23 @@ class ImageOperations:
             pass
 
     @staticmethod
+    def _apply_interpolation(img: np.ndarray, options: dict) -> np.ndarray | None:
+        """Apply interpolation/resize to an image."""
+        method = options.get("interpolation_method", "Linear")
+        factor = options.get("interpolation_factor", 2)
+        interp_map = {"Linear": cv2.INTER_LINEAR, "Cubic": cv2.INTER_CUBIC}
+        logger.debug(f"Applying interpolation: {method}")
+        try:
+            if method in interp_map:
+                img = cv2.resize(img, None, fx=factor, fy=factor, interpolation=interp_map[method])
+            elif method in ["RIFE", "DAIN"]:
+                logger.debug(f"Using AI interpolation: {method}")
+        except Exception as e:
+            logger.error(f"Interpolation failed: {e}", exc_info=True)
+            return None
+        return img
+
+    @staticmethod
     def process_image_subprocess(
         image_path: str, options: dict
     ) -> np.ndarray | None:
@@ -438,30 +455,8 @@ class ImageOperations:
 
             # 5. Interpolation (resize)
             if options.get("interpolation_enabled"):
-                method = options.get("interpolation_method", "Linear")
-                factor = options.get("interpolation_factor", 2)
-                logger.debug(f"Applying interpolation: {method}")
-                try:
-                    if method == "Linear":
-                        img = cv2.resize(
-                            img,
-                            None,
-                            fx=factor,
-                            fy=factor,
-                            interpolation=cv2.INTER_LINEAR,
-                        )
-                    elif method == "Cubic":
-                        img = cv2.resize(
-                            img,
-                            None,
-                            fx=factor,
-                            fy=factor,
-                            interpolation=cv2.INTER_CUBIC,
-                        )
-                    elif method in ["RIFE", "DAIN"]:
-                        logger.debug(f"Using AI interpolation: {method}")
-                except Exception as e:
-                    logger.error(f"Interpolation failed: {e}", exc_info=True)
+                img = ImageOperations._apply_interpolation(img, options)
+                if img is None:
                     return None
 
             # 6. Validate output

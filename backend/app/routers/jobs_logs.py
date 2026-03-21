@@ -17,7 +17,7 @@ from ..db.models import (
     JobLog,
 )
 from ..errors import APIError, validate_uuid
-from ..models.job import JobResponse
+from ..utils.path_validation import validate_file_path
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,7 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
 
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
+    validate_file_path(output_path)
     if not os.path.exists(output_path):
         raise APIError(404, "not_found", "Output not found")
 
@@ -78,10 +79,14 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(output_path, f), filename=f)
+                file_path = os.path.join(output_path, f)
+                validate_file_path(file_path)
+                return FileResponse(file_path, filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(output_path, first), filename=first)
+    first_path = os.path.join(output_path, first)
+    validate_file_path(first_path)
+    return FileResponse(first_path, filename=first)
 
 
 @router.post("/cleanup-stale")

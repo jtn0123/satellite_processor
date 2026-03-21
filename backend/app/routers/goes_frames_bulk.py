@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import json as json_mod
@@ -57,7 +58,7 @@ async def bulk_delete_frames(
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
                 try:
-                    os.remove(path)
+                    await asyncio.to_thread(os.remove, path)
                 except OSError:
                     pass
 
@@ -77,7 +78,11 @@ async def bulk_tag_frames(
     payload: BulkTagRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
+    """Bulk tag frames using ON CONFLICT DO NOTHING for performance.
+
+    Returns the number of requested frame_ids (may include already-tagged
+    frames due to on_conflict_do_nothing).
+    """
     logger.info("Bulk tagging frames")
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -144,18 +149,20 @@ def _frames_to_csv(frames: list[GoesFrame]) -> str:
     return output.getvalue()
 
 
-def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
-    return [
-        {
-            "id": f.id,
-            "satellite": f.satellite,
-            "sector": f.sector,
-            "band": f.band,
-            "capture_time": f.capture_time.isoformat() if f.capture_time else None,
-            "file_size": f.file_size,
-        }
-        for f in frames
-    ]
+async def _stream_frames_json(frames):
+    yield "["
+    for i, frame in enumerate(frames):
+        if i > 0:
+            yield ","
+        yield json_mod.dumps({
+            "id": frame.id,
+            "satellite": frame.satellite,
+            "sector": frame.sector,
+            "band": frame.band,
+            "capture_time": frame.capture_time.isoformat() if frame.capture_time else None,
+            "file_size": frame.file_size,
+        })
+    yield "]"
 
 
 # Bug #2: /frames/export MUST be registered before /frames/{frame_id}
@@ -194,13 +201,8 @@ async def export_frames(
             headers={"Content-Disposition": "attachment; filename=goes_frames.csv"},
         )
 
-    items = _frames_to_json_list(frames)
-
-    async def _stream_json():
-        yield json_mod.dumps(items)
-
     return StreamingResponse(
-        _stream_json(),
+        _stream_frames_json(frames),
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=goes_frames.json"},
     )

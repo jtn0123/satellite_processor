@@ -57,6 +57,7 @@ logger = logging.getLogger(__name__)
 # --- Constants ---
 MAX_RETRY_COUNT = 3
 PROCESS_POLL_INTERVAL_SECONDS = 0.1
+FFMPEG_TIMEOUT_SECONDS = 3600
 PROCESS_TERMINATE_TIMEOUT_SECONDS = 5
 MIN_FPS = 1
 MAX_FPS = 60
@@ -242,13 +243,13 @@ class VideoHandler:
             self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
 
             try:
-                subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=str(input_dir), timeout=3600)
+                subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=str(input_dir), timeout=FFMPEG_TIMEOUT_SECONDS)
                 self.logger.info(f"Successfully created video at {output_path}")
                 return True
             except subprocess.CalledProcessError as e:
                 return self._handle_ffmpeg_error(e, input_dir, output_path, options, _retry_count)
             except subprocess.TimeoutExpired:
-                self.logger.error("FFmpeg timed out after 3600s for %s", output_path)
+                self.logger.error("FFmpeg timed out after %ds for %s", FFMPEG_TIMEOUT_SECONDS, output_path)
                 return False
 
         except Exception as e:

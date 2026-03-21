@@ -24,6 +24,7 @@ export default function QueryErrorBox({
         <span>{message}</span>
         {onRetry && (
           <button
+            type="button"
             onClick={onRetry}
             className="ml-1 underline hover:no-underline"
           >
@@ -40,6 +41,7 @@ export default function QueryErrorBox({
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">{message}</p>
       {onRetry && (
         <button
+          type="button"
           onClick={onRetry}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg
                      bg-gray-100 dark:bg-space-700 hover:bg-gray-200 dark:hover:bg-space-600

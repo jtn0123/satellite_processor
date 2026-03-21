@@ -31,6 +31,7 @@ class ResourceMonitor:
     def __init__(self, parent=None):
         self.logger = logging.getLogger(__name__)
         self._stop_event = threading.Event()
+        self._lock = threading.Lock()
         self._interval = DEFAULT_MONITOR_INTERVAL_SECONDS
         self._last_net_io = psutil.net_io_counters()
         self._last_check = time.time()
@@ -47,11 +48,12 @@ class ResourceMonitor:
 
     def start(self):
         """Start monitoring in a background thread"""
-        if not self._stop_event.is_set() and self._thread and self._thread.is_alive():
-            return
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
+        with self._lock:
+            if self._thread is not None and self._thread.is_alive():
+                return
+            self._stop_event.clear()
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
 
     def _run(self):
         """Main monitoring loop"""
@@ -83,9 +85,10 @@ class ResourceMonitor:
 
     def stop(self):
         """Stop monitoring safely"""
-        self._stop_event.set()
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=2)
+        with self._lock:
+            self._stop_event.set()
+            if self._thread and self._thread.is_alive():
+                self._thread.join(timeout=2)
 
     def cleanup(self):
         """Clean up resources"""

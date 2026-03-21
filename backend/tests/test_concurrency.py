@@ -14,9 +14,6 @@ from app.utils import utcnow
 # Uses shared engine, override_get_db, and setup_db from conftest.py
 
 
-    # client and db fixtures are provided by conftest.py
-
-
 class TestConcurrentReads:
     """Test that concurrent read operations don't interfere with each other."""
 
@@ -97,8 +94,8 @@ class TestWriteIntegrity:
         assert resp2.status_code == 404
 
 
-class TestCircuitBreakerConcurrency:
-    """Test async circuit breaker under concurrent access."""
+class TestCircuitBreakerStateTransitions:
+    """Test circuit breaker state transitions (closed, open, half-open)."""
 
     async def test_concurrent_failures_trip_breaker(self):
         """Multiple failures should correctly trip the breaker."""

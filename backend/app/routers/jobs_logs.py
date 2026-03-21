@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,7 @@ from ..db.models import (
     JobLog,
 )
 from ..errors import APIError, validate_uuid
+from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,8 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/cleanup-stale")
-async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def cleanup_stale_jobs(request: Request, db: AsyncSession = Depends(get_db)):
     """Mark stale processing and pending jobs as failed."""
     from ..services.stale_jobs import cleanup_all_stale
 

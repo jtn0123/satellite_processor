@@ -364,12 +364,14 @@ export default function Dashboard() {
       {/* Quick actions */}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <button
+          type="button"
           onClick={() => navigate('/goes')}
           className="flex items-center gap-2 px-5 py-2.5 min-h-11 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >
           <Download className="w-4 h-4" /> Browse & Fetch
         </button>
         <button
+          type="button"
           onClick={() => navigate('/animate')}
           className="flex items-center gap-2 px-5 py-2.5 min-h-11 bg-space-700 hover:bg-space-600 border border-gray-200 dark:border-space-700/50 rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
         >

@@ -3,13 +3,19 @@ target-version = "py311"
 
 [lint]
 select = ["E", "F", "I", "UP", "B", "S"]
-ignore = ["E501", "B008", "B904", "S101", "S104", "S108", "S311", "S603", "S607"]
+ignore = ["E501", "B008", "B904", "S101", "S104", "S108", "S311"]
 
 [lint.per-file-ignores]
 # sys.path manipulation required before importing core modules
 "backend/app/services/processor.py" = ["E402"]
 "backend/app/tasks/processing.py" = ["E402"]
 "backend/app/tasks/goes_tasks.py" = ["E402"]
+"backend/app/tasks/animation_tasks.py" = ["S603"]
+# subprocess args are constructed internally, no user input
+"satellite_processor/core/ffmpeg.py" = ["S603", "S607"]
+"satellite_processor/core/image_operations.py" = ["S603"]
+"satellite_processor/core/interpolation.py" = ["S603"]
+"satellite_processor/core/video_handler.py" = ["S603", "S607"]
 
 [format]
 quote-style = "double"

@@ -694,7 +694,7 @@ class SatelliteImageProcessor:
 
                     cmd_str = " ".join(cmd)
                     logger.debug(f"Running command: {cmd_str}")
-                    subprocess.run(cmd_str, shell=True, check=True)
+                    subprocess.run(cmd_str, shell=True, check=True)  # noqa: S602,S603,S607  # subprocess args are constructed internally, no user input
 
                     img = cv2.imread(output_file)
                     if img is None:

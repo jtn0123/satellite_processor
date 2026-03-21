@@ -9,12 +9,11 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
-
 
 def setup_tracing(app=None) -> None:
     """Initialize OpenTelemetry tracing if an OTLP endpoint is configured."""
-    if not _OTEL_ENDPOINT:
+    otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+    if not otel_endpoint:
         logger.debug("OTEL_EXPORTER_OTLP_ENDPOINT not set — tracing disabled")
         return
 
@@ -31,7 +30,7 @@ def setup_tracing(app=None) -> None:
         })
 
         provider = TracerProvider(resource=resource)
-        exporter = OTLPSpanExporter(endpoint=_OTEL_ENDPOINT, insecure=True)
+        exporter = OTLPSpanExporter(endpoint=otel_endpoint, insecure=True)
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
 
@@ -52,7 +51,7 @@ def setup_tracing(app=None) -> None:
         except ImportError:
             logger.debug("opentelemetry-instrumentation-celery not installed")
 
-        logger.info("OpenTelemetry tracing enabled → %s", _OTEL_ENDPOINT)
+        logger.info("OpenTelemetry tracing enabled → %s", otel_endpoint)
 
     except ImportError:
         logger.warning("OpenTelemetry packages not installed — tracing disabled")

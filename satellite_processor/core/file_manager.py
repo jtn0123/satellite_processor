@@ -71,6 +71,7 @@ class FileManager:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         temp_dir = base_dir / f"{prefix}_{timestamp}"
         temp_dir.mkdir(parents=True, exist_ok=True)
+        self._temp_dirs.add(temp_dir)
         self.logger.info(f"Created temporary directory: {temp_dir}")
         return temp_dir
 
@@ -84,6 +85,7 @@ class FileManager:
                     except Exception as e:
                         self.logger.error(f"Error removing temp file {file}: {e}", exc_info=True)
                 temp_dir.rmdir()
+                self._temp_dirs.discard(temp_dir)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")
             except Exception as e:
                 self.logger.error(f"Error cleaning up temp directory: {e}", exc_info=True)

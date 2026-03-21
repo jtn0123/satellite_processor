@@ -6,11 +6,13 @@ import logging
 import os
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
 from ..db.database import get_db
 from ..db.models import (
     CleanupRule,
@@ -171,17 +173,31 @@ async def preview_cleanup(request: Request, db: AsyncSession = Depends(get_db)):
 async def run_cleanup_now(request: Request, db: AsyncSession = Depends(get_db)):
     """Manually trigger cleanup."""
     frames_to_delete = await _get_frames_to_cleanup(db)
-    freed = 0
+    allowed_root = str(Path(settings.storage_path).resolve())
+
+    # 1. Validate paths and collect safe ones
+    safe_paths: list[str] = []
     for frame in frames_to_delete:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+                resolved = str(Path(path).resolve())
+                if resolved.startswith(allowed_root):
+                    safe_paths.append(resolved)
+
+    # 2. Delete DB records first
+    freed = 0
+    for frame in frames_to_delete:
         freed += frame.file_size or 0
         await db.delete(frame)
     await db.commit()
+
+    # 3. Delete files after commit, logging failures without raising
+    for path in safe_paths:
+        try:
+            os.remove(path)
+        except OSError:
+            logger.warning("Failed to remove file during cleanup: %s", path)
+
     return CleanupRunResponse(deleted_frames=len(frames_to_delete), freed_bytes=freed)
 
 

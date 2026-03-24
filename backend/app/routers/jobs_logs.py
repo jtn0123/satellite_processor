@@ -53,42 +53,34 @@ async def get_job_logs(
     ]
 
 
-def _find_output_file(output_path: str, allowed_root: Path) -> tuple[str, str]:
+def _find_output_file(output_path: str, allowed_root: str) -> tuple[str, str]:
     """Find the best output file in a directory, preferring video/archive formats.
 
     Returns (file_path, filename) or raises APIError.
     """
-    # Path-injection guard: resolve and confine to allowed root
-    resolved_output = Path(output_path).resolve()
-    try:
-        resolved_output.relative_to(allowed_root)
-    except ValueError:
+    # Path-injection guard: normalize and confine to allowed root
+    safe_path = os.path.realpath(output_path)
+    if os.path.commonpath([allowed_root, safe_path]) != allowed_root:
         raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
 
-    resolved_str = str(resolved_output)
-    entries = sorted(os.listdir(resolved_str))
+    entries = sorted(os.listdir(safe_path))
     # Filter to actual files only — directories would break FileResponse
-    files = [f for f in entries if os.path.isfile(os.path.join(resolved_str, f))]
+    files = [f for f in entries if os.path.isfile(os.path.join(safe_path, f))]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                file_path = Path(resolved_str, f).resolve()
-                try:
-                    file_path.relative_to(allowed_root)
-                except ValueError:
-                    continue
-                return str(file_path), f
+                file_path = os.path.realpath(os.path.join(safe_path, f))
+                if os.path.commonpath([allowed_root, file_path]) == allowed_root:
+                    return file_path, f
 
     first = files[0]
-    first_path = Path(resolved_str, first).resolve()
-    try:
-        first_path.relative_to(allowed_root)
-    except ValueError:
+    first_path = os.path.realpath(os.path.join(safe_path, first))
+    if os.path.commonpath([allowed_root, first_path]) != allowed_root:
         raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
-    return str(first_path), first
+    return first_path, first
 
 
 @router.get("/{job_id}/output")
@@ -103,20 +95,17 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     raw_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    allowed_root = Path(settings.output_dir).resolve()
-    output_path = Path(raw_path).resolve()
-    try:
-        output_path.relative_to(allowed_root)
-    except ValueError:
+    _safe_root = os.path.realpath(settings.output_dir)
+    _safe_output = os.path.realpath(raw_path)
+    if os.path.commonpath([_safe_root, _safe_output]) != _safe_root:
         raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
 
-    output_str = str(output_path)
-    if not os.path.exists(output_str):
+    if not os.path.exists(_safe_output):
         raise APIError(404, "not_found", "Output not found")
-    if os.path.isfile(output_str):
-        return FileResponse(output_str, filename=os.path.basename(output_str))
+    if os.path.isfile(_safe_output):
+        return FileResponse(_safe_output, filename=os.path.basename(_safe_output))
 
-    file_path, filename = _find_output_file(output_str, allowed_root)
+    file_path, filename = _find_output_file(_safe_output, _safe_root)
     return FileResponse(file_path, filename=filename)
 
 

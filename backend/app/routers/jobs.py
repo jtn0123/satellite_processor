@@ -392,32 +392,29 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
 
-    # Path-injection guard: resolve and confine to allowed root
-    _allowed_root = Path(settings.output_dir).resolve()
-    _resolved_output = Path(output_path).resolve()
-    try:
-        _resolved_output.relative_to(_allowed_root)
-    except ValueError:
+    # Path-injection guard: normalize and confine to allowed root
+    _safe_root = os.path.realpath(settings.output_dir)
+    _safe_output = os.path.realpath(output_path)
+    if os.path.commonpath([_safe_root, _safe_output]) != _safe_root:
         raise APIError(403, "forbidden", "Path outside allowed directory")
 
-    _resolved_str = str(_resolved_output)
-    if not os.path.exists(_resolved_str):
+    if not os.path.exists(_safe_output):
         raise APIError(404, "not_found", "Output not found")
 
-    if os.path.isfile(_resolved_str):
-        return FileResponse(_resolved_str, filename=os.path.basename(_resolved_str))
+    if os.path.isfile(_safe_output):
+        return FileResponse(_safe_output, filename=os.path.basename(_safe_output))
 
-    files = [f for f in sorted(os.listdir(_resolved_str)) if os.path.isfile(os.path.join(_resolved_str, f))]
+    files = [f for f in sorted(os.listdir(_safe_output)) if os.path.isfile(os.path.join(_safe_output, f))]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(_resolved_str, f), filename=f)
+                return FileResponse(os.path.join(_safe_output, f), filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(_resolved_str, first), filename=first)
+    return FileResponse(os.path.join(_safe_output, first), filename=first)
 
 
 @router.post("/cleanup-stale")

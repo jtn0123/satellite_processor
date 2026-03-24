@@ -43,10 +43,10 @@ def validate_safe_path(file_path: str, allowed_root: str) -> Path:
     ``allowed_root`` (e.g. ``./data``) and absolute ``file_path``
     (e.g. ``/app/data/...`` inside Docker) are handled correctly.
     """
-    root = Path(allowed_root).resolve()
-    resolved = Path(file_path).resolve()
-    root_str = str(root)
-    resolved_str = str(resolved)
-    if resolved_str != root_str and not resolved_str.startswith(root_str + "/"):
+    import os
+
+    safe_root = os.path.realpath(allowed_root)
+    safe_path = os.path.realpath(file_path)
+    if os.path.commonpath([safe_root, safe_path]) != safe_root:
         raise APIError(403, "forbidden", "Path outside allowed directory")
-    return resolved
+    return Path(safe_path)

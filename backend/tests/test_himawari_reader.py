@@ -3,6 +3,7 @@
 Uses a real B13 (IR, 10.4µm) segment downloaded from the NOAA S3 bucket
 as the primary test fixture, plus synthetic data for edge cases.
 """
+
 from __future__ import annotations
 
 import bz2
@@ -60,6 +61,7 @@ def sample_data(sample_raw: bytes, sample_header: HSDHeader) -> np.ndarray:
 # Block 1 – Basic info
 # ---------------------------------------------------------------------------
 
+
 class TestHeaderBlock1:
     """Tests for Block 1 fields (satellite, obs time, area)."""
 
@@ -90,6 +92,7 @@ class TestHeaderBlock1:
 # Block 2 – Data dimensions
 # ---------------------------------------------------------------------------
 
+
 class TestHeaderBlock2:
     """Tests for Block 2 fields (dimensions, bits per pixel)."""
 
@@ -105,6 +108,7 @@ class TestHeaderBlock2:
 # ---------------------------------------------------------------------------
 # Block 3 – Projection
 # ---------------------------------------------------------------------------
+
 
 class TestHeaderBlock3:
     """Tests for Block 3 projection fields."""
@@ -133,6 +137,7 @@ class TestHeaderBlock3:
 # ---------------------------------------------------------------------------
 # Block 5 – Calibration
 # ---------------------------------------------------------------------------
+
 
 class TestHeaderBlock5:
     """Tests for Block 5 calibration fields."""
@@ -175,6 +180,7 @@ class TestHeaderBlock5:
 # Segment info
 # ---------------------------------------------------------------------------
 
+
 class TestSegmentInfo:
     """Tests for segment number and total segments."""
 
@@ -188,6 +194,7 @@ class TestSegmentInfo:
 # ---------------------------------------------------------------------------
 # Data parsing & calibration
 # ---------------------------------------------------------------------------
+
 
 class TestParseData:
     """Tests for raw-count reading and calibration."""
@@ -229,6 +236,7 @@ class TestParseData:
 # Radiance → BT conversion
 # ---------------------------------------------------------------------------
 
+
 class TestRadianceToBT:
     """Tests for the IR radiance → brightness temperature pipeline."""
 
@@ -258,6 +266,7 @@ class TestRadianceToBT:
 # VIS vs IR resolution
 # ---------------------------------------------------------------------------
 
+
 class TestResolution:
     """Verify expected dimensions for VIS vs IR."""
 
@@ -277,6 +286,7 @@ class TestResolution:
 # assemble_segments()
 # ---------------------------------------------------------------------------
 
+
 class TestAssembleSegments:
     """Tests for vertical stacking of segment arrays."""
 
@@ -289,9 +299,7 @@ class TestAssembleSegments:
         assert full[99, 0] == 9.0
 
     def test_missing_segment_fills_nan(self):
-        segs: list[np.ndarray | None] = [
-            np.ones((10, 20), dtype=np.float32) for _ in range(10)
-        ]
+        segs: list[np.ndarray | None] = [np.ones((10, 20), dtype=np.float32) for _ in range(10)]
         segs[3] = None  # Missing segment 4
         full = assemble_segments(segs)
         assert full.shape == (100, 20)
@@ -314,9 +322,7 @@ class TestAssembleSegments:
             assemble_segments([np.zeros((10, 20))] * 5)
 
     def test_width_mismatch_raises(self):
-        segs: list[np.ndarray | None] = [
-            np.zeros((10, 20), dtype=np.float32) for _ in range(10)
-        ]
+        segs: list[np.ndarray | None] = [np.zeros((10, 20), dtype=np.float32) for _ in range(10)]
         segs[5] = np.zeros((10, 30), dtype=np.float32)  # wrong width
         with pytest.raises(ValueError, match="width mismatch"):
             assemble_segments(segs)
@@ -335,6 +341,7 @@ class TestAssembleSegments:
 # ---------------------------------------------------------------------------
 # Edge cases – corrupt / truncated data
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     """Tests for corrupt, truncated, and empty input."""
@@ -366,6 +373,7 @@ class TestEdgeCases:
 # Normalisation to image
 # ---------------------------------------------------------------------------
 
+
 class TestNormalize:
     """Tests for the percentile-stretch normalisation."""
 
@@ -393,6 +401,7 @@ class TestNormalize:
 # ---------------------------------------------------------------------------
 # Full pipeline: bz2 → PNG
 # ---------------------------------------------------------------------------
+
 
 class TestHsdToPng:
     """Tests for the end-to-end conversion pipeline."""

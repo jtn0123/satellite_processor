@@ -1,4 +1,5 @@
 """Tests for the default fetch preset seed endpoint."""
+
 from __future__ import annotations
 
 import pytest

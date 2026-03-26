@@ -18,6 +18,7 @@ import redis.asyncio as aioredis
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def fake_server():
     """Shared fakeredis server so sync and async clients see the same data."""
@@ -41,6 +42,7 @@ async def async_client(fake_server):
 # ---------------------------------------------------------------------------
 # 1. Connection pool creation and cleanup
 # ---------------------------------------------------------------------------
+
 
 class TestConnectionPool:
     """Verify pool lifecycle matches redis_pool.py patterns."""
@@ -69,6 +71,7 @@ class TestConnectionPool:
 # ---------------------------------------------------------------------------
 # 2. Async client get/set/delete
 # ---------------------------------------------------------------------------
+
 
 class TestAsyncOperations:
     """Core async CRUD operations."""
@@ -106,6 +109,7 @@ class TestAsyncOperations:
 # ---------------------------------------------------------------------------
 # 3. Pub/sub
 # ---------------------------------------------------------------------------
+
 
 class TestPubSub:
     """Pub/sub patterns used by WebSocket progress broadcasting."""
@@ -151,6 +155,7 @@ class TestPubSub:
 # 4. Cache service operations (mirrors services/cache.py)
 # ---------------------------------------------------------------------------
 
+
 class TestCachePatterns:
     """Test patterns from services/cache.py."""
 
@@ -181,6 +186,7 @@ class TestCachePatterns:
 # 5. Health check ping
 # ---------------------------------------------------------------------------
 
+
 class TestHealthCheck:
     """Mirrors _check_redis() in routers/health.py."""
 
@@ -195,6 +201,7 @@ class TestHealthCheck:
 # ---------------------------------------------------------------------------
 # 6. Sync Redis client (tasks/helpers.py pattern)
 # ---------------------------------------------------------------------------
+
 
 class TestSyncClient:
     """Sync Redis usage as in Celery task helpers."""
@@ -226,6 +233,7 @@ class TestSyncClient:
 # 7. Connection error handling
 # ---------------------------------------------------------------------------
 
+
 class TestErrorHandling:
     """Verify error types haven't changed."""
 
@@ -244,6 +252,7 @@ class TestErrorHandling:
 # ---------------------------------------------------------------------------
 # 8. decode_responses behavior
 # ---------------------------------------------------------------------------
+
 
 class TestDecodeResponses:
     """Ensure decode_responses=True returns str, not bytes."""
@@ -265,7 +274,8 @@ class TestDecodeResponses:
     async def test_bytes_mode(self, fake_server):
         """Without decode_responses, values are bytes."""
         client = fakeredis.aioredis.FakeRedis(
-            server=fake_server, decode_responses=False,
+            server=fake_server,
+            decode_responses=False,
         )
         await client.set("bkey", "data")
         val = await client.get("bkey")

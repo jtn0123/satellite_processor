@@ -81,6 +81,7 @@ class TestSetupLoggingModes:
     def test_json_fallback_includes_request_id(self):
         """Fallback format (no pythonjsonlogger) should still include request_id."""
         import builtins
+
         real_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):

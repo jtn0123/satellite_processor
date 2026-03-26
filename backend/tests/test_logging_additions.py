@@ -82,11 +82,13 @@ class TestResponseContext:
 
     def test_capture_response_start(self):
         ctx = _ResponseContext()
-        ctx.capture({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [(b"content-type", b"text/html")],
-        })
+        ctx.capture(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"content-type", b"text/html")],
+            }
+        )
         assert ctx.status_code == 200
         assert ctx.content_type == "text/html"
 
@@ -109,11 +111,13 @@ class TestResponseContext:
 
     def test_capture_no_content_type_header(self):
         ctx = _ResponseContext()
-        ctx.capture({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [(b"x-custom", b"value")],
-        })
+        ctx.capture(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"x-custom", b"value")],
+            }
+        )
         assert ctx.content_type is None
 
 
@@ -170,12 +174,15 @@ class TestEnrichedWideEvent:
     @pytest.fixture
     def simple_app(self):
         async def app(scope, receive, send):
-            await send({
-                "type": "http.response.start",
-                "status": 200,
-                "headers": [(b"content-type", b"application/json")],
-            })
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [(b"content-type", b"application/json")],
+                }
+            )
             await send({"type": "http.response.body", "body": b'{"ok":true}'})
+
         return app
 
     @pytest.mark.asyncio
@@ -241,6 +248,7 @@ class TestEnrichedWideEvent:
     @pytest.mark.asyncio
     async def test_no_content_type_header(self, caplog):
         """Response without content-type header."""
+
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 204, "headers": []})
             await send({"type": "http.response.body", "body": b""})
@@ -261,6 +269,7 @@ class TestRouterLogging:
         """Verify create_preset logs the preset name."""
         with caplog.at_level(logging.INFO, logger="app.routers.presets"):
             from app.routers.presets import logger as presets_logger
+
             presets_logger.info("Creating preset: name=%s", "test_preset")
         assert "Creating preset: name=test_preset" in caplog.text
 
@@ -269,6 +278,7 @@ class TestRouterLogging:
         """Verify upload_image logs the filename."""
         with caplog.at_level(logging.INFO, logger="app.routers.images"):
             from app.routers.images import logger as images_logger
+
             images_logger.info("Image upload started: filename=%s", "test.png")
         assert "Image upload started: filename=test.png" in caplog.text
 
@@ -314,6 +324,7 @@ class TestServiceLogging:
         """configure_processor logs the param keys."""
         with caplog.at_level(logging.INFO, logger="app.services.processor"):
             from app.services.processor import logger as proc_logger
+
             proc_logger.info("Configuring processor with params: %s", ["crop", "scale"])
         assert "Configuring processor with params" in caplog.text
 

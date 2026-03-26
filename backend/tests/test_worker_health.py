@@ -19,10 +19,13 @@ async def test_worker_healthy():
     mock_celery = MagicMock()
     mock_celery.control.inspect.return_value = mock_inspector
 
-    with patch("app.routers.health.celery_app", mock_celery, create=True), \
-         patch.dict("sys.modules", {"app.celery_app": MagicMock(celery_app=mock_celery)}):
+    with (
+        patch("app.routers.health.celery_app", mock_celery, create=True),
+        patch.dict("sys.modules", {"app.celery_app": MagicMock(celery_app=mock_celery)}),
+    ):
         # Patch the import inside _check_worker
         import app.routers.health as h
+
         _original = h.__dict__.get("celery_app")
         try:
             # We need to mock the dynamic import inside the function

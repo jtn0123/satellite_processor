@@ -4,6 +4,7 @@ Revision ID: g39_job_logs
 Revises: f28_notifications
 Create Date: 2026-02-13 17:00:00.000000
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

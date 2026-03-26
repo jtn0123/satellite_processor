@@ -31,17 +31,13 @@ def validate_interpolation_factor(factor: int, quality: str) -> None:
     if max_factor is None:
         raise ValueError(f"Invalid interpolation quality: {quality}")
     if not (2 <= factor <= max_factor):
-        raise ValueError(
-            f"Interpolation factor must be between 2 and {max_factor} for {quality} quality."
-        )
+        raise ValueError(f"Interpolation factor must be between 2 and {max_factor} for {quality} quality.")
 
 
 def validate_interpolation_quality(quality: str) -> None:
     """Validate interpolation quality."""
     if quality not in VALID_INTERPOLATION_QUALITIES:
-        raise ValueError(
-            f"Interpolation quality must be one of {VALID_INTERPOLATION_QUALITIES}."
-        )
+        raise ValueError(f"Interpolation quality must be one of {VALID_INTERPOLATION_QUALITIES}.")
 
 
 def apply_interpolation(

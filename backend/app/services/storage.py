@@ -43,18 +43,18 @@ class StorageService:
         resolved = Path(file_path).resolve()
         # Allow deletion from upload, output, or temp directories
         allowed_dirs = [
-            d for d in (
+            d
+            for d in (
                 getattr(self, "upload_dir", None),
                 getattr(self, "output_dir", None),
                 getattr(self, "temp_dir", None),
-            ) if d is not None
+            )
+            if d is not None
         ]
         if not allowed_dirs:
             logger.warning("No allowed directories configured; blocking deletion: %s", file_path)
             return False
-        allowed = any(
-            self._is_within(resolved, d.resolve()) for d in allowed_dirs
-        )
+        allowed = any(self._is_within(resolved, d.resolve()) for d in allowed_dirs)
         if not allowed:
             logger.warning("Blocked deletion outside allowed dirs: %s", file_path)
             return False

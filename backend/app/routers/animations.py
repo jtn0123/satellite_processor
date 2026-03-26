@@ -252,9 +252,9 @@ async def create_animation(
         if payload.end_date:
             query = query.where(GoesFrame.capture_time <= datetime.fromisoformat(payload.end_date))
         if payload.collection_id:
-            query = query.join(
-                CollectionFrame, CollectionFrame.frame_id == GoesFrame.id
-            ).where(CollectionFrame.collection_id == payload.collection_id)
+            query = query.join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id).where(
+                CollectionFrame.collection_id == payload.collection_id
+            )
         query = query.order_by(GoesFrame.capture_time.asc())
         result = await db.execute(query)
         frame_ids = [r[0] for r in result.all()]
@@ -284,15 +284,25 @@ async def create_animation_from_range(
 ):
     """Create animation from a satellite/sector/band time range."""
     frame_ids = await _query_frame_ids(
-        db, payload.satellite, payload.sector, payload.band,
-        payload.start_time, payload.end_time,
+        db,
+        payload.satellite,
+        payload.sector,
+        payload.band,
+        payload.start_time,
+        payload.end_time,
     )
     overlay_dict = payload.overlay.model_dump() if payload.overlay else None
     name = f"{payload.satellite} {payload.sector} {payload.band}"
     anim = await _create_animation_from_frames(
-        db, frame_ids, name=name, fps=payload.fps, fmt=payload.format,
-        quality=payload.quality, resolution=payload.resolution,
-        loop_style=payload.loop_style, overlay=overlay_dict,
+        db,
+        frame_ids,
+        name=name,
+        fps=payload.fps,
+        fmt=payload.format,
+        quality=payload.quality,
+        resolution=payload.resolution,
+        loop_style=payload.loop_style,
+        overlay=overlay_dict,
     )
     return _build_anim_response(anim)
 
@@ -306,15 +316,25 @@ async def create_animation_recent(
     end_time = datetime.now(UTC)
     start_time = end_time - timedelta(hours=payload.hours)
     frame_ids = await _query_frame_ids(
-        db, payload.satellite, payload.sector, payload.band,
-        start_time, end_time,
+        db,
+        payload.satellite,
+        payload.sector,
+        payload.band,
+        start_time,
+        end_time,
     )
     overlay_dict = payload.overlay.model_dump() if payload.overlay else None
     name = f"{payload.satellite} {payload.sector} {payload.band} (last {payload.hours}h)"
     anim = await _create_animation_from_frames(
-        db, frame_ids, name=name, fps=payload.fps, fmt=payload.format,
-        quality=payload.quality, resolution=payload.resolution,
-        loop_style=payload.loop_style, overlay=overlay_dict,
+        db,
+        frame_ids,
+        name=name,
+        fps=payload.fps,
+        fmt=payload.format,
+        quality=payload.quality,
+        resolution=payload.resolution,
+        loop_style=payload.loop_style,
+        overlay=overlay_dict,
     )
     return _build_anim_response(anim)
 
@@ -328,15 +348,25 @@ async def create_animation_batch(
     results = []
     for item in payload.animations:
         frame_ids = await _query_frame_ids(
-            db, item.satellite, item.sector, item.band,
-            item.start_time, item.end_time,
+            db,
+            item.satellite,
+            item.sector,
+            item.band,
+            item.start_time,
+            item.end_time,
         )
         overlay_dict = item.overlay.model_dump() if item.overlay else None
         name = f"{item.satellite} {item.sector} {item.band}"
         anim = await _create_animation_from_frames(
-            db, frame_ids, name=name, fps=item.fps, fmt=item.format,
-            quality=item.quality, resolution=item.resolution,
-            loop_style=item.loop_style, overlay=overlay_dict,
+            db,
+            frame_ids,
+            name=name,
+            fps=item.fps,
+            fmt=item.format,
+            quality=item.quality,
+            resolution=item.resolution,
+            loop_style=item.loop_style,
+            overlay=overlay_dict,
         )
         results.append(_build_anim_response(anim))
     return results
@@ -351,9 +381,7 @@ async def list_animations(
     logger.debug("Listing animations")
     count = (await db.execute(select(func.count(Animation.id)))).scalar() or 0
     offset = (page - 1) * limit
-    result = await db.execute(
-        select(Animation).order_by(Animation.created_at.desc()).offset(offset).limit(limit)
-    )
+    result = await db.execute(select(Animation).order_by(Animation.created_at.desc()).offset(offset).limit(limit))
     items = [_build_anim_response(anim) for anim in result.scalars().all()]
     return PaginatedResponse(items=items, total=count, page=page, limit=limit)
 
@@ -458,9 +486,7 @@ async def preview_frame_range(
 @router.get("/animation-presets", response_model=list[AnimationPresetResponse])
 async def list_animation_presets(db: AsyncSession = Depends(get_db)):
     logger.debug("Listing animation presets")
-    result = await db.execute(
-        select(AnimationPreset).order_by(AnimationPreset.name)
-    )
+    result = await db.execute(select(AnimationPreset).order_by(AnimationPreset.name))
     return [AnimationPresetResponse.model_validate(p) for p in result.scalars().all()]
 
 
@@ -470,9 +496,7 @@ async def create_animation_preset(
     db: AsyncSession = Depends(get_db),
 ):
     logger.info("Creating animation preset")
-    existing = await db.execute(
-        select(AnimationPreset).where(AnimationPreset.name == payload.name)
-    )
+    existing = await db.execute(select(AnimationPreset).where(AnimationPreset.name == payload.name))
     if existing.scalars().first():
         raise APIError(409, "conflict", "Animation preset name already exists")
     preset = AnimationPreset(
@@ -499,9 +523,7 @@ async def get_animation_preset(
     db: AsyncSession = Depends(get_db),
 ):
     validate_uuid(preset_id, "preset_id")
-    result = await db.execute(
-        select(AnimationPreset).where(AnimationPreset.id == preset_id)
-    )
+    result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
         raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)
@@ -516,14 +538,11 @@ async def update_animation_preset(
 ):
     logger.info("Updating animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")
-    result = await db.execute(
-        select(AnimationPreset).where(AnimationPreset.id == preset_id)
-    )
+    result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
         raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)
-    for field in ("name", "satellite", "sector", "band", "fps", "format",
-                  "quality", "resolution", "loop_style"):
+    for field in ("name", "satellite", "sector", "band", "fps", "format", "quality", "resolution", "loop_style"):
         val = getattr(payload, field)
         if val is not None:
             setattr(preset, field, val)
@@ -539,9 +558,7 @@ async def delete_animation_preset(
 ):
     logger.info("Deleting animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")
-    result = await db.execute(
-        select(AnimationPreset).where(AnimationPreset.id == preset_id)
-    )
+    result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
         raise APIError(404, "not_found", _ANIMATION_PRESET_NOT_FOUND)

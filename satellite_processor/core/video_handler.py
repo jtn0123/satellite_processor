@@ -71,6 +71,7 @@ HIGH_BUFSIZE = "70M"
 
 _VIDEO_CANCELLED_MSG = "Video creation cancelled"
 
+
 class VideoHandler:
     """Handle video creation and processing operations"""
 
@@ -98,9 +99,7 @@ class VideoHandler:
                     break
 
         if not self.ffmpeg_path and not getattr(self, "testing", False):
-            raise RuntimeError(
-                "FFmpeg not found. Please install FFmpeg and ensure it's in your PATH"
-            )
+            raise RuntimeError("FFmpeg not found. Please install FFmpeg and ensure it's in your PATH")
 
         if self.ffmpeg_path:
             self.logger.info(f"Using FFmpeg from: {self.ffmpeg_path}")
@@ -142,9 +141,7 @@ class VideoHandler:
         """Validate interpolation quality."""
         validate_interpolation_quality(quality)
 
-    def _validate_video_paths(
-        self, input_dir: str | Path, output_path: str | Path
-    ) -> tuple[Path, Path]:
+    def _validate_video_paths(self, input_dir: str | Path, output_path: str | Path) -> tuple[Path, Path]:
         """Validate and resolve input/output paths for video creation."""
         if not output_path:
             raise ValueError("Empty output path")
@@ -172,8 +169,12 @@ class VideoHandler:
         return input_dir, output_path
 
     def _handle_ffmpeg_error(
-        self, e: subprocess.CalledProcessError, input_dir: Path,
-        output_path: Path, options: dict, retry_count: int,
+        self,
+        e: subprocess.CalledProcessError,
+        input_dir: Path,
+        output_path: Path,
+        options: dict,
+        retry_count: int,
     ) -> bool:
         """Handle FFmpeg CalledProcessError with retry logic."""
         if self.cancelled:
@@ -243,7 +244,9 @@ class VideoHandler:
             self.logger.debug(f"FFmpeg command: {' '.join(map(str, cmd))}")
 
             try:
-                subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=str(input_dir), timeout=FFMPEG_TIMEOUT_SECONDS)
+                subprocess.run(
+                    cmd, check=True, capture_output=True, text=True, cwd=str(input_dir), timeout=FFMPEG_TIMEOUT_SECONDS
+                )
                 self.logger.info(f"Successfully created video at {output_path}")
                 return True
             except subprocess.CalledProcessError as e:
@@ -301,9 +304,7 @@ class VideoHandler:
         if file_size == 0:
             self.logger.error("Output file is empty")
             return False
-        self.logger.info(
-            f"Successfully created video at {output_path} ({file_size / 1024 / 1024:.1f} MB)"
-        )
+        self.logger.info(f"Successfully created video at {output_path} ({file_size / 1024 / 1024:.1f} MB)")
         return True
 
     def _try_encode(self, cmd: list[str], temp_dir: Path, output_path: Path) -> bool:
@@ -355,9 +356,7 @@ class VideoHandler:
                 except Exception as e:
                     self.logger.error(f"Error terminating process: {e}", exc_info=True)
 
-    def _create_initial_video(
-        self, frame_files: list[Path], output: Path, fps: float, options: dict
-    ) -> bool:
+    def _create_initial_video(self, frame_files: list[Path], output: Path, fps: float, options: dict) -> bool:
         """Create initial video with proper frame timing"""
         try:
             list_file = output.parent / "frames.txt"
@@ -371,18 +370,35 @@ class VideoHandler:
 
             cmd = [
                 str(self.ffmpeg_path),
-                "-y", "-f", "concat", "-safe", "0",
-                "-i", str(list_file),
-                "-c:v", "h264_nvenc",
-                "-preset", "p7", "-rc", "vbr",
-                "-b:v", HIGH_BITRATE,
-                "-maxrate", HIGH_MAXRATE,
-                "-bufsize", HIGH_BUFSIZE,
-                "-profile:v", "main",
-                "-fps_mode", "cfr",
-                "-r", str(fps),
-                "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
+                "-y",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(list_file),
+                "-c:v",
+                "h264_nvenc",
+                "-preset",
+                "p7",
+                "-rc",
+                "vbr",
+                "-b:v",
+                HIGH_BITRATE,
+                "-maxrate",
+                HIGH_MAXRATE,
+                "-bufsize",
+                HIGH_BUFSIZE,
+                "-profile:v",
+                "main",
+                "-fps_mode",
+                "cfr",
+                "-r",
+                str(fps),
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
                 str(output),
             ]
 
@@ -399,12 +415,14 @@ class VideoHandler:
             self.logger.error(f"Error in _create_initial_video: {e}", exc_info=True)
             return False
 
-    def _apply_interpolation(
-        self, input_path: Path, output_path: Path, target_fps: int, options: dict
-    ) -> bool:
+    def _apply_interpolation(self, input_path: Path, output_path: Path, target_fps: int, options: dict) -> bool:
         """Apply high-quality interpolation with hardware acceleration"""
         return apply_interpolation(
-            self.ffmpeg_path, input_path, output_path, target_fps, options,
+            self.ffmpeg_path,
+            input_path,
+            output_path,
+            target_fps,
+            options,
             try_encode_fn=self._try_encode,
         )
 
@@ -412,9 +430,7 @@ class VideoHandler:
         """Get optimal codec parameters based on selected encoder and hardware"""
         return get_codec_params(codec, hardware)
 
-    def _create_ffmpeg_video(
-        self, frame_paths: list[Path], output_path: Path, options: dict
-    ) -> bool:
+    def _create_ffmpeg_video(self, frame_paths: list[Path], output_path: Path, options: dict) -> bool:
         """Create video using FFmpeg"""
         temp_dir = None
         image_list_path = None
@@ -439,19 +455,34 @@ class VideoHandler:
 
             cmd = [
                 str(self.ffmpeg_path),
-                "-y", "-f", "concat", "-safe", "0",
-                "-i", str(image_list_path),
-                "-c:v", get_codec(encoder),
-                "-preset", preset,
-                "-b:v", bitrate,
-                "-vf", f"fps={fps}",
-                "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
+                "-y",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(image_list_path),
+                "-c:v",
+                get_codec(encoder),
+                "-preset",
+                preset,
+                "-b:v",
+                bitrate,
+                "-vf",
+                f"fps={fps}",
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
                 str(output_path),
             ]
 
             process = subprocess.run(
-                cmd, capture_output=True, text=True, env=os.environ.copy(), check=False,
+                cmd,
+                capture_output=True,
+                text=True,
+                env=os.environ.copy(),
+                check=False,
             )
 
             if process.returncode != 0:
@@ -487,9 +518,7 @@ class VideoHandler:
         except Exception as e:
             self.logger.error(f"Cleanup error: {e}", exc_info=True)
 
-    def apply_interpolation(
-        self, video_path: Path, output_path: Path, fps: int
-    ) -> bool:
+    def apply_interpolation(self, video_path: Path, output_path: Path, fps: int) -> bool:
         """Apply frame interpolation to video"""
         return apply_frame_interpolation(self.ffmpeg_path, video_path, output_path, fps)
 
@@ -508,9 +537,7 @@ class VideoHandler:
             result = subprocess.run(cmd, capture_output=True, text=True)
             info = {}
             if result.stderr:
-                duration_match = re.search(
-                    r"Duration: (\d{2}:\d{2}:\d{2}\.\d{2})", result.stderr
-                )
+                duration_match = re.search(r"Duration: (\d{2}:\d{2}:\d{2}\.\d{2})", result.stderr)
                 if duration_match:
                     info["duration"] = duration_match.group(1)
                 resolution_match = re.search(r"(\d{2,}x\d{2,})", result.stderr)
@@ -533,14 +560,8 @@ class VideoHandler:
 
     def encode_video(self, fps: int, bitrate: int):
         """Encode the video with the specified FPS and bitrate."""
-        self.logger.info(
-            f"Encoding video at {fps} FPS with {bitrate} kbps bitrate using {self.encoder} encoder."
-        )
-        fourcc = (
-            cv2.VideoWriter_fourcc(*"X264")
-            if self.encoder == "H.264"
-            else cv2.VideoWriter_fourcc(*"H265")
-        )
+        self.logger.info(f"Encoding video at {fps} FPS with {bitrate} kbps bitrate using {self.encoder} encoder.")
+        fourcc = cv2.VideoWriter_fourcc(*"X264") if self.encoder == "H.264" else cv2.VideoWriter_fourcc(*"H265")
         out = cv2.VideoWriter("output_video.mp4", fourcc, fps, (1920, 1080))
         out.release()
         self.logger.info("Video encoding completed.")
@@ -550,20 +571,21 @@ class VideoHandler:
         self.bitrate = bitrate
         self.logger.info(f"Bitrate set to: {self.bitrate} kbps")
 
-    def transcode_video(
-        self, input_video: str, output_video: str, options: dict
-    ) -> bool:
+    def transcode_video(self, input_video: str, output_video: str, options: dict) -> bool:
         """Transcode video to specified format and quality."""
         output_format = FORMAT_MAP.get(options.get("transcoding_format"), "mp4")
-        quality = TRANSCODE_QUALITY_PRESETS.get(
-            options.get("transcoding_quality"), "23"
-        )
+        quality = TRANSCODE_QUALITY_PRESETS.get(options.get("transcoding_quality"), "23")
 
         ffmpeg_cmd = [
-            "ffmpeg", "-i", input_video,
-            "-vcodec", "libx264",
-            "-crf", quality,
-            "-preset", "medium",
+            "ffmpeg",
+            "-i",
+            input_video,
+            "-vcodec",
+            "libx264",
+            "-crf",
+            quality,
+            "-preset",
+            "medium",
             output_video + f".{output_format}",
         ]
 
@@ -614,9 +636,7 @@ class VideoHandler:
                 self._resource_metrics = []
             self._resource_metrics.append({"cpu": cpu_usage, "memory": memory_usage})
 
-            self.logger.debug(
-                f"Resource usage - CPU: {cpu_usage}%, Memory: {memory_usage:.1f}MB"
-            )
+            self.logger.debug(f"Resource usage - CPU: {cpu_usage}%, Memory: {memory_usage:.1f}MB")
             return {"cpu": cpu_usage, "memory": memory_usage}
         except Exception as e:
             self.logger.error(f"Error getting resource usage: {e}", exc_info=True)
@@ -642,9 +662,7 @@ class VideoHandler:
 
             if numbers != expected:
                 missing = set(expected) - set(numbers)
-                raise RuntimeError(
-                    f"Frame sequence is not continuous. Missing frames: {missing}"
-                )
+                raise RuntimeError(f"Frame sequence is not continuous. Missing frames: {missing}")
 
         except Exception as e:
             if "Frame sequence is not continuous" in str(e):

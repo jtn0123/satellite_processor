@@ -85,9 +85,7 @@ class SettingsManager:
                 value = str(Path(value).resolve())
             self.settings[key] = value
             self.save_settings()
-            self.logger.info(
-                f"Successfully updated setting {key} from '{old_value}' to '{value}'"
-            )
+            self.logger.info(f"Successfully updated setting {key} from '{old_value}' to '{value}'")
             saved_value = self.get(key)
             self.logger.info(f"Verified saved value for {key}: {saved_value}")
         except Exception as e:
@@ -114,11 +112,7 @@ class SettingsManager:
 
             return (
                 not bool(missing),
-                (
-                    f"Missing required preferences: {', '.join(missing)}"
-                    if missing
-                    else ""
-                ),
+                (f"Missing required preferences: {', '.join(missing)}" if missing else ""),
             )
 
         except Exception as e:

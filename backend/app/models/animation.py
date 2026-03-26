@@ -89,6 +89,7 @@ class AnimationCreate(BaseModel):
 
 class AnimationResponse(BaseModel):
     """Response schema for an animation with status, output path, and metadata."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str

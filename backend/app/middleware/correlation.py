@@ -14,9 +14,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 REQUEST_ID_PATTERN = re.compile(r"^[\w\-]{1,64}$")
 
 # Context variable accessible from anywhere in the request lifecycle
-request_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "request_id", default=""
-)
+request_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
 
 
 class CorrelationMiddleware:
@@ -50,9 +48,7 @@ class CorrelationMiddleware:
             """Wrap send to inject X-Request-ID into response headers."""
             if message["type"] == "http.response.start":
                 message = dict(message)
-                message["headers"] = list(message.get("headers", [])) + [
-                    (b"x-request-id", rid.encode())
-                ]
+                message["headers"] = list(message.get("headers", [])) + [(b"x-request-id", rid.encode())]
             await send(message)
 
         try:

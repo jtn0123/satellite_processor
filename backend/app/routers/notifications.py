@@ -40,9 +40,7 @@ class NotificationResponse(BaseModel):
 async def list_notifications(db: AsyncSession = Depends(get_db)):
     """Return last 50 notifications, newest first."""
     logger.debug("Listing notifications")
-    result = await db.execute(
-        select(Notification).order_by(Notification.created_at.desc()).limit(50)
-    )
+    result = await db.execute(select(Notification).order_by(Notification.created_at.desc()).limit(50))
     return [NotificationResponse.from_orm_model(n) for n in result.scalars().all()]
 
 
@@ -50,9 +48,7 @@ async def list_notifications(db: AsyncSession = Depends(get_db)):
 async def mark_read(notification_id: str, db: AsyncSession = Depends(get_db)):
     """Mark a notification as read."""
     logger.info("Marking notification read: id=%s", notification_id)
-    result = await db.execute(
-        select(Notification).where(Notification.id == notification_id)
-    )
+    result = await db.execute(select(Notification).where(Notification.id == notification_id))
     notif = result.scalars().first()
     if not notif:
         raise APIError(404, "not_found", "Notification not found")

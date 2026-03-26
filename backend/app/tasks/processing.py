@@ -49,25 +49,41 @@ def _stage_image_paths(input_path: str, image_paths: list[str]) -> None:
             dst.symlink_to(src)
         except OSError:
             import shutil
+
             shutil.copy2(str(src), str(dst))
 
 
 def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
     """Update job DB and publish final status."""
     if success:
-        _update_job_db(job_id, status="completed", progress=100, output_path=output_path,
-                       completed_at=utcnow(), status_message=MSG_PROCESSING_COMPLETE)
+        _update_job_db(
+            job_id,
+            status="completed",
+            progress=100,
+            output_path=output_path,
+            completed_at=utcnow(),
+            status_message=MSG_PROCESSING_COMPLETE,
+        )
         _publish_progress(job_id, 100, MSG_PROCESSING_COMPLETE, "completed")
     else:
-        _update_job_db(job_id, status="failed", error="Processing returned False",
-                       completed_at=utcnow(), status_message=MSG_PROCESSING_FAILED)
+        _update_job_db(
+            job_id,
+            status="failed",
+            error="Processing returned False",
+            completed_at=utcnow(),
+            status_message=MSG_PROCESSING_FAILED,
+        )
         _publish_progress(job_id, 0, MSG_PROCESSING_FAILED, "failed")
 
 
 @celery_app.task(
-    bind=True, name="process_images",
+    bind=True,
+    name="process_images",
     autoretry_for=(ConnectionError, TimeoutError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def process_images_task(self, job_id: str, params: dict):
     """Batch image processing task"""
@@ -83,8 +99,7 @@ def process_images_task(self, job_id: str, params: dict):
         finally:
             session.close()
 
-    _update_job_db(job_id, status="processing", started_at=utcnow(),
-                   status_message="Initializing processor...")
+    _update_job_db(job_id, status="processing", started_at=utcnow(), status_message="Initializing processor...")
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
     _log("Image processing started")
 
@@ -126,21 +141,25 @@ def process_images_task(self, job_id: str, params: dict):
         duration = time.monotonic() - start_time
         logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Processing failed: {e}", "error")
-        _update_job_db(job_id, status="failed", error=str(e),
-                       completed_at=utcnow(), status_message=f"Error: {e}")
+        _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow(), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise
     finally:
         input_path = params.get("input_path", "")
         if input_path and "job_staging_" in input_path:
             import shutil
+
             shutil.rmtree(input_path, ignore_errors=True)
 
 
 @celery_app.task(
-    bind=True, name="create_video",
+    bind=True,
+    name="create_video",
     autoretry_for=(ConnectionError, TimeoutError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def create_video_task(self, job_id: str, params: dict):
     """Video creation task"""
@@ -189,7 +208,7 @@ def create_video_task(self, job_id: str, params: dict):
 
         # Gather input files and call create_video
         input_files = sorted(Path(input_path).glob("*"))
-        valid_exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
+        valid_exts = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
         input_files = [str(f) for f in input_files if f.is_file() and f.suffix.lower() in valid_exts]
         video_options = {
             "fps": params.get("video", {}).get("fps", 24),
@@ -240,4 +259,5 @@ def create_video_task(self, job_id: str, params: dict):
         input_path = params.get("input_path", "")
         if input_path and "job_staging_" in input_path:
             import shutil
+
             shutil.rmtree(input_path, ignore_errors=True)

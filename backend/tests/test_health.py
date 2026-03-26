@@ -39,10 +39,11 @@ async def test_changelog_endpoint(client):
 def test_parse_changelog_missing_file():
     """Returns empty list when CHANGELOG.md doesn't exist."""
     import app.routers.health as h
+
     original = h._changelog_cache
     h._changelog_cache = None  # reset cache
     try:
-        with patch.object(h, '_find_changelog', return_value=None):
+        with patch.object(h, "_find_changelog", return_value=None):
             result = _parse_changelog()
             assert result == []
     finally:
@@ -50,5 +51,5 @@ def test_parse_changelog_missing_file():
 
 
 def test_strip_links():
-    assert _strip_links('fix something ([#42](url)) ([abc123](url))') == 'fix something'
-    assert _strip_links('simple message') == 'simple message'
+    assert _strip_links("fix something ([#42](url)) ([abc123](url))") == "fix something"
+    assert _strip_links("simple message") == "simple message"

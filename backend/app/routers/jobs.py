@@ -110,9 +110,7 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
         shutil.rmtree(goes_dir, ignore_errors=True)
 
     # Delete associated GoesFrame records and their files/thumbnails
-    frames_result = await db.execute(
-        select(GoesFrame).where(GoesFrame.source_job_id == job.id)
-    )
+    frames_result = await db.execute(select(GoesFrame).where(GoesFrame.source_job_id == job.id))
     frames = frames_result.scalars().all()
 
     for frame in frames:
@@ -127,14 +125,8 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
             os.remove(frame.file_path)
 
         # Delete CollectionFrame join records
-        await db.execute(
-            select(CollectionFrame).where(CollectionFrame.frame_id == frame.id)
-        )
-        await db.execute(
-            CollectionFrame.__table__.delete().where(
-                CollectionFrame.frame_id == frame.id
-            )
-        )
+        await db.execute(select(CollectionFrame).where(CollectionFrame.frame_id == frame.id))
+        await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id == frame.id))
 
         await db.delete(frame)
 
@@ -142,9 +134,7 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     # link them back to jobs. The frame files are already deleted above.
 
     # Delete job logs
-    await db.execute(
-        JobLog.__table__.delete().where(JobLog.job_id == job.id)
-    )
+    await db.execute(JobLog.__table__.delete().where(JobLog.job_id == job.id))
 
     return bytes_freed
 
@@ -198,9 +188,7 @@ async def list_jobs(
     total = count_result.scalar_one()
 
     offset = (page - 1) * limit
-    result = await db.execute(
-        select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit)
-    )
+    result = await db.execute(select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit))
     jobs = result.scalars().all()
 
     return PaginatedResponse[JobResponse](

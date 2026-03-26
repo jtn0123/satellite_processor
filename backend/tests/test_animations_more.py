@@ -1,15 +1,21 @@
 """Additional animation and crop preset tests."""
 
-
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_crop_preset_crud(client):
     # Create
-    resp = await client.post("/api/satellite/crop-presets", json={
-        "name": "Full HD", "x": 0, "y": 0, "width": 1920, "height": 1080,
-    })
+    resp = await client.post(
+        "/api/satellite/crop-presets",
+        json={
+            "name": "Full HD",
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 1080,
+        },
+    )
     assert resp.status_code == 200
     pid = resp.json()["id"]
 
@@ -29,12 +35,26 @@ async def test_crop_preset_crud(client):
 
 @pytest.mark.asyncio
 async def test_crop_preset_duplicate_name(client):
-    await client.post("/api/satellite/crop-presets", json={
-        "name": "dup", "x": 0, "y": 0, "width": 100, "height": 100,
-    })
-    resp = await client.post("/api/satellite/crop-presets", json={
-        "name": "dup", "x": 0, "y": 0, "width": 200, "height": 200,
-    })
+    await client.post(
+        "/api/satellite/crop-presets",
+        json={
+            "name": "dup",
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 100,
+        },
+    )
+    resp = await client.post(
+        "/api/satellite/crop-presets",
+        json={
+            "name": "dup",
+            "x": 0,
+            "y": 0,
+            "width": 200,
+            "height": 200,
+        },
+    )
     assert resp.status_code == 409
 
 
@@ -73,9 +93,15 @@ async def test_delete_nonexistent_animation(client):
 
 @pytest.mark.asyncio
 async def test_create_animation_no_frames(client):
-    resp = await client.post("/api/satellite/animations", json={
-        "name": "test", "frame_ids": [], "fps": 24, "format": "mp4",
-    })
+    resp = await client.post(
+        "/api/satellite/animations",
+        json={
+            "name": "test",
+            "frame_ids": [],
+            "fps": 24,
+            "format": "mp4",
+        },
+    )
     assert resp.status_code in (400, 422)
 
 
@@ -88,9 +114,16 @@ async def test_animations_pagination(client):
 
 @pytest.mark.asyncio
 async def test_crop_preset_partial_update(client):
-    resp = await client.post("/api/satellite/crop-presets", json={
-        "name": "test", "x": 0, "y": 0, "width": 100, "height": 100,
-    })
+    resp = await client.post(
+        "/api/satellite/crop-presets",
+        json={
+            "name": "test",
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 100,
+        },
+    )
     pid = resp.json()["id"]
 
     # Update only width

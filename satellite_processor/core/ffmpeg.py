@@ -80,9 +80,7 @@ def find_ffmpeg(testing: bool = False) -> Path | None:
                 return path
 
         try:
-            result = subprocess.run(
-                ["ffmpeg", "-version"], capture_output=True, text=True
-            )
+            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
             if result.returncode == 0:
                 return Path("ffmpeg")
         except Exception:
@@ -170,10 +168,14 @@ def get_codec_params(codec: str, hardware: str | None = None) -> list[str]:
         base_params = params["av1"]
 
     return base_params + [
-        "-b:v", HIGH_BITRATE,
-        "-maxrate", HIGH_MAXRATE,
-        "-bufsize", HIGH_BUFSIZE,
-        "-movflags", "+faststart",
+        "-b:v",
+        HIGH_BITRATE,
+        "-maxrate",
+        HIGH_MAXRATE,
+        "-bufsize",
+        HIGH_BUFSIZE,
+        "-movflags",
+        "+faststart",
     ]
 
 
@@ -236,8 +238,11 @@ def _build_concat_input(
         input_pattern = f"{input_str}/frame%04d.png"
         cmd = [
             str(ffmpeg_path).replace("\\", "/"),
-            "-y", "-framerate", str(options.get("fps", DEFAULT_FPS)),
-            "-i", input_pattern,
+            "-y",
+            "-framerate",
+            str(options.get("fps", DEFAULT_FPS)),
+            "-i",
+            input_pattern,
         ]
         return cmd, None
 
@@ -258,8 +263,13 @@ def _build_concat_from_list(
     _write_concat_file(list_file, frame_files, options, fix_unc=fix_unc)
     cmd = [
         str(ffmpeg_path).replace("\\", "/"),
-        "-y", "-f", "concat", "-safe", "0",
-        "-i", str(list_file).replace("\\", "/"),
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        str(list_file).replace("\\", "/"),
     ]
     return cmd, temp_dir
 
@@ -301,12 +311,18 @@ def build_ffmpeg_command(
 
         bitrate = options.get("bitrate", 5000)
         bitrate_str = bitrate if isinstance(bitrate, str) else f"{bitrate}k"
-        cmd.extend([
-            "-c:v", get_codec(options.get("encoder", "H.264"), hardware),
-            "-b:v", bitrate_str,
-            "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart",
-        ])
+        cmd.extend(
+            [
+                "-c:v",
+                get_codec(options.get("encoder", "H.264"), hardware),
+                "-b:v",
+                bitrate_str,
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+            ]
+        )
 
         output_str = str(output_path).replace("\\", "/")
         if output_str.startswith("//"):

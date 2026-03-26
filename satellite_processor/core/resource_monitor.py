@@ -51,6 +51,11 @@ class ResourceMonitor:
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
                 return
+            # If a previous thread exists, ensure it has fully exited before
+            # clearing the stop signal — otherwise the old thread could see the
+            # cleared event and keep running.
+            if self._thread is not None:
+                self._thread.join(timeout=2)
             self._stop_event.clear()
             self._thread = threading.Thread(target=self._run, daemon=True)
             self._thread.start()
@@ -99,4 +104,4 @@ class ResourceMonitor:
         try:
             self.cleanup()
         except Exception:
-            pass
+            logger.debug("Error during ResourceMonitor cleanup in __del__", exc_info=True)

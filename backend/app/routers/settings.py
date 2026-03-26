@@ -91,9 +91,7 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
         # Dict/list values must be serialized to JSON strings for the text column.
         if isinstance(value, (dict, list)):
             value = json.dumps(value)
-        existing = (
-            await db.execute(select(AppSetting).where(AppSetting.key == key))
-        ).scalars().first()
+        existing = (await db.execute(select(AppSetting).where(AppSetting.key == key))).scalars().first()
         if existing:
             existing.value = value
             flag_modified(existing, "value")

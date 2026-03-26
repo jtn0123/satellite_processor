@@ -104,11 +104,7 @@ async def get_shared_image(token: str, db: AsyncSession = Depends(get_db)):
 
 
 async def _get_valid_link(token: str, db: AsyncSession) -> ShareLink:
-    result = await db.execute(
-        select(ShareLink)
-        .options(selectinload(ShareLink.frame))
-        .where(ShareLink.token == token)
-    )
+    result = await db.execute(select(ShareLink).options(selectinload(ShareLink.frame)).where(ShareLink.token == token))
     link = result.scalar_one_or_none()
     if not link:
         raise APIError(404, "share_error", "Share link not found")

@@ -77,14 +77,13 @@ def generate_processed_filename(original_path: Path, timestamp: str, prefix: str
     return f"{prefix}_{original_path.stem}_{timestamp}{original_path.suffix}"
 
 
-
 _PROCESSING_IMAGES_LABEL = "Processing Images"
+
+
 class SatelliteImageProcessor:
     """Main image processing class for satellite imagery"""
 
-    def __init__(
-        self, options: dict | None = None, parent: Any | None = None
-    ) -> None:
+    def __init__(self, options: dict | None = None, parent: Any | None = None) -> None:
         # Callback-based signals (replace pyqtSignal)
         self.on_status_update: Callable[[str], None] | None = None
         self.on_error: Callable[[str], None] | None = None
@@ -177,9 +176,7 @@ class SatelliteImageProcessor:
         self.current_operation = operation
         self._emit_progress(operation, progress)
 
-    def _create_progress_bar(
-        self, operation: str, current: int, total: int, width: int = 40
-    ) -> str:
+    def _create_progress_bar(self, operation: str, current: int, total: int, width: int = 40) -> str:
         """Create simple progress bar string"""
         if total <= 0:
             return f"{operation} [{'░' * width}] 0%"
@@ -211,9 +208,7 @@ class SatelliteImageProcessor:
         sanchez_files = []
         total = len(current_files)
 
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_sanchez, sanchez_args)
-        ):
+        for idx, result in enumerate(pool.imap_unordered(self._parallel_sanchez, sanchez_args)):
             if self.cancelled:
                 return []
 
@@ -239,15 +234,11 @@ class SatelliteImageProcessor:
         self.logger.info("Starting parallel image cropping stage...")
         self._emit_status("📐 Stage 2/4: Cropping images...")
 
-        crop_args = [
-            (str(f), dirs["crop"], self.options) for f in current_files
-        ]
+        crop_args = [(str(f), dirs["crop"], self.options) for f in current_files]
         cropped_files = []
         total = len(current_files)
 
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_crop, crop_args)
-        ):
+        for idx, result in enumerate(pool.imap_unordered(self._parallel_crop, crop_args)):
             if self.cancelled:
                 return []
 
@@ -273,15 +264,11 @@ class SatelliteImageProcessor:
         self.logger.info("Starting parallel timestamp processing stage...")
         self._emit_status("⏰ Stage 3/4: Adding timestamps...")
 
-        timestamp_args = [
-            (str(f), dirs["timestamp"]) for f in current_files
-        ]
+        timestamp_args = [(str(f), dirs["timestamp"]) for f in current_files]
         timestamped_files = []
         total = len(current_files)
 
-        for idx, result in enumerate(
-            pool.imap_unordered(self._parallel_timestamp, timestamp_args)
-        ):
+        for idx, result in enumerate(pool.imap_unordered(self._parallel_timestamp, timestamp_args)):
             if self.cancelled:
                 return []
 
@@ -336,9 +323,7 @@ class SatelliteImageProcessor:
             if not current_files:
                 raise ValueError("No valid/readable images found after validation")
 
-            num_processes = min(
-                len(current_files), max(1, multiprocessing.cpu_count() - 1)
-            )
+            num_processes = min(len(current_files), max(1, multiprocessing.cpu_count() - 1))
             self.logger.info(f"Using {num_processes} processes for parallel operations")
 
             pool = multiprocessing.Pool(processes=num_processes)
@@ -410,9 +395,7 @@ class SatelliteImageProcessor:
         """Worker function for parallel Sanchez processing"""
         input_path, output_dir, sanchez_path, underlay_path = args
         try:
-            success = ImageOperations.apply_false_color(
-                input_path, output_dir, sanchez_path, underlay_path
-            )
+            success = ImageOperations.apply_false_color(input_path, output_dir, sanchez_path, underlay_path)
             if success:
                 output_file = Path(output_dir) / f"{Path(input_path).stem}_sanchez.jpg"
                 return str(output_file) if output_file.exists() else None
@@ -436,9 +419,7 @@ class SatelliteImageProcessor:
             output_path = Path(output_dir) / Path(input_path).name
 
             if cv2.imwrite(str(output_path), timestamped):
-                logger.debug(
-                    f"Successfully saved timestamped image: {output_path.name}"
-                )
+                logger.debug(f"Successfully saved timestamped image: {output_path.name}")
                 return str(output_path)
             else:
                 logger.error(f"Failed to save timestamped image: {output_path}")
@@ -537,9 +518,7 @@ class SatelliteImageProcessor:
             missing = []
             if self.options.get("false_color", False):
                 required_keys = ["sanchez_path", "underlay_path"]
-                missing = [
-                    key for key in required_keys if not self.preferences.get(key)
-                ]
+                missing = [key for key in required_keys if not self.preferences.get(key)]
             if not self.preferences.get("temp_directory"):
                 missing.append("temp_directory")
 
@@ -598,10 +577,7 @@ class SatelliteImageProcessor:
         total_steps = len(image_paths)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(self.process_single_image, path): path
-                for path in image_paths
-            }
+            futures = {executor.submit(self.process_single_image, path): path for path in image_paths}
 
             completed = 0
             for future in concurrent.futures.as_completed(futures):
@@ -677,19 +653,21 @@ class SatelliteImageProcessor:
                     img_path = str(Path(img_path))
 
                     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                    output_file = (
-                        Path(output_dir)
-                        / f"processed_{Path(img_path).stem}_{timestamp}.jpg"
-                    )
+                    output_file = Path(output_dir) / f"processed_{Path(img_path).stem}_{timestamp}.jpg"
                     output_file = str(output_file)
 
                     cmd = [
                         f'"{sanchez_path}"',
-                        "-s", f'"{img_path}"',
-                        "-u", f'"{underlay_path}"',
-                        "-o", f'"{output_file}"',
-                        "-nogui", "-falsecolor",
-                        "-format", "jpg",
+                        "-s",
+                        f'"{img_path}"',
+                        "-u",
+                        f'"{underlay_path}"',
+                        "-o",
+                        f'"{output_file}"',
+                        "-nogui",
+                        "-falsecolor",
+                        "-format",
+                        "jpg",
                     ]
 
                     cmd_str = " ".join(cmd)
@@ -698,14 +676,12 @@ class SatelliteImageProcessor:
 
                     img = cv2.imread(output_file)
                     if img is None:
-                        raise ValueError(
-                            f"Failed to load processed image: {output_file}"
-                        )
+                        raise ValueError(f"Failed to load processed image: {output_file}")
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            out_filename = generate_processed_filename(
-                Path(img_path), timestamp, "processed"
-            ).replace(Path(img_path).suffix, ".png")
+            out_filename = generate_processed_filename(Path(img_path), timestamp, "processed").replace(
+                Path(img_path).suffix, ".png"
+            )
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
             out_path = output_path / out_filename
@@ -787,9 +763,7 @@ class SatelliteImageProcessor:
         """Setup resource monitoring timer using threading"""
         try:
             self._resource_timer_running = True
-            self._resource_timer = threading.Timer(
-                RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick
-            )
+            self._resource_timer = threading.Timer(RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick)
             self._resource_timer.daemon = True
             self._resource_timer.start()
         except Exception as e:
@@ -801,9 +775,7 @@ class SatelliteImageProcessor:
             return
         self.update_resource_usage()
         if self._resource_timer_running:
-            self._resource_timer = threading.Timer(
-                RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick
-            )
+            self._resource_timer = threading.Timer(RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick)
             self._resource_timer.daemon = True
             self._resource_timer.start()
 
@@ -880,9 +852,7 @@ class SatelliteImageProcessor:
 
         return find_ffmpeg()
 
-    def save_images_parallel(
-        self, images: list[np.ndarray], output_dir: Path, timestamp: str
-    ) -> None:
+    def save_images_parallel(self, images: list[np.ndarray], output_dir: Path, timestamp: str) -> None:
         """Save images in parallel using multiprocessing"""
         num_processes = multiprocessing.cpu_count()
         tasks = [(idx, img, output_dir, timestamp) for idx, img in enumerate(images)]
@@ -921,9 +891,7 @@ class SatelliteImageProcessor:
             if not input_files:
                 return False
 
-            video_path = (
-                output_dir / f"animation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-            )
+            video_path = output_dir / f"animation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
 
             if isinstance(input_files, list):
                 if not input_files[0]:
@@ -951,9 +919,7 @@ class SatelliteImageProcessor:
             self.logger.error(f"Video creation error: {e}", exc_info=True)
             return False
 
-    def _process_image_subprocess(
-        self, image_path: Path, options: dict
-    ) -> np.ndarray | None:
+    def _process_image_subprocess(self, image_path: Path, options: dict) -> np.ndarray | None:
         """Process a single image with proper dimension handling"""
         try:
             output_dir = str(Path(options["temp_dir"]) / "sanchez_outputs")

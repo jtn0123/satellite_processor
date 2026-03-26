@@ -1,4 +1,5 @@
 """GOES satellite data fetcher using public NOAA S3 buckets."""
+
 from __future__ import annotations
 
 import logging
@@ -37,16 +38,11 @@ from .satellite_registry import (  # noqa: E402
 
 # Satellite → S3 bucket mapping (GOES-only for backward compat)
 SATELLITE_BUCKETS: dict[str, str] = {
-    name: cfg.bucket
-    for name, cfg in SATELLITE_REGISTRY.items()
-    if cfg.format == "netcdf"
+    name: cfg.bucket for name, cfg in SATELLITE_REGISTRY.items() if cfg.format == "netcdf"
 }
 
 # Satellite availability metadata (all satellites)
-SATELLITE_AVAILABILITY: dict[str, dict[str, Any]] = {
-    name: cfg.availability
-    for name, cfg in SATELLITE_REGISTRY.items()
-}
+SATELLITE_AVAILABILITY: dict[str, dict[str, Any]] = {name: cfg.availability for name, cfg in SATELLITE_REGISTRY.items()}
 
 # Sector → product prefix mapping (GOES sectors only for S3 prefix building)
 SECTOR_PRODUCTS: dict[str, str] = {
@@ -125,7 +121,10 @@ def _should_retry_and_wait(attempt: int, max_retries: int, label: str) -> bool:
     delay = _s3_retry_delay(attempt)
     logger.warning(
         "S3 %s (attempt %d/%d), retrying in %.1fs",
-        label, attempt, max_retries, delay,
+        label,
+        attempt,
+        max_retries,
+        delay,
     )
     time.sleep(delay)
     return True
@@ -241,8 +240,13 @@ def validate_params(satellite: str, sector: str, band: str) -> None:
 
 
 def _list_hour(
-    s3, bucket: str, prefix: str, sector: str, band: str,
-    start_time: datetime, end_time: datetime,
+    s3,
+    bucket: str,
+    prefix: str,
+    sector: str,
+    band: str,
+    start_time: datetime,
+    end_time: datetime,
 ) -> list[dict[str, Any]]:
     """List matching files for a single hour prefix."""
     results: list[dict[str, Any]] = []
@@ -331,8 +335,11 @@ def _read_cmi_data(nc_path: Path, sector: str) -> np.ndarray | None:
         if stride > 1:
             logger.info(
                 "Downsampling CMI %dx%d by stride %d → ~%dx%d",
-                shape[0], shape[1], stride,
-                shape[0] // stride, shape[1] // stride,
+                shape[0],
+                shape[1],
+                stride,
+                shape[0] // stride,
+                shape[1] // stride,
             )
             cmi = cmi_var[::stride, ::stride]
         else:
@@ -397,8 +404,9 @@ def _netcdf_to_png(nc_bytes: bytes, output_path: Path, sector: str = "FullDisk")
 def _check_disk_space(path: Path, min_gb: float = 1.0) -> None:
     """Raise if available disk space is below threshold."""
     import shutil
+
     usage = shutil.disk_usage(path)
-    free_gb = usage.free / (1024 ** 3)
+    free_gb = usage.free / (1024**3)
     if free_gb < min_gb:
         raise OSError(
             f"Insufficient disk space: {free_gb:.1f} GB free, need at least {min_gb} GB. "
@@ -414,7 +422,7 @@ MAX_FRAMES_PER_FETCH = DEFAULT_MAX_FRAMES
 
 # Per-frame retry config for transient S3 errors
 _FRAME_RETRY_ATTEMPTS = 2  # 1 retry = 2 total attempts
-_FRAME_RETRY_DELAY = 5.0   # seconds
+_FRAME_RETRY_DELAY = 5.0  # seconds
 
 
 _FRAME_TRANSIENT_ERRORS = (
@@ -425,7 +433,11 @@ _FRAME_TRANSIENT_ERRORS = (
 
 
 def _download_nc_and_convert(
-    s3: Any, bucket: str, key: str, png_path: Path, sector: str,
+    s3: Any,
+    bucket: str,
+    key: str,
+    png_path: Path,
+    sector: str,
 ) -> dict[str, Any]:
     """Download a NetCDF from S3 and convert to PNG. Returns on success, raises on error."""
     tmp_nc_path = None
@@ -433,7 +445,10 @@ def _download_nc_and_convert(
         with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp_nc:
             tmp_nc_path = Path(tmp_nc.name)
             response = _retry_s3_operation(
-                s3.get_object, Bucket=bucket, Key=key, operation="get",
+                s3.get_object,
+                Bucket=bucket,
+                Key=key,
+                operation="get",
             )
             for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
                 tmp_nc.write(chunk)
@@ -481,7 +496,11 @@ def _download_and_convert_frame(
             if attempt < _FRAME_RETRY_ATTEMPTS:
                 logger.warning(
                     "Frame %s attempt %d/%d failed: %s — retrying in %.0fs",
-                    item["key"], attempt, _FRAME_RETRY_ATTEMPTS, exc, _FRAME_RETRY_DELAY,
+                    item["key"],
+                    attempt,
+                    _FRAME_RETRY_ATTEMPTS,
+                    exc,
+                    _FRAME_RETRY_DELAY,
                 )
                 time.sleep(_FRAME_RETRY_DELAY)
 
@@ -576,7 +595,8 @@ def fetch_frames(
     if capped:
         logger.warning(
             "Limiting fetch from %d to %d frames (max per job)",
-            len(available), max_frames,
+            len(available),
+            max_frames,
         )
         available = available[:max_frames]
 
@@ -587,7 +607,17 @@ def fetch_frames(
 
     for i, item in enumerate(available):
         ok = _process_single_frame(
-            s3, bucket, item, satellite, sector, band, out, results, i, len(available), on_progress,
+            s3,
+            bucket,
+            item,
+            satellite,
+            sector,
+            band,
+            out,
+            results,
+            i,
+            len(available),
+            on_progress,
         )
         if not ok:
             failed_downloads += 1
@@ -613,7 +643,10 @@ def fetch_single_preview(
     s3 = _get_s3_client()
     try:
         response = _retry_s3_operation(
-            s3.get_object, Bucket=SATELLITE_BUCKETS[satellite], Key=closest["key"], operation="get",
+            s3.get_object,
+            Bucket=SATELLITE_BUCKETS[satellite],
+            Key=closest["key"],
+            operation="get",
         )
         nc_bytes = response["Body"].read()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:

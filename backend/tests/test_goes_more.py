@@ -53,11 +53,17 @@ async def test_latest_frame_found(client, db):
 @pytest.mark.asyncio
 async def test_latest_returns_most_recent(client, db):
     for i, hour in enumerate([10, 12, 11]):
-        db.add(GoesFrame(
-            id=f"f{i}", satellite="GOES-16", sector="CONUS", band="C02",
-            capture_time=datetime(2024, 1, 1, hour, 0),
-            file_path=f"/tmp/t{i}.nc", file_size=100,
-        ))
+        db.add(
+            GoesFrame(
+                id=f"f{i}",
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime(2024, 1, 1, hour, 0),
+                file_path=f"/tmp/t{i}.nc",
+                file_size=100,
+            )
+        )
     await db.commit()
 
     resp = await client.get("/api/satellite/latest?satellite=GOES-16&sector=CONUS&band=C02")
@@ -79,10 +85,14 @@ async def test_composite_recipes_list(client):
 
 @pytest.mark.asyncio
 async def test_create_composite_missing_recipe(client):
-    resp = await client.post("/api/satellite/composites", json={
-        "satellite": "GOES-16", "sector": "CONUS",
-        "capture_time": "2024-01-01T12:00:00",
-    })
+    resp = await client.post(
+        "/api/satellite/composites",
+        json={
+            "satellite": "GOES-16",
+            "sector": "CONUS",
+            "capture_time": "2024-01-01T12:00:00",
+        },
+    )
     assert resp.status_code in (400, 422)
 
 
@@ -137,9 +147,7 @@ async def test_health_version(client):
 
 @pytest.mark.asyncio
 async def test_settings_update_crop(client):
-    resp = await client.put("/api/settings", json={
-        "default_crop": {"x": 10, "y": 20, "w": 800, "h": 600}
-    })
+    resp = await client.put("/api/settings", json={"default_crop": {"x": 10, "y": 20, "w": 800, "h": 600}})
     assert resp.status_code == 200
     data = resp.json()
     assert data["default_crop"]["x"] == 10

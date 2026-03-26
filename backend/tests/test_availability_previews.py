@@ -88,9 +88,13 @@ async def test_catalog_available_service():
     """Test catalog_available service function directly."""
     from app.services.catalog import catalog_available
 
-    mock_s3 = type("MockS3", (), {
-        "list_objects_v2": lambda self, **kw: {"Contents": [{"Key": "test"}]},
-    })()
+    mock_s3 = type(
+        "MockS3",
+        (),
+        {
+            "list_objects_v2": lambda self, **kw: {"Contents": [{"Key": "test"}]},
+        },
+    )()
 
     with patch("app.services.catalog._get_s3_client", return_value=mock_s3):
         result = catalog_available("GOES-19")

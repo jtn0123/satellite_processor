@@ -46,6 +46,7 @@ DEFAULT_FETCH_PRESETS = [
 
 # ── Seed Defaults ─────────────────────────────────────────
 
+
 @router.post("/fetch-presets/seed-defaults")
 @limiter.limit("10/minute")
 async def seed_default_presets(request: Request, db: AsyncSession = Depends(get_db)):
@@ -53,9 +54,7 @@ async def seed_default_presets(request: Request, db: AsyncSession = Depends(get_
     logger.info("Seeding default fetch presets")
     created = []
     for preset_def in DEFAULT_FETCH_PRESETS:
-        result = await db.execute(
-            select(FetchPreset).where(FetchPreset.name == preset_def["name"])
-        )
+        result = await db.execute(select(FetchPreset).where(FetchPreset.name == preset_def["name"]))
         if result.scalars().first():
             continue
         preset = FetchPreset(
@@ -74,6 +73,7 @@ async def seed_default_presets(request: Request, db: AsyncSession = Depends(get_
 
 
 # ── Fetch Presets ─────────────────────────────────────────
+
 
 @router.post("/fetch-presets", response_model=FetchPresetResponse)
 @limiter.limit("30/minute")
@@ -182,12 +182,15 @@ async def run_fetch_preset(
     if sat_config and sat_config.format == "hsd":
         if preset.band == "TrueColor":
             from ..tasks.himawari_fetch_task import fetch_himawari_true_color
+
             fetch_himawari_true_color.delay(job_id, job.params)
         else:
             from ..tasks.himawari_fetch_task import fetch_himawari_data
+
             fetch_himawari_data.delay(job_id, job.params)
     else:
         from ..tasks.fetch_task import fetch_goes_data
+
         fetch_goes_data.delay(job_id, job.params)
 
     return {"job_id": job_id, "status": "pending", "preset": preset.name}

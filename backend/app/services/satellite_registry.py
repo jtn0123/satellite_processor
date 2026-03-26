@@ -4,6 +4,7 @@ Single source of truth for all satellite metadata: buckets, bands, sectors,
 availability, and band descriptions. GOES and Himawari configs live here;
 legacy constants in goes_fetcher.py and _goes_shared.py re-export from here.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -41,84 +42,127 @@ class SatelliteConfig:
 # ---------------------------------------------------------------------------
 
 _GOES_BAND_DESCRIPTIONS: dict[str, str] = {
-    "C01": "Blue (0.47µm)", "C02": "Red (0.64µm)", "C03": "Veggie (0.86µm)",
-    "C04": "Cirrus (1.37µm)", "C05": "Snow/Ice (1.61µm)", "C06": "Cloud Particle (2.24µm)",
-    "C07": "Shortwave IR (3.9µm)", "C08": "Upper-level WV (6.2µm)",
-    "C09": "Mid-level WV (6.9µm)", "C10": "Lower-level WV (7.3µm)",
-    "C11": "Cloud-top Phase (8.4µm)", "C12": "Ozone (9.6µm)",
-    "C13": "Clean IR (10.3µm)", "C14": "IR (11.2µm)",
-    "C15": "Dirty IR (12.3µm)", "C16": "CO2 (13.3µm)",
+    "C01": "Blue (0.47µm)",
+    "C02": "Red (0.64µm)",
+    "C03": "Veggie (0.86µm)",
+    "C04": "Cirrus (1.37µm)",
+    "C05": "Snow/Ice (1.61µm)",
+    "C06": "Cloud Particle (2.24µm)",
+    "C07": "Shortwave IR (3.9µm)",
+    "C08": "Upper-level WV (6.2µm)",
+    "C09": "Mid-level WV (6.9µm)",
+    "C10": "Lower-level WV (7.3µm)",
+    "C11": "Cloud-top Phase (8.4µm)",
+    "C12": "Ozone (9.6µm)",
+    "C13": "Clean IR (10.3µm)",
+    "C14": "IR (11.2µm)",
+    "C15": "Dirty IR (12.3µm)",
+    "C16": "CO2 (13.3µm)",
     "GEOCOLOR": "GeoColor (True Color Day, IR Night)",
 }
 
 _GOES_BAND_METADATA: dict[str, dict[str, Any]] = {
     "C01": {
-        "wavelength_um": 0.47, "common_name": "Blue",
-        "category": "visible", "use_case": "Daytime aerosol & smoke detection",
+        "wavelength_um": 0.47,
+        "common_name": "Blue",
+        "category": "visible",
+        "use_case": "Daytime aerosol & smoke detection",
     },
     "C02": {
-        "wavelength_um": 0.64, "common_name": "Red",
-        "category": "visible", "use_case": "Primary visible — clouds & surface features",
+        "wavelength_um": 0.64,
+        "common_name": "Red",
+        "category": "visible",
+        "use_case": "Primary visible — clouds & surface features",
     },
     "C03": {
-        "wavelength_um": 0.86, "common_name": "Veggie",
-        "category": "near_ir", "use_case": "Vegetation health, burn scars",
+        "wavelength_um": 0.86,
+        "common_name": "Veggie",
+        "category": "near_ir",
+        "use_case": "Vegetation health, burn scars",
     },
     "C04": {
-        "wavelength_um": 1.37, "common_name": "Cirrus",
-        "category": "near_ir", "use_case": "Cirrus cloud detection",
+        "wavelength_um": 1.37,
+        "common_name": "Cirrus",
+        "category": "near_ir",
+        "use_case": "Cirrus cloud detection",
     },
     "C05": {
-        "wavelength_um": 1.61, "common_name": "Snow/Ice",
-        "category": "near_ir", "use_case": "Snow/ice discrimination, cloud phase",
+        "wavelength_um": 1.61,
+        "common_name": "Snow/Ice",
+        "category": "near_ir",
+        "use_case": "Snow/ice discrimination, cloud phase",
     },
     "C06": {
-        "wavelength_um": 2.24, "common_name": "Cloud Particle",
-        "category": "near_ir", "use_case": "Cloud particle size, snow detection",
+        "wavelength_um": 2.24,
+        "common_name": "Cloud Particle",
+        "category": "near_ir",
+        "use_case": "Cloud particle size, snow detection",
     },
     "C07": {
-        "wavelength_um": 3.9, "common_name": "Shortwave IR",
-        "category": "infrared", "use_case": "Fire/hotspot detection, nighttime fog",
+        "wavelength_um": 3.9,
+        "common_name": "Shortwave IR",
+        "category": "infrared",
+        "use_case": "Fire/hotspot detection, nighttime fog",
     },
     "C08": {
-        "wavelength_um": 6.2, "common_name": "Upper Tropo WV",
-        "category": "infrared", "use_case": "Upper-level water vapor, jet streams",
+        "wavelength_um": 6.2,
+        "common_name": "Upper Tropo WV",
+        "category": "infrared",
+        "use_case": "Upper-level water vapor, jet streams",
     },
     "C09": {
-        "wavelength_um": 6.9, "common_name": "Mid Tropo WV",
-        "category": "infrared", "use_case": "Mid-level water vapor tracking",
+        "wavelength_um": 6.9,
+        "common_name": "Mid Tropo WV",
+        "category": "infrared",
+        "use_case": "Mid-level water vapor tracking",
     },
     "C10": {
-        "wavelength_um": 7.3, "common_name": "Lower Tropo WV",
-        "category": "infrared", "use_case": "Lower-level water vapor, SO₂ detection",
+        "wavelength_um": 7.3,
+        "common_name": "Lower Tropo WV",
+        "category": "infrared",
+        "use_case": "Lower-level water vapor, SO₂ detection",
     },
     "C11": {
-        "wavelength_um": 8.4, "common_name": "Cloud-Top Phase",
-        "category": "infrared", "use_case": "Cloud-top phase, dust detection",
+        "wavelength_um": 8.4,
+        "common_name": "Cloud-Top Phase",
+        "category": "infrared",
+        "use_case": "Cloud-top phase, dust detection",
     },
     "C12": {
-        "wavelength_um": 9.6, "common_name": "Ozone",
-        "category": "infrared", "use_case": "Total column ozone, turbulence",
+        "wavelength_um": 9.6,
+        "common_name": "Ozone",
+        "category": "infrared",
+        "use_case": "Total column ozone, turbulence",
     },
     "C13": {
-        "wavelength_um": 10.3, "common_name": "Clean IR",
-        "category": "infrared", "use_case": "Clean IR window — clouds & SST",
+        "wavelength_um": 10.3,
+        "common_name": "Clean IR",
+        "category": "infrared",
+        "use_case": "Clean IR window — clouds & SST",
     },
     "C14": {
-        "wavelength_um": 11.2, "common_name": "IR Longwave",
-        "category": "infrared", "use_case": "Cloud-top temperature, general IR",
+        "wavelength_um": 11.2,
+        "common_name": "IR Longwave",
+        "category": "infrared",
+        "use_case": "Cloud-top temperature, general IR",
     },
     "C15": {
-        "wavelength_um": 12.3, "common_name": "Dirty IR",
-        "category": "infrared", "use_case": "Dirty IR window — volcanic ash",
+        "wavelength_um": 12.3,
+        "common_name": "Dirty IR",
+        "category": "infrared",
+        "use_case": "Dirty IR window — volcanic ash",
     },
     "C16": {
-        "wavelength_um": 13.3, "common_name": "CO₂ Longwave",
-        "category": "infrared", "use_case": "Cloud-top height estimation",
+        "wavelength_um": 13.3,
+        "common_name": "CO₂ Longwave",
+        "category": "infrared",
+        "use_case": "Cloud-top height estimation",
     },
     "GEOCOLOR": {
-        "wavelength_um": None, "common_name": "GeoColor",
-        "category": "composite", "use_case": "True color daytime, multispectral IR nighttime",
+        "wavelength_um": None,
+        "common_name": "GeoColor",
+        "category": "composite",
+        "use_case": "True color daytime, multispectral IR nighttime",
     },
 }
 
@@ -181,72 +225,106 @@ _HIMAWARI_BAND_DESCRIPTIONS: dict[str, str] = {
 
 _HIMAWARI_BAND_METADATA: dict[str, dict[str, Any]] = {
     "B01": {
-        "wavelength_um": 0.47, "common_name": "Blue",
-        "category": "visible", "use_case": "Daytime aerosol & smoke detection",
+        "wavelength_um": 0.47,
+        "common_name": "Blue",
+        "category": "visible",
+        "use_case": "Daytime aerosol & smoke detection",
     },
     "B02": {
-        "wavelength_um": 0.51, "common_name": "Green",
-        "category": "visible", "use_case": "True color green channel, vegetation",
+        "wavelength_um": 0.51,
+        "common_name": "Green",
+        "category": "visible",
+        "use_case": "True color green channel, vegetation",
     },
     "B03": {
-        "wavelength_um": 0.64, "common_name": "Red",
-        "category": "visible", "use_case": "Primary visible — clouds & surface features",
+        "wavelength_um": 0.64,
+        "common_name": "Red",
+        "category": "visible",
+        "use_case": "Primary visible — clouds & surface features",
     },
     "B04": {
-        "wavelength_um": 0.86, "common_name": "Veggie",
-        "category": "near_ir", "use_case": "Vegetation health, burn scars",
+        "wavelength_um": 0.86,
+        "common_name": "Veggie",
+        "category": "near_ir",
+        "use_case": "Vegetation health, burn scars",
     },
     "B05": {
-        "wavelength_um": 1.6, "common_name": "Snow/Ice",
-        "category": "near_ir", "use_case": "Snow/ice discrimination, cloud phase",
+        "wavelength_um": 1.6,
+        "common_name": "Snow/Ice",
+        "category": "near_ir",
+        "use_case": "Snow/ice discrimination, cloud phase",
     },
     "B06": {
-        "wavelength_um": 2.3, "common_name": "Cloud Particle",
-        "category": "near_ir", "use_case": "Cloud particle size, snow detection",
+        "wavelength_um": 2.3,
+        "common_name": "Cloud Particle",
+        "category": "near_ir",
+        "use_case": "Cloud particle size, snow detection",
     },
     "B07": {
-        "wavelength_um": 3.9, "common_name": "Shortwave IR",
-        "category": "infrared", "use_case": "Fire/hotspot detection, nighttime fog",
+        "wavelength_um": 3.9,
+        "common_name": "Shortwave IR",
+        "category": "infrared",
+        "use_case": "Fire/hotspot detection, nighttime fog",
     },
     "B08": {
-        "wavelength_um": 6.2, "common_name": "Upper Tropo WV",
-        "category": "infrared", "use_case": "Upper-level water vapor, jet streams",
+        "wavelength_um": 6.2,
+        "common_name": "Upper Tropo WV",
+        "category": "infrared",
+        "use_case": "Upper-level water vapor, jet streams",
     },
     "B09": {
-        "wavelength_um": 6.9, "common_name": "Mid Tropo WV",
-        "category": "infrared", "use_case": "Mid-level water vapor tracking",
+        "wavelength_um": 6.9,
+        "common_name": "Mid Tropo WV",
+        "category": "infrared",
+        "use_case": "Mid-level water vapor tracking",
     },
     "B10": {
-        "wavelength_um": 7.3, "common_name": "Lower Tropo WV",
-        "category": "infrared", "use_case": "Lower-level water vapor, SO₂ detection",
+        "wavelength_um": 7.3,
+        "common_name": "Lower Tropo WV",
+        "category": "infrared",
+        "use_case": "Lower-level water vapor, SO₂ detection",
     },
     "B11": {
-        "wavelength_um": 8.6, "common_name": "Cloud-Top Phase",
-        "category": "infrared", "use_case": "Cloud-top phase, dust detection",
+        "wavelength_um": 8.6,
+        "common_name": "Cloud-Top Phase",
+        "category": "infrared",
+        "use_case": "Cloud-top phase, dust detection",
     },
     "B12": {
-        "wavelength_um": 9.6, "common_name": "Ozone",
-        "category": "infrared", "use_case": "Total column ozone, turbulence",
+        "wavelength_um": 9.6,
+        "common_name": "Ozone",
+        "category": "infrared",
+        "use_case": "Total column ozone, turbulence",
     },
     "B13": {
-        "wavelength_um": 10.4, "common_name": "Clean IR",
-        "category": "infrared", "use_case": "Clean IR window — clouds & SST",
+        "wavelength_um": 10.4,
+        "common_name": "Clean IR",
+        "category": "infrared",
+        "use_case": "Clean IR window — clouds & SST",
     },
     "B14": {
-        "wavelength_um": 11.2, "common_name": "IR Longwave",
-        "category": "infrared", "use_case": "Cloud-top temperature, general IR",
+        "wavelength_um": 11.2,
+        "common_name": "IR Longwave",
+        "category": "infrared",
+        "use_case": "Cloud-top temperature, general IR",
     },
     "B15": {
-        "wavelength_um": 12.4, "common_name": "Dirty IR",
-        "category": "infrared", "use_case": "Dirty IR window — volcanic ash",
+        "wavelength_um": 12.4,
+        "common_name": "Dirty IR",
+        "category": "infrared",
+        "use_case": "Dirty IR window — volcanic ash",
     },
     "B16": {
-        "wavelength_um": 13.3, "common_name": "CO₂ Longwave",
-        "category": "infrared", "use_case": "Cloud-top height estimation",
+        "wavelength_um": 13.3,
+        "common_name": "CO₂ Longwave",
+        "category": "infrared",
+        "use_case": "Cloud-top height estimation",
     },
     "TrueColor": {
-        "wavelength_um": None, "common_name": "True Color",
-        "category": "composite", "use_case": "RGB composite from B03+B02+B01",
+        "wavelength_um": None,
+        "common_name": "True Color",
+        "category": "composite",
+        "use_case": "RGB composite from B03+B02+B01",
     },
 }
 
@@ -345,6 +423,7 @@ SATELLITE_REGISTRY: dict[str, SatelliteConfig] = {
 # Public lookup API
 # ---------------------------------------------------------------------------
 
+
 def get_satellite(name: str) -> SatelliteConfig:
     """Get a satellite config by name. Raises KeyError if not found."""
     try:
@@ -366,9 +445,7 @@ def get_all_satellite_names() -> list[str]:
 def validate_satellite(name: str) -> None:
     """Raise ValueError if satellite name is not registered."""
     if name not in SATELLITE_REGISTRY:
-        raise ValueError(
-            f"Unknown satellite: {name}. Valid: {list(SATELLITE_REGISTRY)}"
-        )
+        raise ValueError(f"Unknown satellite: {name}. Valid: {list(SATELLITE_REGISTRY)}")
 
 
 def validate_sector(satellite: str, sector: str) -> None:
@@ -376,10 +453,7 @@ def validate_sector(satellite: str, sector: str) -> None:
     validate_satellite(satellite)
     cfg = SATELLITE_REGISTRY[satellite]
     if sector not in cfg.sectors:
-        raise ValueError(
-            f"Unknown sector: {sector} for {satellite}. "
-            f"Valid: {list(cfg.sectors)}"
-        )
+        raise ValueError(f"Unknown sector: {sector} for {satellite}. Valid: {list(cfg.sectors)}")
 
 
 def validate_band(satellite: str, band: str) -> None:
@@ -387,9 +461,7 @@ def validate_band(satellite: str, band: str) -> None:
     validate_satellite(satellite)
     cfg = SATELLITE_REGISTRY[satellite]
     if band not in cfg.bands:
-        raise ValueError(
-            f"Unknown band: {band} for {satellite}. Valid: {cfg.bands}"
-        )
+        raise ValueError(f"Unknown band: {band} for {satellite}. Valid: {cfg.bands}")
 
 
 def get_all_valid_satellites() -> set[str]:

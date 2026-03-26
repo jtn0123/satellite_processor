@@ -1,4 +1,5 @@
 """Tests for task helpers throttle cleanup."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 def _reset_throttle():
     """Reset the throttle dict before each test."""
     from app.tasks.helpers import _last_progress_update
+
     _last_progress_update.clear()
     yield
     _last_progress_update.clear()

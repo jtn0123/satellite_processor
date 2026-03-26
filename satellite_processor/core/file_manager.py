@@ -124,9 +124,7 @@ class FileManager:
         """Generate processed image filename"""
         return f"processed_{original_path.stem}_{timestamp}{original_path.suffix}"
 
-    def create_temp_dir(
-        self, base_dir: Path | None = None, prefix: str = "temp"
-    ) -> Path:
+    def create_temp_dir(self, base_dir: Path | None = None, prefix: str = "temp") -> Path:
         """Create a secure temporary directory"""
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -187,9 +185,7 @@ class FileManager:
         if len(valid_files) != len(files):
             self.logger.warning(f"Found {len(valid_files)}/{len(files)} valid files")
 
-        sorted_files = sorted(
-            valid_files, key=lambda x: parse_satellite_timestamp(x.name)
-        )
+        sorted_files = sorted(valid_files, key=lambda x: parse_satellite_timestamp(x.name))
 
         self.logger.info(f"Completed sorting {len(sorted_files)} files")
         return sorted_files

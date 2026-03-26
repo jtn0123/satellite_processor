@@ -1,6 +1,5 @@
 """Real tests for video_handler.py — mock subprocess and ffmpeg finding."""
 
-import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -9,11 +8,6 @@ import numpy as np
 import pytest
 
 from satellite_processor.core.video_handler import (
-    DEFAULT_FRAME_DURATION,
-    MAX_BITRATE,
-    MAX_FPS,
-    MIN_BITRATE,
-    MIN_FPS,
     VideoHandler,
 )
 

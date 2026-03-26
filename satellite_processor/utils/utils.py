@@ -13,8 +13,8 @@ Does NOT handle:
 """
 
 import json
-from pathlib import Path
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def load_config(config_path: Path = None) -> dict:
         config_path = Path.home() / ".satellite_processor" / "config.json"
     try:
         if config_path.exists():
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 loaded_settings = json.load(f)
                 settings = {**get_default_settings(), **loaded_settings}
                 return settings

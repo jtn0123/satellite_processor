@@ -1,4 +1,5 @@
 """Tests for processing.py helper functions and constants."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -12,6 +13,7 @@ from app.tasks.processing import (
 )
 
 # ── _stage_image_paths ──────────────────────────────────
+
 
 class TestStageImagePaths:
     def test_creates_symlinks(self, tmp_path):
@@ -77,6 +79,7 @@ class TestStageImagePaths:
 
 # ── _finalize_job ───────────────────────────────────────
 
+
 class TestFinalizeJob:
     @patch("app.tasks.processing._publish_progress")
     @patch("app.tasks.processing._update_job_db")
@@ -110,6 +113,7 @@ class TestFinalizeJob:
 
 
 # ── Constants ───────────────────────────────────────────
+
 
 def test_constants():
     assert MSG_PROCESSING_COMPLETE == "Processing complete"

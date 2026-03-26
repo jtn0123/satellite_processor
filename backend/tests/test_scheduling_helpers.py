@@ -1,4 +1,5 @@
 """Tests for scheduling_tasks helper functions."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -21,16 +22,13 @@ def _utcnow():
 
 # ── _launch_schedule_job ────────────────────────────────
 
+
 class TestLaunchScheduleJob:
     def test_creates_job_and_dispatches(self):
         session = MagicMock()
         now = _utcnow()
-        preset = SimpleNamespace(
-            id="p1", satellite="G16", sector="CONUS", band="C02", name="test-preset"
-        )
-        schedule = SimpleNamespace(
-            id="s1", interval_minutes=30, last_run_at=None, next_run_at=None, name="sched1"
-        )
+        preset = SimpleNamespace(id="p1", satellite="G16", sector="CONUS", band="C02", name="test-preset")
+        schedule = SimpleNamespace(id="s1", interval_minutes=30, last_run_at=None, next_run_at=None, name="sched1")
 
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay = MagicMock()
@@ -68,6 +66,7 @@ class TestLaunchScheduleJob:
 
 # ── check_schedules task ────────────────────────────────
 
+
 class TestCheckSchedules:
     @patch("app.tasks.scheduling_tasks._get_sync_db")
     @patch("app.tasks.scheduling_tasks._launch_schedule_job")
@@ -88,6 +87,7 @@ class TestCheckSchedules:
         session.query.return_value.filter.return_value.first.return_value = preset
 
         from app.tasks.scheduling_tasks import check_schedules
+
         check_schedules()
 
         mock_launch.assert_called_once_with(session, schedule, preset, now)
@@ -108,6 +108,7 @@ class TestCheckSchedules:
         session.query.return_value.filter.return_value.first.return_value = None
 
         from app.tasks.scheduling_tasks import check_schedules
+
         check_schedules()
 
         session.commit.assert_called_once()
@@ -123,6 +124,7 @@ class TestCheckSchedules:
         session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import check_schedules
+
         check_schedules()
 
         session.rollback.assert_called_once()
@@ -137,6 +139,7 @@ class TestCheckSchedules:
         session.query.return_value.filter.return_value.all.return_value = []
 
         from app.tasks.scheduling_tasks import check_schedules
+
         check_schedules()
 
         session.commit.assert_called_once()
@@ -144,6 +147,7 @@ class TestCheckSchedules:
 
 
 # ── run_cleanup task ────────────────────────────────────
+
 
 class TestRunCleanup:
     @patch("app.tasks.scheduling_tasks._get_sync_db")
@@ -153,6 +157,7 @@ class TestRunCleanup:
         session.query.return_value.filter.return_value.all.return_value = []
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         session.close.assert_called_once()
@@ -173,6 +178,7 @@ class TestRunCleanup:
         mock_age.return_value = [frame]
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         mock_del_files.assert_called_once_with(frame)
@@ -196,6 +202,7 @@ class TestRunCleanup:
         mock_storage.return_value = [frame]
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         mock_del_files.assert_called_once_with(frame)
@@ -213,6 +220,7 @@ class TestRunCleanup:
         mock_prot.return_value = set()
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         session.delete.assert_not_called()
@@ -225,6 +233,7 @@ class TestRunCleanup:
         session.query.side_effect = SQLAlchemyError("db error")
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         session.rollback.assert_called_once()
@@ -246,12 +255,14 @@ class TestRunCleanup:
         mock_age.return_value = [frame]
 
         from app.tasks.scheduling_tasks import run_cleanup
+
         run_cleanup()
 
         session.commit.assert_called_once()
 
 
 # ── _get_protected_frame_ids ────────────────────────────
+
 
 class TestGetProtectedFrameIds:
     def test_disabled(self):
@@ -273,6 +284,7 @@ class TestGetProtectedFrameIds:
 
 
 # ── _collect_age_based_deletions ────────────────────────
+
 
 class TestCollectAgeBasedDeletions:
     @patch("app.tasks.scheduling_tasks.utcnow")
@@ -313,6 +325,7 @@ class TestCollectAgeBasedDeletions:
 
 # ── _collect_storage_based_deletions ────────────────────
 
+
 class TestCollectStorageBasedDeletions:
     def test_under_limit(self):
         session = MagicMock()
@@ -326,7 +339,10 @@ class TestCollectStorageBasedDeletions:
 
         f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
-        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+        ]
 
         rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
@@ -338,7 +354,10 @@ class TestCollectStorageBasedDeletions:
 
         f1 = SimpleNamespace(id="f1", file_size=1024 * 1024 * 1024, created_at=_utcnow())
         f2 = SimpleNamespace(id="f2", file_size=1024 * 1024 * 1024, created_at=_utcnow())
-        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+        ]
 
         rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, {"f1"})
@@ -356,7 +375,10 @@ class TestCollectStorageBasedDeletions:
 
         f1 = SimpleNamespace(id="f1", file_size=None, created_at=_utcnow())
         f2 = SimpleNamespace(id="f2", file_size=2 * 1024 * 1024 * 1024, created_at=_utcnow())
-        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [f1, f2]
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+        ]
 
         rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
@@ -375,6 +397,7 @@ class TestCollectStorageBasedDeletions:
 
 
 # ── _delete_frame_files ─────────────────────────────────
+
 
 class TestDeleteFrameFiles:
     def test_deletes_existing_files(self, tmp_path):
@@ -403,23 +426,28 @@ class TestDeleteFrameFiles:
 
 # ── Constants from other modules ────────────────────────
 
+
 def test_jobs_id_fk():
     from app.db.models import JOBS_ID_FK
+
     assert JOBS_ID_FK == "jobs.id"
 
 
 def test_frame_not_found_constant():
     from app.routers.goes_data import _FRAME_NOT_FOUND
+
     assert _FRAME_NOT_FOUND == "Frame not found"
 
 
 def test_collection_not_found_constant():
     from app.routers.goes_data import _COLLECTION_NOT_FOUND
+
     assert _COLLECTION_NOT_FOUND == "Collection not found"
 
 
 def test_max_export_limit():
     from app.routers.goes_data import MAX_EXPORT_LIMIT
+
     assert MAX_EXPORT_LIMIT == 5000
 
 
@@ -429,6 +457,7 @@ def test_processing_constants():
         MSG_PROCESSING_FAILED,
         MSG_VIDEO_CREATION_COMPLETE,
     )
+
     assert MSG_PROCESSING_COMPLETE == "Processing complete"
     assert MSG_PROCESSING_FAILED == "Processing failed"
     assert MSG_VIDEO_CREATION_COMPLETE == "Video creation complete"
@@ -436,5 +465,6 @@ def test_processing_constants():
 
 def test_scheduling_router_constants():
     from app.routers.scheduling import _FETCH_PRESET_NOT_FOUND, _SCHEDULE_NOT_FOUND
+
     assert _FETCH_PRESET_NOT_FOUND == "Fetch preset not found"
     assert _SCHEDULE_NOT_FOUND == "Schedule not found"

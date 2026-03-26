@@ -104,7 +104,13 @@ class TestFetchEndpointCombinations:
     @pytest.mark.parametrize("sector", SECTORS)
     @pytest.mark.parametrize("band", ["C02", "C13"])  # representative bands
     async def test_valid_combo_accepted(
-        self, client: AsyncClient, mock_redis, mock_celery, satellite, sector, band,
+        self,
+        client: AsyncClient,
+        mock_redis,
+        mock_celery,
+        satellite,
+        sector,
+        band,
     ):
         """Valid combos should return 200 with a job_id."""
         mock_task = MagicMock()
@@ -121,7 +127,11 @@ class TestFetchEndpointCombinations:
     @pytest.mark.parametrize("satellite", SATELLITES)
     @pytest.mark.parametrize("sector", SECTORS)
     async def test_geocolor_rejected_all_sectors(
-        self, client: AsyncClient, mock_redis, satellite, sector,
+        self,
+        client: AsyncClient,
+        mock_redis,
+        satellite,
+        sector,
     ):
         """GEOCOLOR must be rejected for every satellite × sector combo."""
         resp = await client.post("/api/satellite/fetch", json=_payload(satellite, sector, "GEOCOLOR"))
@@ -133,7 +143,12 @@ class TestFetchEndpointCombinations:
     @pytest.mark.parametrize("satellite", SATELLITES)
     @pytest.mark.parametrize("band", BANDS_C)
     async def test_all_bands_accepted_conus(
-        self, client: AsyncClient, mock_redis, mock_celery, satellite, band,
+        self,
+        client: AsyncClient,
+        mock_redis,
+        mock_celery,
+        satellite,
+        band,
     ):
         """Every C01-C16 band should be accepted for CONUS."""
         mock_task = MagicMock()

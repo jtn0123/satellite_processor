@@ -31,6 +31,7 @@ TEST_SIZES = [
 # Synthetic test-image generation
 # ---------------------------------------------------------------------------
 
+
 def generate_test_image(width: int, height: int, tmp_dir: Path) -> Path:
     """Create a synthetic GOES-like PNG with gradient + noise."""
     arr = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
@@ -45,6 +46,7 @@ def generate_test_image(width: int, height: int, tmp_dir: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Individual operation benchmarks
 # ---------------------------------------------------------------------------
+
 
 def bench_crop(img: np.ndarray) -> np.ndarray:
     """Crop center 50%."""
@@ -81,6 +83,7 @@ def bench_file_discovery(directory: Path) -> list:
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
+
 
 def _time_op(name: str, fn, *args):
     """Run *fn* with perf_counter timing, return (name, duration_s, result)."""

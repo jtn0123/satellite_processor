@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 async def send_webhook_notification(db: AsyncSession, message: str) -> None:
     """Send a Discord webhook if webhook_url is configured in settings."""
-    result = await db.execute(
-        select(AppSetting).where(AppSetting.key == "webhook_url")
-    )
+    result = await db.execute(select(AppSetting).where(AppSetting.key == "webhook_url"))
     row = result.scalars().first()
     if not row or not row.value:
         return

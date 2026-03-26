@@ -160,10 +160,7 @@ class TestBuildFfmpegCommand:
         for i in range(2):
             (tmp_path / f"frame{i:04d}.png").write_bytes(b"\x89PNG")
         output = tmp_path / "out.mp4"
-        cmd, _ = build_ffmpeg_command(
-            "ffmpeg", tmp_path, output,
-            {"fps": 30, "metadata": {"title": "Test"}}
-        )
+        cmd, _ = build_ffmpeg_command("ffmpeg", tmp_path, output, {"fps": 30, "metadata": {"title": "Test"}})
         assert "-metadata" in cmd
 
 

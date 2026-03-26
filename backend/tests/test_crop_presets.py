@@ -1,4 +1,5 @@
 """Tests for crop preset and animation creation edge cases."""
+
 from __future__ import annotations
 
 import uuid
@@ -28,10 +29,16 @@ def _make_frame(db, **overrides):
 @pytest.mark.asyncio
 class TestCropPresets:
     async def test_create_preset(self, client):
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Northeast US",
-            "x": 100, "y": 200, "width": 500, "height": 400,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Northeast US",
+                "x": 100,
+                "y": 200,
+                "width": 500,
+                "height": 400,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "Northeast US"
@@ -41,21 +48,42 @@ class TestCropPresets:
         preset = CropPreset(id=str(uuid.uuid4()), name="Dupe", x=0, y=0, width=100, height=100)
         db.add(preset)
         await db.commit()
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Dupe", "x": 0, "y": 0, "width": 100, "height": 100,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Dupe",
+                "x": 0,
+                "y": 0,
+                "width": 100,
+                "height": 100,
+            },
+        )
         assert resp.status_code == 409
 
     async def test_create_zero_width(self, client):
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Zero W", "x": 0, "y": 0, "width": 0, "height": 100,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Zero W",
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 100,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_create_negative_x(self, client):
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Neg X", "x": -1, "y": 0, "width": 100, "height": 100,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Neg X",
+                "x": -1,
+                "y": 0,
+                "width": 100,
+                "height": 100,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_list_empty(self, client):
@@ -101,18 +129,24 @@ class TestAnimationCreation:
         f1 = _make_frame(db)
         f2 = _make_frame(db)
         await db.commit()
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "Test Anim",
-            "frame_ids": [f1.id, f2.id],
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "Test Anim",
+                "frame_ids": [f1.id, f2.id],
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["frame_count"] == 2
 
     async def test_create_empty_frame_ids(self, client):
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "Empty",
-            "frame_ids": [],
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "Empty",
+                "frame_ids": [],
+            },
+        )
         # Empty list with no filter matches → 400
         assert resp.status_code in (400, 422)
 
@@ -120,38 +154,50 @@ class TestAnimationCreation:
     async def test_create_with_filters(self, mock_delay, client, db):
         _make_frame(db, satellite="GOES-16", band="C02")
         await db.commit()
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "Filtered",
-            "satellite": "GOES-16",
-            "band": "C02",
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "Filtered",
+                "satellite": "GOES-16",
+                "band": "C02",
+            },
+        )
         assert resp.status_code == 200
 
     async def test_create_no_matching_frames(self, client):
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "No Match",
-            "satellite": "GOES-99",
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "No Match",
+                "satellite": "GOES-99",
+            },
+        )
         assert resp.status_code in (400, 422)
 
     async def test_create_invalid_fps(self, client, db):
         f = _make_frame(db)
         await db.commit()
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "Bad FPS",
-            "frame_ids": [f.id],
-            "fps": 0,
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "Bad FPS",
+                "frame_ids": [f.id],
+                "fps": 0,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_create_invalid_format(self, client, db):
         f = _make_frame(db)
         await db.commit()
-        resp = await client.post("/api/satellite/animations", json={
-            "name": "Bad Format",
-            "frame_ids": [f.id],
-            "format": "avi",
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "name": "Bad Format",
+                "frame_ids": [f.id],
+                "format": "avi",
+            },
+        )
         assert resp.status_code == 422
 
     async def test_get_nonexistent_animation(self, client):

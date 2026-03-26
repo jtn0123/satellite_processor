@@ -13,10 +13,13 @@ async def test_create_job_and_retrieve(client, db):
 
     with patch("app.routers.jobs.celery_app") as mock_celery:
         mock_celery.send_task.return_value = mock_result
-        resp = await client.post("/api/jobs", json={
-            "job_type": "image_process",
-            "params": {},
-        })
+        resp = await client.post(
+            "/api/jobs",
+            json={
+                "job_type": "image_process",
+                "params": {},
+            },
+        )
     assert resp.status_code == 200
     data = resp.json()
     job_id = data["id"]
@@ -161,14 +164,18 @@ async def test_goes_fetch_creates_job(client, db):
         mock_task.delay.return_value = mock_result
 
         from datetime import UTC, datetime, timedelta
+
         now = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-            "start_time": (now - timedelta(hours=3)).isoformat(),
-            "end_time": now.isoformat(),
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+                "start_time": (now - timedelta(hours=3)).isoformat(),
+                "end_time": now.isoformat(),
+            },
+        )
     assert resp.status_code == 200
     data = resp.json()
     assert "job_id" in data or "id" in data
@@ -207,10 +214,13 @@ async def test_collection_full_lifecycle(client, db):
         await session.commit()
 
     # Create collection
-    resp = await client.post("/api/satellite/collections", json={
-        "name": "Integration Collection",
-        "description": "Testing",
-    })
+    resp = await client.post(
+        "/api/satellite/collections",
+        json={
+            "name": "Integration Collection",
+            "description": "Testing",
+        },
+    )
     assert resp.status_code == 200
     coll_id = resp.json()["id"]
 
@@ -264,11 +274,14 @@ async def test_animation_workflow(client, db):
     with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
         mock_task.delay.return_value = MagicMock(id="task-anim-integration")
 
-        resp = await client.post("/api/satellite/animations", json={
-            "frame_ids": frame_ids,
-            "fps": 10,
-            "format": "mp4",
-        })
+        resp = await client.post(
+            "/api/satellite/animations",
+            json={
+                "frame_ids": frame_ids,
+                "fps": 10,
+                "format": "mp4",
+            },
+        )
     assert resp.status_code == 200
     anim_id = resp.json()["id"]
 

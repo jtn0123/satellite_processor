@@ -187,9 +187,7 @@ class TestInterpolateFrames:
         frame1 = np.zeros((50, 50, 3), dtype=np.uint8)
         frame2 = np.ones((50, 50, 3), dtype=np.uint8) * 255
 
-        frames = ImageOperations.interpolate_frames(
-            frame1, frame2, factor=2, method="Linear"
-        )
+        frames = ImageOperations.interpolate_frames(frame1, frame2, factor=2, method="Linear")
 
         assert len(frames) == 1  # factor=2 produces 1 intermediate frame
         # The intermediate frame should have values near 127-128
@@ -200,9 +198,7 @@ class TestInterpolateFrames:
         frame1 = np.zeros((50, 50, 3), dtype=np.uint8)
         frame2 = np.ones((50, 50, 3), dtype=np.uint8) * 200
 
-        frames = ImageOperations.interpolate_frames(
-            frame1, frame2, factor=3, method="Cubic"
-        )
+        frames = ImageOperations.interpolate_frames(frame1, frame2, factor=3, method="Cubic")
 
         assert len(frames) == 2  # factor=3 produces 2 intermediate frames
 

@@ -1,4 +1,5 @@
 """Extended tests for scheduling endpoints (presets, schedules, cleanup)."""
+
 from __future__ import annotations
 
 import uuid
@@ -46,12 +47,15 @@ def _frame(**kw):
 @pytest.mark.asyncio
 class TestFetchPresetsExtended:
     async def test_create_preset(self, client):
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "My Preset",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "My Preset",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "My Preset"
 
@@ -117,11 +121,14 @@ class TestFetchPresetsExtended:
 @pytest.mark.asyncio
 class TestSchedulesExtended:
     async def test_create_schedule_preset_not_found(self, client):
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "Sched",
-            "preset_id": "fake",
-            "interval_minutes": 30,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "Sched",
+                "preset_id": "fake",
+                "interval_minutes": 30,
+            },
+        )
         assert resp.status_code == 404
 
     async def test_create_schedule_success(self, client, db):
@@ -129,12 +136,15 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "My Schedule",
-            "preset_id": p.id,
-            "interval_minutes": 60,
-            "is_active": True,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "My Schedule",
+                "preset_id": p.id,
+                "interval_minutes": 60,
+                "is_active": True,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "My Schedule"
@@ -146,12 +156,15 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
 
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "Inactive",
-            "preset_id": p.id,
-            "interval_minutes": 60,
-            "is_active": False,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "Inactive",
+                "preset_id": p.id,
+                "interval_minutes": 60,
+                "is_active": False,
+            },
+        )
         data = resp.json()
         assert data["is_active"] is False
 
@@ -172,15 +185,21 @@ class TestSchedulesExtended:
         await db.commit()
 
         sched = FetchSchedule(
-            id=str(uuid.uuid4()), name="S", preset_id=p1.id,
-            interval_minutes=30, is_active=False,
+            id=str(uuid.uuid4()),
+            name="S",
+            preset_id=p1.id,
+            interval_minutes=30,
+            is_active=False,
         )
         db.add(sched)
         await db.commit()
 
-        resp = await client.put(f"/api/satellite/schedules/{sched.id}", json={
-            "preset_id": p2.id,
-        })
+        resp = await client.put(
+            f"/api/satellite/schedules/{sched.id}",
+            json={
+                "preset_id": p2.id,
+            },
+        )
         assert resp.status_code == 200
 
     async def test_update_schedule_invalid_preset(self, client, db):
@@ -188,15 +207,21 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
         sched = FetchSchedule(
-            id=str(uuid.uuid4()), name="S", preset_id=p.id,
-            interval_minutes=30, is_active=False,
+            id=str(uuid.uuid4()),
+            name="S",
+            preset_id=p.id,
+            interval_minutes=30,
+            is_active=False,
         )
         db.add(sched)
         await db.commit()
 
-        resp = await client.put(f"/api/satellite/schedules/{sched.id}", json={
-            "preset_id": "nonexistent",
-        })
+        resp = await client.put(
+            f"/api/satellite/schedules/{sched.id}",
+            json={
+                "preset_id": "nonexistent",
+            },
+        )
         assert resp.status_code == 404
 
     async def test_delete_schedule_not_found(self, client):
@@ -208,8 +233,11 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
         sched = FetchSchedule(
-            id=str(uuid.uuid4()), name="S", preset_id=p.id,
-            interval_minutes=30, is_active=False,
+            id=str(uuid.uuid4()),
+            name="S",
+            preset_id=p.id,
+            interval_minutes=30,
+            is_active=False,
         )
         db.add(sched)
         await db.commit()
@@ -222,8 +250,11 @@ class TestSchedulesExtended:
         db.add(p)
         await db.commit()
         sched = FetchSchedule(
-            id=str(uuid.uuid4()), name="S", preset_id=p.id,
-            interval_minutes=30, is_active=False,
+            id=str(uuid.uuid4()),
+            name="S",
+            preset_id=p.id,
+            interval_minutes=30,
+            is_active=False,
         )
         db.add(sched)
         await db.commit()
@@ -244,11 +275,14 @@ class TestSchedulesExtended:
 @pytest.mark.asyncio
 class TestCleanupRulesExtended:
     async def test_create_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Age Rule",
-            "rule_type": "max_age_days",
-            "value": 30,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Age Rule",
+                "rule_type": "max_age_days",
+                "value": 30,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "Age Rule"
 

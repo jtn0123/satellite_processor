@@ -1,4 +1,5 @@
 """Extended tests for health, settings, stats, system, presets, jobs, images endpoints."""
+
 from __future__ import annotations
 
 import uuid
@@ -32,10 +33,13 @@ class TestSettingsExtended:
         assert "default_crop" in data or "video_fps" in data
 
     async def test_update_settings_valid(self, client):
-        resp = await client.put("/api/settings", json={
-            "video_fps": 30,
-            "timestamp_enabled": False,
-        })
+        resp = await client.put(
+            "/api/settings",
+            json={
+                "video_fps": 30,
+                "timestamp_enabled": False,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["video_fps"] == 30
@@ -54,9 +58,12 @@ class TestSettingsExtended:
         assert resp.status_code == 422
 
     async def test_update_settings_crop(self, client):
-        resp = await client.put("/api/settings", json={
-            "default_crop": {"x": 100, "y": 200, "w": 800, "h": 600},
-        })
+        resp = await client.put(
+            "/api/settings",
+            json={
+                "default_crop": {"x": 100, "y": 200, "w": 800, "h": 600},
+            },
+        )
         assert resp.status_code == 200
 
 
@@ -71,10 +78,14 @@ class TestStatsExtended:
         assert data["active_jobs"] == 0
 
     async def test_stats_with_data(self, client, db):
-        db.add(Image(
-            id=str(uuid.uuid4()), filename="test.png",
-            original_name="test.png", file_path="/tmp/test.png",
-        ))
+        db.add(
+            Image(
+                id=str(uuid.uuid4()),
+                filename="test.png",
+                original_name="test.png",
+                file_path="/tmp/test.png",
+            )
+        )
         db.add(Job(id=str(uuid.uuid4()), status="pending"))
         db.add(Job(id=str(uuid.uuid4()), status="completed"))
         await db.commit()
@@ -113,10 +124,13 @@ class TestPresetsExtended:
         assert resp.json() == []
 
     async def test_create_preset(self, client):
-        resp = await client.post("/api/presets", json={
-            "name": "My Preset",
-            "params": {"brightness": 1.2},
-        })
+        resp = await client.post(
+            "/api/presets",
+            json={
+                "name": "My Preset",
+                "params": {"brightness": 1.2},
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "My Preset"
 
@@ -293,10 +307,15 @@ class TestModels:
 
     async def test_goesframe_tag_relationship(self, db):
         from app.db.models import FrameTag
+
         f = GoesFrame(
-            id=str(uuid.uuid4()), satellite="GOES-16", sector="CONUS",
-            band="C02", capture_time=datetime(2024, 1, 1, tzinfo=UTC),
-            file_path="/tmp/t.nc", file_size=100,
+            id=str(uuid.uuid4()),
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1, tzinfo=UTC),
+            file_path="/tmp/t.nc",
+            file_size=100,
         )
         t = Tag(id=str(uuid.uuid4()), name="test", color="#000")
         db.add(f)
@@ -307,19 +326,23 @@ class TestModels:
 
         from sqlalchemy import select
         from sqlalchemy.orm import selectinload
-        result = await db.execute(
-            select(GoesFrame).options(selectinload(GoesFrame.tags)).where(GoesFrame.id == f.id)
-        )
+
+        result = await db.execute(select(GoesFrame).options(selectinload(GoesFrame.tags)).where(GoesFrame.id == f.id))
         frame = result.scalars().first()
         assert len(frame.tags) == 1
         assert frame.tags[0].name == "test"
 
     async def test_collection_frame_relationship(self, db):
         from app.db.models import Collection, CollectionFrame
+
         f = GoesFrame(
-            id=str(uuid.uuid4()), satellite="GOES-16", sector="CONUS",
-            band="C02", capture_time=datetime(2024, 1, 1, tzinfo=UTC),
-            file_path="/tmp/t.nc", file_size=100,
+            id=str(uuid.uuid4()),
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1, tzinfo=UTC),
+            file_path="/tmp/t.nc",
+            file_size=100,
         )
         c = Collection(id=str(uuid.uuid4()), name="Test Col")
         db.add(f)
@@ -330,6 +353,7 @@ class TestModels:
 
         from sqlalchemy import select
         from sqlalchemy.orm import selectinload
+
         result = await db.execute(
             select(Collection).options(selectinload(Collection.frames)).where(Collection.id == c.id)
         )
@@ -338,11 +362,10 @@ class TestModels:
 
     async def test_preset_unique_name(self, db):
         from sqlalchemy.exc import IntegrityError
+
         db.add(Preset(id=str(uuid.uuid4()), name="Unique", params={"a": 1}))
         await db.commit()
 
         db.add(Preset(id=str(uuid.uuid4()), name="Unique", params={"a": 1}))
         with pytest.raises(IntegrityError):
             await db.commit()
-
-

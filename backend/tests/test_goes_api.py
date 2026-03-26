@@ -1,4 +1,5 @@
 """Tests for GOES API endpoints."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -23,13 +24,16 @@ class TestGoesProducts:
 class TestGoesFetch:
     @patch("app.tasks.goes_tasks.fetch_goes_data.delay")
     async def test_create_fetch_job(self, mock_delay, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "FullDisk",
-            "band": "C02",
-            "start_time": "2024-03-15T14:00:00",
-            "end_time": "2024-03-15T15:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "FullDisk",
+                "band": "C02",
+                "start_time": "2024-03-15T14:00:00",
+                "end_time": "2024-03-15T15:00:00",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -37,33 +41,42 @@ class TestGoesFetch:
         mock_delay.assert_called_once()
 
     async def test_invalid_satellite(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-99",
-            "sector": "FullDisk",
-            "band": "C02",
-            "start_time": "2024-03-15T14:00:00",
-            "end_time": "2024-03-15T15:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-99",
+                "sector": "FullDisk",
+                "band": "C02",
+                "start_time": "2024-03-15T14:00:00",
+                "end_time": "2024-03-15T15:00:00",
+            },
+        )
         assert resp.status_code == 422
 
     async def test_invalid_band(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "FullDisk",
-            "band": "C99",
-            "start_time": "2024-03-15T14:00:00",
-            "end_time": "2024-03-15T15:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "FullDisk",
+                "band": "C99",
+                "start_time": "2024-03-15T14:00:00",
+                "end_time": "2024-03-15T15:00:00",
+            },
+        )
         assert resp.status_code == 422
 
     async def test_end_before_start(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "FullDisk",
-            "band": "C02",
-            "start_time": "2024-03-15T15:00:00",
-            "end_time": "2024-03-15T14:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "FullDisk",
+                "band": "C02",
+                "start_time": "2024-03-15T15:00:00",
+                "end_time": "2024-03-15T14:00:00",
+            },
+        )
         assert resp.status_code == 422
 
 
@@ -111,11 +124,14 @@ class TestGoesGaps:
 class TestGoesBackfill:
     @patch("app.tasks.goes_tasks.backfill_gaps.delay")
     async def test_create_backfill_job(self, mock_delay, client):
-        resp = await client.post("/api/satellite/backfill", json={
-            "satellite": "GOES-16",
-            "band": "C02",
-            "sector": "FullDisk",
-        })
+        resp = await client.post(
+            "/api/satellite/backfill",
+            json={
+                "satellite": "GOES-16",
+                "band": "C02",
+                "sector": "FullDisk",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"

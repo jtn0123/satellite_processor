@@ -1,4 +1,5 @@
 """Tests for GOES composites endpoints."""
+
 from __future__ import annotations
 
 import uuid
@@ -61,12 +62,15 @@ class TestCompositeRecipes:
 class TestCreateComposite:
     @patch("app.tasks.goes_tasks.generate_composite.delay")
     async def test_create_valid_composite(self, mock_delay, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "true_color",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "capture_time": "2024-03-15T14:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "true_color",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "capture_time": "2024-03-15T14:00:00",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -75,21 +79,27 @@ class TestCreateComposite:
         mock_delay.assert_called_once()
 
     async def test_create_invalid_recipe(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "nonexistent_recipe",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "capture_time": "2024-03-15T14:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "nonexistent_recipe",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "capture_time": "2024-03-15T14:00:00",
+            },
+        )
         assert resp.status_code in (400, 422)
         assert "Unknown recipe" in resp.json()["detail"]
 
     async def test_create_missing_capture_time(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "true_color",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "true_color",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+            },
+        )
         assert resp.status_code in (400, 422)
         detail = resp.json().get("detail", resp.json())
         if isinstance(detail, list):
@@ -98,29 +108,38 @@ class TestCreateComposite:
             assert "capture_time" in str(detail)
 
     async def test_create_missing_recipe(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "capture_time": "2024-03-15T14:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "capture_time": "2024-03-15T14:00:00",
+            },
+        )
         assert resp.status_code in (400, 422)
 
     @patch("app.tasks.goes_tasks.generate_composite.delay")
     async def test_create_defaults_satellite(self, mock_delay, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "natural_color",
-            "capture_time": "2024-03-15T14:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "natural_color",
+                "capture_time": "2024-03-15T14:00:00",
+            },
+        )
         assert resp.status_code == 200
 
     @patch("app.tasks.goes_tasks.generate_composite.delay")
     async def test_create_all_recipes(self, mock_delay, client):
         recipes = ["true_color", "natural_color", "fire_detection", "dust_ash", "day_cloud_phase", "airmass"]
         for recipe in recipes:
-            resp = await client.post("/api/satellite/composites", json={
-                "recipe": recipe,
-                "capture_time": "2024-03-15T14:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/composites",
+                json={
+                    "recipe": recipe,
+                    "capture_time": "2024-03-15T14:00:00",
+                },
+            )
             assert resp.status_code == 200, f"Failed for recipe: {recipe}"
 
 

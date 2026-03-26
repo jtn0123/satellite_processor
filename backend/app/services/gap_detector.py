@@ -1,4 +1,5 @@
 """Gap detection service for satellite image coverage analysis."""
+
 from __future__ import annotations
 
 import logging
@@ -96,9 +97,7 @@ async def find_gaps(
     Returns list of dicts with 'start', 'end', 'duration_minutes', 'expected_frames'.
     """
     query = (
-        select(GoesFrame.capture_time)
-        .where(GoesFrame.capture_time.isnot(None))
-        .order_by(GoesFrame.capture_time.asc())
+        select(GoesFrame.capture_time).where(GoesFrame.capture_time.isnot(None)).order_by(GoesFrame.capture_time.asc())
     )
     if satellite:
         query = query.where(GoesFrame.satellite == satellite)
@@ -122,12 +121,14 @@ async def find_gaps(
         delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
         if delta_minutes > threshold:
             expected_frames = int(delta_minutes / expected_interval) - 1
-            gaps.append({
-                "start": timestamps[i - 1].isoformat(),
-                "end": timestamps[i].isoformat(),
-                "duration_minutes": round(delta_minutes, 1),
-                "expected_frames": max(expected_frames, 1),
-            })
+            gaps.append(
+                {
+                    "start": timestamps[i - 1].isoformat(),
+                    "end": timestamps[i].isoformat(),
+                    "duration_minutes": round(delta_minutes, 1),
+                    "expected_frames": max(expected_frames, 1),
+                }
+            )
 
     logger.info("Gap detection complete: %d gaps found", len(gaps))
     return gaps

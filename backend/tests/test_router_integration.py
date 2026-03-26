@@ -30,6 +30,7 @@ pytestmark = pytest.mark.usefixtures("mock_redis", "mock_celery")
 
 # ── Factory helpers ──────────────────────────────────────────
 
+
 def make_id():
     return str(uuid.uuid4())
 
@@ -214,13 +215,16 @@ class TestGoesFetch:
     async def test_fetch_goes_creates_job(self, client, db):
         with patch("app.tasks.fetch_task.fetch_goes_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-123")
-            resp = await client.post("/api/satellite/fetch", json={
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "band": "C02",
-                "start_time": "2024-06-01T00:00:00",
-                "end_time": "2024-06-01T01:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/fetch",
+                json={
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "band": "C02",
+                    "start_time": "2024-06-01T00:00:00",
+                    "end_time": "2024-06-01T01:00:00",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -228,46 +232,58 @@ class TestGoesFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_goes_invalid_satellite(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-99",
-            "sector": "CONUS",
-            "band": "C02",
-            "start_time": "2024-06-01T00:00:00",
-            "end_time": "2024-06-01T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-99",
+                "sector": "CONUS",
+                "band": "C02",
+                "start_time": "2024-06-01T00:00:00",
+                "end_time": "2024-06-01T01:00:00",
+            },
+        )
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_fetch_goes_invalid_band(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C99",
-            "start_time": "2024-06-01T00:00:00",
-            "end_time": "2024-06-01T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C99",
+                "start_time": "2024-06-01T00:00:00",
+                "end_time": "2024-06-01T01:00:00",
+            },
+        )
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_fetch_goes_end_before_start(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-            "start_time": "2024-06-01T02:00:00",
-            "end_time": "2024-06-01T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+                "start_time": "2024-06-01T02:00:00",
+                "end_time": "2024-06-01T01:00:00",
+            },
+        )
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_fetch_goes_range_exceeds_24h(self, client):
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-            "start_time": "2024-06-01T00:00:00",
-            "end_time": "2024-06-03T00:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+                "start_time": "2024-06-01T00:00:00",
+                "end_time": "2024-06-03T00:00:00",
+            },
+        )
         assert resp.status_code == 422
 
 
@@ -276,26 +292,32 @@ class TestGoesFetchComposite:
     async def test_fetch_composite_creates_job(self, client, db):
         with patch("app.tasks.composite_task.fetch_composite_data") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-456")
-            resp = await client.post("/api/satellite/fetch-composite", json={
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "recipe": "true_color",
-                "start_time": "2024-06-01T00:00:00",
-                "end_time": "2024-06-01T01:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/fetch-composite",
+                json={
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "recipe": "true_color",
+                    "start_time": "2024-06-01T00:00:00",
+                    "end_time": "2024-06-01T01:00:00",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
 
     @pytest.mark.asyncio
     async def test_fetch_composite_invalid_recipe(self, client):
-        resp = await client.post("/api/satellite/fetch-composite", json={
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "recipe": "nonexistent_recipe",
-            "start_time": "2024-06-01T00:00:00",
-            "end_time": "2024-06-01T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-composite",
+            json={
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "recipe": "nonexistent_recipe",
+                "start_time": "2024-06-01T00:00:00",
+                "end_time": "2024-06-01T01:00:00",
+            },
+        )
         assert resp.status_code == 422
 
 
@@ -304,12 +326,15 @@ class TestGoesBackfill:
     async def test_backfill_creates_job(self, client, db):
         with patch("app.tasks.fetch_task.backfill_gaps") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-789")
-            resp = await client.post("/api/satellite/backfill", json={
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "band": "C02",
-                "expected_interval": 10.0,
-            })
+            resp = await client.post(
+                "/api/satellite/backfill",
+                json={
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "band": "C02",
+                    "expected_interval": 10.0,
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -352,24 +377,30 @@ class TestGoesCompositesCRUD:
     async def test_create_composite(self, client, db):
         with patch("app.tasks.composite_task.generate_composite") as mock_task:
             mock_task.delay.return_value = MagicMock(id="task-comp")
-            resp = await client.post("/api/satellite/composites", json={
-                "recipe": "true_color",
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "capture_time": "2024-06-01T12:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/composites",
+                json={
+                    "recipe": "true_color",
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "capture_time": "2024-06-01T12:00:00",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
 
     @pytest.mark.asyncio
     async def test_create_composite_invalid_recipe(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "fake_recipe",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "capture_time": "2024-06-01T12:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "fake_recipe",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "capture_time": "2024-06-01T12:00:00",
+            },
+        )
         assert resp.status_code == 400
 
     @pytest.mark.asyncio
@@ -568,10 +599,13 @@ class TestGoesFrameExport:
 class TestGoesCollections:
     @pytest.mark.asyncio
     async def test_create_collection(self, client):
-        resp = await client.post("/api/satellite/collections", json={
-            "name": "My Collection",
-            "description": "Test description",
-        })
+        resp = await client.post(
+            "/api/satellite/collections",
+            json={
+                "name": "My Collection",
+                "description": "Test description",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "My Collection"
@@ -730,10 +764,13 @@ class TestGoesTags:
         t = make_tag(db)
         await db.commit()
 
-        resp = await client.post("/api/satellite/frames/tag", json={
-            "frame_ids": [f.id],
-            "tag_ids": [t.id],
-        })
+        resp = await client.post(
+            "/api/satellite/frames/tag",
+            json={
+                "frame_ids": [f.id],
+                "tag_ids": [t.id],
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["tagged"] == 1
 
@@ -767,19 +804,25 @@ class TestGoesProcessFrames:
 
         with patch("app.tasks.processing.process_images_task") as mock_task:
             mock_task.delay.return_value = MagicMock(id="ptask")
-            resp = await client.post("/api/satellite/frames/process", json={
-                "frame_ids": [f.id],
-                "params": {},
-            })
+            resp = await client.post(
+                "/api/satellite/frames/process",
+                json={
+                    "frame_ids": [f.id],
+                    "params": {},
+                },
+            )
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending"
 
     @pytest.mark.asyncio
     async def test_process_frames_not_found(self, client):
-        resp = await client.post("/api/satellite/frames/process", json={
-            "frame_ids": [make_id()],
-            "params": {},
-        })
+        resp = await client.post(
+            "/api/satellite/frames/process",
+            json={
+                "frame_ids": [make_id()],
+                "params": {},
+            },
+        )
         assert resp.status_code == 404
 
 
@@ -951,10 +994,13 @@ class TestJobs:
 class TestJobCreate:
     @pytest.mark.asyncio
     async def test_create_job(self, client, db):
-        resp = await client.post("/api/jobs", json={
-            "job_type": "image_process",
-            "params": {},
-        })
+        resp = await client.post(
+            "/api/jobs",
+            json={
+                "job_type": "image_process",
+                "params": {},
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -962,10 +1008,13 @@ class TestJobCreate:
 
     @pytest.mark.asyncio
     async def test_create_video_job(self, client, db):
-        resp = await client.post("/api/jobs", json={
-            "job_type": "video_create",
-            "params": {},
-        })
+        resp = await client.post(
+            "/api/jobs",
+            json={
+                "job_type": "video_create",
+                "params": {},
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["job_type"] == "video_create"
 
@@ -991,9 +1040,12 @@ class TestSettings:
 
     @pytest.mark.asyncio
     async def test_update_settings_crop(self, client):
-        resp = await client.put("/api/settings", json={
-            "default_crop": {"x": 100, "y": 200, "w": 800, "h": 600},
-        })
+        resp = await client.put(
+            "/api/settings",
+            json={
+                "default_crop": {"x": 100, "y": 200, "w": 800, "h": 600},
+            },
+        )
         assert resp.status_code == 200
         crop = resp.json()["default_crop"]
         assert crop["x"] == 100
@@ -1030,8 +1082,7 @@ class TestStats:
 
     @pytest.mark.asyncio
     async def test_storage_breakdown(self, client, db):
-        make_frame(db, satellite="GOES-16", band="C02", file_size=5000,
-                   capture_time=datetime(2025, 1, 15))
+        make_frame(db, satellite="GOES-16", band="C02", file_size=5000, capture_time=datetime(2025, 1, 15))
         await db.commit()
 
         resp = await client.get("/api/stats/storage/breakdown")
@@ -1050,13 +1101,16 @@ class TestStats:
 class TestFetchPresets:
     @pytest.mark.asyncio
     async def test_create_fetch_preset(self, client):
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "My Preset",
-            "satellite": "GOES-16",
-            "sector": "CONUS",
-            "band": "C02",
-            "description": "Test preset",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "My Preset",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+                "description": "Test preset",
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "My Preset"
 
@@ -1120,12 +1174,15 @@ class TestSchedules:
         p = make_fetch_preset(db)
         await db.commit()
 
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "Hourly CONUS",
-            "preset_id": p.id,
-            "interval_minutes": 60,
-            "is_active": True,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "Hourly CONUS",
+                "preset_id": p.id,
+                "interval_minutes": 60,
+                "is_active": True,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["is_active"] is True
@@ -1133,11 +1190,14 @@ class TestSchedules:
 
     @pytest.mark.asyncio
     async def test_create_schedule_invalid_preset(self, client):
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "Bad Schedule",
-            "preset_id": make_id(),
-            "interval_minutes": 60,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "Bad Schedule",
+                "preset_id": make_id(),
+                "interval_minutes": 60,
+            },
+        )
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -1206,30 +1266,39 @@ class TestSchedules:
 class TestCleanupRules:
     @pytest.mark.asyncio
     async def test_create_cleanup_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Delete old frames",
-            "rule_type": "max_age_days",
-            "value": 30,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Delete old frames",
+                "rule_type": "max_age_days",
+                "value": 30,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["rule_type"] == "max_age_days"
 
     @pytest.mark.asyncio
     async def test_create_cleanup_rule_storage(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Max 10GB",
-            "rule_type": "max_storage_gb",
-            "value": 10.0,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Max 10GB",
+                "rule_type": "max_storage_gb",
+                "value": 10.0,
+            },
+        )
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_create_cleanup_rule_invalid_type(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Bad",
-            "rule_type": "invalid_type",
-            "value": 10,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Bad",
+                "rule_type": "invalid_type",
+                "value": 10,
+            },
+        )
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -1299,10 +1368,16 @@ class TestCleanupRules:
 class TestCropPresets:
     @pytest.mark.asyncio
     async def test_create_crop_preset(self, client):
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Northeast US",
-            "x": 100, "y": 200, "width": 500, "height": 400,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Northeast US",
+                "x": 100,
+                "y": 200,
+                "width": 500,
+                "height": 400,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "Northeast US"
 
@@ -1311,9 +1386,16 @@ class TestCropPresets:
         make_crop_preset(db, name="Dupe")
         await db.commit()
 
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Dupe", "x": 0, "y": 0, "width": 10, "height": 10,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Dupe",
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10,
+            },
+        )
         assert resp.status_code == 409
 
     @pytest.mark.asyncio
@@ -1358,12 +1440,15 @@ class TestAnimations:
     async def test_create_animation_no_frames(self, client):
         """Creating animation with no matching frames should fail."""
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "Test Anim",
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "band": "C02",
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "Test Anim",
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "band": "C02",
+                },
+            )
         assert resp.status_code == 400
 
     @pytest.mark.asyncio
@@ -1374,10 +1459,13 @@ class TestAnimations:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock_task:
             mock_task.delay.return_value = MagicMock(id="anim-task")
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "Test Anim",
-                "frame_ids": [f1.id, f2.id],
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "Test Anim",
+                    "frame_ids": [f1.id, f2.id],
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["frame_count"] == 2
@@ -1422,38 +1510,49 @@ class TestAnimations:
     @pytest.mark.asyncio
     async def test_create_animation_from_range_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/satellite/animations/from-range", json={
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "band": "C02",
-                "start_time": "2025-01-01T00:00:00",
-                "end_time": "2025-01-01T01:00:00",
-            })
-        assert resp.status_code == 400
-
-    @pytest.mark.asyncio
-    async def test_create_animation_recent_no_frames(self, client):
-        with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/satellite/animations/recent", json={
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "band": "C02",
-                "hours": 1,
-            })
-        assert resp.status_code == 400
-
-    @pytest.mark.asyncio
-    async def test_animation_batch_no_frames(self, client):
-        with patch("app.tasks.animation_tasks.generate_animation"):
-            resp = await client.post("/api/satellite/animations/batch", json={
-                "animations": [{
+            resp = await client.post(
+                "/api/satellite/animations/from-range",
+                json={
                     "satellite": "GOES-16",
                     "sector": "CONUS",
                     "band": "C02",
                     "start_time": "2025-01-01T00:00:00",
                     "end_time": "2025-01-01T01:00:00",
-                }],
-            })
+                },
+            )
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_create_animation_recent_no_frames(self, client):
+        with patch("app.tasks.animation_tasks.generate_animation"):
+            resp = await client.post(
+                "/api/satellite/animations/recent",
+                json={
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "band": "C02",
+                    "hours": 1,
+                },
+            )
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_animation_batch_no_frames(self, client):
+        with patch("app.tasks.animation_tasks.generate_animation"):
+            resp = await client.post(
+                "/api/satellite/animations/batch",
+                json={
+                    "animations": [
+                        {
+                            "satellite": "GOES-16",
+                            "sector": "CONUS",
+                            "band": "C02",
+                            "start_time": "2025-01-01T00:00:00",
+                            "end_time": "2025-01-01T01:00:00",
+                        }
+                    ],
+                },
+            )
         assert resp.status_code == 400
 
 
@@ -1489,11 +1588,14 @@ class TestFrameRangePreview:
 class TestAnimationPresets:
     @pytest.mark.asyncio
     async def test_create_animation_preset(self, client):
-        resp = await client.post("/api/satellite/animation-presets", json={
-            "name": "My Preset",
-            "satellite": "GOES-16",
-            "fps": 15,
-        })
+        resp = await client.post(
+            "/api/satellite/animation-presets",
+            json={
+                "name": "My Preset",
+                "satellite": "GOES-16",
+                "fps": 15,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["fps"] == 15
 
@@ -1568,10 +1670,13 @@ class TestPresets:
 
     @pytest.mark.asyncio
     async def test_create_preset(self, client):
-        resp = await client.post("/api/presets", json={
-            "name": "My Preset",
-            "params": {"crop_x": 100},
-        })
+        resp = await client.post(
+            "/api/presets",
+            json={
+                "name": "My Preset",
+                "params": {"crop_x": 100},
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "My Preset"
 

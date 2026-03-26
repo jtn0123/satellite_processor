@@ -35,9 +35,7 @@ class ImageOperations:
     """Static methods for image processing"""
 
     @staticmethod
-    def crop_image(
-        img: np.ndarray, x: int, y: int, width: int, height: int
-    ) -> np.ndarray:
+    def crop_image(img: np.ndarray, x: int, y: int, width: int, height: int) -> np.ndarray:
         """Crop the image to the specified rectangle."""
         return img[y : y + height, x : x + width]
 
@@ -115,9 +113,7 @@ class ImageOperations:
             return False
 
     @staticmethod
-    def add_timestamp(
-        img: np.ndarray, source: datetime | Path | str
-    ) -> np.ndarray:
+    def add_timestamp(img: np.ndarray, source: datetime | Path | str) -> np.ndarray:
         """Add a timestamp overlay to the image"""
         try:
             logger.debug(f"Starting timestamp addition for: {source}")
@@ -201,9 +197,7 @@ class ImageOperations:
         output_dir_path = Path(output_dir)
         output_dir_path.mkdir(parents=True, exist_ok=True)
 
-        success = ImageOperations.apply_false_color(
-            image_path, str(output_dir_path), sanchez_path, underlay_path
-        )
+        success = ImageOperations.apply_false_color(image_path, str(output_dir_path), sanchez_path, underlay_path)
         if not success:
             logger.error(f"Failed to apply false color to: {image_path}")
             return None
@@ -285,9 +279,7 @@ class ImageOperations:
         num_processes = max(1, multiprocessing.cpu_count() - 1)
         chunk_size = max(1, len(images) // num_processes)
 
-        with multiprocessing.Pool(
-            processes=num_processes, initializer=ImageOperations._init_worker
-        ) as pool:
+        with multiprocessing.Pool(processes=num_processes, initializer=ImageOperations._init_worker) as pool:
             try:
                 results = []
                 total = len(images)
@@ -379,7 +371,7 @@ class ImageOperations:
         except PermissionError:
             logger.debug("Insufficient permissions to set process priority")
         except Exception:
-            pass
+            logger.debug("Failed to set process priority", exc_info=True)
 
     @staticmethod
     def _apply_interpolation(img: np.ndarray, options: dict) -> np.ndarray | None:
@@ -392,7 +384,7 @@ class ImageOperations:
             if method in interp_map:
                 img = cv2.resize(img, None, fx=factor, fy=factor, interpolation=interp_map[method])
             elif method in ["RIFE", "DAIN"]:
-                logger.warning(f"AI interpolation method '{method}' is not implemented")
+                logger.warning(f"AI interpolation method '{method}' is not implemented — returning image unchanged")
         except Exception as e:
             logger.error(f"Interpolation failed: {e}", exc_info=True)
             return None
@@ -410,11 +402,13 @@ class ImageOperations:
         unique_dir = _tempfile.mkdtemp(dir=base_dir, prefix="fc_")
         temp_fc_path = str(Path(unique_dir) / f"fc_input_{Path(image_path).stem}.png")
         cv2.imwrite(temp_fc_path, img)
+        sanchez_path = options.get("sanchez_path") or ""
+        underlay_path = options.get("underlay_path") or ""
         result = ImageOperations.apply_false_color_and_read(
             temp_fc_path,
             unique_dir,
-            str(options.get("sanchez_path")),
-            str(options.get("underlay_path")),
+            sanchez_path,
+            underlay_path,
         )
         shutil.rmtree(unique_dir, ignore_errors=True)
         if result is None:
@@ -424,20 +418,15 @@ class ImageOperations:
 
     @staticmethod
     def _read_image(image_path: str) -> np.ndarray | None:
-        """Read an image and ensure BGR format."""
+        """Read an image in BGR format. IMREAD_COLOR guarantees 3 channels."""
         img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
         if img is None:
             logger.error(f"Failed to read image: {image_path}")
             return None
-        if len(img.shape) != 3 or img.shape[2] != 3:
-            logger.debug(f"Converting image format for {image_path}")
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         return img
 
     @staticmethod
-    def process_image_subprocess(
-        image_path: str, options: dict
-    ) -> np.ndarray | None:
+    def process_image_subprocess(image_path: str, options: dict) -> np.ndarray | None:
         """Process a single image in a subprocess with full pipeline support.
 
         Applies the following steps in order (each gated by options):
@@ -449,10 +438,7 @@ class ImageOperations:
         6. Validate final dimensions
         """
         try:
-            logger.debug(
-                f"Processing {image_path} on process "
-                f"{multiprocessing.current_process().name}"
-            )
+            logger.debug(f"Processing {image_path} on process {multiprocessing.current_process().name}")
 
             img = ImageOperations._read_image(image_path)
             if img is None:
@@ -489,9 +475,7 @@ class ImageOperations:
 
             # 6. Validate output
             if img is None or len(img.shape) != 3 or img.shape[2] != 3:
-                logger.error(
-                    f"Invalid image dimensions after processing: {image_path}"
-                )
+                logger.error(f"Invalid image dimensions after processing: {image_path}")
                 return None
 
             return img
@@ -559,9 +543,7 @@ class ImageOperations:
             logger.error(f"Error interpolating frames: {e}", exc_info=True)
             return []
 
-    def process_images(
-        self, image_paths: list[str | Path], options: dict
-    ) -> list[np.ndarray]:
+    def process_images(self, image_paths: list[str | Path], options: dict) -> list[np.ndarray]:
         """Process multiple images with the given options."""
         processed = []
         for path in image_paths:
@@ -570,15 +552,11 @@ class ImageOperations:
                 processed.append(result)
         return processed
 
-    def interpolate_frames_with_options(
-        self, frame_paths: list[str | Path], options: dict
-    ) -> list[np.ndarray | None]:
+    def interpolate_frames_with_options(self, frame_paths: list[str | Path], options: dict) -> list[np.ndarray | None]:
         """Interpolate frames based on options."""
         if options.get("interpolation_enabled"):
             quality = options.get("interpolation_quality", "medium")
-            Interpolator(
-                model_path=f"model_{quality}.pth", processing_speed="fast"
-            )
+            Interpolator(model_path=f"model_{quality}.pth", processing_speed="fast")
             frames = []
             for path in frame_paths:
                 frames.append(self.process_image(path, options))

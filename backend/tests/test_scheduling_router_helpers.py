@@ -1,4 +1,5 @@
 """Tests for scheduling router async helper functions."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ def _utcnow():
 
 
 # ── _get_protected_ids ──────────────────────────────────
+
 
 class TestGetProtectedIds:
     @pytest.mark.asyncio
@@ -51,6 +53,7 @@ class TestGetProtectedIds:
 
 
 # ── _collect_age_deletions ──────────────────────────────
+
 
 class TestCollectAgeDeletions:
     @pytest.mark.asyncio
@@ -102,6 +105,7 @@ class TestCollectAgeDeletions:
 
 
 # ── _collect_storage_deletions ──────────────────────────
+
 
 class TestCollectStorageDeletions:
     @pytest.mark.asyncio
@@ -185,6 +189,7 @@ class TestCollectStorageDeletions:
 
 
 # ── _get_frames_to_cleanup ──────────────────────────────
+
 
 class TestGetFramesToCleanup:
     @pytest.mark.asyncio
@@ -280,6 +285,7 @@ class TestGetFramesToCleanup:
 
 
 # ── _schedule_response ──────────────────────────────────
+
 
 class TestScheduleResponse:
     @pytest.mark.asyncio

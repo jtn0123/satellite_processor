@@ -25,9 +25,7 @@ async def get_stats(request: Request, db: AsyncSession = Depends(get_db)):
     total_images = (await db.execute(select(func.count()).select_from(Image))).scalar_one()
     total_jobs = (await db.execute(select(func.count()).select_from(Job))).scalar_one()
     active_jobs = (
-        await db.execute(
-            select(func.count()).select_from(Job).where(Job.status.in_(["pending", "processing"]))
-        )
+        await db.execute(select(func.count()).select_from(Job).where(Job.status.in_(["pending", "processing"])))
     ).scalar_one()
 
     # Storage usage
@@ -59,17 +57,19 @@ async def storage_breakdown(request: Request, db: AsyncSession = Depends(get_db)
     now = datetime.now(UTC).replace(tzinfo=None)
 
     # By satellite
-    sat_rows = (await db.execute(
-        select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0))
-        .group_by(GoesFrame.satellite)
-    )).all()
+    sat_rows = (
+        await db.execute(
+            select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0)).group_by(GoesFrame.satellite)
+        )
+    ).all()
     by_satellite = {row[0]: row[1] for row in sat_rows}
 
     # By band
-    band_rows = (await db.execute(
-        select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0))
-        .group_by(GoesFrame.band)
-    )).all()
+    band_rows = (
+        await db.execute(
+            select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0)).group_by(GoesFrame.band)
+        )
+    ).all()
     by_band = {row[0]: row[1] for row in band_rows}
 
     # By age bucket (exclusive ranges, single query for consistency)
@@ -77,23 +77,40 @@ async def storage_breakdown(request: Request, db: AsyncSession = Depends(get_db)
     cutoff_7d = now - timedelta(days=7)
     cutoff_30d = now - timedelta(days=30)
 
-    age_row = (await db.execute(
-        select(
-            func.coalesce(func.sum(GoesFrame.file_size), 0),
-            func.coalesce(func.sum(case(
-                (GoesFrame.capture_time >= cutoff_24h, GoesFrame.file_size),
-                else_=0,
-            )), 0),
-            func.coalesce(func.sum(case(
-                (GoesFrame.capture_time >= cutoff_7d, GoesFrame.file_size),
-                else_=0,
-            )), 0),
-            func.coalesce(func.sum(case(
-                (GoesFrame.capture_time >= cutoff_30d, GoesFrame.file_size),
-                else_=0,
-            )), 0),
+    age_row = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(GoesFrame.file_size), 0),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (GoesFrame.capture_time >= cutoff_24h, GoesFrame.file_size),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (GoesFrame.capture_time >= cutoff_7d, GoesFrame.file_size),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (GoesFrame.capture_time >= cutoff_30d, GoesFrame.file_size),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+            )
         )
-    )).one()
+    ).one()
 
     total_storage, val_24h, val_7d, val_30d = age_row
 

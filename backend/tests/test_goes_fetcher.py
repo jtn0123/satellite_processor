@@ -1,4 +1,5 @@
 """Tests for GOES fetcher service."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -123,7 +124,9 @@ class TestListAvailable:
         ]
 
         results = list_available(
-            "GOES-16", "FullDisk", "C02",
+            "GOES-16",
+            "FullDisk",
+            "C02",
             datetime(2024, 3, 15, 14, 0, tzinfo=UTC),
             datetime(2024, 3, 15, 14, 59, tzinfo=UTC),
         )
@@ -139,7 +142,9 @@ class TestListAvailable:
         mock_paginator.paginate.return_value = [{"Contents": []}]
 
         results = list_available(
-            "GOES-16", "FullDisk", "C02",
+            "GOES-16",
+            "FullDisk",
+            "C02",
             datetime(2024, 3, 15, 14, 0, tzinfo=UTC),
             datetime(2024, 3, 15, 14, 59, tzinfo=UTC),
         )

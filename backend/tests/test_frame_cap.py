@@ -1,4 +1,5 @@
 """Tests for frame cap handling, retry logic, and completed_partial status."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -11,13 +12,11 @@ from botocore.exceptions import ClientError
 # fetch_frames metadata & capping
 # ---------------------------------------------------------------------------
 
+
 def _make_available(n: int) -> list[dict]:
     """Generate *n* fake S3 available-frame dicts."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
-    return [
-        {"key": f"frame_{i}.nc", "scan_time": base + timedelta(minutes=10 * i), "size": 1000}
-        for i in range(n)
-    ]
+    return [{"key": f"frame_{i}.nc", "scan_time": base + timedelta(minutes=10 * i), "size": 1000} for i in range(n)]
 
 
 def _client_error(code: str = "SlowDown") -> ClientError:
@@ -40,7 +39,9 @@ def test_fetch_frames_returns_metadata(mock_list, mock_s3_client, mock_retry, mo
     mock_png.return_value = Path("dummy.png")
 
     result = fetch_frames(
-        satellite="GOES-16", sector="FullDisk", band="C02",
+        satellite="GOES-16",
+        sector="FullDisk",
+        band="C02",
         start_time=datetime(2026, 1, 1, tzinfo=UTC),
         end_time=datetime(2026, 1, 1, 1, tzinfo=UTC),
         output_dir=str(tmp_path),
@@ -69,7 +70,9 @@ def test_fetch_frames_caps_at_limit(mock_list, mock_s3_client, mock_retry, mock_
     mock_png.return_value = Path("dummy.png")
 
     result = fetch_frames(
-        satellite="GOES-16", sector="FullDisk", band="C02",
+        satellite="GOES-16",
+        sector="FullDisk",
+        band="C02",
         start_time=datetime(2026, 1, 1, tzinfo=UTC),
         end_time=datetime(2026, 1, 1, 2, tzinfo=UTC),
         output_dir=str(tmp_path),
@@ -85,6 +88,7 @@ def test_fetch_frames_caps_at_limit(mock_list, mock_s3_client, mock_retry, mock_
 # ---------------------------------------------------------------------------
 # Per-frame retry
 # ---------------------------------------------------------------------------
+
 
 @patch("app.services.goes_fetcher._FRAME_RETRY_DELAY", 0)
 @patch("app.services.goes_fetcher._check_disk_space")
@@ -104,12 +108,18 @@ def test_fetch_frames_retry_on_transient_error(mock_list, mock_s3_client, mock_p
     body = MagicMock()
     body.iter_chunks.return_value = [b"data"]
     from botocore.exceptions import ConnectTimeoutError
+
     s3.get_object.side_effect = [ConnectTimeoutError(endpoint_url="https://s3.amazonaws.com"), {"Body": body}]
 
     # Patch _retry_s3_operation to just call the function directly (bypass circuit breaker)
-    with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)})):
+    with patch(
+        "app.services.goes_fetcher._retry_s3_operation",
+        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)}),
+    ):
         result = fetch_frames(
-            satellite="GOES-16", sector="FullDisk", band="C02",
+            satellite="GOES-16",
+            sector="FullDisk",
+            band="C02",
             start_time=datetime(2026, 1, 1, tzinfo=UTC),
             end_time=datetime(2026, 1, 1, 1, tzinfo=UTC),
             output_dir=str(tmp_path),
@@ -131,11 +141,17 @@ def test_fetch_frames_retry_exhausted(mock_list, mock_s3_client, mock_disk, tmp_
     s3 = MagicMock()
     mock_s3_client.return_value = s3
     from botocore.exceptions import ConnectTimeoutError
+
     s3.get_object.side_effect = ConnectTimeoutError(endpoint_url="https://s3.amazonaws.com")
 
-    with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)})):
+    with patch(
+        "app.services.goes_fetcher._retry_s3_operation",
+        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)}),
+    ):
         result = fetch_frames(
-            satellite="GOES-16", sector="FullDisk", band="C02",
+            satellite="GOES-16",
+            sector="FullDisk",
+            band="C02",
             start_time=datetime(2026, 1, 1, tzinfo=UTC),
             end_time=datetime(2026, 1, 1, 1, tzinfo=UTC),
             output_dir=str(tmp_path),
@@ -148,6 +164,7 @@ def test_fetch_frames_retry_exhausted(mock_list, mock_s3_client, mock_disk, tmp_
 # ---------------------------------------------------------------------------
 # goes_tasks status logic
 # ---------------------------------------------------------------------------
+
 
 @patch("app.services.goes_fetcher.fetch_frames")
 @patch("app.tasks.fetch_task._update_job_db")
@@ -162,7 +179,15 @@ def test_completed_partial_status_when_capped(mock_db, mock_progress, mock_updat
     mock_session.query.return_value.filter.return_value.first.return_value = None
 
     mock_fetch.return_value = {
-        "frames": [{"path": "/tmp/f.png", "scan_time": datetime(2026, 1, 1, tzinfo=UTC), "satellite": "GOES-16", "band": "C02", "sector": "FullDisk"}],
+        "frames": [
+            {
+                "path": "/tmp/f.png",
+                "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+                "satellite": "GOES-16",
+                "band": "C02",
+                "sector": "FullDisk",
+            }
+        ],
         "total_available": 300,
         "capped": True,
         "attempted": 200,
@@ -170,14 +195,19 @@ def test_completed_partial_status_when_capped(mock_db, mock_progress, mock_updat
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
-    with patch("app.services.thumbnail.generate_thumbnail", return_value=None), \
-         patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)), \
-         patch("pathlib.Path.stat") as mock_stat, \
-         patch("pathlib.Path.exists", return_value=True):
+    with (
+        patch("app.services.thumbnail.generate_thumbnail", return_value=None),
+        patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)),
+        patch("pathlib.Path.stat") as mock_stat,
+        patch("pathlib.Path.exists", return_value=True),
+    ):
         mock_stat.return_value = MagicMock(st_size=1000)
         fetch_goes_data("job-cap", params)
 
@@ -202,7 +232,15 @@ def test_completed_partial_status_when_some_failed(mock_db, mock_progress, mock_
     mock_session.query.return_value.filter.return_value.first.return_value = None
 
     mock_fetch.return_value = {
-        "frames": [{"path": "/tmp/f.png", "scan_time": datetime(2026, 1, 1, tzinfo=UTC), "satellite": "GOES-16", "band": "C02", "sector": "FullDisk"}],
+        "frames": [
+            {
+                "path": "/tmp/f.png",
+                "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+                "satellite": "GOES-16",
+                "band": "C02",
+                "sector": "FullDisk",
+            }
+        ],
         "total_available": 10,
         "capped": False,
         "attempted": 10,
@@ -210,14 +248,19 @@ def test_completed_partial_status_when_some_failed(mock_db, mock_progress, mock_
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
-    with patch("app.services.thumbnail.generate_thumbnail", return_value=None), \
-         patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)), \
-         patch("pathlib.Path.stat") as mock_stat, \
-         patch("pathlib.Path.exists", return_value=True):
+    with (
+        patch("app.services.thumbnail.generate_thumbnail", return_value=None),
+        patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)),
+        patch("pathlib.Path.stat") as mock_stat,
+        patch("pathlib.Path.exists", return_value=True),
+    ):
         mock_stat.return_value = MagicMock(st_size=1000)
         fetch_goes_data("job-partial", params)
 
@@ -241,7 +284,15 @@ def test_completed_status_when_all_succeed(mock_db, mock_progress, mock_update, 
     mock_session.query.return_value.filter.return_value.first.return_value = None
 
     mock_fetch.return_value = {
-        "frames": [{"path": "/tmp/f.png", "scan_time": datetime(2026, 1, 1, tzinfo=UTC), "satellite": "GOES-16", "band": "C02", "sector": "FullDisk"}],
+        "frames": [
+            {
+                "path": "/tmp/f.png",
+                "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+                "satellite": "GOES-16",
+                "band": "C02",
+                "sector": "FullDisk",
+            }
+        ],
         "total_available": 1,
         "capped": False,
         "attempted": 1,
@@ -249,14 +300,19 @@ def test_completed_status_when_all_succeed(mock_db, mock_progress, mock_update, 
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
-    with patch("app.services.thumbnail.generate_thumbnail", return_value=None), \
-         patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)), \
-         patch("pathlib.Path.stat") as mock_stat, \
-         patch("pathlib.Path.exists", return_value=True):
+    with (
+        patch("app.services.thumbnail.generate_thumbnail", return_value=None),
+        patch("app.services.thumbnail.get_image_dimensions", return_value=(100, 100)),
+        patch("pathlib.Path.stat") as mock_stat,
+        patch("pathlib.Path.exists", return_value=True),
+    ):
         mock_stat.return_value = MagicMock(st_size=1000)
         fetch_goes_data("job-ok", params)
 
@@ -289,8 +345,11 @@ def test_failed_status_when_zero_frames(mock_db, mock_progress, mock_update, moc
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
     fetch_goes_data("job-empty", params)
@@ -327,8 +386,11 @@ def test_frame_cap_reads_from_settings(mock_db, mock_progress, mock_update, mock
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
     fetch_goes_data("job-settings", params)
@@ -358,8 +420,11 @@ def test_frame_cap_default_when_no_setting(mock_db, mock_progress, mock_update, 
     }
 
     params = {
-        "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-        "start_time": "2026-01-01T00:00:00", "end_time": "2026-01-01T01:00:00",
+        "satellite": "GOES-16",
+        "sector": "FullDisk",
+        "band": "C02",
+        "start_time": "2026-01-01T00:00:00",
+        "end_time": "2026-01-01T01:00:00",
     }
 
     fetch_goes_data("job-default", params)

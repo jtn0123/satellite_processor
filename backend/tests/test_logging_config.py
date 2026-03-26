@@ -14,10 +14,7 @@ class TestSetupLogging:
         """Reset root logger between tests, preserving pytest's own handlers."""
         root = logging.getLogger()
         # Preserve pytest LogCaptureHandlers so we don't fight the framework
-        self._pytest_handlers = [
-            h for h in root.handlers
-            if type(h).__name__ == "LogCaptureHandler"
-        ]
+        self._pytest_handlers = [h for h in root.handlers if type(h).__name__ == "LogCaptureHandler"]
         root.handlers.clear()
         root.handlers.extend(self._pytest_handlers)
         root.setLevel(logging.WARNING)
@@ -91,6 +88,7 @@ class TestSetupLogging:
         with patch.dict("sys.modules", {"pythonjsonlogger": None}):
             # Force ImportError on import
             import builtins
+
             real_import = builtins.__import__
 
             def mock_import(name, *args, **kwargs):
@@ -126,24 +124,30 @@ class TestRequestLoggingMiddleware:
     @pytest.fixture
     def app_mock(self):
         """A mock ASGI app that sends a standard HTTP response."""
+
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 200})
             await send({"type": "http.response.body", "body": b"OK"})
+
         return app
 
     @pytest.fixture
     def error_app(self):
         """A mock ASGI app that returns 500."""
+
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 500})
             await send({"type": "http.response.body", "body": b"Error"})
+
         return app
 
     @pytest.fixture
     def raising_app(self):
         """A mock ASGI app that raises an exception."""
+
         async def app(scope, receive, send):
             raise RuntimeError("boom")
+
         return app
 
     @pytest.mark.asyncio
@@ -198,6 +202,7 @@ class TestRequestLoggingMiddleware:
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
         import json
+
         event = json.loads(record.message)
         assert "duration_ms" in event
         assert event["duration_ms"] >= 0
@@ -210,6 +215,7 @@ class TestRequestLoggingMiddleware:
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
         import json
+
         event = json.loads(record.message)
         assert event["method"] == "DELETE"
         assert event["path"] == "/items/1"
@@ -223,6 +229,7 @@ class TestRequestLoggingMiddleware:
             await middleware(scope, AsyncMock(), AsyncMock())
         record = caplog.records[-1]
         import json
+
         event = json.loads(record.message)
         assert event["method"] == "?"
         assert event["path"] == "?"
@@ -257,6 +264,7 @@ class TestRequestLoggingMiddleware:
         wide_records = [r for r in caplog.records if r.name == "wide_event"]
         if wide_records:
             import json
+
             event = json.loads(wide_records[-1].message)
             assert event["status_code"] == 500
             assert "error" in event
@@ -279,6 +287,7 @@ class TestRequestLoggingMiddleware:
         with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         import json
+
         event = json.loads(caplog.records[-1].message)
         assert event["client_ip"] == "127.0.0.1"
         assert event["user_agent"] == "TestAgent/1.0"
@@ -287,6 +296,7 @@ class TestRequestLoggingMiddleware:
     @pytest.mark.asyncio
     async def test_response_size_tracked(self, caplog):
         """Wide event tracks response body size."""
+
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 200})
             await send({"type": "http.response.body", "body": b"hello world"})
@@ -296,5 +306,6 @@ class TestRequestLoggingMiddleware:
         with caplog.at_level(logging.INFO, logger="wide_event"):
             await middleware(scope, AsyncMock(), AsyncMock())
         import json
+
         event = json.loads(caplog.records[-1].message)
         assert event["response_size_bytes"] == 11

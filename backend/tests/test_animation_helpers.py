@@ -1,4 +1,5 @@
 """Tests for animation_tasks helper functions and constants."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -20,6 +21,7 @@ from app.tasks.animation_tasks import (
 
 # ── Constants ────────────────────────────────────────────
 
+
 def test_quality_crf_values():
     assert QUALITY_CRF == {"low": "28", "medium": "23", "high": "18"}
 
@@ -29,6 +31,7 @@ def test_preview_max_width():
 
 
 # ── _apply_loop_style ───────────────────────────────────
+
 
 class TestApplyLoopStyle:
     def test_forward(self):
@@ -61,6 +64,7 @@ class TestApplyLoopStyle:
 
 # ── _build_overlay_label ────────────────────────────────
 
+
 class TestBuildOverlayLabel:
     def _frame(self, sat="G16", sector="CONUS", band="C02"):
         return SimpleNamespace(satellite=sat, sector=sector, band=band)
@@ -84,10 +88,12 @@ class TestBuildOverlayLabel:
 
 # ── _process_single_frame ───────────────────────────────
 
+
 class TestProcessSingleFrame:
     @pytest.fixture()
     def img_500x300(self):
         import numpy as np
+
         return np.zeros((300, 500, 3), dtype=np.uint8)
 
     def test_no_transforms(self, img_500x300):
@@ -101,6 +107,7 @@ class TestProcessSingleFrame:
 
     def test_preview_downscale(self):
         import numpy as np
+
         big = np.zeros((1000, 2000, 3), dtype=np.uint8)
         result = _process_single_frame(big, None, "preview", None)
         assert result.shape[1] == PREVIEW_MAX_WIDTH
@@ -123,6 +130,7 @@ class TestProcessSingleFrame:
 
 
 # ── _render_frames_to_dir ───────────────────────────────
+
 
 class TestRenderFramesToDir:
     @patch("app.tasks.animation_tasks._update_job_db")
@@ -151,6 +159,7 @@ class TestRenderFramesToDir:
 
 
 # ── _encode_output ──────────────────────────────────────
+
 
 class TestEncodeOutput:
     @patch("app.tasks.animation_tasks.subprocess.run")
@@ -185,6 +194,7 @@ class TestEncodeOutput:
 
 # ── _mark_animation_failed ─────────────────────────────
 
+
 class TestMarkAnimationFailed:
     def test_marks_failed(self):
         anim = SimpleNamespace(status="processing", error=None, completed_at=None)
@@ -210,19 +220,23 @@ class TestMarkAnimationFailed:
     def test_exception_swallowed(self):
         session = MagicMock()
         from sqlalchemy.exc import OperationalError
+
         session.query.side_effect = OperationalError("db down", {}, None)
         _mark_animation_failed(session, "a1", "boom")  # should not raise
 
 
 # ── _apply_overlay ──────────────────────────────────────
 
+
 class TestApplyOverlay:
     def _make_img(self, w=200, h=100):
         import numpy as np
+
         return np.zeros((h, w, 3), dtype=np.uint8)
 
     def test_with_label_and_timestamp(self):
         from datetime import datetime
+
         frame = SimpleNamespace(capture_time=datetime(2024, 6, 15, 12, 30, 0))
         overlay = {"label": True, "timestamp": True}
         img = self._make_img()
@@ -238,6 +252,7 @@ class TestApplyOverlay:
 
     def test_with_timestamp_only(self):
         from datetime import datetime
+
         frame = SimpleNamespace(capture_time=datetime(2024, 6, 15, 12, 30, 0))
         overlay = {"label": False, "timestamp": True}
         img = self._make_img()
@@ -261,6 +276,7 @@ class TestApplyOverlay:
 
 # ── _run_ffmpeg ─────────────────────────────────────────
 
+
 class TestRunFfmpeg:
     @patch("app.tasks.animation_tasks.subprocess.run")
     def test_success(self, mock_run):
@@ -271,14 +287,14 @@ class TestRunFfmpeg:
     @patch("app.tasks.animation_tasks.subprocess.run")
     def test_failure_raises(self, mock_run):
         import subprocess
-        mock_run.return_value = MagicMock(
-            returncode=1, stderr=b"error msg", stdout=b""
-        )
+
+        mock_run.return_value = MagicMock(returncode=1, stderr=b"error msg", stdout=b"")
         with pytest.raises(subprocess.CalledProcessError):
             _run_ffmpeg(["ffmpeg", "-invalid"])
 
 
 # ── _render_frames_to_dir with overlay ──────────────────
+
 
 class TestRenderFramesWithOverlay:
     @patch("app.tasks.animation_tasks._update_job_db")
@@ -294,9 +310,7 @@ class TestRenderFramesWithOverlay:
         cv2.imwrite(str(src), img)
 
         frame = SimpleNamespace(
-            file_path=str(src),
-            capture_time=datetime(2024, 1, 1, 12, 0, 0),
-            satellite="G16", sector="CONUS", band="C02"
+            file_path=str(src), capture_time=datetime(2024, 1, 1, 12, 0, 0), satellite="G16", sector="CONUS", band="C02"
         )
         work = tmp_path / "work"
         work.mkdir()

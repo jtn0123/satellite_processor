@@ -37,9 +37,7 @@ async def create_collection(
     db: AsyncSession = Depends(get_db),
 ):
     logger.info("Creating collection: name=%s", payload.name)
-    existing = await db.execute(
-        select(Collection).where(Collection.name == payload.name)
-    )
+    existing = await db.execute(select(Collection).where(Collection.name == payload.name))
     if existing.scalar_one_or_none() is not None:
         raise APIError(409, "conflict", f"Collection '{payload.name}' already exists")
 
@@ -114,9 +112,7 @@ async def update_collection(
     await db.refresh(coll)
 
     count_result = await db.execute(
-        select(func.count(CollectionFrame.frame_id)).where(
-            CollectionFrame.collection_id == collection_id
-        )
+        select(func.count(CollectionFrame.frame_id)).where(CollectionFrame.collection_id == collection_id)
     )
     frame_count = count_result.scalar() or 0
 
@@ -159,10 +155,7 @@ async def add_frames_to_collection(
     # Bug #9: Bulk insert with ON CONFLICT DO NOTHING
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    values = [
-        {"collection_id": collection_id, "frame_id": frame_id}
-        for frame_id in payload.frame_ids
-    ]
+    values = [{"collection_id": collection_id, "frame_id": frame_id} for frame_id in payload.frame_ids]
     if values:
         stmt = pg_insert(CollectionFrame).values(values).on_conflict_do_nothing()
         result = await db.execute(stmt)
@@ -187,8 +180,7 @@ async def list_collection_frames(
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
 
     count_result = await db.execute(
-        select(func.count(CollectionFrame.frame_id))
-        .where(CollectionFrame.collection_id == collection_id)
+        select(func.count(CollectionFrame.frame_id)).where(CollectionFrame.collection_id == collection_id)
     )
     total = count_result.scalar() or 0
 

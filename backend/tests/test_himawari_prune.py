@@ -1,4 +1,5 @@
 """Tests for Himawari frame cleanup and per-satellite disk management."""
+
 from __future__ import annotations
 
 import uuid
@@ -63,35 +64,44 @@ class TestHimawariCleanupRules:
     """Test that cleanup rules can target Himawari-9 specifically."""
 
     async def test_create_himawari_specific_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Prune Himawari",
-            "rule_type": "max_age_days",
-            "value": 7,
-            "satellite": "Himawari-9",
-            "protect_collections": True,
-            "is_active": True,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Prune Himawari",
+                "rule_type": "max_age_days",
+                "value": 7,
+                "satellite": "Himawari-9",
+                "protect_collections": True,
+                "is_active": True,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "Himawari-9"
         assert data["rule_type"] == "max_age_days"
 
     async def test_create_all_satellites_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Prune All",
-            "rule_type": "max_age_days",
-            "value": 30,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Prune All",
+                "rule_type": "max_age_days",
+                "value": 30,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["satellite"] is None
 
     async def test_create_himawari_storage_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Himawari Storage Limit",
-            "rule_type": "max_storage_gb",
-            "value": 50,
-            "satellite": "Himawari-9",
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Himawari Storage Limit",
+                "rule_type": "max_storage_gb",
+                "value": 50,
+                "satellite": "Himawari-9",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "Himawari-9"
@@ -115,9 +125,12 @@ class TestHimawariCleanupRules:
     async def test_update_rule_satellite(self, client, db):
         rule = _make_rule(db, satellite=None)
         await db.commit()
-        resp = await client.put(f"/api/satellite/cleanup-rules/{rule.id}", json={
-            "satellite": "Himawari-9",
-        })
+        resp = await client.put(
+            f"/api/satellite/cleanup-rules/{rule.id}",
+            json={
+                "satellite": "Himawari-9",
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["satellite"] == "Himawari-9"
 

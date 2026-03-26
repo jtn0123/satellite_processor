@@ -1,4 +1,5 @@
 """Tests for Himawari fetch task (PR 4)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -10,6 +11,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_redis():
@@ -41,6 +43,7 @@ def himawari_params():
 # ---------------------------------------------------------------------------
 # _list_segments_for_timestamp
 # ---------------------------------------------------------------------------
+
 
 class TestListSegments:
     @patch("app.tasks.himawari_fetch_task._retry_s3_operation")
@@ -85,6 +88,7 @@ class TestListSegments:
 # _download_segments_parallel
 # ---------------------------------------------------------------------------
 
+
 class TestDownloadSegmentsParallel:
     @patch("app.tasks.himawari_fetch_task._download_segment")
     def test_downloads_all_segments(self, mock_download):
@@ -125,6 +129,7 @@ class TestDownloadSegmentsParallel:
 # _create_himawari_fetch_records
 # ---------------------------------------------------------------------------
 
+
 class TestCreateHimawariFetchRecords:
     @patch("app.tasks.himawari_fetch_task._get_sync_db")
     def test_creates_collection_and_frames(self, mock_db, tmp_path):
@@ -139,8 +144,10 @@ class TestCreateHimawariFetchRecords:
         img_path = tmp_path / "test.png"
         img_path.write_bytes(b"\x89PNG\r\n" + b"\x00" * 100)
 
-        with patch("app.services.thumbnail.generate_thumbnail", return_value=str(tmp_path / "thumb.png")), \
-             patch("app.services.thumbnail.get_image_dimensions", return_value=(5500, 5500)):
+        with (
+            patch("app.services.thumbnail.generate_thumbnail", return_value=str(tmp_path / "thumb.png")),
+            patch("app.services.thumbnail.get_image_dimensions", return_value=(5500, 5500)),
+        ):
             _create_himawari_fetch_records(
                 "job-1",
                 "FLDK",
@@ -168,6 +175,7 @@ class TestCreateHimawariFetchRecords:
 # _execute_himawari_fetch
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._create_himawari_fetch_records")
     @patch("app.tasks.himawari_fetch_task.hsd_to_png")
@@ -177,9 +185,16 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_full_fetch_success(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd, mock_records,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        mock_records,
+        himawari_params,
+        tmp_path,
     ):
         """Happy path: finds timestamps, downloads segments, creates records."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
@@ -210,8 +225,12 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_no_timestamps_found(
-        self, mock_progress, mock_update, mock_timestamps,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        himawari_params,
+        tmp_path,
     ):
         """Should report failure when no timestamps exist."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
@@ -234,17 +253,23 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_respects_max_frames_limit(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd, mock_records,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        mock_records,
+        himawari_params,
+        tmp_path,
     ):
         """Should cap the number of frames to max_frames_per_fetch."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
 
         # Return 5 timestamps, but limit to 2
         mock_timestamps.return_value = [
-            {"scan_time": f"2026-03-03T00:{i*10:02d}:00+00:00", "key": f"k{i}", "size": 1000}
-            for i in range(5)
+            {"scan_time": f"2026-03-03T00:{i * 10:02d}:00+00:00", "key": f"k{i}", "size": 1000} for i in range(5)
         ]
         mock_list_segs.return_value = [f"seg_{i}" for i in range(10)]
         mock_download.return_value = [b"data"] * 10
@@ -271,9 +296,16 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_partial_segment_failure(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd, mock_records,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        mock_records,
+        himawari_params,
+        tmp_path,
     ):
         """Should handle partial segment failures gracefully."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
@@ -304,9 +336,15 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_all_downloads_fail(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        himawari_params,
+        tmp_path,
     ):
         """Should report failure when all downloads fail."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
@@ -336,9 +374,16 @@ class TestExecuteHimawariFetch:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_processing_error_counts_as_failure(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd, mock_records,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        mock_records,
+        himawari_params,
+        tmp_path,
     ):
         """hsd_to_png failure should count as a failed download."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
@@ -364,6 +409,7 @@ class TestExecuteHimawariFetch:
 # ---------------------------------------------------------------------------
 # Celery task (fetch_himawari_data)
 # ---------------------------------------------------------------------------
+
 
 class TestFetchHimawariDataTask:
     @patch("app.tasks.himawari_fetch_task._execute_himawari_fetch")
@@ -399,6 +445,7 @@ class TestFetchHimawariDataTask:
 # ---------------------------------------------------------------------------
 # Router dispatch (fetch endpoint → Himawari task)
 # ---------------------------------------------------------------------------
+
 
 class TestFetchEndpointDispatch:
     """Verify that the fetch endpoint dispatches to the correct task based on satellite type."""
@@ -439,6 +486,7 @@ class TestFetchEndpointDispatch:
 # Progress reporting
 # ---------------------------------------------------------------------------
 
+
 class TestProgressReporting:
     @patch("app.tasks.himawari_fetch_task._create_himawari_fetch_records")
     @patch("app.tasks.himawari_fetch_task.hsd_to_png")
@@ -448,16 +496,22 @@ class TestProgressReporting:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_progress_reported_for_each_frame(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_list_segs, mock_download, mock_hsd, mock_records,
-        himawari_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_list_segs,
+        mock_download,
+        mock_hsd,
+        mock_records,
+        himawari_params,
+        tmp_path,
     ):
         """Progress should be published for each frame being processed."""
         from app.tasks.himawari_fetch_task import _execute_himawari_fetch
 
         mock_timestamps.return_value = [
-            {"scan_time": f"2026-03-03T00:{i*10:02d}:00+00:00", "key": f"k{i}", "size": 1000}
-            for i in range(3)
+            {"scan_time": f"2026-03-03T00:{i * 10:02d}:00+00:00", "key": f"k{i}", "size": 1000} for i in range(3)
         ]
         mock_list_segs.return_value = [f"seg_{i}" for i in range(10)]
         mock_download.return_value = [b"data"] * 10

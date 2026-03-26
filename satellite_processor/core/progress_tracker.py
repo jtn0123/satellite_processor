@@ -37,10 +37,7 @@ class ProgressTracker:
         if self.on_progress:
             self.on_progress(operation, progress)
         if self.total_operations > 0 and self.on_overall_progress:
-            overall = int(
-                ((self.current_operation + progress / 100) / self.total_operations)
-                * 100
-            )
+            overall = int(((self.current_operation + progress / 100) / self.total_operations) * 100)
             self.on_overall_progress(overall)
 
     def complete_operation(self):

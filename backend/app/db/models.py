@@ -105,9 +105,7 @@ class GoesFrame(Base):
 
     source_job = relationship("Job", foreign_keys=[source_job_id])
     tags = relationship("Tag", secondary="frame_tags", back_populates="frames")
-    collections = relationship(
-        "Collection", secondary="collection_frames", back_populates="frames"
-    )
+    collections = relationship("Collection", secondary="collection_frames", back_populates="frames")
 
     __table_args__ = (
         Index("ix_goes_frames_sat_band", "satellite", "band"),
@@ -126,20 +124,14 @@ class Collection(Base):
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
-    frames = relationship(
-        "GoesFrame", secondary="collection_frames", back_populates="collections"
-    )
+    frames = relationship("GoesFrame", secondary="collection_frames", back_populates="collections")
 
 
 class CollectionFrame(Base):
     __tablename__ = "collection_frames"
 
-    collection_id = Column(
-        String(36), ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True
-    )
-    frame_id = Column(
-        String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True
-    )
+    collection_id = Column(String(36), ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True)
+    frame_id = Column(String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True)
 
 
 class Tag(Base):
@@ -149,20 +141,14 @@ class Tag(Base):
     name = Column(String(100), unique=True, nullable=False, index=True)
     color = Column(String(7), default="#3b82f6")
 
-    frames = relationship(
-        "GoesFrame", secondary="frame_tags", back_populates="tags"
-    )
+    frames = relationship("GoesFrame", secondary="frame_tags", back_populates="tags")
 
 
 class FrameTag(Base):
     __tablename__ = "frame_tags"
 
-    frame_id = Column(
-        String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True
-    )
-    tag_id = Column(
-        String(36), ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
-    )
+    frame_id = Column(String(36), ForeignKey(GOES_FRAMES_ID_FK, ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(String(36), ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
 
 
 class CropPreset(Base):
@@ -253,9 +239,7 @@ class FetchSchedule(Base):
 
     preset = relationship("FetchPreset", back_populates="schedules")
 
-    __table_args__ = (
-        CheckConstraint("interval_minutes > 0", name="ck_fetch_schedules_interval"),
-    )
+    __table_args__ = (CheckConstraint("interval_minutes > 0", name="ck_fetch_schedules_interval"),)
 
 
 class Composite(Base):
@@ -336,6 +320,7 @@ class CleanupRule(Base):
 
 class AppSetting(Base):
     """Key-value settings stored in the database."""
+
     __tablename__ = "app_settings"
 
     key = Column(String(100), primary_key=True)
@@ -345,6 +330,7 @@ class AppSetting(Base):
 
 class ErrorLog(Base):
     """Frontend error reports collected via POST /api/errors."""
+
     __tablename__ = "error_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

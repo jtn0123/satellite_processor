@@ -37,7 +37,9 @@ _COMPOSITE_RECIPE_BANDS: dict[str, list[str]] = {
 
 
 def _validate_satellite_availability(
-    satellite: str, start_time, end_time,
+    satellite: str,
+    start_time,
+    end_time,
 ) -> None:
     """Raise APIError if the requested time range falls outside satellite availability."""
     avail = SATELLITE_AVAILABILITY.get(satellite)
@@ -48,19 +50,24 @@ def _validate_satellite_availability(
     if avail_to and start_time.replace(tzinfo=None) > avail_to:
         suggestion = "GOES-19" if satellite == "GOES-16" else "GOES-18"
         raise APIError(
-            422, "out_of_range",
+            422,
+            "out_of_range",
             f"{satellite} data is only available through {avail['available_to'][:7]}. "
             f"Use {suggestion} for current data.",
         )
     if end_time.replace(tzinfo=None) < avail_from:
         raise APIError(
-            422, "out_of_range",
+            422,
+            "out_of_range",
             f"{satellite} data is only available from {avail['available_from'][:7]}.",
         )
 
 
 def _validate_frame_count(
-    sector: str, start_time, end_time, num_bands: int,
+    sector: str,
+    start_time,
+    end_time,
+    num_bands: int,
 ) -> None:
     """Raise APIError if the estimated frame count exceeds the limit."""
     interval = SECTOR_INTERVALS.get(sector, 10)
@@ -68,9 +75,9 @@ def _validate_frame_count(
     estimated_frames = int(duration_min / interval) * num_bands
     if estimated_frames > 50 * num_bands:
         raise APIError(
-            422, "too_many_frames",
-            f"Estimated {estimated_frames} frames exceeds limit of {50 * num_bands}. "
-            "Reduce time range.",
+            422,
+            "too_many_frames",
+            f"Estimated {estimated_frames} frames exceeds limit of {50 * num_bands}. Reduce time range.",
         )
 
 
@@ -81,10 +88,12 @@ def _dispatch_composite_task(job_id: str, params: dict, satellite: str, recipe: 
     sat_config = SATELLITE_REGISTRY.get(satellite)
     if sat_config and sat_config.format == "hsd" and recipe == "himawari_true_color":
         from ..tasks.himawari_fetch_task import fetch_himawari_true_color
+
         result = fetch_himawari_true_color.delay(job_id, params)
         return result, f"Himawari True Color fetch job created ({num_bands} bands)"
 
     from ..tasks.composite_task import fetch_composite_data
+
     result = fetch_composite_data.delay(job_id, params)
     return result, f"Composite fetch job created ({recipe}, {num_bands} bands)"
 
@@ -96,10 +105,12 @@ def _dispatch_fetch_task(job_id: str, params: dict, satellite: str) -> tuple:
     sat_config = SATELLITE_REGISTRY.get(satellite)
     if sat_config and sat_config.format == "hsd":
         from ..tasks.himawari_fetch_task import fetch_himawari_data
+
         result = fetch_himawari_data.delay(job_id, params)
         return result, "Himawari fetch job created"
 
     from ..tasks.fetch_task import fetch_goes_data
+
     result = fetch_goes_data.delay(job_id, params)
     return result, "GOES fetch job created"
 
@@ -246,6 +257,7 @@ async def backfill_gaps(
     await db.commit()
 
     from ..tasks.fetch_task import backfill_gaps as backfill_task
+
     backfill_task.delay(job_id, job.params)
 
     return GoesFetchResponse(

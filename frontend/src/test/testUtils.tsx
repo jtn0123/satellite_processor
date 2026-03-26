@@ -33,14 +33,21 @@ export function renderWithRouter(ui: React.ReactElement) {
  * Render a component wrapped in QueryClientProvider → MemoryRouter with
  * an explicit route path. Use this for page-level components that rely on
  * Routes / useParams.
+ *
+ * @param routePattern - The route pattern (e.g. "/goes/:id"), defaults to the initialEntry
+ * @param initialEntry - The actual URL to navigate to (e.g. "/goes/123"), defaults to path
  */
-export function renderWithRoute(ui: React.ReactElement, path = '/goes') {
+export function renderWithRoute(
+  ui: React.ReactElement,
+  path = '/goes',
+  { routePattern, initialEntry }: { routePattern?: string; initialEntry?: string } = {},
+) {
   const qc = createTestQueryClient();
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
+      <MemoryRouter initialEntries={[initialEntry ?? path]}>
         <Routes>
-          <Route path={path} element={ui} />
+          <Route path={routePattern ?? path} element={ui} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

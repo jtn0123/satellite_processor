@@ -49,6 +49,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-frames"])
 
 # ── Dashboard Stats ───────────────────────────────────────────────────
 
+
 @router.get("/dashboard-stats")
 async def dashboard_stats(db: AsyncSession = Depends(get_db)):
     """Aggregated dashboard statistics for the GOES data overview."""
@@ -58,42 +59,46 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db)):
     async def _fetch():
         total = (await db.execute(select(func.count(GoesFrame.id)))).scalar() or 0
 
-        sat_rows = (await db.execute(
-            select(GoesFrame.satellite, func.count(GoesFrame.id))
-            .group_by(GoesFrame.satellite)
-        )).all()
+        sat_rows = (
+            await db.execute(select(GoesFrame.satellite, func.count(GoesFrame.id)).group_by(GoesFrame.satellite))
+        ).all()
         frames_by_satellite = {row[0]: row[1] for row in sat_rows}
 
-        last_job = (await db.execute(
-            select(Job.completed_at)
-            .where(Job.job_type == "goes_fetch", Job.status == "completed")
-            .order_by(Job.completed_at.desc())
-            .limit(1)
-        )).scalar()
+        last_job = (
+            await db.execute(
+                select(Job.completed_at)
+                .where(Job.job_type == "goes_fetch", Job.status == "completed")
+                .order_by(Job.completed_at.desc())
+                .limit(1)
+            )
+        ).scalar()
         last_fetch_time = last_job.isoformat() if last_job else None
 
-        active_schedules = (await db.execute(
-            select(func.count(FetchSchedule.id)).where(FetchSchedule.is_active.is_(True))
-        )).scalar() or 0
+        active_schedules = (
+            await db.execute(select(func.count(FetchSchedule.id)).where(FetchSchedule.is_active.is_(True)))
+        ).scalar() or 0
 
-        sat_storage_rows = (await db.execute(
-            select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0))
-            .group_by(GoesFrame.satellite)
-        )).all()
+        sat_storage_rows = (
+            await db.execute(
+                select(GoesFrame.satellite, func.coalesce(func.sum(GoesFrame.file_size), 0)).group_by(
+                    GoesFrame.satellite
+                )
+            )
+        ).all()
         storage_by_satellite = {row[0]: row[1] for row in sat_storage_rows}
 
-        band_storage_rows = (await db.execute(
-            select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0))
-            .group_by(GoesFrame.band)
-        )).all()
+        band_storage_rows = (
+            await db.execute(
+                select(GoesFrame.band, func.coalesce(func.sum(GoesFrame.file_size), 0)).group_by(GoesFrame.band)
+            )
+        ).all()
         storage_by_band = {row[0]: row[1] for row in band_storage_rows}
 
-        recent_rows = (await db.execute(
-            select(Job)
-            .where(Job.job_type == "goes_fetch")
-            .order_by(Job.created_at.desc())
-            .limit(5)
-        )).scalars().all()
+        recent_rows = (
+            (await db.execute(select(Job).where(Job.job_type == "goes_fetch").order_by(Job.created_at.desc()).limit(5)))
+            .scalars()
+            .all()
+        )
         recent_jobs = [
             {
                 "id": j.id,
@@ -119,6 +124,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db)):
 
 # ── Quick Fetch Presets ───────────────────────────────────────────────
 
+
 @router.get("/quick-fetch-options")
 async def quick_fetch_options():
     """Return preset time ranges for quick GOES data fetching."""
@@ -131,6 +137,7 @@ async def quick_fetch_options():
 
 
 # ── Frames ────────────────────────────────────────────────────────────
+
 
 @router.get("/frames", response_model=PaginatedResponse[GoesFrameResponse])
 async def list_frames(
@@ -174,16 +181,20 @@ async def list_frames(
         query = query.join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id).where(
             CollectionFrame.collection_id == collection_id
         )
-        count_query = count_query.join(
-            CollectionFrame, CollectionFrame.frame_id == GoesFrame.id
-        ).where(CollectionFrame.collection_id == collection_id)
+        count_query = count_query.join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id).where(
+            CollectionFrame.collection_id == collection_id
+        )
     if tag:
-        query = query.join(FrameTag, FrameTag.frame_id == GoesFrame.id).join(
-            Tag, Tag.id == FrameTag.tag_id
-        ).where(Tag.name == tag)
-        count_query = count_query.join(
-            FrameTag, FrameTag.frame_id == GoesFrame.id
-        ).join(Tag, Tag.id == FrameTag.tag_id).where(Tag.name == tag)
+        query = (
+            query.join(FrameTag, FrameTag.frame_id == GoesFrame.id)
+            .join(Tag, Tag.id == FrameTag.tag_id)
+            .where(Tag.name == tag)
+        )
+        count_query = (
+            count_query.join(FrameTag, FrameTag.frame_id == GoesFrame.id)
+            .join(Tag, Tag.id == FrameTag.tag_id)
+            .where(Tag.name == tag)
+        )
 
     sort_col = getattr(GoesFrame, sort, GoesFrame.capture_time)
     if order == "desc":
@@ -249,11 +260,16 @@ def _frames_to_csv(frames: list[GoesFrame]) -> str:
     writer = csv.writer(output)
     writer.writerow(["id", "satellite", "sector", "band", "capture_time", "file_size"])
     for f in frames:
-        writer.writerow([
-            f.id, f.satellite, f.sector, f.band,
-            f.capture_time.isoformat() if f.capture_time else "",
-            f.file_size,
-        ])
+        writer.writerow(
+            [
+                f.id,
+                f.satellite,
+                f.sector,
+                f.band,
+                f.capture_time.isoformat() if f.capture_time else "",
+                f.file_size,
+            ]
+        )
     return output.getvalue()
 
 
@@ -289,12 +305,7 @@ async def export_frames(
         )
     import json as json_mod
 
-    query = (
-        select(GoesFrame)
-        .order_by(GoesFrame.capture_time.desc())
-        .offset(offset)
-        .limit(limit)
-    )
+    query = select(GoesFrame).order_by(GoesFrame.capture_time.desc()).offset(offset).limit(limit)
     result = await db.execute(query)
     frames = result.scalars().all()
 
@@ -341,9 +352,7 @@ async def bulk_delete_frames(
 ):
     """Bulk delete frames and their files."""
     logger.info("Bulk delete frames requested")
-    result = await db.execute(
-        select(GoesFrame).where(GoesFrame.id.in_(payload.ids))
-    )
+    result = await db.execute(select(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
     frames = result.scalars().all()
 
     for frame in frames:
@@ -372,11 +381,7 @@ async def bulk_tag_frames(
     logger.info("Bulk tagging frames")
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    values = [
-        {"frame_id": frame_id, "tag_id": tag_id}
-        for frame_id in payload.frame_ids
-        for tag_id in payload.tag_ids
-    ]
+    values = [{"frame_id": frame_id, "tag_id": tag_id} for frame_id in payload.frame_ids for tag_id in payload.tag_ids]
     if values:
         stmt = pg_insert(FrameTag).values(values).on_conflict_do_nothing()
         await db.execute(stmt)
@@ -391,9 +396,7 @@ async def process_frames(
 ):
     """Send selected frames to the processing pipeline."""
     logger.info("Processing frames requested")
-    result = await db.execute(
-        select(GoesFrame.file_path).where(GoesFrame.id.in_(payload.frame_ids))
-    )
+    result = await db.execute(select(GoesFrame.file_path).where(GoesFrame.id.in_(payload.frame_ids)))
     paths = [r[0] for r in result.all()]
     if not paths:
         raise APIError(404, "not_found", "No frames found")

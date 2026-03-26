@@ -11,8 +11,6 @@ from unittest.mock import MagicMock, patch
 from app.db.models import GoesFrame, Job, gen_uuid
 from app.utils import utcnow
 
-# Uses shared engine, override_get_db, and setup_db from conftest.py
-
 
 class TestConcurrentReads:
     """Test that concurrent read operations don't interfere with each other."""
@@ -23,9 +21,7 @@ class TestConcurrentReads:
             db.add(Job(id=gen_uuid(), name=f"job-{i}", status="completed"))
         await db.commit()
 
-        results = await asyncio.gather(
-            *[client.get("/api/jobs") for _ in range(10)]
-        )
+        results = await asyncio.gather(*[client.get("/api/jobs") for _ in range(10)])
 
         for resp in results:
             assert resp.status_code == 200
@@ -35,14 +31,16 @@ class TestConcurrentReads:
     async def test_concurrent_frame_queries(self, client, db):
         """Concurrent frame queries with different filters should all succeed."""
         for i in range(10):
-            db.add(GoesFrame(
-                id=gen_uuid(),
-                satellite="GOES-19",
-                sector="CONUS",
-                band=f"C{(i % 3) + 1:02d}",
-                capture_time=utcnow(),
-                file_path=f"/data/frame_{i}.nc",
-            ))
+            db.add(
+                GoesFrame(
+                    id=gen_uuid(),
+                    satellite="GOES-19",
+                    sector="CONUS",
+                    band=f"C{(i % 3) + 1:02d}",
+                    capture_time=utcnow(),
+                    file_path=f"/data/frame_{i}.nc",
+                )
+            )
         await db.commit()
 
         results = await asyncio.gather(
@@ -70,10 +68,13 @@ class TestWriteIntegrity:
 
             created_ids = set()
             for i in range(10):
-                resp = await client.post("/api/jobs", json={
-                    "job_type": "image_process",
-                    "params": {"input_path": f"/data/input_{i}"},
-                })
+                resp = await client.post(
+                    "/api/jobs",
+                    json={
+                        "job_type": "image_process",
+                        "params": {"input_path": f"/data/input_{i}"},
+                    },
+                )
                 assert resp.status_code in (200, 201)
                 job_id = resp.json()["id"]
                 assert job_id not in created_ids, f"Duplicate job ID: {job_id}"
@@ -101,9 +102,7 @@ class TestCircuitBreakerStateTransitions:
         """Multiple failures should correctly trip the breaker."""
         from app.circuit_breaker import CircuitBreaker, CircuitState
 
-        breaker = CircuitBreaker(
-            name="test-trip", failure_threshold=3, recovery_timeout=1.0
-        )
+        breaker = CircuitBreaker(name="test-trip", failure_threshold=3, recovery_timeout=1.0)
 
         for _ in range(5):
             breaker.record_failure()
@@ -114,9 +113,7 @@ class TestCircuitBreakerStateTransitions:
         """Multiple allow_request calls should be safe under closed state."""
         from app.circuit_breaker import CircuitBreaker
 
-        breaker = CircuitBreaker(
-            name="test-allow", failure_threshold=10, recovery_timeout=60.0
-        )
+        breaker = CircuitBreaker(name="test-allow", failure_threshold=10, recovery_timeout=60.0)
 
         results = [breaker.allow_request() for _ in range(20)]
         assert all(results)
@@ -126,7 +123,9 @@ class TestCircuitBreakerStateTransitions:
         from app.circuit_breaker import CircuitBreaker, CircuitState
 
         breaker = CircuitBreaker(
-            name="test-halfopen", failure_threshold=1, recovery_timeout=0.01,
+            name="test-halfopen",
+            failure_threshold=1,
+            recovery_timeout=0.01,
             half_open_max_calls=1,
         )
 

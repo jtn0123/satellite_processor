@@ -1,4 +1,5 @@
 """Celery task for generating animations from GOES frames."""
+
 from __future__ import annotations
 
 import logging
@@ -36,14 +37,12 @@ def _apply_overlay(img, frame, overlay: dict, label_text: str):
     y_pos = 10
 
     if overlay.get("label") and label_text:
-        draw.text((10, y_pos), label_text, fill=(255, 255, 255), font=font,
-                  stroke_width=2, stroke_fill=(0, 0, 0))
+        draw.text((10, y_pos), label_text, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0))
         y_pos += 30
 
     if overlay.get("timestamp") and frame.capture_time:
         ts_text = frame.capture_time.strftime("%Y-%m-%d %H:%M UTC")
-        draw.text((10, y_pos), ts_text, fill=(255, 255, 255), font=font,
-                  stroke_width=2, stroke_fill=(0, 0, 0))
+        draw.text((10, y_pos), ts_text, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0))
 
     result = np.array(pil_img)[:, :, ::-1]  # RGB -> BGR
     return result
@@ -76,7 +75,7 @@ def _process_single_frame(img, crop, resolution: str, scale: str):
     import cv2
 
     if crop:
-        img = img[crop.y:crop.y + crop.height, crop.x:crop.x + crop.width]
+        img = img[crop.y : crop.y + crop.height, crop.x : crop.x + crop.width]
 
     if resolution == "preview":
         h, w = img.shape[:2]
@@ -95,8 +94,9 @@ def _process_single_frame(img, crop, resolution: str, scale: str):
     return img
 
 
-def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution: str,
-                          scale: str, overlay: dict | None, label_text: str):
+def _render_frames_to_dir(
+    frames, work_dir: Path, job_id: str, crop, resolution: str, scale: str, overlay: dict | None, label_text: str
+):
     """Read, transform, and write all frames to the working directory."""
     import cv2
 
@@ -122,10 +122,8 @@ def _render_frames_to_dir(frames, work_dir: Path, job_id: str, crop, resolution:
 
         pct_done = 10 + int((i + 1) / len(frames) * 60)
         if (i + 1) % max(1, len(frames) // 20) == 0:
-            _publish_progress(job_id, pct_done,
-                              f"Processed frame {i + 1}/{len(frames)}", "processing")
-            _update_job_db(job_id, progress=pct_done,
-                           status_message=f"Processed frame {i + 1}/{len(frames)}")
+            _publish_progress(job_id, pct_done, f"Processed frame {i + 1}/{len(frames)}", "processing")
+            _update_job_db(job_id, progress=pct_done, status_message=f"Processed frame {i + 1}/{len(frames)}")
 
     return output_idx
 
@@ -137,18 +135,41 @@ def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path
 
     if fmt == "gif":
         palette = str(work_dir / "palette.png")
-        cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                "-vf", "palettegen", palette]
+        cmd1 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern, "-vf", "palettegen", palette]
         _run_ffmpeg(cmd1)
-        cmd2 = [ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-                "-i", palette, "-lavfi", "paletteuse", str(output_path)]
+        cmd2 = [
+            ffmpeg,
+            "-y",
+            "-framerate",
+            str(fps),
+            "-i",
+            input_pattern,
+            "-i",
+            palette,
+            "-lavfi",
+            "paletteuse",
+            str(output_path),
+        ]
         _run_ffmpeg(cmd2)
     else:
         crf = QUALITY_CRF.get(quality, "23")
         cmd = [
-            ffmpeg, "-y", "-framerate", str(fps), "-i", input_pattern,
-            "-c:v", "libx264", "-crf", crf, "-preset", "medium",
-            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            ffmpeg,
+            "-y",
+            "-framerate",
+            str(fps),
+            "-i",
+            input_pattern,
+            "-c:v",
+            "libx264",
+            "-crf",
+            crf,
+            "-preset",
+            "medium",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
             str(output_path),
         ]
         _run_ffmpeg(cmd)
@@ -166,6 +187,7 @@ def _run_ffmpeg(cmd: list[str]):
 def _mark_animation_failed(session, animation_id: str, error: str):
     """Mark the animation record as failed in the database."""
     from ..db.models import Animation
+
     try:
         logger.error("Marking animation %s as failed: %s", animation_id, error)
         anim = session.query(Animation).filter(Animation.id == animation_id).first()
@@ -179,17 +201,20 @@ def _mark_animation_failed(session, animation_id: str, error: str):
 
 
 @celery_app.task(
-    bind=True, name="generate_animation",
+    bind=True,
+    name="generate_animation",
     autoretry_for=(ConnectionError, TimeoutError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def generate_animation(self, job_id: str, animation_id: str):
     """Generate an animation (MP4/GIF) from selected GOES frames."""
     from ..db.models import Animation, CropPreset, GoesFrame, Job
 
     logger.info("Starting animation job %s (anim %s)", job_id, animation_id)
-    _update_job_db(job_id, status="processing", started_at=utcnow(),
-                   status_message="Preparing animation...")
+    _update_job_db(job_id, status="processing", started_at=utcnow(), status_message="Preparing animation...")
     _publish_progress(job_id, 0, "Preparing animation...", "processing")
 
     session = _get_sync_db()
@@ -213,10 +238,7 @@ def generate_animation(self, job_id: str, animation_id: str):
         scale = params.get("scale", "100%")
 
         frames = (
-            session.query(GoesFrame)
-            .filter(GoesFrame.id.in_(frame_ids))
-            .order_by(GoesFrame.capture_time.asc())
-            .all()
+            session.query(GoesFrame).filter(GoesFrame.id.in_(frame_ids)).order_by(GoesFrame.capture_time.asc()).all()
         )
         if not frames:
             raise RuntimeError("No frames found")
@@ -256,21 +278,25 @@ def generate_animation(self, job_id: str, animation_id: str):
         session.commit()
 
         _update_job_db(
-            job_id, status="completed", progress=100,
+            job_id,
+            status="completed",
+            progress=100,
             output_path=str(output_path),
             completed_at=utcnow(),
             status_message=f"Animation complete: {len(frames)} frames, {duration_seconds:.1f}s",
         )
-        _publish_progress(job_id, 100,
-                          f"Animation complete: {len(frames)} frames", "completed")
+        _publish_progress(job_id, 100, f"Animation complete: {len(frames)} frames", "completed")
 
     except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
         logger.exception("Animation job %s failed", job_id)
         session.rollback()
         _mark_animation_failed(session, animation_id, str(e))
         _update_job_db(
-            job_id, status="failed", error=str(e),
-            completed_at=utcnow(), status_message=f"Error: {e}",
+            job_id,
+            status="failed",
+            error=str(e),
+            completed_at=utcnow(),
+            status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

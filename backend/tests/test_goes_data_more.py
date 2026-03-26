@@ -18,10 +18,17 @@ async def test_frames_empty(client):
 @pytest.mark.asyncio
 async def test_frames_pagination(client, db):
     for i in range(5):
-        db.add(GoesFrame(
-            id=f"f{i}", satellite="GOES-16", sector="CONUS", band="C02",
-            capture_time=datetime(2024, 1, 1, i), file_path=f"/t/{i}.nc", file_size=100,
-        ))
+        db.add(
+            GoesFrame(
+                id=f"f{i}",
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime(2024, 1, 1, i),
+                file_path=f"/t/{i}.nc",
+                file_size=100,
+            )
+        )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames?page=1&limit=2")
@@ -33,10 +40,28 @@ async def test_frames_pagination(client, db):
 
 @pytest.mark.asyncio
 async def test_frames_filter_satellite(client, db):
-    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
-    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-18", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=100))
+    db.add(
+        GoesFrame(
+            id="40b8f45e-7bd1-5131-9043-bb2d8253153d",
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/1.nc",
+            file_size=100,
+        )
+    )
+    db.add(
+        GoesFrame(
+            id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29",
+            satellite="GOES-18",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/2.nc",
+            file_size=100,
+        )
+    )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames?satellite=GOES-16")
@@ -47,8 +72,17 @@ async def test_frames_filter_satellite(client, db):
 @pytest.mark.asyncio
 async def test_frames_sort_asc(client, db):
     for i in [3, 1, 2]:
-        db.add(GoesFrame(id=f"f{i}", satellite="GOES-16", sector="CONUS", band="C02",
-                         capture_time=datetime(2024, 1, 1, i), file_path=f"/t/{i}.nc", file_size=i*100))
+        db.add(
+            GoesFrame(
+                id=f"f{i}",
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime(2024, 1, 1, i),
+                file_path=f"/t/{i}.nc",
+                file_size=i * 100,
+            )
+        )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames?sort=file_size&order=asc")
@@ -65,8 +99,17 @@ async def test_frame_detail_not_found(client):
 
 @pytest.mark.asyncio
 async def test_frame_detail(client, db):
-    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
+    db.add(
+        GoesFrame(
+            id="40b8f45e-7bd1-5131-9043-bb2d8253153d",
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/1.nc",
+            file_size=100,
+        )
+    )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames/40b8f45e-7bd1-5131-9043-bb2d8253153d")
@@ -85,10 +128,28 @@ async def test_frame_stats_empty(client):
 
 @pytest.mark.asyncio
 async def test_frame_stats_with_data(client, db):
-    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=500))
-    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-18", sector="CONUS", band="C13",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/2.nc", file_size=300))
+    db.add(
+        GoesFrame(
+            id="40b8f45e-7bd1-5131-9043-bb2d8253153d",
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/1.nc",
+            file_size=500,
+        )
+    )
+    db.add(
+        GoesFrame(
+            id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29",
+            satellite="GOES-18",
+            sector="CONUS",
+            band="C13",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/2.nc",
+            file_size=300,
+        )
+    )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames/stats")
@@ -183,19 +244,40 @@ async def test_delete_nonexistent_tag(client):
 
 @pytest.mark.asyncio
 async def test_process_frames_no_match(client):
-    resp = await client.post("/api/satellite/frames/process", json={
-        "frame_ids": ["nonexistent"],
-        "params": {},
-    })
+    resp = await client.post(
+        "/api/satellite/frames/process",
+        json={
+            "frame_ids": ["nonexistent"],
+            "params": {},
+        },
+    )
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_frames_date_filter(client, db):
-    db.add(GoesFrame(id="40b8f45e-7bd1-5131-9043-bb2d8253153d", satellite="GOES-16", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 1, 1), file_path="/t/1.nc", file_size=100))
-    db.add(GoesFrame(id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29", satellite="GOES-16", sector="CONUS", band="C02",
-                     capture_time=datetime(2024, 6, 1), file_path="/t/2.nc", file_size=100))
+    db.add(
+        GoesFrame(
+            id="40b8f45e-7bd1-5131-9043-bb2d8253153d",
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 1),
+            file_path="/t/1.nc",
+            file_size=100,
+        )
+    )
+    db.add(
+        GoesFrame(
+            id="2f0ef28f-ecc6-51f7-9295-0094dd96ac29",
+            satellite="GOES-16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 6, 1),
+            file_path="/t/2.nc",
+            file_size=100,
+        )
+    )
     await db.commit()
 
     resp = await client.get("/api/satellite/frames?start_date=2024-03-01T00:00:00")

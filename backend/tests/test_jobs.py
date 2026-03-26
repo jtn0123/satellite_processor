@@ -74,8 +74,7 @@ async def test_delete_job(client):
     async def _mock_close():
         return None
 
-    with patch("app.routers.jobs.celery_app") as mock_celery, \
-         patch("redis.asyncio.Redis.from_url") as mock_redis_cls:
+    with patch("app.routers.jobs.celery_app") as mock_celery, patch("redis.asyncio.Redis.from_url") as mock_redis_cls:
         mock_r = MagicMock()
         mock_r.publish = _mock_publish
         mock_r.close = _mock_close

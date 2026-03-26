@@ -7,6 +7,7 @@ Covers:
 - Scheduling dispatch for Himawari presets (TrueColor + single-band)
 - Percentile normalization per channel
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -19,6 +20,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def himawari_tc_params():
@@ -33,6 +35,7 @@ def himawari_tc_params():
 # ---------------------------------------------------------------------------
 # Composite recipe registration
 # ---------------------------------------------------------------------------
+
 
 class TestCompositeRecipeRegistration:
     def test_himawari_true_color_recipe_exists(self):
@@ -63,6 +66,7 @@ class TestCompositeRecipeRegistration:
 # ---------------------------------------------------------------------------
 # _normalize_channel_percentile
 # ---------------------------------------------------------------------------
+
 
 class TestNormalizeChannelPercentile:
     def test_normal_data(self):
@@ -104,6 +108,7 @@ class TestNormalizeChannelPercentile:
 # _composite_true_color
 # ---------------------------------------------------------------------------
 
+
 class TestCompositeTrueColor:
     def test_creates_rgb_png(self, tmp_path):
         from app.tasks.himawari_fetch_task import _composite_true_color
@@ -122,6 +127,7 @@ class TestCompositeTrueColor:
 
         # Verify it's a valid RGB image
         from PIL import Image as PILImage
+
         img = PILImage.open(output)
         assert img.mode == "RGB"
         assert img.size == (200, 100)
@@ -139,6 +145,7 @@ class TestCompositeTrueColor:
         _composite_true_color(bands, output)
 
         from PIL import Image as PILImage
+
         img = PILImage.open(output)
         assert img.size == (400, 200)  # Should match largest
 
@@ -169,6 +176,7 @@ class TestCompositeTrueColor:
 # _fetch_and_assemble_band
 # ---------------------------------------------------------------------------
 
+
 class TestFetchAndAssembleBand:
     @patch("app.tasks.himawari_fetch_task._download_segments_parallel")
     @patch("app.tasks.himawari_fetch_task._list_segments_for_timestamp")
@@ -194,6 +202,7 @@ class TestFetchAndAssembleBand:
 # _execute_himawari_true_color
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._create_himawari_fetch_records")
     @patch("app.tasks.himawari_fetch_task._composite_true_color")
@@ -202,9 +211,15 @@ class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_full_true_color_success(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_fetch_band, mock_composite, mock_records,
-        himawari_tc_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_fetch_band,
+        mock_composite,
+        mock_records,
+        himawari_tc_params,
+        tmp_path,
     ):
         """Happy path: fetches 3 bands, composites, creates records."""
         from app.tasks.himawari_fetch_task import _execute_himawari_true_color
@@ -240,8 +255,12 @@ class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_no_timestamps_fails(
-        self, mock_progress, mock_update, mock_timestamps,
-        himawari_tc_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        himawari_tc_params,
+        tmp_path,
     ):
         from app.tasks.himawari_fetch_task import _execute_himawari_true_color
 
@@ -262,9 +281,15 @@ class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_missing_band_counts_as_failure(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_fetch_band, mock_composite, mock_records,
-        himawari_tc_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_fetch_band,
+        mock_composite,
+        mock_records,
+        himawari_tc_params,
+        tmp_path,
     ):
         """If one of the 3 bands fails, that timestamp should be skipped."""
         from app.tasks.himawari_fetch_task import _execute_himawari_true_color
@@ -300,9 +325,15 @@ class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_multiple_timestamps(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_fetch_band, mock_composite, mock_records,
-        himawari_tc_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_fetch_band,
+        mock_composite,
+        mock_records,
+        himawari_tc_params,
+        tmp_path,
     ):
         """Should process multiple timestamps."""
         from app.tasks.himawari_fetch_task import _execute_himawari_true_color
@@ -333,15 +364,20 @@ class TestExecuteHimawariTrueColor:
     @patch("app.tasks.himawari_fetch_task._update_job_db")
     @patch("app.tasks.himawari_fetch_task._publish_progress")
     def test_respects_max_frames_limit(
-        self, mock_progress, mock_update, mock_timestamps,
-        mock_fetch_band, mock_composite, mock_records,
-        himawari_tc_params, tmp_path,
+        self,
+        mock_progress,
+        mock_update,
+        mock_timestamps,
+        mock_fetch_band,
+        mock_composite,
+        mock_records,
+        himawari_tc_params,
+        tmp_path,
     ):
         from app.tasks.himawari_fetch_task import _execute_himawari_true_color
 
         mock_timestamps.return_value = [
-            {"scan_time": f"2026-03-03T00:{i*10:02d}:00+00:00", "key": f"k{i}", "size": 1000}
-            for i in range(5)
+            {"scan_time": f"2026-03-03T00:{i * 10:02d}:00+00:00", "key": f"k{i}", "size": 1000} for i in range(5)
         ]
         mock_fetch_band.return_value = np.random.uniform(0, 100, (100, 100)).astype(np.float32)
         mock_composite.return_value = Path("/tmp/test.png")
@@ -364,6 +400,7 @@ class TestExecuteHimawariTrueColor:
 # ---------------------------------------------------------------------------
 # Celery task (fetch_himawari_true_color)
 # ---------------------------------------------------------------------------
+
 
 class TestFetchHimawariTrueColorTask:
     @patch("app.tasks.himawari_fetch_task._execute_himawari_true_color")
@@ -396,18 +433,22 @@ class TestFetchHimawariTrueColorTask:
 # Fetch-composite endpoint dispatch
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 class TestFetchCompositeDispatch:
     @patch("app.tasks.himawari_fetch_task.fetch_himawari_true_color.delay")
     async def test_himawari_true_color_dispatches_to_himawari_task(self, mock_delay, client):
         """POST /fetch-composite with himawari_true_color recipe should dispatch to Himawari task."""
-        resp = await client.post("/api/satellite/fetch-composite", json={
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "recipe": "himawari_true_color",
-            "start_time": "2026-03-03T00:00:00",
-            "end_time": "2026-03-03T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-composite",
+            json={
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "recipe": "himawari_true_color",
+                "start_time": "2026-03-03T00:00:00",
+                "end_time": "2026-03-03T01:00:00",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "Himawari True Color" in data["message"]
@@ -416,13 +457,16 @@ class TestFetchCompositeDispatch:
     @patch("app.tasks.composite_task.fetch_composite_data.delay")
     async def test_goes_true_color_dispatches_to_goes_task(self, mock_delay, client):
         """GOES true_color recipe should still dispatch to the GOES composite task."""
-        resp = await client.post("/api/satellite/fetch-composite", json={
-            "satellite": "GOES-18",
-            "sector": "CONUS",
-            "recipe": "true_color",
-            "start_time": "2026-03-03T00:00:00",
-            "end_time": "2026-03-03T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-composite",
+            json={
+                "satellite": "GOES-18",
+                "sector": "CONUS",
+                "recipe": "true_color",
+                "start_time": "2026-03-03T00:00:00",
+                "end_time": "2026-03-03T01:00:00",
+            },
+        )
         assert resp.status_code == 200
         mock_delay.assert_called_once()
 
@@ -430,19 +474,23 @@ class TestFetchCompositeDispatch:
         """The himawari_true_color recipe should be accepted by the validator."""
         # We just need it to not be a 422 validation error
         with patch("app.tasks.himawari_fetch_task.fetch_himawari_true_color.delay"):
-            resp = await client.post("/api/satellite/fetch-composite", json={
-                "satellite": "Himawari-9",
-                "sector": "FLDK",
-                "recipe": "himawari_true_color",
-                "start_time": "2026-03-03T00:00:00",
-                "end_time": "2026-03-03T01:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/fetch-composite",
+                json={
+                    "satellite": "Himawari-9",
+                    "sector": "FLDK",
+                    "recipe": "himawari_true_color",
+                    "start_time": "2026-03-03T00:00:00",
+                    "end_time": "2026-03-03T01:00:00",
+                },
+            )
         assert resp.status_code == 200
 
 
 # ---------------------------------------------------------------------------
 # Composite recipe endpoint includes Himawari
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 class TestCompositeRecipeEndpoint:
@@ -466,6 +514,7 @@ class TestCompositeRecipeEndpoint:
 # ---------------------------------------------------------------------------
 # Scheduling dispatch for Himawari
 # ---------------------------------------------------------------------------
+
 
 class TestSchedulingDispatch:
     def test_scheduling_dispatches_himawari_single_band(self):
@@ -536,17 +585,21 @@ class TestSchedulingDispatch:
 # Scheduling endpoint dispatch for Himawari presets
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 class TestSchedulingEndpointDispatch:
     async def test_create_himawari_preset(self, client):
         """Should be able to create a Himawari preset with TrueColor band."""
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "Himawari FLDK TrueColor",
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "TrueColor",
-            "description": "Auto-fetch Himawari True Color",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "Himawari FLDK TrueColor",
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "TrueColor",
+                "description": "Auto-fetch Himawari True Color",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "Himawari-9"
@@ -554,12 +607,15 @@ class TestSchedulingEndpointDispatch:
 
     async def test_create_himawari_single_band_preset(self, client):
         """Should be able to create a Himawari preset with a single band."""
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "Himawari FLDK B13",
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "B13",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "Himawari FLDK B13",
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "B13",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["satellite"] == "Himawari-9"
@@ -568,20 +624,26 @@ class TestSchedulingEndpointDispatch:
     async def test_create_himawari_schedule(self, client):
         """Should be able to create a schedule with a Himawari preset."""
         # Create preset
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "Sched Preset",
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "TrueColor",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "Sched Preset",
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "TrueColor",
+            },
+        )
         preset_id = resp.json()["id"]
 
         # Create schedule
-        resp = await client.post("/api/satellite/schedules", json={
-            "name": "Every 10 min",
-            "preset_id": preset_id,
-            "interval_minutes": 10,
-        })
+        resp = await client.post(
+            "/api/satellite/schedules",
+            json={
+                "name": "Every 10 min",
+                "preset_id": preset_id,
+                "interval_minutes": 10,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["interval_minutes"] == 10
@@ -596,14 +658,18 @@ class TestSchedulingEndpointDispatch:
                 called["params"] = params
 
         import app.tasks.himawari_fetch_task as h_mod
+
         monkeypatch.setattr(h_mod, "fetch_himawari_true_color", FakeTask())
 
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "Run TC",
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "TrueColor",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "Run TC",
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "TrueColor",
+            },
+        )
         pid = resp.json()["id"]
         resp = await client.post(f"/api/satellite/fetch-presets/{pid}/run")
         assert resp.status_code == 200
@@ -620,14 +686,18 @@ class TestSchedulingEndpointDispatch:
                 called["params"] = params
 
         import app.tasks.himawari_fetch_task as h_mod
+
         monkeypatch.setattr(h_mod, "fetch_himawari_data", FakeTask())
 
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": "Run B13",
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "B13",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": "Run B13",
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "B13",
+            },
+        )
         pid = resp.json()["id"]
         resp = await client.post(f"/api/satellite/fetch-presets/{pid}/run")
         assert resp.status_code == 200
@@ -639,17 +709,21 @@ class TestSchedulingEndpointDispatch:
 # TrueColor band validation (blocked from direct fetch)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 class TestTrueColorBandValidation:
     async def test_truecolor_blocked_in_direct_fetch(self, client):
         """TrueColor should NOT be allowed in the direct /fetch endpoint."""
-        resp = await client.post("/api/satellite/fetch", json={
-            "satellite": "Himawari-9",
-            "sector": "FLDK",
-            "band": "TrueColor",
-            "start_time": "2026-03-03T00:00:00",
-            "end_time": "2026-03-03T01:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch",
+            json={
+                "satellite": "Himawari-9",
+                "sector": "FLDK",
+                "band": "TrueColor",
+                "start_time": "2026-03-03T00:00:00",
+                "end_time": "2026-03-03T01:00:00",
+            },
+        )
         assert resp.status_code == 422
         detail = resp.json()["detail"]
         if isinstance(detail, list):
@@ -662,13 +736,16 @@ class TestTrueColorBandValidation:
 # Celery app registration
 # ---------------------------------------------------------------------------
 
+
 class TestCeleryRegistration:
     def test_himawari_fetch_task_in_includes(self):
         from app.celery_app import celery_app
+
         assert "app.tasks.himawari_fetch_task" in celery_app.conf.include
 
     def test_himawari_task_routes_exist(self):
         from app.celery_app import celery_app
+
         routes = celery_app.conf.task_routes
         assert "fetch_himawari_data" in routes
         assert "fetch_himawari_true_color" in routes

@@ -24,13 +24,16 @@ def setup_tracing(app=None) -> None:
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-        resource = Resource.create({
-            "service.name": "satellite-processor-api",
-            "service.version": os.getenv("BUILD_VERSION", "dev"),
-        })
+        resource = Resource.create(
+            {
+                "service.name": "satellite-processor-api",
+                "service.version": os.getenv("BUILD_VERSION", "dev"),
+            }
+        )
 
         provider = TracerProvider(resource=resource)
-        exporter = OTLPSpanExporter(endpoint=otel_endpoint, insecure=True)
+        insecure = otel_endpoint.startswith("http://")
+        exporter = OTLPSpanExporter(endpoint=otel_endpoint, insecure=insecure)
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
 
@@ -38,6 +41,7 @@ def setup_tracing(app=None) -> None:
         if app is not None:
             try:
                 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
                 FastAPIInstrumentor.instrument_app(app)
                 logger.info("OpenTelemetry: FastAPI instrumented")
             except ImportError:
@@ -46,6 +50,7 @@ def setup_tracing(app=None) -> None:
         # Instrument Celery
         try:
             from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
             CeleryInstrumentor().instrument()
             logger.info("OpenTelemetry: Celery instrumented")
         except ImportError:

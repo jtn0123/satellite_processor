@@ -71,13 +71,14 @@ async def list_errors(
     """List recent errors with pagination. Auth required (handled by global middleware)."""
     total = (await db.execute(select(func.count(ErrorLog.id)))).scalar() or 0
     rows = (
-        await db.execute(
-            select(ErrorLog)
-            .order_by(ErrorLog.created_at.desc())
-            .offset((page - 1) * per_page)
-            .limit(per_page)
+        (
+            await db.execute(
+                select(ErrorLog).order_by(ErrorLog.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     items = [
         ErrorReportOut(

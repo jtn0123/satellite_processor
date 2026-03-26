@@ -27,20 +27,17 @@ class TestCatalogLatestImageUrl:
 
         paginator = MagicMock()
         key = "ABI-L1b-RadC/2024/166/12/OR_ABI-L1b-RadC-M6C02_G19_s20241661200.nc"
-        paginator.paginate.return_value = [
-            {"Contents": [{"Key": key, "Size": 5000}]}
-        ]
+        paginator.paginate.return_value = [{"Contents": [{"Key": key, "Size": 5000}]}]
         mock_s3.return_value.get_paginator.return_value = paginator
 
-        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
-             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+        with (
+            patch("app.services.catalog._matches_sector_and_band", return_value=True),
+            patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)),
+        ):
             result = catalog_latest("GOES-19", "CONUS", "C02")
 
         assert result is not None
-        assert result["image_url"] == (
-            "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/"
-            "2500x1500.jpg"
-        )
+        assert result["image_url"] == ("https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/02/2500x1500.jpg")
         assert "thumbnail_url" in result
         assert "mobile_url" in result
 
@@ -50,13 +47,13 @@ class TestCatalogLatestImageUrl:
 
         paginator = MagicMock()
         key = "ABI-L1b-RadC/2024/166/12/test.nc"
-        paginator.paginate.return_value = [
-            {"Contents": [{"Key": key, "Size": 3000}]}
-        ]
+        paginator.paginate.return_value = [{"Contents": [{"Key": key, "Size": 3000}]}]
         mock_s3.return_value.get_paginator.return_value = paginator
 
-        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
-             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+        with (
+            patch("app.services.catalog._matches_sector_and_band", return_value=True),
+            patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)),
+        ):
             result = catalog_latest("GOES-16", "CONUS", "C02")
 
         assert result is not None
@@ -81,13 +78,13 @@ class TestCatalogLatestImageUrl:
 
         paginator = MagicMock()
         key = "ABI-L1b-RadF/2024/166/12/test.nc"
-        paginator.paginate.return_value = [
-            {"Contents": [{"Key": key, "Size": 8000}]}
-        ]
+        paginator.paginate.return_value = [{"Contents": [{"Key": key, "Size": 8000}]}]
         mock_s3.return_value.get_paginator.return_value = paginator
 
-        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
-             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+        with (
+            patch("app.services.catalog._matches_sector_and_band", return_value=True),
+            patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)),
+        ):
             result = catalog_latest("GOES-19", "FullDisk", "C13")
 
         assert result is not None
@@ -113,9 +110,14 @@ async def test_catalog_latest_returns_image_url(client):
         "image_url": "https://noaa-goes19.s3.amazonaws.com/ABI-L1b-RadC/2025/001/12/test.nc",
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/satellite/catalog/latest", params={
-            "satellite": "GOES-19", "sector": "CONUS", "band": "C02",
-        })
+        resp = await client.get(
+            "/api/satellite/catalog/latest",
+            params={
+                "satellite": "GOES-19",
+                "sector": "CONUS",
+                "band": "C02",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "image_url" in data
@@ -174,15 +176,21 @@ class TestCatalogList:
     def test_returns_sorted_results(self, mock_s3):
         paginator = MagicMock()
         paginator.paginate.return_value = [
-            {"Contents": [
-                {"Key": "ABI-L1b-RadC/2024/166/12/OR_ABI-L1b-RadC-M6C02_G19_s20241661200_e20241661205.nc",
-                 "Size": 4000},
-            ]}
+            {
+                "Contents": [
+                    {
+                        "Key": "ABI-L1b-RadC/2024/166/12/OR_ABI-L1b-RadC-M6C02_G19_s20241661200_e20241661205.nc",
+                        "Size": 4000,
+                    },
+                ]
+            }
         ]
         mock_s3.return_value.get_paginator.return_value = paginator
 
-        with patch("app.services.catalog._matches_sector_and_band", return_value=True), \
-             patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)):
+        with (
+            patch("app.services.catalog._matches_sector_and_band", return_value=True),
+            patch("app.services.catalog._parse_scan_time", return_value=datetime(2024, 6, 14, 12, 0, tzinfo=UTC)),
+        ):
             result = catalog_list("GOES-19", "CONUS", "C02", datetime(2024, 6, 14, tzinfo=UTC))
 
         assert isinstance(result, list)
@@ -236,9 +244,7 @@ class TestCatalogAvailable:
 
     @patch("app.services.catalog._get_s3_client")
     def test_returns_available_sectors(self, mock_s3):
-        mock_s3.return_value.list_objects_v2.return_value = {
-            "Contents": [{"Key": "test.nc"}]
-        }
+        mock_s3.return_value.list_objects_v2.return_value = {"Contents": [{"Key": "test.nc"}]}
         result = catalog_available("GOES-19")
         assert result["satellite"] == "GOES-19"
         assert isinstance(result["available_sectors"], list)
@@ -267,9 +273,7 @@ class TestCollectMatchingEntries:
     def test_skips_entries_without_scan_time(self, mock_match, mock_parse):
         s3 = MagicMock()
         paginator = MagicMock()
-        paginator.paginate.return_value = [
-            {"Contents": [{"Key": "test.nc", "Size": 100}]}
-        ]
+        paginator.paginate.return_value = [{"Contents": [{"Key": "test.nc", "Size": 100}]}]
         s3.get_paginator.return_value = paginator
         result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
         assert result == []
@@ -278,9 +282,7 @@ class TestCollectMatchingEntries:
     def test_skips_non_matching_entries(self, mock_match):
         s3 = MagicMock()
         paginator = MagicMock()
-        paginator.paginate.return_value = [
-            {"Contents": [{"Key": "test.nc", "Size": 100}]}
-        ]
+        paginator.paginate.return_value = [{"Contents": [{"Key": "test.nc", "Size": 100}]}]
         s3.get_paginator.return_value = paginator
         result = _collect_matching_entries(s3, "bucket", "prefix", "CONUS", "C02")
         assert result == []

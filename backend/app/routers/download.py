@@ -35,8 +35,7 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
         raise APIError(
             400,
             "export_too_large",
-            f"Export exceeds maximum of {MAX_ZIP_FILES} files. "
-            f"Requested {len(files)} files.",
+            f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files.",
         )
 
     logger = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
 
     try:
-        safe_path = validate_safe_path(output_path, settings.storage_path)
+        safe_path = validate_safe_path(output_path, settings.output_dir)
     except Exception:
         return []
 
@@ -75,7 +74,10 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
         return [(str(safe_path), arc)]
     result = []
     for fname in sorted(os.listdir(safe_path)):
-        fpath = safe_path / fname
+        fpath = (safe_path / fname).resolve()
+        # Ensure resolved child is still within the safe directory (guards against symlink escapes)
+        if not str(fpath).startswith(str(safe_path.resolve()) + os.sep):
+            continue
         if fpath.is_file():
             arc = f"{prefix}/{fname}" if prefix else fname
             result.append((str(fpath), arc))
@@ -104,8 +106,13 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
     if safe_output.is_file():
         return FileResponse(str(safe_output), filename=safe_output.name)
 
-    # Directory — list files
-    files = [f for f in sorted(os.listdir(safe_output)) if (safe_output / f).is_file()]
+    # Directory — list files, resolving each to guard against symlink escapes
+    safe_root = str(safe_output.resolve()) + os.sep
+    files = [
+        f
+        for f in sorted(os.listdir(safe_output))
+        if (safe_output / f).resolve().is_file() and str((safe_output / f).resolve()).startswith(safe_root)
+    ]
     if not files:
         raise APIError(404, "not_found", "No output files")
 
@@ -136,7 +143,9 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: AsyncS
     for jid in job_ids:
         validate_uuid(jid, "job_id")
 
-    result = await db.execute(select(Job).where(Job.id.in_(job_ids), Job.status == "completed"))
+    result = await db.execute(
+        select(Job).where(Job.id.in_(job_ids), Job.status.in_(["completed", "completed_partial"]))
+    )
     jobs = result.scalars().all()
     if not jobs:
         raise APIError(404, "not_found", "No completed jobs found")

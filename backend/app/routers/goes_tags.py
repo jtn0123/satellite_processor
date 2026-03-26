@@ -45,9 +45,7 @@ async def list_tags(
 ):
     logger.debug("Listing tags")
     total = (await db.execute(select(func.count(Tag.id)))).scalar() or 0
-    result = await db.execute(
-        select(Tag).order_by(Tag.name).offset((page - 1) * limit).limit(limit)
-    )
+    result = await db.execute(select(Tag).order_by(Tag.name).offset((page - 1) * limit).limit(limit))
     items = [TagResponse.model_validate(t) for t in result.scalars().all()]
     return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 

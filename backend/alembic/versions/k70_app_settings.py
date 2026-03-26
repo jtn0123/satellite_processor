@@ -4,6 +4,7 @@ Revision ID: k70_app_settings
 Revises: j60_composites
 Create Date: 2026-02-14
 """
+
 import sqlalchemy as sa
 from alembic import op
 

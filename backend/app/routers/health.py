@@ -59,15 +59,13 @@ def _find_changelog() -> Path | None:
 def _strip_links(text: str) -> str:
     """Strip markdown links from change messages, keeping link text."""
     # Remove ([#123](url)) and ([hash](url)) patterns
-    text = re.sub(r'\s*\(\[([^\]]*)\]\([^)]*\)\)', '', text)
+    text = re.sub(r"\s*\(\[([^\]]*)\]\([^)]*\)\)", "", text)
     # Remove closes references
-    text = re.sub(r',?\s*closes\s+\S+', '', text)
+    text = re.sub(r",?\s*closes\s+\S+", "", text)
     return text.strip()
 
 
-def _try_append_release(
-    current: dict | None, releases: list, limit: int
-) -> bool:
+def _try_append_release(current: dict | None, releases: list, limit: int) -> bool:
     """Append current release to list. Return True if limit reached."""
     if current:
         releases.append(current)
@@ -99,7 +97,7 @@ def _parse_changelog(limit: int = 5) -> list:
 
     for line in path.read_text(encoding="utf-8").splitlines():
         m = re.match(
-            r'^##?\s+\[?(\d+\.\d+\.\d+)\]?(?:\([^)]*\))?\s+\((\d{4}-\d{2}-\d{2})\)',
+            r"^##?\s+\[?(\d+\.\d+\.\d+)\]?(?:\([^)]*\))?\s+\((\d{4}-\d{2}-\d{2})\)",
             line,
         )
         if m:

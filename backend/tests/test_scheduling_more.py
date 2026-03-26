@@ -6,10 +6,16 @@ import pytest
 @pytest.mark.asyncio
 async def test_fetch_preset_crud(client):
     # Create
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "Morning CONUS", "satellite": "GOES-16", "sector": "CONUS",
-        "band": "C02", "description": "Morning fetch",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "Morning CONUS",
+            "satellite": "GOES-16",
+            "sector": "CONUS",
+            "band": "C02",
+            "description": "Morning fetch",
+        },
+    )
     assert resp.status_code == 200
     pid = resp.json()["id"]
     assert resp.json()["name"] == "Morning CONUS"
@@ -44,9 +50,15 @@ async def test_delete_nonexistent_fetch_preset(client):
 
 @pytest.mark.asyncio
 async def test_fetch_preset_partial_update(client):
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "Test", "satellite": "GOES-16", "sector": "CONUS", "band": "C02",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "Test",
+            "satellite": "GOES-16",
+            "sector": "CONUS",
+            "band": "C02",
+        },
+    )
     pid = resp.json()["id"]
 
     resp = await client.put(f"/api/satellite/fetch-presets/{pid}", json={"band": "C13"})
@@ -65,9 +77,15 @@ async def test_fetch_presets_list_empty(client):
 @pytest.mark.asyncio
 async def test_multiple_fetch_presets(client):
     for i in range(3):
-        resp = await client.post("/api/satellite/fetch-presets", json={
-            "name": f"Preset {i}", "satellite": "GOES-16", "sector": "CONUS", "band": "C02",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-presets",
+            json={
+                "name": f"Preset {i}",
+                "satellite": "GOES-16",
+                "sector": "CONUS",
+                "band": "C02",
+            },
+        )
         assert resp.status_code == 200
 
     resp = await client.get("/api/satellite/fetch-presets")

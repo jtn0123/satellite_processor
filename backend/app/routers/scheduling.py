@@ -60,15 +60,14 @@ DEFAULT_FETCH_PRESETS = [
 
 # ── Seed Defaults ─────────────────────────────────────────
 
+
 @router.post("/fetch-presets/seed-defaults")
 async def seed_default_presets(db: AsyncSession = Depends(get_db)):
     """Create default fetch presets if they don't already exist."""
     logger.info("Seeding default fetch presets")
     created = []
     for preset_def in DEFAULT_FETCH_PRESETS:
-        result = await db.execute(
-            select(FetchPreset).where(FetchPreset.name == preset_def["name"])
-        )
+        result = await db.execute(select(FetchPreset).where(FetchPreset.name == preset_def["name"]))
         if result.scalars().first():
             continue
         preset = FetchPreset(
@@ -87,6 +86,7 @@ async def seed_default_presets(db: AsyncSession = Depends(get_db)):
 
 
 # ── Fetch Presets ─────────────────────────────────────────
+
 
 @router.post("/fetch-presets", response_model=FetchPresetResponse)
 async def create_fetch_preset(
@@ -186,18 +186,22 @@ async def run_fetch_preset(
     if sat_config and sat_config.format == "hsd":
         if preset.band == "TrueColor":
             from ..tasks.himawari_fetch_task import fetch_himawari_true_color
+
             fetch_himawari_true_color.delay(job_id, job.params)
         else:
             from ..tasks.himawari_fetch_task import fetch_himawari_data
+
             fetch_himawari_data.delay(job_id, job.params)
     else:
         from ..tasks.fetch_task import fetch_goes_data
+
         fetch_goes_data.delay(job_id, job.params)
 
     return {"job_id": job_id, "status": "pending", "preset": preset.name}
 
 
 # ── Schedules ─────────────────────────────────────────────
+
 
 @router.post("/schedules", response_model=FetchScheduleResponse)
 async def create_schedule(
@@ -229,9 +233,7 @@ async def create_schedule(
 async def list_schedules(db: AsyncSession = Depends(get_db)):
     logger.debug("Listing schedules")
     result = await db.execute(
-        select(FetchSchedule)
-        .options(selectinload(FetchSchedule.preset))
-        .order_by(FetchSchedule.created_at.desc())
+        select(FetchSchedule).options(selectinload(FetchSchedule.preset)).order_by(FetchSchedule.created_at.desc())
     )
     schedules = result.scalars().all()
     return [FetchScheduleResponse.model_validate(s) for s in schedules]
@@ -316,15 +318,14 @@ async def _schedule_response(db: AsyncSession, schedule: FetchSchedule) -> Fetch
     """Build response with preset loaded."""
     # Re-query with eager loading to avoid lazy load issues
     result = await db.execute(
-        select(FetchSchedule)
-        .options(selectinload(FetchSchedule.preset))
-        .where(FetchSchedule.id == schedule.id)
+        select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule.id)
     )
     schedule = result.scalars().first()
     return FetchScheduleResponse.model_validate(schedule)
 
 
 # ── Cleanup Rules ─────────────────────────────────────────
+
 
 @router.post("/cleanup-rules", response_model=CleanupRuleResponse)
 async def create_cleanup_rule(
@@ -393,16 +394,18 @@ async def delete_cleanup_rule(
 async def cleanup_storage_stats(db: AsyncSession = Depends(get_db)):
     """Per-satellite storage breakdown for the cleanup dashboard."""
     logger.debug("Cleanup storage stats requested")
-    rows = (await db.execute(
-        select(
-            GoesFrame.satellite,
-            GoesFrame.sector,
-            func.count(GoesFrame.id).label("count"),
-            func.coalesce(func.sum(GoesFrame.file_size), 0).label("size"),
-            func.min(GoesFrame.capture_time).label("oldest"),
-            func.max(GoesFrame.capture_time).label("newest"),
-        ).group_by(GoesFrame.satellite, GoesFrame.sector)
-    )).all()
+    rows = (
+        await db.execute(
+            select(
+                GoesFrame.satellite,
+                GoesFrame.sector,
+                func.count(GoesFrame.id).label("count"),
+                func.coalesce(func.sum(GoesFrame.file_size), 0).label("size"),
+                func.min(GoesFrame.capture_time).label("oldest"),
+                func.max(GoesFrame.capture_time).label("newest"),
+            ).group_by(GoesFrame.satellite, GoesFrame.sector)
+        )
+    ).all()
 
     satellites: dict = {}
     total_frames = 0
@@ -440,7 +443,9 @@ async def preview_cleanup(db: AsyncSession = Depends(get_db)):
         total_size_bytes=total_size,
         frames=[
             {
-                "id": f.id, "file_path": f.file_path, "file_size": f.file_size,
+                "id": f.id,
+                "file_path": f.file_path,
+                "file_size": f.file_size,
                 "capture_time": f.capture_time.isoformat() if f.capture_time else None,
             }
             for f in frames_to_delete[:100]  # Limit preview to 100

@@ -1,4 +1,5 @@
 """Tests for extracted helper functions in goes_tasks (#98 coverage boost)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -7,6 +8,7 @@ from unittest.mock import MagicMock, patch
 # ---------------------------------------------------------------------------
 # _read_max_frames_setting
 # ---------------------------------------------------------------------------
+
 
 @patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_from_db(mock_db):
@@ -52,14 +54,21 @@ def test_read_max_frames_setting_exception(mock_db):
 # _build_status_message
 # ---------------------------------------------------------------------------
 
+
 def test_build_status_no_frames_no_available():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=0, total_available=0, was_capped=False,
-        failed_downloads=0, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=0,
+        total_available=0,
+        was_capped=False,
+        failed_downloads=0,
+        max_frames_limit=200,
     )
     assert status == "failed"
     assert "No frames found" in msg
@@ -69,10 +78,16 @@ def test_build_status_all_failed():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=0, total_available=10, was_capped=False,
-        failed_downloads=10, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=0,
+        total_available=10,
+        was_capped=False,
+        failed_downloads=10,
+        max_frames_limit=200,
     )
     assert status == "failed"
     assert "All 10 frames failed" in msg
@@ -82,10 +97,16 @@ def test_build_status_all_success():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=5, total_available=5, was_capped=False,
-        failed_downloads=0, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=5,
+        total_available=5,
+        was_capped=False,
+        failed_downloads=0,
+        max_frames_limit=200,
     )
     assert status == "completed"
     assert "Fetched 5 frames" in msg
@@ -95,10 +116,16 @@ def test_build_status_capped():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=200, total_available=500, was_capped=True,
-        failed_downloads=0, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=200,
+        total_available=500,
+        was_capped=True,
+        failed_downloads=0,
+        max_frames_limit=200,
     )
     assert status == "completed_partial"
     assert "frame limit" in msg
@@ -108,10 +135,16 @@ def test_build_status_partial_with_failures():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=7, total_available=10, was_capped=False,
-        failed_downloads=3, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=7,
+        total_available=10,
+        was_capped=False,
+        failed_downloads=3,
+        max_frames_limit=200,
     )
     assert status == "completed_partial"
     assert "3 failed" in msg
@@ -121,10 +154,16 @@ def test_build_status_capped_with_failures():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=5, total_available=300, was_capped=True,
-        failed_downloads=2, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=5,
+        total_available=300,
+        was_capped=True,
+        failed_downloads=2,
+        max_frames_limit=200,
     )
     assert status == "completed_partial"
     assert "2 failed" in msg
@@ -135,10 +174,16 @@ def test_build_status_historical_satellite():
     from app.tasks.goes_tasks import _build_status_message
 
     msg, status = _build_status_message(
-        "GOES-16", "FullDisk", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=0, total_available=0, was_capped=False,
-        failed_downloads=0, max_frames_limit=200,
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=0,
+        total_available=0,
+        was_capped=False,
+        failed_downloads=0,
+        max_frames_limit=200,
     )
     assert status == "failed"
     assert "available from" in msg  # GOES-16 has available_to set
@@ -147,6 +192,7 @@ def test_build_status_historical_satellite():
 # ---------------------------------------------------------------------------
 # _detect_gaps
 # ---------------------------------------------------------------------------
+
 
 @patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_finds_gaps(mock_db):
@@ -191,6 +237,7 @@ def test_detect_gaps_no_gaps(mock_db):
 # _build_fetch_result (goes_fetcher)
 # ---------------------------------------------------------------------------
 
+
 def test_build_fetch_result():
     from app.services.goes_fetcher import _build_fetch_result
 
@@ -207,6 +254,7 @@ def test_build_fetch_result():
 # ---------------------------------------------------------------------------
 # _download_and_convert_frame (goes_fetcher)
 # ---------------------------------------------------------------------------
+
 
 @patch("app.services.goes_fetcher._netcdf_to_png_from_file")
 @patch("app.services.goes_fetcher._retry_s3_operation")
@@ -245,18 +293,33 @@ def test_download_and_convert_frame_transient_failure(mock_retry, tmp_path):
 # _process_single_frame
 # ---------------------------------------------------------------------------
 
+
 @patch("app.services.goes_fetcher._download_and_convert_frame")
 def test_process_single_frame_success(mock_dl, tmp_path):
     from pathlib import Path as _P
 
     from app.services.goes_fetcher import _process_single_frame
 
-    mock_dl.return_value = {"path": "/tmp/f.png", "satellite": "GOES-16", "band": "C02", "scan_time": datetime(2026, 1, 1, tzinfo=UTC)}
+    mock_dl.return_value = {
+        "path": "/tmp/f.png",
+        "satellite": "GOES-16",
+        "band": "C02",
+        "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+    }
     results = []
     progress_calls = []
     ok = _process_single_frame(
-        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
-        _P(tmp_path), results, 0, 5, lambda cur, tot: progress_calls.append((cur, tot)),
+        MagicMock(),
+        "bucket",
+        {"key": "k"},
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        _P(tmp_path),
+        results,
+        0,
+        5,
+        lambda cur, tot: progress_calls.append((cur, tot)),
     )
     assert ok is True
     assert len(results) == 1
@@ -272,8 +335,17 @@ def test_process_single_frame_returns_none(mock_dl, tmp_path):
     mock_dl.return_value = None
     results = []
     ok = _process_single_frame(
-        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
-        _P(tmp_path), results, 0, 5, None,
+        MagicMock(),
+        "bucket",
+        {"key": "k"},
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        _P(tmp_path),
+        results,
+        0,
+        5,
+        None,
     )
     assert ok is False
     assert len(results) == 0
@@ -288,8 +360,17 @@ def test_process_single_frame_unexpected_error(mock_dl, tmp_path):
     mock_dl.side_effect = ConnectionError("boom")
     results = []
     ok = _process_single_frame(
-        MagicMock(), "bucket", {"key": "k"}, "GOES-16", "FullDisk", "C02",
-        _P(tmp_path), results, 0, 5, None,
+        MagicMock(),
+        "bucket",
+        {"key": "k"},
+        "GOES-16",
+        "FullDisk",
+        "C02",
+        _P(tmp_path),
+        results,
+        0,
+        5,
+        None,
     )
     assert ok is False
 
@@ -297,6 +378,7 @@ def test_process_single_frame_unexpected_error(mock_dl, tmp_path):
 # ---------------------------------------------------------------------------
 # _detect_gaps edge cases
 # ---------------------------------------------------------------------------
+
 
 @patch("app.tasks.fetch_task._get_sync_db")
 def test_detect_gaps_empty_timestamps(mock_db):
@@ -345,6 +427,7 @@ def test_detect_gaps_no_filter(mock_db):
 # _create_backfill_image_records
 # ---------------------------------------------------------------------------
 
+
 @patch("app.tasks.fetch_task._get_sync_db")
 def test_create_backfill_image_records(mock_db, tmp_path):
     from app.tasks.goes_tasks import _create_backfill_image_records
@@ -356,12 +439,16 @@ def test_create_backfill_image_records(mock_db, tmp_path):
     f = tmp_path / "frame.png"
     f.write_bytes(b"fake")
 
-    _create_backfill_image_records([{
-        "path": str(f),
-        "satellite": "GOES-16",
-        "band": "C02",
-        "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
-    }])
+    _create_backfill_image_records(
+        [
+            {
+                "path": str(f),
+                "satellite": "GOES-16",
+                "band": "C02",
+                "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+            }
+        ]
+    )
     assert session.add.call_count == 2  # Image + GoesFrame
     session.commit.assert_called_once()
     session.close.assert_called_once()
@@ -375,6 +462,7 @@ def test_create_backfill_image_records(mock_db, tmp_path):
 # _create_fetch_records
 # ---------------------------------------------------------------------------
 
+
 @patch("app.services.thumbnail.generate_thumbnail", return_value="/tmp/thumb.png")
 @patch("app.services.thumbnail.get_image_dimensions", return_value=(1000, 1000))
 @patch("app.tasks.fetch_task._get_sync_db")
@@ -387,12 +475,19 @@ def test_create_fetch_records(mock_db, mock_dims, mock_thumb, tmp_path):
     f = tmp_path / "frame.png"
     f.write_bytes(b"fake")
 
-    _create_fetch_records("job-1", "FullDisk", str(tmp_path), [{
-        "path": str(f),
-        "satellite": "GOES-16",
-        "band": "C02",
-        "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
-    }])
+    _create_fetch_records(
+        "job-1",
+        "FullDisk",
+        str(tmp_path),
+        [
+            {
+                "path": str(f),
+                "satellite": "GOES-16",
+                "band": "C02",
+                "scan_time": datetime(2026, 1, 1, tzinfo=UTC),
+            }
+        ],
+    )
     assert session.add.call_count >= 3  # Collection + Image + GoesFrame + CollectionFrame
     session.commit.assert_called_once()
     session.close.assert_called_once()
@@ -415,6 +510,7 @@ def test_create_fetch_records_empty(mock_db, mock_dims, mock_thumb):
 # ---------------------------------------------------------------------------
 # _read_max_frames_setting — non-numeric value
 # ---------------------------------------------------------------------------
+
 
 @patch("app.tasks.fetch_task._get_sync_db")
 def test_read_max_frames_setting_non_numeric(mock_db):
@@ -458,10 +554,15 @@ def test_build_status_message_all_paths(mock_db, mock_redis):
 
     # Test with capped AND failed downloads
     msg, status = _build_status_message(
-        "GOES-16", "CONUS", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=90, total_available=200,
-        was_capped=True, failed_downloads=10,
+        "GOES-16",
+        "CONUS",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=90,
+        total_available=200,
+        was_capped=True,
+        failed_downloads=10,
         max_frames_limit=100,
     )
     assert status == "completed_partial"
@@ -470,10 +571,15 @@ def test_build_status_message_all_paths(mock_db, mock_redis):
 
     # Test completed with exact match
     msg2, status2 = _build_status_message(
-        "GOES-16", "CONUS", "C02",
-        datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, 1, tzinfo=UTC),
-        fetched_count=50, total_available=50,
-        was_capped=False, failed_downloads=0,
+        "GOES-16",
+        "CONUS",
+        "C02",
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 1, 1, tzinfo=UTC),
+        fetched_count=50,
+        total_available=50,
+        was_capped=False,
+        failed_downloads=0,
         max_frames_limit=200,
     )
     assert status2 == "completed"

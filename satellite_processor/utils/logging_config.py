@@ -1,8 +1,8 @@
 import logging
 import logging.handlers
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 
 def setup_logging(log_dir: str = None, debug: bool = False) -> None:
@@ -17,9 +17,7 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     console_formatter = logging.Formatter(
-        "%(levelname)s: %(message)s"
-        if not debug
-        else "[%(name)s] %(levelname)s: %(message)s"
+        "%(levelname)s: %(message)s" if not debug else "[%(name)s] %(levelname)s: %(message)s"
     )
 
     # Console handler
@@ -44,7 +42,9 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
         log_file = log_dir / f"satellite_processor_{timestamp}.log"
 
         file_handler = logging.handlers.RotatingFileHandler(
-            log_file, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
+            log_file,
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,  # 10MB
         )
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(logging.DEBUG)
@@ -52,9 +52,7 @@ def setup_logging(log_dir: str = None, debug: bool = False) -> None:
 
     # Set specific levels for different modules
     logging.getLogger("satellite_processor.core.processor").setLevel(logging.INFO)
-    logging.getLogger("satellite_processor.core.image_operations").setLevel(
-        logging.INFO
-    )
+    logging.getLogger("satellite_processor.core.image_operations").setLevel(logging.INFO)
     logging.getLogger("satellite_processor.gui").setLevel(logging.INFO)
 
     # Suppress external library logging

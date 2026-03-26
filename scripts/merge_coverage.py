@@ -3,8 +3,8 @@
 
 Rewrites <source> paths so SonarQube can resolve files from the repo root.
 """
+
 import glob
-import os
 import sys
 import xml.etree.ElementTree as ET
 

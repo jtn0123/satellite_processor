@@ -1,6 +1,7 @@
 """Edge case tests for Himawari HSD reader — covers malformed headers,
 invalid segments, and missing data scenarios.
 """
+
 from __future__ import annotations
 
 import bz2
@@ -51,6 +52,7 @@ def sample_header(sample_raw: bytes) -> HSDHeader:
 # ---------------------------------------------------------------------------
 # Malformed HSD header tests
 # ---------------------------------------------------------------------------
+
 
 class TestMalformedHeaders:
     """Tests for malformed/corrupt HSD headers."""
@@ -160,6 +162,7 @@ class TestMalformedHeaders:
 # Data parsing with wrong data types / truncated data
 # ---------------------------------------------------------------------------
 
+
 class TestParseDataEdgeCases:
     """Tests for data block edge cases."""
 
@@ -195,6 +198,7 @@ class TestParseDataEdgeCases:
 # Invalid segment numbers
 # ---------------------------------------------------------------------------
 
+
 class TestInvalidSegments:
     """Tests for invalid segment number handling."""
 
@@ -204,7 +208,7 @@ class TestInvalidSegments:
         data[0] = 7  # block number
         struct.pack_into("<H", data, 1, 10)  # block length
         data[3] = 10  # total_segments
-        data[4] = 3   # segment_seq
+        data[4] = 3  # segment_seq
         total_segs, seg_num = _find_segment_info(bytes(data), 0, 1, 0)
         assert total_segs == 10
         assert seg_num == 3
@@ -239,31 +243,25 @@ class TestInvalidSegments:
 # Missing segments in assembly
 # ---------------------------------------------------------------------------
 
+
 class TestMissingSegmentsAssembly:
     """Tests for segment assembly with various missing patterns."""
 
     def test_first_segment_missing(self):
-        segs: list[np.ndarray | None] = [None] + [
-            np.ones((10, 20), dtype=np.float32) for _ in range(9)
-        ]
+        segs: list[np.ndarray | None] = [None] + [np.ones((10, 20), dtype=np.float32) for _ in range(9)]
         full = assemble_segments(segs)
         assert full.shape == (100, 20)
         assert np.isnan(full[0:10]).all()
         assert not np.isnan(full[10:100]).any()
 
     def test_last_segment_missing(self):
-        segs: list[np.ndarray | None] = [
-            np.ones((10, 20), dtype=np.float32) for _ in range(9)
-        ] + [None]
+        segs: list[np.ndarray | None] = [np.ones((10, 20), dtype=np.float32) for _ in range(9)] + [None]
         full = assemble_segments(segs)
         assert np.isnan(full[90:100]).all()
         assert not np.isnan(full[0:90]).any()
 
     def test_alternating_missing(self):
-        segs: list[np.ndarray | None] = [
-            None if i % 2 == 0 else np.ones((10, 20), dtype=np.float32)
-            for i in range(10)
-        ]
+        segs: list[np.ndarray | None] = [None if i % 2 == 0 else np.ones((10, 20), dtype=np.float32) for i in range(10)]
         full = assemble_segments(segs)
         for i in range(10):
             block = full[i * 10 : (i + 1) * 10]
@@ -285,6 +283,7 @@ class TestMissingSegmentsAssembly:
 # ---------------------------------------------------------------------------
 # _decompress_and_parse_segment
 # ---------------------------------------------------------------------------
+
 
 class TestDecompressAndParseSegment:
     """Tests for the segment decompression helper."""
@@ -309,6 +308,7 @@ class TestDecompressAndParseSegment:
 # ---------------------------------------------------------------------------
 # Block parser helpers
 # ---------------------------------------------------------------------------
+
 
 class TestBlockParsers:
     """Tests for individual block parsing helpers."""
@@ -338,6 +338,7 @@ class TestBlockParsers:
         b2 = _parse_block2(sample_raw, b1["b1_len"])
         b3 = _parse_block3(sample_raw, b1["b1_len"] + b2["b2_len"])
         from app.services.himawari_reader import _read_block_header
+
         off4 = b1["b1_len"] + b2["b2_len"] + b3["b3_len"]
         _, b4_len = _read_block_header(sample_raw, off4)
         result = _parse_block5_calibration(sample_raw, off4 + b4_len)
@@ -348,6 +349,7 @@ class TestBlockParsers:
 # ---------------------------------------------------------------------------
 # hsd_to_png edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestHsdToPngEdgeCases:
     """Additional edge cases for the full pipeline."""
@@ -366,5 +368,6 @@ class TestHsdToPngEdgeCases:
         result = hsd_to_png(segments, out)
         assert result.exists()
         from PIL import Image as PILImage
+
         img = PILImage.open(result)
         assert img.size == (5500, 5500)  # 10 segments x 550 lines

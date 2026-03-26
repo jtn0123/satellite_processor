@@ -1,6 +1,7 @@
 """Edge case tests for Himawari catalog functions — empty listings,
 malformed filenames, date boundary cases.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -19,6 +20,7 @@ from app.services.himawari_catalog import (
 # ---------------------------------------------------------------------------
 # Empty S3 listing scenarios
 # ---------------------------------------------------------------------------
+
 
 class TestEmptyS3Listings:
     """Verify behavior when S3 returns empty or no data."""
@@ -55,6 +57,7 @@ class TestEmptyS3Listings:
 # ---------------------------------------------------------------------------
 # Malformed filename parsing
 # ---------------------------------------------------------------------------
+
 
 class TestMalformedFilenames:
     """Tests for filenames that don't match expected patterns."""
@@ -98,6 +101,7 @@ class TestMalformedFilenames:
 # Date boundary cases
 # ---------------------------------------------------------------------------
 
+
 class TestDateBoundaries:
     """Tests for date boundaries — midnight, year boundaries, leap years."""
 
@@ -136,6 +140,7 @@ class TestDateBoundaries:
 # list_himawari_timestamps deduplication edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestTimestampDeduplication:
     """Tests for edge cases in timestamp deduplication."""
 
@@ -157,10 +162,7 @@ class TestTimestampDeduplication:
         objects = []
         for hhmm in ("2350", "0000", "1200", "0600"):
             for seg in range(1, 3):
-                key = (
-                    f"AHI-L1b-FLDK/2026/03/03/{hhmm}/"
-                    f"HS_H09_20260303_{hhmm}_B13_FLDK_R20_S{seg:02d}20.DAT.bz2"
-                )
+                key = f"AHI-L1b-FLDK/2026/03/03/{hhmm}/HS_H09_20260303_{hhmm}_B13_FLDK_R20_S{seg:02d}20.DAT.bz2"
                 objects.append({"Key": key, "Size": 5000})
         mock_list.return_value = objects
 
@@ -200,6 +202,7 @@ class TestTimestampDeduplication:
 # ---------------------------------------------------------------------------
 # Sector validation
 # ---------------------------------------------------------------------------
+
 
 class TestSectorValidation:
     """Verify sector validation for prefix builders."""

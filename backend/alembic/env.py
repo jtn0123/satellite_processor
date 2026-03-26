@@ -2,6 +2,7 @@
 
 Reads DATABASE_URL from environment, falling back to alembic.ini sqlalchemy.url.
 """
+
 from __future__ import annotations
 
 import os

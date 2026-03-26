@@ -330,7 +330,7 @@ export default function CleanupTab() {
                   aria-label={`Toggle rule ${rule.name} ${rule.is_active ? 'off' : 'on'}`}>
                   {rule.is_active ? 'Active' : 'Inactive'}
                 </button>
-                <button onClick={() => deleteRule.mutate(rule.id)} disabled={deleteRule.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400 ${deleteRule.isPending ? 'opacity-50' : ''}`} aria-label={`Delete rule ${rule.name}`}>
+                <button type="button" onClick={() => deleteRule.mutate(rule.id)} disabled={deleteRule.isPending} className={`p-2 hover:bg-gray-100 dark:hover:bg-slate-600 dark:bg-slate-700 rounded-lg text-red-400 ${deleteRule.isPending ? 'opacity-50' : ''}`} aria-label={`Delete rule ${rule.name}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

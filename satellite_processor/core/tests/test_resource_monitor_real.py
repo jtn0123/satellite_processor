@@ -8,7 +8,7 @@ from satellite_processor.core.resource_monitor import ResourceMonitor
 class TestResourceMonitor:
     def test_init(self):
         rm = ResourceMonitor()
-        assert rm._running is False
+        assert not rm._stop_event.is_set()
         assert rm.on_resource_update is None
         rm.cleanup()
 
@@ -20,11 +20,18 @@ class TestResourceMonitor:
 
     def test_start_stop(self):
         rm = ResourceMonitor()
+        counter = {"count": 0}
+        rm.on_resource_update = lambda stats: counter.__setitem__("count", counter["count"] + 1)
+        rm.set_interval(50)
         rm.start()
-        assert rm._running is True
+        assert not rm._stop_event.is_set()
         assert rm._thread is not None
+        time.sleep(0.3)
         rm.stop()
-        assert rm._running is False
+        assert rm._stop_event.is_set()
+        count_after_stop = counter["count"]
+        time.sleep(0.5)
+        assert counter["count"] == count_after_stop
 
     def test_start_idempotent(self):
         rm = ResourceMonitor()
@@ -55,9 +62,16 @@ class TestResourceMonitor:
 
     def test_cleanup(self):
         rm = ResourceMonitor()
+        counter = {"count": 0}
+        rm.on_resource_update = lambda stats: counter.__setitem__("count", counter["count"] + 1)
+        rm.set_interval(50)
         rm.start()
+        time.sleep(0.3)
         rm.cleanup()
-        assert rm._running is False
+        assert rm._stop_event.is_set()
+        count_after_cleanup = counter["count"]
+        time.sleep(0.5)
+        assert counter["count"] == count_after_cleanup
 
     def test_del_doesnt_raise(self):
         rm = ResourceMonitor()

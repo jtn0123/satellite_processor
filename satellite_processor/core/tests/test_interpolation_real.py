@@ -51,9 +51,7 @@ class TestApplyInterpolation:
     @patch("subprocess.run")
     def test_cpu_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        result = apply_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {}
-        )
+        result = apply_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {})
         assert result is True
         cmd = mock_run.call_args[0][0]
         assert "minterpolate" in " ".join(cmd)
@@ -61,10 +59,7 @@ class TestApplyInterpolation:
     @patch("subprocess.run")
     def test_nvidia_hardware(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        result = apply_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60,
-            {"hardware": "NVIDIA GPU"}
-        )
+        result = apply_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {"hardware": "NVIDIA GPU"})
         assert result is True
         cmd = mock_run.call_args[0][0]
         assert "h264_nvenc" in cmd
@@ -72,25 +67,18 @@ class TestApplyInterpolation:
     @patch("subprocess.run")
     def test_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1)
-        result = apply_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {}
-        )
+        result = apply_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {})
         assert result is False
 
     def test_with_try_encode_fn(self):
         fn = MagicMock(return_value=True)
-        result = apply_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {},
-            try_encode_fn=fn
-        )
+        result = apply_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {}, try_encode_fn=fn)
         assert result is True
         assert fn.called
 
     @patch("subprocess.run", side_effect=Exception("boom"))
     def test_exception_returns_false(self, mock_run):
-        result = apply_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {}
-        )
+        result = apply_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60, {})
         assert result is False
 
 
@@ -98,17 +86,13 @@ class TestApplyFrameInterpolation:
     @patch("subprocess.run")
     def test_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        result = apply_frame_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60
-        )
+        result = apply_frame_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60)
         assert result is True
 
     @patch("subprocess.run")
     def test_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stderr="error")
-        result = apply_frame_interpolation(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60
-        )
+        result = apply_frame_interpolation("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60)
         assert result is False
 
 
@@ -116,17 +100,13 @@ class TestInterpolateFrames:
     @patch("subprocess.run")
     def test_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        result = interpolate_frames(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60
-        )
+        result = interpolate_frames("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60)
         assert result is True
 
     @patch("subprocess.run")
     def test_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stderr="err")
-        result = interpolate_frames(
-            "ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60
-        )
+        result = interpolate_frames("ffmpeg", Path("/in.mp4"), Path("/out.mp4"), 60)
         assert result is False
 
 

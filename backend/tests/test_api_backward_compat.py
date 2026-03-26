@@ -35,8 +35,7 @@ async def test_goes_alias_returns_same_status(client, old_path, new_path):
     new_resp = await client.get(new_path)
     old_resp = await client.get(old_path)
     assert old_resp.status_code == new_resp.status_code, (
-        f"{old_path} returned {old_resp.status_code}, "
-        f"expected {new_resp.status_code} (same as {new_path})"
+        f"{old_path} returned {old_resp.status_code}, expected {new_resp.status_code} (same as {new_path})"
     )
 
 

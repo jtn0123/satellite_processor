@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithRoute } from './testUtils';
 
 // Mock api client
 vi.mock('../api/client', () => ({
@@ -36,20 +35,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/goes']}>
-        <Routes>
-          <Route path="/goes" element={ui} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
-}
+const renderWithProviders = renderWithRoute;
 
 const HIMAWARI_PRODUCTS = {
   satellites: ['GOES-16', 'GOES-18', 'GOES-19', 'Himawari-9'],

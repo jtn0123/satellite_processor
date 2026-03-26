@@ -18,6 +18,17 @@ from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
+
+def _is_child_of(child: Path, parent: Path) -> bool:
+    """Check if *child* is a descendant of *parent* after resolving symlinks."""
+    try:
+        child_str = str(child.resolve())
+        parent_str = str(parent.resolve())
+        return child_str.startswith(parent_str + os.sep) or child_str == parent_str
+    except OSError:
+        return False
+
+
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
@@ -35,8 +46,7 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
         raise APIError(
             400,
             "export_too_large",
-            f"Export exceeds maximum of {MAX_ZIP_FILES} files. "
-            f"Requested {len(files)} files.",
+            f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files.",
         )
 
     logger = logging.getLogger(__name__)
@@ -62,17 +72,25 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
     """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
-    if not os.path.exists(output_path):
+
+    try:
+        safe_path = validate_safe_path(output_path, settings.output_dir)
+    except Exception:
         return []
-    if os.path.isfile(output_path):
-        arc = f"{prefix}/{os.path.basename(output_path)}" if prefix else os.path.basename(output_path)
-        return [(output_path, arc)]
+
+    if not safe_path.exists():
+        return []
+    if safe_path.is_file():
+        arc = f"{prefix}/{safe_path.name}" if prefix else safe_path.name
+        return [(str(safe_path), arc)]
     result = []
-    for fname in sorted(os.listdir(output_path)):
-        fpath = os.path.join(output_path, fname)
-        if os.path.isfile(fpath):
+    for fname in sorted(os.listdir(safe_path)):
+        fpath = safe_path / fname
+        if not _is_child_of(fpath, safe_path):
+            continue
+        if fpath.resolve().is_file():
             arc = f"{prefix}/{fname}" if prefix else fname
-            result.append((fpath, arc))
+            result.append((str(fpath.resolve()), arc))
     return result
 
 
@@ -85,30 +103,34 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", "Job not found")
-    if job.status != "completed":
+    if job.status not in ("completed", "completed_partial"):
         raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    # Prevent path traversal — ensure output stays within storage
-    validate_safe_path(output_path, settings.storage_path)
-    if not os.path.exists(output_path):
+    safe_output = validate_safe_path(output_path, settings.output_dir)
+
+    if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found on disk")
 
     # Single file
-    if os.path.isfile(output_path):
-        return FileResponse(output_path, filename=os.path.basename(output_path))
+    if safe_output.is_file():
+        return FileResponse(str(safe_output), filename=safe_output.name)
 
-    # Directory — list files
-    files = [f for f in sorted(os.listdir(output_path)) if os.path.isfile(os.path.join(output_path, f))]
+    # Directory — list files, resolving each to guard against symlink escapes
+    files = [
+        f
+        for f in sorted(os.listdir(safe_output))
+        if _is_child_of(safe_output / f, safe_output) and (safe_output / f).resolve().is_file()
+    ]
     if not files:
         raise APIError(404, "not_found", "No output files")
 
     # Single file in dir
     if len(files) == 1:
-        return FileResponse(os.path.join(output_path, files[0]), filename=files[0])
+        return FileResponse(str(safe_output / files[0]), filename=files[0])
 
     # Multiple files — stream zip
-    file_pairs = [(os.path.join(output_path, f), f) for f in files]
+    file_pairs = [(str(safe_output / f), f) for f in files]
     return StreamingResponse(
         _zip_stream(file_pairs),
         media_type="application/zip",
@@ -130,7 +152,9 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: AsyncS
     for jid in job_ids:
         validate_uuid(jid, "job_id")
 
-    result = await db.execute(select(Job).where(Job.id.in_(job_ids), Job.status == "completed"))
+    result = await db.execute(
+        select(Job).where(Job.id.in_(job_ids), Job.status.in_(["completed", "completed_partial"]))
+    )
     jobs = result.scalars().all()
     if not jobs:
         raise APIError(404, "not_found", "No completed jobs found")

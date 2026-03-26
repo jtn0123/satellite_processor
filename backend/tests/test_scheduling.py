@@ -10,14 +10,18 @@ pytestmark = pytest.mark.asyncio
 
 # ── Fetch Presets ─────────────────────────────────────────
 
+
 async def test_create_fetch_preset(client):
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "Test Preset",
-        "satellite": "GOES-16",
-        "sector": "FullDisk",
-        "band": "C02",
-        "description": "Test description",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "Test Preset",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+            "description": "Test description",
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "Test Preset"
@@ -26,21 +30,39 @@ async def test_create_fetch_preset(client):
 
 
 async def test_list_fetch_presets(client):
-    await client.post("/api/satellite/fetch-presets", json={
-        "name": "P1", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
-    await client.post("/api/satellite/fetch-presets", json={
-        "name": "P2", "satellite": "GOES-18", "sector": "CONUS", "band": "C13",
-    })
+    await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "P1",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
+    await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "P2",
+            "satellite": "GOES-18",
+            "sector": "CONUS",
+            "band": "C13",
+        },
+    )
     resp = await client.get("/api/satellite/fetch-presets")
     assert resp.status_code == 200
     assert len(resp.json()) == 2
 
 
 async def test_update_fetch_preset(client):
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "Old Name", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "Old Name",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = resp.json()["id"]
     resp = await client.put(f"/api/satellite/fetch-presets/{pid}", json={"name": "New Name"})
     assert resp.status_code == 200
@@ -48,9 +70,15 @@ async def test_update_fetch_preset(client):
 
 
 async def test_delete_fetch_preset(client):
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "To Delete", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "To Delete",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = resp.json()["id"]
     resp = await client.delete(f"/api/satellite/fetch-presets/{pid}")
     assert resp.status_code == 200
@@ -66,17 +94,25 @@ async def test_delete_fetch_preset_not_found(client):
 async def test_run_fetch_preset(client, monkeypatch):
     # Mock the celery task
     called = {}
+
     class FakeTask:
         def delay(self, job_id, params):
             called["job_id"] = job_id
             called["params"] = params
 
     import app.tasks.fetch_task as goes_mod
+
     monkeypatch.setattr(goes_mod, "fetch_goes_data", FakeTask())
 
-    resp = await client.post("/api/satellite/fetch-presets", json={
-        "name": "Run Me", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "Run Me",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = resp.json()["id"]
     resp = await client.post(f"/api/satellite/fetch-presets/{pid}/run")
     assert resp.status_code == 200
@@ -91,16 +127,26 @@ async def test_run_fetch_preset_not_found(client):
 
 # ── Schedules ─────────────────────────────────────────────
 
+
 async def test_create_schedule(client):
-    p = await client.post("/api/satellite/fetch-presets", json={
-        "name": "SP", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    p = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "SP",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = p.json()["id"]
-    resp = await client.post("/api/satellite/schedules", json={
-        "name": "Hourly Fetch",
-        "preset_id": pid,
-        "interval_minutes": 60,
-    })
+    resp = await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "Hourly Fetch",
+            "preset_id": pid,
+            "interval_minutes": 60,
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["is_active"] is False
@@ -108,33 +154,60 @@ async def test_create_schedule(client):
 
 
 async def test_create_schedule_bad_preset(client):
-    resp = await client.post("/api/satellite/schedules", json={
-        "name": "Bad", "preset_id": "nonexistent", "interval_minutes": 60,
-    })
+    resp = await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "Bad",
+            "preset_id": "nonexistent",
+            "interval_minutes": 60,
+        },
+    )
     assert resp.status_code == 404
 
 
 async def test_list_schedules(client):
-    p = await client.post("/api/satellite/fetch-presets", json={
-        "name": "SP2", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    p = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "SP2",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = p.json()["id"]
-    await client.post("/api/satellite/schedules", json={
-        "name": "S1", "preset_id": pid, "interval_minutes": 60,
-    })
+    await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "S1",
+            "preset_id": pid,
+            "interval_minutes": 60,
+        },
+    )
     resp = await client.get("/api/satellite/schedules")
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
 
 
 async def test_toggle_schedule(client):
-    p = await client.post("/api/satellite/fetch-presets", json={
-        "name": "TP", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    p = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "TP",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = p.json()["id"]
-    s = await client.post("/api/satellite/schedules", json={
-        "name": "Toggle Me", "preset_id": pid, "interval_minutes": 60,
-    })
+    s = await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "Toggle Me",
+            "preset_id": pid,
+            "interval_minutes": 60,
+        },
+    )
     sid = s.json()["id"]
     assert s.json()["is_active"] is False
 
@@ -149,13 +222,24 @@ async def test_toggle_schedule(client):
 
 
 async def test_update_schedule(client):
-    p = await client.post("/api/satellite/fetch-presets", json={
-        "name": "UP", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    p = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "UP",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = p.json()["id"]
-    s = await client.post("/api/satellite/schedules", json={
-        "name": "Old", "preset_id": pid, "interval_minutes": 60,
-    })
+    s = await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "Old",
+            "preset_id": pid,
+            "interval_minutes": 60,
+        },
+    )
     sid = s.json()["id"]
     resp = await client.put(f"/api/satellite/schedules/{sid}", json={"name": "New", "interval_minutes": 120})
     assert resp.status_code == 200
@@ -164,13 +248,24 @@ async def test_update_schedule(client):
 
 
 async def test_delete_schedule(client):
-    p = await client.post("/api/satellite/fetch-presets", json={
-        "name": "DP", "satellite": "GOES-16", "sector": "FullDisk", "band": "C02",
-    })
+    p = await client.post(
+        "/api/satellite/fetch-presets",
+        json={
+            "name": "DP",
+            "satellite": "GOES-16",
+            "sector": "FullDisk",
+            "band": "C02",
+        },
+    )
     pid = p.json()["id"]
-    s = await client.post("/api/satellite/schedules", json={
-        "name": "Del Me", "preset_id": pid, "interval_minutes": 60,
-    })
+    s = await client.post(
+        "/api/satellite/schedules",
+        json={
+            "name": "Del Me",
+            "preset_id": pid,
+            "interval_minutes": 60,
+        },
+    )
     sid = s.json()["id"]
     resp = await client.delete(f"/api/satellite/schedules/{sid}")
     assert resp.status_code == 200
@@ -183,12 +278,16 @@ async def test_toggle_schedule_not_found(client):
 
 # ── Cleanup Rules ─────────────────────────────────────────
 
+
 async def test_create_cleanup_rule(client):
-    resp = await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Age Rule",
-        "rule_type": "max_age_days",
-        "value": 30,
-    })
+    resp = await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Age Rule",
+            "rule_type": "max_age_days",
+            "value": 30,
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["rule_type"] == "max_age_days"
@@ -197,18 +296,28 @@ async def test_create_cleanup_rule(client):
 
 
 async def test_list_cleanup_rules(client):
-    await client.post("/api/satellite/cleanup-rules", json={
-        "name": "R1", "rule_type": "max_age_days", "value": 30,
-    })
+    await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "R1",
+            "rule_type": "max_age_days",
+            "value": 30,
+        },
+    )
     resp = await client.get("/api/satellite/cleanup-rules")
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
 
 
 async def test_update_cleanup_rule(client):
-    r = await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Update Me", "rule_type": "max_age_days", "value": 30,
-    })
+    r = await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Update Me",
+            "rule_type": "max_age_days",
+            "value": 30,
+        },
+    )
     rid = r.json()["id"]
     resp = await client.put(f"/api/satellite/cleanup-rules/{rid}", json={"value": 60})
     assert resp.status_code == 200
@@ -216,9 +325,14 @@ async def test_update_cleanup_rule(client):
 
 
 async def test_delete_cleanup_rule(client):
-    r = await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Del Rule", "rule_type": "max_age_days", "value": 30,
-    })
+    r = await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Del Rule",
+            "rule_type": "max_age_days",
+            "value": 30,
+        },
+    )
     rid = r.json()["id"]
     resp = await client.delete(f"/api/satellite/cleanup-rules/{rid}")
     assert resp.status_code == 200
@@ -233,9 +347,14 @@ async def test_cleanup_preview_empty(client):
 async def test_cleanup_preview_with_old_frames(client, db):
     """Test that cleanup preview identifies old frames."""
     # Create an age rule
-    await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Age 1d", "rule_type": "max_age_days", "value": 1,
-    })
+    await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Age 1d",
+            "rule_type": "max_age_days",
+            "value": 1,
+        },
+    )
     # Create an old frame
     old_frame = GoesFrame(
         id="old-frame-1",
@@ -257,9 +376,14 @@ async def test_cleanup_preview_with_old_frames(client, db):
 
 async def test_cleanup_respects_protect_collections(client, db):
     """Frames in collections should be protected when protect_collections=True."""
-    await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Age 1d", "rule_type": "max_age_days", "value": 1,
-    })
+    await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Age 1d",
+            "rule_type": "max_age_days",
+            "value": 1,
+        },
+    )
 
     # Create old frame in a collection
     old_frame = GoesFrame(
@@ -286,9 +410,14 @@ async def test_cleanup_respects_protect_collections(client, db):
 
 async def test_cleanup_run(client, db):
     """Test manual cleanup run."""
-    await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Age 1d", "rule_type": "max_age_days", "value": 1,
-    })
+    await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Age 1d",
+            "rule_type": "max_age_days",
+            "value": 1,
+        },
+    )
     old_frame = GoesFrame(
         id="delete-me",
         satellite="GOES-16",
@@ -312,9 +441,14 @@ async def test_cleanup_run(client, db):
 async def test_cleanup_storage_rule(client, db):
     """Test max_storage_gb rule."""
     # Rule: max 0 GB (will trigger cleanup of everything)
-    await client.post("/api/satellite/cleanup-rules", json={
-        "name": "Storage 0", "rule_type": "max_storage_gb", "value": 0.000001,
-    })
+    await client.post(
+        "/api/satellite/cleanup-rules",
+        json={
+            "name": "Storage 0",
+            "rule_type": "max_storage_gb",
+            "value": 0.000001,
+        },
+    )
     frame = GoesFrame(
         id="storage-frame",
         satellite="GOES-16",

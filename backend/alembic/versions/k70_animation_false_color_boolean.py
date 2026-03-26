@@ -29,20 +29,10 @@ def upgrade():
     if isinstance(col["type"], sa.Boolean):
         return
     # PostgreSQL: alter column type with USING cast
-    op.execute(
-        "ALTER TABLE animations ALTER COLUMN false_color TYPE BOOLEAN "
-        "USING false_color::boolean"
-    )
-    op.execute(
-        "ALTER TABLE animations ALTER COLUMN false_color SET DEFAULT false"
-    )
+    op.execute("ALTER TABLE animations ALTER COLUMN false_color TYPE BOOLEAN USING false_color::boolean")
+    op.execute("ALTER TABLE animations ALTER COLUMN false_color SET DEFAULT false")
 
 
 def downgrade():
-    op.execute(
-        "ALTER TABLE animations ALTER COLUMN false_color TYPE INTEGER "
-        "USING false_color::integer"
-    )
-    op.execute(
-        "ALTER TABLE animations ALTER COLUMN false_color SET DEFAULT 0"
-    )
+    op.execute("ALTER TABLE animations ALTER COLUMN false_color TYPE INTEGER USING false_color::integer")
+    op.execute("ALTER TABLE animations ALTER COLUMN false_color SET DEFAULT 0")

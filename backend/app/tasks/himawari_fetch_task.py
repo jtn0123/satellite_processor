@@ -4,6 +4,7 @@ Downloads HSD segments (bz2-compressed), assembles them into full-disk
 images via the lightweight HSD parser, and creates GoesFrame + Image DB
 records identical to the GOES pipeline.
 """
+
 from __future__ import annotations
 
 import logging
@@ -98,10 +99,7 @@ def _download_segments_parallel(
     results: dict[int, bytes] = {}
 
     with ThreadPoolExecutor(max_workers=_SEGMENT_WORKERS) as pool:
-        future_to_idx = {
-            pool.submit(_download_segment, bucket, key): idx
-            for idx, key in enumerate(keys)
-        }
+        future_to_idx = {pool.submit(_download_segment, bucket, key): idx for idx, key in enumerate(keys)}
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]
             try:
@@ -133,11 +131,7 @@ def _create_himawari_fetch_records(
         sat = results[0]["satellite"] if results else "Himawari-9"
         band = results[0]["band"] if results else ""
         collection_name = f"Himawari Fetch {sat} {sector} {band}"
-        existing_coll = (
-            session.query(Collection)
-            .filter(Collection.name == collection_name)
-            .first()
-        )
+        existing_coll = session.query(Collection).filter(Collection.name == collection_name).first()
         if existing_coll:
             collection_id = existing_coll.id
         else:
@@ -212,11 +206,7 @@ def _read_max_frames_setting() -> int:
     max_frames_limit = DEFAULT_MAX_FRAMES
     session = _get_sync_db()
     try:
-        setting = (
-            session.query(AppSetting)
-            .filter(AppSetting.key == "max_frames_per_fetch")
-            .first()
-        )
+        setting = session.query(AppSetting).filter(AppSetting.key == "max_frames_per_fetch").first()
         if setting and isinstance(setting.value, (int, float)):
             max_frames_limit = max(1, min(int(setting.value), 1000))
     except (SQLAlchemyError, ValueError, TypeError):
@@ -226,9 +216,11 @@ def _read_max_frames_setting() -> int:
     return max_frames_limit
 
 
-
 def _collect_timestamps_in_range(
-    sector: str, band: str, start_time: datetime, end_time: datetime,
+    sector: str,
+    band: str,
+    start_time: datetime,
+    end_time: datetime,
 ) -> list[dict]:
     """Collect available timestamps across all days in the time range."""
     all_timestamps: list[dict] = []
@@ -245,8 +237,13 @@ def _collect_timestamps_in_range(
 
 
 def _handle_no_timestamps(
-    job_id: str, satellite: str, sector: str, band: str,
-    start_time: datetime, end_time: datetime, _log,
+    job_id: str,
+    satellite: str,
+    sector: str,
+    band: str,
+    start_time: datetime,
+    end_time: datetime,
+    _log,
 ) -> None:
     """Handle the case when no timestamps are found — update job as failed."""
     msg = (
@@ -256,16 +253,25 @@ def _handle_no_timestamps(
     )
     _log(msg, "warning")
     _update_job_db(
-        job_id, status="failed", progress=100,
-        completed_at=utcnow(), status_message=msg,
+        job_id,
+        status="failed",
+        progress=100,
+        completed_at=utcnow(),
+        status_message=msg,
     )
     _publish_progress(job_id, 100, msg, "failed")
 
 
 def _build_final_status(
-    fetched_count: int, total_available: int, failed_downloads: int,
-    was_capped: bool, max_frames_limit: int, label: str = "frames",
-    satellite: str = "", sector: str = "", band: str = "",
+    fetched_count: int,
+    total_available: int,
+    failed_downloads: int,
+    was_capped: bool,
+    max_frames_limit: int,
+    label: str = "frames",
+    satellite: str = "",
+    sector: str = "",
+    band: str = "",
 ) -> tuple[str, str]:
     """Build (status_msg, final_status) from fetch result counts."""
     if fetched_count == 0:
@@ -286,21 +292,33 @@ def _build_final_status(
 
 
 def _finalize_job(
-    job_id: str, output_dir: str, status_msg: str, final_status: str, _log,
+    job_id: str,
+    output_dir: str,
+    status_msg: str,
+    final_status: str,
+    _log,
 ) -> None:
     """Write the final job status to DB and publish progress."""
     _log(status_msg, level="info" if final_status == "completed" else "warning")
     _update_job_db(
-        job_id, status=final_status, progress=100, output_path=output_dir,
-        completed_at=utcnow(), status_message=status_msg,
+        job_id,
+        status=final_status,
+        progress=100,
+        output_path=output_dir,
+        completed_at=utcnow(),
+        status_message=status_msg,
         **({"error": status_msg} if final_status == "completed_partial" else {}),
     )
     _publish_progress(job_id, 100, status_msg, final_status)
 
 
 def _process_single_band_frame(
-    bucket: str, satellite: str, sector: str, band: str,
-    scan_time: datetime, output_dir: str,
+    bucket: str,
+    satellite: str,
+    sector: str,
+    band: str,
+    scan_time: datetime,
+    output_dir: str,
 ) -> dict | None:
     """Download segments for one timestamp, assemble to PNG. Returns result dict or None."""
     segment_keys = _list_segments_for_timestamp(bucket, sector, band, scan_time)
@@ -345,8 +363,12 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     _log(f"Found {len(all_timestamps)} available timestamps on S3")
     logger.info(
         "Found %d Himawari timestamps for %s %s %s [%s → %s]",
-        len(all_timestamps), satellite, sector, band,
-        start_time.isoformat(), end_time.isoformat(),
+        len(all_timestamps),
+        satellite,
+        sector,
+        band,
+        start_time.isoformat(),
+        end_time.isoformat(),
     )
 
     if not all_timestamps:
@@ -383,9 +405,15 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
         _create_himawari_fetch_records(job_id, sector, output_dir, results)
 
     status_msg, final_status = _build_final_status(
-        len(results), len(all_timestamps), failed_downloads,
-        was_capped, max_frames_limit, label="frames",
-        satellite=satellite, sector=sector, band=band,
+        len(results),
+        len(all_timestamps),
+        failed_downloads,
+        was_capped,
+        max_frames_limit,
+        label="frames",
+        satellite=satellite,
+        sector=sector,
+        band=band,
     )
     _finalize_job(job_id, output_dir, status_msg, final_status, _log)
 
@@ -456,6 +484,7 @@ def _fetch_and_assemble_band(
             continue
         try:
             import bz2
+
             decompressed = bz2.decompress(seg_bytes)
             header = parse_hsd_header(decompressed)
             arr = parse_hsd_data(decompressed, header)
@@ -537,8 +566,11 @@ def _composite_true_color(
 
 
 def _process_true_color_frame(
-    bucket: str, satellite: str, sector: str,
-    scan_time: datetime, output_dir: str,
+    bucket: str,
+    satellite: str,
+    sector: str,
+    scan_time: datetime,
+    output_dir: str,
 ) -> dict | None:
     """Fetch all 3 bands for one timestamp and composite to True Color PNG.
 
@@ -582,7 +614,9 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
     _log(f"Found {len(all_timestamps)} available timestamps for True Color")
     logger.info(
         "Found %d timestamps for Himawari TrueColor [%s → %s]",
-        len(all_timestamps), start_time.isoformat(), end_time.isoformat(),
+        len(all_timestamps),
+        start_time.isoformat(),
+        end_time.isoformat(),
     )
 
     if not all_timestamps:
@@ -619,9 +653,15 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
         _create_himawari_fetch_records(job_id, sector, output_dir, results)
 
     status_msg, final_status = _build_final_status(
-        len(results), len(all_timestamps), failed_downloads,
-        was_capped, max_frames_limit, label="TrueColor frames",
-        satellite=satellite, sector=sector, band="TrueColor",
+        len(results),
+        len(all_timestamps),
+        failed_downloads,
+        was_capped,
+        max_frames_limit,
+        label="TrueColor frames",
+        satellite=satellite,
+        sector=sector,
+        band="TrueColor",
     )
     _finalize_job(job_id, output_dir, status_msg, final_status, _log)
 

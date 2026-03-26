@@ -76,6 +76,5 @@ if not settings.api_key:
 
 if not settings.debug and "sqlite" in settings.database_url.lower():
     logging.getLogger(__name__).warning(
-        "DATABASE_URL is using SQLite in non-debug mode. "
-        "Consider switching to PostgreSQL for production."
+        "DATABASE_URL is using SQLite in non-debug mode. Consider switching to PostgreSQL for production."
     )

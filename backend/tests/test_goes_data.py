@@ -1,4 +1,5 @@
 """Tests for GOES data management endpoints (frames, collections, tags)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ def _make_frame(**overrides):
     defaults.update(overrides)
     if defaults["id"] is None:
         import uuid
+
         defaults["id"] = str(uuid.uuid4())
     return GoesFrame(**defaults)
 
@@ -73,9 +75,7 @@ class TestFrames:
         db.add(f2)
         await db.commit()
 
-        resp = await client.request(
-            "DELETE", "/api/satellite/frames", json={"ids": [f1.id, f2.id]}
-        )
+        resp = await client.request("DELETE", "/api/satellite/frames", json={"ids": [f1.id, f2.id]})
         assert resp.status_code == 200
         assert resp.json()["deleted"] == 2
 
@@ -99,10 +99,13 @@ class TestFrames:
 @pytest.mark.asyncio
 class TestCollections:
     async def test_create_collection(self, client):
-        resp = await client.post("/api/satellite/collections", json={
-            "name": "Test Collection",
-            "description": "A test",
-        })
+        resp = await client.post(
+            "/api/satellite/collections",
+            json={
+                "name": "Test Collection",
+                "description": "A test",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "Test Collection"
@@ -139,9 +142,7 @@ class TestCollections:
         db.add(frame)
         await db.commit()
 
-        resp = await client.post("/api/satellite/collections/c1/frames", json={
-            "frame_ids": [frame.id]
-        })
+        resp = await client.post("/api/satellite/collections/c1/frames", json={"frame_ids": [frame.id]})
         assert resp.status_code == 200
         assert resp.json()["added"] == 1
 
@@ -153,19 +154,20 @@ class TestCollections:
         db.add(CollectionFrame(collection_id="c1", frame_id=frame.id))
         await db.commit()
 
-        resp = await client.request(
-            "DELETE", "/api/satellite/collections/c1/frames", json={"frame_ids": [frame.id]}
-        )
+        resp = await client.request("DELETE", "/api/satellite/collections/c1/frames", json={"frame_ids": [frame.id]})
         assert resp.status_code == 200
 
 
 @pytest.mark.asyncio
 class TestTags:
     async def test_create_tag(self, client):
-        resp = await client.post("/api/satellite/tags", json={
-            "name": "favorite",
-            "color": "#ff0000",
-        })
+        resp = await client.post(
+            "/api/satellite/tags",
+            json={
+                "name": "favorite",
+                "color": "#ff0000",
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "favorite"
 
@@ -200,9 +202,12 @@ class TestTags:
         db.add(Tag(id="t1", name="tag1", color="#000"))
         await db.commit()
 
-        resp = await client.post("/api/satellite/frames/tag", json={
-            "frame_ids": [frame.id],
-            "tag_ids": ["t1"],
-        })
+        resp = await client.post(
+            "/api/satellite/frames/tag",
+            json={
+                "frame_ids": [frame.id],
+                "tag_ids": ["t1"],
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["tagged"] == 1

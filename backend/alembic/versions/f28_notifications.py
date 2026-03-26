@@ -4,6 +4,7 @@ Revision ID: f28_notifications
 Revises: e17_data_integrity
 Create Date: 2026-02-13
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

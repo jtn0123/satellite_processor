@@ -1,4 +1,5 @@
 """Celery tasks for GOES data fetching and gap backfilling."""
+
 from __future__ import annotations
 
 import logging
@@ -27,9 +28,7 @@ def _read_max_frames_setting() -> int:
     max_frames_limit = DEFAULT_MAX_FRAMES
     session = _get_sync_db()
     try:
-        setting = session.query(AppSetting).filter(
-            AppSetting.key == "max_frames_per_fetch"
-        ).first()
+        setting = session.query(AppSetting).filter(AppSetting.key == "max_frames_per_fetch").first()
         if setting and isinstance(setting.value, (int, float)):
             max_frames_limit = max(1, min(int(setting.value), 1000))
     except (SQLAlchemyError, ValueError, TypeError):
@@ -51,8 +50,8 @@ def _create_fetch_records(
 
     session = _get_sync_db()
     try:
-        sat = results[0]['satellite'] if results else ''
-        band = results[0]['band'] if results else ''
+        sat = results[0]["satellite"] if results else ""
+        band = results[0]["band"] if results else ""
         collection_name = f"GOES Fetch {sat} {sector} {band}"
         existing_coll = session.query(Collection).filter(Collection.name == collection_name).first()
         if existing_coll:
@@ -115,8 +114,11 @@ def _create_fetch_records(
 
 
 def _no_frames_message(
-    satellite: str, sector: str, band: str,
-    start_time: datetime, end_time: datetime,
+    satellite: str,
+    sector: str,
+    band: str,
+    start_time: datetime,
+    end_time: datetime,
     total_available: int,
 ) -> tuple[str, str]:
     """Return status message when zero frames were fetched."""
@@ -129,8 +131,7 @@ def _no_frames_message(
     avail_hint = ""
     if avail.get("available_to"):
         avail_hint = (
-            f" {satellite} data is only available from "
-            f"{avail['available_from']} through {avail['available_to']}."
+            f" {satellite} data is only available from {avail['available_from']} through {avail['available_to']}."
         )
     status_msg = (
         f"No frames found on S3 for {satellite} {sector} {band} "
@@ -177,6 +178,7 @@ def _build_status_message(
 
 def _make_job_logger(job_id: str):
     """Return a helper function that writes to the job log."""
+
     def _log(msg: str, level: str = "info") -> None:
         session = _get_sync_db()
         try:
@@ -185,6 +187,7 @@ def _make_job_logger(job_id: str):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
+
     return _log
 
 
@@ -205,12 +208,14 @@ def _log_s3_prefixes(satellite: str, sector: str, band: str, start_time: datetim
 
 def _make_progress_callback(job_id: str, _log):
     """Return an on_progress callback for fetch_frames."""
+
     def on_progress(current: int, total: int):
         pct = int(current / total * 100) if total > 0 else 0
         msg = f"Downloading frame {current}/{total}"
         _publish_progress(job_id, pct, msg)
         _update_job_db(job_id, progress=pct, status_message=msg)
         _log(msg)
+
     return on_progress
 
 
@@ -229,14 +234,21 @@ def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: 
     _log(f"Found {len(available)} available frames on S3")
     logger.info(
         "Found %d available frames for %s %s %s [%s → %s]",
-        len(available), satellite, sector, band,
-        start_time.isoformat(), end_time.isoformat(),
+        len(available),
+        satellite,
+        sector,
+        band,
+        start_time.isoformat(),
+        end_time.isoformat(),
     )
 
     max_frames_limit = _read_max_frames_setting()
     fetch_result = fetch_frames(
-        satellite=satellite, sector=sector, band=band,
-        start_time=start_time, end_time=end_time,
+        satellite=satellite,
+        sector=sector,
+        band=band,
+        start_time=start_time,
+        end_time=end_time,
         output_dir=output_dir,
         on_progress=_make_progress_callback(job_id, _log),
         max_frames=max_frames_limit,
@@ -247,9 +259,15 @@ def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: 
         _create_fetch_records(job_id, sector, output_dir, results)
 
     status_msg, final_status = _build_status_message(
-        satellite, sector, band, start_time, end_time,
-        len(results), fetch_result["total_available"],
-        fetch_result["capped"], fetch_result["failed_downloads"],
+        satellite,
+        sector,
+        band,
+        start_time,
+        end_time,
+        len(results),
+        fetch_result["total_available"],
+        fetch_result["capped"],
+        fetch_result["failed_downloads"],
         max_frames_limit,
     )
 
@@ -257,8 +275,12 @@ def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: 
     if not defer_final_update:
         error_value = status_msg if final_status == "completed_partial" else None
         _update_job_db(
-            job_id, status=final_status, progress=100, output_path=output_dir,
-            completed_at=utcnow(), status_message=status_msg,
+            job_id,
+            status=final_status,
+            progress=100,
+            output_path=output_dir,
+            completed_at=utcnow(),
+            status_message=status_msg,
             **({"error": error_value} if error_value else {}),
         )
         _publish_progress(job_id, 100, status_msg, final_status)
@@ -269,23 +291,33 @@ def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
     logger.exception("GOES fetch job %s failed", job_id)
     _log(f"GOES fetch failed: {error}", "error")
     _update_job_db(
-        job_id, status="failed", error=str(error),
-        completed_at=utcnow(), status_message=f"Error: {error}",
+        job_id,
+        status="failed",
+        error=str(error),
+        completed_at=utcnow(),
+        status_message=f"Error: {error}",
     )
     _publish_progress(job_id, 0, f"Error: {error}", "failed")
 
 
 @celery_app.task(
-    bind=True, name="fetch_goes_data",
+    bind=True,
+    name="fetch_goes_data",
     autoretry_for=(ConnectionError, TimeoutError, ClientError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def fetch_goes_data(self, job_id: str, params: dict):
     """Download GOES frames for a time range and create Image records."""
     logger.info("Starting GOES fetch job %s", job_id)
     _update_job_db(
-        job_id, status="processing", task_id=self.request.id,
-        started_at=utcnow(), status_message="Fetching GOES data...",
+        job_id,
+        status="processing",
+        task_id=self.request.id,
+        started_at=utcnow(),
+        status_message="Fetching GOES data...",
     )
     _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
 
@@ -312,9 +344,11 @@ def _detect_gaps(
     try:
         from sqlalchemy import select as sa_select
 
-        query = sa_select(GoesFrame.capture_time).where(
-            GoesFrame.capture_time.isnot(None)
-        ).order_by(GoesFrame.capture_time.asc())
+        query = (
+            sa_select(GoesFrame.capture_time)
+            .where(GoesFrame.capture_time.isnot(None))
+            .order_by(GoesFrame.capture_time.asc())
+        )
         if satellite:
             query = query.where(GoesFrame.satellite == satellite)
         if band:
@@ -331,12 +365,14 @@ def _detect_gaps(
         delta_minutes = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60.0
         if delta_minutes > threshold:
             expected_frames = max(int(delta_minutes / expected_interval) - 1, 1)
-            gaps.append({
-                "start": timestamps[i - 1].isoformat(),
-                "end": timestamps[i].isoformat(),
-                "duration_minutes": round(delta_minutes, 1),
-                "expected_frames": expected_frames,
-            })
+            gaps.append(
+                {
+                    "start": timestamps[i - 1].isoformat(),
+                    "end": timestamps[i].isoformat(),
+                    "duration_minutes": round(delta_minutes, 1),
+                    "expected_frames": expected_frames,
+                }
+            )
     return gaps
 
 
@@ -400,31 +436,45 @@ def _fill_single_gap(
     start = datetime.fromisoformat(gap["start"])
     end = datetime.fromisoformat(gap["end"])
     fetch_result = fetch_frames(
-        satellite=satellite, sector=sector, band=band,
-        start_time=start, end_time=end, output_dir=output_dir,
+        satellite=satellite,
+        sector=sector,
+        band=band,
+        start_time=start,
+        end_time=end,
+        output_dir=output_dir,
     )
     results = fetch_result["frames"]
     if fetch_result["capped"] or fetch_result["failed_downloads"] > 0:
         logger.warning(
             "Backfill gap %d: %d fetched, %d available, capped=%s, failed=%d",
-            gap_index + 1, len(results), fetch_result["total_available"],
-            fetch_result["capped"], fetch_result["failed_downloads"],
+            gap_index + 1,
+            len(results),
+            fetch_result["total_available"],
+            fetch_result["capped"],
+            fetch_result["failed_downloads"],
         )
     _create_backfill_image_records(results)
     return len(results)
 
 
 @celery_app.task(
-    bind=True, name="backfill_gaps",
+    bind=True,
+    name="backfill_gaps",
     autoretry_for=(ConnectionError, TimeoutError, ClientError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def backfill_gaps(self, job_id: str, params: dict):
     """Run gap detection then fetch missing frames."""
     logger.info("Starting backfill job %s", job_id)
     _update_job_db(
-        job_id, status="processing", task_id=self.request.id,
-        started_at=utcnow(), status_message="Detecting gaps...",
+        job_id,
+        status="processing",
+        task_id=self.request.id,
+        started_at=utcnow(),
+        status_message="Detecting gaps...",
     )
     _publish_progress(job_id, 0, "Detecting gaps...", "processing")
 
@@ -437,8 +487,11 @@ def backfill_gaps(self, job_id: str, params: dict):
         gaps = _detect_gaps(satellite, band, sector, expected_interval)
         if not gaps:
             _update_job_db(
-                job_id, status="completed", progress=100,
-                completed_at=utcnow(), status_message="No gaps found",
+                job_id,
+                status="completed",
+                progress=100,
+                completed_at=utcnow(),
+                status_message="No gaps found",
             )
             _publish_progress(job_id, 100, "No gaps found", "completed")
             return
@@ -453,7 +506,10 @@ def backfill_gaps(self, job_id: str, params: dict):
             _publish_progress(job_id, pct, f"Filled gap {i + 1}/{len(gaps)}")
 
         _update_job_db(
-            job_id, status="completed", progress=100, output_path=output_dir,
+            job_id,
+            status="completed",
+            progress=100,
+            output_path=output_dir,
             completed_at=utcnow(),
             status_message=f"Backfilled {total_fetched} frames across {len(gaps)} gaps",
         )
@@ -462,8 +518,11 @@ def backfill_gaps(self, job_id: str, params: dict):
     except Exception as e:  # Task boundary: log + update status, re-raise for retry
         logger.exception("Backfill job %s failed", job_id)
         _update_job_db(
-            job_id, status="failed", error=str(e),
-            completed_at=utcnow(), status_message=f"Error: {e}",
+            job_id,
+            status="failed",
+            error=str(e),
+            completed_at=utcnow(),
+            status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
         raise

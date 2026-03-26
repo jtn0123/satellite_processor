@@ -6,6 +6,7 @@ Docker memory limits are safe. Run with:
 
 Marked as integration tests since they hit real S3 / do real processing.
 """
+
 from __future__ import annotations
 
 import gc
@@ -43,7 +44,7 @@ class TestWorkerMemory:
 
     def test_netcdf_to_png_memory(self):
         """Test that NetCDF→PNG conversion doesn't exceed expected memory.
-        
+
         FullDisk CMI files are the largest (~50-200MB NetCDF).
         After streaming fix, we open from disk, so memory should only
         spike for the numpy array (~50MB for 5424x5424 float32).
@@ -71,9 +72,7 @@ class TestWorkerMemory:
         # Stream download to temp file (simulates new fetch_frames behavior)
         with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
             tmp_path = Path(tmp.name)
-            response = _retry_s3_operation(
-                s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get"
-            )
+            response = _retry_s3_operation(s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get")
             for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
                 tmp.write(chunk)
 
@@ -105,15 +104,11 @@ class TestWorkerMemory:
         out_path.unlink(missing_ok=True)
 
         # Assert: streaming download should use <50MB (just chunk buffer)
-        assert download_delta < 50, (
-            f"Streaming download used {download_delta:.0f}MB — should be <50MB"
-        )
+        assert download_delta < 50, f"Streaming download used {download_delta:.0f}MB — should be <50MB"
 
         # Assert: total operation should use <600MB
         # FullDisk = 5424x5424 float32 = ~112MB numpy array + processing overhead
-        assert total_delta < 600, (
-            f"Total operation used {total_delta:.0f}MB — should be <600MB for safe 2G worker"
-        )
+        assert total_delta < 600, f"Total operation used {total_delta:.0f}MB — should be <600MB for safe 2G worker"
 
     def test_conus_memory(self):
         """CONUS frames are smaller — should use much less memory."""
@@ -138,9 +133,7 @@ class TestWorkerMemory:
 
         with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
             tmp_path = Path(tmp.name)
-            response = _retry_s3_operation(
-                s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get"
-            )
+            response = _retry_s3_operation(s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get")
             for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
                 tmp.write(chunk)
 
@@ -160,9 +153,7 @@ class TestWorkerMemory:
         out_path.unlink(missing_ok=True)
 
         # CONUS is ~3000x5000 — much smaller than FullDisk
-        assert total_delta < 300, (
-            f"CONUS processing used {total_delta:.0f}MB — should be <300MB"
-        )
+        assert total_delta < 300, f"CONUS processing used {total_delta:.0f}MB — should be <300MB"
 
     def test_sequential_frames_no_leak(self):
         """Process multiple frames sequentially and verify no memory leak."""
@@ -187,9 +178,7 @@ class TestWorkerMemory:
         for i, item in enumerate(available[:5]):  # Test up to 5 frames
             with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
                 tmp_path = Path(tmp.name)
-                response = _retry_s3_operation(
-                    s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get"
-                )
+                response = _retry_s3_operation(s3.get_object, Bucket="noaa-goes19", Key=item["key"], operation="get")
                 for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
                     tmp.write(chunk)
 
@@ -202,7 +191,7 @@ class TestWorkerMemory:
             rss_now = get_current_rss_mb()
             delta = rss_now - rss_baseline
             deltas.append(delta)
-            print(f"\n  Frame {i+1}: RSS delta = {delta:.1f} MB")
+            print(f"\n  Frame {i + 1}: RSS delta = {delta:.1f} MB")
 
             tmp_path.unlink(missing_ok=True)
             out_path.unlink(missing_ok=True)
@@ -212,9 +201,7 @@ class TestWorkerMemory:
         if len(deltas) >= 3:
             growth = deltas[-1] - deltas[1]
             print(f"\n  Memory growth (frame 2 → last): {growth:.1f} MB")
-            assert growth < 100, (
-                f"Memory grew {growth:.0f}MB over {len(deltas)-1} frames — possible leak"
-            )
+            assert growth < 100, f"Memory grew {growth:.0f}MB over {len(deltas) - 1} frames — possible leak"
 
 
 @pytest.mark.integration
@@ -238,6 +225,4 @@ class TestAPIMemory:
 
         # FastAPI + SQLAlchemy + all routers — allow up to 600MB (CI runners
         # have higher baseline due to shared process with pytest + all test deps)
-        assert rss_after < 600, (
-            f"API app uses {rss_after:.0f}MB at startup — should be <600MB for 1G limit"
-        )
+        assert rss_after < 600, f"API app uses {rss_after:.0f}MB at startup — should be <600MB for 1G limit"

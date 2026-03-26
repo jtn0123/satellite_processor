@@ -1,4 +1,5 @@
 """Extended tests for cleanup rules and execution."""
+
 from __future__ import annotations
 
 import uuid
@@ -43,46 +44,61 @@ def _make_rule(db, **overrides):
 @pytest.mark.asyncio
 class TestCleanupRules:
     async def test_create_max_age_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Delete old frames",
-            "rule_type": "max_age_days",
-            "value": 30,
-            "protect_collections": True,
-            "is_active": True,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Delete old frames",
+                "rule_type": "max_age_days",
+                "value": 30,
+                "protect_collections": True,
+                "is_active": True,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["rule_type"] == "max_age_days"
 
     async def test_create_max_storage_rule(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Limit storage",
-            "rule_type": "max_storage_gb",
-            "value": 100,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Limit storage",
+                "rule_type": "max_storage_gb",
+                "value": 100,
+            },
+        )
         assert resp.status_code == 200
 
     async def test_create_invalid_rule_type(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Bad rule",
-            "rule_type": "invalid_type",
-            "value": 10,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Bad rule",
+                "rule_type": "invalid_type",
+                "value": 10,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_create_zero_value(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Zero",
-            "rule_type": "max_age_days",
-            "value": 0,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Zero",
+                "rule_type": "max_age_days",
+                "value": 0,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_create_negative_value(self, client):
-        resp = await client.post("/api/satellite/cleanup-rules", json={
-            "name": "Negative",
-            "rule_type": "max_age_days",
-            "value": -5,
-        })
+        resp = await client.post(
+            "/api/satellite/cleanup-rules",
+            json={
+                "name": "Negative",
+                "rule_type": "max_age_days",
+                "value": -5,
+            },
+        )
         assert resp.status_code == 422
 
     async def test_list_rules_empty(self, client):
@@ -99,9 +115,12 @@ class TestCleanupRules:
     async def test_update_rule(self, client, db):
         rule = _make_rule(db)
         await db.commit()
-        resp = await client.put(f"/api/satellite/cleanup-rules/{rule.id}", json={
-            "value": 14,
-        })
+        resp = await client.put(
+            f"/api/satellite/cleanup-rules/{rule.id}",
+            json={
+                "value": 14,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["value"] == 14
 

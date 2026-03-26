@@ -1,4 +1,5 @@
 """Extended tests for animation studio endpoints."""
+
 from __future__ import annotations
 
 import uuid
@@ -26,10 +27,16 @@ def _frame(**kw):
 @pytest.mark.asyncio
 class TestCropPresetsExtended:
     async def test_create_crop_preset(self, client):
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Region A",
-            "x": 100, "y": 200, "width": 500, "height": 400,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Region A",
+                "x": 100,
+                "y": 200,
+                "width": 500,
+                "height": 400,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "Region A"
 
@@ -37,9 +44,16 @@ class TestCropPresetsExtended:
         db.add(CropPreset(id=str(uuid.uuid4()), name="Dup", x=0, y=0, width=100, height=100))
         await db.commit()
 
-        resp = await client.post("/api/satellite/crop-presets", json={
-            "name": "Dup", "x": 0, "y": 0, "width": 100, "height": 100,
-        })
+        resp = await client.post(
+            "/api/satellite/crop-presets",
+            json={
+                "name": "Dup",
+                "x": 0,
+                "y": 0,
+                "width": 100,
+                "height": 100,
+            },
+        )
         assert resp.status_code == 409
 
     async def test_list_crop_presets_empty(self, client):
@@ -88,12 +102,15 @@ class TestAnimationsExtended:
     async def test_create_animation_no_frames(self, client):
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "Test Anim",
-                "frame_ids": [],
-                "satellite": "GOES-16",
-                "band": "C99",
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "Test Anim",
+                    "frame_ids": [],
+                    "satellite": "GOES-16",
+                    "band": "C99",
+                },
+            )
         assert resp.status_code in (400, 422)
 
     async def test_create_animation_with_frame_ids(self, client, db):
@@ -105,12 +122,15 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "My Animation",
-                "frame_ids": [f1.id, f2.id],
-                "fps": 10,
-                "format": "mp4",
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "My Animation",
+                    "frame_ids": [f1.id, f2.id],
+                    "fps": 10,
+                    "format": "mp4",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "My Animation"
@@ -124,11 +144,14 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "Filtered",
-                "satellite": "GOES-16",
-                "band": "C02",
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "Filtered",
+                    "satellite": "GOES-16",
+                    "band": "C02",
+                },
+            )
         assert resp.status_code == 200
         assert resp.json()["frame_count"] == 1
 
@@ -142,10 +165,13 @@ class TestAnimationsExtended:
 
         with patch("app.tasks.animation_tasks.generate_animation") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/animations", json={
-                "name": "Col Anim",
-                "collection_id": "c1",
-            })
+            resp = await client.post(
+                "/api/satellite/animations",
+                json={
+                    "name": "Col Anim",
+                    "collection_id": "c1",
+                },
+            )
         assert resp.status_code == 200
         assert resp.json()["frame_count"] == 1
 
@@ -157,10 +183,15 @@ class TestAnimationsExtended:
 
     async def test_list_animations_pagination(self, client, db):
         for i in range(5):
-            db.add(Animation(
-                id=str(uuid.uuid4()), name=f"Anim {i}",
-                status="completed", frame_count=10, fps=10,
-            ))
+            db.add(
+                Animation(
+                    id=str(uuid.uuid4()),
+                    name=f"Anim {i}",
+                    status="completed",
+                    frame_count=10,
+                    fps=10,
+                )
+            )
         await db.commit()
 
         resp = await client.get("/api/satellite/animations?page=1&limit=2")
@@ -196,11 +227,21 @@ class TestAnimationsExtended:
 
     async def test_animation_response_shape(self, client, db):
         aid = str(uuid.uuid4())
-        db.add(Animation(
-            id=aid, name="Full", status="completed", frame_count=10,
-            fps=24, format="mp4", quality="high", scale="50%",
-            false_color=1, file_size=1000000, duration_seconds=30,
-        ))
+        db.add(
+            Animation(
+                id=aid,
+                name="Full",
+                status="completed",
+                frame_count=10,
+                fps=24,
+                format="mp4",
+                quality="high",
+                scale="50%",
+                false_color=1,
+                file_size=1000000,
+                duration_seconds=30,
+            )
+        )
         await db.commit()
 
         resp = await client.get(f"/api/satellite/animations/{aid}")

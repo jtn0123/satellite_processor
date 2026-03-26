@@ -3,6 +3,7 @@
 Ensures every possible configuration works correctly without hitting real AWS.
 Covers both GOES and Himawari satellites.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -217,10 +218,12 @@ class TestListAvailableMocked:
         fake_keys = []
         t = start
         while t <= end:
-            fake_keys.append({
-                "Key": _make_s3_key(satellite, sector, band, t),
-                "Size": 5000000,
-            })
+            fake_keys.append(
+                {
+                    "Key": _make_s3_key(satellite, sector, band, t),
+                    "Size": 5000000,
+                }
+            )
             t += timedelta(minutes=10)
 
         mock_paginator = MagicMock()
@@ -249,9 +252,13 @@ class TestListAvailableMocked:
             patch("app.services.goes_fetcher._get_s3_client", return_value=mock_s3),
             patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn()),
         ):
-            results = list_available("GOES-18", "CONUS", "C02",
-                                     datetime(2025, 6, 15, 12, 0, 0, tzinfo=UTC),
-                                     datetime(2025, 6, 15, 12, 30, 0, tzinfo=UTC))
+            results = list_available(
+                "GOES-18",
+                "CONUS",
+                "C02",
+                datetime(2025, 6, 15, 12, 0, 0, tzinfo=UTC),
+                datetime(2025, 6, 15, 12, 30, 0, tzinfo=UTC),
+            )
         assert results == []
 
     def test_no_contents_key(self):
@@ -264,9 +271,13 @@ class TestListAvailableMocked:
             patch("app.services.goes_fetcher._get_s3_client", return_value=mock_s3),
             patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn()),
         ):
-            results = list_available("GOES-19", "FullDisk", "C01",
-                                     datetime(2025, 6, 15, 12, 0, 0, tzinfo=UTC),
-                                     datetime(2025, 6, 15, 12, 30, 0, tzinfo=UTC))
+            results = list_available(
+                "GOES-19",
+                "FullDisk",
+                "C01",
+                datetime(2025, 6, 15, 12, 0, 0, tzinfo=UTC),
+                datetime(2025, 6, 15, 12, 30, 0, tzinfo=UTC),
+            )
         assert results == []
 
 
@@ -293,9 +304,13 @@ class TestTimezoneHandling:
             patch("app.services.goes_fetcher._retry_s3_operation", side_effect=lambda fn, *a, **kw: fn()),
         ):
             # Aware datetimes should work fine
-            results = list_available("GOES-16", "FullDisk", "C02",
-                                     datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-                                     datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC))
+            results = list_available(
+                "GOES-16",
+                "FullDisk",
+                "C02",
+                datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC),
+            )
             assert results == []
 
 
@@ -315,10 +330,13 @@ class TestFetchGoesDataTaskParams:
         }
         del full_params[missing_key]
 
-        with patch("app.tasks.fetch_task._update_job_db"), \
-             patch("app.tasks.fetch_task._publish_progress"), \
-             patch("app.tasks.fetch_task._get_redis"):
+        with (
+            patch("app.tasks.fetch_task._update_job_db"),
+            patch("app.tasks.fetch_task._publish_progress"),
+            patch("app.tasks.fetch_task._get_redis"),
+        ):
             from app.tasks.goes_tasks import fetch_goes_data
+
             # The task should raise (KeyError or similar) for missing params
             with pytest.raises((KeyError, ValueError)):
                 fetch_goes_data("test-job-id", full_params)
@@ -333,13 +351,25 @@ class TestFetchGoesDataTaskParams:
             "end_time": "2025-06-15T13:00:00+00:00",
         }
 
-        with patch("app.tasks.fetch_task._update_job_db"), \
-             patch("app.tasks.fetch_task._publish_progress"), \
-             patch("app.tasks.fetch_task._get_redis"), \
-             patch("app.tasks.fetch_task._get_sync_db"), \
-             patch("app.services.goes_fetcher.fetch_frames", return_value={"frames": [], "total_available": 0, "capped": False, "attempted": 0, "failed_downloads": 0}) as mock_fetch, \
-             patch("app.services.goes_fetcher.list_available", return_value=[]):
+        with (
+            patch("app.tasks.fetch_task._update_job_db"),
+            patch("app.tasks.fetch_task._publish_progress"),
+            patch("app.tasks.fetch_task._get_redis"),
+            patch("app.tasks.fetch_task._get_sync_db"),
+            patch(
+                "app.services.goes_fetcher.fetch_frames",
+                return_value={
+                    "frames": [],
+                    "total_available": 0,
+                    "capped": False,
+                    "attempted": 0,
+                    "failed_downloads": 0,
+                },
+            ) as mock_fetch,
+            patch("app.services.goes_fetcher.list_available", return_value=[]),
+        ):
             from app.tasks.goes_tasks import fetch_goes_data
+
             fetch_goes_data("test-job-id", params)
             mock_fetch.assert_called_once()
 

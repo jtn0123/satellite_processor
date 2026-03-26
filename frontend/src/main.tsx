@@ -26,3 +26,7 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>
 );
+
+// ── Web Vitals (async, non-blocking) ────────────────────────────────
+const { reportWebVitals } = await import('./utils/webVitals');
+reportWebVitals();

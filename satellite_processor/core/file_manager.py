@@ -71,6 +71,7 @@ class FileManager:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         temp_dir = base_dir / f"{prefix}_{timestamp}"
         temp_dir.mkdir(parents=True, exist_ok=True)
+        self._temp_dirs.add(temp_dir)
         self.logger.info(f"Created temporary directory: {temp_dir}")
         return temp_dir
 
@@ -84,6 +85,7 @@ class FileManager:
                     except Exception as e:
                         self.logger.error(f"Error removing temp file {file}: {e}", exc_info=True)
                 temp_dir.rmdir()
+                self._temp_dirs.discard(temp_dir)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")
             except Exception as e:
                 self.logger.error(f"Error cleaning up temp directory: {e}", exc_info=True)
@@ -122,9 +124,7 @@ class FileManager:
         """Generate processed image filename"""
         return f"processed_{original_path.stem}_{timestamp}{original_path.suffix}"
 
-    def create_temp_dir(
-        self, base_dir: Path | None = None, prefix: str = "temp"
-    ) -> Path:
+    def create_temp_dir(self, base_dir: Path | None = None, prefix: str = "temp") -> Path:
         """Create a secure temporary directory"""
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -185,9 +185,7 @@ class FileManager:
         if len(valid_files) != len(files):
             self.logger.warning(f"Found {len(valid_files)}/{len(files)} valid files")
 
-        sorted_files = sorted(
-            valid_files, key=lambda x: parse_satellite_timestamp(x.name)
-        )
+        sorted_files = sorted(valid_files, key=lambda x: parse_satellite_timestamp(x.name))
 
         self.logger.info(f"Completed sorting {len(sorted_files)} files")
         return sorted_files
@@ -202,6 +200,13 @@ class FileManager:
         """Get sequential path for output files"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return base_dir / f"{prefix}_{timestamp}{ext}"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
+        return False
 
     def __del__(self):
         """Ensure cleanup on deletion"""

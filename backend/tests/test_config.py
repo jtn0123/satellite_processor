@@ -116,6 +116,7 @@ class TestSQLiteWarning:
         ):
             with caplog.at_level(logging.WARNING):
                 import app.config as config_module
+
                 importlib.reload(config_module)
             assert any("sqlite" in r.message.lower() for r in caplog.records)
 
@@ -127,6 +128,7 @@ class TestSQLiteWarning:
         ):
             with caplog.at_level(logging.WARNING):
                 import app.config as config_module
+
                 importlib.reload(config_module)
             assert not any("sqlite" in r.message.lower() for r in caplog.records)
 
@@ -138,6 +140,7 @@ class TestSQLiteWarning:
         ):
             with caplog.at_level(logging.WARNING):
                 import app.config as config_module
+
                 importlib.reload(config_module)
             assert not any("sqlite" in r.message.lower() for r in caplog.records)
 
@@ -153,9 +156,11 @@ class TestProductionApiKeyRequired:
 
         from app.main import app, lifespan
 
-        with sync_patch("app.main.app_settings") as mock_settings, \
-             sync_patch("app.main.init_db", new_callable=AsyncMock), \
-             sync_patch("app.main.setup_logging"):
+        with (
+            sync_patch("app.main.app_settings") as mock_settings,
+            sync_patch("app.main.init_db", new_callable=AsyncMock),
+            sync_patch("app.main.setup_logging"),
+        ):
             mock_settings.debug = False
             mock_settings.api_key = ""
             mock_settings.storage_path = "/tmp"
@@ -172,11 +177,13 @@ class TestProductionApiKeyRequired:
 
         from app.main import app, lifespan
 
-        with sync_patch("app.main.app_settings") as mock_settings, \
-             sync_patch("app.main.init_db", new_callable=AsyncMock), \
-             sync_patch("app.main.setup_logging"), \
-             sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}), \
-             sync_patch("app.main.asyncio.create_task") as mock_task:
+        with (
+            sync_patch("app.main.app_settings") as mock_settings,
+            sync_patch("app.main.init_db", new_callable=AsyncMock),
+            sync_patch("app.main.setup_logging"),
+            sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}),
+            sync_patch("app.main.asyncio.create_task") as mock_task,
+        ):
             mock_settings.debug = False
             mock_settings.api_key = "my-secret-key"
             mock_settings.storage_path = "/tmp"
@@ -195,11 +202,13 @@ class TestProductionApiKeyRequired:
 
         from app.main import app, lifespan
 
-        with sync_patch("app.main.app_settings") as mock_settings, \
-             sync_patch("app.main.init_db", new_callable=AsyncMock), \
-             sync_patch("app.main.setup_logging"), \
-             sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}), \
-             sync_patch("app.main.asyncio.create_task") as mock_task:
+        with (
+            sync_patch("app.main.app_settings") as mock_settings,
+            sync_patch("app.main.init_db", new_callable=AsyncMock),
+            sync_patch("app.main.setup_logging"),
+            sync_patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock, return_value={"total": 0}),
+            sync_patch("app.main.asyncio.create_task") as mock_task,
+        ):
             mock_settings.debug = True
             mock_settings.api_key = ""
             mock_settings.storage_path = "/tmp"
@@ -225,14 +234,17 @@ class TestSatelliteRegistry:
 
     def test_registry_accepts_goes_satellites(self):
         from app.services.satellite_registry import validate_satellite
+
         for name in ["GOES-16", "GOES-18", "GOES-19"]:
             validate_satellite(name)
 
     def test_registry_accepts_himawari(self):
         from app.services.satellite_registry import validate_satellite
+
         validate_satellite("Himawari-9")
 
     def test_registry_rejects_unknown(self):
         from app.services.satellite_registry import validate_satellite
+
         with pytest.raises(ValueError):
             validate_satellite("GOES-99")

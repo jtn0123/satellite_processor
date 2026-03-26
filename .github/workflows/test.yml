@@ -219,6 +219,7 @@ jobs:
       POSTGRES_USER: sat
       POSTGRES_DB: satellite_processor
       API_KEY: test-api-key
+      REDIS_PASSWORD: testredispassword
       CORS_ORIGINS: '["http://localhost:3000"]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

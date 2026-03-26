@@ -1,4 +1,5 @@
 """Tests for gap detector service."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta

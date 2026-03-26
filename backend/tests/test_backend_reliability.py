@@ -1,4 +1,5 @@
 """Tests for backend reliability: narrowed exceptions, Celery retry config, failed_jobs tracking."""
+
 from __future__ import annotations
 
 import json
@@ -64,15 +65,18 @@ class TestNarrowedExceptions:
 class TestCeleryRetryConfig:
     """Verify autoretry configuration is applied to all task functions."""
 
-    @pytest.mark.parametrize("task_name", [
-        "fetch_goes_data",
-        "backfill_gaps",
-        "generate_composite",
-        "fetch_composite_data",
-        "generate_animation",
-        "process_images",
-        "create_video",
-    ])
+    @pytest.mark.parametrize(
+        "task_name",
+        [
+            "fetch_goes_data",
+            "backfill_gaps",
+            "generate_composite",
+            "fetch_composite_data",
+            "generate_animation",
+            "process_images",
+            "create_video",
+        ],
+    )
     def test_task_has_autoretry(self, task_name):
         """All major tasks should have autoretry_for configured."""
         task = celery_app.tasks.get(task_name)
@@ -86,14 +90,14 @@ class TestCeleryRetryConfig:
         """Verify fetch_goes_data has ConnectionError in autoretry_for."""
         from app.tasks.goes_tasks import fetch_goes_data
 
-        autoretry = getattr(fetch_goes_data, 'autoretry_for', None)
+        autoretry = getattr(fetch_goes_data, "autoretry_for", None)
         assert autoretry is not None
         assert ConnectionError in autoretry
 
     def test_process_images_retries_on_timeout(self):
         from app.tasks.processing import process_images_task
 
-        autoretry = getattr(process_images_task, 'autoretry_for', None)
+        autoretry = getattr(process_images_task, "autoretry_for", None)
         assert autoretry is not None
         assert TimeoutError in autoretry
 
@@ -173,12 +177,14 @@ class TestFailedJobsTracking:
     async def test_failed_jobs_pagination(self, client, db):
         """Pagination works correctly."""
         for i in range(5):
-            db.add(FailedJob(
-                id=f"id-{i}",
-                task_name="test_task",
-                task_id=f"tid-{i}",
-                exception="err",
-            ))
+            db.add(
+                FailedJob(
+                    id=f"id-{i}",
+                    task_name="test_task",
+                    task_id=f"tid-{i}",
+                    exception="err",
+                )
+            )
         await db.commit()
 
         resp = await client.get("/api/system/failed-jobs?page=1&limit=2")
@@ -336,8 +342,17 @@ class TestGosFetcherSafeKeyAccess:
             mock_dl.side_effect = ValueError("bad data")
             results = []
             ok = _process_single_frame(
-                MagicMock(), "bucket", {}, "GOES-16", "FullDisk", "C02",
-                Path("/tmp"), results, 0, 5, None,
+                MagicMock(),
+                "bucket",
+                {},
+                "GOES-16",
+                "FullDisk",
+                "C02",
+                Path("/tmp"),
+                results,
+                0,
+                5,
+                None,
             )
             assert ok is False
 

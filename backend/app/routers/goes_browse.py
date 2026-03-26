@@ -23,10 +23,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-browse"])
 @router.get("/composite-recipes")
 def list_composite_recipes():
     """List available composite recipes."""
-    return [
-        {"id": k, "name": v["name"], "bands": v["bands"]}
-        for k, v in COMPOSITE_RECIPES.items()
-    ]
+    return [{"id": k, "name": v["name"], "bands": v["bands"]} for k, v in COMPOSITE_RECIPES.items()]
 
 
 @router.post("/composites")
@@ -65,13 +62,17 @@ async def create_composite(
 
     from ..tasks.composite_task import generate_composite
 
-    generate_composite.delay(composite_id, job_id, {
-        "recipe": recipe,
-        "satellite": satellite,
-        "sector": sector,
-        "capture_time": capture_time,
-        "bands": COMPOSITE_RECIPES[recipe]["bands"],
-    })
+    generate_composite.delay(
+        composite_id,
+        job_id,
+        {
+            "recipe": recipe,
+            "satellite": satellite,
+            "sector": sector,
+            "capture_time": capture_time,
+            "bands": COMPOSITE_RECIPES[recipe]["bands"],
+        },
+    )
 
     return {
         "id": composite_id,
@@ -91,10 +92,7 @@ async def list_composites(
     logger.debug("Listing composites")
     total = (await db.execute(select(func.count(Composite.id)))).scalar() or 0
     result = await db.execute(
-        select(Composite)
-        .order_by(Composite.created_at.desc())
-        .offset((page - 1) * limit)
-        .limit(limit)
+        select(Composite).order_by(Composite.created_at.desc()).offset((page - 1) * limit).limit(limit)
     )
     composites = result.scalars().all()
     items = [

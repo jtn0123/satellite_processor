@@ -20,6 +20,7 @@ def pytest_collection_modifyitems(config, items):
         if "integration" in item.keywords:
             item.add_marker(skip_integration)
 
+
 # In-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -43,11 +44,13 @@ def mock_redis():
     from fakeredis import FakeAsyncRedis
 
     fake = FakeAsyncRedis(decode_responses=True)
-    with patch("app.redis_pool.get_redis_client", return_value=fake), \
-         patch("app.redis_pool.get_redis_pool", return_value=MagicMock()), \
-         patch("app.services.cache.get_redis_client", return_value=fake), \
-         patch("app.routers.health.get_redis_client", return_value=fake), \
-         patch("app.main.get_redis_client", return_value=fake):
+    with (
+        patch("app.redis_pool.get_redis_client", return_value=fake),
+        patch("app.redis_pool.get_redis_pool", return_value=MagicMock()),
+        patch("app.services.cache.get_redis_client", return_value=fake),
+        patch("app.routers.health.get_redis_client", return_value=fake),
+        patch("app.main.get_redis_client", return_value=fake),
+    ):
         yield fake
 
 

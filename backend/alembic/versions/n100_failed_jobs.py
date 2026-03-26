@@ -4,6 +4,7 @@ Revision ID: n100_failed_jobs
 Revises: m90_share_links
 Create Date: 2026-03-02
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

@@ -119,7 +119,7 @@ export default function CollectionsTab() {
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
                     <button
                       onClick={() => handleAnimate(c.id)}
-                      disabled={loadingAnimateId === c.id || !c.frame_count}
+                      disabled={!!loadingAnimateId || !c.frame_count}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
                       aria-label={`Animate collection ${c.name}`}
                     >

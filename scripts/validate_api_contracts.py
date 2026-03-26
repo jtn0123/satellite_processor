@@ -7,26 +7,25 @@ Usage:
 Exits with code 1 if any mismatch is found.
 """
 
-import json
 import re
 import sys
 from pathlib import Path
 
 # --- Step 1: Extract OpenAPI spec from the FastAPI app ---
 
+
 def get_openapi_spec() -> dict:
     """Import the FastAPI app and get its OpenAPI spec."""
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
     from app.main import app  # noqa: E402
+
     return app.openapi()
 
 
 # --- Step 2: Parse frontend API calls ---
 
 # Matches: api.get('/path'), api.post(`/path`), api.delete("/path/${id}/action"), etc.
-API_CALL_RE = re.compile(
-    r"""api\.(get|post|put|patch|delete)\(\s*[`'"](/[^`'"]*?)[`'"]"""
-)
+API_CALL_RE = re.compile(r"""api\.(get|post|put|patch|delete)\(\s*[`'"](/[^`'"]*?)[`'"]""")
 
 # Template literal interpolation patterns like ${id}
 TEMPLATE_VAR_RE = re.compile(r"\$\{[^}]+\}")
@@ -37,9 +36,11 @@ def normalize_path(raw_path: str) -> str:
 
     e.g. /notifications/${id}/read → /notifications/{id}/read
     """
+
     def replacer(m: re.Match) -> str:
         var_name = m.group(0)[2:-1]  # strip ${ and }
         return f"{{{var_name}}}"
+
     return TEMPLATE_VAR_RE.sub(replacer, raw_path)
 
 
@@ -117,20 +118,20 @@ def main() -> int:
             path_exists = any(path_matches_spec(api_path, sp) for sp in all_paths)
             if path_exists:
                 mismatches.append(
-                    f"  WRONG METHOD: {method} {raw_path} → path exists but not with {method}"
-                    f"\n    at {file}:{line_no}"
+                    f"  WRONG METHOD: {method} {raw_path} → path exists but not with {method}\n    at {file}:{line_no}"
                 )
             else:
                 mismatches.append(
-                    f"  MISSING: {method} {raw_path} → no matching endpoint in spec"
-                    f"\n    at {file}:{line_no}"
+                    f"  MISSING: {method} {raw_path} → no matching endpoint in spec\n    at {file}:{line_no}"
                 )
 
     if mismatches:
         print(f"❌ Found {len(mismatches)} API contract mismatch(es):\n")
         for m in mismatches:
             print(m)
-        print(f"\nSpec has {sum(len(v) for v in spec_endpoints.values())} endpoints across {len(spec_endpoints)} methods")
+        print(
+            f"\nSpec has {sum(len(v) for v in spec_endpoints.values())} endpoints across {len(spec_endpoints)} methods"
+        )
         return 1
 
     print(f"✅ All {len(calls)} frontend API calls match the OpenAPI spec")
@@ -140,10 +141,10 @@ def main() -> int:
 def check_band_consistency() -> int:
     """Verify all bands from /goes/products are in VALID_BANDS."""
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
-    from app.services.goes_fetcher import VALID_BANDS  # noqa: E402
+    import asyncio
 
     from app.main import app  # noqa: E402
-    import asyncio
+    from app.services.goes_fetcher import VALID_BANDS  # noqa: E402
     from httpx import ASGITransport, AsyncClient
 
     async def _check() -> int:

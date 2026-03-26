@@ -42,9 +42,12 @@ def validate_safe_path(file_path: str, allowed_root: str) -> Path:
     Both paths are resolved to absolute before comparison, so relative
     ``allowed_root`` (e.g. ``./data``) and absolute ``file_path``
     (e.g. ``/app/data/...`` inside Docker) are handled correctly.
+
+    Uses Path.resolve() + str prefix check — a pattern recognised by
+    CodeQL as a path-injection sanitizer.
     """
-    root = Path(allowed_root).resolve()
-    resolved = Path(file_path).resolve()
-    if not str(resolved).startswith(str(root)):
-        raise APIError(403, "forbidden", "Path traversal detected")
-    return resolved
+    root = str(Path(allowed_root).resolve())
+    resolved = str(Path(file_path).resolve())
+    if not (resolved == root or resolved.startswith(root + "/")):
+        raise APIError(403, "forbidden", "Path outside allowed directory")
+    return Path(resolved)

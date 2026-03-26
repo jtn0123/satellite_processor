@@ -1,4 +1,5 @@
 """Extended tests for GOES API endpoints (goes.py router)."""
+
 from __future__ import annotations
 
 import uuid
@@ -134,12 +135,15 @@ class TestCreateComposite:
     async def test_create_composite_success(self, client, db):
         with patch("app.tasks.composite_task.generate_composite") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/composites", json={
-                "recipe": "true_color",
-                "satellite": "GOES-16",
-                "sector": "CONUS",
-                "capture_time": "2024-06-01T12:00:00",
-            })
+            resp = await client.post(
+                "/api/satellite/composites",
+                json={
+                    "recipe": "true_color",
+                    "satellite": "GOES-16",
+                    "sector": "CONUS",
+                    "capture_time": "2024-06-01T12:00:00",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -147,16 +151,22 @@ class TestCreateComposite:
         assert "job_id" in data
 
     async def test_create_composite_unknown_recipe(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "nonexistent",
-            "capture_time": "2024-06-01T12:00:00",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "nonexistent",
+                "capture_time": "2024-06-01T12:00:00",
+            },
+        )
         assert resp.status_code in (400, 422)
 
     async def test_create_composite_missing_capture_time(self, client):
-        resp = await client.post("/api/satellite/composites", json={
-            "recipe": "true_color",
-        })
+        resp = await client.post(
+            "/api/satellite/composites",
+            json={
+                "recipe": "true_color",
+            },
+        )
         assert resp.status_code in (400, 422)
 
 
@@ -171,15 +181,17 @@ class TestListComposites:
 
     async def test_list_composites_pagination(self, client, db):
         for i in range(5):
-            db.add(Composite(
-                id=str(uuid.uuid4()),
-                name=f"Comp {i}",
-                recipe="true_color",
-                satellite="GOES-16",
-                sector="CONUS",
-                capture_time=datetime(2024, 6, 1, i, tzinfo=UTC),
-                status="completed",
-            ))
+            db.add(
+                Composite(
+                    id=str(uuid.uuid4()),
+                    name=f"Comp {i}",
+                    recipe="true_color",
+                    satellite="GOES-16",
+                    sector="CONUS",
+                    capture_time=datetime(2024, 6, 1, i, tzinfo=UTC),
+                    status="completed",
+                )
+            )
         await db.commit()
 
         resp = await client.get("/api/satellite/composites?page=1&limit=2")
@@ -190,15 +202,17 @@ class TestListComposites:
 
     async def test_list_composites_page_2(self, client, db):
         for i in range(5):
-            db.add(Composite(
-                id=str(uuid.uuid4()),
-                name=f"Comp {i}",
-                recipe="true_color",
-                satellite="GOES-16",
-                sector="CONUS",
-                capture_time=datetime(2024, 6, 1, i, tzinfo=UTC),
-                status="completed",
-            ))
+            db.add(
+                Composite(
+                    id=str(uuid.uuid4()),
+                    name=f"Comp {i}",
+                    recipe="true_color",
+                    satellite="GOES-16",
+                    sector="CONUS",
+                    capture_time=datetime(2024, 6, 1, i, tzinfo=UTC),
+                    status="completed",
+                )
+            )
         await db.commit()
 
         resp = await client.get("/api/satellite/composites?page=3&limit=2")
@@ -214,12 +228,17 @@ class TestGetComposite:
 
     async def test_get_composite_success(self, client, db):
         cid = str(uuid.uuid4())
-        db.add(Composite(
-            id=cid, name="Test", recipe="true_color",
-            satellite="GOES-16", sector="CONUS",
-            capture_time=datetime(2024, 6, 1, tzinfo=UTC),
-            status="completed",
-        ))
+        db.add(
+            Composite(
+                id=cid,
+                name="Test",
+                recipe="true_color",
+                satellite="GOES-16",
+                sector="CONUS",
+                capture_time=datetime(2024, 6, 1, tzinfo=UTC),
+                status="completed",
+            )
+        )
         await db.commit()
 
         resp = await client.get(f"/api/satellite/composites/{cid}")

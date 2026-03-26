@@ -43,9 +43,15 @@ async def test_catalog_returns_list(client):
         {"scan_time": "2025-01-01T12:00:00+00:00", "size": 12345, "key": "test/key.nc"},
     ]
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/satellite/catalog", params={
-            "satellite": "GOES-19", "sector": "CONUS", "band": "C02", "date": "2025-01-01",
-        })
+        resp = await client.get(
+            "/api/satellite/catalog",
+            params={
+                "satellite": "GOES-19",
+                "sector": "CONUS",
+                "band": "C02",
+                "date": "2025-01-01",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
@@ -56,22 +62,29 @@ async def test_catalog_returns_list(client):
 async def test_catalog_latest_not_found(client):
     """Catalog latest returns 404 when no recent frames."""
     with patch("app.routers.goes_catalog.get_cached", return_value=None):
-        resp = await client.get("/api/satellite/catalog/latest", params={
-            "satellite": "GOES-19", "sector": "CONUS",
-        })
+        resp = await client.get(
+            "/api/satellite/catalog/latest",
+            params={
+                "satellite": "GOES-19",
+                "sector": "CONUS",
+            },
+        )
         assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_fetch_composite_bad_recipe(client):
     """Fetch-composite rejects unknown recipe."""
-    resp = await client.post("/api/satellite/fetch-composite", json={
-        "satellite": "GOES-19",
-        "sector": "CONUS",
-        "recipe": "invalid_recipe",
-        "start_time": "2025-01-01T00:00:00Z",
-        "end_time": "2025-01-01T01:00:00Z",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-composite",
+        json={
+            "satellite": "GOES-19",
+            "sector": "CONUS",
+            "recipe": "invalid_recipe",
+            "start_time": "2025-01-01T00:00:00Z",
+            "end_time": "2025-01-01T01:00:00Z",
+        },
+    )
     assert resp.status_code == 422
 
 
@@ -83,13 +96,16 @@ async def test_fetch_composite_success(client):
         mock_result.id = "test-task-id"
         mock_task.delay.return_value = mock_result
 
-        resp = await client.post("/api/satellite/fetch-composite", json={
-            "satellite": "GOES-19",
-            "sector": "CONUS",
-            "recipe": "true_color",
-            "start_time": "2025-01-01T00:00:00Z",
-            "end_time": "2025-01-01T01:00:00Z",
-        })
+        resp = await client.post(
+            "/api/satellite/fetch-composite",
+            json={
+                "satellite": "GOES-19",
+                "sector": "CONUS",
+                "recipe": "true_color",
+                "start_time": "2025-01-01T00:00:00Z",
+                "end_time": "2025-01-01T01:00:00Z",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "job_id" in data
@@ -100,26 +116,32 @@ async def test_fetch_composite_success(client):
 @pytest.mark.asyncio
 async def test_fetch_composite_invalid_satellite(client):
     """Fetch-composite rejects invalid satellite."""
-    resp = await client.post("/api/satellite/fetch-composite", json={
-        "satellite": "GOES-99",
-        "sector": "CONUS",
-        "recipe": "true_color",
-        "start_time": "2025-01-01T00:00:00Z",
-        "end_time": "2025-01-01T01:00:00Z",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-composite",
+        json={
+            "satellite": "GOES-99",
+            "sector": "CONUS",
+            "recipe": "true_color",
+            "start_time": "2025-01-01T00:00:00Z",
+            "end_time": "2025-01-01T01:00:00Z",
+        },
+    )
     assert resp.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_fetch_composite_end_before_start(client):
     """Fetch-composite rejects end_time before start_time."""
-    resp = await client.post("/api/satellite/fetch-composite", json={
-        "satellite": "GOES-19",
-        "sector": "CONUS",
-        "recipe": "true_color",
-        "start_time": "2025-01-01T02:00:00Z",
-        "end_time": "2025-01-01T01:00:00Z",
-    })
+    resp = await client.post(
+        "/api/satellite/fetch-composite",
+        json={
+            "satellite": "GOES-19",
+            "sector": "CONUS",
+            "recipe": "true_color",
+            "start_time": "2025-01-01T02:00:00Z",
+            "end_time": "2025-01-01T01:00:00Z",
+        },
+    )
     assert resp.status_code == 422
 
 
@@ -235,9 +257,14 @@ async def test_catalog_latest_meso_returns_data(client):
         "thumbnail_url": None,
     }
     with patch("app.routers.goes_catalog.get_cached", return_value=mock_result):
-        resp = await client.get("/api/satellite/catalog/latest", params={
-            "satellite": "GOES-19", "sector": "Mesoscale1", "band": "C02",
-        })
+        resp = await client.get(
+            "/api/satellite/catalog/latest",
+            params={
+                "satellite": "GOES-19",
+                "sector": "Mesoscale1",
+                "band": "C02",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["scan_time"] == "2025-06-01T12:00:00+00:00"

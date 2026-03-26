@@ -1,4 +1,5 @@
 """Tests for download router (#185)."""
+
 from __future__ import annotations
 
 import pytest

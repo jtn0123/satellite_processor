@@ -1,4 +1,5 @@
 """Tests for Himawari S3 catalog functions."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -141,10 +142,7 @@ class TestParseHimawariScanTime:
 
     def test_different_segments_same_time(self):
         """All segments for the same timestamp should parse to the same time."""
-        keys = [
-            f"HS_H09_20260303_0000_B13_FLDK_R20_S{seg:02d}10.DAT.bz2"
-            for seg in range(1, 11)
-        ]
+        keys = [f"HS_H09_20260303_0000_B13_FLDK_R20_S{seg:02d}10.DAT.bz2" for seg in range(1, 11)]
         times = [_parse_himawari_scan_time(k) for k in keys]
         assert all(t == times[0] for t in times)
         assert times[0] == datetime(2026, 3, 3, 0, 0, tzinfo=UTC)
@@ -162,8 +160,7 @@ class TestListHimawariTimestamps:
             for seg in range(1, 11):
                 res = 10 if band <= 3 else 20
                 key = (
-                    f"AHI-L1b-FLDK/2026/03/03/0000/"
-                    f"HS_H09_20260303_0000_B{band:02d}_FLDK_R{res}_S{seg:02d}{res}.DAT.bz2"
+                    f"AHI-L1b-FLDK/2026/03/03/0000/HS_H09_20260303_0000_B{band:02d}_FLDK_R{res}_S{seg:02d}{res}.DAT.bz2"
                 )
                 objects.append({"Key": key, "Size": 5000000})
         mock_list.return_value = objects
@@ -178,10 +175,7 @@ class TestListHimawariTimestamps:
         objects = []
         for hhmm in ("0000", "0010"):
             for seg in range(1, 11):
-                key = (
-                    f"AHI-L1b-FLDK/2026/03/03/{hhmm}/"
-                    f"HS_H09_20260303_{hhmm}_B13_FLDK_R20_S{seg:02d}20.DAT.bz2"
-                )
+                key = f"AHI-L1b-FLDK/2026/03/03/{hhmm}/HS_H09_20260303_{hhmm}_B13_FLDK_R20_S{seg:02d}20.DAT.bz2"
                 objects.append({"Key": key, "Size": 5000000})
         mock_list.return_value = objects
 

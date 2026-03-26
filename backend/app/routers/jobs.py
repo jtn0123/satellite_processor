@@ -22,7 +22,7 @@ from ..db.models import (
     Job,
     JobLog,
 )
-from ..errors import APIError, validate_uuid
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -110,9 +110,7 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
         shutil.rmtree(goes_dir, ignore_errors=True)
 
     # Delete associated GoesFrame records and their files/thumbnails
-    frames_result = await db.execute(
-        select(GoesFrame).where(GoesFrame.source_job_id == job.id)
-    )
+    frames_result = await db.execute(select(GoesFrame).where(GoesFrame.source_job_id == job.id))
     frames = frames_result.scalars().all()
 
     for frame in frames:
@@ -127,14 +125,8 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
             os.remove(frame.file_path)
 
         # Delete CollectionFrame join records
-        await db.execute(
-            select(CollectionFrame).where(CollectionFrame.frame_id == frame.id)
-        )
-        await db.execute(
-            CollectionFrame.__table__.delete().where(
-                CollectionFrame.frame_id == frame.id
-            )
-        )
+        await db.execute(select(CollectionFrame).where(CollectionFrame.frame_id == frame.id))
+        await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id == frame.id))
 
         await db.delete(frame)
 
@@ -142,9 +134,7 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     # link them back to jobs. The frame files are already deleted above.
 
     # Delete job logs
-    await db.execute(
-        JobLog.__table__.delete().where(JobLog.job_id == job.id)
-    )
+    await db.execute(JobLog.__table__.delete().where(JobLog.job_id == job.id))
 
     return bytes_freed
 
@@ -198,9 +188,7 @@ async def list_jobs(
     total = count_result.scalar_one()
 
     offset = (page - 1) * limit
-    result = await db.execute(
-        select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit)
-    )
+    result = await db.execute(select(Job).order_by(Job.created_at.desc()).offset(offset).limit(limit))
     jobs = result.scalars().all()
 
     return PaginatedResponse[JobResponse](
@@ -386,28 +374,31 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     job = result.scalar_one_or_none()
     if not job:
         raise APIError(404, "not_found", _JOB_NOT_FOUND)
-    if job.status != "completed":
+    if job.status not in ("completed", "completed_partial"):
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    if not os.path.exists(output_path):
+
+    safe_output = validate_safe_path(output_path, settings.output_dir)
+
+    if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found")
 
-    if os.path.isfile(output_path):
-        return FileResponse(output_path, filename=os.path.basename(output_path))
+    if safe_output.is_file():
+        return FileResponse(str(safe_output), filename=safe_output.name)
 
-    files = sorted(os.listdir(output_path))
+    files = [f for f in sorted(os.listdir(safe_output)) if (safe_output / f).is_file()]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(output_path, f), filename=f)
+                return FileResponse(str(safe_output / f), filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(output_path, first), filename=first)
+    return FileResponse(str(safe_output / first), filename=first)
 
 
 @router.post("/cleanup-stale")

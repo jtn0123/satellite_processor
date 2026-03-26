@@ -138,13 +138,13 @@ class TestParallelWorkers:
         output_dir.mkdir()
 
         options = {
-            "crop_x": 0, "crop_y": 0,
-            "crop_width": 100, "crop_height": 50,
+            "crop_x": 0,
+            "crop_y": 0,
+            "crop_width": 100,
+            "crop_height": 50,
         }
 
-        result = SatelliteImageProcessor._parallel_crop(
-            (str(img_path), str(output_dir), options)
-        )
+        result = SatelliteImageProcessor._parallel_crop((str(img_path), str(output_dir), options))
         assert result is not None
 
     def test_parallel_crop_invalid_image(self, tmp_path):
@@ -152,7 +152,5 @@ class TestParallelWorkers:
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        result = SatelliteImageProcessor._parallel_crop(
-            ("/nonexistent.png", str(output_dir), {})
-        )
+        result = SatelliteImageProcessor._parallel_crop(("/nonexistent.png", str(output_dir), {}))
         assert result is None

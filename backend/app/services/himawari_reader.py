@@ -17,6 +17,7 @@ HSD file layout (little-endian throughout):
 References:
     JMA Himawari Standard Data User's Guide (v1.3, 2015)
 """
+
 from __future__ import annotations
 
 import bz2
@@ -50,6 +51,7 @@ _VIS_BANDS = frozenset(range(1, 5))  # bands 1, 2, 3, 4
 # Header dataclass
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class HSDHeader:
     """Parsed header fields from an HSD segment file."""
@@ -82,10 +84,10 @@ class HSDHeader:
 
     # Block 5 – calibration
     central_wavelength: float  # µm
-    gain: float   # count → radiance slope
+    gain: float  # count → radiance slope
     offset: float  # count → radiance intercept
-    count_error: int       # count value representing error pixels
-    count_outside: int     # count value representing outside-scan pixels
+    count_error: int  # count value representing error pixels
+    count_outside: int  # count value representing outside-scan pixels
 
     # IR correction coefficients (for brightness temperature)
     # BT_corrected = c0 + c1·BT + c2·BT²
@@ -110,6 +112,7 @@ class HSDHeader:
 # ---------------------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------------------
+
 
 def _mjd_to_datetime(mjd: float) -> datetime:
     """Convert Modified Julian Date to UTC datetime."""
@@ -290,7 +293,10 @@ def parse_hsd_header(data: bytes) -> HSDHeader:
 
     off_after_b5 = off4 + b4_len + b5["b5_len"]
     total_segments, segment_number = _find_segment_info(
-        data, off_after_b5, b1["total_header_blocks"] - 5, b1["segment_number"],
+        data,
+        off_after_b5,
+        b1["total_header_blocks"] - 5,
+        b1["segment_number"],
     )
 
     return HSDHeader(
@@ -339,13 +345,9 @@ def parse_hsd_data(data: bytes, header: HSDHeader) -> np.ndarray:
     data_start = header.total_header_length
     data_end = data_start + expected_pixels * 2  # uint16
     if len(data) < data_end:
-        raise ValueError(
-            f"Data too short: need {data_end} bytes, got {len(data)}"
-        )
+        raise ValueError(f"Data too short: need {data_end} bytes, got {len(data)}")
 
-    counts = np.frombuffer(
-        data[data_start:data_end], dtype="<u2"
-    ).reshape(header.num_lines, header.num_columns)
+    counts = np.frombuffer(data[data_start:data_end], dtype="<u2").reshape(header.num_lines, header.num_columns)
 
     # Build valid-pixel mask
     invalid = (counts == header.count_error) | (counts == header.count_outside)
@@ -368,21 +370,21 @@ def _radiance_to_bt(radiance: np.ndarray, header: HSDHeader) -> np.ndarray:
       3. Correction: T = c0 + c1_corr·T_eff + c2_corr·T_eff²
     """
     lam = header.central_wavelength  # µm
-    nu = header.central_wavenumber   # cm⁻¹
+    nu = header.central_wavenumber  # cm⁻¹
 
     # Step 1 – unit conversion (W/(m²·sr·µm) → mW/(m²·sr·cm⁻¹))
-    l_nu = radiance * (lam ** 2 / 10.0)
+    l_nu = radiance * (lam**2 / 10.0)
 
     # Guard against non-positive radiance (space, limb)
     with np.errstate(invalid="ignore", divide="ignore"):
         # Step 2 – inverse Planck
-        arg = _C1_PLANCK * nu ** 3 / l_nu + 1.0
+        arg = _C1_PLANCK * nu**3 / l_nu + 1.0
         # Clamp to avoid log of non-positive
         arg = np.where(arg > 1.0, arg, np.nan)
         t_eff = _C2_PLANCK * nu / np.log(arg)
 
         # Step 3 – band-specific correction
-        bt = header.ir_c0 + header.ir_c1 * t_eff + header.ir_c2 * t_eff ** 2
+        bt = header.ir_c0 + header.ir_c1 * t_eff + header.ir_c2 * t_eff**2
 
     # Anything that went through NaN stays NaN
     bt = np.where(np.isfinite(bt) & (bt > 0), bt, np.nan)
@@ -425,9 +427,7 @@ def assemble_segments(
             if width is None:
                 width = seg.shape[1]
             elif seg.shape[1] != width:
-                raise ValueError(
-                    f"Segment width mismatch: expected {width}, got {seg.shape[1]}"
-                )
+                raise ValueError(f"Segment width mismatch: expected {width}, got {seg.shape[1]}")
             if lines_per_seg is None:
                 lines_per_seg = seg.shape[0]
 

@@ -1,4 +1,5 @@
 """Job logging helpers — async for FastAPI, sync for Celery tasks."""
+
 from __future__ import annotations
 
 import json
@@ -43,13 +44,15 @@ def log_job_sync(
     # Broadcast to WebSocket listeners
     if redis_client is not None:
         try:
-            payload = json.dumps({
-                "type": "log",
-                "job_id": job_id,
-                "level": level,
-                "message": message,
-                "timestamp": ts.isoformat(),
-            })
+            payload = json.dumps(
+                {
+                    "type": "log",
+                    "job_id": job_id,
+                    "level": level,
+                    "message": message,
+                    "timestamp": ts.isoformat(),
+                }
+            )
             redis_client.publish(f"job:{job_id}", payload)
         except (redis.exceptions.RedisError, OSError):
             logger.debug("Redis unavailable, skipping log broadcast for job %s", job_id)

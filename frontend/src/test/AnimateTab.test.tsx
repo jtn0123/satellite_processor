@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from './testUtils';
 import AnimateTab from '../components/Animation/AnimateTab';
 
 const mockGet = vi.fn();
@@ -46,19 +46,6 @@ const processingAnimation = { ...completedAnimation, id: 'anim-3', name: 'Proces
 const failedAnimation = { ...completedAnimation, id: 'anim-4', name: 'Failed Anim', status: 'failed', output_path: null, file_size: 0, error: 'Out of memory' };
 const gifAnimation = { ...completedAnimation, id: 'anim-5', name: 'GIF Anim', format: 'gif', output_path: '/output/test.gif' };
 
-function renderWithProviders(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>,
-  );
-}
 
 function setupDefaultMocks(animations: unknown[] = []) {
   mockGet.mockImplementation((url: string) => {

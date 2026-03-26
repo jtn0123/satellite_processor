@@ -20,12 +20,14 @@ _engine_kwargs: dict = {
 
 # Pool settings only apply to non-SQLite databases (SQLite uses NullPool)
 if "sqlite" not in settings.database_url:
-    _engine_kwargs.update({
-        "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_recycle": 1800,
-    })
+    _engine_kwargs.update(
+        {
+            "pool_pre_ping": True,
+            "pool_size": 5,
+            "max_overflow": 10,
+            "pool_recycle": 1800,
+        }
+    )
 
 engine = create_async_engine(settings.database_url, **_engine_kwargs)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -56,6 +58,8 @@ async def init_db(max_retries: int = 5, base_delay: float = 1.0):
             delay = base_delay * (2 ** (attempt - 1))
             logger.warning(
                 "Database connection failed (attempt %d/%d), retrying in %.1fs",
-                attempt, max_retries, delay,
+                attempt,
+                max_retries,
+                delay,
             )
             await asyncio.sleep(delay)

@@ -1,4 +1,5 @@
 """GOES S3 catalog service — query available imagery from NOAA public buckets."""
+
 from __future__ import annotations
 
 import logging
@@ -39,9 +40,7 @@ CDN_RESOLUTIONS: dict[str, dict[str, str]] = {
 logger = logging.getLogger(__name__)
 
 
-def build_cdn_urls(
-    satellite: str, sector: str, band: str
-) -> dict[str, str] | None:
+def build_cdn_urls(satellite: str, sector: str, band: str) -> dict[str, str] | None:
     """Build NOAA CDN image URLs for multiple resolutions.
 
     The CDN always serves the latest image at each resolution — no timestamp
@@ -72,10 +71,7 @@ def build_cdn_urls(
     resolutions = CDN_RESOLUTIONS.get(sector, CDN_RESOLUTIONS["CONUS"])
     base = f"https://cdn.star.nesdis.noaa.gov/{sat_cdn}/ABI/{cdn_sector}/{cdn_band}"
 
-    return {
-        res_key: f"{base}/{res_val}.jpg"
-        for res_key, res_val in resolutions.items()
-    }
+    return {res_key: f"{base}/{res_val}.jpg" for res_key, res_val in resolutions.items()}
 
 
 def _normalize_date(date: datetime | None) -> datetime:
@@ -104,11 +100,13 @@ def _collect_matching_entries(
                 continue
             scan_time = _parse_scan_time(key)
             if scan_time:
-                results.append({
-                    "scan_time": scan_time.isoformat(),
-                    "size": obj["Size"],
-                    "key": key,
-                })
+                results.append(
+                    {
+                        "scan_time": scan_time.isoformat(),
+                        "size": obj["Size"],
+                        "key": key,
+                    }
+                )
     return results
 
 

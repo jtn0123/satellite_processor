@@ -26,6 +26,7 @@ def setup_logging(debug: bool = False):
     else:
         try:
             from pythonjsonlogger import jsonlogger
+
             handler = logging.StreamHandler(sys.stdout)
             formatter = jsonlogger.JsonFormatter(
                 "%(asctime)s %(levelname)s %(name)s %(request_id)s %(message)s",
@@ -163,8 +164,13 @@ class RequestLoggingMiddleware:
             raise
         finally:
             self._emit_wide_event(
-                scope, start, ctx.status_code, request_size, ctx.response_size,
-                ctx.content_type, error_info,
+                scope,
+                start,
+                ctx.status_code,
+                request_size,
+                ctx.response_size,
+                ctx.content_type,
+                error_info,
             )
 
     def _emit_wide_event(

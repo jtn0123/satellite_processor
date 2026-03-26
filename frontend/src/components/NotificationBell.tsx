@@ -18,7 +18,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: notifications, isError } = useQuery<Notification[]>({
+  const { data: notifications, isError, isLoading } = useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: () => api.get('/notifications').then((r) => {
       return extractArray<Notification>(r.data);
@@ -49,12 +49,16 @@ export default function NotificationBell() {
     }
   }, [open, handleClickOutside]);
 
+  let buttonLabel = 'Notifications';
+  if (isError) buttonLabel = 'Notifications, unable to load';
+  else if (unreadCount > 0) buttonLabel = `Notifications, ${unreadCount} unread`;
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring relative"
-        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-label={buttonLabel}
         aria-haspopup="true"
         aria-expanded={open}
       >
@@ -80,12 +84,17 @@ export default function NotificationBell() {
           <div className="px-4 py-3 border-b border-gray-200 dark:border-space-700/50">
             <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
           </div>
-          <div className="max-h-64 overflow-y-auto" role="group" aria-labelledby="notification-heading">
-            {isError ? (
+          <div className="max-h-64 overflow-y-auto" aria-labelledby="notification-heading">
+            {isError && (
               <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
-            ) : (!notifications || notifications.length === 0) ? (
+            )}
+            {!isError && isLoading && (
+              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">Loading…</div>
+            )}
+            {!isError && !isLoading && (!notifications || notifications.length === 0) && (
               <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
-            ) : (
+            )}
+            {!isError && !isLoading && notifications && notifications.length > 0 && (
               notifications.slice(0, 10).map((n) => (
                 <button
                   key={n.id}

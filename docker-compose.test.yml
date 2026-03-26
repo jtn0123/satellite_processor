@@ -7,9 +7,9 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://sat:testpass@db/satellite_processor_test
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://:testredis@redis:6379/0
+      - CELERY_BROKER_URL=redis://:testredis@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:testredis@redis:6379/0
       - STORAGE_PATH=/app/data
       - PYTHONPATH=/app
       - TESTING=true
@@ -37,9 +37,9 @@ services:
     command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=1
     environment:
       - DATABASE_URL=postgresql+asyncpg://sat:testpass@db/satellite_processor_test
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://:testredis@redis:6379/0
+      - CELERY_BROKER_URL=redis://:testredis@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:testredis@redis:6379/0
       - STORAGE_PATH=/app/data
       - PYTHONPATH=/app
       - TESTING=true
@@ -75,8 +75,9 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass testredis
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "REDISCLI_AUTH=testredis redis-cli ping"]
       interval: 5s
       timeout: 3s
       retries: 5

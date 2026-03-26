@@ -5,21 +5,28 @@ services:
     container_name: sat-tracker-frontend
     ports:
       - "3001:80"
+    environment:
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://sat.neuhard.dev}
+      API_KEY: ${API_KEY:-}
     depends_on:
       - api
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
     restart: unless-stopped
 
   api:
     image: ghcr.io/jtn0123/satellite-processor-api:latest
     container_name: sat-tracker-api
-    user: "0:0"
     ports:
       - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://sat:${POSTGRES_PASSWORD}@db/satellite_processor
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
       STORAGE_PATH: /app/data
       API_KEY: ${API_KEY}
       CORS_ORIGINS: '["https://sat.neuhard.dev","http://localhost:3001"]'
@@ -31,6 +38,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
@@ -42,17 +54,21 @@ services:
   worker:
     image: ghcr.io/jtn0123/satellite-processor-api:latest
     container_name: sat-tracker-worker
-    user: "0:0"
-    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-4}
     environment:
       DATABASE_URL: postgresql+asyncpg://sat:${POSTGRES_PASSWORD}@db/satellite_processor
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
       STORAGE_PATH: /app/data
       PYTHONPATH: /app
     volumes:
       - sat-data:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
     depends_on:
       db:
         condition: service_healthy
@@ -69,6 +85,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - sat-pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sat -d satellite_processor"]
       interval: 10s
@@ -79,11 +100,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sat-tracker-redis
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
     volumes:
       - sat-redis:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "REDISCLI_AUTH=${REDIS_PASSWORD} redis-cli ping"]
       interval: 10s
       timeout: 3s
       retries: 5

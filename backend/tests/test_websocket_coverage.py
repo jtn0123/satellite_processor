@@ -105,9 +105,7 @@ class TestWsAuthenticate:
         ws = AsyncMock()
         ws.query_params = {}
         ws.headers = {}
-        ws.receive_json = AsyncMock(
-            return_value={"type": "auth", "api_key": "secret"}
-        )
+        ws.receive_json = AsyncMock(return_value={"type": "auth", "api_key": "secret"})
         with patch.object(main_module.app_settings, "api_key", "secret"):
             result = await main_module._ws_authenticate(ws)
         assert result is True
@@ -120,9 +118,7 @@ class TestWsAuthenticate:
         ws = AsyncMock()
         ws.query_params = {}
         ws.headers = {}
-        ws.receive_json = AsyncMock(
-            return_value={"type": "auth", "api_key": "wrong"}
-        )
+        ws.receive_json = AsyncMock(return_value={"type": "auth", "api_key": "wrong"})
         with patch.object(main_module.app_settings, "api_key", "secret"):
             result = await main_module._ws_authenticate(ws)
         assert result is False
@@ -136,9 +132,7 @@ class TestWsAuthenticate:
         ws.query_params = {"api_key": "wrong"}
         ws.headers = {}
         # No valid first-message auth either — timeout
-        ws.receive_json = AsyncMock(
-            side_effect=TimeoutError()
-        )
+        ws.receive_json = AsyncMock(side_effect=TimeoutError())
         with patch.object(main_module.app_settings, "api_key", "secret"):
             result = await main_module._ws_authenticate(ws)
         assert result is False

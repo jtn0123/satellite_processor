@@ -28,6 +28,7 @@ def test_circuit_resets_on_success():
 
 def test_circuit_half_open_after_timeout():
     import time
+
     cb = CircuitBreaker(name="test", failure_threshold=2, recovery_timeout=0.1)
     cb.record_failure()
     cb.record_failure()

@@ -1,4 +1,5 @@
 """Tests for goes_data.py helper functions and constants."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -14,6 +15,7 @@ from app.routers.goes_data import (
 
 # ── Constants ───────────────────────────────────────────
 
+
 def test_collection_not_found():
     assert _COLLECTION_NOT_FOUND == "Collection not found"
 
@@ -28,11 +30,16 @@ def test_max_export_limit():
 
 # ── _frames_to_csv ──────────────────────────────────────
 
+
 class TestFramesToCsv:
     def test_basic(self):
         frame = SimpleNamespace(
-            id="f1", satellite="G16", sector="CONUS", band="C02",
-            capture_time=datetime(2024, 1, 15, 12, 0, 0), file_size=1024
+            id="f1",
+            satellite="G16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 15, 12, 0, 0),
+            file_size=1024,
         )
         csv = _frames_to_csv([frame])
         lines = csv.strip().split("\n")
@@ -47,17 +54,20 @@ class TestFramesToCsv:
         assert len(lines) == 1  # header only
 
     def test_none_capture_time(self):
-        frame = SimpleNamespace(
-            id="f1", satellite="G16", sector="FD", band="C13",
-            capture_time=None, file_size=None
-        )
+        frame = SimpleNamespace(id="f1", satellite="G16", sector="FD", band="C13", capture_time=None, file_size=None)
         csv = _frames_to_csv([frame])
         assert "f1" in csv
 
     def test_multiple_frames(self):
         frames = [
-            SimpleNamespace(id=f"f{i}", satellite="G16", sector="CONUS", band="C02",
-                            capture_time=datetime(2024, 1, 15, i, 0, 0), file_size=i * 100)
+            SimpleNamespace(
+                id=f"f{i}",
+                satellite="G16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime(2024, 1, 15, i, 0, 0),
+                file_size=i * 100,
+            )
             for i in range(5)
         ]
         csv = _frames_to_csv(frames)
@@ -67,11 +77,16 @@ class TestFramesToCsv:
 
 # ── _frames_to_json_list ────────────────────────────────
 
+
 class TestFramesToJsonList:
     def test_basic(self):
         frame = SimpleNamespace(
-            id="f1", satellite="G16", sector="CONUS", band="C02",
-            capture_time=datetime(2024, 1, 15, 12, 0, 0), file_size=1024
+            id="f1",
+            satellite="G16",
+            sector="CONUS",
+            band="C02",
+            capture_time=datetime(2024, 1, 15, 12, 0, 0),
+            file_size=1024,
         )
         result = _frames_to_json_list([frame])
         assert len(result) == 1
@@ -83,10 +98,7 @@ class TestFramesToJsonList:
         assert _frames_to_json_list([]) == []
 
     def test_none_capture_time(self):
-        frame = SimpleNamespace(
-            id="f1", satellite="G16", sector="FD", band="C13",
-            capture_time=None, file_size=None
-        )
+        frame = SimpleNamespace(id="f1", satellite="G16", sector="FD", band="C13", capture_time=None, file_size=None)
         result = _frames_to_json_list([frame])
         assert result[0]["capture_time"] is None
         assert result[0]["file_size"] is None

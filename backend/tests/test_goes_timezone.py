@@ -1,4 +1,5 @@
 """Tests for timezone-aware datetime handling and error surfacing in GOES fetcher."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -43,7 +44,9 @@ class TestParseScanTime:
 # list_available: timezone coercion
 # ---------------------------------------------------------------------------
 
-MOCK_KEY_TEMPLATE = "ABI-L2-CMIPM/2026/060/{hour:02d}/OR_ABI-L2-CMIPM1-M6C02_G19_s2026060{hour:02d}{minute:02d}00{sec}_{rest}.nc"
+MOCK_KEY_TEMPLATE = (
+    "ABI-L2-CMIPM/2026/060/{hour:02d}/OR_ABI-L2-CMIPM1-M6C02_G19_s2026060{hour:02d}{minute:02d}00{sec}_{rest}.nc"
+)
 
 
 def _make_s3_page(keys: list[str]) -> list[dict]:
@@ -113,7 +116,9 @@ def test_list_available_timezone_handling(start: datetime, end: datetime, descri
 @pytest.mark.usefixtures("_mock_s3")
 def test_list_available_returns_sorted() -> None:
     results = list_available(
-        "GOES-19", "Mesoscale1", "C02",
+        "GOES-19",
+        "Mesoscale1",
+        "C02",
         datetime(2026, 3, 1, 17, 0, 0),
         datetime(2026, 3, 1, 17, 5, 0),
     )
@@ -136,12 +141,16 @@ class TestListHourErrorHandling:
         )
         mock_client.get_paginator.return_value = mock_paginator
 
-        with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=ClientError(
-            {"Error": {"Code": "AccessDenied", "Message": "Access Denied"}}, "ListObjects"
-        )):
+        with patch(
+            "app.services.goes_fetcher._retry_s3_operation",
+            side_effect=ClientError({"Error": {"Code": "AccessDenied", "Message": "Access Denied"}}, "ListObjects"),
+        ):
             results = _list_hour(
-                mock_client, "noaa-goes19", "ABI-L2-CMIPM/2026/060/17/",
-                "Mesoscale1", "C02",
+                mock_client,
+                "noaa-goes19",
+                "ABI-L2-CMIPM/2026/060/17/",
+                "Mesoscale1",
+                "C02",
                 datetime(2026, 3, 1, 17, 0, tzinfo=UTC),
                 datetime(2026, 3, 1, 17, 10, tzinfo=UTC),
             )
@@ -157,8 +166,11 @@ class TestListHourErrorHandling:
         with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=TypeError("bad comparison")):
             with pytest.raises(TypeError, match="bad comparison"):
                 _list_hour(
-                    mock_client, "noaa-goes19", "ABI-L2-CMIPM/2026/060/17/",
-                    "Mesoscale1", "C02",
+                    mock_client,
+                    "noaa-goes19",
+                    "ABI-L2-CMIPM/2026/060/17/",
+                    "Mesoscale1",
+                    "C02",
                     datetime(2026, 3, 1, 17, 0, tzinfo=UTC),
                     datetime(2026, 3, 1, 17, 10, tzinfo=UTC),
                 )
@@ -198,7 +210,9 @@ def test_list_available_non_meso_sectors(sector: str, product: str) -> None:
     # The mock S3 returns mesoscale keys, so we won't get matches for CONUS/FullDisk,
     # but the important thing is it doesn't crash
     results = list_available(
-        "GOES-19", sector, "C02",
+        "GOES-19",
+        sector,
+        "C02",
         datetime(2026, 3, 1, 17, 0, 0),
         datetime(2026, 3, 1, 17, 10, 0),
     )

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { screen } from '@testing-library/react';
+import { renderWithRouter } from './testUtils';
 
 vi.mock('../hooks/usePageTitle', () => ({ usePageTitle: vi.fn() }));
 vi.mock('../hooks/useApi', () => ({
@@ -29,14 +28,7 @@ vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
 import LiveView from '../pages/LiveView';
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>,
-  );
-}
+const renderWithProviders = renderWithRouter;
 
 describe('LiveView page', () => {
   it('renders heading', () => {

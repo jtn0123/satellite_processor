@@ -4,6 +4,7 @@ Revision ID: j60_composites
 Revises: i50_job_name
 Create Date: 2026-02-14
 """
+
 import sqlalchemy as sa
 from alembic import op
 

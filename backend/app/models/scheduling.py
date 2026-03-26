@@ -45,6 +45,7 @@ class FetchPresetResponse(BaseModel):
 
 # --- Fetch Schedule schemas ---
 
+
 class FetchScheduleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     preset_id: str
@@ -75,6 +76,7 @@ class FetchScheduleResponse(BaseModel):
 
 
 # --- Cleanup Rule schemas ---
+
 
 class CleanupRuleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)

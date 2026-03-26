@@ -1,4 +1,5 @@
-import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent } from 'react';
+import type { CSSProperties, RefObject, TouchEvent as ReactTouchEvent, WheelEvent, MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useState, useEffect } from 'react';
 import type { LatestFrame, Product } from '../types';
 import ImageErrorBoundary from '../ImageErrorBoundary';
 import ImagePanelContent from '../ImagePanelContent';
@@ -95,6 +96,72 @@ interface LiveImageAreaProps {
   readonly liveAnnouncement?: string;
 }
 
+interface ImageContentProps {
+  readonly imageUrl: string | null;
+  readonly catalogImageUrl: string | null;
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly isComposite: boolean;
+  readonly satellite: string;
+  readonly sector: string;
+  readonly band: string;
+  readonly products: Product | undefined;
+  readonly activeJobId: string | null;
+  readonly activeJob: { id: string; status: string; progress: number; status_message: string } | null;
+  readonly lastFetchFailed: boolean;
+  readonly fetchNow: () => void;
+  readonly compareMode: boolean;
+  readonly prevImageUrl: string | null;
+  readonly comparePosition: number;
+  readonly setComparePosition: (v: number) => void;
+  readonly frame: LatestFrame | null | undefined;
+  readonly prevFrame: LatestFrame | null | undefined;
+  readonly zoom: LiveImageAreaProps['zoom'];
+  readonly imageRef: RefObject<HTMLImageElement | null>;
+}
+
+function ImageContent(props: ImageContentProps) {
+  const {
+    imageUrl, catalogImageUrl, isLoading, isError, isComposite,
+    satellite, sector, band, products, activeJobId, activeJob,
+    lastFetchFailed, fetchNow, compareMode, prevImageUrl,
+    comparePosition, setComparePosition, frame, prevFrame, zoom, imageRef,
+  } = props;
+  const isHimawari = isHimawariSatellite(satellite);
+  const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
+  if (isCdnUnavailable && isHimawari) {
+    return <HimawariEmptyState satellite={satellite} sector={sector} band={band} activeJobId={activeJobId} fetchNow={fetchNow} />;
+  }
+  if (isCdnUnavailable && isComposite) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
+        <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
+      </div>
+    );
+  }
+  if (isCdnUnavailable) {
+    return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
+  }
+  return (
+    <ImagePanelContent
+      isLoading={isLoading && !catalogImageUrl}
+      isError={isError && !imageUrl}
+      imageUrl={imageUrl}
+      compareMode={compareMode}
+      satellite={satellite}
+      band={band}
+      sector={sector}
+      zoomStyle={zoom.style}
+      prevImageUrl={prevImageUrl}
+      comparePosition={comparePosition}
+      onPositionChange={setComparePosition}
+      frameTime={frame?.capture_time ?? null}
+      prevFrameTime={prevFrame?.capture_time ?? null}
+      imageRef={imageRef}
+    />
+  );
+}
+
 export function LiveImageArea(props: LiveImageAreaProps) {
   const {
     containerRef, imageRef, isMobile, zoom, showZoomHint,
@@ -114,6 +181,44 @@ export function LiveImageArea(props: LiveImageAreaProps) {
     catalogLatest,
   } = props;
 
+  // Himawari staleness: track age from capture_time (no catalogLatest available).
+  // nowMs is initialised lazily (Date.now() only runs once per mount) and then
+  // refreshed every minute via an interval — never called synchronously in render.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const himawariStaleMin =
+    isHimawariSatellite(satellite) && !freshnessInfo && frame?.capture_time && !activeJobId
+      ? Math.floor((nowMs - new Date(frame.capture_time).getTime()) / 60000)
+      : null;
+
+  const containerClass = `relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`;
+
+  function handleContainerTouchStart(e: ReactTouchEvent) {
+    if (!compareMode) { zoom.handlers.onTouchStart(e); }
+    handleTouchStart(e);
+  }
+
+  function handleContainerTouchEnd(e: ReactTouchEvent) {
+    if (!compareMode) { zoom.handlers.onTouchEnd(e); }
+    handleTouchEnd(e, zoom.isZoomed);
+  }
+
+  function handleContainerMouseMove(e: ReactMouseEvent) {
+    if (!compareMode) { zoom.handlers.onMouseMove(e); }
+    if (!isMobile && !overlayVisible) {
+      setOverlayVisible(true);
+      resetOverlayTimer();
+    }
+  }
+
+  function handleContainerKeyDown(e: ReactKeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); }
+  }
+
   return (
     <div
       ref={containerRef}
@@ -121,74 +226,43 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       role="application"
       aria-label="Satellite image viewer — tap to toggle controls, swipe to change band"
       tabIndex={0}
-      className={`relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`}
+      className={containerClass}
       onWheel={compareMode ? undefined : zoom.handlers.onWheel}
-      onTouchStart={(e) => {
-        if (!compareMode) { zoom.handlers.onTouchStart(e); }
-        handleTouchStart(e);
-      }}
+      onTouchStart={handleContainerTouchStart}
       onTouchMove={compareMode ? undefined : zoom.handlers.onTouchMove}
-      onTouchEnd={(e) => {
-        if (!compareMode) { zoom.handlers.onTouchEnd(e); }
-        handleTouchEnd(e, zoom.isZoomed);
-      }}
+      onTouchEnd={handleContainerTouchEnd}
       onMouseDown={compareMode ? undefined : zoom.handlers.onMouseDown}
-      onMouseMove={(e) => {
-        if (!compareMode) { zoom.handlers.onMouseMove(e); }
-        if (isMobile || overlayVisible) { return; }
-        setOverlayVisible(true);
-        resetOverlayTimer();
-      }}
+      onMouseMove={handleContainerMouseMove}
       onMouseUp={compareMode ? undefined : zoom.handlers.onMouseUp}
       onClick={handleImageTap}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleImageTap(); } }}
+      onKeyDown={handleContainerKeyDown}
     >
       {isMobile && <SwipeHint availableBands={products?.bands?.length} isZoomed={zoom.isZoomed} />}
 
       <ImageErrorBoundary key={`${satellite}-${sector}-${band}`}>
-        {(() => {
-          const isHimawari = isHimawariSatellite(satellite);
-          const isCdnUnavailable = !imageUrl && (products?.sectors?.find((s) => s.id === sector)?.cdn_available === false || isHimawari) && !isLoading;
-          if (isCdnUnavailable && isHimawari) {
-            return (
-              <HimawariEmptyState
-                satellite={satellite}
-                sector={sector}
-                band={band}
-                activeJobId={activeJobId}
-                fetchNow={fetchNow}
-              />
-            );
-          }
-          if (isCdnUnavailable && isComposite) {
-            return (
-              <div className="flex flex-col items-center justify-center gap-4 text-center p-8" data-testid="geocolor-meso-message">
-                <p className="text-white/70 text-sm">GEOCOLOR is only available via CDN for CONUS and Full Disk sectors. Select a different band to fetch mesoscale data.</p>
-              </div>
-            );
-          }
-          if (isCdnUnavailable) {
-            return <MesoFetchRequiredMessage onFetchNow={fetchNow} isFetching={!!activeJobId} fetchFailed={lastFetchFailed} errorMessage={activeJob?.status === 'failed' ? activeJob.status_message : null} />;
-          }
-          return (
-            <ImagePanelContent
-              isLoading={isLoading && !catalogImageUrl}
-              isError={isError && !imageUrl}
-              imageUrl={imageUrl}
-              compareMode={compareMode}
-              satellite={satellite}
-              band={band}
-              sector={sector}
-              zoomStyle={zoom.style}
-              prevImageUrl={prevImageUrl}
-              comparePosition={comparePosition}
-              onPositionChange={setComparePosition}
-              frameTime={frame?.capture_time ?? null}
-              prevFrameTime={prevFrame?.capture_time ?? null}
-              imageRef={imageRef}
-            />
-          );
-        })()}
+        <ImageContent
+          imageUrl={imageUrl}
+          catalogImageUrl={catalogImageUrl}
+          isLoading={isLoading}
+          isError={isError}
+          isComposite={isComposite}
+          satellite={satellite}
+          sector={sector}
+          band={band}
+          products={products}
+          activeJobId={activeJobId}
+          activeJob={activeJob}
+          lastFetchFailed={lastFetchFailed}
+          fetchNow={fetchNow}
+          compareMode={compareMode}
+          prevImageUrl={prevImageUrl}
+          comparePosition={comparePosition}
+          setComparePosition={setComparePosition}
+          frame={frame}
+          prevFrame={prevFrame}
+          zoom={zoom}
+          imageRef={imageRef}
+        />
       </ImageErrorBoundary>
 
       {swipeToast && (
@@ -248,6 +322,15 @@ export function LiveImageArea(props: LiveImageAreaProps) {
             activeJobId={activeJobId}
             onFetchNow={fetchNow}
           />
+        </div>
+      )}
+
+      {himawariStaleMin != null && himawariStaleMin > 20 && (
+        <div className="absolute max-sm:top-16 sm:top-28 inset-x-4 z-10">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/15 border border-yellow-500/30 text-yellow-200 text-xs">
+            <span>Last fetched: {himawariStaleMin} min ago — data may be stale</span>
+            <button type="button" onClick={fetchNow} className="ml-auto underline hover:text-yellow-100 transition-colors">Fetch now</button>
+          </div>
         </div>
       )}
 

@@ -78,9 +78,7 @@ async def list_products(response: Response):
     cdn_sectors = {"CONUS", "FullDisk"}
     products = {
         "satellites": list(SATELLITE_REGISTRY),
-        "satellite_availability": {
-            name: cfg.availability for name, cfg in SATELLITE_REGISTRY.items()
-        },
+        "satellite_availability": {name: cfg.availability for name, cfg in SATELLITE_REGISTRY.items()},
         "satellite_details": satellite_details,
         "sectors": [
             {
@@ -276,6 +274,7 @@ async def get_latest_frame(
     if not frame:
         raise APIError(404, "not_found", "No frames found for the given parameters")
     from ..services.catalog import build_cdn_urls
+
     cdn_urls = build_cdn_urls(frame.satellite, frame.sector, frame.band)
     mobile_url = cdn_urls["mobile"] if cdn_urls else f"/api/satellite/frames/{frame.id}/image"
 

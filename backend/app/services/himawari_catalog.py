@@ -6,6 +6,7 @@ files (16 bands × 10 segments).  Functions here deduplicate to unique
 timestamps and expose a catalog interface parallel to the GOES helpers in
 ``catalog.py``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -45,14 +46,8 @@ def _build_himawari_prefix(sector: str, dt: datetime) -> str:
     """
     product = _HIMAWARI_SECTOR_PREFIXES.get(sector)
     if product is None:
-        raise ValueError(
-            f"Unknown Himawari sector: {sector}. "
-            f"Valid: {list(_HIMAWARI_SECTOR_PREFIXES)}"
-        )
-    return (
-        f"{product}/{dt.year:04d}/{dt.month:02d}/{dt.day:02d}/"
-        f"{dt.hour:02d}{dt.minute:02d}/"
-    )
+        raise ValueError(f"Unknown Himawari sector: {sector}. Valid: {list(_HIMAWARI_SECTOR_PREFIXES)}")
+    return f"{product}/{dt.year:04d}/{dt.month:02d}/{dt.day:02d}/{dt.hour:02d}{dt.minute:02d}/"
 
 
 def _build_himawari_date_prefix(sector: str, dt: datetime) -> str:
@@ -103,9 +98,7 @@ def _parse_himawari_scan_time(key: str) -> datetime | None:
     if parsed is None:
         return None
     try:
-        return datetime.strptime(
-            f"{parsed['date']}{parsed['time']}", "%Y%m%d%H%M"
-        ).replace(tzinfo=UTC)
+        return datetime.strptime(f"{parsed['date']}{parsed['time']}", "%Y%m%d%H%M").replace(tzinfo=UTC)
     except ValueError:
         return None
 

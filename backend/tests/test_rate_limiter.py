@@ -47,6 +47,7 @@ class TestLimiterRedisConfig:
             from importlib import reload
 
             import app.rate_limit as rl
+
             original_limiter = rl.limiter
             try:
                 with patch.dict(os.environ, {"REDIS_URL": ""}, clear=False):
@@ -61,6 +62,7 @@ class TestLimiterRedisConfig:
             from importlib import reload
 
             import app.rate_limit as rl
+
             original_limiter = rl.limiter
             try:
                 reload(rl)
@@ -75,4 +77,5 @@ class TestKeyGeneration:
     def test_get_remote_address_import(self):
         """get_remote_address should be importable from slowapi."""
         from slowapi.util import get_remote_address
+
         assert callable(get_remote_address)

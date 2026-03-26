@@ -1,4 +1,5 @@
 """SQLAlchemy model for dead-letter tracking of failed Celery tasks."""
+
 from __future__ import annotations
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
@@ -9,6 +10,7 @@ from ..utils import utcnow
 
 def _gen_uuid() -> str:
     import uuid
+
     return str(uuid.uuid4())
 
 

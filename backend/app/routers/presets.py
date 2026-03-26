@@ -32,14 +32,9 @@ async def list_presets(
 ):
     """List presets with pagination (#160)."""
     logger.debug("Listing presets: limit=%d, offset=%d", limit, offset)
-    result = await db.execute(
-        select(Preset).order_by(Preset.name).offset(offset).limit(limit)
-    )
+    result = await db.execute(select(Preset).order_by(Preset.name).offset(offset).limit(limit))
     presets = result.scalars().all()
-    return [
-        {"id": p.id, "name": p.name, "params": p.params, "created_at": str(p.created_at)}
-        for p in presets
-    ]
+    return [{"id": p.id, "name": p.name, "params": p.params, "created_at": str(p.created_at)} for p in presets]
 
 
 @router.post("")

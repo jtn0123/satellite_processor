@@ -14,8 +14,8 @@ Does NOT handle:
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class PresetManager:
         """Load presets from JSON file"""
         try:
             if self._presets_file.exists():
-                with open(self._presets_file, "r", encoding="utf-8") as f:
+                with open(self._presets_file, encoding="utf-8") as f:
                     return json.load(f)
             return {}
         except Exception as e:
@@ -96,7 +96,7 @@ class PresetManager:
     def import_presets(self, file_path: Path) -> bool:
         """Import presets from file"""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 presets = json.load(f)
             for name, data in presets.items():
                 self.save_preset(name, data["params"])

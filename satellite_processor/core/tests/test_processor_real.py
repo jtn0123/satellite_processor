@@ -1,7 +1,7 @@
 """Real tests for processor.py — uses real objects, mocks only external processes."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -18,9 +18,11 @@ from satellite_processor.core.processor import (
 def processor(tmp_path, monkeypatch):
     """Create a real processor with temp dirs."""
     monkeypatch.setenv("SETTINGS_DIR", str(tmp_path / "settings"))
-    with patch("satellite_processor.core.video_handler.find_ffmpeg", return_value=Path("ffmpeg")), \
-         patch.object(SatelliteImageProcessor, "_setup_resource_monitoring"), \
-         patch("satellite_processor.core.processor.ResourceMonitor"):
+    with (
+        patch("satellite_processor.core.video_handler.find_ffmpeg", return_value=Path("ffmpeg")),
+        patch.object(SatelliteImageProcessor, "_setup_resource_monitoring"),
+        patch("satellite_processor.core.processor.ResourceMonitor"),
+    ):
         proc = SatelliteImageProcessor(options={})
         proc._resource_timer_running = False
         proc.input_dir = str(tmp_path / "input")
@@ -220,8 +222,9 @@ class TestCreateProgressBar:
 
 class TestUpdateTimestamp:
     def test_updates(self, processor):
-        old = processor.timestamp
+        _old = processor.timestamp
         import time
+
         time.sleep(0.01)
         processor.update_timestamp()
         # May or may not differ in same second, just verify it runs
@@ -234,21 +237,6 @@ class TestResourceUsage:
         processor.update_resource_usage()
         assert len(data) == 1
         assert "cpu" in data[0]
-
-
-class TestSomeOtherMethod:
-    def test_runs(self, processor):
-        msgs = []
-        processor.on_status_update = lambda m: msgs.append(m)
-        processor.on_progress = lambda *a: None
-        processor.on_finished = lambda: None
-        processor.some_other_method()
-        assert len(msgs) >= 2
-
-
-class TestRunProcessing:
-    def test_with_none_window(self, processor):
-        processor.run_processing()  # Should not raise
 
 
 class TestParallelCrop:

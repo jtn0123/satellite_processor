@@ -1,4 +1,5 @@
 """Celery tasks for GOES composite generation and multi-band fetching."""
+
 from __future__ import annotations
 
 import logging
@@ -42,10 +43,7 @@ def _load_band_images(
                 GoesFrame.band == band_name,
             )
             .order_by(
-                sa_func.abs(
-                    sa_func.extract("epoch", GoesFrame.capture_time)
-                    - sa_func.extract("epoch", capture_time)
-                )
+                sa_func.abs(sa_func.extract("epoch", GoesFrame.capture_time) - sa_func.extract("epoch", capture_time))
             )
             .limit(1)
         )
@@ -111,9 +109,13 @@ def _mark_composite_failed(composite_id: str, error: str) -> None:
 
 
 @celery_app.task(
-    bind=True, name="generate_composite",
+    bind=True,
+    name="generate_composite",
     autoretry_for=(ConnectionError, TimeoutError, ClientError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def generate_composite(self, composite_id: str, job_id: str, params: dict):
     """Generate a band composite image from multiple GOES bands."""
@@ -134,7 +136,11 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
         session = _get_sync_db()
         try:
             band_images = _load_band_images(
-                session, params["bands"], params["satellite"], params["sector"], capture_time,
+                session,
+                params["bands"],
+                params["satellite"],
+                params["sector"],
+                capture_time,
             )
             if not any(b is not None for b in band_images):
                 raise ValueError("No band images found for composite")
@@ -156,8 +162,11 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
             session.close()
 
         _update_job_db(
-            job_id, status="completed", progress=100,
-            completed_at=utcnow(), status_message="Composite generated",
+            job_id,
+            status="completed",
+            progress=100,
+            completed_at=utcnow(),
+            status_message="Composite generated",
         )
         _publish_progress(job_id, 100, "Composite generated", "completed")
 
@@ -170,9 +179,13 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
 
 
 @celery_app.task(
-    bind=True, name="fetch_composite_data",
+    bind=True,
+    name="fetch_composite_data",
     autoretry_for=(ConnectionError, TimeoutError, ClientError),
-    max_retries=3, retry_backoff=True, retry_backoff_max=300, retry_jitter=True,
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 def fetch_composite_data(self, job_id: str, params: dict):
     """Fetch multiple bands sequentially, then auto-queue composite generation."""
@@ -259,17 +272,24 @@ def fetch_composite_data(self, job_id: str, params: dict):
                 session.close()
 
             for composite_id, comp_job_id, capture_time in composite_tasks:
-                generate_composite.delay(composite_id, comp_job_id, {
-                    "recipe": recipe,
-                    "satellite": satellite,
-                    "sector": sector,
-                    "capture_time": capture_time,
-                    "bands": bands,
-                })
+                generate_composite.delay(
+                    composite_id,
+                    comp_job_id,
+                    {
+                        "recipe": recipe,
+                        "satellite": satellite,
+                        "sector": sector,
+                        "capture_time": capture_time,
+                        "bands": bands,
+                    },
+                )
 
         _update_job_db(
-            job_id, status="completed", progress=100,
-            completed_at=utcnow(), status_message="Composite fetch completed",
+            job_id,
+            status="completed",
+            progress=100,
+            completed_at=utcnow(),
+            status_message="Composite fetch completed",
         )
         _publish_progress(job_id, 100, "Composite fetch completed", "completed")
 

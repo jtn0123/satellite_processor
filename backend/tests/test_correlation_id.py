@@ -108,12 +108,14 @@ class TestRequestIdFilter:
     def test_filter_returns_true(self):
         f = RequestIdFilter()
         import logging
+
         record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
         assert f.filter(record) is True
 
     def test_filter_sets_request_id(self):
         f = RequestIdFilter()
         import logging
+
         record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
         token = request_id_ctx.set("test-rid")
         try:
@@ -125,6 +127,7 @@ class TestRequestIdFilter:
     def test_filter_empty_when_no_context(self):
         f = RequestIdFilter()
         import logging
+
         record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
         f.filter(record)
         assert record.request_id == ""  # type: ignore[attr-defined]

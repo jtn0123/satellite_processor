@@ -33,6 +33,7 @@ class TestCancelJob:
 
         # Verify DB state
         from sqlalchemy import select
+
         result = await db.execute(select(Job).where(Job.id == jid))
         job = result.scalars().first()
         assert job.status == "cancelled"
@@ -100,6 +101,7 @@ class TestDeleteWithFiles:
 
         # Verify gone from DB
         from sqlalchemy import select
+
         result = await db.execute(select(Job).where(Job.id == jid))
         assert result.scalars().first() is None
 
@@ -122,22 +124,31 @@ class TestDeleteWithFiles:
         await db.commit()
 
         fid = _uuid()
-        db.add(GoesFrame(
-            id=fid, satellite="GOES-16", sector="CONUS", band="C02",
-            capture_time=datetime(2024, 1, 1, tzinfo=UTC),
-            file_path="/tmp/nonexistent.nc", file_size=100,
-            source_job_id=jid,
-        ))
+        db.add(
+            GoesFrame(
+                id=fid,
+                satellite="GOES-16",
+                sector="CONUS",
+                band="C02",
+                capture_time=datetime(2024, 1, 1, tzinfo=UTC),
+                file_path="/tmp/nonexistent.nc",
+                file_size=100,
+                source_job_id=jid,
+            )
+        )
         await db.commit()
 
         # delete_files=true triggers file cleanup
-        with patch("app.routers.jobs.os.path.isdir", return_value=False), \
-             patch("app.routers.jobs.os.path.isfile", return_value=False):
+        with (
+            patch("app.routers.jobs.os.path.isdir", return_value=False),
+            patch("app.routers.jobs.os.path.isfile", return_value=False),
+        ):
             resp = await client.delete(f"/api/jobs/{jid}?delete_files=true")
         assert resp.status_code == 200
 
         # GoesFrame should be deleted
         from sqlalchemy import select
+
         result = await db.execute(select(GoesFrame).where(GoesFrame.id == fid))
         assert result.scalars().first() is None
 
@@ -175,7 +186,8 @@ class TestBulkDelete:
 
         with patch("app.routers.jobs._delete_job_files", return_value=2048):
             resp = await client.request(
-                "DELETE", "/api/jobs/bulk",
+                "DELETE",
+                "/api/jobs/bulk",
                 json={"job_ids": [jid], "delete_files": True},
             )
         assert resp.status_code == 200
@@ -183,7 +195,8 @@ class TestBulkDelete:
 
     async def test_bulk_delete_nonexistent_ids(self, client):
         resp = await client.request(
-            "DELETE", "/api/jobs/bulk",
+            "DELETE",
+            "/api/jobs/bulk",
             json={"job_ids": [_uuid(), _uuid()]},
         )
         assert resp.status_code == 200
@@ -196,7 +209,9 @@ class TestBulkDelete:
 
         with patch("app.routers.jobs.celery_app") as mock_celery:
             resp = await client.request(
-                "DELETE", "/api/jobs/bulk", json={"job_ids": [jid]},
+                "DELETE",
+                "/api/jobs/bulk",
+                json={"job_ids": [jid]},
             )
         assert resp.status_code == 200
         mock_celery.control.revoke.assert_called_once()
@@ -211,16 +226,21 @@ class TestStaleJobDetection:
         """Job processing >30 min → marked as failed."""
         jid = _uuid()
         old_time = utcnow() - timedelta(minutes=45)
-        db.add(Job(
-            id=jid, status="processing",
-            started_at=old_time, updated_at=old_time,
-        ))
+        db.add(
+            Job(
+                id=jid,
+                status="processing",
+                started_at=old_time,
+                updated_at=old_time,
+            )
+        )
         await db.commit()
 
         count = await mark_stale_jobs(db)
         assert count == 1
 
         from sqlalchemy import select
+
         result = await db.execute(select(Job).where(Job.id == jid))
         job = result.scalars().first()
         assert job.status == "failed"
@@ -230,16 +250,21 @@ class TestStaleJobDetection:
         """Job processing <30 min → left alone."""
         jid = _uuid()
         recent = utcnow() - timedelta(minutes=10)
-        db.add(Job(
-            id=jid, status="processing",
-            started_at=recent, updated_at=recent,
-        ))
+        db.add(
+            Job(
+                id=jid,
+                status="processing",
+                started_at=recent,
+                updated_at=recent,
+            )
+        )
         await db.commit()
 
         count = await mark_stale_jobs(db)
         assert count == 0
 
         from sqlalchemy import select
+
         result = await db.execute(select(Job).where(Job.id == jid))
         job = result.scalars().first()
         assert job.status == "processing"
@@ -248,10 +273,14 @@ class TestStaleJobDetection:
         """Job already completed → not affected."""
         jid = _uuid()
         old_time = utcnow() - timedelta(hours=2)
-        db.add(Job(
-            id=jid, status="completed",
-            started_at=old_time, updated_at=old_time,
-        ))
+        db.add(
+            Job(
+                id=jid,
+                status="completed",
+                started_at=old_time,
+                updated_at=old_time,
+            )
+        )
         await db.commit()
 
         count = await mark_stale_jobs(db)

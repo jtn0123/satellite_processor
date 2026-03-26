@@ -31,7 +31,7 @@ async def share_setup(db):
     await db.flush()
 
     link = ShareLink(
-        token="valid-token",
+        token="valid-token",  # noqa: S106
         frame_id="test-frame-1",
         expires_at=utcnow() + timedelta(hours=72),
     )
@@ -50,11 +50,7 @@ async def test_shared_image_valid_path(client, share_setup, tmp_path):
         mock_settings.storage_path = str(tmp_path)
         # Update the frame's file_path to point to our temp file
         async with TestSessionLocal() as db:
-            await db.execute(
-                update(GoesFrame)
-                .where(GoesFrame.id == "test-frame-1")
-                .values(file_path=str(img))
-            )
+            await db.execute(update(GoesFrame).where(GoesFrame.id == "test-frame-1").values(file_path=str(img)))
             await db.commit()
 
         resp = await client.get("/api/shared/valid-token/image")
@@ -65,11 +61,7 @@ async def test_shared_image_valid_path(client, share_setup, tmp_path):
 async def test_shared_image_path_traversal_returns_404(client, share_setup):
     """Path traversal attempt returns 404."""
     async with TestSessionLocal() as db:
-        await db.execute(
-            update(GoesFrame)
-            .where(GoesFrame.id == "test-frame-1")
-            .values(file_path="/etc/passwd")
-        )
+        await db.execute(update(GoesFrame).where(GoesFrame.id == "test-frame-1").values(file_path="/etc/passwd"))
         await db.commit()
 
     with patch("app.routers.share.settings") as mock_settings:
@@ -81,13 +73,15 @@ async def test_shared_image_path_traversal_returns_404(client, share_setup):
 @pytest.mark.asyncio
 async def test_api_key_fatal_in_production(caplog):
     """Startup raises SystemExit when API key is not set in production mode."""
-    with patch("app.main.app_settings") as mock_settings, \
-         patch("app.main.init_db", new_callable=AsyncMock), \
-         patch("app.main.close_redis_pool", new_callable=AsyncMock), \
-         patch("app.main.setup_logging"), \
-         patch("app.main._stale_job_checker", new_callable=AsyncMock), \
-         patch("app.db.database.async_session", new_callable=AsyncMock), \
-         patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock):
+    with (
+        patch("app.main.app_settings") as mock_settings,
+        patch("app.main.init_db", new_callable=AsyncMock),
+        patch("app.main.close_redis_pool", new_callable=AsyncMock),
+        patch("app.main.setup_logging"),
+        patch("app.main._stale_job_checker", new_callable=AsyncMock),
+        patch("app.db.database.async_session", new_callable=AsyncMock),
+        patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock),
+    ):
         mock_settings.api_key = ""
         mock_settings.debug = False
 
@@ -102,14 +96,16 @@ async def test_api_key_fatal_in_production(caplog):
 @pytest.mark.asyncio
 async def test_api_key_warning_in_debug_mode(caplog):
     """Startup logs warning (not fatal) when API key is not set in debug mode."""
-    with patch("app.main.app_settings") as mock_settings, \
-         patch("app.main.init_db", new_callable=AsyncMock), \
-         patch("app.main.close_redis_pool", new_callable=AsyncMock), \
-         patch("app.main.setup_logging"), \
-         patch("app.main._stale_job_checker", new_callable=AsyncMock), \
-         patch("app.main.asyncio.create_task") as mock_task, \
-         patch("app.db.database.async_session", new_callable=AsyncMock), \
-         patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock):
+    with (
+        patch("app.main.app_settings") as mock_settings,
+        patch("app.main.init_db", new_callable=AsyncMock),
+        patch("app.main.close_redis_pool", new_callable=AsyncMock),
+        patch("app.main.setup_logging"),
+        patch("app.main._stale_job_checker", new_callable=AsyncMock),
+        patch("app.main.asyncio.create_task") as mock_task,
+        patch("app.db.database.async_session", new_callable=AsyncMock),
+        patch("app.services.stale_jobs.cleanup_all_stale", new_callable=AsyncMock),
+    ):
         mock_settings.api_key = ""
         mock_settings.debug = True
         mock_settings.storage_path = "/tmp"
@@ -123,7 +119,6 @@ async def test_api_key_warning_in_debug_mode(caplog):
             async with lifespan(mock_app):
                 pass
 
-        assert any(
-            "API key is not set" in record.message
-            for record in caplog.records
-        ), f"Expected API key warning, got: {[r.message for r in caplog.records]}"
+        assert any("API key is not set" in record.message for record in caplog.records), (
+            f"Expected API key warning, got: {[r.message for r in caplog.records]}"
+        )

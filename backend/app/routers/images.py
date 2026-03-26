@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..db.models import Image
-from ..errors import APIError, validate_uuid
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
@@ -34,6 +34,7 @@ router = APIRouter(prefix="/api/images", tags=["images"])
 def _validate_file_path(file_path: str) -> Path:
     """#23: Validate that a file path is within the configured storage directory."""
     from ..config import settings as app_settings
+
     storage_root = Path(app_settings.storage_path).resolve()
     resolved = Path(file_path).resolve()
     if not str(resolved).startswith(str(storage_root)):
@@ -59,13 +60,11 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
     safe_basename = os.path.basename(file.filename)
     if len(safe_basename) > 200:
         name, ext = os.path.splitext(safe_basename)
-        safe_basename = name[:200 - len(ext)] + ext
+        safe_basename = name[: 200 - len(ext)] + ext
     ext = os.path.splitext(safe_basename)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
-        raise APIError(
-            400, "invalid_file_type",
-            f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
+        raise APIError(400, "invalid_file_type", f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
 
     file_id = str(uuid.uuid4())
     dest_name = f"{file_id}_{safe_basename}"
@@ -130,9 +129,7 @@ async def list_images(
     total = count_result.scalar_one()
 
     offset = (page - 1) * limit
-    result = await db.execute(
-        select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit)
-    )
+    result = await db.execute(select(Image).order_by(Image.uploaded_at.desc()).offset(offset).limit(limit))
     images = result.scalars().all()
 
     return PaginatedResponse[ImageResponse](
@@ -187,11 +184,13 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     logger.debug("Thumbnail requested: image_id=%s", image_id)
     validate_uuid(image_id, "image_id")
     from ..config import settings as app_settings
+
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
-    fp = _validate_file_path(image.file_path)
+    fp = validate_safe_path(image.file_path, app_settings.storage_path)
+
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     cache_dir = Path(app_settings.storage_path) / "thumbnails"
@@ -199,8 +198,8 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     cache_path = cache_dir / f"{image_id}.jpg"
     if cache_path.exists():
         return FileResponse(
-            str(cache_path), media_type="image/jpeg",
-            headers={"Cache-Control": "public, max-age=86400"})
+            str(cache_path), media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"}
+        )
     # #204: Run PIL thumbnail generation in a thread to avoid blocking the event loop
     import asyncio
 
@@ -212,8 +211,8 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
     try:
         await asyncio.to_thread(_generate_thumbnail)
         return FileResponse(
-            str(cache_path), media_type="image/jpeg",
-            headers={"Cache-Control": "public, max-age=86400"})
+            str(cache_path), media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"}
+        )
     except (OSError, ValueError):
         raise APIError(500, "thumbnail_error", "Could not generate thumbnail")
 
@@ -227,7 +226,10 @@ async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
     image = result.scalar_one_or_none()
     if not image:
         raise APIError(404, "not_found", _IMAGE_NOT_FOUND)
-    fp = _validate_file_path(image.file_path)
+    from ..config import settings as app_settings_full
+
+    fp = validate_safe_path(image.file_path, app_settings_full.storage_path)
+
     if not fp.exists():
         raise APIError(404, "not_found", "File not found on disk")
     return FileResponse(str(fp), filename=image.original_name)

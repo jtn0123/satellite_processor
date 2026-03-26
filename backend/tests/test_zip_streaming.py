@@ -1,4 +1,5 @@
 """Tests for streaming ZIP generation (#185 fix)."""
+
 from __future__ import annotations
 
 import io

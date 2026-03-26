@@ -1,4 +1,5 @@
 """Tests for storage service path traversal protection."""
+
 import os
 import tempfile
 

@@ -198,6 +198,7 @@ class TestCreateLinkData:
 
 try:
     import pytestqt  # noqa: F401
+
     _has_qt = True
 except ImportError:
     _has_qt = False

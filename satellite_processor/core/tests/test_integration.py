@@ -52,9 +52,7 @@ class TestImageProcessingPipeline:
         frame1 = np.zeros((480, 640, 3), dtype=np.uint8)
         frame2 = np.full((480, 640, 3), 200, dtype=np.uint8)
 
-        frames = ImageOperations.interpolate_frames(
-            frame1, frame2, factor=3, method="Linear"
-        )
+        frames = ImageOperations.interpolate_frames(frame1, frame2, factor=3, method="Linear")
 
         # factor=3 produces 2 intermediate frames (alpha=1/3, 2/3)
         assert len(frames) == 2
@@ -184,10 +182,13 @@ class TestVideoHandlerCommandGeneration:
         (-c:v, -b:v, -pix_fmt yuv420p)."""
         self._create_frame_files(tmp_path)
 
-        with patch(
-            "subprocess.run",
-            return_value=MagicMock(returncode=0),
-        ), patch("psutil.Process"):
+        with (
+            patch(
+                "subprocess.run",
+                return_value=MagicMock(returncode=0),
+            ),
+            patch("psutil.Process"),
+        ):
             handler = VideoHandler()
             handler.testing = True
 
@@ -200,9 +201,7 @@ class TestVideoHandlerCommandGeneration:
         }
         output_path = tmp_path / "output.mp4"
 
-        cmd, _ = handler.build_ffmpeg_command(
-            str(tmp_path), str(output_path), options
-        )
+        cmd, _ = handler.build_ffmpeg_command(str(tmp_path), str(output_path), options)
         cmd_str = " ".join(str(c) for c in cmd)
 
         assert "-c:v" in cmd_str
@@ -216,10 +215,13 @@ class TestVideoHandlerCommandGeneration:
         flag in the generated command."""
         self._create_frame_files(tmp_path)
 
-        with patch(
-            "subprocess.run",
-            return_value=MagicMock(returncode=0),
-        ), patch("psutil.Process"):
+        with (
+            patch(
+                "subprocess.run",
+                return_value=MagicMock(returncode=0),
+            ),
+            patch("psutil.Process"),
+        ):
             handler = VideoHandler()
             handler.testing = True
 
@@ -237,9 +239,7 @@ class TestVideoHandlerCommandGeneration:
         }
         output_path = tmp_path / "output.mp4"
 
-        cmd, _ = handler.build_ffmpeg_command(
-            str(tmp_path), str(output_path), options
-        )
+        cmd, _ = handler.build_ffmpeg_command(str(tmp_path), str(output_path), options)
         cmd_str = " ".join(str(c) for c in cmd)
 
         assert "-metadata" in cmd_str

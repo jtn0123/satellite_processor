@@ -13,9 +13,9 @@ Does NOT handle:
 - GUI operations
 """
 
-from datetime import datetime
-import re
 import logging
+import re
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,5 @@
 """Celery tasks for scheduled fetches and auto-cleanup."""
+
 from __future__ import annotations
 
 import logging
@@ -52,12 +53,15 @@ def _launch_schedule_job(session, schedule, preset, now):
     if sat_config and sat_config.format == "hsd":
         if preset.band == "TrueColor":
             from .himawari_fetch_task import fetch_himawari_true_color
+
             fetch_himawari_true_color.delay(job_id, job.params)
         else:
             from .himawari_fetch_task import fetch_himawari_data
+
             fetch_himawari_data.delay(job_id, job.params)
     else:
         from .fetch_task import fetch_goes_data
+
         fetch_goes_data.delay(job_id, job.params)
 
 

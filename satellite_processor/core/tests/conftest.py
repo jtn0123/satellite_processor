@@ -21,9 +21,11 @@ def mock_interpolator():
 
 @pytest.fixture
 def mock_filesystem():
-    with patch("pathlib.Path.exists", return_value=True), patch(
-        "pathlib.Path.is_dir", return_value=True
-    ), patch("pathlib.Path.mkdir"):
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_dir", return_value=True),
+        patch("pathlib.Path.mkdir"),
+    ):
         yield
 
 

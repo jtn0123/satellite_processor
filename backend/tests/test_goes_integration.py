@@ -42,6 +42,7 @@ BANDS = ["C02", "C07", "C13"]
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _time_range_for_satellite(sat: str) -> tuple[datetime, datetime]:
     if sat == "GOES-16":
         return GOES16_START, GOES16_END
@@ -51,6 +52,7 @@ def _time_range_for_satellite(sat: str) -> tuple[datetime, datetime]:
 # ---------------------------------------------------------------------------
 # 1. S3 bucket accessibility
 # ---------------------------------------------------------------------------
+
 
 class TestS3Accessibility:
     """Verify each NOAA bucket is reachable."""
@@ -68,6 +70,7 @@ class TestS3Accessibility:
 # 2. list_available — all satellite × sector × band combos
 # ---------------------------------------------------------------------------
 
+
 class TestListAvailable:
     """Verify list_available returns real data for every combo."""
 
@@ -79,8 +82,7 @@ class TestListAvailable:
         start, end = _time_range_for_satellite(satellite)
         results = list_available(satellite, sector, band, start, end)
         assert len(results) > 0, (
-            f"No frames for {satellite}/{sector}/{band} "
-            f"between {start.isoformat()} and {end.isoformat()}"
+            f"No frames for {satellite}/{sector}/{band} between {start.isoformat()} and {end.isoformat()}"
         )
         # Verify structure
         first = results[0]
@@ -93,6 +95,7 @@ class TestListAvailable:
 # ---------------------------------------------------------------------------
 # 3. Actual frame download (one per satellite, minimal)
 # ---------------------------------------------------------------------------
+
 
 class TestFetchFrames:
     """Download one real frame per satellite, verify file, clean up."""

@@ -1,4 +1,5 @@
 """Extended tests for GOES data management endpoints."""
+
 from __future__ import annotations
 
 import uuid
@@ -47,9 +48,7 @@ class TestFrameFiltering:
         db.add(_frame(capture_time=datetime(2024, 12, 1, tzinfo=UTC)))
         await db.commit()
 
-        resp = await client.get(
-            "/api/satellite/frames?start_date=2024-06-01T00:00:00&end_date=2024-06-30T00:00:00"
-        )
+        resp = await client.get("/api/satellite/frames?start_date=2024-06-01T00:00:00&end_date=2024-06-30T00:00:00")
         assert resp.json()["total"] == 1
 
     async def test_filter_by_collection(self, client, db):
@@ -184,10 +183,13 @@ class TestBulkDeleteFrames:
 @pytest.mark.asyncio
 class TestBulkTagFrames:
     async def test_bulk_tag_empty_lists_rejected(self, client):
-        resp = await client.post("/api/satellite/frames/tag", json={
-            "frame_ids": [],
-            "tag_ids": [],
-        })
+        resp = await client.post(
+            "/api/satellite/frames/tag",
+            json={
+                "frame_ids": [],
+                "tag_ids": [],
+            },
+        )
         assert resp.status_code == 422  # min_length=1 validation
 
     async def test_bulk_tag_duplicate_ignored(self, client, db):
@@ -198,10 +200,13 @@ class TestBulkTagFrames:
         db.add(FrameTag(frame_id=f.id, tag_id="t1"))
         await db.commit()
 
-        resp = await client.post("/api/satellite/frames/tag", json={
-            "frame_ids": [f.id],
-            "tag_ids": ["t1"],
-        })
+        resp = await client.post(
+            "/api/satellite/frames/tag",
+            json={
+                "frame_ids": [f.id],
+                "tag_ids": ["t1"],
+            },
+        )
         assert resp.status_code == 200
 
     async def test_bulk_tag_multiple_frames_and_tags(self, client, db):
@@ -213,10 +218,13 @@ class TestBulkTagFrames:
         db.add(Tag(id="t2", name="b", color="#fff"))
         await db.commit()
 
-        resp = await client.post("/api/satellite/frames/tag", json={
-            "frame_ids": [f1.id, f2.id],
-            "tag_ids": ["t1", "t2"],
-        })
+        resp = await client.post(
+            "/api/satellite/frames/tag",
+            json={
+                "frame_ids": [f1.id, f2.id],
+                "tag_ids": ["t1", "t2"],
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["tagged"] == 2
 
@@ -243,9 +251,7 @@ class TestCollectionsExtended:
         db.add(CollectionFrame(collection_id="c1", frame_id=f.id))
         await db.commit()
 
-        resp = await client.post("/api/satellite/collections/c1/frames", json={
-            "frame_ids": [f.id]
-        })
+        resp = await client.post("/api/satellite/collections/c1/frames", json={"frame_ids": [f.id]})
         assert resp.status_code == 200
         assert resp.json()["added"] == 0
 
@@ -257,10 +263,7 @@ class TestCollectionsExtended:
         db.add(CollectionFrame(collection_id="c1", frame_id=f.id))
         await db.commit()
 
-        resp = await client.request(
-            "DELETE", "/api/satellite/collections/c1/frames",
-            json={"frame_ids": [f.id]}
-        )
+        resp = await client.request("DELETE", "/api/satellite/collections/c1/frames", json={"frame_ids": [f.id]})
         assert resp.status_code == 200
 
     async def test_collection_frame_count(self, client, db):
@@ -355,12 +358,16 @@ class TestFrameStats:
 class TestProcessFrames:
     async def test_process_no_frames_found(self, client):
         from unittest.mock import patch
+
         with patch("app.tasks.processing.process_images_task") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/frames/process", json={
-                "frame_ids": ["nonexistent"],
-                "params": {},
-            })
+            resp = await client.post(
+                "/api/satellite/frames/process",
+                json={
+                    "frame_ids": ["nonexistent"],
+                    "params": {},
+                },
+            )
         assert resp.status_code == 404
 
     async def test_process_frames_success(self, client, db):
@@ -369,12 +376,16 @@ class TestProcessFrames:
         await db.commit()
 
         from unittest.mock import patch
+
         with patch("app.tasks.processing.process_images_task") as mock:
             mock.delay = lambda *a: None
-            resp = await client.post("/api/satellite/frames/process", json={
-                "frame_ids": [f.id],
-                "params": {"brightness": 1.2},
-            })
+            resp = await client.post(
+                "/api/satellite/frames/process",
+                json={
+                    "frame_ids": [f.id],
+                    "params": {"brightness": 1.2},
+                },
+            )
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending"
         assert resp.json()["frame_count"] == 1

@@ -62,9 +62,11 @@ def mock_interpolator(monkeypatch):
 # Add this fixture to mock filesystem checks
 @pytest.fixture
 def mock_filesystem():
-    with patch("pathlib.Path.exists", return_value=True), patch(
-        "pathlib.Path.is_dir", return_value=True
-    ), patch("pathlib.Path.mkdir"):
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_dir", return_value=True),
+        patch("pathlib.Path.mkdir"),
+    ):
         yield
 
 
@@ -120,14 +122,12 @@ def assert_path_is_file(path: Path) -> None:
     assert path.is_file(), f"Path is not a file: {path}"
 
 
-def assert_directory_contains_files(
-    directory: Path, pattern: str, min_count: int = 1
-) -> None:
+def assert_directory_contains_files(directory: Path, pattern: str, min_count: int = 1) -> None:
     """Assert that a directory contains files matching a pattern."""
     files = list(directory.glob(pattern))
-    assert (
-        len(files) >= min_count
-    ), f"Directory {directory} should contain at least {min_count} files matching {pattern}, found {len(files)}"
+    assert len(files) >= min_count, (
+        f"Directory {directory} should contain at least {min_count} files matching {pattern}, found {len(files)}"
+    )
 
 
 def create_test_video_options(testing: bool = True, **kwargs) -> dict:

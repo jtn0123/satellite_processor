@@ -1,4 +1,5 @@
 """Tests for the satellite registry — central config for all satellites."""
+
 from __future__ import annotations
 
 import pytest
@@ -46,11 +47,14 @@ class TestRegistryContents:
 class TestGOESConfig:
     """GOES satellites have correct configuration."""
 
-    @pytest.mark.parametrize("name,bucket", [
-        ("GOES-16", "noaa-goes16"),
-        ("GOES-18", "noaa-goes18"),
-        ("GOES-19", "noaa-goes19"),
-    ])
+    @pytest.mark.parametrize(
+        "name,bucket",
+        [
+            ("GOES-16", "noaa-goes16"),
+            ("GOES-18", "noaa-goes18"),
+            ("GOES-19", "noaa-goes19"),
+        ],
+    )
     def test_goes_buckets(self, name, bucket):
         cfg = get_satellite(name)
         assert cfg.bucket == bucket

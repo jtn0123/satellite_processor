@@ -70,6 +70,7 @@ class ProcessFramesRequest(BaseModel):
 
 # --- Collection schemas ---
 
+
 class CollectionBrief(BaseModel):
     """Minimal collection info embedded in frame responses."""
 
@@ -113,6 +114,7 @@ class CollectionFramesRequest(BaseModel):
 
 
 # --- Tag schemas ---
+
 
 class TagCreate(BaseModel):
     """Request schema for creating a tag with name and color."""

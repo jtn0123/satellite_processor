@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -68,8 +68,9 @@ class GoesToSatelliteRewriteMiddleware:
             path: str = scope.get("path", "")
             if path.startswith("/api/goes/") or path == "/api/goes":
                 scope = dict(scope)
-                scope["path"] = "/api/satellite" + path[len("/api/goes"):]
+                scope["path"] = "/api/satellite" + path[len("/api/goes") :]
         await self.app(scope, receive, send)
+
 
 # Paths that skip API key auth
 AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
@@ -109,8 +110,7 @@ async def lifespan(app: FastAPI):
                 "(DEBUG=false). Set API_KEY or enable DEBUG mode for development."
             )
         logger.warning(
-            "API key is not set — authentication is disabled. "
-            "Set API_KEY environment variable for production."
+            "API key is not set — authentication is disabled. Set API_KEY environment variable for production."
         )
 
     # Check for stale jobs on startup
@@ -142,14 +142,16 @@ async def lifespan(app: FastAPI):
                 _res = await _db.execute(_sel(_FP).where(_FP.name == _pdef["name"]))
                 if _res.scalars().first():
                     continue
-                _db.add(_FP(
-                    id=str(_uuid.uuid4()),
-                    name=_pdef["name"],
-                    satellite=_pdef["satellite"],
-                    sector=_pdef["sector"],
-                    band=_pdef["band"],
-                    description=_pdef["description"],
-                ))
+                _db.add(
+                    _FP(
+                        id=str(_uuid.uuid4()),
+                        name=_pdef["name"],
+                        satellite=_pdef["satellite"],
+                        sector=_pdef["sector"],
+                        band=_pdef["band"],
+                        description=_pdef["description"],
+                    )
+                )
             await _db.commit()
             logger.info("Default fetch presets seeded")
     except Exception:
@@ -249,11 +251,13 @@ app.include_router(share.router)
 app.include_router(file_download.router)
 app.include_router(errors.router)
 
+# Optional OpenTelemetry tracing (enabled when OTEL_EXPORTER_OTLP_ENDPOINT is set)
+from .tracing import setup_tracing  # noqa: E402
+
+setup_tracing(app)
+
 
 # Alias: /api/frames → /api/satellite/frames (Bug #6)
-from fastapi.responses import RedirectResponse  # noqa: E402
-
-
 @app.get("/api/frames", include_in_schema=False)
 async def frames_alias(request: Request):
     """Redirect /api/frames to /api/satellite/frames, preserving query params."""
@@ -360,13 +364,9 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     try:
         # Wait up to 5 seconds for auth message
         msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
-        if (
-            isinstance(msg, dict)
-            and msg.get("type") == "auth"
-            and msg.get("api_key") == app_settings.api_key
-        ):
+        if isinstance(msg, dict) and msg.get("type") == "auth" and msg.get("api_key") == app_settings.api_key:
             return True
-    except (TimeoutError, WebSocketDisconnect, Exception):
+    except (TimeoutError, WebSocketDisconnect, ConnectionError, RuntimeError, json.JSONDecodeError):
         pass
 
     await websocket.close(code=4401, reason="Invalid or missing API key")

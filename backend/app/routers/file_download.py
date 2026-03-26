@@ -35,6 +35,7 @@ async def download_file(
     # If path is not absolute, resolve it relative to storage root
     if not path.startswith("/"):
         path = str(Path(storage_root) / path)
+
     resolved = validate_safe_path(path, storage_root)
 
     if not resolved.exists():

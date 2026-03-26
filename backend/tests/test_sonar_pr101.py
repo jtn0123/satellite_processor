@@ -1,4 +1,5 @@
 """Tests targeting new code in PR #101 for SonarQube coverage."""
+
 from __future__ import annotations
 
 import math
@@ -7,6 +8,7 @@ import math
 def test_goes_frames_id_fk_constant():
     """Verify the GOES_FRAMES_ID_FK constant is used in models."""
     from app.db.models import GOES_FRAMES_ID_FK
+
     assert GOES_FRAMES_ID_FK == "goes_frames.id"
 
 
@@ -20,6 +22,7 @@ def test_animation_pattern_constants():
         PATTERN_QUALITY,
         PATTERN_RESOLUTION,
     )
+
     assert re.match(PATTERN_FORMAT, "mp4")
     assert re.match(PATTERN_FORMAT, "gif")
     assert not re.match(PATTERN_FORMAT, "avi")
@@ -39,6 +42,7 @@ def test_animation_pattern_constants():
 def test_animation_preset_not_found_constant():
     """Verify the animation preset not found message constant."""
     from app.routers.animations import _ANIMATION_PRESET_NOT_FOUND
+
     assert _ANIMATION_PRESET_NOT_FOUND == "Animation preset not found"
 
 
@@ -56,5 +60,6 @@ def test_math_isclose_used_for_scale():
 def test_goes_products_satellite_availability_dict():
     """Verify SATELLITE_AVAILABILITY is used as dict()."""
     from app.routers.goes import SATELLITE_AVAILABILITY
+
     result = dict(SATELLITE_AVAILABILITY)
     assert isinstance(result, dict)

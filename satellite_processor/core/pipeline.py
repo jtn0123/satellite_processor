@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import multiprocessing.pool
+import threading
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -35,6 +36,7 @@ class Stage(ABC):
         image_paths: list[Path],
         pool: multiprocessing.pool.Pool,
         progress_callback: ProgressCallback | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> list[Path]:
         """Execute the stage, returning the (possibly modified) list of paths."""
         ...
@@ -56,6 +58,7 @@ class CropStage(Stage):
         image_paths: list[Path],
         pool: multiprocessing.pool.Pool,
         progress_callback: ProgressCallback | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> list[Path]:
         if not self.options.get("crop_enabled"):
             return image_paths
@@ -65,6 +68,8 @@ class CropStage(Stage):
         total = len(image_paths)
 
         for idx, result in enumerate(pool.imap_unordered(self.worker_fn, args)):
+            if cancel_event and cancel_event.is_set():
+                return []
             if result:
                 results.append(Path(result))
             if progress_callback:
@@ -89,6 +94,7 @@ class FalseColorStage(Stage):
         image_paths: list[Path],
         pool: multiprocessing.pool.Pool,
         progress_callback: ProgressCallback | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> list[Path]:
         if not self.options.get("false_color_enabled"):
             return image_paths
@@ -106,6 +112,8 @@ class FalseColorStage(Stage):
         total = len(image_paths)
 
         for idx, result in enumerate(pool.imap_unordered(self.worker_fn, args)):
+            if cancel_event and cancel_event.is_set():
+                return []
             if result:
                 results.append(Path(result))
             if progress_callback:
@@ -130,6 +138,7 @@ class TimestampStage(Stage):
         image_paths: list[Path],
         pool: multiprocessing.pool.Pool,
         progress_callback: ProgressCallback | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> list[Path]:
         if not self.options.get("add_timestamp", True):
             return image_paths
@@ -139,6 +148,8 @@ class TimestampStage(Stage):
         total = len(image_paths)
 
         for idx, result in enumerate(pool.imap_unordered(self.worker_fn, args)):
+            if cancel_event and cancel_event.is_set():
+                return []
             if result:
                 results.append(Path(result))
             if progress_callback:
@@ -157,6 +168,7 @@ class ScaleStage(Stage):
         image_paths: list[Path],
         pool: multiprocessing.pool.Pool,
         progress_callback: ProgressCallback | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> list[Path]:
         return image_paths
 
@@ -167,7 +179,7 @@ class Pipeline:
     def __init__(self, resource_monitor: ResourceMonitor | None = None) -> None:
         self._stages: list[Stage] = []
         self._resource_monitor = resource_monitor
-        self._cancelled = False
+        self._cancel_event = threading.Event()
 
     def add_stage(self, stage: Stage) -> Pipeline:
         """Add a stage to the pipeline. Returns self for chaining."""
@@ -175,7 +187,7 @@ class Pipeline:
         return self
 
     def cancel(self) -> None:
-        self._cancelled = True
+        self._cancel_event.set()
 
     @property
     def stages(self) -> list[Stage]:
@@ -190,7 +202,7 @@ class Pipeline:
         """Run all stages sequentially, passing image_paths through each."""
         current = image_paths
         for stage in self._stages:
-            if self._cancelled or not current:
+            if self._cancel_event.is_set() or not current:
                 return []
 
             # Throttle if system is under pressure
@@ -200,7 +212,7 @@ class Pipeline:
                     time.sleep(0.5)
 
             logger.info(f"Running pipeline stage: {stage.name}")
-            current = stage.run(current, pool, progress_callback)
+            current = stage.run(current, pool, progress_callback, cancel_event=self._cancel_event)
 
         return current
 

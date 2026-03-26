@@ -385,6 +385,8 @@ class ImageOperations:
                 img = cv2.resize(img, None, fx=factor, fy=factor, interpolation=interp_map[method])
             elif method in ["RIFE", "DAIN"]:
                 logger.warning(f"AI interpolation method '{method}' is not implemented — returning image unchanged")
+            else:
+                logger.warning(f"Unknown interpolation method '{method}' — returning image unchanged")
         except Exception as e:
             logger.error(f"Interpolation failed: {e}", exc_info=True)
             return None
@@ -402,8 +404,12 @@ class ImageOperations:
         unique_dir = _tempfile.mkdtemp(dir=base_dir, prefix="fc_")
         temp_fc_path = str(Path(unique_dir) / f"fc_input_{Path(image_path).stem}.png")
         cv2.imwrite(temp_fc_path, img)
-        sanchez_path = options.get("sanchez_path") or ""
-        underlay_path = options.get("underlay_path") or ""
+        sanchez_path = options.get("sanchez_path")
+        underlay_path = options.get("underlay_path")
+        if not sanchez_path or not underlay_path:
+            logger.error("sanchez_path or underlay_path not provided in options")
+            shutil.rmtree(unique_dir, ignore_errors=True)
+            return None
         result = ImageOperations.apply_false_color_and_read(
             temp_fc_path,
             unique_dir,

@@ -56,6 +56,9 @@ class ResourceMonitor:
             # cleared event and keep running.
             if self._thread is not None:
                 self._thread.join(timeout=2)
+                if self._thread.is_alive():
+                    self.logger.warning("Previous monitor thread still alive; skipping restart")
+                    return
             self._stop_event.clear()
             self._thread = threading.Thread(target=self._run, daemon=True)
             self._thread.start()

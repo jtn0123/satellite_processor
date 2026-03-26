@@ -18,6 +18,17 @@ from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
+
+def _is_child_of(child: Path, parent: Path) -> bool:
+    """Check if *child* is a descendant of *parent* after resolving symlinks."""
+    try:
+        child_str = str(child.resolve())
+        parent_str = str(parent.resolve())
+        return child_str.startswith(parent_str + os.sep) or child_str == parent_str
+    except OSError:
+        return False
+
+
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
@@ -74,13 +85,12 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
         return [(str(safe_path), arc)]
     result = []
     for fname in sorted(os.listdir(safe_path)):
-        fpath = (safe_path / fname).resolve()
-        # Ensure resolved child is still within the safe directory (guards against symlink escapes)
-        if not str(fpath).startswith(str(safe_path.resolve()) + os.sep):
+        fpath = safe_path / fname
+        if not _is_child_of(fpath, safe_path):
             continue
-        if fpath.is_file():
+        if fpath.resolve().is_file():
             arc = f"{prefix}/{fname}" if prefix else fname
-            result.append((str(fpath), arc))
+            result.append((str(fpath.resolve()), arc))
     return result
 
 
@@ -97,7 +107,7 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
         raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    safe_output = validate_safe_path(output_path, settings.storage_path)
+    safe_output = validate_safe_path(output_path, settings.output_dir)
 
     if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found on disk")
@@ -107,11 +117,10 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
         return FileResponse(str(safe_output), filename=safe_output.name)
 
     # Directory — list files, resolving each to guard against symlink escapes
-    safe_root = str(safe_output.resolve()) + os.sep
     files = [
         f
         for f in sorted(os.listdir(safe_output))
-        if (safe_output / f).resolve().is_file() and str((safe_output / f).resolve()).startswith(safe_root)
+        if _is_child_of(safe_output / f, safe_output) and (safe_output / f).resolve().is_file()
     ]
     if not files:
         raise APIError(404, "not_found", "No output files")

@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -256,10 +256,8 @@ from .tracing import setup_tracing  # noqa: E402
 
 setup_tracing(app)
 
+
 # Alias: /api/frames → /api/satellite/frames (Bug #6)
-from fastapi.responses import RedirectResponse  # noqa: E402
-
-
 @app.get("/api/frames", include_in_schema=False)
 async def frames_alias(request: Request):
     """Redirect /api/frames to /api/satellite/frames, preserving query params."""

@@ -25,8 +25,8 @@ export default defineConfig([
     rules: {
       // Downgrade to warn — 112 existing usages; fix incrementally
       '@typescript-eslint/no-non-null-assertion': 'warn',
-      // Allow empty functions (common for no-op handlers and mocks)
-      '@typescript-eslint/no-empty-function': 'off',
+      // Allow empty arrow functions (common for no-op handlers and mocks)
+      '@typescript-eslint/no-empty-function': ['warn', { allow: ['arrowFunctions'] }],
       // autoFocus is acceptable for search inputs and modals
       'jsx-a11y/no-autofocus': 'warn',
     },

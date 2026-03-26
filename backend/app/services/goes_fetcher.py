@@ -217,7 +217,9 @@ def _matches_sector_and_band(key: str, sector: str, band: str) -> bool:
     # Pattern: OR_ABI-L2-CMIPM1-M6C02 vs OR_ABI-L2-CMIPM2-M6C02
     if sector == "Mesoscale1" and "CMIPM1" not in filename:
         return False
-    return not (sector == "Mesoscale2" and "CMIPM2" not in filename)
+    if sector == "Mesoscale2" and "CMIPM2" not in filename:  # noqa: SIM103
+        return False
+    return True
 
 
 def validate_params(satellite: str, sector: str, band: str) -> None:

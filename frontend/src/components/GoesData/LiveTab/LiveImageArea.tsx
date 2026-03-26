@@ -157,7 +157,6 @@ function ImageContent(props: ImageContentProps) {
       onPositionChange={setComparePosition}
       frameTime={frame?.capture_time ?? null}
       prevFrameTime={prevFrame?.capture_time ?? null}
-      isZoomed={zoom.isZoomed}
       imageRef={imageRef}
     />
   );

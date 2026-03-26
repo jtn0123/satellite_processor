@@ -22,7 +22,7 @@ from ..db.models import (
     Job,
     JobLog,
 )
-from ..errors import APIError, validate_uuid
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -392,29 +392,25 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
 
-    # Path-injection guard: normalize and confine to allowed root
-    _safe_root = os.path.realpath(settings.output_dir)
-    _safe_output = os.path.realpath(output_path)
-    if os.path.commonpath([_safe_root, _safe_output]) != _safe_root:
-        raise APIError(403, "forbidden", "Path outside allowed directory")
+    safe_output = validate_safe_path(output_path, settings.output_dir)
 
-    if not os.path.exists(_safe_output):
+    if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found")
 
-    if os.path.isfile(_safe_output):
-        return FileResponse(_safe_output, filename=os.path.basename(_safe_output))
+    if safe_output.is_file():
+        return FileResponse(str(safe_output), filename=safe_output.name)
 
-    files = [f for f in sorted(os.listdir(_safe_output)) if os.path.isfile(os.path.join(_safe_output, f))]
+    files = [f for f in sorted(os.listdir(safe_output)) if (safe_output / f).is_file()]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                return FileResponse(os.path.join(_safe_output, f), filename=f)
+                return FileResponse(str(safe_output / f), filename=f)
 
     first = files[0]
-    return FileResponse(os.path.join(_safe_output, first), filename=first)
+    return FileResponse(str(safe_output / first), filename=first)
 
 
 @router.post("/cleanup-stale")

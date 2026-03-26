@@ -16,7 +16,7 @@ from ..db.models import (
     Job,
     JobLog,
 )
-from ..errors import APIError, validate_uuid
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -53,34 +53,23 @@ async def get_job_logs(
     ]
 
 
-def _find_output_file(output_path: str, allowed_root: str) -> tuple[str, str]:
-    """Find the best output file in a directory, preferring video/archive formats.
+def _find_output_file(safe_dir: Path) -> tuple[str, str]:
+    """Find the best output file in a validated directory, preferring video/archive formats.
 
     Returns (file_path, filename) or raises APIError.
+    ``safe_dir`` must already be validated via ``validate_safe_path``.
     """
-    # Path-injection guard: normalize and confine to allowed root
-    safe_path = os.path.realpath(output_path)
-    if os.path.commonpath([allowed_root, safe_path]) != allowed_root:
-        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
-
-    entries = sorted(os.listdir(safe_path))
-    # Filter to actual files only — directories would break FileResponse
-    files = [f for f in entries if os.path.isfile(os.path.join(safe_path, f))]
+    entries = sorted(os.listdir(safe_dir))
+    files = [f for f in entries if (safe_dir / f).is_file()]
     if not files:
         raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:
             if f.endswith(ext):
-                file_path = os.path.realpath(os.path.join(safe_path, f))
-                if os.path.commonpath([allowed_root, file_path]) == allowed_root:
-                    return file_path, f
+                return str(safe_dir / f), f
 
-    first = files[0]
-    first_path = os.path.realpath(os.path.join(safe_path, first))
-    if os.path.commonpath([allowed_root, first_path]) != allowed_root:
-        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
-    return first_path, first
+    return str(safe_dir / files[0]), files[0]
 
 
 @router.get("/{job_id}/output")
@@ -95,17 +84,14 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
         raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     raw_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    _safe_root = os.path.realpath(settings.output_dir)
-    _safe_output = os.path.realpath(raw_path)
-    if os.path.commonpath([_safe_root, _safe_output]) != _safe_root:
-        raise APIError(403, "forbidden", _PATH_OUTSIDE_ALLOWED)
+    safe_output = validate_safe_path(raw_path, settings.output_dir)
 
-    if not os.path.exists(_safe_output):
+    if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found")
-    if os.path.isfile(_safe_output):
-        return FileResponse(_safe_output, filename=os.path.basename(_safe_output))
+    if safe_output.is_file():
+        return FileResponse(str(safe_output), filename=safe_output.name)
 
-    file_path, filename = _find_output_file(_safe_output, _safe_root)
+    file_path, filename = _find_output_file(safe_output)
     return FileResponse(file_path, filename=filename)
 
 

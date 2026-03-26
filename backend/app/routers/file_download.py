@@ -1,14 +1,13 @@
 """Generic file download endpoint for serving data files (images, thumbnails, etc.)."""
 
 import logging
-import os
 from pathlib import Path
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
 
 from ..config import settings
-from ..errors import APIError
+from ..errors import APIError, validate_safe_path
 from ..rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -37,11 +36,7 @@ async def download_file(
     if not path.startswith("/"):
         path = str(Path(storage_root) / path)
 
-    # Path-injection guard: normalize and confine to allowed root
-    _safe_root = os.path.realpath(storage_root)
-    resolved = Path(os.path.realpath(path))
-    if os.path.commonpath([_safe_root, str(resolved)]) != _safe_root:
-        raise APIError(403, "forbidden", "Path outside allowed directory")
+    resolved = validate_safe_path(path, storage_root)
 
     if not resolved.exists():
         raise APIError(404, "not_found", "File not found")

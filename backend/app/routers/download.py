@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..db.database import get_db
 from ..db.models import Job
-from ..errors import APIError, validate_uuid
+from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
@@ -63,23 +63,22 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
     """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
 
-    # Path-injection guard: normalize and confine to allowed root
-    _safe_root = os.path.realpath(settings.storage_path)
-    _safe_path = os.path.realpath(output_path)
-    if os.path.commonpath([_safe_root, _safe_path]) != _safe_root:
+    try:
+        safe_path = validate_safe_path(output_path, settings.storage_path)
+    except Exception:
         return []
 
-    if not os.path.exists(_safe_path):
+    if not safe_path.exists():
         return []
-    if os.path.isfile(_safe_path):
-        arc = f"{prefix}/{os.path.basename(_safe_path)}" if prefix else os.path.basename(_safe_path)
-        return [(_safe_path, arc)]
+    if safe_path.is_file():
+        arc = f"{prefix}/{safe_path.name}" if prefix else safe_path.name
+        return [(str(safe_path), arc)]
     result = []
-    for fname in sorted(os.listdir(_safe_path)):
-        fpath = os.path.join(_safe_path, fname)
-        if os.path.isfile(fpath):
+    for fname in sorted(os.listdir(safe_path)):
+        fpath = safe_path / fname
+        if fpath.is_file():
             arc = f"{prefix}/{fname}" if prefix else fname
-            result.append((fpath, arc))
+            result.append((str(fpath), arc))
     return result
 
 
@@ -96,30 +95,26 @@ async def download_job_output(request: Request, job_id: str, db: AsyncSession = 
         raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
-    # Path-injection guard: normalize and confine to allowed root
-    _safe_root = os.path.realpath(settings.storage_path)
-    _safe_output = os.path.realpath(output_path)
-    if os.path.commonpath([_safe_root, _safe_output]) != _safe_root:
-        raise APIError(403, "forbidden", "Path outside allowed directory")
+    safe_output = validate_safe_path(output_path, settings.storage_path)
 
-    if not os.path.exists(_safe_output):
+    if not safe_output.exists():
         raise APIError(404, "not_found", "Output not found on disk")
 
     # Single file
-    if os.path.isfile(_safe_output):
-        return FileResponse(_safe_output, filename=os.path.basename(_safe_output))
+    if safe_output.is_file():
+        return FileResponse(str(safe_output), filename=safe_output.name)
 
     # Directory — list files
-    files = [f for f in sorted(os.listdir(_safe_output)) if os.path.isfile(os.path.join(_safe_output, f))]
+    files = [f for f in sorted(os.listdir(safe_output)) if (safe_output / f).is_file()]
     if not files:
         raise APIError(404, "not_found", "No output files")
 
     # Single file in dir
     if len(files) == 1:
-        return FileResponse(os.path.join(_safe_output, files[0]), filename=files[0])
+        return FileResponse(str(safe_output / files[0]), filename=files[0])
 
     # Multiple files — stream zip
-    file_pairs = [(os.path.join(_safe_output, f), f) for f in files]
+    file_pairs = [(str(safe_output / f), f) for f in files]
     return StreamingResponse(
         _zip_stream(file_pairs),
         media_type="application/zip",

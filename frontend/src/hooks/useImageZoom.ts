@@ -1,4 +1,15 @@
-import { useState, useCallback, useMemo, useRef, useEffect, type CSSProperties, type TouchEvent, type WheelEvent, type MouseEvent, type RefObject } from 'react';
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  type CSSProperties,
+  type TouchEvent,
+  type WheelEvent,
+  type MouseEvent,
+  type RefObject,
+} from 'react';
 
 interface ZoomState {
   scale: number;
@@ -61,7 +72,9 @@ export function clampTranslate(
   };
 }
 
-function getContainerDimensions(containerRef?: RefObject<HTMLElement | null>): { width: number; height: number } | null {
+function getContainerDimensions(
+  containerRef?: RefObject<HTMLElement | null>,
+): { width: number; height: number } | null {
   const rect = containerRef?.current?.getBoundingClientRect();
   if (!rect) return null;
   return { width: rect.width, height: rect.height };
@@ -80,11 +93,25 @@ export function getCoverScale(
 }
 
 export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomReturn {
-  const { minScale = 1, maxScale = 5, doubleTapScale = 2.5, containerRef, imageRef, eliminateLetterbox = false } = options;
+  const {
+    minScale = 1,
+    maxScale = 5,
+    doubleTapScale = 2.5,
+    containerRef,
+    imageRef,
+    eliminateLetterbox = false,
+  } = options;
 
   const [state, setState] = useState<ZoomState>(INITIAL_STATE);
   const stateRef = useRef<ZoomState>(INITIAL_STATE);
-  const pinchStartRef = useRef<{ dist: number; scale: number; midX: number; midY: number; tx: number; ty: number } | null>(null);
+  const pinchStartRef = useRef<{
+    dist: number;
+    scale: number;
+    midX: number;
+    midY: number;
+    tx: number;
+    ty: number;
+  } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const isDragging = useRef(false);
 
@@ -95,9 +122,10 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   const syncLayout = useCallback(() => {
     const rect = containerRef?.current?.getBoundingClientRect();
     const img = imageRef?.current;
-    const aspect = (img && img.naturalWidth > 0 && img.naturalHeight > 0)
-      ? img.naturalWidth / img.naturalHeight
-      : DEFAULT_ASPECT;
+    const aspect =
+      img && img.naturalWidth > 0 && img.naturalHeight > 0
+        ? img.naturalWidth / img.naturalHeight
+        : DEFAULT_ASPECT;
     setLayoutInfo({ cw: rect?.width ?? 0, ch: rect?.height ?? 0, aspect });
   }, [containerRef, imageRef]);
 
@@ -120,25 +148,32 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     stateRef.current = state;
   }, [state]);
 
-  const clampScale = useCallback((s: number) => Math.min(maxScale, Math.max(minScale, s)), [minScale, maxScale]);
+  const clampScale = useCallback(
+    (s: number) => Math.min(maxScale, Math.max(minScale, s)),
+    [minScale, maxScale],
+  );
 
   // Event-time helpers that read refs (only called from event handlers, not render)
   const getAspect = useCallback((): number => {
     const img = imageRef?.current;
-    return (img && img.naturalWidth > 0 && img.naturalHeight > 0)
+    return img && img.naturalWidth > 0 && img.naturalHeight > 0
       ? img.naturalWidth / img.naturalHeight
       : DEFAULT_ASPECT;
   }, [imageRef]);
 
-  const clampXY = useCallback((tx: number, ty: number, scale: number): { tx: number; ty: number } => {
-    const dims = getContainerDimensions(containerRef);
-    if (!dims) return { tx, ty };
-    const aspect = getAspect();
-    const effective = eliminateLetterbox && scale > 1
-      ? Math.max(scale, getCoverScale(dims.width, dims.height, aspect))
-      : scale;
-    return clampTranslate(tx, ty, effective, dims.width, dims.height, aspect);
-  }, [containerRef, getAspect, eliminateLetterbox]);
+  const clampXY = useCallback(
+    (tx: number, ty: number, scale: number): { tx: number; ty: number } => {
+      const dims = getContainerDimensions(containerRef);
+      if (!dims) return { tx, ty };
+      const aspect = getAspect();
+      const effective =
+        eliminateLetterbox && scale > 1
+          ? Math.max(scale, getCoverScale(dims.width, dims.height, aspect))
+          : scale;
+      return clampTranslate(tx, ty, effective, dims.width, dims.height, aspect);
+    },
+    [containerRef, getAspect, eliminateLetterbox],
+  );
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
 
@@ -150,97 +185,131 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     setState(INITIAL_STATE);
   }, []);
 
-  const setScaleTo = useCallback((s: number) => {
-    if (s < minScale) {
-      setState(INITIAL_STATE);
-    } else {
-      const clamped = clampScale(s);
+  const setScaleTo = useCallback(
+    (s: number) => {
+      if (s < minScale) {
+        setState(INITIAL_STATE);
+      } else {
+        const clamped = clampScale(s);
+        setState((prev) => {
+          const clampedXY = clampXY(prev.translateX, prev.translateY, clamped);
+          return { ...prev, scale: clamped, translateX: clampedXY.tx, translateY: clampedXY.ty };
+        });
+      }
+    },
+    [clampScale, clampXY, minScale],
+  );
+
+  const onWheel = useCallback(
+    (e: WheelEvent) => {
+      if (stateRef.current.scale > 1) {
+        e.preventDefault();
+      }
+      syncLayout();
+      const rect = containerRef?.current?.getBoundingClientRect();
+      const cx = e.clientX ?? 0;
+      const cy = e.clientY ?? 0;
+      const cursorX = rect ? cx - rect.left - rect.width / 2 : 0;
+      const cursorY = rect ? cy - rect.top - rect.height / 2 : 0;
+
       setState((prev) => {
-        const clampedXY = clampXY(prev.translateX, prev.translateY, clamped);
-        return { ...prev, scale: clamped, translateX: clampedXY.tx, translateY: clampedXY.ty };
+        const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+        const rawScale = prev.scale * factor;
+        if (rawScale < minScale) return INITIAL_STATE;
+        const newScale = clampScale(rawScale);
+
+        // Zoom toward cursor: keep the point under cursor fixed in image space
+        const imageX = (cursorX - prev.translateX) / prev.scale;
+        const imageY = (cursorY - prev.translateY) / prev.scale;
+        const newTx = cursorX - imageX * newScale;
+        const newTy = cursorY - imageY * newScale;
+
+        const clamped = clampXY(newTx, newTy, newScale);
+        return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
       });
-    }
-  }, [clampScale, clampXY, minScale]);
-
-  const onWheel = useCallback((e: WheelEvent) => {
-    if (stateRef.current.scale > 1) {
-      e.preventDefault();
-    }
-    syncLayout();
-    const rect = containerRef?.current?.getBoundingClientRect();
-    const cx = e.clientX ?? 0;
-    const cy = e.clientY ?? 0;
-    const cursorX = rect ? cx - rect.left - rect.width / 2 : 0;
-    const cursorY = rect ? cy - rect.top - rect.height / 2 : 0;
-
-    setState((prev) => {
-      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const rawScale = prev.scale * factor;
-      if (rawScale < minScale) return INITIAL_STATE;
-      const newScale = clampScale(rawScale);
-
-      // Zoom toward cursor: keep the point under cursor fixed in image space
-      const imageX = (cursorX - prev.translateX) / prev.scale;
-      const imageY = (cursorY - prev.translateY) / prev.scale;
-      const newTx = cursorX - imageX * newScale;
-      const newTy = cursorY - imageY * newScale;
-
-      const clamped = clampXY(newTx, newTy, newScale);
-      return { ...prev, scale: newScale, translateX: clamped.tx, translateY: clamped.ty };
-    });
-  }, [clampScale, clampXY, containerRef, minScale, syncLayout]);
+    },
+    [clampScale, clampXY, containerRef, minScale, syncLayout],
+  );
 
   const getTouchDist = (e: TouchEvent) => {
     const [a, b] = [e.touches[0], e.touches[1]];
     return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   };
 
-  const onTouchStart = useCallback((e: TouchEvent) => {
-    syncLayout();
-    const s = stateRef.current;
-    setState((prev) => ({ ...prev, isInteracting: true }));
-    if (e.touches.length === 2) {
-      const rect = containerRef?.current?.getBoundingClientRect();
-      const [a, b] = [e.touches[0], e.touches[1]];
-      const midX = rect ? (a.clientX + b.clientX) / 2 - rect.left - rect.width / 2 : 0;
-      const midY = rect ? (a.clientY + b.clientY) / 2 - rect.top - rect.height / 2 : 0;
-      pinchStartRef.current = { dist: getTouchDist(e), scale: s.scale, midX, midY, tx: s.translateX, ty: s.translateY };
-    } else if (e.touches.length === 1 && s.scale > 1) {
-      const touch = e.touches[0];
-      panRef.current = { startX: touch.clientX, startY: touch.clientY, tx: s.translateX, ty: s.translateY };
-    }
-  }, [containerRef, syncLayout]);
+  const onTouchStart = useCallback(
+    (e: TouchEvent) => {
+      syncLayout();
+      const s = stateRef.current;
+      setState((prev) => ({ ...prev, isInteracting: true }));
+      if (e.touches.length === 2) {
+        const rect = containerRef?.current?.getBoundingClientRect();
+        const [a, b] = [e.touches[0], e.touches[1]];
+        const midX = rect ? (a.clientX + b.clientX) / 2 - rect.left - rect.width / 2 : 0;
+        const midY = rect ? (a.clientY + b.clientY) / 2 - rect.top - rect.height / 2 : 0;
+        pinchStartRef.current = {
+          dist: getTouchDist(e),
+          scale: s.scale,
+          midX,
+          midY,
+          tx: s.translateX,
+          ty: s.translateY,
+        };
+      } else if (e.touches.length === 1 && s.scale > 1) {
+        const touch = e.touches[0];
+        panRef.current = {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          tx: s.translateX,
+          ty: s.translateY,
+        };
+      }
+    },
+    [containerRef, syncLayout],
+  );
 
-  const onTouchMove = useCallback((e: TouchEvent) => {
-    if (e.touches.length === 2 && pinchStartRef.current) {
-      e.preventDefault();
-      const dist = getTouchDist(e);
-      const startData = pinchStartRef.current;
-      const newScale = clampScale(startData.scale * (dist / startData.dist));
-      setState(() => {
-        if (newScale <= minScale) {
-          const clamped = clampXY(0, 0, minScale);
-          return { scale: minScale, translateX: clamped.tx, translateY: clamped.ty, isInteracting: true };
-        }
-        // Zoom toward pinch midpoint: keep the point under midpoint fixed
-        const imageX = (startData.midX - startData.tx) / startData.scale;
-        const imageY = (startData.midY - startData.ty) / startData.scale;
-        const newTx = startData.midX - imageX * newScale;
-        const newTy = startData.midY - imageY * newScale;
-        const clamped = clampXY(newTx, newTy, newScale);
-        return { scale: newScale, translateX: clamped.tx, translateY: clamped.ty, isInteracting: true };
-      });
-    } else if (e.touches.length === 1 && panRef.current && stateRef.current.scale > 1) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const dx = touch.clientX - panRef.current.startX;
-      const dy = touch.clientY - panRef.current.startY;
-      const rawTx = panRef.current.tx + dx;
-      const rawTy = panRef.current.ty + dy;
-      const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
-      setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
-    }
-  }, [clampScale, clampXY, minScale]);
+  const onTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchStartRef.current) {
+        e.preventDefault();
+        const dist = getTouchDist(e);
+        const startData = pinchStartRef.current;
+        const newScale = clampScale(startData.scale * (dist / startData.dist));
+        setState(() => {
+          if (newScale <= minScale) {
+            const clamped = clampXY(0, 0, minScale);
+            return {
+              scale: minScale,
+              translateX: clamped.tx,
+              translateY: clamped.ty,
+              isInteracting: true,
+            };
+          }
+          // Zoom toward pinch midpoint: keep the point under midpoint fixed
+          const imageX = (startData.midX - startData.tx) / startData.scale;
+          const imageY = (startData.midY - startData.ty) / startData.scale;
+          const newTx = startData.midX - imageX * newScale;
+          const newTy = startData.midY - imageY * newScale;
+          const clamped = clampXY(newTx, newTy, newScale);
+          return {
+            scale: newScale,
+            translateX: clamped.tx,
+            translateY: clamped.ty,
+            isInteracting: true,
+          };
+        });
+      } else if (e.touches.length === 1 && panRef.current && stateRef.current.scale > 1) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const dx = touch.clientX - panRef.current.startX;
+        const dy = touch.clientY - panRef.current.startY;
+        const rawTx = panRef.current.tx + dx;
+        const rawTy = panRef.current.ty + dy;
+        const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
+        setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
+      }
+    },
+    [clampScale, clampXY, minScale],
+  );
 
   const onTouchEnd = useCallback(() => {
     pinchStartRef.current = null;
@@ -261,16 +330,19 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     }
   }, []);
 
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging.current && panRef.current) {
-      const dx = e.clientX - panRef.current.startX;
-      const dy = e.clientY - panRef.current.startY;
-      const rawTx = panRef.current.tx + dx;
-      const rawTy = panRef.current.ty + dy;
-      const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
-      setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
-    }
-  }, [clampXY]);
+  const onMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging.current && panRef.current) {
+        const dx = e.clientX - panRef.current.startX;
+        const dy = e.clientY - panRef.current.startY;
+        const rawTx = panRef.current.tx + dx;
+        const rawTy = panRef.current.ty + dy;
+        const clamped = clampXY(rawTx, rawTy, stateRef.current.scale);
+        setState((prev) => ({ ...prev, translateX: clamped.tx, translateY: clamped.ty }));
+      }
+    },
+    [clampXY],
+  );
 
   const onMouseUp = useCallback(() => {
     isDragging.current = false;
@@ -288,9 +360,17 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
     if (eliminateLetterbox && state.scale > 1 && cw > 0 && ch > 0) {
       effectiveScale = Math.max(state.scale, getCoverScale(cw, ch, aspect));
     }
-    let tx = 0, ty = 0;
+    let tx = 0,
+      ty = 0;
     if (state.scale > 1 && cw > 0 && ch > 0) {
-      const clamped = clampTranslate(state.translateX, state.translateY, effectiveScale, cw, ch, aspect);
+      const clamped = clampTranslate(
+        state.translateX,
+        state.translateY,
+        effectiveScale,
+        cw,
+        ch,
+        aspect,
+      );
       tx = clamped.tx;
       ty = clamped.ty;
     }
@@ -306,7 +386,15 @@ export function useImageZoom(options: UseImageZoomOptions = {}): UseImageZoomRet
   return {
     scale: state.scale,
     style,
-    handlers: { onWheel, onTouchStart, onTouchMove, onTouchEnd, onMouseDown, onMouseMove, onMouseUp },
+    handlers: {
+      onWheel,
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd,
+      onMouseDown,
+      onMouseMove,
+      onMouseUp,
+    },
     reset,
     zoomIn,
     zoomOut,

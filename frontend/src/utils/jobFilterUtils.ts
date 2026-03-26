@@ -7,14 +7,17 @@ interface JobLike {
 
 import { JOB_STATUS } from './jobStatus';
 
-const STATUS_FILTER_MAP: Readonly<Record<StatusFilter, ReadonlyArray<string>>> = {
+const STATUS_FILTER_MAP: Readonly<Record<StatusFilter, readonly string[]>> = {
   All: [],
   Running: [JOB_STATUS.PENDING, JOB_STATUS.PROCESSING],
   Completed: [JOB_STATUS.COMPLETED, JOB_STATUS.COMPLETED_PARTIAL],
   Failed: [JOB_STATUS.FAILED, JOB_STATUS.CANCELLED],
 };
 
-export function filterJobsByStatus<T extends JobLike>(jobs: ReadonlyArray<T>, filter: StatusFilter): ReadonlyArray<T> {
+export function filterJobsByStatus<T extends JobLike>(
+  jobs: readonly T[],
+  filter: StatusFilter,
+): readonly T[] {
   if (filter === 'All') return jobs;
   const allowed = STATUS_FILTER_MAP[filter];
   return jobs.filter((j) => allowed.includes(j.status));

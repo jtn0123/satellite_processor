@@ -12,7 +12,14 @@ interface MobileSettingsPanelProps {
   readonly onLoadPreset: (preset: AnimationPreset) => void;
 }
 
-export function MobileSettingsPanel({ open, onClose, config, captureInterval, onChange, onLoadPreset }: MobileSettingsPanelProps) {
+export function MobileSettingsPanel({
+  open,
+  onClose,
+  config,
+  captureInterval,
+  onChange,
+  onLoadPreset,
+}: MobileSettingsPanelProps) {
   if (!open) return null;
 
   return (
@@ -38,7 +45,11 @@ export function MobileSettingsPanel({ open, onClose, config, captureInterval, on
           </button>
         </div>
         <div className="p-6 space-y-4">
-          <AnimationSettingsPanel config={config} captureIntervalMinutes={captureInterval} onChange={onChange} />
+          <AnimationSettingsPanel
+            config={config}
+            captureIntervalMinutes={captureInterval}
+            onChange={onChange}
+          />
           <AnimationPresets config={config} onLoadPreset={onLoadPreset} />
         </div>
       </div>

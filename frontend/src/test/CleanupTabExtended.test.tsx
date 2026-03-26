@@ -18,8 +18,10 @@ vi.mock('../utils/toast', () => ({
 import CleanupTab from '../components/GoesData/CleanupTab';
 import api from '../api/client';
 
-const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-
+const mockedApi = api as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -27,7 +29,12 @@ beforeEach(() => {
     if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
     if (url === '/satellite/frames/stats') {
       return Promise.resolve({
-        data: { total_frames: 500, total_size_bytes: 5368709120, by_satellite: { 'GOES-16': { count: 300, size: 3e9 } }, by_band: { C02: { count: 200, size: 2e9 } } },
+        data: {
+          total_frames: 500,
+          total_size_bytes: 5368709120,
+          by_satellite: { 'GOES-16': { count: 300, size: 3e9 } },
+          by_band: { C02: { count: 200, size: 2e9 } },
+        },
       });
     }
     return Promise.resolve({ data: {} });
@@ -85,7 +92,7 @@ describe('CleanupTab - create rule form', () => {
   it('shows create form when New Rule clicked', async () => {
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('New Rule')).toBeInTheDocument());
-    
+
     fireEvent.click(screen.getByText('New Rule'));
     expect(screen.getByLabelText('Rule name')).toBeInTheDocument();
   });
@@ -93,10 +100,10 @@ describe('CleanupTab - create rule form', () => {
   it('hides create form when Cancel clicked', async () => {
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('New Rule')).toBeInTheDocument());
-    
+
     fireEvent.click(screen.getByText('New Rule'));
     expect(screen.getByLabelText('Rule name')).toBeInTheDocument();
-    
+
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByLabelText('Rule name')).not.toBeInTheDocument();
   });

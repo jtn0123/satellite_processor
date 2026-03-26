@@ -13,17 +13,29 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const makeFrame = (id: string) => ({
-  id, satellite: 'GOES-18', sector: 'CONUS', band: 'Band13',
-  capture_time: '2024-01-01T00:00:00Z', file_path: '/test.nc',
-  file_size: 1024, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail', width: 1000, height: 1000,
-  tags: [], collections: [],
+  id,
+  satellite: 'GOES-18',
+  sector: 'CONUS',
+  band: 'Band13',
+  capture_time: '2024-01-01T00:00:00Z',
+  file_path: '/test.nc',
+  file_size: 1024,
+  thumbnail_path: null,
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  width: 1000,
+  height: 1000,
+  tags: [],
+  collections: [],
 });
 
 describe('SonarQube final fixes', () => {
   describe('ImageViewer - pan/zoom button accessibility', () => {
     it('pan/zoom button has no conflicting role', () => {
       const frame = makeFrame('1');
-      render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+      render(
+        <ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />,
+      );
       const panBtn = document.querySelector('button[aria-label*="Pan and zoom"]');
       expect(panBtn).toBeTruthy();
       expect(panBtn!.getAttribute('role')).toBeNull();
@@ -31,7 +43,9 @@ describe('SonarQube final fixes', () => {
 
     it('dialog does not have tabIndex on non-interactive element', () => {
       const frame = makeFrame('1');
-      render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+      render(
+        <ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />,
+      );
       const dialog = document.querySelector('dialog');
       expect(dialog).toBeTruthy();
       expect(dialog?.hasAttribute('tabindex')).toBe(false);
@@ -39,7 +53,9 @@ describe('SonarQube final fixes', () => {
 
     it('handles mouseMove and mouseUp on image area without errors', () => {
       const frame = makeFrame('1');
-      render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
+      render(
+        <ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />,
+      );
       // Image area is the flex container div holding nav buttons and the image
       const img = document.querySelector('img[alt*="GOES-18"]')!;
       expect(img).toBeTruthy();

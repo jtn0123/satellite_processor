@@ -46,7 +46,12 @@ const CDN_RESOLUTIONS: Readonly<Record<string, { desktop: string; mobile: string
 };
 
 /** Build a direct CDN URL from satellite/sector/band (returns null for meso sectors and Himawari). */
-export function buildCdnUrl(satellite: string, sector: string, band: string, isMobile = false): string | null {
+export function buildCdnUrl(
+  satellite: string,
+  sector: string,
+  band: string,
+  isMobile = false,
+): string | null {
   if (!satellite || !sector || !band) return null;
   // No CDN exists for Himawari satellites
   if (isHimawariSatellite(satellite)) return null;

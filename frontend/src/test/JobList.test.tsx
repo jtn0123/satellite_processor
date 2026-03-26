@@ -5,8 +5,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 vi.mock('../hooks/useApi', () => ({
   useJobs: vi.fn(() => ({
     data: [
-      { id: 'j1', job_type: 'goes_fetch', status: 'completed', progress: 100, status_message: 'Done', created_at: '2026-01-01T12:00:00Z' },
-      { id: 'j2', job_type: 'animation', status: 'processing', progress: 50, status_message: 'Working', created_at: '2026-01-01T11:00:00Z' },
+      {
+        id: 'j1',
+        job_type: 'goes_fetch',
+        status: 'completed',
+        progress: 100,
+        status_message: 'Done',
+        created_at: '2026-01-01T12:00:00Z',
+      },
+      {
+        id: 'j2',
+        job_type: 'animation',
+        status: 'processing',
+        progress: 50,
+        status_message: 'Working',
+        created_at: '2026-01-01T11:00:00Z',
+      },
     ],
     isLoading: false,
   })),

@@ -13,7 +13,10 @@ interface SwipeHintProps {
  * Fades out after 3.5 seconds and sets localStorage so it won't show again.
  * Hidden when only 1 band is available or when zoomed in.
  */
-export default function SwipeHint({ availableBands = 2, isZoomed = false }: Readonly<SwipeHintProps>) {
+export default function SwipeHint({
+  availableBands = 2,
+  isZoomed = false,
+}: Readonly<SwipeHintProps>) {
   // Check localStorage synchronously during init to avoid effect setState
   const [visible, setVisible] = useState(() => {
     try {
@@ -29,7 +32,9 @@ export default function SwipeHint({ availableBands = 2, isZoomed = false }: Read
       setVisible(false);
       try {
         localStorage.setItem(STORAGE_KEY, '1');
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }, 3500);
     return () => clearTimeout(timer);
   }, [visible]);

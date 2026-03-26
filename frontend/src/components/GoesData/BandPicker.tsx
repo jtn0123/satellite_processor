@@ -20,13 +20,21 @@ const HIMAWARI_BAND_IDS = Object.keys(HIMAWARI_BAND_INFO);
 const GOES_GROUPS: { label: string; category: string; bands: string[] }[] = [
   { label: 'Visible', category: 'Visible', bands: ['C01', 'C02'] },
   { label: 'Near-IR', category: 'Near-IR', bands: ['C03', 'C04', 'C05', 'C06'] },
-  { label: 'Infrared', category: 'IR', bands: ['C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16'] },
+  {
+    label: 'Infrared',
+    category: 'IR',
+    bands: ['C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16'],
+  },
 ];
 
 const HIMAWARI_GROUPS: { label: string; category: string; bands: string[] }[] = [
   { label: 'Visible', category: 'Visible', bands: ['B01', 'B02', 'B03'] },
   { label: 'Near-IR', category: 'Near-IR', bands: ['B04', 'B05', 'B06'] },
-  { label: 'Infrared', category: 'IR', bands: ['B07', 'B08', 'B09', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16'] },
+  {
+    label: 'Infrared',
+    category: 'IR',
+    bands: ['B07', 'B08', 'B09', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16'],
+  },
 ];
 
 const GOES_FILTERS: { label: string; bands: string[] }[] = [
@@ -43,7 +51,13 @@ const HIMAWARI_FILTERS: { label: string; bands: string[] }[] = [
   { label: 'Vegetation', bands: ['B03', 'B04', 'B05', 'B06'] },
 ];
 
-export default function BandPicker({ value, onChange, satellite, sector, disabled }: Readonly<BandPickerProps>) {
+export default function BandPicker({
+  value,
+  onChange,
+  satellite,
+  sector,
+  disabled,
+}: Readonly<BandPickerProps>) {
   const isHimawari = satellite ? isHimawariSatellite(satellite) : false;
   const bandInfoMap = satellite ? getBandInfoForSatellite(satellite) : BAND_INFO;
   const GROUPS = isHimawari ? HIMAWARI_GROUPS : GOES_GROUPS;
@@ -57,26 +71,35 @@ export default function BandPicker({ value, onChange, satellite, sector, disable
   const { data: bandCounts } = useQuery<Record<string, number>>({
     queryKey: ['band-counts', satellite, sector],
     queryFn: () =>
-      api.get('/satellite/band-availability', { params: { satellite, sector } }).then((r) => r.data?.counts ?? {}),
+      api
+        .get('/satellite/band-availability', { params: { satellite, sector } })
+        .then((r) => r.data?.counts ?? {}),
     enabled: !!satellite && !!sector,
     staleTime: 60000,
   });
 
-  const fetchSample = useCallback((bandId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!satellite || !sector) return;
-    setFetchingBand(bandId);
-    api.post('/satellite/fetch', {
-      satellite,
-      sector,
-      band: bandId,
-      hours: 1,
-    }).then(() => {
-      showToast('success', `Fetching sample for ${bandId}`);
-    }).catch(() => {
-      showToast('error', `Failed to fetch ${bandId}`);
-    }).finally(() => setFetchingBand(null));
-  }, [satellite, sector]);
+  const fetchSample = useCallback(
+    (bandId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!satellite || !sector) return;
+      setFetchingBand(bandId);
+      api
+        .post('/satellite/fetch', {
+          satellite,
+          sector,
+          band: bandId,
+          hours: 1,
+        })
+        .then(() => {
+          showToast('success', `Fetching sample for ${bandId}`);
+        })
+        .catch(() => {
+          showToast('error', `Failed to fetch ${bandId}`);
+        })
+        .finally(() => setFetchingBand(null));
+    },
+    [satellite, sector],
+  );
 
   const activeBands = useMemo(() => {
     const f = FILTERS.find((x) => x.label === filter);

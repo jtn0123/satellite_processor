@@ -12,7 +12,7 @@
 interface ApiErrorResponse {
   response?: {
     data?: {
-      detail?: string | Array<{ msg?: string }>;
+      detail?: string | { msg?: string }[];
       message?: string;
     };
   };

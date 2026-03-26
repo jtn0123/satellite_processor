@@ -14,16 +14,19 @@ export function useLongPress({ onLongPress, onClick, delay = 500 }: UseLongPress
   const isLongPress = useRef(false);
   const didMove = useRef(false);
 
-  const start = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    isLongPress.current = false;
-    didMove.current = false;
-    timerRef.current = setTimeout(() => {
-      isLongPress.current = true;
-      onLongPress(e);
-      // Vibrate on supported devices
-      if (navigator.vibrate) navigator.vibrate(30);
-    }, delay);
-  }, [onLongPress, delay]);
+  const start = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      isLongPress.current = false;
+      didMove.current = false;
+      timerRef.current = setTimeout(() => {
+        isLongPress.current = true;
+        onLongPress(e);
+        // Vibrate on supported devices
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, delay);
+    },
+    [onLongPress, delay],
+  );
 
   const move = useCallback(() => {
     if (timerRef.current) {
@@ -33,15 +36,18 @@ export function useLongPress({ onLongPress, onClick, delay = 500 }: UseLongPress
     }
   }, []);
 
-  const end = useCallback((e: React.MouseEvent) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (!isLongPress.current && !didMove.current && onClick) {
-      onClick(e);
-    }
-  }, [onClick]);
+  const end = useCallback(
+    (e: React.MouseEvent) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      if (!isLongPress.current && !didMove.current && onClick) {
+        onClick(e);
+      }
+    },
+    [onClick],
+  );
 
   return {
     onTouchStart: start,

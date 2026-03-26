@@ -9,14 +9,18 @@ function ThrowingChild(): ReactNode {
 
 describe('TabErrorBoundary', () => {
   const originalError = console.error;
-  beforeEach(() => { console.error = vi.fn(); });
-  afterEach(() => { console.error = originalError; });
+  beforeEach(() => {
+    console.error = vi.fn();
+  });
+  afterEach(() => {
+    console.error = originalError;
+  });
 
   it('renders children when no error', () => {
     render(
       <TabErrorBoundary tabName="Browse">
         <div>Content</div>
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('Content')).toBeTruthy();
   });
@@ -25,7 +29,7 @@ describe('TabErrorBoundary', () => {
     render(
       <TabErrorBoundary tabName="Browse">
         <ThrowingChild />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText(/Browse encountered an error/)).toBeTruthy();
     expect(screen.getByText('Test crash')).toBeTruthy();
@@ -35,7 +39,7 @@ describe('TabErrorBoundary', () => {
     render(
       <TabErrorBoundary tabName="Test">
         <ThrowingChild />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('Retry')).toBeTruthy();
   });
@@ -44,7 +48,7 @@ describe('TabErrorBoundary', () => {
     render(
       <TabErrorBoundary>
         <ThrowingChild />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText(/This tab encountered an error/)).toBeTruthy();
   });

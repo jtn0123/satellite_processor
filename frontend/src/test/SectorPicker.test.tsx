@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SectorPicker from '../components/GoesData/SectorPicker';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-const wrap = (ui: React.ReactElement) => render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+const wrap = (ui: React.ReactElement) =>
+  render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 
 const MOCK_SECTORS = [
   { id: 'FullDisk', name: 'FullDisk', cadence_minutes: 10, typical_file_size_kb: 12000 },

@@ -1,6 +1,15 @@
 import { memo, useMemo, useState } from 'react';
 import { useJobs, useDeleteJob } from '../../hooks/useApi';
-import { Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Download } from 'lucide-react';
+import {
+  Trash2,
+  Eye,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  AlertTriangle,
+  Download,
+} from 'lucide-react';
 import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
 import ConfirmDialog from '../ConfirmDialog';
@@ -20,9 +29,17 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; bg:
   [JOB_STATUS.PENDING]: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
   [JOB_STATUS.PROCESSING]: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
   [JOB_STATUS.COMPLETED]: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
-  [JOB_STATUS.COMPLETED_PARTIAL]: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  [JOB_STATUS.COMPLETED_PARTIAL]: {
+    icon: AlertTriangle,
+    color: 'text-amber-400',
+    bg: 'bg-amber-400/10',
+  },
   [JOB_STATUS.FAILED]: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
-  [JOB_STATUS.CANCELLED]: { icon: AlertTriangle, color: 'text-gray-500 dark:text-slate-400', bg: 'bg-slate-400/10' },
+  [JOB_STATUS.CANCELLED]: {
+    icon: AlertTriangle,
+    color: 'text-gray-500 dark:text-slate-400',
+    bg: 'bg-slate-400/10',
+  },
 };
 
 interface Props {
@@ -45,7 +62,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {["a","b","c"].map((k) => (
+        {['a', 'b', 'c'].map((k) => (
           <div key={k} className="h-14 bg-white dark:bg-space-800/70 rounded-xl animate-pulse" />
         ))}
       </div>
@@ -53,7 +70,9 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
   }
 
   if (displayed.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No jobs yet</p>;
+    return (
+      <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No jobs yet</p>
+    );
   }
 
   return (
@@ -67,7 +86,9 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
           aria-label="Filter jobs by status"
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
           ))}
         </select>
       </div>
@@ -88,7 +109,9 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">{job.job_type}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {job.job_type}
+                </span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                   {job.status}
                 </span>
@@ -109,13 +132,15 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
               {new Date(job.created_at).toLocaleString()}
             </span>
             <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-              {(job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.COMPLETED_PARTIAL) && (
+              {(job.status === JOB_STATUS.COMPLETED ||
+                job.status === JOB_STATUS.COMPLETED_PARTIAL) && (
                 <a
                   href={`/api/jobs/${job.id}/download`}
                   download
                   onClick={(e) => e.stopPropagation()}
                   className="p-1.5 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400 hover:text-primary"
-                  title="Download" aria-label={`Download job ${job.id.slice(0, 8)}`}
+                  title="Download"
+                  aria-label={`Download job ${job.id.slice(0, 8)}`}
                 >
                   <Download className="w-4 h-4" />
                 </a>
@@ -150,7 +175,10 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
           message="This cannot be undone."
           confirmLabel="Delete"
           isPending={deleteJob.isPending}
-          onConfirm={() => { deleteJob.mutate(deleteJobId); setDeleteJobId(null); }}
+          onConfirm={() => {
+            deleteJob.mutate(deleteJobId);
+            setDeleteJobId(null);
+          }}
           onCancel={() => setDeleteJobId(null)}
         />
       )}

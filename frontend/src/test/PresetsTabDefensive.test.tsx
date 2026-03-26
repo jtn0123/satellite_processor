@@ -19,7 +19,6 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
@@ -64,9 +63,23 @@ describe('PresetsTab - Defensive Scenarios', () => {
 
   it('handles presets API returning paginated object', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets') return Promise.resolve({
-        data: { items: [{ id: '1', name: 'Test Preset', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', description: '', created_at: '2024-01-01' }], total: 1 },
-      });
+      if (url === '/satellite/fetch-presets')
+        return Promise.resolve({
+          data: {
+            items: [
+              {
+                id: '1',
+                name: 'Test Preset',
+                satellite: 'GOES-16',
+                sector: 'CONUS',
+                band: 'C02',
+                description: '',
+                created_at: '2024-01-01',
+              },
+            ],
+            total: 1,
+          },
+        });
       if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });
     });
@@ -78,10 +91,35 @@ describe('PresetsTab - Defensive Scenarios', () => {
 
   it('handles schedule with null preset reference', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [{ id: '1', name: 'P1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02', description: '', created_at: '2024-01-01' }] });
-      if (url === '/satellite/schedules') return Promise.resolve({
-        data: [{ id: 's1', name: 'Hourly', preset_id: '1', interval_minutes: 60, is_active: true, last_run_at: null, next_run_at: null, preset: null }],
-      });
+      if (url === '/satellite/fetch-presets')
+        return Promise.resolve({
+          data: [
+            {
+              id: '1',
+              name: 'P1',
+              satellite: 'GOES-16',
+              sector: 'CONUS',
+              band: 'C02',
+              description: '',
+              created_at: '2024-01-01',
+            },
+          ],
+        });
+      if (url === '/satellite/schedules')
+        return Promise.resolve({
+          data: [
+            {
+              id: 's1',
+              name: 'Hourly',
+              preset_id: '1',
+              interval_minutes: 60,
+              is_active: true,
+              last_run_at: null,
+              next_run_at: null,
+              preset: null,
+            },
+          ],
+        });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<PresetsTab />);

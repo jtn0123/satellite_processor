@@ -18,11 +18,16 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: notifications, isError, isLoading } = useQuery<Notification[]>({
+  const {
+    data: notifications,
+    isError,
+    isLoading,
+  } = useQuery<Notification[]>({
     queryKey: ['notifications'],
-    queryFn: () => api.get('/notifications').then((r) => {
-      return extractArray<Notification>(r.data);
-    }),
+    queryFn: () =>
+      api.get('/notifications').then((r) => {
+        return extractArray<Notification>(r.data);
+      }),
     refetchInterval: 30_000,
     staleTime: 15_000,
     retry: false,
@@ -64,12 +69,19 @@ export default function NotificationBell() {
       >
         <Bell className="w-4 h-4" aria-hidden="true" />
         {isError && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true" title="Unable to load notifications">
+          <span
+            className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+            aria-hidden="true"
+            title="Unable to load notifications"
+          >
             !
           </span>
         )}
         {!isError && unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true">
+          <span
+            className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+            aria-hidden="true"
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -82,19 +94,30 @@ export default function NotificationBell() {
           aria-label="Notifications"
         >
           <div className="px-4 py-3 border-b border-gray-200 dark:border-space-700/50">
-            <h3 className="text-sm font-semibold" id="notification-heading">Notifications</h3>
+            <h3 className="text-sm font-semibold" id="notification-heading">
+              Notifications
+            </h3>
           </div>
           <div className="max-h-64 overflow-y-auto" aria-labelledby="notification-heading">
             {isError && (
-              <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">Unable to load notifications</div>
+              <div className="px-4 py-6 text-center text-sm text-amber-500 dark:text-amber-400">
+                Unable to load notifications
+              </div>
             )}
             {!isError && isLoading && (
-              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">Loading…</div>
+              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">
+                Loading…
+              </div>
             )}
             {!isError && !isLoading && (!notifications || notifications.length === 0) && (
-              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No notifications</div>
+              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">
+                No notifications
+              </div>
             )}
-            {!isError && !isLoading && notifications && notifications.length > 0 && (
+            {!isError &&
+              !isLoading &&
+              notifications &&
+              notifications.length > 0 &&
               notifications.slice(0, 10).map((n) => (
                 <button
                   key={n.id}
@@ -108,7 +131,12 @@ export default function NotificationBell() {
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    {!n.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" aria-hidden="true" />}
+                    {!n.read && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     <div className={n.read ? 'ml-4' : ''}>
                       <p className="text-sm text-gray-600 dark:text-slate-300">{n.message}</p>
                       <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
@@ -117,8 +145,7 @@ export default function NotificationBell() {
                     </div>
                   </div>
                 </button>
-              ))
-            )}
+              ))}
           </div>
         </div>
       )}

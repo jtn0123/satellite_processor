@@ -21,7 +21,9 @@ vi.mock('../api/client', () => ({
         });
       }
       if (url === '/satellite/frames/stats') {
-        return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
+        return Promise.resolve({
+          data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 },
+        });
       }
       return Promise.resolve({ data: {} });
     }),

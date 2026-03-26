@@ -24,7 +24,7 @@ onError((report) => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );
 
 // ── Web Vitals (async, non-blocking) ────────────────────────────────

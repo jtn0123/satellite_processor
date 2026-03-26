@@ -54,9 +54,7 @@ async def invalidate(pattern: str) -> int:
     """Delete keys matching a glob pattern. Returns count deleted."""
     redis_client = get_redis_client()
     try:
-        keys: list[str] = []
-        async for key in redis_client.scan_iter(match=pattern, count=100):
-            keys.append(key)
+        keys: list[str] = [key async for key in redis_client.scan_iter(match=pattern, count=100)]
         if keys:
             deleted: int = await redis_client.delete(*keys)
             return deleted

@@ -5,8 +5,30 @@ import { MemoryRouter } from 'react-router-dom';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 
 const mockImages = [
-  { id: 'img-1', filename: 'test.png', original_name: 'test.png', file_size: 1024, width: 100, height: 100, satellite: 'GOES-16', channel: 'visible', captured_at: '2026-01-01T00:00:00Z', uploaded_at: '2026-01-01T00:00:00Z' },
-  { id: 'img-2', filename: 'test2.png', original_name: 'test2.png', file_size: 2048, width: 200, height: 200, satellite: 'GOES-18', channel: 'infrared', captured_at: '2026-01-02T00:00:00Z', uploaded_at: '2026-01-02T00:00:00Z' },
+  {
+    id: 'img-1',
+    filename: 'test.png',
+    original_name: 'test.png',
+    file_size: 1024,
+    width: 100,
+    height: 100,
+    satellite: 'GOES-16',
+    channel: 'visible',
+    captured_at: '2026-01-01T00:00:00Z',
+    uploaded_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'img-2',
+    filename: 'test2.png',
+    original_name: 'test2.png',
+    file_size: 2048,
+    width: 200,
+    height: 200,
+    satellite: 'GOES-18',
+    channel: 'infrared',
+    captured_at: '2026-01-02T00:00:00Z',
+    uploaded_at: '2026-01-02T00:00:00Z',
+  },
 ];
 
 let isLoading = false;
@@ -92,7 +114,9 @@ describe('ImageGallery - sort and filter', () => {
 
   it('filters by satellite', () => {
     render(<ImageGallery />, { wrapper });
-    fireEvent.change(screen.getByLabelText('Filter by satellite'), { target: { value: 'GOES-16' } });
+    fireEvent.change(screen.getByLabelText('Filter by satellite'), {
+      target: { value: 'GOES-16' },
+    });
     expect(screen.getByText('test.png')).toBeInTheDocument();
     expect(screen.queryByText('test2.png')).not.toBeInTheDocument();
   });

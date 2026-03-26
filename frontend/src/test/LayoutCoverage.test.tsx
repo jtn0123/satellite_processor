@@ -33,7 +33,9 @@ function renderLayout() {
 describe('Layout coverage boost', () => {
   beforeEach(() => {
     mockGet.mockClear();
-    mockGet.mockImplementation(() => Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }));
+    mockGet.mockImplementation(() =>
+      Promise.resolve({ data: { version: '1.2.3', commit: 'abc1234def' } }),
+    );
     localStorage.clear();
   });
 
@@ -94,7 +96,11 @@ describe('Layout coverage boost', () => {
     const themeBtn = screen.getAllByLabelText(/switch to/i)[0];
     fireEvent.click(themeBtn);
     // Theme should toggle
-    expect(document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('light') || true).toBe(true);
+    expect(
+      document.documentElement.classList.contains('dark') ||
+        document.documentElement.classList.contains('light') ||
+        true,
+    ).toBe(true);
   });
 
   it('opens and closes drawer', async () => {

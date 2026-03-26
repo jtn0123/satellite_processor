@@ -18,7 +18,13 @@ vi.mock('../components/ImageGallery/ImageGallery', () => ({
 }));
 
 vi.mock('../components/Processing/ProcessingForm', () => ({
-  default: ({ selectedImages, initialParams }: { selectedImages: string[]; initialParams: Record<string, unknown> | null }) => (
+  default: ({
+    selectedImages,
+    initialParams,
+  }: {
+    selectedImages: string[];
+    initialParams: Record<string, unknown> | null;
+  }) => (
     <div data-testid="processing-form">
       <span data-testid="selected-count">{selectedImages.length}</span>
       {initialParams && <span data-testid="has-params">yes</span>}
@@ -29,7 +35,9 @@ vi.mock('../components/Processing/ProcessingForm', () => ({
 vi.mock('../components/Processing/PresetManager', () => ({
   default: ({ onLoadPreset }: { onLoadPreset: (params: Record<string, unknown>) => void }) => (
     <div data-testid="preset-manager">
-      <button data-testid="load-preset" onClick={() => onLoadPreset({ crop: true })}>Load</button>
+      <button data-testid="load-preset" onClick={() => onLoadPreset({ crop: true })}>
+        Load
+      </button>
     </div>
   ),
 }));

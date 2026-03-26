@@ -24,7 +24,9 @@ describe('PullToRefreshIndicator', () => {
   });
 
   it('applies rotation transform based on pullDistance', () => {
-    const { container } = render(<PullToRefreshIndicator pullDistance={40} isRefreshing={false} threshold={80} />);
+    const { container } = render(
+      <PullToRefreshIndicator pullDistance={40} isRefreshing={false} threshold={80} />,
+    );
     const svg = container.querySelector('svg');
     expect(svg?.style.transform).toBe('rotate(180deg)');
   });

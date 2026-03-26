@@ -5,12 +5,26 @@ import NotificationBell from '../components/NotificationBell';
 
 vi.mock('../api/client', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({
-      data: [
-        { id: 'n1', message: 'Fetch complete', type: 'fetch_complete', read: false, created_at: '2026-01-01T12:00:00Z' },
-        { id: 'n2', message: 'Old note', type: 'fetch_complete', read: true, created_at: '2026-01-01T11:00:00Z' },
-      ],
-    })),
+    get: vi.fn(() =>
+      Promise.resolve({
+        data: [
+          {
+            id: 'n1',
+            message: 'Fetch complete',
+            type: 'fetch_complete',
+            read: false,
+            created_at: '2026-01-01T12:00:00Z',
+          },
+          {
+            id: 'n2',
+            message: 'Old note',
+            type: 'fetch_complete',
+            read: true,
+            created_at: '2026-01-01T11:00:00Z',
+          },
+        ],
+      }),
+    ),
     patch: vi.fn(() => Promise.resolve({})),
   },
 }));

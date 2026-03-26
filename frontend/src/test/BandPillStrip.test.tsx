@@ -108,7 +108,9 @@ describe('BandPillStrip', () => {
     render(
       <BandPillStrip
         {...defaultProps}
-        satelliteAvailability={{ 'GOES-16': { status: 'degraded', description: 'Degraded performance' } }}
+        satelliteAvailability={{
+          'GOES-16': { status: 'degraded', description: 'Degraded performance' },
+        }}
       />,
     );
     expect(screen.getByTestId('pill-strip-satellite').textContent).toContain('degraded');

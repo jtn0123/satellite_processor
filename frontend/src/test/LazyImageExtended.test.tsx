@@ -6,7 +6,8 @@ type IOCallback = IntersectionObserverCallback;
 
 function setupIO() {
   let storedCb: IOCallback | null = null;
-  const instances: Array<{ observe: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }> = [];
+  const instances: { observe: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }[] =
+    [];
 
   class MockIO {
     observe = vi.fn();
@@ -24,7 +25,10 @@ function setupIO() {
     const inst = instances[instances.length - 1];
     if (storedCb && inst) {
       act(() => {
-        storedCb!([{ isIntersecting: true } as IntersectionObserverEntry], inst as unknown as IntersectionObserver);
+        storedCb!(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          inst as unknown as IntersectionObserver,
+        );
       });
     }
   }
@@ -33,7 +37,10 @@ function setupIO() {
     const inst = instances[instances.length - 1];
     if (storedCb && inst) {
       act(() => {
-        storedCb!([{ isIntersecting: false } as IntersectionObserverEntry], inst as unknown as IntersectionObserver);
+        storedCb!(
+          [{ isIntersecting: false } as IntersectionObserverEntry],
+          inst as unknown as IntersectionObserver,
+        );
       });
     }
   }
@@ -77,7 +84,9 @@ describe('LazyImage — extended', () => {
 
   it('renders custom placeholder', () => {
     setupIO();
-    render(<LazyImage src="/img.jpg" alt="test" placeholder={<div data-testid="custom">Loading</div>} />);
+    render(
+      <LazyImage src="/img.jpg" alt="test" placeholder={<div data-testid="custom">Loading</div>} />,
+    );
     expect(screen.getByTestId('custom')).toBeInTheDocument();
   });
 

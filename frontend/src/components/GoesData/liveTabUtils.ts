@@ -65,16 +65,25 @@ function formatLong(bandId: string, friendly?: string, description?: string): st
   return formatMedium(bandId, friendly, description);
 }
 
-export function getFriendlyBandLabel(bandId: string, description?: string, format?: 'short' | 'medium' | 'long', satellite?: string): string {
+export function getFriendlyBandLabel(
+  bandId: string,
+  description?: string,
+  format?: 'short' | 'medium' | 'long',
+  satellite?: string,
+): string {
   const names = getBandNames(satellite);
   const friendly = names[bandId];
 
-  if ((bandId === 'GEOCOLOR' || bandId === 'TrueColor') && format !== 'short') return friendly ?? bandId;
+  if ((bandId === 'GEOCOLOR' || bandId === 'TrueColor') && format !== 'short')
+    return friendly ?? bandId;
 
   switch (format) {
-    case 'short': return formatShort(bandId, friendly);
-    case 'long': return formatLong(bandId, friendly, description);
-    default: return formatMedium(bandId, friendly, description);
+    case 'short':
+      return formatShort(bandId, friendly);
+    case 'long':
+      return formatLong(bandId, friendly, description);
+    default:
+      return formatMedium(bandId, friendly, description);
   }
 }
 
@@ -115,20 +124,31 @@ export function saveCachedImage(url: string, meta: Omit<CachedImageMeta, 'url'>)
   try {
     const key = `${CACHE_PREFIX}${meta.satellite}:${meta.sector}:${meta.band}`;
     localStorage.setItem(key, JSON.stringify({ url, ...meta }));
-    const allKeys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+    const allKeys = Object.keys(localStorage).filter((k) => k.startsWith(CACHE_PREFIX));
     if (allKeys.length > MAX_CACHED) {
-      const entries = allKeys.map(k => {
-        try { return { key: k, ts: JSON.parse(localStorage.getItem(k) ?? '{}').timestamp ?? '' }; }
-        catch { return { key: k, ts: '' }; }
-      }).sort((a, b) => a.ts.localeCompare(b.ts));
+      const entries = allKeys
+        .map((k) => {
+          try {
+            return { key: k, ts: JSON.parse(localStorage.getItem(k) ?? '{}').timestamp ?? '' };
+          } catch {
+            return { key: k, ts: '' };
+          }
+        })
+        .sort((a, b) => a.ts.localeCompare(b.ts));
       for (let i = 0; i < entries.length - MAX_CACHED; i++) {
         localStorage.removeItem(entries[i].key);
       }
     }
-  } catch { /* storage full — ignore */ }
+  } catch {
+    /* storage full — ignore */
+  }
 }
 
-export function loadCachedImage(satellite?: string, sector?: string, band?: string): CachedImageMeta | null {
+export function loadCachedImage(
+  satellite?: string,
+  sector?: string,
+  band?: string,
+): CachedImageMeta | null {
   try {
     if (satellite && sector && band) {
       const key = `${CACHE_PREFIX}${satellite}:${sector}:${band}`;
@@ -137,7 +157,9 @@ export function loadCachedImage(satellite?: string, sector?: string, band?: stri
     }
     // Only return exact-match cache to avoid showing wrong band's image
     return null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -209,7 +231,10 @@ function buildHimawariBands(): BandOption[] {
 /** Return sectors relevant to the selected satellite.
  *  For GOES: uses API-provided sectors if available, falls back to defaults.
  *  For Himawari: always uses client-side constants (API may not have them). */
-export function getSectorsForSatellite(satellite: string, apiSectors?: ReadonlyArray<SectorOption>): SectorOption[] {
+export function getSectorsForSatellite(
+  satellite: string,
+  apiSectors?: readonly SectorOption[],
+): SectorOption[] {
   if (isHimawariSatellite(satellite)) return HIMAWARI_SECTORS;
   return apiSectors && apiSectors.length > 0 ? [...apiSectors] : GOES_SECTORS;
 }
@@ -217,7 +242,10 @@ export function getSectorsForSatellite(satellite: string, apiSectors?: ReadonlyA
 /** Return bands relevant to the selected satellite.
  *  For GOES: uses API-provided bands if available, falls back to defaults.
  *  For Himawari: always uses client-side constants. */
-export function getBandsForSatellite(satellite: string, apiBands?: ReadonlyArray<BandOption>): BandOption[] {
+export function getBandsForSatellite(
+  satellite: string,
+  apiBands?: readonly BandOption[],
+): BandOption[] {
   if (isHimawariSatellite(satellite)) return buildHimawariBands();
   return apiBands && apiBands.length > 0 ? [...apiBands] : buildGoesBands();
 }

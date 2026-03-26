@@ -22,9 +22,7 @@ export default function FloatingCompareBar({
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-full px-4 py-2.5 shadow-2xl border border-gray-700 dark:border-slate-600 animate-fade-in">
-      <span className="text-sm font-medium mr-1">
-        {selectedFrames.length} selected
-      </span>
+      <span className="text-sm font-medium mr-1">{selectedFrames.length} selected</span>
 
       {selectedFrames.length === 2 && (
         <button

@@ -29,13 +29,22 @@ export default function JobsPage() {
       ) : (
         <>
           <div>
-            <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-1">
-              <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
+            <nav
+              aria-label="Breadcrumb"
+              className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-1"
+            >
+              <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                Home
+              </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span aria-current="page" className="text-gray-900 dark:text-white">Jobs</span>
+              <span aria-current="page" className="text-gray-900 dark:text-white">
+                Jobs
+              </span>
             </nav>
             <h1 className="text-2xl font-bold">Jobs</h1>
-            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Monitor and manage processing jobs</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
+              Monitor and manage processing jobs
+            </p>
           </div>
           <JobList onSelect={handleSelect} />
         </>

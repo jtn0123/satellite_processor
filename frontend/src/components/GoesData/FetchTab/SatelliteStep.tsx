@@ -51,7 +51,9 @@ export function SatelliteStep({ satellite, setSatellite, products, onNext }: Sat
               </div>
               {avail && (
                 <>
-                  <div className="text-xs text-gray-500 dark:text-slate-400">{avail.description}</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400">
+                    {avail.description}
+                  </div>
                   <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
                     {formatAvailRange(avail)}
                   </div>

@@ -15,7 +15,11 @@ function TestComponent({ onClose }: { onClose: () => void }) {
 
 function EmptyComponent({ onClose }: { onClose: () => void }) {
   const ref = useFocusTrap(onClose);
-  return <div ref={ref}><p>No focusable elements</p></div>;
+  return (
+    <div ref={ref}>
+      <p>No focusable elements</p>
+    </div>
+  );
 }
 
 describe('useFocusTrap', () => {

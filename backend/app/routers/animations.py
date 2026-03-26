@@ -1,5 +1,6 @@
 """Animation studio endpoints — crop presets, animations, presets, and batch."""
 
+import contextlib
 import logging
 import os
 import uuid
@@ -406,10 +407,8 @@ async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)
     if not anim:
         raise APIError(404, "not_found", "Animation not found")
     if anim.output_path:
-        try:
+        with contextlib.suppress(OSError):
             os.remove(anim.output_path)
-        except OSError:
-            pass
     await db.delete(anim)
     await db.commit()
     return {"deleted": animation_id}

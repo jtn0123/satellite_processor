@@ -13,29 +13,45 @@ interface WhatStepProps {
   readonly setBand: (v: string) => void;
   readonly imageType: ImageType;
   readonly setImageType: (v: ImageType) => void;
-  readonly products: { sectors: Array<{ id: string; name: string; product: string }> } | undefined;
+  readonly products: { sectors: { id: string; name: string; product: string }[] } | undefined;
   readonly onBack: () => void;
   readonly onNext: () => void;
 }
 
-export function WhatStep({ satellite, sector, setSector, band, setBand, imageType, setImageType, products, onBack, onNext }: WhatStepProps) {
+export function WhatStep({
+  satellite,
+  sector,
+  setSector,
+  band,
+  setBand,
+  imageType,
+  setImageType,
+  products,
+  onBack,
+  onNext,
+}: WhatStepProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white">What to Fetch</h2>
 
       <div>
         <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Sector</h3>
-        <SectorPicker value={sector} onChange={setSector} sectors={products?.sectors ?? []} satellite={satellite} />
+        <SectorPicker
+          value={sector}
+          onChange={setSector}
+          sectors={products?.sectors ?? []}
+          satellite={satellite}
+        />
       </div>
 
       <div>
         <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Image Type</h3>
         <div className="flex gap-2">
-          {([
+          {[
             { value: 'single' as const, label: 'Single Band' },
             { value: 'true_color' as const, label: 'True Color' },
             { value: 'natural_color' as const, label: 'Natural Color' },
-          ]).map((opt) => (
+          ].map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -76,12 +92,18 @@ export function WhatStep({ satellite, sector, setSector, band, setBand, imageTyp
       )}
 
       <div className="flex justify-between">
-        <button type="button" onClick={onBack}
-          className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        >
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
-        <button type="button" onClick={onNext}
-          className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors">
+        <button
+          type="button"
+          onClick={onNext}
+          className="flex items-center gap-1 px-4 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        >
           Next <ChevronRight className="w-4 h-4" />
         </button>
       </div>

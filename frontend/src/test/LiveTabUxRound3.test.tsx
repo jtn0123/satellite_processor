@@ -80,7 +80,14 @@ function setupDefaultMocks() {
     if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
     if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME_DATA });
     if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG_DATA });
-    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS', 'FD'], checked_at: new Date().toISOString() } });
+    if (url.startsWith('/satellite/catalog/available'))
+      return Promise.resolve({
+        data: {
+          satellite: 'GOES-16',
+          available_sectors: ['CONUS', 'FD'],
+          checked_at: new Date().toISOString(),
+        },
+      });
     if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
@@ -208,10 +215,14 @@ describe('Countdown Timer', () => {
 
     expect(getCountdown()).toBe('Next: 5:00');
 
-    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
     expect(getCountdown()).toBe('Next: 4:59');
 
-    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
     expect(getCountdown()).toBe('Next: 4:58');
   });
 });
@@ -255,15 +266,23 @@ describe('Cached Image Banner', () => {
     // Make the real image fail so it falls back to cache
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/satellite/latest')) return Promise.resolve({
-        data: {
-          ...FRAME_DATA,
-          image_url: 'http://broken-url/image.png',
-          thumbnail_url: 'http://broken-url/thumb.png',
-        },
-      });
+      if (url.startsWith('/satellite/latest'))
+        return Promise.resolve({
+          data: {
+            ...FRAME_DATA,
+            image_url: 'http://broken-url/image.png',
+            thumbnail_url: 'http://broken-url/thumb.png',
+          },
+        });
       if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
-      if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+      if (url.startsWith('/satellite/catalog/available'))
+        return Promise.resolve({
+          data: {
+            satellite: 'GOES-16',
+            available_sectors: ['CONUS'],
+            checked_at: new Date().toISOString(),
+          },
+        });
       return Promise.resolve({ data: {} });
     });
 
@@ -300,15 +319,23 @@ describe('Cached Image Banner', () => {
 
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS_DATA });
-      if (url.startsWith('/satellite/latest')) return Promise.resolve({
-        data: {
-          ...FRAME_DATA,
-          image_url: 'http://broken-url/image.png',
-          thumbnail_url: 'http://broken-url/thumb.png',
-        },
-      });
+      if (url.startsWith('/satellite/latest'))
+        return Promise.resolve({
+          data: {
+            ...FRAME_DATA,
+            image_url: 'http://broken-url/image.png',
+            thumbnail_url: 'http://broken-url/thumb.png',
+          },
+        });
       if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: null });
-      if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
+      if (url.startsWith('/satellite/catalog/available'))
+        return Promise.resolve({
+          data: {
+            satellite: 'GOES-16',
+            available_sectors: ['CONUS'],
+            checked_at: new Date().toISOString(),
+          },
+        });
       return Promise.resolve({ data: {} });
     });
 

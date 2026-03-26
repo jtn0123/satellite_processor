@@ -82,7 +82,8 @@ export default function FrameRangePreview({ data, isLoading, isError }: Readonly
         {data.total_count} frames in range
         {data.capture_interval_minutes > 0 && (
           <span className="text-gray-400 dark:text-slate-500 font-normal">
-            {' '}· ~{data.capture_interval_minutes}min interval
+            {' '}
+            · ~{data.capture_interval_minutes}min interval
           </span>
         )}
       </p>

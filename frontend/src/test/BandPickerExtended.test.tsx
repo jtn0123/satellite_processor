@@ -20,7 +20,7 @@ function renderBandPicker(props: Partial<React.ComponentProps<typeof BandPicker>
   return render(
     <QueryClientProvider client={qc}>
       <BandPicker value="C02" onChange={() => {}} satellite="GOES-16" sector="CONUS" {...props} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -56,10 +56,13 @@ describe('BandPicker - Extended', () => {
     await waitFor(() => expect(screen.getAllByTitle(/Fetch sample for/).length).toBeGreaterThan(0));
     const fetchBtn = screen.getAllByTitle(/Fetch sample for/)[0];
     fireEvent.click(fetchBtn);
-    expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-      satellite: 'GOES-16',
-      sector: 'CONUS',
-    }));
+    expect(mockedApi.post).toHaveBeenCalledWith(
+      '/satellite/fetch',
+      expect.objectContaining({
+        satellite: 'GOES-16',
+        sector: 'CONUS',
+      }),
+    );
   });
 
   it('fetch sample shows success toast on success', async () => {
@@ -133,9 +136,27 @@ describe('BandPicker - Extended', () => {
   it('does not show "No data yet" for bands with data', async () => {
     // Set all bands as having data
     const allCounts: Record<string, number> = {};
-    ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12','C13','C14','C15','C16'].forEach(b => allCounts[b] = 10);
+    [
+      'C01',
+      'C02',
+      'C03',
+      'C04',
+      'C05',
+      'C06',
+      'C07',
+      'C08',
+      'C09',
+      'C10',
+      'C11',
+      'C12',
+      'C13',
+      'C14',
+      'C15',
+      'C16',
+    ].forEach((b) => (allCounts[b] = 10));
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/band-availability') return Promise.resolve({ data: { counts: allCounts } });
+      if (url === '/satellite/band-availability')
+        return Promise.resolve({ data: { counts: allCounts } });
       return Promise.resolve({ data: {} });
     });
     renderBandPicker();

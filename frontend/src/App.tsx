@@ -31,7 +31,9 @@ function LoadingSpinner() {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-space-950 gap-4">
       <Satellite className="w-10 h-10 text-primary animate-pulse" />
-      <div className="text-sm text-gray-500 dark:text-slate-400 font-medium">Loading Satellite Tracker…</div>
+      <div className="text-sm text-gray-500 dark:text-slate-400 font-medium">
+        Loading Satellite Tracker…
+      </div>
     </div>
   );
 }
@@ -42,15 +44,71 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
-            <Route path="shared/:token" element={<ErrorBoundary><SharedFrame /></ErrorBoundary>} />
+            <Route
+              path="shared/:token"
+              element={
+                <ErrorBoundary>
+                  <SharedFrame />
+                </ErrorBoundary>
+              }
+            />
             <Route element={<Layout />}>
-              <Route index element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
-              <Route path="live" element={<ErrorBoundary><LiveView /></ErrorBoundary>} />
-              <Route path="animate" element={<ErrorBoundary><Animate /></ErrorBoundary>} />
-              <Route path="goes" element={<ErrorBoundary><GoesData /></ErrorBoundary>} />
-              <Route path="jobs" element={<ErrorBoundary><JobsPage /></ErrorBoundary>} />
-              <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
-              <Route path="errors" element={<ErrorBoundary><ErrorDashboard /></ErrorBoundary>} />
+              <Route
+                index
+                element={
+                  <ErrorBoundary>
+                    <Dashboard />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="live"
+                element={
+                  <ErrorBoundary>
+                    <LiveView />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="animate"
+                element={
+                  <ErrorBoundary>
+                    <Animate />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="goes"
+                element={
+                  <ErrorBoundary>
+                    <GoesData />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="jobs"
+                element={
+                  <ErrorBoundary>
+                    <JobsPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ErrorBoundary>
+                    <SettingsPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="errors"
+                element={
+                  <ErrorBoundary>
+                    <ErrorDashboard />
+                  </ErrorBoundary>
+                }
+              />
               {/* Legacy redirects */}
               <Route path="upload" element={<Navigate to="/settings" replace />} />
               <Route path="process" element={<Navigate to="/settings" replace />} />

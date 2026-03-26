@@ -84,7 +84,7 @@ def find_ffmpeg(testing: bool = False) -> Path | None:
             if result.returncode == 0:
                 return Path("ffmpeg")
         except Exception:
-            pass
+            logger.debug("ffmpeg not found on PATH")
 
         return None
     except Exception as e:

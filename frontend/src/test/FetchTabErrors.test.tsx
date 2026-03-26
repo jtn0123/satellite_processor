@@ -14,10 +14,31 @@ vi.mock('../api/client', () => ({
         return Promise.resolve({
           data: {
             satellites: ['GOES-19'],
-            sectors: [{ id: 'FullDisk', name: 'FullDisk', cadence_minutes: 10, typical_file_size_kb: 12000 }],
-            bands: [{ id: 'C02', description: 'Red Visible', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' }],
+            sectors: [
+              {
+                id: 'FullDisk',
+                name: 'FullDisk',
+                cadence_minutes: 10,
+                typical_file_size_kb: 12000,
+              },
+            ],
+            bands: [
+              {
+                id: 'C02',
+                description: 'Red Visible',
+                wavelength_um: 0.64,
+                common_name: 'Red',
+                category: 'visible',
+                use_case: 'Primary visible',
+              },
+            ],
             satellite_availability: {
-              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active', description: 'GOES-East' },
+              'GOES-19': {
+                available_from: '2025-01-01',
+                available_to: null,
+                status: 'active',
+                description: 'GOES-East',
+              },
             },
             default_satellite: 'GOES-19',
           },
@@ -41,7 +62,9 @@ vi.mock('../utils/toast', () => ({
 }));
 
 function makeWrapper() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return function W({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   };

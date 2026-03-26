@@ -29,18 +29,23 @@ export default function ErrorDashboard() {
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const fetchErrors = useCallback(async (p = page) => {
-    setLoading(true);
-    try {
-      const res = await api.get<ErrorListResponse>('/errors', { params: { page: p, per_page: 50 } });
-      setErrors(res.data.items);
-      setTotal(res.data.total);
-    } catch {
-      // Silently fail — we're on the error dashboard, ironic to error here
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
+  const fetchErrors = useCallback(
+    async (p = page) => {
+      setLoading(true);
+      try {
+        const res = await api.get<ErrorListResponse>('/errors', {
+          params: { page: p, per_page: 50 },
+        });
+        setErrors(res.data.items);
+        setTotal(res.data.total);
+      } catch {
+        // Silently fail — we're on the error dashboard, ironic to error here
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page],
+  );
 
   useEffect(() => {
     fetchErrors(page);
@@ -65,7 +70,7 @@ export default function ErrorDashboard() {
   };
 
   const toggleExpand = (id: number) => {
-    setExpandedId(prev => (prev === id ? null : id));
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
@@ -139,7 +144,9 @@ export default function ErrorDashboard() {
                 <div className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-space-700/50 bg-gray-50/50 dark:bg-space-800/30">
                   {err.stack && (
                     <div className="mt-3">
-                      <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">Stack Trace</h4>
+                      <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">
+                        Stack Trace
+                      </h4>
                       <pre className="text-xs font-mono bg-gray-100 dark:bg-space-900 p-3 rounded overflow-x-auto max-h-64 whitespace-pre-wrap text-gray-700 dark:text-slate-300">
                         {err.stack}
                       </pre>
@@ -148,19 +155,27 @@ export default function ErrorDashboard() {
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     {err.user_agent && (
                       <div>
-                        <span className="font-semibold text-gray-500 dark:text-slate-400">User Agent</span>
-                        <p className="text-gray-700 dark:text-slate-300 truncate">{err.user_agent}</p>
+                        <span className="font-semibold text-gray-500 dark:text-slate-400">
+                          User Agent
+                        </span>
+                        <p className="text-gray-700 dark:text-slate-300 truncate">
+                          {err.user_agent}
+                        </p>
                       </div>
                     )}
                     {err.client_ip && (
                       <div>
-                        <span className="font-semibold text-gray-500 dark:text-slate-400">Client IP</span>
+                        <span className="font-semibold text-gray-500 dark:text-slate-400">
+                          Client IP
+                        </span>
                         <p className="text-gray-700 dark:text-slate-300">{err.client_ip}</p>
                       </div>
                     )}
                     {err.context && (
                       <div className="col-span-2">
-                        <span className="font-semibold text-gray-500 dark:text-slate-400">Context</span>
+                        <span className="font-semibold text-gray-500 dark:text-slate-400">
+                          Context
+                        </span>
                         <pre className="text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-space-900 p-2 rounded mt-1 overflow-x-auto">
                           {JSON.stringify(err.context, null, 2)}
                         </pre>
@@ -178,7 +193,7 @@ export default function ErrorDashboard() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-space-800 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-space-700 transition-colors"
           >
@@ -188,7 +203,7 @@ export default function ErrorDashboard() {
             Page {page} of {totalPages}
           </span>
           <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
             className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-space-800 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-space-700 transition-colors"
           >

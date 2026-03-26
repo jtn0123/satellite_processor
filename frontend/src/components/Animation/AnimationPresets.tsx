@@ -19,7 +19,8 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
 
   const { data: presets } = useQuery<AnimationPreset[]>({
     queryKey: ['animation-presets'],
-    queryFn: () => api.get('/satellite/animation-presets').then((r) => extractArray<AnimationPreset>(r.data)),
+    queryFn: () =>
+      api.get('/satellite/animation-presets').then((r) => extractArray<AnimationPreset>(r.data)),
   });
 
   const saveMutation = useMutation({
@@ -27,7 +28,10 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { start_date: _s, end_date: _e, name: _n, ...presetConfig } = config;
       return api
-        .post('/satellite/animation-presets', { name: newName || 'Untitled Preset', ...presetConfig })
+        .post('/satellite/animation-presets', {
+          name: newName || 'Untitled Preset',
+          ...presetConfig,
+        })
         .then((r) => r.data);
     },
     onSuccess: () => {

@@ -6,7 +6,11 @@ import EmptyState from './EmptyState';
 import type { FrameStats } from './types';
 
 export default function StatsTab() {
-  const { data: stats, isLoading, isError } = useQuery<FrameStats>({
+  const {
+    data: stats,
+    isLoading,
+    isError,
+  } = useQuery<FrameStats>({
     queryKey: ['goes-frame-stats'],
     queryFn: () => api.get('/satellite/frames/stats').then((r) => r.data),
   });
@@ -26,7 +30,8 @@ export default function StatsTab() {
         description="Fetch some satellite data first — statistics will appear here once you have frames to analyze."
         action={{
           label: 'Go to Fetch Tab',
-          onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
+          onClick: () =>
+            globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
         }}
       />
     );
@@ -42,15 +47,21 @@ export default function StatsTab() {
       {/* Overview cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
-          <div className="text-3xl font-bold text-primary">{stats.total_frames.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-primary">
+            {stats.total_frames.toLocaleString()}
+          </div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Total Frames</div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
-          <div className="text-3xl font-bold text-emerald-400">{formatBytes(stats.total_size_bytes)}</div>
+          <div className="text-3xl font-bold text-emerald-400">
+            {formatBytes(stats.total_size_bytes)}
+          </div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Total Storage</div>
         </div>
         <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
-          <div className="text-3xl font-bold text-amber-400">{Object.keys(stats.by_satellite ?? {}).length}</div>
+          <div className="text-3xl font-bold text-amber-400">
+            {Object.keys(stats.by_satellite ?? {}).length}
+          </div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Satellites</div>
         </div>
       </div>
@@ -63,11 +74,15 @@ export default function StatsTab() {
             <div key={sat} className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-900 dark:text-white">{sat}</span>
-                <span className="text-gray-500 dark:text-slate-400">{data.count} frames · {formatBytes(data.size)}</span>
+                <span className="text-gray-500 dark:text-slate-400">
+                  {data.count} frames · {formatBytes(data.size)}
+                </span>
               </div>
               <div className="h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${(data.size / maxSatSize) * 100}%` }} />
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${(data.size / maxSatSize) * 100}%` }}
+                />
               </div>
             </div>
           ))}
@@ -82,10 +97,14 @@ export default function StatsTab() {
             <div key={bandKey} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
               <div className="text-sm font-medium text-gray-900 dark:text-white">{bandKey}</div>
               <div className="text-xl font-bold text-primary">{data.count}</div>
-              <div className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(data.size)}</div>
+              <div className="text-xs text-gray-400 dark:text-slate-500">
+                {formatBytes(data.size)}
+              </div>
               <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-primary/60 rounded-full"
-                  style={{ width: `${(data.count / maxBandCount) * 100}%` }} />
+                <div
+                  className="h-full bg-primary/60 rounded-full"
+                  style={{ width: `${(data.count / maxBandCount) * 100}%` }}
+                />
               </div>
             </div>
           ))}

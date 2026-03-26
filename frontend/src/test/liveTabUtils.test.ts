@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getFriendlyBandLabel, saveCachedImage, loadCachedImage } from '../components/GoesData/liveTabUtils';
+import {
+  getFriendlyBandLabel,
+  saveCachedImage,
+  loadCachedImage,
+} from '../components/GoesData/liveTabUtils';
 
 describe('getFriendlyBandLabel', () => {
   describe('short mode', () => {

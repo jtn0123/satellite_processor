@@ -4,11 +4,7 @@ import { useRef, useCallback } from 'react';
  * Distinguishes single-tap from double-tap.
  * Single tap fires after 300ms delay; double tap fires immediately on second tap.
  */
-export function useDoubleTap(
-  onSingleTap: () => void,
-  onDoubleTap: () => void,
-  delay = 300,
-) {
+export function useDoubleTap(onSingleTap: () => void, onDoubleTap: () => void, delay = 300) {
   const lastTap = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 

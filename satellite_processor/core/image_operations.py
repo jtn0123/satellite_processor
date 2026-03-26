@@ -563,10 +563,7 @@ class ImageOperations:
         if options.get("interpolation_enabled"):
             quality = options.get("interpolation_quality", "medium")
             Interpolator(model_path=f"model_{quality}.pth", processing_speed="fast")
-            frames = []
-            for path in frame_paths:
-                frames.append(self.process_image(path, options))
-            return frames
+            return [self.process_image(path, options) for path in frame_paths]
         return [self.process_image(path, options) for path in frame_paths]
 
 

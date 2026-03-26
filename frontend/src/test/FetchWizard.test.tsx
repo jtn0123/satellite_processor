@@ -11,16 +11,50 @@ vi.mock('../api/client', () => ({
           data: {
             satellites: ['GOES-19', 'GOES-18', 'GOES-16'],
             satellite_availability: {
-              'GOES-19': { available_from: '2024-01-01', available_to: null, status: 'active', description: 'GOES-East (active)' },
-              'GOES-18': { available_from: '2022-01-01', available_to: null, status: 'active', description: 'GOES-West (active)' },
-              'GOES-16': { available_from: '2017-01-01', available_to: '2025-04-07', status: 'historical', description: 'GOES-East (historical)' },
+              'GOES-19': {
+                available_from: '2024-01-01',
+                available_to: null,
+                status: 'active',
+                description: 'GOES-East (active)',
+              },
+              'GOES-18': {
+                available_from: '2022-01-01',
+                available_to: null,
+                status: 'active',
+                description: 'GOES-West (active)',
+              },
+              'GOES-16': {
+                available_from: '2017-01-01',
+                available_to: '2025-04-07',
+                status: 'historical',
+                description: 'GOES-East (historical)',
+              },
             },
             sectors: [
-              { id: 'FullDisk', name: 'FullDisk', product: 'ABI-L2-CMIPF', cadence_minutes: 10, typical_file_size_kb: 12000 },
-              { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPC', cadence_minutes: 5, typical_file_size_kb: 4000 },
+              {
+                id: 'FullDisk',
+                name: 'FullDisk',
+                product: 'ABI-L2-CMIPF',
+                cadence_minutes: 10,
+                typical_file_size_kb: 12000,
+              },
+              {
+                id: 'CONUS',
+                name: 'CONUS',
+                product: 'ABI-L2-CMIPC',
+                cadence_minutes: 5,
+                typical_file_size_kb: 4000,
+              },
             ],
             bands: [
-              { id: 'C02', description: 'Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' },
+              {
+                id: 'C02',
+                description: 'Red (0.64µm)',
+                wavelength_um: 0.64,
+                common_name: 'Red',
+                category: 'visible',
+                use_case: 'Primary visible',
+              },
             ],
             default_satellite: 'GOES-19',
           },
@@ -34,7 +68,9 @@ vi.mock('../api/client', () => ({
       }
       return Promise.resolve({ data: {} });
     }),
-    post: vi.fn().mockResolvedValue({ data: { job_id: 'test-job-1', status: 'pending', message: 'ok' } }),
+    post: vi
+      .fn()
+      .mockResolvedValue({ data: { job_id: 'test-job-1', status: 'pending', message: 'ok' } }),
   },
 }));
 

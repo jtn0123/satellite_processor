@@ -14,16 +14,24 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
       if (e.key === 'Tab' && dialogRef.current) {
         const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     globalThis.addEventListener('keydown', handler);
@@ -35,11 +43,18 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
   const formatTime = (t: string) => new Date(t).toLocaleString();
 
   return (
-    <dialog ref={dialogRef} open aria-label="Compare frames" className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white m-0 w-full h-full max-w-none max-h-none border-none p-0">
+    <dialog
+      ref={dialogRef}
+      open
+      aria-label="Compare frames"
+      className="fixed inset-0 z-50 bg-black/90 flex flex-col text-white m-0 w-full h-full max-w-none max-h-none border-none p-0"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold" id="compare-heading">Compare Frames</h2>
+          <h2 className="text-lg font-semibold" id="compare-heading">
+            Compare Frames
+          </h2>
           <fieldset aria-label="Comparison view mode" className="border-0 p-0 m-0">
             <button
               type="button"
@@ -59,7 +74,12 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             </button>
           </fieldset>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close comparison view" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close comparison view"
+          className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
+        >
           Close
         </button>
       </div>
@@ -94,9 +114,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
             </div>
           </div>
         ) : (
-          <div
-            className="relative h-full w-full overflow-hidden cursor-col-resize select-none"
-          >
+          <div className="relative h-full w-full overflow-hidden cursor-col-resize select-none">
             <input
               type="range"
               min={0}
@@ -113,10 +131,7 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
               className="absolute inset-0 w-full h-full object-contain"
             />
             {/* Frame A (clipped) */}
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={{ width: `${sliderPos}%` }}
-            >
+            <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
               <img
                 src={`/api/satellite/frames/${frameA.id}/image`}
                 alt={`Frame A: ${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}

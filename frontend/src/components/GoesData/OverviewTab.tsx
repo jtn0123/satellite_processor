@@ -56,14 +56,28 @@ function timeAgo(dateStr: string): string {
 
 function statusBadge(status: string) {
   const map: Record<string, { color: string; icon: React.ReactNode }> = {
-    [JOB_STATUS.COMPLETED]: { color: 'bg-green-500/10 text-green-400 border-green-500/20', icon: <CheckCircle2 className="w-3 h-3" /> },
-    [JOB_STATUS.FAILED]: { color: 'bg-red-500/10 text-red-400 border-red-500/20', icon: <XCircle className="w-3 h-3" /> },
-    running: { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-    [JOB_STATUS.PENDING]: { color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: <Clock className="w-3 h-3" /> },
+    [JOB_STATUS.COMPLETED]: {
+      color: 'bg-green-500/10 text-green-400 border-green-500/20',
+      icon: <CheckCircle2 className="w-3 h-3" />,
+    },
+    [JOB_STATUS.FAILED]: {
+      color: 'bg-red-500/10 text-red-400 border-red-500/20',
+      icon: <XCircle className="w-3 h-3" />,
+    },
+    running: {
+      color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      icon: <Loader2 className="w-3 h-3 animate-spin" />,
+    },
+    [JOB_STATUS.PENDING]: {
+      color: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      icon: <Clock className="w-3 h-3" />,
+    },
   };
   const m = map[status] ?? map[JOB_STATUS.PENDING];
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${m.color}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${m.color}`}
+    >
       {m.icon}
       {status}
     </span>
@@ -72,7 +86,11 @@ function statusBadge(status: string) {
 
 export default function OverviewTab() {
   // AWS catalog latest — not available in dashboard-stats
-  const { data: catalogLatest, isLoading: catalogLoading, isError: catalogError } = useQuery<CatalogLatest>({
+  const {
+    data: catalogLatest,
+    isLoading: catalogLoading,
+    isError: catalogError,
+  } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest'],
     queryFn: () => api.get('/satellite/catalog/latest').then((r) => r.data),
     staleTime: 120_000,
@@ -122,9 +140,11 @@ export default function OverviewTab() {
       icon: <Download className="w-5 h-5" />,
       color: 'from-sky-500/20 to-blue-500/20 border-sky-500/30',
       onClick: () => {
-        globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
-          detail: { satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours_back: 1 },
-        }));
+        globalThis.dispatchEvent(
+          new CustomEvent('fetch-prefill', {
+            detail: { satellite: 'GOES-19', sector: 'CONUS', band: 'C02', hours_back: 1 },
+          }),
+        );
         switchTab('fetch');
       },
     },
@@ -134,9 +154,11 @@ export default function OverviewTab() {
       icon: <Zap className="w-5 h-5" />,
       color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',
       onClick: () => {
-        globalThis.dispatchEvent(new CustomEvent('fetch-prefill', {
-          detail: { satellite: 'GOES-19', sector: 'FullDisk', band: 'C02' },
-        }));
+        globalThis.dispatchEvent(
+          new CustomEvent('fetch-prefill', {
+            detail: { satellite: 'GOES-19', sector: 'FullDisk', band: 'C02' },
+          }),
+        );
         switchTab('fetch');
       },
     },
@@ -188,13 +210,13 @@ export default function OverviewTab() {
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4 flex-1 min-w-[200px]">
-              <div className="text-sm text-gray-500 dark:text-slate-400">{catalogLatest.satellite}</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">
+                {catalogLatest.satellite}
+              </div>
               <div className="text-lg font-bold text-gray-900 dark:text-white">
                 {catalogLatest.sector} · {catalogLatest.band}
               </div>
-              <div className="text-sm text-primary mt-1">
-                {timeAgo(catalogLatest.scan_time)}
-              </div>
+              <div className="text-sm text-primary mt-1">{timeAgo(catalogLatest.scan_time)}</div>
               <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                 {new Date(catalogLatest.scan_time).toLocaleString()}
               </div>
@@ -228,15 +250,15 @@ export default function OverviewTab() {
             <Satellite className="w-4 h-4 text-amber-400" />
             <span className="text-sm text-gray-500 dark:text-slate-400">Satellites</span>
           </div>
-          <div className="text-3xl font-bold text-amber-400">
-            {satelliteCount ?? '—'}
-          </div>
+          <div className="text-3xl font-bold text-amber-400">{satelliteCount ?? '—'}</div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">Quick Actions</h3>
+        <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">
+          Quick Actions
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActions.map((action) => (
             <button
@@ -247,8 +269,12 @@ export default function OverviewTab() {
             >
               <div className="mt-0.5 text-gray-900 dark:text-white">{action.icon}</div>
               <div>
-                <div className="font-medium text-sm text-gray-900 dark:text-white">{action.label}</div>
-                <div className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{action.description}</div>
+                <div className="font-medium text-sm text-gray-900 dark:text-white">
+                  {action.label}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                  {action.description}
+                </div>
               </div>
             </button>
           ))}
@@ -264,10 +290,17 @@ export default function OverviewTab() {
           </div>
           <div className="space-y-3">
             {recentJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+              <div
+                key={job.id}
+                className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-3"
+              >
                 <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{job.status_message || 'Fetch Job'}</div>
-                  <div className="text-xs text-gray-400 dark:text-slate-500">{job.created_at ? timeAgo(job.created_at) : '—'}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {job.status_message || 'Fetch Job'}
+                  </div>
+                  <div className="text-xs text-gray-400 dark:text-slate-500">
+                    {job.created_at ? timeAgo(job.created_at) : '—'}
+                  </div>
                 </div>
                 {statusBadge(job.status)}
               </div>
@@ -277,54 +310,70 @@ export default function OverviewTab() {
       )}
 
       {/* Stats Section */}
-      {dashboard && (Object.keys(bySatellite).length > 0 || Object.keys(storageBands).length > 0) && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-gray-900 dark:text-white">Statistics</h3>
+      {dashboard &&
+        (Object.keys(bySatellite).length > 0 || Object.keys(storageBands).length > 0) && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Statistics</h3>
+            </div>
+
+            {/* Storage by Satellite */}
+            {Object.keys(bySatellite).length > 0 && (
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Storage by Satellite
+                </h4>
+                <div className="space-y-3">
+                  {Object.entries(bySatellite).map(([sat, data]) => (
+                    <div key={sat} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-900 dark:text-white">{sat}</span>
+                        <span className="text-gray-500 dark:text-slate-400">
+                          {data.count} frames · {formatBytes(data.size)}
+                        </span>
+                      </div>
+                      <div className="h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${(data.size / maxSatSize) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Storage by Band */}
+            {Object.keys(storageBands).length > 0 && (
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Storage by Band
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(storageBands).map(([bandKey, size]) => (
+                    <div
+                      key={bandKey}
+                      className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2"
+                    >
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {bandKey}
+                      </div>
+                      <div className="text-xl font-bold text-primary">{formatBytes(size)}</div>
+                      <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary/60 rounded-full"
+                          style={{ width: `${(size / maxBandSize) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Storage by Satellite */}
-          {Object.keys(bySatellite).length > 0 && (
-            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Storage by Satellite</h4>
-              <div className="space-y-3">
-                {Object.entries(bySatellite).map(([sat, data]) => (
-                  <div key={sat} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-900 dark:text-white">{sat}</span>
-                      <span className="text-gray-500 dark:text-slate-400">{data.count} frames · {formatBytes(data.size)}</span>
-                    </div>
-                    <div className="h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all"
-                        style={{ width: `${(data.size / maxSatSize) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Storage by Band */}
-          {Object.keys(storageBands).length > 0 && (
-            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Storage by Band</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {Object.entries(storageBands).map(([bandKey, size]) => (
-                  <div key={bandKey} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{bandKey}</div>
-                    <div className="text-xl font-bold text-primary">{formatBytes(size)}</div>
-                    <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary/60 rounded-full"
-                        style={{ width: `${(size / maxBandSize) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        )}
     </div>
   );
 }

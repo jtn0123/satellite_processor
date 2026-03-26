@@ -68,8 +68,12 @@ function useZoomHint(isZoomed: boolean): boolean {
 }
 
 describe('Zoom hint timing', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('useZoomHint shows hint on zoom-in and hides after 2s', () => {
     const { result, rerender } = renderHook(({ zoomed }) => useZoomHint(zoomed), {
@@ -83,7 +87,9 @@ describe('Zoom hint timing', () => {
     expect(result.current).toBe(true);
 
     // After 2s it should hide
-    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
     expect(result.current).toBe(false);
   });
 });

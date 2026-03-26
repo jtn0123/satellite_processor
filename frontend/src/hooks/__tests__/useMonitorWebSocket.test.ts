@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useMonitorWebSocket } from '../useMonitorWebSocket';
 
@@ -66,7 +66,7 @@ describe('useMonitorWebSocket', () => {
 
   it('handles frame_ingested message matching filter', () => {
     const { result } = renderHook(() =>
-      useMonitorWebSocket(true, { satellite: 'GOES-16', sector: 'CONUS', band: 'C02' })
+      useMonitorWebSocket(true, { satellite: 'GOES-16', sector: 'CONUS', band: 'C02' }),
     );
     act(() => {
       MockWebSocket.instances[0].onopen?.();
@@ -89,7 +89,7 @@ describe('useMonitorWebSocket', () => {
 
   it('ignores non-matching frame_ingested messages', () => {
     const { result } = renderHook(() =>
-      useMonitorWebSocket(true, { satellite: 'GOES-16', sector: 'CONUS', band: 'C02' })
+      useMonitorWebSocket(true, { satellite: 'GOES-16', sector: 'CONUS', band: 'C02' }),
     );
     act(() => {
       MockWebSocket.instances[0].onmessage?.({
@@ -153,16 +153,26 @@ describe('useMonitorWebSocket', () => {
     renderHook(() => useMonitorWebSocket(true));
 
     // Close and reconnect
-    act(() => { MockWebSocket.instances[0].onclose?.(); });
-    act(() => { vi.advanceTimersByTime(5000); });
+    act(() => {
+      MockWebSocket.instances[0].onclose?.();
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
     expect(MockWebSocket.instances).toHaveLength(2);
 
     // Open successfully resets retry count
-    act(() => { MockWebSocket.instances[1].onopen?.(); });
-    act(() => { MockWebSocket.instances[1].onclose?.(); });
+    act(() => {
+      MockWebSocket.instances[1].onopen?.();
+    });
+    act(() => {
+      MockWebSocket.instances[1].onclose?.();
+    });
 
     // Should reconnect at base delay again (5000), not 10000
-    act(() => { vi.advanceTimersByTime(5000); });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
     expect(MockWebSocket.instances).toHaveLength(3);
   });
 

@@ -25,6 +25,7 @@ frontend/
 ```
 
 **Key patterns:**
+
 - **Lazy loading**: All page components are `React.lazy()` loaded for code splitting
 - **React Query**: All API state is managed via `@tanstack/react-query` with configurable `staleTime`/`gcTime`
 - **WebSocket**: Real-time job progress updates via `/ws/status` and `/ws/jobs/{id}`
@@ -58,16 +59,19 @@ Output goes to `dist/`, served by Nginx in production.
 The frontend communicates with the backend API. Here are key endpoints:
 
 ### Health Check
+
 ```bash
 curl http://localhost:8000/api/health/version
 ```
 
 ### List GOES Frames
+
 ```bash
 curl "http://localhost:8000/api/goes/frames?page=1&limit=50&satellite=GOES-16&sort=capture_time&order=desc"
 ```
 
 ### Fetch GOES Data
+
 ```bash
 curl -X POST http://localhost:8000/api/goes/fetch \
   -H "Content-Type: application/json" \
@@ -81,11 +85,13 @@ curl -X POST http://localhost:8000/api/goes/fetch \
 ```
 
 ### Get Latest Frame (Live View)
+
 ```bash
 curl "http://localhost:8000/api/goes/latest?satellite=GOES-16&sector=CONUS&band=C02"
 ```
 
 ### Create Composite
+
 ```bash
 curl -X POST http://localhost:8000/api/goes/composites \
   -H "Content-Type: application/json" \
@@ -98,22 +104,26 @@ curl -X POST http://localhost:8000/api/goes/composites \
 ```
 
 ### List Jobs
+
 ```bash
 curl http://localhost:8000/api/jobs
 ```
 
 ### Upload Image
+
 ```bash
 curl -X POST http://localhost:8000/api/images/upload \
   -F "file=@image.nc"
 ```
 
 ### System Status
+
 ```bash
 curl http://localhost:8000/api/system/status
 ```
 
 ### Coverage Gap Analysis
+
 ```bash
 curl "http://localhost:8000/api/goes/gaps?satellite=GOES-16&band=C02&expected_interval=10"
 ```

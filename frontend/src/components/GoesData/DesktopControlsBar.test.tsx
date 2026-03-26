@@ -41,7 +41,13 @@ describe('DesktopControlsBar', () => {
 
   it('does not call onAutoFetchChange when disabled', async () => {
     const onAutoFetchChange = vi.fn();
-    render(<DesktopControlsBar {...defaultProps} onAutoFetchChange={onAutoFetchChange} autoFetchDisabled={true} />);
+    render(
+      <DesktopControlsBar
+        {...defaultProps}
+        onAutoFetchChange={onAutoFetchChange}
+        autoFetchDisabled={true}
+      />,
+    );
     await userEvent.click(screen.getByRole('switch', { name: /auto-fetch/i }));
     expect(onAutoFetchChange).not.toHaveBeenCalled();
   });

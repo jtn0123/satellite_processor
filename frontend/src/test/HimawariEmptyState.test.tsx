@@ -74,7 +74,9 @@ describe('Himawari improved empty state', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     await waitFor(() => {
@@ -92,7 +94,9 @@ describe('Himawari improved empty state', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     await waitFor(() => {
@@ -108,7 +112,9 @@ describe('Himawari improved empty state', () => {
     await waitFor(() => expect(screen.getByTestId('pill-strip-satellite')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     await waitFor(() => {

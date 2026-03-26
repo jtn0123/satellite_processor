@@ -30,7 +30,9 @@ describe('StatusPill', () => {
   });
 
   it('uses mobile styling when isMobile', () => {
-    render(<StatusPill monitoring={false} satellite="GOES-16" band="C02" frameTime={null} isMobile />);
+    render(
+      <StatusPill monitoring={false} satellite="GOES-16" band="C02" frameTime={null} isMobile />,
+    );
     const pill = screen.getByTestId('status-pill');
     expect(pill.className).toContain('top-2');
   });
@@ -188,7 +190,10 @@ describe('Multi-band offline cache', () => {
 
   it('saves and loads cached image by band', () => {
     saveCachedImage('https://cdn.example.com/img1.jpg', {
-      satellite: 'GOES-16', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
+      satellite: 'GOES-16',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2026-01-01T00:00:00Z',
     });
     const result = loadCachedImage('GOES-16', 'CONUS', 'C02');
     expect(result).not.toBeNull();
@@ -202,10 +207,16 @@ describe('Multi-band offline cache', () => {
 
   it('returns null when no specific band requested (no cross-band fallback)', () => {
     saveCachedImage('https://cdn.example.com/old.jpg', {
-      satellite: 'GOES-16', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
+      satellite: 'GOES-16',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2026-01-01T00:00:00Z',
     });
     saveCachedImage('https://cdn.example.com/new.jpg', {
-      satellite: 'GOES-16', band: 'C07', sector: 'CONUS', timestamp: '2026-01-02T00:00:00Z',
+      satellite: 'GOES-16',
+      band: 'C07',
+      sector: 'CONUS',
+      timestamp: '2026-01-02T00:00:00Z',
     });
     // No params = no result (prevents showing wrong band's image)
     const result = loadCachedImage();
@@ -215,20 +226,26 @@ describe('Multi-band offline cache', () => {
   it('prunes old entries when over MAX_CACHED limit', () => {
     for (let i = 1; i <= 8; i++) {
       saveCachedImage(`https://cdn.example.com/img${i}.jpg`, {
-        satellite: 'GOES-16', band: `C${String(i).padStart(2, '0')}`, sector: 'CONUS',
+        satellite: 'GOES-16',
+        band: `C${String(i).padStart(2, '0')}`,
+        sector: 'CONUS',
         timestamp: `2026-01-0${i}T00:00:00Z`,
       });
     }
     // Should have pruned oldest, keeping MAX_CACHED (6)
-    const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('live-cache:'));
+    const cacheKeys = Object.keys(localStorage).filter((k) => k.startsWith('live-cache:'));
     expect(cacheKeys.length).toBeLessThanOrEqual(6);
   });
 
   it('handles storage errors gracefully', () => {
     const origSetItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = () => { throw new Error('QuotaExceeded'); };
+    Storage.prototype.setItem = () => {
+      throw new Error('QuotaExceeded');
+    };
     // Should not throw
-    expect(() => saveCachedImage('url', { satellite: 'X', band: 'Y', sector: 'Z', timestamp: '' })).not.toThrow();
+    expect(() =>
+      saveCachedImage('url', { satellite: 'X', band: 'Y', sector: 'Z', timestamp: '' }),
+    ).not.toThrow();
     Storage.prototype.setItem = origSetItem;
   });
 });

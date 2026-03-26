@@ -6,7 +6,9 @@ test.describe('Navigation Flow', () => {
     await waitForApiHealth(request);
   });
 
-  test('full navigation: dashboard → live → browse → animate → jobs → settings', async ({ page }) => {
+  test('full navigation: dashboard → live → browse → animate → jobs → settings', async ({
+    page,
+  }) => {
     // Dashboard
     await navigateTo(page, '/');
     await expect(page.locator('body')).toBeVisible({ timeout: 15_000 });

@@ -93,6 +93,8 @@ describe('Process page - with images', () => {
 describe('Process page - subtitle', () => {
   it('shows configuration description', () => {
     renderPage(<Process />);
-    expect(screen.getByText(/select images and configure processing parameters/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/select images and configure processing parameters/i),
+    ).toBeInTheDocument();
   });
 });

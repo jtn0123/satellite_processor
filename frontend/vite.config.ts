@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 const backendOrigin = process.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:8000';
@@ -37,4 +37,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

@@ -1,5 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { navigateTo, apiPost, apiGet, waitForApiHealth, waitForJob, buildFetchRequest, API_BASE, API_KEY } from './helpers';
+import {
+  navigateTo,
+  apiPost,
+  apiGet,
+  waitForApiHealth,
+  waitForJob,
+  buildFetchRequest,
+  API_BASE,
+  API_KEY,
+} from './helpers';
 
 test.describe('Image rendering after fetch', () => {
   test.describe.configure({ mode: 'serial' });
@@ -49,7 +58,7 @@ test.describe('Image rendering after fetch', () => {
   test('thumbnail URLs return image content', async ({ request }) => {
     const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
-    const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
+    const items = (framesBody.items ?? framesBody) as Record<string, unknown>[];
     if (!Array.isArray(items) || items.length === 0) {
       test.skip(true, 'No frames available');
       return;

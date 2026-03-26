@@ -13,7 +13,15 @@ vi.mock('../hooks/useApi', () => ({
   useStats: () => ({ data: null, isLoading: false }),
   useHealthDetailed: () => ({ data: null, isLoading: false }),
   useSettings: () => ({
-    data: { default_false_color: 'vegetation', timestamp_enabled: true, timestamp_position: 'bottom-left', video_fps: 24, video_codec: 'h264', max_frames_per_fetch: 200, video_quality: 23 },
+    data: {
+      default_false_color: 'vegetation',
+      timestamp_enabled: true,
+      timestamp_position: 'bottom-left',
+      video_fps: 24,
+      video_codec: 'h264',
+      max_frames_per_fetch: 200,
+      video_quality: 23,
+    },
     isLoading: false,
   }),
   useUpdateSettings: () => ({ mutate: vi.fn(), isPending: false }),

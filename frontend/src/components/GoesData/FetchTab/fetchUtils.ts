@@ -2,10 +2,14 @@ import type { SatelliteAvailability } from '../types';
 
 export function formatAvailRange(avail: SatelliteAvailability): string {
   const from = new Date(avail.available_from);
-  const fromStr = from.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).replace(',', '');
+  const fromStr = from
+    .toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+    .replace(',', '');
   if (!avail.available_to) return `${fromStr}–present`;
   const to = new Date(avail.available_to);
-  const toStr = to.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).replace(',', '');
+  const toStr = to
+    .toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+    .replace(',', '');
   return `${fromStr}–${toStr}`;
 }
 

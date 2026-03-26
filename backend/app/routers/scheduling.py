@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -461,10 +462,8 @@ async def run_cleanup_now(db: AsyncSession = Depends(get_db)):
     for frame in frames_to_delete:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(path)
-                except OSError:
-                    pass
         freed += frame.file_size or 0
         await db.delete(frame)
     await db.commit()

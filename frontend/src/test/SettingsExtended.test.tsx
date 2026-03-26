@@ -43,9 +43,12 @@ describe('Settings - error state', () => {
     });
 
     render(<Settings />, { wrapper });
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to load settings/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Failed to load settings/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
     expect(screen.getByText('Retry')).toBeInTheDocument();
   });
 });
@@ -66,7 +69,10 @@ describe('Settings - loaded form', () => {
           },
         });
       }
-      if (url === '/satellite/frames/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
+      if (url === '/satellite/frames/stats')
+        return Promise.resolve({
+          data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 },
+        });
       return Promise.resolve({ data: {} });
     });
 
@@ -79,10 +85,21 @@ describe('Settings - loaded form', () => {
     mockGet.mockImplementation((url: string) => {
       if (url === '/settings') {
         return Promise.resolve({
-          data: { default_false_color: 'vegetation', timestamp_enabled: true, timestamp_position: 'bottom-left', video_fps: 24, video_codec: 'h264', max_frames_per_fetch: 200, video_quality: 23 },
+          data: {
+            default_false_color: 'vegetation',
+            timestamp_enabled: true,
+            timestamp_position: 'bottom-left',
+            video_fps: 24,
+            video_codec: 'h264',
+            max_frames_per_fetch: 200,
+            video_quality: 23,
+          },
         });
       }
-      if (url === '/satellite/frames/stats') return Promise.resolve({ data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } });
+      if (url === '/satellite/frames/stats')
+        return Promise.resolve({
+          data: { by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 },
+        });
       return Promise.resolve({ data: {} });
     });
 

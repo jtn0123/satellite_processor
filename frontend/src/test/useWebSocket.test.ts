@@ -146,18 +146,25 @@ describe('useWebSocket', () => {
   });
 
   it('should clear stale data and logs when jobId changes', () => {
-    const { result, rerender } = renderHook(
-      ({ jobId }) => useWebSocket(jobId),
-      { initialProps: { jobId: 'job-1' as string | null } },
-    );
+    const { result, rerender } = renderHook(({ jobId }) => useWebSocket(jobId), {
+      initialProps: { jobId: 'job-1' as string | null },
+    });
 
     // Simulate data from first job
     act(() => MockWebSocket.instances[0].simulateOpen());
     act(() => {
-      MockWebSocket.instances[0].simulateMessage({ progress: 50, message: 'halfway', status: 'processing' });
+      MockWebSocket.instances[0].simulateMessage({
+        progress: 50,
+        message: 'halfway',
+        status: 'processing',
+      });
     });
     act(() => {
-      MockWebSocket.instances[0].simulateMessage({ type: 'log', level: 'info', message: 'log entry' });
+      MockWebSocket.instances[0].simulateMessage({
+        type: 'log',
+        level: 'info',
+        message: 'log entry',
+      });
     });
     expect(result.current.data).not.toBeNull();
     expect(result.current.logs).toHaveLength(1);

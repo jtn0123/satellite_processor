@@ -34,13 +34,16 @@ export function useMonitorMode(
     });
   }, [onMonitorChange]);
 
-  const startMonitorRaw = useCallback((applyConfig: () => void) => {
-    applyConfig();
-    setAutoFetch(true);
-    setMonitoring(true);
-    onMonitorChange?.(true);
-    showToast('success', 'Monitor mode activated');
-  }, [onMonitorChange]);
+  const startMonitorRaw = useCallback(
+    (applyConfig: () => void) => {
+      applyConfig();
+      setAutoFetch(true);
+      setMonitoring(true);
+      onMonitorChange?.(true);
+      showToast('success', 'Monitor mode activated');
+    },
+    [onMonitorChange],
+  );
 
   const stopMonitor = useCallback(() => {
     setMonitoring(false);

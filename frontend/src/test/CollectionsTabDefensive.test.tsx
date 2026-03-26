@@ -14,7 +14,11 @@ vi.mock('../api/client', () => ({
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 vi.mock('../components/GoesData/AnimationPlayer', () => ({
   default: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="animation-player"><button type="button" onClick={onClose}>Close</button></div>
+    <div data-testid="animation-player">
+      <button type="button" onClick={onClose}>
+        Close
+      </button>
+    </div>
   ),
 }));
 
@@ -23,7 +27,6 @@ import api from '../api/client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
-
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -63,9 +66,21 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('handles collections API returning paginated object', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({
-        data: { items: [{ id: '1', name: 'Test', description: 'desc', frame_count: 5, created_at: '2024-01-01' }], total: 1 },
-      });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: {
+            items: [
+              {
+                id: '1',
+                name: 'Test',
+                description: 'desc',
+                frame_count: 5,
+                created_at: '2024-01-01',
+              },
+            ],
+            total: 1,
+          },
+        });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);
@@ -99,9 +114,18 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('renders collection with zero frame_count', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({
-        data: [{ id: '1', name: 'Empty Col', description: '', frame_count: 0, created_at: '2024-01-01' }],
-      });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: [
+            {
+              id: '1',
+              name: 'Empty Col',
+              description: '',
+              frame_count: 0,
+              created_at: '2024-01-01',
+            },
+          ],
+        });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);
@@ -113,9 +137,18 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('renders collection with null frame_count', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({
-        data: [{ id: '1', name: 'Null Count', description: '', frame_count: null, created_at: '2024-01-01' }],
-      });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: [
+            {
+              id: '1',
+              name: 'Null Count',
+              description: '',
+              frame_count: null,
+              created_at: '2024-01-01',
+            },
+          ],
+        });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<CollectionsTab />);
@@ -141,9 +174,12 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('shows edit/delete buttons on collection cards', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({
-        data: [{ id: '1', name: 'Test', description: '', frame_count: 3, created_at: '2024-01-01' }],
-      });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: [
+            { id: '1', name: 'Test', description: '', frame_count: 3, created_at: '2024-01-01' },
+          ],
+        });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);
@@ -155,9 +191,12 @@ describe('CollectionsTab - Defensive Scenarios', () => {
 
   it('animate button disabled when frame_count is 0', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({
-        data: [{ id: '1', name: 'Empty', description: '', frame_count: 0, created_at: '2024-01-01' }],
-      });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: [
+            { id: '1', name: 'Empty', description: '', frame_count: 0, created_at: '2024-01-01' },
+          ],
+        });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<CollectionsTab />);

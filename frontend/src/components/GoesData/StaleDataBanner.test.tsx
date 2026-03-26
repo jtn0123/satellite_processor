@@ -36,7 +36,7 @@ describe('StaleDataBanner', () => {
         captureTime={new Date(Date.now() - 60_000).toISOString()}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -48,7 +48,7 @@ describe('StaleDataBanner', () => {
         captureTime={new Date(Date.now() - 10_800_000).toISOString()} // 3h ago → red
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/Data is stale!/)).toBeInTheDocument();
   });

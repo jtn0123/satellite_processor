@@ -7,7 +7,7 @@ describe('BottomSheet', () => {
     const { container } = render(
       <BottomSheet open={false} onClose={vi.fn()} title="Filters">
         <div>content</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     expect(container.innerHTML).toBe('');
   });
@@ -16,7 +16,7 @@ describe('BottomSheet', () => {
     render(
       <BottomSheet open={true} onClose={vi.fn()} title="Filters">
         <div>filter content</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
     expect(screen.getByText('filter content')).toBeInTheDocument();
@@ -26,7 +26,7 @@ describe('BottomSheet', () => {
     render(
       <BottomSheet open={true} onClose={vi.fn()} title="My Sheet">
         <div>body</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     expect(screen.getByText('My Sheet')).toBeInTheDocument();
   });
@@ -36,7 +36,7 @@ describe('BottomSheet', () => {
     render(
       <BottomSheet open={true} onClose={onClose} title="Test">
         <div>body</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     fireEvent.click(screen.getByLabelText('Close'));
     expect(onClose).toHaveBeenCalledOnce();
@@ -47,7 +47,7 @@ describe('BottomSheet', () => {
     const { container } = render(
       <BottomSheet open={true} onClose={onClose} title="Test">
         <div>body</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     // Backdrop is the first child div with bg-black/50
     const backdrop = container.querySelector('[aria-hidden="true"]');
@@ -60,7 +60,7 @@ describe('BottomSheet', () => {
     const { unmount } = render(
       <BottomSheet open={true} onClose={vi.fn()} title="Test">
         <div>body</div>
-      </BottomSheet>
+      </BottomSheet>,
     );
     expect(document.body.style.overflow).toBe('hidden');
     unmount();
@@ -71,7 +71,7 @@ describe('BottomSheet', () => {
     render(
       <BottomSheet open={true} onClose={vi.fn()} title="Test">
         <button>Action</button>
-      </BottomSheet>
+      </BottomSheet>,
     );
     expect(screen.getByText('Action')).toBeInTheDocument();
   });

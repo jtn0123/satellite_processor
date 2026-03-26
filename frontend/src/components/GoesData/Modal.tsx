@@ -38,11 +38,7 @@ export default function Modal({
         aria-label="Close modal"
         tabIndex={-1}
       />
-      <div
-        ref={dialogRef}
-        className={panelClassName}
-        aria-hidden="false"
-      >
+      <div ref={dialogRef} className={panelClassName} aria-hidden="false">
         {children}
       </div>
     </dialog>

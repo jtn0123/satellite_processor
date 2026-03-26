@@ -24,7 +24,9 @@ vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
 vi.mock('../components/GoesData/AnimationPlayer', () => ({
   default: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="animation-player"><button onClick={onClose}>Close Player</button></div>
+    <div data-testid="animation-player">
+      <button onClick={onClose}>Close Player</button>
+    </div>
   ),
 }));
 
@@ -36,8 +38,20 @@ function renderWith(ui: React.ReactElement) {
 }
 
 const collections = [
-  { id: 'c1', name: 'Collection A', frame_count: 5, created_at: '2026-01-01T00:00:00Z', description: 'Test desc' },
-  { id: 'c2', name: 'Collection B', frame_count: 0, created_at: '2026-01-02T00:00:00Z', description: '' },
+  {
+    id: 'c1',
+    name: 'Collection A',
+    frame_count: 5,
+    created_at: '2026-01-01T00:00:00Z',
+    description: 'Test desc',
+  },
+  {
+    id: 'c2',
+    name: 'Collection B',
+    frame_count: 0,
+    created_at: '2026-01-02T00:00:00Z',
+    description: '',
+  },
 ];
 
 describe('CollectionsTab extended', () => {
@@ -62,12 +76,16 @@ describe('CollectionsTab extended', () => {
     const input = screen.getByPlaceholderText('New collection name');
     fireEvent.change(input, { target: { value: 'New Coll' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() => expect(mockPost).toHaveBeenCalledWith('/satellite/collections', { name: 'New Coll' }));
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith('/satellite/collections', { name: 'New Coll' }),
+    );
   });
 
   it('creates a collection on button click', async () => {
     renderWith(<CollectionsTab />);
-    fireEvent.change(screen.getByPlaceholderText('New collection name'), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByPlaceholderText('New collection name'), {
+      target: { value: 'Test' },
+    });
     fireEvent.click(screen.getByText('Create'));
     await waitFor(() => expect(mockPost).toHaveBeenCalled());
   });
@@ -85,7 +103,9 @@ describe('CollectionsTab extended', () => {
     const editInput = screen.getByLabelText('Edit collection name');
     fireEvent.change(editInput, { target: { value: 'Renamed' } });
     fireEvent.keyDown(editInput, { key: 'Enter' });
-    await waitFor(() => expect(mockPut).toHaveBeenCalledWith('/satellite/collections/c1', { name: 'Renamed' }));
+    await waitFor(() =>
+      expect(mockPut).toHaveBeenCalledWith('/satellite/collections/c1', { name: 'Renamed' }),
+    );
   });
 
   it('cancels edit mode', async () => {
@@ -100,7 +120,9 @@ describe('CollectionsTab extended', () => {
     renderWith(<CollectionsTab />);
     await waitFor(() => expect(screen.getByText('Collection A')).toBeInTheDocument());
     fireEvent.click(screen.getAllByText('Edit')[0]);
-    fireEvent.change(screen.getByLabelText('Edit collection name'), { target: { value: 'Updated' } });
+    fireEvent.change(screen.getByLabelText('Edit collection name'), {
+      target: { value: 'Updated' },
+    });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mockPut).toHaveBeenCalled());
   });
@@ -143,6 +165,8 @@ describe('CollectionsTab extended', () => {
   it('shows empty state when no collections', async () => {
     mockGet.mockImplementation(() => Promise.resolve({ data: [] }));
     renderWith(<CollectionsTab />);
-    await waitFor(() => expect(screen.getByText(/create your first collection/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/create your first collection/i)).toBeInTheDocument(),
+    );
   });
 });

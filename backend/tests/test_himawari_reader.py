@@ -282,11 +282,6 @@ class TestResolution:
         assert 1100 == 550 * 2
 
 
-# ---------------------------------------------------------------------------
-# assemble_segments()
-# ---------------------------------------------------------------------------
-
-
 class TestAssembleSegments:
     """Tests for vertical stacking of segment arrays."""
 

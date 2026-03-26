@@ -23,7 +23,6 @@ const mockedApi = api as unknown as {
   delete: ReturnType<typeof vi.fn>;
 };
 
-
 const mockStats = {
   total_frames: 1200,
   total_size_bytes: 5_368_709_120,
@@ -45,16 +44,36 @@ const mockStorageStats = {
       total_frames: 500,
       total_size: 2_000_000_000,
       sectors: {
-        CONUS: { count: 300, size: 1_200_000_000, oldest: '2024-03-01T00:00:00', newest: '2024-03-15T00:00:00' },
-        'Full Disk': { count: 200, size: 800_000_000, oldest: '2024-03-01T00:00:00', newest: '2024-03-15T00:00:00' },
+        CONUS: {
+          count: 300,
+          size: 1_200_000_000,
+          oldest: '2024-03-01T00:00:00',
+          newest: '2024-03-15T00:00:00',
+        },
+        'Full Disk': {
+          count: 200,
+          size: 800_000_000,
+          oldest: '2024-03-01T00:00:00',
+          newest: '2024-03-15T00:00:00',
+        },
       },
     },
     'Himawari-9': {
       total_frames: 700,
       total_size: 3_368_709_120,
       sectors: {
-        FLDK: { count: 500, size: 2_500_000_000, oldest: '2024-03-01T00:00:00', newest: '2024-03-15T00:00:00' },
-        Japan: { count: 200, size: 868_709_120, oldest: '2024-03-10T00:00:00', newest: '2024-03-15T00:00:00' },
+        FLDK: {
+          count: 500,
+          size: 2_500_000_000,
+          oldest: '2024-03-01T00:00:00',
+          newest: '2024-03-15T00:00:00',
+        },
+        Japan: {
+          count: 200,
+          size: 868_709_120,
+          oldest: '2024-03-10T00:00:00',
+          newest: '2024-03-15T00:00:00',
+        },
       },
     },
   },
@@ -133,10 +152,10 @@ describe('CleanupTab - Satellite Filter in Rule Creation', () => {
 
     fireEvent.click(screen.getByText('New Rule'));
     const select = screen.getByLabelText('Satellite filter') as HTMLSelectElement;
-    const options = Array.from(select.options).map(o => o.value);
+    const options = Array.from(select.options).map((o) => o.value);
     expect(options).toContain('Himawari-9');
     expect(options).toContain('GOES-16');
-    expect(options).toContain('');  // "All Satellites" option
+    expect(options).toContain(''); // "All Satellites" option
   });
 
   it('shows satellite badge on rules with satellite filter', async () => {
@@ -145,12 +164,24 @@ describe('CleanupTab - Satellite Filter in Rule Creation', () => {
         return Promise.resolve({
           data: [
             {
-              id: '1', name: 'Himawari Prune', rule_type: 'max_age_days', value: 7,
-              satellite: 'Himawari-9', protect_collections: true, is_active: true, created_at: '2024-06-01',
+              id: '1',
+              name: 'Himawari Prune',
+              rule_type: 'max_age_days',
+              value: 7,
+              satellite: 'Himawari-9',
+              protect_collections: true,
+              is_active: true,
+              created_at: '2024-06-01',
             },
             {
-              id: '2', name: 'Global Prune', rule_type: 'max_age_days', value: 30,
-              satellite: null, protect_collections: true, is_active: true, created_at: '2024-06-01',
+              id: '2',
+              name: 'Global Prune',
+              rule_type: 'max_age_days',
+              value: 30,
+              satellite: null,
+              protect_collections: true,
+              is_active: true,
+              created_at: '2024-06-01',
             },
           ],
         });
@@ -174,7 +205,9 @@ describe('CleanupTab - Empty Storage Stats', () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
       if (url === '/satellite/frames/stats') {
-        return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
+        return Promise.resolve({
+          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
+        });
       }
       if (url === '/satellite/cleanup/stats') {
         return Promise.resolve({ data: { total_frames: 0, total_size: 0, satellites: {} } });
@@ -194,7 +227,9 @@ describe('CleanupTab - Empty Storage Stats', () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
       if (url === '/satellite/frames/stats') {
-        return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
+        return Promise.resolve({
+          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
+        });
       }
       if (url === '/satellite/cleanup/stats') return Promise.resolve({ data: null });
       return Promise.resolve({ data: {} });

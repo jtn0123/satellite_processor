@@ -23,15 +23,43 @@ const CDN_SECTORS = ['CONUS', 'FullDisk'];
 const MESO_SECTORS = ['Mesoscale1', 'Mesoscale2'];
 const REPRESENTATIVE_BANDS = ['GEOCOLOR', 'C02', 'C13'];
 const ALL_BANDS = [
-  'GEOCOLOR', 'C01', 'C02', 'C03', 'C04', 'C05', 'C06', 'C07', 'C08',
-  'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+  'GEOCOLOR',
+  'C01',
+  'C02',
+  'C03',
+  'C04',
+  'C05',
+  'C06',
+  'C07',
+  'C08',
+  'C09',
+  'C10',
+  'C11',
+  'C12',
+  'C13',
+  'C14',
+  'C15',
+  'C16',
 ];
 
 const BAND_DESCRIPTIONS: Record<string, string> = {
-  GEOCOLOR: 'GeoColor', C01: 'Blue', C02: 'Red', C03: 'Veggie', C04: 'Cirrus',
-  C05: 'Snow/Ice', C06: 'Cloud Particle', C07: 'Shortwave IR', C08: 'Upper WV',
-  C09: 'Mid WV', C10: 'Lower WV', C11: 'Cloud-top', C12: 'Ozone',
-  C13: 'Clean IR', C14: 'IR', C15: 'Dirty IR', C16: 'CO2',
+  GEOCOLOR: 'GeoColor',
+  C01: 'Blue',
+  C02: 'Red',
+  C03: 'Veggie',
+  C04: 'Cirrus',
+  C05: 'Snow/Ice',
+  C06: 'Cloud Particle',
+  C07: 'Shortwave IR',
+  C08: 'Upper WV',
+  C09: 'Mid WV',
+  C10: 'Lower WV',
+  C11: 'Cloud-top',
+  C12: 'Ozone',
+  C13: 'Clean IR',
+  C14: 'IR',
+  C15: 'Dirty IR',
+  C16: 'CO2',
 };
 
 function makeProducts(defaultSat = 'GOES-19') {
@@ -61,16 +89,25 @@ function mockApiDefaults(sector = 'CONUS', band = 'GEOCOLOR') {
     if (url.startsWith('/satellite/latest'))
       return Promise.resolve({
         data: {
-          id: '1', satellite: 'GOES-19', sector, band,
-          capture_time: '2025-01-01T12:00:00Z', file_size: 1024,
-          width: 5424, height: 3000,
+          id: '1',
+          satellite: 'GOES-19',
+          sector,
+          band,
+          capture_time: '2025-01-01T12:00:00Z',
+          file_size: 1024,
+          width: 5424,
+          height: 3000,
           image_url: '/api/satellite/frames/1/image',
           thumbnail_url: '/api/satellite/frames/1/thumbnail',
         },
       });
     if (url.startsWith('/satellite/catalog/latest'))
       return Promise.resolve({
-        data: { scan_time: '2025-01-01T12:00:00Z', image_url: 'https://cdn.example.com/test.jpg', mobile_url: 'https://cdn.example.com/test-m.jpg' },
+        data: {
+          scan_time: '2025-01-01T12:00:00Z',
+          image_url: 'https://cdn.example.com/test.jpg',
+          mobile_url: 'https://cdn.example.com/test-m.jpg',
+        },
       });
     return Promise.resolve({ data: {} });
   });
@@ -86,9 +123,7 @@ beforeEach(() => {
 describe('buildCdnUrl — satellite × sector × band matrix', () => {
   it.each(
     SATELLITES.flatMap((sat) =>
-      CDN_SECTORS.flatMap((sector) =>
-        REPRESENTATIVE_BANDS.map((band) => ({ sat, sector, band })),
-      ),
+      CDN_SECTORS.flatMap((sector) => REPRESENTATIVE_BANDS.map((band) => ({ sat, sector, band }))),
     ),
   )('returns a valid URL for $sat / $sector / $band', ({ sat, sector, band }) => {
     const url = buildCdnUrl(sat, sector, band);
@@ -99,9 +134,7 @@ describe('buildCdnUrl — satellite × sector × band matrix', () => {
 
   it.each(
     SATELLITES.flatMap((sat) =>
-      MESO_SECTORS.flatMap((sector) =>
-        REPRESENTATIVE_BANDS.map((band) => ({ sat, sector, band })),
-      ),
+      MESO_SECTORS.flatMap((sector) => REPRESENTATIVE_BANDS.map((band) => ({ sat, sector, band }))),
     ),
   )('returns null for meso sector: $sat / $sector / $band', ({ sat, sector, band }) => {
     expect(buildCdnUrl(sat, sector, band)).toBeNull();
@@ -209,7 +242,8 @@ describe('LiveTab — Fetch to view visibility', () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: makeProducts() });
       if (url.startsWith('/satellite/latest')) return Promise.reject({ response: { status: 404 } });
-      if (url.startsWith('/satellite/catalog/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('/satellite/catalog/latest'))
+        return Promise.reject({ response: { status: 404 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -231,9 +265,12 @@ describe('LiveTab — Fetch to view visibility', () => {
     });
 
     // Should show "Fetch to view" message (meso + no CDN + no local frame)
-    await waitFor(() => {
-      expect(screen.getByTestId('meso-fetch-required')).toBeInTheDocument();
-    }, { timeout: 6000 });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('meso-fetch-required')).toBeInTheDocument();
+      },
+      { timeout: 6000 },
+    );
   });
 
   it('auto-switches GEOCOLOR to C02 when switching to Mesoscale1', async () => {
@@ -254,7 +291,8 @@ describe('LiveTab — Fetch to view visibility', () => {
           },
         });
       if (url.startsWith('/satellite/latest')) return Promise.reject({ response: { status: 404 } });
-      if (url.startsWith('/satellite/catalog/latest')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('/satellite/catalog/latest'))
+        return Promise.reject({ response: { status: 404 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -284,15 +322,14 @@ describe('LiveTab — Fetch to view visibility', () => {
 describe('buildCdnUrl — all C01-C16 bands for CDN sectors', () => {
   const cbands = ALL_BANDS.filter((b) => b.startsWith('C'));
 
-  it.each(
-    cbands.flatMap((band) =>
-      CDN_SECTORS.map((sector) => ({ band, sector })),
-    ),
-  )('returns valid URL for GOES-19 / $sector / $band', ({ band, sector }) => {
-    const url = buildCdnUrl('GOES-19', sector, band);
-    expect(url).toBeTruthy();
-    expect(url).toContain(`/${band.slice(1)}/`);
-  });
+  it.each(cbands.flatMap((band) => CDN_SECTORS.map((sector) => ({ band, sector }))))(
+    'returns valid URL for GOES-19 / $sector / $band',
+    ({ band, sector }) => {
+      const url = buildCdnUrl('GOES-19', sector, band);
+      expect(url).toBeTruthy();
+      expect(url).toContain(`/${band.slice(1)}/`);
+    },
+  );
 });
 
 // ── Fetch validation: GEOCOLOR rejected client-side ──────────────
@@ -320,9 +357,7 @@ describe('useLiveFetchJob — GEOCOLOR guard', () => {
 describe('LiveTab — render smoke tests for all combos', () => {
   it.each(
     SATELLITES.flatMap((sat) =>
-      SECTORS.flatMap((sector) =>
-        ['C02', 'C13'].map((band) => ({ sat, sector, band })),
-      ),
+      SECTORS.flatMap((sector) => ['C02', 'C13'].map((band) => ({ sat, sector, band }))),
     ),
   )('renders without error for $sat / $sector / $band', async ({ sat, sector, band }) => {
     mockedApi.get.mockImplementation((url: string) => {
@@ -333,16 +368,24 @@ describe('LiveTab — render smoke tests for all combos', () => {
       if (url.startsWith('/satellite/latest'))
         return Promise.resolve({
           data: {
-            id: '1', satellite: sat, sector, band,
-            capture_time: '2025-01-01T12:00:00Z', file_size: 1024,
-            width: 5424, height: 3000,
+            id: '1',
+            satellite: sat,
+            sector,
+            band,
+            capture_time: '2025-01-01T12:00:00Z',
+            file_size: 1024,
+            width: 5424,
+            height: 3000,
             image_url: '/api/satellite/frames/1/image',
             thumbnail_url: '/api/satellite/frames/1/thumbnail',
           },
         });
       if (url.startsWith('/satellite/catalog/latest'))
         return Promise.resolve({
-          data: { scan_time: '2025-01-01T12:00:00Z', image_url: 'https://cdn.example.com/test.jpg' },
+          data: {
+            scan_time: '2025-01-01T12:00:00Z',
+            image_url: 'https://cdn.example.com/test.jpg',
+          },
         });
       return Promise.resolve({ data: {} });
     });

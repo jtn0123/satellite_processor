@@ -41,8 +41,18 @@ beforeEach(() => {
 
 describe('CompareView integration flow', () => {
   it('renders both frames with metadata and images in side-by-side mode', () => {
-    const frameA = makeFrame({ id: 'fa', satellite: 'GOES-16', band: 'C02', capture_time: '2026-01-15T10:00:00Z' });
-    const frameB = makeFrame({ id: 'fb', satellite: 'GOES-18', band: 'C13', capture_time: '2026-01-15T11:00:00Z' });
+    const frameA = makeFrame({
+      id: 'fa',
+      satellite: 'GOES-16',
+      band: 'C02',
+      capture_time: '2026-01-15T10:00:00Z',
+    });
+    const frameB = makeFrame({
+      id: 'fb',
+      satellite: 'GOES-18',
+      band: 'C13',
+      capture_time: '2026-01-15T11:00:00Z',
+    });
     const onClose = vi.fn();
 
     render(<CompareView frameA={frameA} frameB={frameB} onClose={onClose} />);

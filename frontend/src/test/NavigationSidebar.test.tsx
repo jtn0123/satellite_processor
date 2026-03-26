@@ -5,11 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 
 // Mock heavy child components to keep tests fast
-vi.mock('../components/ConnectionStatus', () => ({ default: () => <div data-testid="connection-status" /> }));
-vi.mock('../components/NotificationBell', () => ({ default: () => <div data-testid="notification-bell" /> }));
+vi.mock('../components/ConnectionStatus', () => ({
+  default: () => <div data-testid="connection-status" />,
+}));
+vi.mock('../components/NotificationBell', () => ({
+  default: () => <div data-testid="notification-bell" />,
+}));
 vi.mock('../components/KeyboardShortcuts', () => ({ default: () => null }));
 vi.mock('../components/WhatsNewModal', () => ({ default: () => null }));
-vi.mock('../components/MobileBottomNav', () => ({ default: () => <nav data-testid="mobile-nav" /> }));
+vi.mock('../components/MobileBottomNav', () => ({
+  default: () => <nav data-testid="mobile-nav" />,
+}));
 vi.mock('../hooks/useJobToasts', () => ({ useJobToasts: () => {} }));
 
 function renderLayout(route = '/') {
@@ -23,7 +29,7 @@ function renderLayout(route = '/') {
           </Route>
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 

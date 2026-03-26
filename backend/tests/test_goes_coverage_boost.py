@@ -234,17 +234,19 @@ class TestFetchFrames:
     def test_fetch_frames_invalid_max_frames(self, tmp_path):
         from app.services.goes_fetcher import fetch_frames
 
-        with patch("app.services.goes_fetcher.validate_params"):
-            with pytest.raises(ValueError, match="max_frames must be a positive"):
-                fetch_frames(
-                    "GOES-16",
-                    "FullDisk",
-                    "C02",
-                    datetime(2026, 1, 1, tzinfo=UTC),
-                    datetime(2026, 1, 2, tzinfo=UTC),
-                    str(tmp_path),
-                    max_frames=0,
-                )
+        with (
+            patch("app.services.goes_fetcher.validate_params"),
+            pytest.raises(ValueError, match="max_frames must be a positive"),
+        ):
+            fetch_frames(
+                "GOES-16",
+                "FullDisk",
+                "C02",
+                datetime(2026, 1, 1, tzinfo=UTC),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                str(tmp_path),
+                max_frames=0,
+            )
 
 
 # ===========================================================================

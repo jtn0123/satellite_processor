@@ -20,7 +20,7 @@ function renderNav(route = '/goes') {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <MobileBottomNav />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

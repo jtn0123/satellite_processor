@@ -29,7 +29,7 @@ def test_publish_progress(mock_redis):
     _publish_progress("job-1", 50, "Halfway there")
     mock_redis.publish.assert_called_once()
     args = mock_redis.publish.call_args
-    assert "job:job-1" == args[0][0]
+    assert args[0][0] == "job:job-1"
     assert "50" in args[0][1]
 
 

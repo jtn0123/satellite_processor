@@ -50,7 +50,13 @@ describe('MobileControlsFab', () => {
   });
 
   it('disables auto-fetch when autoFetchDisabled', () => {
-    render(<MobileControlsFab {...defaultProps} autoFetchDisabled={true} autoFetchDisabledReason="CDN only" />);
+    render(
+      <MobileControlsFab
+        {...defaultProps}
+        autoFetchDisabled={true}
+        autoFetchDisabledReason="CDN only"
+      />,
+    );
     fireEvent.click(screen.getByTestId('fab-toggle'));
     expect(screen.getByText('Auto-fetch N/A')).toBeInTheDocument();
     expect(screen.getByText('Auto-fetch N/A').closest('button')).toBeDisabled();

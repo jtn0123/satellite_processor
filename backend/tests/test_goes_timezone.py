@@ -163,17 +163,19 @@ class TestListHourErrorHandling:
         mock_paginator.paginate.return_value = [{"Contents": [{"Key": "test", "Size": 1}]}]
         mock_client.get_paginator.return_value = mock_paginator
 
-        with patch("app.services.goes_fetcher._retry_s3_operation", side_effect=TypeError("bad comparison")):
-            with pytest.raises(TypeError, match="bad comparison"):
-                _list_hour(
-                    mock_client,
-                    "noaa-goes19",
-                    "ABI-L2-CMIPM/2026/060/17/",
-                    "Mesoscale1",
-                    "C02",
-                    datetime(2026, 3, 1, 17, 0, tzinfo=UTC),
-                    datetime(2026, 3, 1, 17, 10, tzinfo=UTC),
-                )
+        with (
+            patch("app.services.goes_fetcher._retry_s3_operation", side_effect=TypeError("bad comparison")),
+            pytest.raises(TypeError, match="bad comparison"),
+        ):
+            _list_hour(
+                mock_client,
+                "noaa-goes19",
+                "ABI-L2-CMIPM/2026/060/17/",
+                "Mesoscale1",
+                "C02",
+                datetime(2026, 3, 1, 17, 0, tzinfo=UTC),
+                datetime(2026, 3, 1, 17, 10, tzinfo=UTC),
+            )
 
 
 # ---------------------------------------------------------------------------

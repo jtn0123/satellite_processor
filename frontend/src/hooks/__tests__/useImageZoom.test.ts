@@ -10,13 +10,23 @@ function makeWheelEvent(deltaY: number) {
 function makeContainerRef(width: number, height: number): RefObject<HTMLElement> {
   return {
     current: {
-      getBoundingClientRect: () => ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }),
+      getBoundingClientRect: () => ({
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
     } as unknown as HTMLElement,
   };
 }
 
 function makeImageRef(naturalWidth: number, naturalHeight: number): RefObject<HTMLImageElement> {
-  const listeners: Record<string, Array<() => void>> = {};
+  const listeners: Record<string, (() => void)[]> = {};
   return {
     current: {
       naturalWidth,
@@ -32,10 +42,9 @@ function makeImageRef(naturalWidth: number, naturalHeight: number): RefObject<HT
   };
 }
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
+function makeTouchEvent(touches: { clientX: number; clientY: number }[]) {
   return { touches, preventDefault: () => {} } as unknown as React.TouchEvent;
 }
-
 
 describe('useImageZoom', () => {
   it('starts at scale 1 with no zoom', () => {
@@ -115,7 +124,9 @@ describe('useImageZoom', () => {
     // So maxX=200 (with imageRef) vs 450 (without) — distinct!
 
     act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
-    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])));
+    act(() =>
+      result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])),
+    );
 
     const transform = result.current.style.transform as string;
     const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
@@ -130,9 +141,7 @@ describe('useImageZoom', () => {
   it('pinch zoom clamps to minScale instead of resetting to INITIAL_STATE', () => {
     const containerRef = makeContainerRef(400, 400);
     const imageRef = makeImageRef(400, 400);
-    const { result } = renderHook(() =>
-      useImageZoom({ minScale: 0.5, containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ minScale: 0.5, containerRef, imageRef }));
 
     // Zoom in first via zoomIn
     act(() => result.current.zoomIn());
@@ -163,9 +172,7 @@ describe('useImageZoom', () => {
   it('pinch zoom with minScale=0.5 does not snap to 100% at scale 0.7', () => {
     const containerRef = makeContainerRef(400, 400);
     const imageRef = makeImageRef(400, 400);
-    const { result } = renderHook(() =>
-      useImageZoom({ minScale: 0.5, containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ minScale: 0.5, containerRef, imageRef }));
 
     // Zoom in to scale 2.5
     act(() => result.current.zoomIn());
@@ -228,7 +235,9 @@ describe('useImageZoom', () => {
 
     act(() => result.current.zoomIn());
     act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
-    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])));
+    act(() =>
+      result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 500, clientY: 500 }])),
+    );
 
     const transform = result.current.style.transform as string;
     const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);

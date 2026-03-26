@@ -46,7 +46,7 @@ export default function KeyboardShortcuts() {
       '?': () => setOpen((v) => !v),
       Escape: close,
     }),
-    [navigate, close]
+    [navigate, close],
   );
 
   useHotkeys(shortcuts);
@@ -60,16 +60,24 @@ export default function KeyboardShortcuts() {
       onCancel={close}
       aria-label="Keyboard shortcuts dialog"
     >
-      <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={close} aria-label="Close dialog" tabIndex={-1} />
-      <div
-        className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md text-left cursor-default"
-      >
+      <button
+        className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default"
+        onClick={close}
+        aria-label="Close dialog"
+        tabIndex={-1}
+      />
+      <div className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-md text-left cursor-default">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Keyboard className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
           </div>
-          <button type="button" onClick={close} className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
+          <button
+            type="button"
+            onClick={close}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400"
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

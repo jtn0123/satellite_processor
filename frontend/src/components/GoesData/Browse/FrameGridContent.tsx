@@ -17,12 +17,27 @@ interface FrameGridContentProps {
   onDelete: (frame: GoesFrame) => void;
 }
 
-export default function FrameGridContent({ isLoading, frames, viewMode, selectedIds, onFrameClick, onView, onDownload, onCompare, onTag, onAddToCollection, onDelete }: Readonly<FrameGridContentProps>) {
+export default function FrameGridContent({
+  isLoading,
+  frames,
+  viewMode,
+  selectedIds,
+  onFrameClick,
+  onView,
+  onDownload,
+  onCompare,
+  onTag,
+  onAddToCollection,
+  onDelete,
+}: Readonly<FrameGridContentProps>) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
-          <div key={key} className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden">
+          <div
+            key={key}
+            className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
             <div className="p-2 space-y-2">
               <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
@@ -41,14 +56,18 @@ export default function FrameGridContent({ isLoading, frames, viewMode, selected
         description="Fetch satellite data to start browsing frames. Head over to the Fetch tab to download GOES imagery."
         action={{
           label: 'Go to Fetch Tab',
-          onClick: () => globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
+          onClick: () =>
+            globalThis.dispatchEvent(new CustomEvent('switch-tab', { detail: 'fetch' })),
         }}
       />
     );
   }
   if (viewMode === 'grid') {
     return (
-      <ul aria-label="Satellite frames" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 list-none p-0 m-0">
+      <ul
+        aria-label="Satellite frames"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 list-none p-0 m-0"
+      >
         {frames.map((frame) => (
           <li key={frame.id} className="cv-auto @container">
             <FrameCard

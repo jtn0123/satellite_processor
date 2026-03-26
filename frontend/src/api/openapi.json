@@ -7,9 +7,7 @@
   "paths": {
     "/api/jobs": {
       "post": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Create Job",
         "description": "Create a processing job and dispatch to Celery",
         "operationId": "create_job_api_jobs_post",
@@ -47,9 +45,7 @@
         }
       },
       "get": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "List Jobs",
         "description": "List jobs with pagination",
         "operationId": "list_jobs_api_jobs_get",
@@ -104,9 +100,7 @@
     },
     "/api/jobs/{job_id}": {
       "get": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Get Job",
         "description": "Get job details",
         "operationId": "get_job_api_jobs__job_id__get",
@@ -145,9 +139,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Update Job",
         "description": "Partially update a job record",
         "operationId": "update_job_api_jobs__job_id__patch",
@@ -196,9 +188,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Delete Job",
         "description": "Delete a job \u2014 optionally delete associated files and DB records.",
         "operationId": "delete_job_api_jobs__job_id__delete",
@@ -247,9 +237,7 @@
     },
     "/api/jobs/{job_id}/cancel": {
       "post": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Cancel Job",
         "description": "Cancel a running job \u2014 revokes the Celery task and cleans up partial files.",
         "operationId": "cancel_job_api_jobs__job_id__cancel_post",
@@ -288,9 +276,7 @@
     },
     "/api/jobs/bulk": {
       "delete": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Bulk Delete Jobs",
         "description": "Bulk delete jobs by IDs or all jobs.",
         "operationId": "bulk_delete_jobs_api_jobs_bulk_delete",
@@ -350,9 +336,7 @@
     },
     "/api/jobs/{job_id}/logs": {
       "get": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Get Job Logs",
         "description": "Return logs for a job ordered by timestamp.",
         "operationId": "get_job_logs_api_jobs__job_id__logs_get",
@@ -419,9 +403,7 @@
     },
     "/api/jobs/{job_id}/output": {
       "get": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Get Job Output",
         "description": "Download job output",
         "operationId": "get_job_output_api_jobs__job_id__output_get",
@@ -460,9 +442,7 @@
     },
     "/api/jobs/cleanup-stale": {
       "post": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Cleanup Stale Jobs",
         "description": "Mark stale processing and pending jobs as failed.",
         "operationId": "cleanup_stale_jobs_api_jobs_cleanup_stale_post",
@@ -480,9 +460,7 @@
     },
     "/api/images/upload": {
       "post": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "Upload Image",
         "description": "Upload a satellite image using chunked streaming to avoid OOM on large files.",
         "operationId": "upload_image_api_images_upload_post",
@@ -520,9 +498,7 @@
     },
     "/api/images": {
       "get": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "List Images",
         "description": "List uploaded images with pagination",
         "operationId": "list_images_api_images_get",
@@ -577,9 +553,7 @@
     },
     "/api/images/bulk": {
       "delete": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "Bulk Delete Images",
         "description": "Bulk delete images by IDs.",
         "operationId": "bulk_delete_images_api_images_bulk_delete",
@@ -617,9 +591,7 @@
     },
     "/api/images/{image_id}": {
       "delete": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "Delete Image",
         "description": "Delete an uploaded image",
         "operationId": "delete_image_api_images__image_id__delete",
@@ -658,9 +630,7 @@
     },
     "/api/images/{image_id}/thumbnail": {
       "get": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "Get Thumbnail",
         "description": "Return a ~256px thumbnail",
         "operationId": "get_thumbnail_api_images__image_id__thumbnail_get",
@@ -699,9 +669,7 @@
     },
     "/api/images/{image_id}/full": {
       "get": {
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "summary": "Get Full Image",
         "description": "Return the original image file",
         "operationId": "get_full_image_api_images__image_id__full_get",
@@ -740,9 +708,7 @@
     },
     "/api/presets": {
       "get": {
-        "tags": [
-          "presets"
-        ],
+        "tags": ["presets"],
         "summary": "List Presets",
         "description": "List presets with pagination (#160).",
         "operationId": "list_presets_api_presets_get",
@@ -793,9 +759,7 @@
         }
       },
       "post": {
-        "tags": [
-          "presets"
-        ],
+        "tags": ["presets"],
         "summary": "Create Preset",
         "description": "Create a preset",
         "operationId": "create_preset_api_presets_post",
@@ -833,9 +797,7 @@
     },
     "/api/presets/{name}": {
       "patch": {
-        "tags": [
-          "presets"
-        ],
+        "tags": ["presets"],
         "summary": "Rename Preset",
         "description": "Rename a preset",
         "operationId": "rename_preset_api_presets__name__patch",
@@ -882,9 +844,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "presets"
-        ],
+        "tags": ["presets"],
         "summary": "Delete Preset",
         "description": "Delete a preset by name",
         "operationId": "delete_preset_api_presets__name__delete",
@@ -923,9 +883,7 @@
     },
     "/api/system/status": {
       "get": {
-        "tags": [
-          "system"
-        ],
+        "tags": ["system"],
         "summary": "System Status",
         "description": "Get system resource usage",
         "operationId": "system_status_api_system_status_get",
@@ -943,9 +901,7 @@
     },
     "/api/system/info": {
       "get": {
-        "tags": [
-          "system"
-        ],
+        "tags": ["system"],
         "summary": "System Info",
         "description": "Get system information: Python version, uptime, disk, memory, worker status.",
         "operationId": "system_info_api_system_info_get",
@@ -963,9 +919,7 @@
     },
     "/api/system/failed-jobs": {
       "get": {
-        "tags": [
-          "system"
-        ],
+        "tags": ["system"],
         "summary": "List Failed Jobs",
         "description": "List failed Celery tasks from the dead-letter table (paginated).",
         "operationId": "list_failed_jobs_api_system_failed_jobs_get",
@@ -1034,9 +988,7 @@
     },
     "/api/settings": {
       "get": {
-        "tags": [
-          "settings"
-        ],
+        "tags": ["settings"],
         "summary": "Get Settings",
         "operationId": "get_settings_api_settings_get",
         "responses": {
@@ -1051,9 +1003,7 @@
         }
       },
       "put": {
-        "tags": [
-          "settings"
-        ],
+        "tags": ["settings"],
         "summary": "Update Settings",
         "operationId": "update_settings_api_settings_put",
         "requestBody": {
@@ -1090,9 +1040,7 @@
     },
     "/api/satellite/products": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "List Products",
         "description": "List available satellites, sectors, and bands with enhanced metadata.\n\nReturns all registered satellites (GOES + Himawari) with per-satellite\nsectors, bands, and availability.  Each satellite entry includes a\n``fetchable`` flag indicating whether the fetch pipeline supports it.",
         "operationId": "list_products_api_satellite_products_get",
@@ -1110,9 +1058,7 @@
     },
     "/api/satellite/catalog": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Catalog",
         "description": "Query NOAA S3 for available GOES captures.",
         "operationId": "catalog_api_satellite_catalog_get",
@@ -1190,9 +1136,7 @@
     },
     "/api/satellite/catalog/latest": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Catalog Latest",
         "description": "Return the most recent available frame on S3 (checks last 2 hours).",
         "operationId": "catalog_latest_api_satellite_catalog_latest_get",
@@ -1252,9 +1196,7 @@
     },
     "/api/satellite/catalog/available": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Catalog Available",
         "description": "Check which sectors have recent data (last 2 hours) on S3.",
         "operationId": "catalog_available_api_satellite_catalog_available_get",
@@ -1294,9 +1236,7 @@
     },
     "/api/satellite/preview/band-samples": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Band Sample Thumbnails",
         "description": "Return thumbnail URLs for the latest frame of each band.",
         "operationId": "band_sample_thumbnails_api_satellite_preview_band_samples_get",
@@ -1346,9 +1286,7 @@
     },
     "/api/satellite/band-availability": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Band Availability",
         "description": "Return frame count per band for the given satellite/sector.",
         "operationId": "band_availability_api_satellite_band_availability_get",
@@ -1398,9 +1336,7 @@
     },
     "/api/satellite/latest": {
       "get": {
-        "tags": [
-          "satellite-catalog"
-        ],
+        "tags": ["satellite-catalog"],
         "summary": "Get Latest Frame",
         "description": "Return the most recent GoesFrame for the given satellite/sector/band.",
         "operationId": "get_latest_frame_api_satellite_latest_get",
@@ -1460,9 +1396,7 @@
     },
     "/api/satellite/fetch-composite": {
       "post": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Fetch Composite",
         "description": "Fetch multiple bands and auto-composite. Max 50 frames per request.",
         "operationId": "fetch_composite_api_satellite_fetch_composite_post",
@@ -1502,9 +1436,7 @@
     },
     "/api/satellite/fetch": {
       "post": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Fetch Goes",
         "description": "Kick off a GOES data fetch job.",
         "operationId": "fetch_goes_api_satellite_fetch_post",
@@ -1544,9 +1476,7 @@
     },
     "/api/satellite/gaps": {
       "get": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Detect Gaps",
         "description": "Run gap detection and return coverage stats.",
         "operationId": "detect_gaps_api_satellite_gaps_get",
@@ -1636,9 +1566,7 @@
     },
     "/api/satellite/backfill": {
       "post": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Backfill Gaps",
         "description": "Fill detected gaps (one-shot, not automatic).",
         "operationId": "backfill_gaps_api_satellite_backfill_post",
@@ -1678,9 +1606,7 @@
     },
     "/api/satellite/frame-count": {
       "get": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Estimate Frame Count",
         "description": "Estimate frame count for a time range without downloading.",
         "operationId": "estimate_frame_count_api_satellite_frame_count_get",
@@ -1757,9 +1683,7 @@
     },
     "/api/satellite/preview": {
       "get": {
-        "tags": [
-          "satellite-fetch"
-        ],
+        "tags": ["satellite-fetch"],
         "summary": "Preview Frame",
         "description": "Fetch a single frame preview.",
         "operationId": "preview_frame_api_satellite_preview_get",
@@ -1826,9 +1750,7 @@
     },
     "/api/satellite/composite-recipes": {
       "get": {
-        "tags": [
-          "satellite-browse"
-        ],
+        "tags": ["satellite-browse"],
         "summary": "List Composite Recipes",
         "description": "List available composite recipes.",
         "operationId": "list_composite_recipes_api_satellite_composite_recipes_get",
@@ -1846,9 +1768,7 @@
     },
     "/api/satellite/composites": {
       "post": {
-        "tags": [
-          "satellite-browse"
-        ],
+        "tags": ["satellite-browse"],
         "summary": "Create Composite",
         "description": "Create a band composite image via Celery task.",
         "operationId": "create_composite_api_satellite_composites_post",
@@ -1884,9 +1804,7 @@
         }
       },
       "get": {
-        "tags": [
-          "satellite-browse"
-        ],
+        "tags": ["satellite-browse"],
         "summary": "List Composites",
         "description": "List generated composites.",
         "operationId": "list_composites_api_satellite_composites_get",
@@ -1941,9 +1859,7 @@
     },
     "/api/satellite/composites/{composite_id}": {
       "get": {
-        "tags": [
-          "satellite-browse"
-        ],
+        "tags": ["satellite-browse"],
         "summary": "Get Composite",
         "description": "Get composite detail.",
         "operationId": "get_composite_api_satellite_composites__composite_id__get",
@@ -1982,9 +1898,7 @@
     },
     "/api/satellite/composites/{composite_id}/image": {
       "get": {
-        "tags": [
-          "satellite-browse"
-        ],
+        "tags": ["satellite-browse"],
         "summary": "Get Composite Image",
         "description": "Serve the composite image file.",
         "operationId": "get_composite_image_api_satellite_composites__composite_id__image_get",
@@ -2023,9 +1937,7 @@
     },
     "/api/satellite/crop-presets": {
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "List Crop Presets",
         "operationId": "list_crop_presets_api_satellite_crop_presets_get",
         "responses": {
@@ -2046,9 +1958,7 @@
         }
       },
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Crop Preset",
         "operationId": "create_crop_preset_api_satellite_crop_presets_post",
         "requestBody": {
@@ -2087,9 +1997,7 @@
     },
     "/api/satellite/crop-presets/{preset_id}": {
       "put": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Update Crop Preset",
         "operationId": "update_crop_preset_api_satellite_crop_presets__preset_id__put",
         "parameters": [
@@ -2137,9 +2045,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Delete Crop Preset",
         "operationId": "delete_crop_preset_api_satellite_crop_presets__preset_id__delete",
         "parameters": [
@@ -2177,9 +2083,7 @@
     },
     "/api/satellite/animations": {
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Animation",
         "description": "Create an animation generation job.",
         "operationId": "create_animation_api_satellite_animations_post",
@@ -2217,9 +2121,7 @@
         }
       },
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "List Animations",
         "operationId": "list_animations_api_satellite_animations_get",
         "parameters": [
@@ -2273,9 +2175,7 @@
     },
     "/api/satellite/animations/from-range": {
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Animation From Range",
         "description": "Create animation from a satellite/sector/band time range.",
         "operationId": "create_animation_from_range_api_satellite_animations_from_range_post",
@@ -2315,9 +2215,7 @@
     },
     "/api/satellite/animations/recent": {
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Animation Recent",
         "description": "Create animation from the last N hours of frames.",
         "operationId": "create_animation_recent_api_satellite_animations_recent_post",
@@ -2357,9 +2255,7 @@
     },
     "/api/satellite/animations/batch": {
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Animation Batch",
         "description": "Create multiple animation jobs at once.",
         "operationId": "create_animation_batch_api_satellite_animations_batch_post",
@@ -2403,9 +2299,7 @@
     },
     "/api/satellite/animations/{animation_id}": {
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Get Animation",
         "operationId": "get_animation_api_satellite_animations__animation_id__get",
         "parameters": [
@@ -2443,9 +2337,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Delete Animation",
         "operationId": "delete_animation_api_satellite_animations__animation_id__delete",
         "parameters": [
@@ -2483,9 +2375,7 @@
     },
     "/api/satellite/frames/preview-range": {
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Preview Frame Range",
         "description": "Preview frames in a time range \u2014 returns count and 3 sample frames.",
         "operationId": "preview_frame_range_api_satellite_frames_preview_range_get",
@@ -2564,9 +2454,7 @@
     },
     "/api/satellite/animation-presets": {
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "List Animation Presets",
         "operationId": "list_animation_presets_api_satellite_animation_presets_get",
         "responses": {
@@ -2587,9 +2475,7 @@
         }
       },
       "post": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Create Animation Preset",
         "operationId": "create_animation_preset_api_satellite_animation_presets_post",
         "requestBody": {
@@ -2628,9 +2514,7 @@
     },
     "/api/satellite/animation-presets/{preset_id}": {
       "get": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Get Animation Preset",
         "operationId": "get_animation_preset_api_satellite_animation_presets__preset_id__get",
         "parameters": [
@@ -2668,9 +2552,7 @@
         }
       },
       "put": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Update Animation Preset",
         "operationId": "update_animation_preset_api_satellite_animation_presets__preset_id__put",
         "parameters": [
@@ -2718,9 +2600,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "animation-studio"
-        ],
+        "tags": ["animation-studio"],
         "summary": "Delete Animation Preset",
         "operationId": "delete_animation_preset_api_satellite_animation_presets__preset_id__delete",
         "parameters": [
@@ -2758,9 +2638,7 @@
     },
     "/api/satellite/dashboard-stats": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Dashboard Stats",
         "description": "Aggregated dashboard statistics for the GOES data overview.",
         "operationId": "dashboard_stats_api_satellite_dashboard_stats_get",
@@ -2778,9 +2656,7 @@
     },
     "/api/satellite/quick-fetch-options": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Quick Fetch Options",
         "description": "Return preset time ranges for quick GOES data fetching.",
         "operationId": "quick_fetch_options_api_satellite_quick_fetch_options_get",
@@ -2798,9 +2674,7 @@
     },
     "/api/satellite/frames": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "List Frames",
         "description": "List GOES frames with filtering, sorting, pagination.",
         "operationId": "list_frames_api_satellite_frames_get",
@@ -2989,9 +2863,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Bulk Delete Frames",
         "description": "Bulk delete frames and their files.",
         "operationId": "bulk_delete_frames_api_satellite_frames_delete",
@@ -3029,9 +2901,7 @@
     },
     "/api/satellite/frames/stats": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Frame Stats",
         "description": "Storage stats per satellite/band.",
         "operationId": "frame_stats_api_satellite_frames_stats_get",
@@ -3051,9 +2921,7 @@
     },
     "/api/satellite/frames/export": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Export Frames",
         "description": "Export frame metadata as CSV or JSON with pagination.",
         "operationId": "export_frames_api_satellite_frames_export_get",
@@ -3116,9 +2984,7 @@
     },
     "/api/satellite/frames/{frame_id}": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Get Frame",
         "description": "Get single frame detail.",
         "operationId": "get_frame_api_satellite_frames__frame_id__get",
@@ -3159,9 +3025,7 @@
     },
     "/api/satellite/frames/tag": {
       "post": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Bulk Tag Frames",
         "description": "Bulk tag frames using ON CONFLICT DO NOTHING for performance.",
         "operationId": "bulk_tag_frames_api_satellite_frames_tag_post",
@@ -3199,9 +3063,7 @@
     },
     "/api/satellite/frames/process": {
       "post": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Process Frames",
         "description": "Send selected frames to the processing pipeline.",
         "operationId": "process_frames_api_satellite_frames_process_post",
@@ -3239,9 +3101,7 @@
     },
     "/api/satellite/frames/{frame_id}/image": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Get Frame Image",
         "description": "Serve the raw image file for a frame.",
         "operationId": "get_frame_image_api_satellite_frames__frame_id__image_get",
@@ -3280,9 +3140,7 @@
     },
     "/api/satellite/frames/{frame_id}/thumbnail": {
       "get": {
-        "tags": [
-          "satellite-frames"
-        ],
+        "tags": ["satellite-frames"],
         "summary": "Get Frame Thumbnail",
         "description": "Serve the thumbnail image for a frame.",
         "operationId": "get_frame_thumbnail_api_satellite_frames__frame_id__thumbnail_get",
@@ -3321,9 +3179,7 @@
     },
     "/api/satellite/collections": {
       "post": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Create Collection",
         "operationId": "create_collection_api_satellite_collections_post",
         "requestBody": {
@@ -3360,9 +3216,7 @@
         }
       },
       "get": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "List Collections",
         "operationId": "list_collections_api_satellite_collections_get",
         "parameters": [
@@ -3416,9 +3270,7 @@
     },
     "/api/satellite/collections/{collection_id}": {
       "put": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Update Collection",
         "operationId": "update_collection_api_satellite_collections__collection_id__put",
         "parameters": [
@@ -3466,9 +3318,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Delete Collection",
         "operationId": "delete_collection_api_satellite_collections__collection_id__delete",
         "parameters": [
@@ -3506,9 +3356,7 @@
     },
     "/api/satellite/collections/{collection_id}/frames": {
       "post": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Add Frames To Collection",
         "operationId": "add_frames_to_collection_api_satellite_collections__collection_id__frames_post",
         "parameters": [
@@ -3554,9 +3402,7 @@
         }
       },
       "get": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "List Collection Frames",
         "description": "Return ordered frames for a collection with pagination.",
         "operationId": "list_collection_frames_api_satellite_collections__collection_id__frames_get",
@@ -3618,9 +3464,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Remove Frames From Collection",
         "operationId": "remove_frames_from_collection_api_satellite_collections__collection_id__frames_delete",
         "parameters": [
@@ -3668,9 +3512,7 @@
     },
     "/api/satellite/collections/{collection_id}/export": {
       "get": {
-        "tags": [
-          "satellite-collections"
-        ],
+        "tags": ["satellite-collections"],
         "summary": "Export Collection",
         "description": "Export frame metadata for a collection.",
         "operationId": "export_collection_api_satellite_collections__collection_id__export_get",
@@ -3742,9 +3584,7 @@
     },
     "/api/satellite/tags": {
       "post": {
-        "tags": [
-          "satellite-tags"
-        ],
+        "tags": ["satellite-tags"],
         "summary": "Create Tag",
         "operationId": "create_tag_api_satellite_tags_post",
         "requestBody": {
@@ -3781,9 +3621,7 @@
         }
       },
       "get": {
-        "tags": [
-          "satellite-tags"
-        ],
+        "tags": ["satellite-tags"],
         "summary": "List Tags",
         "operationId": "list_tags_api_satellite_tags_get",
         "parameters": [
@@ -3837,9 +3675,7 @@
     },
     "/api/satellite/tags/{tag_id}": {
       "delete": {
-        "tags": [
-          "satellite-tags"
-        ],
+        "tags": ["satellite-tags"],
         "summary": "Delete Tag",
         "operationId": "delete_tag_api_satellite_tags__tag_id__delete",
         "parameters": [
@@ -3877,9 +3713,7 @@
     },
     "/api/health": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health Basic",
         "description": "Basic liveness check with dependency awareness.\n\nReturns 'ok' if core services are reachable, 'degraded' if DB or Redis\nis down but the app is still running.",
         "operationId": "health_basic_api_health_get",
@@ -3897,9 +3731,7 @@
     },
     "/api/health/version": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Version Info",
         "description": "Return app version and build info.",
         "operationId": "version_info_api_health_version_get",
@@ -3917,9 +3749,7 @@
     },
     "/api/health/changelog": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Changelog",
         "description": "Return parsed CHANGELOG.md as structured JSON.",
         "operationId": "changelog_api_health_changelog_get",
@@ -3937,9 +3767,7 @@
     },
     "/api/health/detailed": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health Detailed",
         "description": "Detailed health check with dependency status.",
         "operationId": "health_detailed_api_health_detailed_get",
@@ -3957,9 +3785,7 @@
     },
     "/api/stats": {
       "get": {
-        "tags": [
-          "stats"
-        ],
+        "tags": ["stats"],
         "summary": "Get Stats",
         "description": "Return dashboard stats: counts and storage usage.",
         "operationId": "get_stats_api_stats_get",
@@ -3977,9 +3803,7 @@
     },
     "/api/stats/storage/breakdown": {
       "get": {
-        "tags": [
-          "stats"
-        ],
+        "tags": ["stats"],
         "summary": "Storage Breakdown",
         "description": "Storage breakdown grouped by satellite, band, and age bucket.",
         "operationId": "storage_breakdown_api_stats_storage_breakdown_get",
@@ -3997,9 +3821,7 @@
     },
     "/api/jobs/{job_id}/download": {
       "get": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Download Job Output",
         "description": "Download job output as a single file or zip of all outputs.",
         "operationId": "download_job_output_api_jobs__job_id__download_get",
@@ -4038,9 +3860,7 @@
     },
     "/api/jobs/bulk-download": {
       "post": {
-        "tags": [
-          "jobs"
-        ],
+        "tags": ["jobs"],
         "summary": "Bulk Download",
         "description": "Download outputs from multiple jobs as a single zip.\n\n#155: Uses BulkDeleteRequest (renamed concept \u2014 reuses ids list Pydantic model)\nfor proper validation instead of raw dict.",
         "operationId": "bulk_download_api_jobs_bulk_download_post",
@@ -4078,9 +3898,7 @@
     },
     "/api/satellite/fetch-presets/seed-defaults": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Seed Default Presets",
         "description": "Create default fetch presets if they don't already exist.",
         "operationId": "seed_default_presets_api_satellite_fetch_presets_seed_defaults_post",
@@ -4098,9 +3916,7 @@
     },
     "/api/satellite/fetch-presets": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "List Fetch Presets",
         "operationId": "list_fetch_presets_api_satellite_fetch_presets_get",
         "responses": {
@@ -4121,9 +3937,7 @@
         }
       },
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Create Fetch Preset",
         "operationId": "create_fetch_preset_api_satellite_fetch_presets_post",
         "requestBody": {
@@ -4162,9 +3976,7 @@
     },
     "/api/satellite/fetch-presets/{preset_id}": {
       "put": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Update Fetch Preset",
         "operationId": "update_fetch_preset_api_satellite_fetch_presets__preset_id__put",
         "parameters": [
@@ -4212,9 +4024,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Delete Fetch Preset",
         "operationId": "delete_fetch_preset_api_satellite_fetch_presets__preset_id__delete",
         "parameters": [
@@ -4252,9 +4062,7 @@
     },
     "/api/satellite/fetch-presets/{preset_id}/run": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Run Fetch Preset",
         "description": "Execute a preset immediately (fetches last 1 hour of data).",
         "operationId": "run_fetch_preset_api_satellite_fetch_presets__preset_id__run_post",
@@ -4293,9 +4101,7 @@
     },
     "/api/satellite/schedules": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "List Schedules",
         "operationId": "list_schedules_api_satellite_schedules_get",
         "responses": {
@@ -4316,9 +4122,7 @@
         }
       },
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Create Schedule",
         "operationId": "create_schedule_api_satellite_schedules_post",
         "requestBody": {
@@ -4357,9 +4161,7 @@
     },
     "/api/satellite/schedules/{schedule_id}": {
       "put": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Update Schedule",
         "operationId": "update_schedule_api_satellite_schedules__schedule_id__put",
         "parameters": [
@@ -4407,9 +4209,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Delete Schedule",
         "operationId": "delete_schedule_api_satellite_schedules__schedule_id__delete",
         "parameters": [
@@ -4447,9 +4247,7 @@
     },
     "/api/satellite/schedules/{schedule_id}/toggle": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Toggle Schedule",
         "operationId": "toggle_schedule_api_satellite_schedules__schedule_id__toggle_post",
         "parameters": [
@@ -4489,9 +4287,7 @@
     },
     "/api/satellite/cleanup-rules": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "List Cleanup Rules",
         "operationId": "list_cleanup_rules_api_satellite_cleanup_rules_get",
         "responses": {
@@ -4512,9 +4308,7 @@
         }
       },
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Create Cleanup Rule",
         "operationId": "create_cleanup_rule_api_satellite_cleanup_rules_post",
         "requestBody": {
@@ -4553,9 +4347,7 @@
     },
     "/api/satellite/cleanup-rules/{rule_id}": {
       "put": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Update Cleanup Rule",
         "operationId": "update_cleanup_rule_api_satellite_cleanup_rules__rule_id__put",
         "parameters": [
@@ -4603,9 +4395,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Delete Cleanup Rule",
         "operationId": "delete_cleanup_rule_api_satellite_cleanup_rules__rule_id__delete",
         "parameters": [
@@ -4643,9 +4433,7 @@
     },
     "/api/satellite/cleanup/stats": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Cleanup Storage Stats",
         "description": "Per-satellite storage breakdown for the cleanup dashboard.",
         "operationId": "cleanup_storage_stats_api_satellite_cleanup_stats_get",
@@ -4663,9 +4451,7 @@
     },
     "/api/satellite/cleanup/preview": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Preview Cleanup",
         "description": "Dry-run: show what would be deleted by active cleanup rules.",
         "operationId": "preview_cleanup_api_satellite_cleanup_preview_get",
@@ -4685,9 +4471,7 @@
     },
     "/api/satellite/cleanup/run": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Run Cleanup Now",
         "description": "Manually trigger cleanup.",
         "operationId": "run_cleanup_now_api_satellite_cleanup_run_post",
@@ -4707,9 +4491,7 @@
     },
     "/api/notifications": {
       "get": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "List Notifications",
         "description": "Return last 50 notifications, newest first.",
         "operationId": "list_notifications_api_notifications_get",
@@ -4733,9 +4515,7 @@
     },
     "/api/notifications/{notification_id}/read": {
       "post": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "Mark Read",
         "description": "Mark a notification as read.",
         "operationId": "mark_read_api_notifications__notification_id__read_post",
@@ -4774,9 +4554,7 @@
     },
     "/api/satellite/frames/{frame_id}/share": {
       "post": {
-        "tags": [
-          "share"
-        ],
+        "tags": ["share"],
         "summary": "Create Share Link",
         "description": "Create a public share link for a frame (expires in N hours, default 72).",
         "operationId": "create_share_link_api_satellite_frames__frame_id__share_post",
@@ -4827,9 +4605,7 @@
     },
     "/api/shared/{token}": {
       "get": {
-        "tags": [
-          "share"
-        ],
+        "tags": ["share"],
         "summary": "Get Shared Frame",
         "description": "Public endpoint \u2014 retrieve frame info by share token.",
         "operationId": "get_shared_frame_api_shared__token__get",
@@ -4870,9 +4646,7 @@
     },
     "/api/shared/{token}/image": {
       "get": {
-        "tags": [
-          "share"
-        ],
+        "tags": ["share"],
         "summary": "Get Shared Image",
         "description": "Public endpoint \u2014 serve the actual image for a share token.",
         "operationId": "get_shared_image_api_shared__token__image_get",
@@ -4911,9 +4685,7 @@
     },
     "/api/download": {
       "get": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "Download File",
         "description": "Serve a file from the data directory.\n\nThe path must resolve to a location within the configured storage path.\nPath traversal attempts are rejected.",
         "operationId": "download_file_api_download_get",
@@ -4954,9 +4726,7 @@
     },
     "/api/errors": {
       "post": {
-        "tags": [
-          "errors"
-        ],
+        "tags": ["errors"],
         "summary": "Report Error",
         "description": "Collect a frontend error report. No auth required.",
         "operationId": "report_error_api_errors_post",
@@ -4992,9 +4762,7 @@
         }
       },
       "get": {
-        "tags": [
-          "errors"
-        ],
+        "tags": ["errors"],
         "summary": "List Errors",
         "description": "List recent errors with pagination. Auth required (handled by global middleware).",
         "operationId": "list_errors_api_errors_get",
@@ -5049,9 +4817,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "errors"
-        ],
+        "tags": ["errors"],
         "summary": "Clear Errors",
         "description": "Clear all error logs. Auth required (handled by global middleware).",
         "operationId": "clear_errors_api_errors_delete",
@@ -5297,13 +5063,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "satellite",
-          "sector",
-          "band",
-          "start_time",
-          "end_time"
-        ],
+        "required": ["satellite", "sector", "band", "start_time", "end_time"],
         "title": "AnimationFromRange",
         "description": "Create animation from a time range query."
       },
@@ -5381,9 +5141,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "AnimationPresetCreate",
         "description": "Request schema for creating an animation preset."
       },
@@ -5469,10 +5227,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "AnimationPresetResponse",
         "description": "Response schema for an animation preset."
       },
@@ -5648,11 +5403,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "satellite",
-          "sector",
-          "band"
-        ],
+        "required": ["satellite", "sector", "band"],
         "title": "AnimationRecent",
         "description": "Create animation from recent N hours."
       },
@@ -5792,15 +5543,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "status",
-          "frame_count",
-          "fps",
-          "format",
-          "quality"
-        ],
+        "required": ["id", "name", "status", "frame_count", "fps", "format", "quality"],
         "title": "AnimationResponse",
         "description": "Response schema for an animation with status, output path, and metadata."
       },
@@ -5871,13 +5614,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "satellite",
-          "sector",
-          "band",
-          "start_time",
-          "end_time"
-        ],
+        "required": ["satellite", "sector", "band", "start_time", "end_time"],
         "title": "BatchAnimationItem",
         "description": "Single item in a batch animation request."
       },
@@ -5894,9 +5631,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "animations"
-        ],
+        "required": ["animations"],
         "title": "BatchAnimationRequest",
         "description": "Batch animation creation request."
       },
@@ -5909,9 +5644,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_upload_image_api_images_upload_post"
       },
       "BulkDeleteRequest": {
@@ -5926,9 +5659,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "title": "BulkDeleteRequest",
         "description": "Request schema for bulk-deleting resources by their IDs."
       },
@@ -5944,9 +5675,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "title": "BulkFrameDeleteRequest",
         "description": "Request schema for bulk-deleting GOES frames by their IDs."
       },
@@ -5989,10 +5718,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "frame_ids",
-          "tag_ids"
-        ],
+        "required": ["frame_ids", "tag_ids"],
         "title": "BulkTagRequest",
         "description": "Request schema for applying tags to multiple frames at once."
       },
@@ -6017,10 +5743,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "frame_count",
-          "total_size_bytes"
-        ],
+        "required": ["frame_count", "total_size_bytes"],
         "title": "CleanupPreviewResponse"
       },
       "CleanupRuleCreate": {
@@ -6066,11 +5789,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "rule_type",
-          "value"
-        ],
+        "required": ["name", "rule_type", "value"],
         "title": "CleanupRuleCreate"
       },
       "CleanupRuleResponse": {
@@ -6124,14 +5843,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "rule_type",
-          "value",
-          "protect_collections",
-          "is_active"
-        ],
+        "required": ["id", "name", "rule_type", "value", "protect_collections", "is_active"],
         "title": "CleanupRuleResponse"
       },
       "CleanupRuleUpdate": {
@@ -6221,10 +5933,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "deleted_frames",
-          "freed_bytes"
-        ],
+        "required": ["deleted_frames", "freed_bytes"],
         "title": "CleanupRunResponse"
       },
       "CollectionBrief": {
@@ -6239,10 +5948,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "CollectionBrief",
         "description": "Minimal collection info embedded in frame responses."
       },
@@ -6261,9 +5967,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "CollectionCreate",
         "description": "Request schema for creating a named frame collection."
       },
@@ -6279,9 +5983,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "frame_ids"
-        ],
+        "required": ["frame_ids"],
         "title": "CollectionFramesRequest",
         "description": "Request schema for adding frames to a collection."
       },
@@ -6330,11 +6032,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "description"
-        ],
+        "required": ["id", "name", "description"],
         "title": "CollectionResponse",
         "description": "Response schema for a collection with frame count and timestamps."
       },
@@ -6391,10 +6089,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "recipe",
-          "capture_time"
-        ],
+        "required": ["recipe", "capture_time"],
         "title": "CompositeCreateRequest",
         "description": "Request schema for creating a band composite image."
       },
@@ -6492,14 +6187,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "recipe",
-          "satellite",
-          "sector",
-          "status"
-        ],
+        "required": ["id", "name", "recipe", "satellite", "sector", "status"],
         "title": "CompositeResponse"
       },
       "CropPresetCreate": {
@@ -6532,13 +6220,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "x",
-          "y",
-          "width",
-          "height"
-        ],
+        "required": ["name", "x", "y", "width", "height"],
         "title": "CropPresetCreate",
         "description": "Request schema for creating a crop preset with name and region coordinates."
       },
@@ -6582,14 +6264,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "x",
-          "y",
-          "width",
-          "height"
-        ],
+        "required": ["id", "name", "x", "y", "width", "height"],
         "title": "CropPresetResponse",
         "description": "Response schema for a crop preset with coordinates and metadata."
       },
@@ -6753,9 +6428,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "ErrorReportIn"
       },
       "FetchCompositeRequest": {
@@ -6789,13 +6462,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "satellite",
-          "sector",
-          "recipe",
-          "start_time",
-          "end_time"
-        ],
+        "required": ["satellite", "sector", "recipe", "start_time", "end_time"],
         "title": "FetchCompositeRequest",
         "description": "Request schema for fetching composite imagery (multi-band + auto-composite)."
       },
@@ -6832,12 +6499,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "satellite",
-          "sector",
-          "band"
-        ],
+        "required": ["name", "satellite", "sector", "band"],
         "title": "FetchPresetCreate",
         "description": "Request schema for creating a fetch preset with satellite/sector/band configuration."
       },
@@ -6881,14 +6543,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "satellite",
-          "sector",
-          "band",
-          "description"
-        ],
+        "required": ["id", "name", "satellite", "sector", "band", "description"],
         "title": "FetchPresetResponse",
         "description": "Response schema for a fetch preset with satellite configuration."
       },
@@ -6978,11 +6633,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "preset_id",
-          "interval_minutes"
-        ],
+        "required": ["name", "preset_id", "interval_minutes"],
         "title": "FetchScheduleCreate"
       },
       "FetchScheduleResponse": {
@@ -7067,13 +6718,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "preset_id",
-          "interval_minutes",
-          "is_active"
-        ],
+        "required": ["id", "name", "preset_id", "interval_minutes", "is_active"],
         "title": "FetchScheduleResponse"
       },
       "FetchScheduleUpdate": {
@@ -7204,9 +6849,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total_frames"
-        ],
+        "required": ["total_frames"],
         "title": "FrameRangePreview",
         "description": "Preview of frames in a time range."
       },
@@ -7242,12 +6885,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total_frames",
-          "total_size_bytes",
-          "by_satellite",
-          "by_band"
-        ],
+        "required": ["total_frames", "total_size_bytes", "by_satellite", "by_band"],
         "title": "FrameStatsResponse",
         "description": "Aggregated statistics for GOES frames broken down by satellite and band."
       },
@@ -7322,13 +6960,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "satellite",
-          "sector",
-          "band",
-          "start_time",
-          "end_time"
-        ],
+        "required": ["satellite", "sector", "band", "start_time", "end_time"],
         "title": "GoesFetchRequest",
         "description": "Request schema for fetching satellite frames within a time range. Max 24h window."
       },
@@ -7348,11 +6980,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "job_id",
-          "status",
-          "message"
-        ],
+        "required": ["job_id", "status", "message"],
         "title": "GoesFetchResponse"
       },
       "GoesFrameResponse": {
@@ -7467,14 +7095,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "satellite",
-          "sector",
-          "band",
-          "capture_time",
-          "file_size"
-        ],
+        "required": ["id", "satellite", "sector", "band", "capture_time", "file_size"],
         "title": "GoesFrameResponse",
         "description": "Response schema for a GOES satellite frame with file info, tags, and collections."
       },
@@ -7568,12 +7189,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "filename",
-          "original_name",
-          "file_size"
-        ],
+        "required": ["id", "filename", "original_name", "file_size"],
         "title": "ImageResponse",
         "description": "Response schema for an uploaded satellite image with dimensions and metadata."
       },
@@ -7581,11 +7197,7 @@
         "properties": {
           "job_type": {
             "type": "string",
-            "enum": [
-              "image_process",
-              "video_create",
-              "goes_fetch"
-            ],
+            "enum": ["image_process", "video_create", "goes_fetch"],
             "title": "Job Type",
             "default": "image_process"
           },
@@ -7850,12 +7462,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "type",
-          "message",
-          "read"
-        ],
+        "required": ["id", "type", "message", "read"],
         "title": "NotificationResponse"
       },
       "OverlaySettings": {
@@ -7903,12 +7510,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[AnimationResponse]"
       },
       "PaginatedResponse_CollectionResponse_": {
@@ -7934,12 +7536,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[CollectionResponse]"
       },
       "PaginatedResponse_CompositeResponse_": {
@@ -7965,12 +7562,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[CompositeResponse]"
       },
       "PaginatedResponse_GoesFrameResponse_": {
@@ -7996,12 +7588,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[GoesFrameResponse]"
       },
       "PaginatedResponse_ImageResponse_": {
@@ -8027,12 +7614,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[ImageResponse]"
       },
       "PaginatedResponse_JobResponse_": {
@@ -8058,12 +7640,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[JobResponse]"
       },
       "PaginatedResponse_TagResponse_": {
@@ -8089,12 +7666,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit"
-        ],
+        "required": ["items", "total", "page", "limit"],
         "title": "PaginatedResponse[TagResponse]"
       },
       "PresetCreate": {
@@ -8112,10 +7684,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "params"
-        ],
+        "required": ["name", "params"],
         "title": "PresetCreate",
         "description": "Request schema for creating a named processing parameter preset."
       },
@@ -8129,9 +7698,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "PresetRename"
       },
       "ProcessFramesRequest": {
@@ -8151,9 +7718,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "frame_ids"
-        ],
+        "required": ["frame_ids"],
         "title": "ProcessFramesRequest",
         "description": "Request schema for submitting selected frames for processing."
       },
@@ -8173,13 +7738,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "vegetation",
-                  "fire",
-                  "water_vapor",
-                  "dust",
-                  "airmass"
-                ]
+                "enum": ["vegetation", "fire", "water_vapor", "dust", "airmass"]
               },
               {
                 "type": "null"
@@ -8202,12 +7761,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "top-left",
-                  "top-right",
-                  "bottom-left",
-                  "bottom-right"
-                ]
+                "enum": ["top-left", "top-right", "bottom-left", "bottom-right"]
               },
               {
                 "type": "null"
@@ -8232,11 +7786,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "h264",
-                  "hevc",
-                  "av1"
-                ]
+                "enum": ["h264", "hevc", "av1"]
               },
               {
                 "type": "null"
@@ -8301,11 +7851,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "token",
-          "url",
-          "expires_at"
-        ],
+        "required": ["token", "url", "expires_at"],
         "title": "ShareLinkResponse"
       },
       "SharedFrameResponse": {
@@ -8390,9 +7936,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "TagCreate",
         "description": "Request schema for creating a tag with name and color."
       },
@@ -8412,11 +7956,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "color"
-        ],
+        "required": ["id", "name", "color"],
         "title": "TagResponse",
         "description": "Response schema for a tag with id, name, and color."
       },
@@ -8453,11 +7993,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       }
     }

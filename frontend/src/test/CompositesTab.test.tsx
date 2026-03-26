@@ -15,7 +15,6 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
@@ -77,13 +76,24 @@ describe('CompositesTab', () => {
       if (url.startsWith('/satellite/composites')) {
         return Promise.resolve({
           data: {
-            items: [{
-              id: '1', name: 'True Color', recipe: 'true_color',
-              satellite: 'GOES-16', sector: 'CONUS', capture_time: '2024-06-01T12:00:00',
-              file_path: null, file_size: 0, status: 'completed', error: '',
-              created_at: '2024-06-01T12:05:00',
-            }],
-            total: 1, page: 1, limit: 20,
+            items: [
+              {
+                id: '1',
+                name: 'True Color',
+                recipe: 'true_color',
+                satellite: 'GOES-16',
+                sector: 'CONUS',
+                capture_time: '2024-06-01T12:00:00',
+                file_path: null,
+                file_size: 0,
+                status: 'completed',
+                error: '',
+                created_at: '2024-06-01T12:05:00',
+              },
+            ],
+            total: 1,
+            page: 1,
+            limit: 20,
           },
         });
       }

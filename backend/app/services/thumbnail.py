@@ -22,10 +22,7 @@ def generate_thumbnail(source_path: str, output_dir: str | None = None) -> str |
     if not src.exists():
         return None
 
-    if output_dir:
-        thumb_dir = Path(output_dir) / "thumbnails"
-    else:
-        thumb_dir = src.parent / "thumbnails"
+    thumb_dir = Path(output_dir) / "thumbnails" if output_dir else src.parent / "thumbnails"
     thumb_dir.mkdir(parents=True, exist_ok=True)
     thumb_path = thumb_dir / f"thumb_{src.stem}.jpg"
 

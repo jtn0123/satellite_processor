@@ -15,7 +15,6 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
@@ -23,7 +22,10 @@ beforeEach(() => {
       return Promise.resolve({
         data: {
           satellites: ['GOES-16', 'GOES-19'],
-          bands: [{ id: 'C02', description: 'Red' }, { id: 'C13', description: 'IR' }],
+          bands: [
+            { id: 'C02', description: 'Red' },
+            { id: 'C13', description: 'IR' },
+          ],
         },
       });
     }
@@ -54,14 +56,26 @@ describe('GapsTab', () => {
             expected_frames: 160,
             time_range: { start: '2024-06-01T00:00:00Z', end: '2024-06-01T23:59:59Z' },
             gaps: [
-              { start: '2024-06-01T06:00:00Z', end: '2024-06-01T07:00:00Z', duration_minutes: 60, expected_frames: 6 },
-              { start: '2024-06-01T14:00:00Z', end: '2024-06-01T14:30:00Z', duration_minutes: 30, expected_frames: 3 },
+              {
+                start: '2024-06-01T06:00:00Z',
+                end: '2024-06-01T07:00:00Z',
+                duration_minutes: 60,
+                expected_frames: 6,
+              },
+              {
+                start: '2024-06-01T14:00:00Z',
+                end: '2024-06-01T14:30:00Z',
+                duration_minutes: 30,
+                expected_frames: 3,
+              },
             ],
           },
         });
       }
       if (url === '/satellite/products') {
-        return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
+        return Promise.resolve({
+          data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -87,13 +101,20 @@ describe('GapsTab', () => {
             expected_frames: 110,
             time_range: null,
             gaps: [
-              { start: '2024-06-01T06:00:00Z', end: '2024-06-01T07:00:00Z', duration_minutes: 60, expected_frames: 6 },
+              {
+                start: '2024-06-01T06:00:00Z',
+                end: '2024-06-01T07:00:00Z',
+                duration_minutes: 60,
+                expected_frames: 6,
+              },
             ],
           },
         });
       }
       if (url === '/satellite/products') {
-        return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
+        return Promise.resolve({
+          data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -123,7 +144,9 @@ describe('GapsTab', () => {
         });
       }
       if (url === '/satellite/products') {
-        return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
+        return Promise.resolve({
+          data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -147,13 +170,20 @@ describe('GapsTab', () => {
             expected_frames: 110,
             time_range: null,
             gaps: [
-              { start: '2024-06-01T06:00:00Z', end: '2024-06-01T07:00:00Z', duration_minutes: 60, expected_frames: 6 },
+              {
+                start: '2024-06-01T06:00:00Z',
+                end: '2024-06-01T07:00:00Z',
+                duration_minutes: 60,
+                expected_frames: 6,
+              },
             ],
           },
         });
       }
       if (url === '/satellite/products') {
-        return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
+        return Promise.resolve({
+          data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -176,13 +206,26 @@ describe('GapsTab', () => {
       if (url === '/satellite/gaps') {
         return Promise.resolve({
           data: {
-            coverage_percent: 90, gap_count: 1, total_frames: 100, expected_frames: 110, time_range: null,
-            gaps: [{ start: '2024-06-01T06:00:00Z', end: '2024-06-01T07:00:00Z', duration_minutes: 60, expected_frames: 6 }],
+            coverage_percent: 90,
+            gap_count: 1,
+            total_frames: 100,
+            expected_frames: 110,
+            time_range: null,
+            gaps: [
+              {
+                start: '2024-06-01T06:00:00Z',
+                end: '2024-06-01T07:00:00Z',
+                duration_minutes: 60,
+                expected_frames: 6,
+              },
+            ],
           },
         });
       }
       if (url === '/satellite/products') {
-        return Promise.resolve({ data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] } });
+        return Promise.resolve({
+          data: { satellites: ['GOES-19'], bands: [{ id: 'C02', description: 'Red' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -197,11 +240,14 @@ describe('GapsTab', () => {
     fireEvent.click(screen.getByText('Confirm Backfill'));
 
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/backfill', expect.objectContaining({
-        satellite: 'GOES-19',
-        band: 'C02',
-        sector: 'FullDisk',
-      }));
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        '/satellite/backfill',
+        expect.objectContaining({
+          satellite: 'GOES-19',
+          band: 'C02',
+          sector: 'FullDisk',
+        }),
+      );
     });
   });
 });

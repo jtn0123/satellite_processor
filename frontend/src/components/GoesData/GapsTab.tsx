@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, AlertTriangle, Play, PlayCircle, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import {
+  Search,
+  AlertTriangle,
+  Play,
+  PlayCircle,
+  Loader2,
+  CheckCircle2,
+  Clock,
+} from 'lucide-react';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import type { CoverageStats, Gap } from './types';
@@ -20,20 +28,33 @@ export default function GapsTab() {
   const [confirmGap, setConfirmGap] = useState<Gap | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
 
-  const { data: products } = useQuery<{ satellites: string[]; bands: { id: string; description: string }[] }>({
+  const { data: products } = useQuery<{
+    satellites: string[];
+    bands: { id: string; description: string }[];
+  }>({
     queryKey: ['goes-products'],
     queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
-  const { data: coverage, isLoading, refetch, isError } = useQuery<CoverageStats>({
+  const {
+    data: coverage,
+    isLoading,
+    refetch,
+    isError,
+  } = useQuery<CoverageStats>({
     queryKey: ['goes-gaps', satellite, band, expectedInterval],
     queryFn: () =>
-      api.get('/satellite/gaps', { params: { satellite, band, expected_interval: expectedInterval } }).then((r) => r.data),
+      api
+        .get('/satellite/gaps', {
+          params: { satellite, band, expected_interval: expectedInterval },
+        })
+        .then((r) => r.data),
     enabled: false,
   });
 
   const backfillMutation = useMutation({
-    mutationFn: (payload: BackfillPayload) => api.post('/satellite/backfill', payload).then((r) => r.data),
+    mutationFn: (payload: BackfillPayload) =>
+      api.post('/satellite/backfill', payload).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-gaps'] });
       setConfirmGap(null);
@@ -74,33 +95,79 @@ export default function GapsTab() {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div>
-          <label htmlFor="gap-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
-          <select id="gap-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
+          <label
+            htmlFor="gap-satellite"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Satellite
+          </label>
+          <select
+            id="gap-satellite"
+            value={satellite}
+            onChange={(e) => setSatellite(e.target.value)}
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
+          >
             {(products?.satellites ?? ['GOES-16', 'GOES-18', 'GOES-19']).map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="gap-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
-          <select id="gap-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2">
-            {(products?.bands ?? [{ id: 'C02', description: 'Red' }, { id: 'C13', description: 'IR' }]).map((b) => (
-              <option key={b.id} value={b.id}>{b.id} — {b.description}</option>
+          <label
+            htmlFor="gap-band"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Band
+          </label>
+          <select
+            id="gap-band"
+            value={band}
+            onChange={(e) => setBand(e.target.value)}
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
+          >
+            {(
+              products?.bands ?? [
+                { id: 'C02', description: 'Red' },
+                { id: 'C13', description: 'IR' },
+              ]
+            ).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.id} — {b.description}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="gap-interval" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Expected Interval (min)</label>
-          <input id="gap-interval" type="number" min={1} max={60} value={expectedInterval}
+          <label
+            htmlFor="gap-interval"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Expected Interval (min)
+          </label>
+          <input
+            id="gap-interval"
+            type="number"
+            min={1}
+            max={60}
+            value={expectedInterval}
             onChange={(e) => setExpectedInterval(Number(e.target.value))}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
+          />
         </div>
         <div className="flex items-end">
-          <button type="button" onClick={() => refetch()} disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors disabled:opacity-50">
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
             Detect Gaps
           </button>
         </div>
@@ -139,11 +206,13 @@ export default function GapsTab() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800">
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1">Coverage</div>
-              <div className={`text-3xl font-bold ${(() => {
-                if (coverage.coverage_percent >= 95) return 'text-emerald-400';
-                if (coverage.coverage_percent >= 80) return 'text-amber-400';
-                return 'text-red-400';
-              })()}`}>
+              <div
+                className={`text-3xl font-bold ${(() => {
+                  if (coverage.coverage_percent >= 95) return 'text-emerald-400';
+                  if (coverage.coverage_percent >= 80) return 'text-amber-400';
+                  return 'text-red-400';
+                })()}`}
+              >
                 {coverage.coverage_percent.toFixed(1)}%
               </div>
             </div>
@@ -166,12 +235,20 @@ export default function GapsTab() {
                   : `Backfill gap: ${new Date(confirmGap!.start).toLocaleString()} → ${new Date(confirmGap!.end).toLocaleString()} (~${confirmGap!.expected_frames} frames)?`}
               </div>
               <div className="flex gap-3">
-                <button onClick={executeBackfill} disabled={backfillMutation.isPending}
-                  className="px-4 py-2 bg-amber-500 text-black rounded-lg text-sm font-medium hover:bg-amber-400 disabled:opacity-50">
+                <button
+                  onClick={executeBackfill}
+                  disabled={backfillMutation.isPending}
+                  className="px-4 py-2 bg-amber-500 text-black rounded-lg text-sm font-medium hover:bg-amber-400 disabled:opacity-50"
+                >
                   {backfillMutation.isPending ? 'Submitting...' : 'Confirm Backfill'}
                 </button>
-                <button onClick={() => { setConfirmGap(null); setConfirmAll(false); }}
-                  className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-slate-600">
+                <button
+                  onClick={() => {
+                    setConfirmGap(null);
+                    setConfirmAll(false);
+                  }}
+                  className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-slate-600"
+                >
                   Cancel
                 </button>
               </div>
@@ -183,8 +260,12 @@ export default function GapsTab() {
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
               <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Detected Gaps</h3>
-                <button type="button" onClick={handleBackfillAll} disabled={backfillMutation.isPending}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50">
+                <button
+                  type="button"
+                  onClick={handleBackfillAll}
+                  disabled={backfillMutation.isPending}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50"
+                >
                   <PlayCircle className="w-4 h-4" />
                   Backfill All ({coverage.gap_count})
                 </button>
@@ -196,15 +277,21 @@ export default function GapsTab() {
                       <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                       <div>
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {new Date(gap.start).toLocaleString()} → {new Date(gap.end).toLocaleString()}
+                          {new Date(gap.start).toLocaleString()} →{' '}
+                          {new Date(gap.end).toLocaleString()}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-slate-400">
-                          {gap.duration_minutes.toFixed(0)} min · ~{gap.expected_frames} frames missing
+                          {gap.duration_minutes.toFixed(0)} min · ~{gap.expected_frames} frames
+                          missing
                         </div>
                       </div>
                     </div>
-                    <button type="button" onClick={() => handleBackfillOne(gap)} disabled={backfillMutation.isPending}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm hover:bg-primary/20 disabled:opacity-50">
+                    <button
+                      type="button"
+                      onClick={() => handleBackfillOne(gap)}
+                      disabled={backfillMutation.isPending}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm hover:bg-primary/20 disabled:opacity-50"
+                    >
                       <Play className="w-3 h-3" />
                       Backfill
                     </button>
@@ -217,7 +304,9 @@ export default function GapsTab() {
           {coverage.gaps.length === 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-6 py-8 text-center">
               <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <div className="text-sm text-emerald-400">No gaps detected — coverage looks good!</div>
+              <div className="text-sm text-emerald-400">
+                No gaps detected — coverage looks good!
+              </div>
             </div>
           )}
         </div>
@@ -227,7 +316,9 @@ export default function GapsTab() {
       {!coverage && !isLoading && !isError && (
         <div className="text-center py-12 text-gray-400 dark:text-slate-500">
           <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <div className="text-sm">Select parameters and click &quot;Detect Gaps&quot; to scan for missing frames</div>
+          <div className="text-sm">
+            Select parameters and click &quot;Detect Gaps&quot; to scan for missing frames
+          </div>
         </div>
       )}
     </div>

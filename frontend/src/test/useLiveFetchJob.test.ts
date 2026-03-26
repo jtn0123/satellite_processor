@@ -84,7 +84,9 @@ describe('useLiveFetchJob', () => {
     mockGet.mockReset();
     mockShowToast.mockReset();
     mockPost.mockResolvedValue({ data: { job_id: 'job-123' } });
-    mockGet.mockResolvedValue({ data: { id: 'job-123', status: 'processing', progress: 50, status_message: 'Working' } });
+    mockGet.mockResolvedValue({
+      data: { id: 'job-123', status: 'processing', progress: 50, status_message: 'Working' },
+    });
   });
 
   afterEach(() => {
@@ -102,11 +104,14 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-      satellite: 'GOES-18',
-      sector: 'CONUS',
-      band: 'Band02',
-    }));
+    expect(mockPost).toHaveBeenCalledWith(
+      '/satellite/fetch',
+      expect.objectContaining({
+        satellite: 'GOES-18',
+        sector: 'CONUS',
+        band: 'Band02',
+      }),
+    );
     expect(result.current.activeJobId).toBe('job-123');
     expect(mockShowToast).toHaveBeenCalledWith('success', 'Fetching latest frame…');
   });
@@ -126,10 +131,13 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-      start_time: '2024-06-01T12:00:00Z',
-      end_time: '2024-06-01T12:00:00Z',
-    }));
+    expect(mockPost).toHaveBeenCalledWith(
+      '/satellite/fetch',
+      expect.objectContaining({
+        start_time: '2024-06-01T12:00:00Z',
+        end_time: '2024-06-01T12:00:00Z',
+      }),
+    );
   });
 
   it('clears activeJobId after job completes with delay', async () => {
@@ -140,7 +148,9 @@ describe('useLiveFetchJob', () => {
       data: { id: 'job-123', status: 'completed', progress: 100, status_message: 'Done' },
     });
 
-    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveFetchJob(makeProps({ refetch })), {
+      wrapper: createWrapper(),
+    });
 
     // Set active job
     await act(async () => {
@@ -198,11 +208,14 @@ describe('useLiveFetchJob', () => {
     renderHook(() => useLiveFetchJob(props), { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-        satellite: 'GOES-18',
-        sector: 'CONUS',
-        band: 'Band02',
-      }));
+      expect(mockPost).toHaveBeenCalledWith(
+        '/satellite/fetch',
+        expect.objectContaining({
+          satellite: 'GOES-18',
+          sector: 'CONUS',
+          band: 'Band02',
+        }),
+      );
     });
     expect(mockShowToast).toHaveBeenCalledWith('success', 'Auto-fetching new frame from AWS');
   });
@@ -226,7 +239,10 @@ describe('useLiveFetchJob', () => {
 
   it('cleanup cancels inflight auto-fetch', async () => {
     // Make post slow
-    mockPost.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: { job_id: 'job-slow' } }), 100)));
+    mockPost.mockImplementation(
+      () =>
+        new Promise((resolve) => setTimeout(() => resolve({ data: { job_id: 'job-slow' } }), 100)),
+    );
     const props = makeProps({
       autoFetch: true,
       catalogLatest: makeCatalog(),
@@ -303,10 +319,13 @@ describe('useLiveFetchJob', () => {
     await act(async () => {
       await result.current.fetchNow();
     });
-    expect(mockPost).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-      start_time: '2024-06-01T12:00:00Z',
-      end_time: '2024-06-01T12:00:00Z',
-    }));
+    expect(mockPost).toHaveBeenCalledWith(
+      '/satellite/fetch',
+      expect.objectContaining({
+        start_time: '2024-06-01T12:00:00Z',
+        end_time: '2024-06-01T12:00:00Z',
+      }),
+    );
   });
 
   it('lastFetchFailed is true when job completes but no frame exists', async () => {
@@ -332,10 +351,10 @@ describe('useLiveFetchJob', () => {
       data: { id: 'job-123', status: 'failed', progress: 0, status_message: 'Error' },
     });
     const props = makeProps({ frame: null });
-    const { result, rerender } = renderHook(
-      (p) => useLiveFetchJob(p),
-      { initialProps: props, wrapper: createWrapper() },
-    );
+    const { result, rerender } = renderHook((p) => useLiveFetchJob(p), {
+      initialProps: props,
+      wrapper: createWrapper(),
+    });
     await act(async () => {
       await result.current.fetchNow();
     });

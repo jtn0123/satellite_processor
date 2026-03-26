@@ -177,6 +177,7 @@ def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operatio
             return result
         except (*_RETRYABLE_S3_ERRORS, ClientError) as exc:
             _handle_retry_exception(exc, attempt, max_retries, operation)
+    return None
 
 
 def _build_s3_prefix(_satellite: str, sector: str, _band: str, dt_obj: datetime) -> str:
@@ -210,20 +211,13 @@ def _matches_sector_and_band(key: str, sector: str, band: str) -> bool:
     """Check if an S3 key matches the requested sector and band."""
     filename = key.rsplit("/", 1)[-1] if "/" in key else key
     # Check band — mode can be M3, M4, or M6
-    band_found = False
-    for mode in ("M3", "M4", "M6"):
-        if f"-{mode}{band}_" in filename:
-            band_found = True
-            break
-    if not band_found:
+    if not any(f"-{mode}{band}_" in filename for mode in ("M3", "M4", "M6")):
         return False
     # For Mesoscale, check M1 vs M2
     # Pattern: OR_ABI-L2-CMIPM1-M6C02 vs OR_ABI-L2-CMIPM2-M6C02
     if sector == "Mesoscale1" and "CMIPM1" not in filename:
         return False
-    if sector == "Mesoscale2" and "CMIPM2" not in filename:
-        return False
-    return True
+    return not (sector == "Mesoscale2" and "CMIPM2" not in filename)
 
 
 def validate_params(satellite: str, sector: str, band: str) -> None:

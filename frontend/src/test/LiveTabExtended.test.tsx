@@ -23,16 +23,29 @@ beforeEach(() => {
         data: {
           satellites: ['GOES-16', 'GOES-18'],
           sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-          bands: [{ id: 'GEOCOLOR', description: 'GeoColor' }, { id: 'C02', description: 'Red' }, { id: 'C13', description: 'IR' }],
+          bands: [
+            { id: 'GEOCOLOR', description: 'GeoColor' },
+            { id: 'C02', description: 'Red' },
+            { id: 'C13', description: 'IR' },
+          ],
         },
       });
     }
     if (url.startsWith('/satellite/latest')) {
       return Promise.resolve({
         data: {
-          id: 'f1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
-          capture_time: '2024-06-01T12:00:00', file_path: '/tmp/t.nc',
-          file_size: 1024, width: 5424, height: 3000, thumbnail_path: '/tmp/th.png', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+          id: 'f1',
+          satellite: 'GOES-16',
+          sector: 'CONUS',
+          band: 'C02',
+          capture_time: '2024-06-01T12:00:00',
+          file_path: '/tmp/t.nc',
+          file_size: 1024,
+          width: 5424,
+          height: 3000,
+          thumbnail_path: '/tmp/th.png',
+          image_url: '/api/satellite/frames/test-id/image',
+          thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
         },
       });
     }

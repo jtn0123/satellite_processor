@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useImageZoom } from '../hooks/useImageZoom';
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
+function makeTouchEvent(touches: { clientX: number; clientY: number }[]) {
   return { touches, preventDefault: () => {} } as unknown as React.TouchEvent;
 }
 
@@ -172,7 +172,9 @@ describe('useImageZoom', () => {
   });
 
   it('respects custom options', () => {
-    const { result } = renderHook(() => useImageZoom({ minScale: 0.5, maxScale: 3, doubleTapScale: 2 }));
+    const { result } = renderHook(() =>
+      useImageZoom({ minScale: 0.5, maxScale: 3, doubleTapScale: 2 }),
+    );
     act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
     const match = result.current.style.transform?.toString().match(/scale\(([\d.]+)\)/);
@@ -185,7 +187,9 @@ describe('useImageZoom', () => {
     // Single touch start (first tap, no double tap)
     act(() => result.current.handlers.onTouchStart(makeTouchEvent([touch])));
     // Wait > 300ms by creating a fresh touch
-    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 150, clientY: 150 }])));
+    act(() =>
+      result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 150, clientY: 150 }])),
+    );
     // Should stay at 0,0 since not zoomed and panRef not set
     expect(result.current.style.transform).toContain('translate(0px, 0px)');
   });

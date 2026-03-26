@@ -32,10 +32,7 @@ async def client():
 
 def _payload(satellite: str, sector: str, band: str) -> dict:
     # GOES-16 decommissioned after 2025-04 — use a date within its availability window
-    if satellite == "GOES-16":
-        base = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
-    else:
-        base = datetime.now(UTC)
+    base = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC) if satellite == "GOES-16" else datetime.now(UTC)
     return {
         "satellite": satellite,
         "sector": sector,

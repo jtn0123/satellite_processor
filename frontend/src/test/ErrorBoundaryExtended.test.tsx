@@ -16,7 +16,7 @@ describe('ErrorBoundary extended', () => {
     render(
       <ErrorBoundary>
         <GoodComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
     expect(screen.getByText('Working fine')).toBeInTheDocument();
   });
@@ -27,7 +27,7 @@ describe('ErrorBoundary extended', () => {
     render(
       <ErrorBoundary>
         <BrokenComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
     // Should show some error UI instead of crashing
     expect(document.body.textContent).toBeTruthy();
@@ -42,7 +42,7 @@ describe('ErrorBoundary extended', () => {
           <BrokenComponent />
         </ErrorBoundary>
         <div>Still visible</div>
-      </div>
+      </div>,
     );
     expect(screen.getByText('Still visible')).toBeInTheDocument();
     spy.mockRestore();

@@ -11,17 +11,17 @@ class TestSettingsFieldsWired:
     def test_default_satellite_matches_settings(self):
         from app.config import DEFAULT_SATELLITE, settings
 
-        assert DEFAULT_SATELLITE == settings.goes_default_satellite
+        assert settings.goes_default_satellite == DEFAULT_SATELLITE
 
     def test_default_sector_matches_settings(self):
         from app.config import DEFAULT_SECTOR, settings
 
-        assert DEFAULT_SECTOR == settings.goes_default_sector
+        assert settings.goes_default_sector == DEFAULT_SECTOR
 
     def test_default_band_matches_settings(self):
         from app.config import DEFAULT_BAND, settings
 
-        assert DEFAULT_BAND == settings.goes_default_band
+        assert settings.goes_default_band == DEFAULT_BAND
 
     def test_env_var_override_takes_effect(self):
         """Changing GOES_DEFAULT_SATELLITE env var should change the Settings value."""

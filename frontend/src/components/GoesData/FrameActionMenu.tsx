@@ -46,7 +46,10 @@ export default function FrameActionMenu({
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
         className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
         aria-label="More actions"
         aria-haspopup="true"
@@ -65,7 +68,11 @@ export default function FrameActionMenu({
               key={item.label}
               type="button"
               role="menuitem"
-              onClick={(e) => { e.stopPropagation(); item.action(); setOpen(false); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                item.action();
+                setOpen(false);
+              }}
               className={`w-full flex items-center gap-2.5 px-3 min-h-[44px] text-sm transition-colors ${
                 item.danger
                   ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'

@@ -14,21 +14,34 @@ const defaultTimestamp = { enabled: true, position: 'bottom-left' };
 const defaultScale = { enabled: false, factor: 1 };
 const defaultVideo = { fps: 24, codec: 'h264', quality: 23, interpolation: 'none' };
 
-function initFromParams<T extends Record<string, unknown>>(defaults: T, params: Record<string, unknown> | undefined, key: string, enableOnMatch = true): T {
+function initFromParams<T extends Record<string, unknown>>(
+  defaults: T,
+  params: Record<string, unknown> | undefined,
+  key: string,
+  enableOnMatch = true,
+): T {
   if (!params || !(key in params)) return defaults;
   const p = params[key] as Record<string, unknown>;
   return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p } as T;
 }
 
-export default function ProcessingForm({ selectedImages, onJobCreated, initialParams }: Readonly<Props>) {
+export default function ProcessingForm({
+  selectedImages,
+  onJobCreated,
+  initialParams,
+}: Readonly<Props>) {
   const p = initialParams as Record<string, Record<string, unknown>> | undefined;
   const [step, setStep] = useState(0);
   const createJob = useCreateJob();
 
   // Processing params — initialized from preset if provided
   const [crop, setCrop] = useState(() => initFromParams(defaultCrop, p, 'crop'));
-  const [falseColor, setFalseColor] = useState(() => initFromParams(defaultFalseColor, p, 'false_color'));
-  const [timestamp, setTimestamp] = useState(() => initFromParams(defaultTimestamp, p, 'timestamp'));
+  const [falseColor, setFalseColor] = useState(() =>
+    initFromParams(defaultFalseColor, p, 'false_color'),
+  );
+  const [timestamp, setTimestamp] = useState(() =>
+    initFromParams(defaultTimestamp, p, 'timestamp'),
+  );
   const [scale, setScale] = useState(() => initFromParams(defaultScale, p, 'scale'));
 
   // Video params
@@ -53,7 +66,7 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
           video,
         },
       },
-      { onSuccess: () => onJobCreated?.() }
+      { onSuccess: () => onJobCreated?.() },
     );
   };
 
@@ -66,7 +79,9 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             key={s.label}
             onClick={() => setStep(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              i === step ? 'bg-primary/10 text-primary' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+              i === step
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <s.icon className="w-4 h-4" />
@@ -89,12 +104,16 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
               <div className="grid grid-cols-4 gap-3">
                 {(['x', 'y', 'w', 'h'] as const).map((key) => (
                   <div key={key}>
-                    <label className="text-xs text-gray-500 dark:text-slate-400 uppercase">{key}</label>
+                    <label className="text-xs text-gray-500 dark:text-slate-400 uppercase">
+                      {key}
+                    </label>
                     <input
                       type="number"
                       min={0}
                       value={crop[key]}
-                      onChange={(e) => setCrop({ ...crop, [key]: Math.max(0, Number(e.target.value)) })}
+                      onChange={(e) =>
+                        setCrop({ ...crop, [key]: Math.max(0, Number(e.target.value)) })
+                      }
                       aria-label={`Crop ${({ x: 'X coordinate', y: 'Y coordinate', w: 'width', h: 'height' } as const)[key]}`}
                       className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
                     />
@@ -167,7 +186,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="proc-fps" className="text-xs text-gray-500 dark:text-slate-400 uppercase">FPS</label>
+                <label
+                  htmlFor="proc-fps"
+                  className="text-xs text-gray-500 dark:text-slate-400 uppercase"
+                >
+                  FPS
+                </label>
                 <input
                   id="proc-fps"
                   type="range"
@@ -180,7 +204,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 <span className="text-sm text-gray-600 dark:text-slate-300">{video.fps} fps</span>
               </div>
               <div>
-                <label htmlFor="proc-quality" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Quality (CRF)</label>
+                <label
+                  htmlFor="proc-quality"
+                  className="text-xs text-gray-500 dark:text-slate-400 uppercase"
+                >
+                  Quality (CRF)
+                </label>
                 <input
                   id="proc-quality"
                   type="range"
@@ -195,7 +224,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="proc-codec" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Codec</label>
+                <label
+                  htmlFor="proc-codec"
+                  className="text-xs text-gray-500 dark:text-slate-400 uppercase"
+                >
+                  Codec
+                </label>
                 <select
                   id="proc-codec"
                   value={video.codec}
@@ -208,7 +242,12 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 </select>
               </div>
               <div>
-                <label htmlFor="proc-interp" className="text-xs text-gray-500 dark:text-slate-400 uppercase">Interpolation</label>
+                <label
+                  htmlFor="proc-interp"
+                  className="text-xs text-gray-500 dark:text-slate-400 uppercase"
+                >
+                  Interpolation
+                </label>
                 <select
                   id="proc-interp"
                   value={video.interpolation}
@@ -229,16 +268,19 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
             <h3 className="text-lg font-semibold">Review</h3>
             <div className="bg-gray-200 dark:bg-slate-700/50 rounded-lg p-4 space-y-2 text-sm">
               <p>
-                <span className="text-gray-500 dark:text-slate-400">Images:</span> {selectedImages.length} selected
+                <span className="text-gray-500 dark:text-slate-400">Images:</span>{' '}
+                {selectedImages.length} selected
               </p>
               {crop.enabled && (
                 <p>
-                  <span className="text-gray-500 dark:text-slate-400">Crop:</span> {crop.x},{crop.y} {crop.w}×{crop.h}
+                  <span className="text-gray-500 dark:text-slate-400">Crop:</span> {crop.x},{crop.y}{' '}
+                  {crop.w}×{crop.h}
                 </p>
               )}
               {falseColor.enabled && (
                 <p>
-                  <span className="text-gray-500 dark:text-slate-400">False Color:</span> {falseColor.method}
+                  <span className="text-gray-500 dark:text-slate-400">False Color:</span>{' '}
+                  {falseColor.method}
                 </p>
               )}
               <p>
@@ -246,8 +288,8 @@ export default function ProcessingForm({ selectedImages, onJobCreated, initialPa
                 {timestamp.enabled ? timestamp.position : 'Off'}
               </p>
               <p>
-                <span className="text-gray-500 dark:text-slate-400">Video:</span> {video.fps}fps, {video.codec},{' '}
-                CRF {video.quality}
+                <span className="text-gray-500 dark:text-slate-400">Video:</span> {video.fps}fps,{' '}
+                {video.codec}, CRF {video.quality}
               </p>
             </div>
             <button

@@ -41,8 +41,7 @@ def load_config(config_path: Path = None) -> dict:
         if config_path.exists():
             with open(config_path) as f:
                 loaded_settings = json.load(f)
-                settings = {**get_default_settings(), **loaded_settings}
-                return settings
+                return {**get_default_settings(), **loaded_settings}
         return get_default_settings()
     except Exception as e:
         logger.error(f"Error loading config: {e}")

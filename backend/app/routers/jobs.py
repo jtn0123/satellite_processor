@@ -1,5 +1,6 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
+import contextlib
 import logging
 import os
 import shutil
@@ -288,10 +289,8 @@ async def bulk_delete_jobs(
         # Revoke any running tasks
         task_id = _get_job_task_id(job)
         if task_id and job.status in ("pending", "processing"):
-            try:
+            with contextlib.suppress(OSError):
                 celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-            except OSError:
-                pass
 
         if use_delete_files:
             total_bytes_freed += await _delete_job_files(db, job)
@@ -325,10 +324,8 @@ async def delete_job(
     # Revoke Celery task if still running
     task_id = _get_job_task_id(job)
     if task_id and job.status in ("pending", "processing"):
-        try:
+        with contextlib.suppress(OSError):
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except OSError:
-            pass
 
     bytes_freed = 0
     if delete_files:
@@ -406,5 +403,4 @@ async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
     """Mark stale processing and pending jobs as failed."""
     from ..services.stale_jobs import cleanup_all_stale
 
-    result = await cleanup_all_stale(db)
-    return result
+    return await cleanup_all_stale(db)

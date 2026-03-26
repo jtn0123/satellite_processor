@@ -47,7 +47,9 @@ export default function MonitorSettingsPanel({
     const handler = (e: globalThis.MouseEvent | globalThis.TouchEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
     };
-    const escHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
     document.addEventListener('keydown', escHandler);
@@ -90,15 +92,16 @@ export default function MonitorSettingsPanel({
             </h3>
             {isMonitoring && (
               <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />{' '}
-                Active
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Active
               </span>
             )}
           </div>
 
           {/* Presets */}
           <fieldset className="space-y-1.5 border-0 p-0 m-0">
-            <legend className="text-xs text-white/60 uppercase tracking-wider">Quick Presets</legend>
+            <legend className="text-xs text-white/60 uppercase tracking-wider">
+              Quick Presets
+            </legend>
             {MONITOR_PRESETS.map((preset) => (
               <button
                 key={preset.label}
@@ -118,7 +121,9 @@ export default function MonitorSettingsPanel({
 
           {/* Custom config */}
           <fieldset className="space-y-2 border-0 border-t border-white/10 p-0 m-0 pt-3">
-            <legend className="text-xs text-white/60 uppercase tracking-wider">Custom Configuration</legend>
+            <legend className="text-xs text-white/60 uppercase tracking-wider">
+              Custom Configuration
+            </legend>
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={customSatellite}
@@ -127,7 +132,9 @@ export default function MonitorSettingsPanel({
                 aria-label="Monitor satellite"
               >
                 {satellites.map((s) => (
-                  <option key={s} value={s} className="bg-gray-900">{s}</option>
+                  <option key={s} value={s} className="bg-gray-900">
+                    {s}
+                  </option>
                 ))}
               </select>
               <select
@@ -137,7 +144,9 @@ export default function MonitorSettingsPanel({
                 aria-label="Monitor sector"
               >
                 {sectors.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-gray-900">{s.name}</option>
+                  <option key={s.id} value={s.id} className="bg-gray-900">
+                    {s.name}
+                  </option>
                 ))}
               </select>
               <select
@@ -147,7 +156,9 @@ export default function MonitorSettingsPanel({
                 aria-label="Monitor band"
               >
                 {bands.map((b) => (
-                  <option key={b.id} value={b.id} className="bg-gray-900">{b.id}</option>
+                  <option key={b.id} value={b.id} className="bg-gray-900">
+                    {b.id}
+                  </option>
                 ))}
               </select>
               <select
@@ -157,7 +168,9 @@ export default function MonitorSettingsPanel({
                 aria-label="Monitor interval"
               >
                 {CUSTOM_INTERVALS.map((ci) => (
-                  <option key={ci.value} value={ci.value} className="bg-gray-900">{ci.label}</option>
+                  <option key={ci.value} value={ci.value} className="bg-gray-900">
+                    {ci.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -167,7 +180,10 @@ export default function MonitorSettingsPanel({
           <div className="flex gap-2">
             {isMonitoring ? (
               <button
-                onClick={() => { onStop(); setOpen(false); }}
+                onClick={() => {
+                  onStop();
+                  setOpen(false);
+                }}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 border border-red-400/30 text-red-300 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
                 data-testid="monitor-stop-btn"
               >

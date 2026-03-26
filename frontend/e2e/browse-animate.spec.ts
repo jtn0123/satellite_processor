@@ -20,7 +20,9 @@ function mockFrames(page: Page) {
     }
     // Stats endpoint
     if (url.includes('/frames/stats')) {
-      return route.fulfill({ json: { total_frames: 50, total_size_bytes: 2500000, by_satellite: {}, by_band: {} } });
+      return route.fulfill({
+        json: { total_frames: 50, total_size_bytes: 2500000, by_satellite: {}, by_band: {} },
+      });
     }
     // Frame list
     const items = Array.from({ length: 12 }, (_, i) => ({
@@ -49,11 +51,16 @@ test.describe('Browse flow', () => {
     await mockFrames(page);
     await page.goto('/goes');
     // Browse tab should be default
-    const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
+    const browseTab = page
+      .locator('[role="tab"]')
+      .filter({ hasText: /browse/i })
+      .first();
     await expect(browseTab).toHaveAttribute('aria-selected', 'true');
     // Frames should render (LazyImage wraps images in a div; the actual <img> may
     // not appear until IntersectionObserver fires, so assert on the wrapper instead)
-    await expect(page.locator('[data-testid="lazy-image-wrapper"]').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="lazy-image-wrapper"]').first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('clicking a frame opens detail view', async ({ page }) => {
@@ -64,7 +71,11 @@ test.describe('Browse flow', () => {
     if (await firstCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await firstCard.click();
       // Should show detail - dialog, drawer, or expanded view
-      await expect(page.locator('[role="dialog"], [class*="detail"], [class*="Detail"], [class*="viewer"]').first())
+      await expect(
+        page
+          .locator('[role="dialog"], [class*="detail"], [class*="Detail"], [class*="viewer"]')
+          .first(),
+      )
         .toBeVisible({ timeout: 5000 })
         .catch(() => {
           // May navigate instead
@@ -95,7 +106,9 @@ test.describe('Animation flow', () => {
     await page.goto('/animate');
     await expect(page).toHaveURL(/animate/);
     // Page should have animation-related content
-    await expect(page.locator('h1, h2, [class*="animate"], [class*="Animate"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator('h1, h2, [class*="animate"], [class*="Animate"]').first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test('animate page shows frame selection controls', async ({ page }) => {
@@ -108,7 +121,9 @@ test.describe('Animation flow', () => {
 
   test('animate page shows create/preview button', async ({ page }) => {
     await page.goto('/animate');
-    const actionBtn = page.locator('button:has-text("Create"), button:has-text("Preview"), button:has-text("Generate")').first();
+    const actionBtn = page
+      .locator('button:has-text("Create"), button:has-text("Preview"), button:has-text("Generate")')
+      .first();
     await expect(actionBtn).toBeVisible({ timeout: 5000 });
   });
 });

@@ -36,7 +36,10 @@ export default function BrowseToolbar({
   return (
     <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 border border-gray-200 dark:border-slate-800">
       <div className="flex items-center gap-3">
-        <button onClick={selectAll} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors min-h-[44px] px-2">
+        <button
+          onClick={selectAll}
+          className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors min-h-[44px] px-2"
+        >
           {selectedIds.size > 0 && selectedIds.size === frames.length
             ? 'Deselect All'
             : 'Select All'}
@@ -67,12 +70,18 @@ export default function BrowseToolbar({
         </button>
 
         <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden ml-2">
-          <button onClick={() => setViewMode('grid')} aria-label="Grid view"
-            className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
+          <button
+            onClick={() => setViewMode('grid')}
+            aria-label="Grid view"
+            className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}
+          >
             <Grid3X3 className="w-4 h-4" />
           </button>
-          <button onClick={() => setViewMode('list')} aria-label="List view"
-            className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}>
+          <button
+            onClick={() => setViewMode('list')}
+            aria-label="List view"
+            className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500'}`}
+          >
             <List className="w-4 h-4" />
           </button>
         </div>

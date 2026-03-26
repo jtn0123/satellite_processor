@@ -7,7 +7,10 @@ import Modal from './Modal';
 import type { TagType } from './types';
 import { extractArray } from '../../utils/safeData';
 
-export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: string[]; onClose: () => void }>) {
+export default function TagModal({
+  frameIds,
+  onClose,
+}: Readonly<{ frameIds: string[]; onClose: () => void }>) {
   const queryClient = useQueryClient();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -15,13 +18,15 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
 
   const { data: tags } = useQuery<TagType[]>({
     queryKey: ['goes-tags'],
-    queryFn: () => api.get('/satellite/tags').then((r) => {
-      return extractArray(r.data);
-    }),
+    queryFn: () =>
+      api.get('/satellite/tags').then((r) => {
+        return extractArray(r.data);
+      }),
   });
 
   const tagMutation = useMutation({
-    mutationFn: () => api.post('/satellite/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
+    mutationFn: () =>
+      api.post('/satellite/frames/tag', { frame_ids: frameIds, tag_ids: selectedTags }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goes-frames'] });
       showToast('success', `Tagged ${frameIds.length} frame(s)`);
@@ -31,7 +36,8 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   });
 
   const createTagMutation = useMutation({
-    mutationFn: () => api.post('/satellite/tags', { name: newTagName, color: newTagColor }).then((r) => r.data),
+    mutationFn: () =>
+      api.post('/satellite/tags', { name: newTagName, color: newTagColor }).then((r) => r.data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['goes-tags'] });
       setSelectedTags((prev) => [...prev, data.id]);
@@ -42,46 +48,81 @@ export default function TagModal({ frameIds, onClose }: Readonly<{ frameIds: str
   });
 
   const toggleTag = (id: string) => {
-    setSelectedTags((prev) => prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]);
+    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
   };
 
   return (
     <Modal onClose={onClose} ariaLabel="Tag Frames">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Tag Frames</h3>
-        <button type="button" onClick={onClose} aria-label="Close tag modal"><X className="w-5 h-5 text-gray-500 dark:text-slate-400" /></button>
+        <button type="button" onClick={onClose} aria-label="Close tag modal">
+          <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {(tags ?? []).map((t) => (
-          <button type="button" key={t.id} onClick={() => toggleTag(t.id)}
+          <button
+            type="button"
+            key={t.id}
+            onClick={() => toggleTag(t.id)}
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               selectedTags.includes(t.id)
                 ? 'border-primary bg-primary/20 text-gray-900 dark:text-white'
                 : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-            }`}>
-            <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: t.color }} />
+            }`}
+          >
+            <span
+              className="inline-block w-2 h-2 rounded-full mr-1.5"
+              style={{ backgroundColor: t.color }}
+            />
             {t.name}
           </button>
         ))}
       </div>
 
       {selectedTags.length > 0 && (
-        <button type="button" onClick={() => tagMutation.mutate()} disabled={tagMutation.isPending}
-          className="w-full px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
+        <button
+          type="button"
+          onClick={() => tagMutation.mutate()}
+          disabled={tagMutation.isPending}
+          className="w-full px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50"
+        >
           {tagMutation.isPending ? 'Tagging...' : `Tag ${frameIds.length} frames`}
         </button>
       )}
 
       <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-2">
-        <label htmlFor="tagmod-create-new-tag" className="text-sm text-gray-500 dark:text-slate-400">Create new tag</label>
+        <label
+          htmlFor="tagmod-create-new-tag"
+          className="text-sm text-gray-500 dark:text-slate-400"
+        >
+          Create new tag
+        </label>
         <div className="flex gap-2">
-          <input id="tagmod-create-new-tag" type="color" value={newTagColor} onChange={(e) => setNewTagColor(e.target.value)}
-            className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-pointer" />
-          <input aria-label="New tag name" type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
-            placeholder="Tag name" className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2" />
-          <button type="button" onClick={() => createTagMutation.mutate()} disabled={!newTagName || createTagMutation.isPending}
-            className="px-4 py-2 bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50">+</button>
+          <input
+            id="tagmod-create-new-tag"
+            type="color"
+            value={newTagColor}
+            onChange={(e) => setNewTagColor(e.target.value)}
+            className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-pointer"
+          />
+          <input
+            aria-label="New tag name"
+            type="text"
+            value={newTagName}
+            onChange={(e) => setNewTagName(e.target.value)}
+            placeholder="Tag name"
+            className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
+          />
+          <button
+            type="button"
+            onClick={() => createTagMutation.mutate()}
+            disabled={!newTagName || createTagMutation.isPending}
+            className="px-4 py-2 bg-emerald-600 text-gray-900 dark:text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
+          >
+            +
+          </button>
         </div>
       </div>
     </Modal>

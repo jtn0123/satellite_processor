@@ -128,11 +128,12 @@ describe('FrameGallery filter → display integration', () => {
     // Should trigger new frame fetch with satellite param
     await waitFor(() => {
       const frameCalls = mockedGet.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames') && !call[0].includes('stats'),
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].startsWith('/satellite/frames') &&
+          !call[0].includes('stats'),
       );
-      const hasFilteredCall = frameCalls.some(
-        (call) => call[1]?.params?.satellite === 'GOES-18',
-      );
+      const hasFilteredCall = frameCalls.some((call) => call[1]?.params?.satellite === 'GOES-18');
       expect(hasFilteredCall).toBe(true);
     });
   });
@@ -156,11 +157,12 @@ describe('FrameGallery filter → display integration', () => {
 
     await waitFor(() => {
       const frameCalls = mockedGet.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames') && !call[0].includes('stats'),
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].startsWith('/satellite/frames') &&
+          !call[0].includes('stats'),
       );
-      const hasFilteredCall = frameCalls.some(
-        (call) => call[1]?.params?.band === 'C13',
-      );
+      const hasFilteredCall = frameCalls.some((call) => call[1]?.params?.band === 'C13');
       expect(hasFilteredCall).toBe(true);
     });
   });

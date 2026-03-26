@@ -39,10 +39,12 @@ export default function PresetsPage() {
       <div className="space-y-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold">Presets</h1>
-          <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Manage processing presets</p>
+          <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
+            Manage processing presets
+          </p>
         </div>
         <div className="space-y-2">
-          {["a","b","c","d"].map((k) => (
+          {['a', 'b', 'c', 'd'].map((k) => (
             <div key={k} className="h-16 bg-white dark:bg-space-800/70 rounded-lg animate-pulse" />
           ))}
         </div>
@@ -54,7 +56,9 @@ export default function PresetsPage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold">Presets</h1>
-        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Manage saved processing presets</p>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
+          Manage saved processing presets
+        </p>
       </div>
 
       {presetList.length === 0 ? (
@@ -105,7 +109,8 @@ export default function PresetsPage() {
                   <>
                     <p className="font-medium text-sm">{p.name}</p>
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-                      Created {new Date(p.created_at).toLocaleDateString()} · {Object.keys(p.params).length} parameters
+                      Created {new Date(p.created_at).toLocaleDateString()} ·{' '}
+                      {Object.keys(p.params).length} parameters
                     </p>
                   </>
                 )}
@@ -143,7 +148,10 @@ export default function PresetsPage() {
           message="You can recreate it later."
           confirmLabel="Delete"
           isPending={deletePreset.isPending}
-          onConfirm={() => { deletePreset.mutate(deletePresetName); setDeletePresetName(null); }}
+          onConfirm={() => {
+            deletePreset.mutate(deletePresetName);
+            setDeletePresetName(null);
+          }}
           onCancel={() => setDeletePresetName(null)}
         />
       )}

@@ -20,7 +20,10 @@ const defaultProps = {
   onStop: vi.fn(),
   onApplyPreset: vi.fn(),
   satellites: ['GOES-16', 'GOES-18'],
-  sectors: [{ id: 'CONUS', name: 'CONUS' }, { id: 'FULL', name: 'Full Disk' }],
+  sectors: [
+    { id: 'CONUS', name: 'CONUS' },
+    { id: 'FULL', name: 'Full Disk' },
+  ],
   bands: [{ id: 'C02', description: 'Visible' }],
 };
 

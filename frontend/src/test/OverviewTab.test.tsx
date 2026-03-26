@@ -29,8 +29,8 @@ vi.mock('../api/client', () => ({
               'GOES-18': { count: 50, size: 2000000 },
             },
             by_band: {
-              'C02': { count: 80, size: 2500000 },
-              'C13': { count: 70, size: 2500000 },
+              C02: { count: 80, size: 2500000 },
+              C13: { count: 70, size: 2500000 },
             },
           },
         });
@@ -39,8 +39,20 @@ vi.mock('../api/client', () => ({
         return Promise.resolve({
           data: {
             items: [
-              { id: '1', name: 'Fetch GOES-19 CONUS', status: 'completed', created_at: new Date().toISOString(), completed_at: new Date().toISOString() },
-              { id: '2', name: 'Fetch GOES-18 FullDisk', status: 'running', created_at: new Date().toISOString(), completed_at: null },
+              {
+                id: '1',
+                name: 'Fetch GOES-19 CONUS',
+                status: 'completed',
+                created_at: new Date().toISOString(),
+                completed_at: new Date().toISOString(),
+              },
+              {
+                id: '2',
+                name: 'Fetch GOES-18 FullDisk',
+                status: 'running',
+                created_at: new Date().toISOString(),
+                completed_at: null,
+              },
             ],
             total: 2,
           },
@@ -55,9 +67,7 @@ function renderWithQuery(ui: React.ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('OverviewTab', () => {

@@ -14,7 +14,7 @@ test.describe('Dashboard', () => {
   test('dashboard stats API returns data', async ({ request }) => {
     const res = await apiGet(request, '/api/satellite/dashboard-stats');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { total_frames: number };
+    const body = (await res.json()) as { total_frames: number };
     expect(body.total_frames).toBeGreaterThanOrEqual(0);
   });
 
@@ -36,7 +36,8 @@ test.describe('Dashboard', () => {
       await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
     }
     // Find and click a nav link to browse
-    const browseLink = page.getByRole('link', { name: /browse/i })
+    const browseLink = page
+      .getByRole('link', { name: /browse/i })
       .or(page.locator('a[href*="goes"]'));
     const linkExists = (await browseLink.count()) > 0;
     if (linkExists) {
@@ -67,9 +68,7 @@ test.describe('Dashboard', () => {
   test('dashboard system health section renders', async ({ page }) => {
     await navigateTo(page, '/');
     // System health may show as a section or card
-    const health = page.locator(
-      '[class*="health"], [class*="system"], [data-testid*="health"]',
-    );
+    const health = page.locator('[class*="health"], [class*="system"], [data-testid*="health"]');
     const count = await health.count();
     // Resilient — may not exist on all dashboard layouts
     expect(count).toBeGreaterThanOrEqual(0);

@@ -73,8 +73,14 @@ export const GOES_SECTORS = ['FullDisk', 'CONUS', 'Mesoscale1', 'Mesoscale2'];
 export const HIMAWARI_SECTORS = ['FLDK', 'Japan', 'Target'];
 export const SECTORS = [...GOES_SECTORS, ...HIMAWARI_SECTORS];
 
-export const GOES_BANDS = Array.from({ length: 16 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
-export const HIMAWARI_BANDS = Array.from({ length: 16 }, (_, i) => `B${String(i + 1).padStart(2, '0')}`);
+export const GOES_BANDS = Array.from(
+  { length: 16 },
+  (_, i) => `C${String(i + 1).padStart(2, '0')}`,
+);
+export const HIMAWARI_BANDS = Array.from(
+  { length: 16 },
+  (_, i) => `B${String(i + 1).padStart(2, '0')}`,
+);
 /** @deprecated Use GOES_BANDS or HIMAWARI_BANDS for satellite-specific lists. */
 export const BANDS = GOES_BANDS;
 

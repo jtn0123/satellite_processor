@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { apiPost, apiGet, apiDelete, apiDeleteNoAuth, waitForApiHealth, waitForJob, buildFetchRequest } from './helpers';
+import {
+  apiPost,
+  apiGet,
+  apiDelete,
+  apiDeleteNoAuth,
+  waitForApiHealth,
+  waitForJob,
+  buildFetchRequest,
+} from './helpers';
 
 test.describe('Delete flows', () => {
   test.describe.configure({ mode: 'serial' });
@@ -24,7 +32,7 @@ test.describe('Delete flows', () => {
   test('delete a frame via API and verify removal', async ({ request }) => {
     const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
-    const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
+    const items = (framesBody.items ?? framesBody) as Record<string, unknown>[];
     if (!Array.isArray(items) || items.length === 0) {
       test.skip(true, 'No frames available to delete');
       return;
@@ -37,7 +45,7 @@ test.describe('Delete flows', () => {
     // Verify it's gone
     const afterRes = await apiGet(request, '/api/satellite/frames');
     const afterBody = afterRes.body as Record<string, unknown>;
-    const afterItems = (afterBody.items ?? afterBody) as Array<Record<string, unknown>>;
+    const afterItems = (afterBody.items ?? afterBody) as Record<string, unknown>[];
     if (Array.isArray(afterItems)) {
       const found = afterItems.find((f) => f.id === frameId);
       expect(found).toBeUndefined();
@@ -47,7 +55,7 @@ test.describe('Delete flows', () => {
   test('delete a job via API and verify removal', async ({ request }) => {
     // Get a job to delete
     const jobsRes = await apiGet(request, '/api/jobs');
-    const jobs = jobsRes.body as Array<Record<string, unknown>>;
+    const jobs = jobsRes.body as Record<string, unknown>[];
     if (!Array.isArray(jobs) || jobs.length === 0) {
       test.skip(true, 'No jobs available to delete');
       return;
@@ -59,7 +67,7 @@ test.describe('Delete flows', () => {
 
     // Verify removal
     const afterRes = await apiGet(request, '/api/jobs');
-    const afterJobs = afterRes.body as Array<Record<string, unknown>>;
+    const afterJobs = afterRes.body as Record<string, unknown>[];
     if (Array.isArray(afterJobs)) {
       const found = afterJobs.find((j) => (j.id ?? j.job_id) === targetJobId);
       expect(found).toBeUndefined();

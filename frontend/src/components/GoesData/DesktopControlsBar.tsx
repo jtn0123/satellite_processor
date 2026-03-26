@@ -31,7 +31,18 @@ function getCompareButtonClass(active: boolean): string {
     : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20';
 }
 
-export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, refreshInterval, onRefreshIntervalChange, compareMode, onCompareModeChange, autoFetchDisabled, autoFetchDisabledReason }: Readonly<DesktopControlsBarProps>) {
+export default function DesktopControlsBar({
+  monitoring,
+  onToggleMonitor,
+  autoFetch,
+  onAutoFetchChange,
+  refreshInterval,
+  onRefreshIntervalChange,
+  compareMode,
+  onCompareModeChange,
+  autoFetchDisabled,
+  autoFetchDisabledReason,
+}: Readonly<DesktopControlsBarProps>) {
   const watchLabel = monitoring ? 'Stop watching' : 'Start watching';
   const toggleKnobClass = autoFetch && !autoFetchDisabled ? 'translate-x-4' : 'translate-x-0.5';
   const selectClass = autoFetch ? 'hover:bg-white/20' : 'opacity-40 cursor-not-allowed';
@@ -60,7 +71,9 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${getToggleSwitchClass(autoFetch, autoFetchDisabled)}`}
         >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${toggleKnobClass}`} />
+          <span
+            className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${toggleKnobClass}`}
+          />
         </button>
         <Zap className="w-3.5 h-3.5 text-amber-400" />
         <span className="whitespace-nowrap">Auto-fetch every</span>
@@ -72,7 +85,13 @@ export default function DesktopControlsBar({ monitoring, onToggleMonitor, autoFe
           className={`rounded bg-white/10 border border-white/20 text-white text-xs px-1.5 py-0.5 transition-opacity ${selectClass}`}
         >
           {REFRESH_INTERVALS.map((ri) => (
-            <option key={ri.value} value={ri.value} className="bg-white dark:bg-space-900 text-gray-900 dark:text-white">{ri.label}</option>
+            <option
+              key={ri.value}
+              value={ri.value}
+              className="bg-white dark:bg-space-900 text-gray-900 dark:text-white"
+            >
+              {ri.label}
+            </option>
           ))}
         </select>
       </div>

@@ -14,11 +14,7 @@ vi.mock('../api/client', () => ({
 
 import api from '../api/client';
 import { MONITOR_PRESETS } from '../components/GoesData/monitorPresets';
-import {
-  HIMAWARI_BAND_INFO,
-  getBandInfoForSatellite,
-  getBandLabel,
-} from '../constants/bands';
+import { HIMAWARI_BAND_INFO, getBandInfoForSatellite, getBandLabel } from '../constants/bands';
 import {
   getSectorsForSatellite,
   getBandsForSatellite,
@@ -26,11 +22,7 @@ import {
   isCompositeBand,
   getDisabledBands,
 } from '../components/GoesData/liveTabUtils';
-import {
-  isHimawariSatellite,
-  getDefaultBand,
-  getDefaultSector,
-} from '../utils/sectorHelpers';
+import { isHimawariSatellite, getDefaultBand, getDefaultSector } from '../utils/sectorHelpers';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
@@ -40,10 +32,30 @@ const renderWithProviders = renderWithRoute;
 const HIMAWARI_PRODUCTS = {
   satellites: ['GOES-16', 'GOES-18', 'GOES-19', 'Himawari-9'],
   satellite_availability: {
-    'GOES-16': { available_from: '2017-12-18', available_to: null, status: 'active', description: 'GOES-East' },
-    'GOES-18': { available_from: '2022-01-01', available_to: null, status: 'active', description: 'GOES-West' },
-    'GOES-19': { available_from: '2024-06-01', available_to: null, status: 'active', description: 'GOES-East' },
-    'Himawari-9': { available_from: '2022-12-13', available_to: null, status: 'active', description: 'East Asia / W. Pacific' },
+    'GOES-16': {
+      available_from: '2017-12-18',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-East',
+    },
+    'GOES-18': {
+      available_from: '2022-01-01',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-West',
+    },
+    'GOES-19': {
+      available_from: '2024-06-01',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-East',
+    },
+    'Himawari-9': {
+      available_from: '2022-12-13',
+      available_to: null,
+      status: 'active',
+      description: 'East Asia / W. Pacific',
+    },
   },
   sectors: [
     { id: 'FullDisk', name: 'Full Disk', product: 'ABI-L2-CMIPF' },
@@ -63,13 +75,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
     if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-    if (url === '/satellite/frames') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
+    if (url === '/satellite/frames')
+      return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
     if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
     if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
     if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [] });
     if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
-    if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url === '/satellite/animations')
+      return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
     if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });
   });
@@ -116,13 +130,13 @@ describe('Himawari Band Info', () => {
 describe('Satellite-aware sectors and bands', () => {
   it('getSectorsForSatellite returns Himawari sectors', () => {
     const sectors = getSectorsForSatellite('Himawari-9');
-    expect(sectors.map(s => s.id)).toEqual(['FLDK', 'Japan', 'Target']);
+    expect(sectors.map((s) => s.id)).toEqual(['FLDK', 'Japan', 'Target']);
   });
 
   it('getSectorsForSatellite returns GOES sectors', () => {
     const sectors = getSectorsForSatellite('GOES-19');
-    expect(sectors.map(s => s.id)).toContain('FullDisk');
-    expect(sectors.map(s => s.id)).toContain('CONUS');
+    expect(sectors.map((s) => s.id)).toContain('FullDisk');
+    expect(sectors.map((s) => s.id)).toContain('CONUS');
   });
 
   it('getBandsForSatellite returns Himawari bands with TrueColor', () => {
@@ -185,22 +199,26 @@ describe('Satellite helper functions', () => {
 
 describe('Monitor Presets include Himawari', () => {
   it('has GOES and Himawari presets', () => {
-    const goesPresets = MONITOR_PRESETS.filter(p => !p.satellite || p.satellite?.startsWith('GOES'));
-    const himPresets = MONITOR_PRESETS.filter(p => p.satellite === 'Himawari-9');
+    const goesPresets = MONITOR_PRESETS.filter(
+      (p) => !p.satellite || p.satellite?.startsWith('GOES'),
+    );
+    const himPresets = MONITOR_PRESETS.filter((p) => p.satellite === 'Himawari-9');
     expect(goesPresets.length).toBeGreaterThanOrEqual(3);
     expect(himPresets.length).toBeGreaterThanOrEqual(3);
   });
 
   it('Himawari presets use correct sectors', () => {
-    const himPresets = MONITOR_PRESETS.filter(p => p.satellite === 'Himawari-9');
-    const sectors = himPresets.map(p => p.sector);
+    const himPresets = MONITOR_PRESETS.filter((p) => p.satellite === 'Himawari-9');
+    const sectors = himPresets.map((p) => p.sector);
     expect(sectors).toContain('Japan');
     expect(sectors).toContain('FLDK');
     expect(sectors).toContain('Target');
   });
 
   it('Himawari Japan preset uses TrueColor', () => {
-    const japanPreset = MONITOR_PRESETS.find(p => p.satellite === 'Himawari-9' && p.sector === 'Japan');
+    const japanPreset = MONITOR_PRESETS.find(
+      (p) => p.satellite === 'Himawari-9' && p.sector === 'Japan',
+    );
     expect(japanPreset).toBeDefined();
     expect(japanPreset!.band).toBe('TrueColor');
   });
@@ -251,11 +269,14 @@ describe('FetchTab Himawari support', () => {
 
     await waitFor(() => {
       // Should use fetch-composite endpoint for TrueColor
-      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch-composite', expect.objectContaining({
-        satellite: 'Himawari-9',
-        sector: 'Japan',
-        recipe: 'true_color',
-      }));
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        '/satellite/fetch-composite',
+        expect.objectContaining({
+          satellite: 'Himawari-9',
+          sector: 'Japan',
+          recipe: 'true_color',
+        }),
+      );
     });
   });
 
@@ -271,11 +292,14 @@ describe('FetchTab Himawari support', () => {
     fireEvent.click(fldkBtn);
 
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-        satellite: 'Himawari-9',
-        sector: 'FLDK',
-        band: 'B13',
-      }));
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        '/satellite/fetch',
+        expect.objectContaining({
+          satellite: 'Himawari-9',
+          sector: 'FLDK',
+          band: 'B13',
+        }),
+      );
     });
   });
 });
@@ -291,17 +315,17 @@ describe('PresetsTab Himawari support', () => {
       expect(screen.getByText('Fetch Presets')).toBeInTheDocument();
     });
 
-    // Click "New Preset" 
+    // Click "New Preset"
     fireEvent.click(screen.getByText('New Preset'));
 
     // Should see satellite selector with Himawari-9 option
     const selects = screen.getAllByRole('combobox');
-    const satSelect = selects.find(s => s.getAttribute('aria-label') === 'Satellite');
+    const satSelect = selects.find((s) => s.getAttribute('aria-label') === 'Satellite');
     expect(satSelect).toBeDefined();
 
     // Check Himawari-9 is an option
     const options = Array.from(satSelect!.querySelectorAll('option'));
-    const himawariOption = options.find(o => o.value === 'Himawari-9');
+    const himawariOption = options.find((o) => o.value === 'Himawari-9');
     expect(himawariOption).toBeDefined();
   });
 
@@ -316,26 +340,26 @@ describe('PresetsTab Himawari support', () => {
     fireEvent.click(screen.getByText('New Preset'));
 
     const selects = screen.getAllByRole('combobox');
-    const satSelect = selects.find(s => s.getAttribute('aria-label') === 'Satellite');
+    const satSelect = selects.find((s) => s.getAttribute('aria-label') === 'Satellite');
 
     // Switch to Himawari-9
     fireEvent.change(satSelect!, { target: { value: 'Himawari-9' } });
 
     // Sector dropdown should now show Himawari sectors
-    const sectorSelect = selects.find(s => s.getAttribute('aria-label') === 'Sector');
+    const sectorSelect = selects.find((s) => s.getAttribute('aria-label') === 'Sector');
     await waitFor(() => {
       const sectorOptions = Array.from(sectorSelect!.querySelectorAll('option'));
-      const sectorIds = sectorOptions.map(o => o.value);
+      const sectorIds = sectorOptions.map((o) => o.value);
       expect(sectorIds).toContain('FLDK');
       expect(sectorIds).toContain('Japan');
       expect(sectorIds).toContain('Target');
     });
 
     // Band dropdown should show Himawari bands
-    const bandSelect = selects.find(s => s.getAttribute('aria-label') === 'Band');
+    const bandSelect = selects.find((s) => s.getAttribute('aria-label') === 'Band');
     await waitFor(() => {
       const bandOptions = Array.from(bandSelect!.querySelectorAll('option'));
-      const bandIds = bandOptions.map(o => o.value);
+      const bandIds = bandOptions.map((o) => o.value);
       expect(bandIds).toContain('B01');
       expect(bandIds).toContain('B13');
       expect(bandIds).toContain('TrueColor');
@@ -347,18 +371,22 @@ describe('PresetsTab Himawari support', () => {
 
 describe('AnimationStudioTab Himawari support', () => {
   it('shows Himawari-9 in satellite dropdown', async () => {
-    const AnimationStudioTab = (await import('../components/GoesData/AnimationStudioTab/AnimationStudioTab')).default;
+    const AnimationStudioTab = (
+      await import('../components/GoesData/AnimationStudioTab/AnimationStudioTab')
+    ).default;
     renderWithProviders(<AnimationStudioTab />);
 
     await waitFor(() => {
       const satSelect = screen.getByLabelText('Satellite');
       const options = Array.from(satSelect.querySelectorAll('option'));
-      expect(options.map(o => o.textContent)).toContain('Himawari-9');
+      expect(options.map((o) => o.textContent)).toContain('Himawari-9');
     });
   });
 
   it('shows satellite-aware bands when Himawari selected', async () => {
-    const AnimationStudioTab = (await import('../components/GoesData/AnimationStudioTab/AnimationStudioTab')).default;
+    const AnimationStudioTab = (
+      await import('../components/GoesData/AnimationStudioTab/AnimationStudioTab')
+    ).default;
     renderWithProviders(<AnimationStudioTab />);
 
     // Wait for products to load — satellite options should appear
@@ -369,15 +397,17 @@ describe('AnimationStudioTab Himawari support', () => {
     });
 
     // Select Himawari-9
-    fireEvent.change(document.getElementById('anim-satellite')!, { target: { value: 'Himawari-9' } });
+    fireEvent.change(document.getElementById('anim-satellite')!, {
+      target: { value: 'Himawari-9' },
+    });
 
     // Allow re-render
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 50));
 
     // Band dropdown should show Himawari bands
     const bandSelect = document.getElementById('anim-band') as HTMLSelectElement;
     const bandOptions = Array.from(bandSelect.querySelectorAll('option'));
-    const bandValues = bandOptions.map(o => o.getAttribute('value') ?? '');
+    const bandValues = bandOptions.map((o) => o.getAttribute('value') ?? '');
     expect(bandValues).toContain('TrueColor');
     expect(bandValues).toContain('B01');
     expect(bandValues).toContain('B13');
@@ -386,7 +416,7 @@ describe('AnimationStudioTab Himawari support', () => {
     // Sector dropdown should show Himawari sectors
     const sectorSelect = document.getElementById('anim-sector') as HTMLSelectElement;
     const sectorOptions = Array.from(sectorSelect.querySelectorAll('option'));
-    const sectorValues = sectorOptions.map(o => o.getAttribute('value') ?? '');
+    const sectorValues = sectorOptions.map((o) => o.getAttribute('value') ?? '');
     expect(sectorValues).toContain('FLDK');
     expect(sectorValues).toContain('Japan');
     expect(sectorValues).toContain('Target');
@@ -401,8 +431,12 @@ describe('CompositesTab Himawari support', () => {
 
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
-      if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/composite-recipes')
+        return Promise.resolve({
+          data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }],
+        });
+      if (url === '/satellite/composites')
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -419,7 +453,7 @@ describe('CompositesTab Himawari support', () => {
       const satSelect = document.getElementById('comp-satellite') as HTMLSelectElement;
       expect(satSelect).toBeTruthy();
       const options = Array.from(satSelect.querySelectorAll('option'));
-      expect(options.map(o => o.textContent)).toContain('Himawari-9');
+      expect(options.map((o) => o.textContent)).toContain('Himawari-9');
     });
   });
 
@@ -428,8 +462,12 @@ describe('CompositesTab Himawari support', () => {
 
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: HIMAWARI_PRODUCTS });
-      if (url === '/satellite/composite-recipes') return Promise.resolve({ data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }] });
-      if (url === '/satellite/composites') return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/composite-recipes')
+        return Promise.resolve({
+          data: [{ id: 'true_color', name: 'True Color', bands: ['C01', 'C02', 'C03'] }],
+        });
+      if (url === '/satellite/composites')
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
 
@@ -454,7 +492,7 @@ describe('CompositesTab Himawari support', () => {
     await waitFor(() => {
       const sectorSelect = document.getElementById('comp-sector') as HTMLSelectElement;
       const options = Array.from(sectorSelect.querySelectorAll('option'));
-      const sectorIds = options.map(o => o.getAttribute('value'));
+      const sectorIds = options.map((o) => o.getAttribute('value'));
       expect(sectorIds).toContain('FLDK');
       expect(sectorIds).toContain('Japan');
     });

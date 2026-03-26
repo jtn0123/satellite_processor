@@ -36,54 +36,128 @@ export default function FilterSidebar({
         </div>
 
         <div>
-          <label htmlFor="browse-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
-          <select id="browse-satellite" value={filters.filterSat} onChange={(e) => filters.setFilterSat(e.target.value)}
-            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
+          <label
+            htmlFor="browse-satellite"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Satellite
+          </label>
+          <select
+            id="browse-satellite"
+            value={filters.filterSat}
+            onChange={(e) => filters.setFilterSat(e.target.value)}
+            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content"
+          >
             <option value="">All</option>
-            {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+            {(products?.satellites ?? []).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="browse-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
-          <select id="browse-band" value={filters.filterBand} onChange={(e) => filters.setFilterBand(e.target.value)}
-            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
+          <label
+            htmlFor="browse-band"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Band
+          </label>
+          <select
+            id="browse-band"
+            value={filters.filterBand}
+            onChange={(e) => filters.setFilterBand(e.target.value)}
+            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content"
+          >
             <option value="">All</option>
-            {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
+            {(products?.bands ?? []).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.id}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="browse-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
-          <select id="browse-sector" value={filters.filterSector} onChange={(e) => filters.setFilterSector(e.target.value)}
-            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
+          <label
+            htmlFor="browse-sector"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Sector
+          </label>
+          <select
+            id="browse-sector"
+            value={filters.filterSector}
+            onChange={(e) => filters.setFilterSector(e.target.value)}
+            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content"
+          >
             <option value="">All</option>
-            {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {(products?.sectors ?? []).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="browse-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
-          <select id="browse-collection" value={filters.filterCollection} onChange={(e) => filters.setFilterCollection(e.target.value)}
-            className={`w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content${collectionsError ? ' border-red-400' : ''}`}>
+          <label
+            htmlFor="browse-collection"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Collection
+          </label>
+          <select
+            id="browse-collection"
+            value={filters.filterCollection}
+            onChange={(e) => filters.setFilterCollection(e.target.value)}
+            className={`w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content${collectionsError ? ' border-red-400' : ''}`}
+          >
             <option value="">{collectionsError ? 'Failed to load' : 'All'}</option>
-            {(collections ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {(collections ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="browse-tag" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Tag</label>
-          <select id="browse-tag" value={filters.filterTag} onChange={(e) => filters.setFilterTag(e.target.value)}
-            className={`w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content${tagsError ? ' border-red-400' : ''}`}>
+          <label
+            htmlFor="browse-tag"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Tag
+          </label>
+          <select
+            id="browse-tag"
+            value={filters.filterTag}
+            onChange={(e) => filters.setFilterTag(e.target.value)}
+            className={`w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content${tagsError ? ' border-red-400' : ''}`}
+          >
             <option value="">{tagsError ? 'Failed to load' : 'All'}</option>
-            {(tags ?? []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            {(tags ?? []).map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="browse-sort" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sort by</label>
-          <select id="browse-sort" value={filters.sortBy} onChange={(e) => filters.setSortBy(e.target.value)}
-            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
+          <label
+            htmlFor="browse-sort"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Sort by
+          </label>
+          <select
+            id="browse-sort"
+            value={filters.sortBy}
+            onChange={(e) => filters.setSortBy(e.target.value)}
+            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content"
+          >
             <option value="capture_time">Capture Time</option>
             <option value="file_size">Size</option>
             <option value="satellite">Satellite</option>
@@ -92,9 +166,18 @@ export default function FilterSidebar({
         </div>
 
         <div>
-          <label htmlFor="browse-order" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Order</label>
-          <select id="browse-order" value={filters.sortOrder} onChange={(e) => filters.setSortOrder(e.target.value)}
-            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content">
+          <label
+            htmlFor="browse-order"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
+            Order
+          </label>
+          <select
+            id="browse-order"
+            value={filters.sortOrder}
+            onChange={(e) => filters.setSortOrder(e.target.value)}
+            className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5 field-sizing-content"
+          >
             <option value="desc">Newest first</option>
             <option value="asc">Oldest first</option>
           </select>

@@ -10,8 +10,22 @@ vi.mock('../api/client', () => ({
         return Promise.resolve({
           data: {
             items: [
-              { id: 'job-1', name: 'GOES-19 CONUS C02', status: 'processing', progress: 45, status_message: 'Fetching...', created_at: '2025-01-01T00:00:00Z' },
-              { id: 'job-2', name: 'GOES-18 FullDisk C13', status: 'pending', progress: 0, status_message: '', created_at: '2025-01-01T00:01:00Z' },
+              {
+                id: 'job-1',
+                name: 'GOES-19 CONUS C02',
+                status: 'processing',
+                progress: 45,
+                status_message: 'Fetching...',
+                created_at: '2025-01-01T00:00:00Z',
+              },
+              {
+                id: 'job-2',
+                name: 'GOES-18 FullDisk C13',
+                status: 'pending',
+                progress: 0,
+                status_message: '',
+                created_at: '2025-01-01T00:01:00Z',
+              },
             ],
             total: 2,
           },

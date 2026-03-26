@@ -19,26 +19,46 @@ const mockedApi = api as any;
 const PRODUCTS = {
   satellites: ['GOES-16'],
   sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-  bands: [{ id: 'GEOCOLOR', description: 'GeoColor' }, { id: 'C02', description: 'Red' }],
+  bands: [
+    { id: 'GEOCOLOR', description: 'GeoColor' },
+    { id: 'C02', description: 'Red' },
+  ],
   default_satellite: 'GOES-16',
 };
 
 const FRAME = {
-  id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
+  id: '1',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'C02',
   capture_time: new Date(Date.now() - 7200000).toISOString(), // 2h old
-  file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  file_path: '/tmp/test.nc',
+  file_size: 1024,
+  width: 5424,
+  height: 3000,
+  thumbnail_path: null,
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG = {
   scan_time: new Date(Date.now() - 300000).toISOString(), // 5min old (newer than frame)
-  size: 2048, key: 'test-key',
-  satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
+  size: 2048,
+  key: 'test-key',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'C02',
 };
 
 function renderLiveTab() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return render(<MemoryRouter><QueryClientProvider client={qc}><LiveTab /></QueryClientProvider></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <LiveTab />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
 }
 
 beforeEach(() => {
@@ -49,8 +69,18 @@ beforeEach(() => {
     if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
     if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
     if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
-    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
-    if (url.startsWith('/jobs/job-1')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' } });
+    if (url.startsWith('/satellite/catalog/available'))
+      return Promise.resolve({
+        data: {
+          satellite: 'GOES-16',
+          available_sectors: ['CONUS'],
+          checked_at: new Date().toISOString(),
+        },
+      });
+    if (url.startsWith('/jobs/job-1'))
+      return Promise.resolve({
+        data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' },
+      });
     return Promise.resolve({ data: {} });
   });
   mockedApi.post.mockResolvedValue({ data: { job_id: 'job-1' } });
@@ -68,19 +98,28 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
     const c02Pill = screen.getByTestId('band-pill-C02');
-    await act(async () => { fireEvent.click(c02Pill); });
+    await act(async () => {
+      fireEvent.click(c02Pill);
+    });
 
     // Enable auto-fetch
-    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
-    await act(async () => { fireEvent.click(checkbox); });
+    const checkbox = screen
+      .getAllByRole('switch')
+      .find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
 
     // Wait for the auto-fetch effect to fire
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/fetch', expect.objectContaining({
-        satellite: 'GOES-16',
-        sector: 'CONUS',
-        band: 'C02',
-      }));
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        '/satellite/fetch',
+        expect.objectContaining({
+          satellite: 'GOES-16',
+          sector: 'CONUS',
+          band: 'C02',
+        }),
+      );
     });
   });
 
@@ -90,10 +129,16 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
     const c02Pill = screen.getByTestId('band-pill-C02');
-    await act(async () => { fireEvent.click(c02Pill); });
+    await act(async () => {
+      fireEvent.click(c02Pill);
+    });
 
-    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
-    await act(async () => { fireEvent.click(checkbox); });
+    const checkbox = screen
+      .getAllByRole('switch')
+      .find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
 
     await waitFor(() => {
       expect(mockedApi.post).toHaveBeenCalled();
@@ -116,7 +161,15 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
       if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
       if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
       if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
-      if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, status_message: jobStatus } });
+      if (url.startsWith('/jobs/'))
+        return Promise.resolve({
+          data: {
+            id: 'job-1',
+            status: jobStatus,
+            progress: jobStatus === 'completed' ? 100 : 50,
+            status_message: jobStatus,
+          },
+        });
       return Promise.resolve({ data: {} });
     });
 
@@ -125,11 +178,17 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
     const c02Pill = screen.getByTestId('band-pill-C02');
-    await act(async () => { fireEvent.click(c02Pill); });
+    await act(async () => {
+      fireEvent.click(c02Pill);
+    });
 
     // Enable auto-fetch to trigger job
-    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
-    await act(async () => { fireEvent.click(checkbox); });
+    const checkbox = screen
+      .getAllByRole('switch')
+      .find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
 
@@ -137,7 +196,9 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     jobStatus = 'completed';
 
     // Advance timers to let the completion effect fire
-    await act(async () => { vi.advanceTimersByTime(5000); });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
 
     // The job should eventually clear (tested by the effect running without error)
     expect(true).toBe(true);
@@ -182,11 +243,17 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
     const c02Pill = screen.getByTestId('band-pill-C02');
-    await act(async () => { fireEvent.click(c02Pill); });
+    await act(async () => {
+      fireEvent.click(c02Pill);
+    });
 
     // Enable auto-fetch which will trigger fetchNow
-    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
-    await act(async () => { fireEvent.click(checkbox); });
+    const checkbox = screen
+      .getAllByRole('switch')
+      .find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
 
     // Should not crash even on error
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
@@ -197,7 +264,15 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
       if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
       if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
       if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
-      if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading frame' } });
+      if (url.startsWith('/jobs/'))
+        return Promise.resolve({
+          data: {
+            id: 'job-1',
+            status: 'running',
+            progress: 50,
+            status_message: 'Downloading frame',
+          },
+        });
       return Promise.resolve({ data: {} });
     });
 
@@ -206,11 +281,17 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
 
     // Switch to C02 (auto-fetch is skipped for GEOCOLOR composites)
     const c02Pill = screen.getByTestId('band-pill-C02');
-    await act(async () => { fireEvent.click(c02Pill); });
+    await act(async () => {
+      fireEvent.click(c02Pill);
+    });
 
     // Enable auto-fetch
-    const checkbox = screen.getAllByRole('switch').find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
-    await act(async () => { fireEvent.click(checkbox); });
+    const checkbox = screen
+      .getAllByRole('switch')
+      .find((s) => !s.title && s.getAttribute('aria-checked') === 'false')!;
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
 
@@ -226,7 +307,10 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
     await waitFor(() => expect(screen.getByLabelText('Enter fullscreen')).toBeInTheDocument());
 
     // Simulate existing fullscreen
-    Object.defineProperty(document, 'fullscreenElement', { value: document.body, configurable: true });
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: document.body,
+      configurable: true,
+    });
     const exitSpy = vi.fn().mockResolvedValue(undefined);
     document.exitFullscreen = exitSpy;
 

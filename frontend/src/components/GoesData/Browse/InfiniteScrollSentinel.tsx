@@ -1,11 +1,14 @@
 import { forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const InfiniteScrollSentinel = forwardRef<HTMLDivElement, Readonly<{
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchNextPage: () => void;
-}>>(function InfiniteScrollSentinel({ hasNextPage, isFetchingNextPage, fetchNextPage }, ref) {
+const InfiniteScrollSentinel = forwardRef<
+  HTMLDivElement,
+  Readonly<{
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    fetchNextPage: () => void;
+  }>
+>(function InfiniteScrollSentinel({ hasNextPage, isFetchingNextPage, fetchNextPage }, ref) {
   if (!hasNextPage) return null;
 
   return (

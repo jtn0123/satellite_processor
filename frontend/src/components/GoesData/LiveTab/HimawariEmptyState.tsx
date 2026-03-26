@@ -66,8 +66,7 @@ export default function HimawariEmptyState({
       setScheduleStatus('success');
     } catch (err: unknown) {
       setScheduleStatus('error');
-      const message =
-        err instanceof Error ? err.message : 'Failed to create schedule';
+      const message = err instanceof Error ? err.message : 'Failed to create schedule';
       setScheduleError(message);
     }
   }, [satellite, sector, band]);

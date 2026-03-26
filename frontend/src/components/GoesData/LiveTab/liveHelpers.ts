@@ -13,7 +13,10 @@ export function resolveImageUrls(
   band?: string,
   isMobileView?: boolean,
 ) {
-  const catalogImageUrl = (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ?? catalogLatest?.image_url ?? null;
+  const catalogImageUrl =
+    (isMobileView ? catalogLatest?.mobile_url : catalogLatest?.image_url) ??
+    catalogLatest?.image_url ??
+    null;
   const localImageUrl = frame?.thumbnail_url ?? frame?.image_url ?? null;
   const directCdnUrl = buildCdnUrl(satellite ?? '', sector ?? '', band ?? '', isMobileView);
   const imageUrl = localImageUrl ?? catalogImageUrl ?? directCdnUrl;
@@ -25,7 +28,10 @@ export function resolveImageUrls(
   return { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl };
 }
 
-export function computeFreshness(catalogLatest: CatalogLatest | null | undefined, frame: LatestFrame | null | undefined) {
+export function computeFreshness(
+  catalogLatest: CatalogLatest | null | undefined,
+  frame: LatestFrame | null | undefined,
+) {
   if (!catalogLatest || !frame) return null;
   const awsAge = timeAgo(catalogLatest.scan_time);
   const localAge = timeAgo(frame.capture_time);
@@ -40,7 +46,9 @@ export async function exitFullscreenSafe() {
   try {
     await document.exitFullscreen();
   } catch {
-    await (document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen?.();
+    await (
+      document as unknown as { webkitExitFullscreen?: () => Promise<void> }
+    ).webkitExitFullscreen?.();
   }
 }
 
@@ -48,7 +56,9 @@ export async function enterFullscreenSafe(el: HTMLElement) {
   try {
     await el.requestFullscreen();
   } catch {
-    await (el as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen?.();
+    await (
+      el as unknown as { webkitRequestFullscreen?: () => Promise<void> }
+    ).webkitRequestFullscreen?.();
   }
 }
 

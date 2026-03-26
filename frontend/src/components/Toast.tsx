@@ -30,7 +30,9 @@ function getToasts() {
 
 function subscribeToasts(cb: () => void) {
   toastListeners.add(cb);
-  return () => { toastListeners.delete(cb); };
+  return () => {
+    toastListeners.delete(cb);
+  };
 }
 
 const styleMap: Record<ToastType, { bg: string; icon: React.ReactNode }> = {
@@ -59,7 +61,10 @@ const progressBarColors: Record<ToastType, string> = {
   info: 'bg-blue-400',
 };
 
-function ToastItem({ toast, onDismiss }: Readonly<{ toast: ToastMessage; onDismiss: (id: string) => void }>) {
+function ToastItem({
+  toast,
+  onDismiss,
+}: Readonly<{ toast: ToastMessage; onDismiss: (id: string) => void }>) {
   const progressRef = useRef<HTMLDivElement>(null);
   const [dismissing, setDismissing] = useState(false);
 
@@ -86,7 +91,11 @@ function ToastItem({ toast, onDismiss }: Readonly<{ toast: ToastMessage; onDismi
       <div className="flex items-center gap-2 px-4 py-3">
         {style.icon}
         <span className="flex-1">{toast.message}</span>
-        <button onClick={handleDismiss} className="p-0.5 hover:opacity-70 transition-opacity" aria-label="Dismiss notification">
+        <button
+          onClick={handleDismiss}
+          className="p-0.5 hover:opacity-70 transition-opacity"
+          aria-label="Dismiss notification"
+        >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>

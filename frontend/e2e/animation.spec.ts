@@ -16,7 +16,10 @@ test('GOES Data page loads with 4 tabs', async ({ page }) => {
 test('Browse tab is default', async ({ page }) => {
   await page.goto('/goes');
   const goesTablist = page.locator('[role="tablist"][aria-label="Satellite Data tabs"]');
-  const browseTab = goesTablist.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
+  const browseTab = goesTablist
+    .locator('[role="tab"]')
+    .filter({ hasText: /browse/i })
+    .first();
   await expect(browseTab).toHaveAttribute('aria-selected', 'true');
 });
 

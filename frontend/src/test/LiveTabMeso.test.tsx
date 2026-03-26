@@ -50,8 +50,20 @@ describe('LiveTab renders', () => {
             default_satellite: 'GOES-19',
             satellite_availability: {},
             sectors: [
-              { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPC', cadence_minutes: 5, cdn_available: true },
-              { id: 'Mesoscale1', name: 'Mesoscale 1', product: 'ABI-L2-CMIPM', cadence_minutes: 1, cdn_available: false },
+              {
+                id: 'CONUS',
+                name: 'CONUS',
+                product: 'ABI-L2-CMIPC',
+                cadence_minutes: 5,
+                cdn_available: true,
+              },
+              {
+                id: 'Mesoscale1',
+                name: 'Mesoscale 1',
+                product: 'ABI-L2-CMIPM',
+                cadence_minutes: 1,
+                cdn_available: false,
+              },
             ],
             bands: [
               { id: 'GEOCOLOR', description: 'GeoColor' },
@@ -63,9 +75,16 @@ describe('LiveTab renders', () => {
       if (url.startsWith('/satellite/latest')) {
         return Promise.resolve({
           data: {
-            id: 1, satellite: 'GOES-19', sector: 'CONUS', band: 'C02',
-            capture_time: '2025-06-01T12:00:00', file_size: 1024, width: 5424, height: 3000,
-            image_url: '/api/satellite/frames/1/image', thumbnail_url: '/api/satellite/frames/1/thumb',
+            id: 1,
+            satellite: 'GOES-19',
+            sector: 'CONUS',
+            band: 'C02',
+            capture_time: '2025-06-01T12:00:00',
+            file_size: 1024,
+            width: 5424,
+            height: 3000,
+            image_url: '/api/satellite/frames/1/image',
+            thumbnail_url: '/api/satellite/frames/1/thumb',
           },
         });
       }

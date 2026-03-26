@@ -12,7 +12,9 @@ test.describe('Mobile Live View', () => {
     await page.goto('/live');
     await page.waitForSelector('[data-testid="live-image-area"]', { timeout: 10000 });
     // Verify the page doesn't scroll — content fits within viewport
-    const canScroll = await page.evaluate(() => document.body.scrollHeight > globalThis.innerHeight + 10);
+    const canScroll = await page.evaluate(
+      () => document.body.scrollHeight > globalThis.innerHeight + 10,
+    );
     expect(canScroll).toBe(false);
   });
 
@@ -31,10 +33,10 @@ test.describe('Mobile Live View', () => {
     const header = page.locator('header').filter({ hasText: 'SatTracker' });
     const desktopSidebar = page.locator('[data-testid="desktop-sidebar"]');
     // Either the header or sidebar containing SatTracker should not be visible
-    if (await header.count() > 0) {
+    if ((await header.count()) > 0) {
       await expect(header).not.toBeVisible();
     }
-    if (await desktopSidebar.count() > 0) {
+    if ((await desktopSidebar.count()) > 0) {
       await expect(desktopSidebar).not.toBeVisible();
     }
   });
@@ -67,7 +69,9 @@ test.describe('Mobile Live View', () => {
 
   test('FAB overlays image', async ({ page }) => {
     await page.goto('/live');
-    const fab = page.locator('[data-testid="fab-toggle"]').or(page.locator('[data-testid="mobile-fab"]'));
+    const fab = page
+      .locator('[data-testid="fab-toggle"]')
+      .or(page.locator('[data-testid="mobile-fab"]'));
     await expect(fab.first()).toBeVisible({ timeout: 10000 });
     const imageArea = page.locator('[data-testid="live-image-area"]');
     await expect(imageArea).toBeVisible();
@@ -85,11 +89,13 @@ test.describe('Mobile Live View', () => {
 
   test('FAB is icon-only on mobile', async ({ page }) => {
     await page.goto('/live');
-    const fab = page.locator('[data-testid="fab-toggle"]').or(page.locator('[data-testid="mobile-fab"]'));
+    const fab = page
+      .locator('[data-testid="fab-toggle"]')
+      .or(page.locator('[data-testid="mobile-fab"]'));
     await expect(fab.first()).toBeVisible({ timeout: 10000 });
     // At 390px width, FAB should not show "Controls" text
     const controlsText = fab.first().getByText('Controls');
-    if (await controlsText.count() > 0) {
+    if ((await controlsText.count()) > 0) {
       await expect(controlsText).not.toBeVisible();
     }
   });
@@ -123,28 +129,35 @@ test.describe('Mobile Live View', () => {
       if (!el) return null;
 
       // Dispatch a touchstart with two touches
-      const createTouch = (x: number, y: number) => new Touch({
-        identifier: Math.random(),
-        target: el,
-        clientX: x,
-        clientY: y,
-      });
+      const createTouch = (x: number, y: number) =>
+        new Touch({
+          identifier: Math.random(),
+          target: el,
+          clientX: x,
+          clientY: y,
+        });
 
-      el.dispatchEvent(new TouchEvent('touchstart', {
-        touches: [createTouch(150, 400), createTouch(250, 400)],
-        bubbles: true,
-      }));
+      el.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [createTouch(150, 400), createTouch(250, 400)],
+          bubbles: true,
+        }),
+      );
 
       // Move touches apart (zoom in)
-      el.dispatchEvent(new TouchEvent('touchmove', {
-        touches: [createTouch(100, 400), createTouch(300, 400)],
-        bubbles: true,
-      }));
+      el.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [createTouch(100, 400), createTouch(300, 400)],
+          bubbles: true,
+        }),
+      );
 
-      el.dispatchEvent(new TouchEvent('touchend', {
-        touches: [],
-        bubbles: true,
-      }));
+      el.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          bubbles: true,
+        }),
+      );
 
       // Check if any transform/scale was applied
       const img = el.querySelector('img') || el;
@@ -228,9 +241,7 @@ test.describe('Mobile Live View', () => {
   test('no page overflow', async ({ page }) => {
     await page.goto('/live');
     await page.waitForSelector('[data-testid="live-image-area"]', { timeout: 10000 });
-    const noOverflow = await page.evaluate(
-      () => document.body.scrollHeight <= window.innerHeight
-    );
+    const noOverflow = await page.evaluate(() => document.body.scrollHeight <= window.innerHeight);
     expect(noOverflow).toBe(true);
   });
 });

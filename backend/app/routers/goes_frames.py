@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import io
 import logging
@@ -197,10 +198,7 @@ async def list_frames(
         )
 
     sort_col = getattr(GoesFrame, sort, GoesFrame.capture_time)
-    if order == "desc":
-        query = query.order_by(sort_col.desc())
-    else:
-        query = query.order_by(sort_col.asc())
+    query = query.order_by(sort_col.desc()) if order == "desc" else query.order_by(sort_col.asc())
 
     total = (await db.execute(count_query)).scalar() or 0
     offset = (page - 1) * limit
@@ -358,10 +356,8 @@ async def bulk_delete_frames(
     for frame in frames:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(path)
-                except OSError:
-                    pass
 
     # Bug #17: Delete FK references before deleting frames
     await db.execute(delete(CollectionFrame).where(CollectionFrame.frame_id.in_(payload.ids)))

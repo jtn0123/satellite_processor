@@ -10,14 +10,18 @@ function ThrowingChild({ shouldThrow }: { shouldThrow: boolean }) {
 describe('TabErrorBoundary — extended', () => {
   // Suppress console.error for expected errors
   const originalError = console.error;
-  beforeAll(() => { console.error = vi.fn(); });
-  afterAll(() => { console.error = originalError; });
+  beforeAll(() => {
+    console.error = vi.fn();
+  });
+  afterAll(() => {
+    console.error = originalError;
+  });
 
   it('renders children normally when no error', () => {
     render(
       <TabErrorBoundary tabName="Browse">
         <div>Normal content</div>
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('Normal content')).toBeInTheDocument();
   });
@@ -26,7 +30,7 @@ describe('TabErrorBoundary — extended', () => {
     render(
       <TabErrorBoundary tabName="Browse">
         <ThrowingChild shouldThrow={true} />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('Browse encountered an error')).toBeInTheDocument();
     expect(screen.getByText('Test crash')).toBeInTheDocument();
@@ -36,7 +40,7 @@ describe('TabErrorBoundary — extended', () => {
     render(
       <TabErrorBoundary>
         <ThrowingChild shouldThrow={true} />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('This tab encountered an error')).toBeInTheDocument();
   });
@@ -51,7 +55,7 @@ describe('TabErrorBoundary — extended', () => {
     render(
       <TabErrorBoundary tabName="Test">
         <Conditional />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     expect(screen.getByText('Test encountered an error')).toBeInTheDocument();
 
@@ -64,7 +68,7 @@ describe('TabErrorBoundary — extended', () => {
     render(
       <TabErrorBoundary>
         <ThrowingChild shouldThrow={true} />
-      </TabErrorBoundary>
+      </TabErrorBoundary>,
     );
     const pre = screen.getByText('Test crash').closest('pre');
     expect(pre).toBeInTheDocument();

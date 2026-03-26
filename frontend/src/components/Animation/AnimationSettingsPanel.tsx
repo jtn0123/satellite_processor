@@ -22,7 +22,11 @@ function calcFps(preset: SpeedPreset, intervalMin: number): number {
   return Math.max(1, Math.min(30, Math.round(multiplier / (intervalMin / 60))));
 }
 
-export default function AnimationSettingsPanel({ config, captureIntervalMinutes, onChange }: Readonly<Props>) {
+export default function AnimationSettingsPanel({
+  config,
+  captureIntervalMinutes,
+  onChange,
+}: Readonly<Props>) {
   const handleSpeedPreset = (preset: SpeedPreset) => {
     onChange({ fps: calcFps(preset, captureIntervalMinutes) });
   };
@@ -52,7 +56,10 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
 
       {/* FPS Slider */}
       <div>
-        <label htmlFor="settings-fps" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
+        <label
+          htmlFor="settings-fps"
+          className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+        >
           FPS: {config.fps}
         </label>
         <input
@@ -97,12 +104,17 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       <div role="radiogroup" aria-label="Loop Style">
         <span className="block text-xs text-gray-400 dark:text-slate-500 mb-2">Loop Style</span>
         <div className="flex gap-2 flex-wrap">
-          {([
-            { value: 'forward', label: 'Forward' },
-            { value: 'pingpong', label: 'Ping-pong' },
-            { value: 'hold', label: 'Hold last frame' },
-          ] as const).map(({ value, label }) => (
-            <label key={value} className="flex items-center gap-2 min-h-[44px] px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 cursor-pointer">
+          {(
+            [
+              { value: 'forward', label: 'Forward' },
+              { value: 'pingpong', label: 'Ping-pong' },
+              { value: 'hold', label: 'Hold last frame' },
+            ] as const
+          ).map(({ value, label }) => (
+            <label
+              key={value}
+              className="flex items-center gap-2 min-h-[44px] px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="loop_style"
@@ -118,7 +130,12 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
 
       {/* Format */}
       <div>
-        <label htmlFor="settings-format" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Format</label>
+        <label
+          htmlFor="settings-format"
+          className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+        >
+          Format
+        </label>
         <select
           id="settings-format"
           value={config.format}
@@ -155,11 +172,13 @@ export default function AnimationSettingsPanel({ config, captureIntervalMinutes,
       <fieldset className="border-0 p-0 m-0">
         <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Overlays</legend>
         <div className="space-y-2">
-          {([
-            { key: 'show_timestamp', label: 'Show timestamp' },
-            { key: 'show_label', label: 'Show satellite/band label' },
-            { key: 'show_colorbar', label: 'Show colorbar' },
-          ] as const).map(({ key, label }) => (
+          {(
+            [
+              { key: 'show_timestamp', label: 'Show timestamp' },
+              { key: 'show_label', label: 'Show satellite/band label' },
+              { key: 'show_colorbar', label: 'Show colorbar' },
+            ] as const
+          ).map(({ key, label }) => (
             <label key={key} className="flex items-center gap-2 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"

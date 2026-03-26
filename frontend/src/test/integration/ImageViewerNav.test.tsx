@@ -67,11 +67,7 @@ describe('ImageViewer navigation integration', () => {
 
   it('navigates to next frame on ArrowRight key', async () => {
     const user = userEvent.setup();
-    const frames = [
-      makeFrame({ id: 'f1' }),
-      makeFrame({ id: 'f2' }),
-      makeFrame({ id: 'f3' }),
-    ];
+    const frames = [makeFrame({ id: 'f1' }), makeFrame({ id: 'f2' }), makeFrame({ id: 'f3' })];
     const onClose = vi.fn();
     const onNavigate = vi.fn();
 
@@ -85,11 +81,7 @@ describe('ImageViewer navigation integration', () => {
 
   it('navigates to previous frame on ArrowLeft key', async () => {
     const user = userEvent.setup();
-    const frames = [
-      makeFrame({ id: 'f1' }),
-      makeFrame({ id: 'f2' }),
-      makeFrame({ id: 'f3' }),
-    ];
+    const frames = [makeFrame({ id: 'f1' }), makeFrame({ id: 'f2' }), makeFrame({ id: 'f3' })];
     const onClose = vi.fn();
     const onNavigate = vi.fn();
 

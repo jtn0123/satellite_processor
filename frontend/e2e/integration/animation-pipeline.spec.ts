@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { navigateTo, apiPost, apiGet, waitForApiHealth, waitForJob, buildFetchRequest } from './helpers';
+import {
+  navigateTo,
+  apiPost,
+  apiGet,
+  waitForApiHealth,
+  waitForJob,
+  buildFetchRequest,
+} from './helpers';
 
 test.describe('Fetch → Animate pipeline', () => {
   test.describe.configure({ mode: 'serial' });
@@ -70,7 +77,7 @@ test.describe('Fetch → Animate pipeline', () => {
     // Check if we have frames first
     const framesRes = await apiGet(request, '/api/satellite/frames');
     const framesBody = framesRes.body as Record<string, unknown>;
-    const items = (framesBody.items ?? framesBody) as Array<Record<string, unknown>>;
+    const items = (framesBody.items ?? framesBody) as Record<string, unknown>[];
     if (!Array.isArray(items) || items.length < 2) {
       test.skip(true, 'Not enough frames for animation');
       return;
@@ -113,7 +120,7 @@ test.describe('Fetch → Animate pipeline', () => {
 
     // Check jobs to find output info
     const jobsRes = await apiGet(request, '/api/jobs');
-    const jobs = jobsRes.body as Array<Record<string, unknown>>;
+    const jobs = jobsRes.body as Record<string, unknown>[];
     if (Array.isArray(jobs)) {
       const job = jobs.find((j) => (j.id ?? j.job_id) === animationJobId);
       if (job && job.status === 'completed') {

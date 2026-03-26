@@ -16,7 +16,7 @@ test.describe('Jobs Page', () => {
   test('jobs API returns job list', async ({ request }) => {
     const res = await apiGet(request, '/api/jobs');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { items: unknown[] };
+    const body = (await res.json()) as { items: unknown[] };
     expect(Array.isArray(body.items)).toBeTruthy();
   });
 

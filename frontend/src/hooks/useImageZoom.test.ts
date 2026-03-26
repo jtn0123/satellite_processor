@@ -11,16 +11,22 @@ describe('useImageZoom', () => {
 
   it('zoomIn sets scale to doubleTapScale', () => {
     const { result } = renderHook(() => useImageZoom({ doubleTapScale: 3 }));
-    act(() => { result.current.zoomIn(); });
+    act(() => {
+      result.current.zoomIn();
+    });
     expect(result.current.isZoomed).toBe(true);
     expect(result.current.style.transform).toContain('scale(3)');
   });
 
   it('reset returns to initial state', () => {
     const { result } = renderHook(() => useImageZoom());
-    act(() => { result.current.zoomIn(); });
+    act(() => {
+      result.current.zoomIn();
+    });
     expect(result.current.isZoomed).toBe(true);
-    act(() => { result.current.reset(); });
+    act(() => {
+      result.current.reset();
+    });
     expect(result.current.isZoomed).toBe(false);
     expect(result.current.style.transform).toContain('scale(1)');
   });
@@ -32,7 +38,9 @@ describe('useImageZoom', () => {
       preventDefault: () => {},
     } as unknown as React.WheelEvent;
 
-    act(() => { result.current.handlers.onWheel(wheelEvent); });
+    act(() => {
+      result.current.handlers.onWheel(wheelEvent);
+    });
     expect(result.current.isZoomed).toBe(true);
   });
 
@@ -43,7 +51,9 @@ describe('useImageZoom', () => {
       preventDefault: () => {},
     } as unknown as React.WheelEvent;
 
-    act(() => { result.current.handlers.onWheel(wheelEvent); });
+    act(() => {
+      result.current.handlers.onWheel(wheelEvent);
+    });
     expect(result.current.isZoomed).toBe(false);
   });
 
@@ -56,7 +66,9 @@ describe('useImageZoom', () => {
     } as unknown as React.WheelEvent;
 
     for (let i = 0; i < 20; i++) {
-      act(() => { result.current.handlers.onWheel(wheelEvent); });
+      act(() => {
+        result.current.handlers.onWheel(wheelEvent);
+      });
     }
     expect(result.current.style.transform).toContain('scale(2)');
   });
@@ -64,7 +76,9 @@ describe('useImageZoom', () => {
   it('style has correct cursor when zoomed', () => {
     const { result } = renderHook(() => useImageZoom());
     expect(result.current.style.cursor).toBe('default');
-    act(() => { result.current.zoomIn(); });
+    act(() => {
+      result.current.zoomIn();
+    });
     expect(result.current.style.cursor).toBe('grab');
   });
 

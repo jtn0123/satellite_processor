@@ -44,8 +44,7 @@ def _apply_overlay(img, frame, overlay: dict, label_text: str):
         ts_text = frame.capture_time.strftime("%Y-%m-%d %H:%M UTC")
         draw.text((10, y_pos), ts_text, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0))
 
-    result = np.array(pil_img)[:, :, ::-1]  # RGB -> BGR
-    return result
+    return np.array(pil_img)[:, :, ::-1]  # RGB -> BGR
 
 
 def _apply_loop_style(frames, loop_style: str, fps: int) -> list:

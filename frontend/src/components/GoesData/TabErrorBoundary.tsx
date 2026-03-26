@@ -41,7 +41,8 @@ export default class TabErrorBoundary extends Component<Props, State> {
             {this.props.tabName || 'This tab'} encountered an error
           </h3>
           <p className="text-sm text-gray-500 dark:text-slate-400 max-w-md text-center">
-            Something went wrong while rendering this tab. You can try again or switch to a different tab.
+            Something went wrong while rendering this tab. You can try again or switch to a
+            different tab.
           </p>
           {this.state.error && (
             <pre className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-900 rounded-lg p-3 max-w-lg overflow-auto border border-gray-200 dark:border-slate-800">

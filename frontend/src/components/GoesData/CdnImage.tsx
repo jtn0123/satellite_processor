@@ -10,7 +10,13 @@ export interface CdnImageProps extends Readonly<React.ImgHTMLAttributes<HTMLImag
   imageRef?: Ref<HTMLImageElement>;
 }
 
-export default function CdnImage({ src, alt, className, imageRef, ...props }: Readonly<CdnImageProps>) {
+export default function CdnImage({
+  src,
+  alt,
+  className,
+  imageRef,
+  ...props
+}: Readonly<CdnImageProps>) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [usingCached, setUsingCached] = useState(false);
@@ -79,21 +85,37 @@ export default function CdnImage({ src, alt, className, imageRef, ...props }: Re
 
   if (error || !displaySrc) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center" data-testid="cdn-image-error">
+      <div
+        className="relative w-full h-full flex items-center justify-center"
+        data-testid="cdn-image-error"
+      >
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" />
-        <span className="relative z-10 text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>
+        <span className="relative z-10 text-xs text-white/60 font-medium">
+          Image unavailable · Retrying…
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden md:rounded-lg md:border md:border-white/10 bg-slate-900" data-testid="live-image-container">
+    <div
+      className="relative w-full h-full overflow-hidden md:rounded-lg md:border md:border-white/10 bg-slate-900"
+      data-testid="live-image-container"
+    >
       {/* Cached image banner — absolute overlay, dismissible */}
       {usingCached && cachedMeta && !cachedDismissed && (
-        <div className="absolute top-0 left-0 right-0 z-10 flex justify-center px-4 py-1" data-testid="cached-image-banner">
+        <div
+          className="absolute top-0 left-0 right-0 z-10 flex justify-center px-4 py-1"
+          data-testid="cached-image-banner"
+        >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px]">
             <span>Cached image · {new Date(cachedMeta.timestamp).toLocaleString()}</span>
-            <button type="button" onClick={() => setCachedDismissed(true)} className="p-2 hover:bg-white/10 rounded" aria-label="Dismiss cached banner">
+            <button
+              type="button"
+              onClick={() => setCachedDismissed(true)}
+              className="p-2 hover:bg-white/10 rounded"
+              aria-label="Dismiss cached banner"
+            >
               <X className="w-3 h-3" />
             </button>
           </div>
@@ -101,7 +123,10 @@ export default function CdnImage({ src, alt, className, imageRef, ...props }: Re
       )}
       {/* Shimmer placeholder */}
       {!loaded && !error && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg" data-testid="image-shimmer" />
+        <div
+          className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg"
+          data-testid="image-shimmer"
+        />
       )}
       <img
         ref={imageRef}

@@ -55,9 +55,7 @@ describe('usePullToRefresh', () => {
 
   it('does not activate when disabled', () => {
     const onRefresh = vi.fn();
-    const { result } = renderHook(() =>
-      usePullToRefresh({ onRefresh, enabled: false }),
-    );
+    const { result } = renderHook(() => usePullToRefresh({ onRefresh, enabled: false }));
 
     expect(result.current.isRefreshing).toBe(false);
     expect(result.current.pullDistance).toBe(0);

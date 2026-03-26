@@ -7,8 +7,22 @@ import JobList from '../components/Jobs/JobList';
 vi.mock('../hooks/useApi', () => ({
   useJobs: () => ({
     data: [
-      { id: '1', status: 'completed', created_at: '2026-01-01T00:00:00Z', status_message: 'Done', progress: 100, type: 'fetch' },
-      { id: '2', status: 'processing', created_at: '2026-01-01T01:00:00Z', status_message: 'Running', progress: 50, type: 'fetch' },
+      {
+        id: '1',
+        status: 'completed',
+        created_at: '2026-01-01T00:00:00Z',
+        status_message: 'Done',
+        progress: 100,
+        type: 'fetch',
+      },
+      {
+        id: '2',
+        status: 'processing',
+        created_at: '2026-01-01T01:00:00Z',
+        status_message: 'Running',
+        progress: 50,
+        type: 'fetch',
+      },
     ],
     isLoading: false,
     error: null,

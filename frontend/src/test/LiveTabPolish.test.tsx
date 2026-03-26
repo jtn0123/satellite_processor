@@ -12,7 +12,9 @@ import {
 
 describe('Friendly Band Names', () => {
   it('formats C02 with description (long)', () => {
-    expect(getFriendlyBandLabel('C02', 'Red (0.64µm)', 'long')).toBe('Visible Red (C02 — Red (0.64µm))');
+    expect(getFriendlyBandLabel('C02', 'Red (0.64µm)', 'long')).toBe(
+      'Visible Red (C02 — Red (0.64µm))',
+    );
   });
 
   it('formats C13 with description (long)', () => {
@@ -84,10 +86,16 @@ describe('Image Cache (localStorage)', () => {
 
   it('overwrites previous cache for same band', () => {
     saveCachedImage('https://example.com/old.jpg', {
-      satellite: 'GOES-19', band: 'C02', sector: 'CONUS', timestamp: '2026-01-01T00:00:00Z',
+      satellite: 'GOES-19',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2026-01-01T00:00:00Z',
     });
     saveCachedImage('https://example.com/new.jpg', {
-      satellite: 'GOES-19', band: 'C02', sector: 'CONUS', timestamp: '2026-02-22T22:10:00Z',
+      satellite: 'GOES-19',
+      band: 'C02',
+      sector: 'CONUS',
+      timestamp: '2026-02-22T22:10:00Z',
     });
 
     const cached = loadCachedImage('GOES-19', 'CONUS', 'C02');
@@ -100,9 +108,14 @@ describe('Image Cache (localStorage)', () => {
     });
 
     // Should not throw
-    expect(() => saveCachedImage('url', {
-      satellite: 'X', band: 'Y', sector: 'Z', timestamp: 'T',
-    })).not.toThrow();
+    expect(() =>
+      saveCachedImage('url', {
+        satellite: 'X',
+        band: 'Y',
+        sector: 'Z',
+        timestamp: 'T',
+      }),
+    ).not.toThrow();
 
     spy.mockRestore();
   });

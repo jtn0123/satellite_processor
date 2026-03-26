@@ -55,7 +55,10 @@ jobs:
           uv pip install --system ruff pip-audit
 
       - name: Lint with ruff
-        run: ruff check backend/
+        run: ruff check backend/ satellite_processor/
+
+      - name: Check Python formatting
+        run: ruff format --check backend/ satellite_processor/
 
       - name: Security audit (pip-audit)
         run: pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
@@ -278,6 +281,11 @@ jobs:
         if: matrix.shard == 1
         working-directory: frontend
         run: npm run lint
+
+      - name: Check formatting
+        if: matrix.shard == 1
+        working-directory: frontend
+        run: npx prettier --check .
 
       - name: Unit Tests with coverage
         working-directory: frontend

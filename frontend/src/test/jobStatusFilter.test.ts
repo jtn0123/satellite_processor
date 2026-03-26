@@ -2,12 +2,54 @@ import { describe, it, expect } from 'vitest';
 import { filterJobsByStatus } from '../utils/jobFilterUtils';
 
 const mockJobs = [
-  { id: '1', job_type: 'fetch', status: 'completed', progress: 100, status_message: 'Done', created_at: '2024-01-01' },
-  { id: '2', job_type: 'fetch', status: 'processing', progress: 50, status_message: 'Running', created_at: '2024-01-02' },
-  { id: '3', job_type: 'fetch', status: 'failed', progress: 0, status_message: 'Error', created_at: '2024-01-03' },
-  { id: '4', job_type: 'fetch', status: 'pending', progress: 0, status_message: 'Queued', created_at: '2024-01-04' },
-  { id: '5', job_type: 'fetch', status: 'completed_partial', progress: 80, status_message: 'Partial', created_at: '2024-01-05' },
-  { id: '6', job_type: 'fetch', status: 'cancelled', progress: 0, status_message: 'Cancelled', created_at: '2024-01-06' },
+  {
+    id: '1',
+    job_type: 'fetch',
+    status: 'completed',
+    progress: 100,
+    status_message: 'Done',
+    created_at: '2024-01-01',
+  },
+  {
+    id: '2',
+    job_type: 'fetch',
+    status: 'processing',
+    progress: 50,
+    status_message: 'Running',
+    created_at: '2024-01-02',
+  },
+  {
+    id: '3',
+    job_type: 'fetch',
+    status: 'failed',
+    progress: 0,
+    status_message: 'Error',
+    created_at: '2024-01-03',
+  },
+  {
+    id: '4',
+    job_type: 'fetch',
+    status: 'pending',
+    progress: 0,
+    status_message: 'Queued',
+    created_at: '2024-01-04',
+  },
+  {
+    id: '5',
+    job_type: 'fetch',
+    status: 'completed_partial',
+    progress: 80,
+    status_message: 'Partial',
+    created_at: '2024-01-05',
+  },
+  {
+    id: '6',
+    job_type: 'fetch',
+    status: 'cancelled',
+    progress: 0,
+    status_message: 'Cancelled',
+    created_at: '2024-01-06',
+  },
 ];
 
 describe('filterJobsByStatus', () => {

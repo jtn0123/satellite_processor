@@ -23,11 +23,7 @@ export default function QueryErrorBox({
         <Icon className="w-4 h-4 shrink-0" />
         <span>{message}</span>
         {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="ml-1 underline hover:no-underline"
-          >
+          <button type="button" onClick={onRetry} className="ml-1 underline hover:no-underline">
             Retry
           </button>
         )}

@@ -14,7 +14,10 @@ test.describe('Browse frames flow', () => {
 
   test('browse tab is selected by default', async ({ page }) => {
     await page.goto('/goes');
-    const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
+    const browseTab = page
+      .locator('[role="tab"]')
+      .filter({ hasText: /browse/i })
+      .first();
     await expect(browseTab).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -42,7 +45,10 @@ test.describe('Browse frames flow', () => {
   test('can cycle through all tabs', async ({ page }) => {
     await page.goto('/goes');
     for (const name of ['Fetch', 'Map', 'Stats', 'Browse']) {
-      const tab = page.locator('[role="tab"]').filter({ hasText: new RegExp(name, 'i') }).first();
+      const tab = page
+        .locator('[role="tab"]')
+        .filter({ hasText: new RegExp(name, 'i') })
+        .first();
       await tab.click();
       await expect(tab).toHaveAttribute('aria-selected', 'true');
     }

@@ -16,7 +16,10 @@ vi.mock('../hooks/useMonitorWebSocket', () => ({
 import LiveTab from '../components/GoesData/LiveTab';
 import api from '../api/client';
 
-const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
+const mockedApi = api as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+};
 
 const PRODUCTS_DATA = {
   satellites: ['GOES-16', 'GOES-18'],
@@ -31,15 +34,31 @@ const PRODUCTS_DATA = {
   ],
   default_satellite: 'GOES-16',
   satellite_availability: {
-    'GOES-16': { available_from: '2017-12-18', available_to: null, status: 'active', description: 'GOES-East' },
-    'GOES-18': { available_from: '2022-03-01', available_to: null, status: 'active', description: 'GOES-West' },
+    'GOES-16': {
+      available_from: '2017-12-18',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-East',
+    },
+    'GOES-18': {
+      available_from: '2022-03-01',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-West',
+    },
   },
 };
 
 const FRAME_DATA = {
-  id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
-  capture_time: new Date().toISOString(), file_size: 1024,
-  width: 5424, height: 3000, image_url: '/api/satellite/frames/1/image',
+  id: '1',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'GEOCOLOR',
+  capture_time: new Date().toISOString(),
+  file_size: 1024,
+  width: 5424,
+  height: 3000,
+  image_url: '/api/satellite/frames/1/image',
   thumbnail_url: '/api/satellite/frames/1/thumbnail',
 };
 
@@ -53,8 +72,12 @@ beforeEach(() => {
     if (url.startsWith('/satellite/catalog/latest')) {
       return Promise.resolve({
         data: {
-          scan_time: new Date().toISOString(), size: 2048, key: 'test',
-          satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
+          scan_time: new Date().toISOString(),
+          size: 2048,
+          key: 'test',
+          satellite: 'GOES-16',
+          sector: 'CONUS',
+          band: 'GEOCOLOR',
           image_url: 'https://cdn.example.com/image.jpg',
           thumbnail_url: 'https://cdn.example.com/thumb.jpg',
           mobile_url: 'https://cdn.example.com/mobile.jpg',
@@ -68,7 +91,12 @@ beforeEach(() => {
 describe('LiveTab — extended coverage', () => {
   it('shows loading shimmer before data arrives', () => {
     // Delay API responses
-    mockedApi.get.mockImplementation(() => new Promise(() => { /* never resolves */ }));
+    mockedApi.get.mockImplementation(
+      () =>
+        new Promise(() => {
+          /* never resolves */
+        }),
+    );
     renderWithProviders(<LiveTab />);
     // Should show some loading indicator or the image area
     expect(screen.getByTestId('live-image-area')).toBeInTheDocument();
@@ -114,10 +142,13 @@ describe('LiveTab — extended coverage', () => {
     if (mesoOption) {
       fireEvent.click(mesoOption);
 
-      await waitFor(() => {
-        const fetchBtn = screen.queryByText('Fetch to view');
-        expect(fetchBtn).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          const fetchBtn = screen.queryByText('Fetch to view');
+          expect(fetchBtn).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
     }
   });
 

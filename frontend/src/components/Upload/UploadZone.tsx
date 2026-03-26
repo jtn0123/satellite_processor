@@ -14,14 +14,12 @@ export default function UploadZone() {
   const updateUpload = useCallback(
     (idx: number, patch: Partial<{ progress: number; status: 'uploading' | 'done' | 'error' }>) =>
       setUploads((prev) => prev.map((u, i) => (i === idx ? { ...u, ...patch } : u))),
-    []
+    [],
   );
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      const fileArray = Array.from(files).filter((f) =>
-        /\.(png|tiff?|jpg|jpeg)$/i.test(f.name)
-      );
+      const fileArray = Array.from(files).filter((f) => /\.(png|tiff?|jpg|jpeg)$/i.test(f.name));
       // Reset index when starting a new batch to stay in sync with uploads array
       idxRef.current = 0;
       setUploads([]);
@@ -46,7 +44,7 @@ export default function UploadZone() {
         }
       }
     },
-    [qc, updateUpload]
+    [qc, updateUpload],
   );
 
   return (
@@ -81,13 +79,18 @@ export default function UploadZone() {
         <p className="text-sm text-gray-600 dark:text-slate-300">
           Drag & drop satellite images here, or click to browse
         </p>
-        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">PNG, TIFF, JPEG supported · Max file size: 500 MB</p>
+        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+          PNG, TIFF, JPEG supported · Max file size: 500 MB
+        </p>
       </button>
 
       {uploads.length > 0 && (
         <div className="space-y-2">
           {uploads.map((u) => (
-            <div key={u.name} className="flex items-center gap-3 bg-gray-100 dark:bg-slate-800 rounded-lg px-4 py-2">
+            <div
+              key={u.name}
+              className="flex items-center gap-3 bg-gray-100 dark:bg-slate-800 rounded-lg px-4 py-2"
+            >
               {u.status === 'done' && <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />}
               {u.status === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
               {u.status !== 'done' && u.status !== 'error' && (

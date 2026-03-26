@@ -10,7 +10,7 @@ opencv-python-headless==4.13.0.92
 
 # Utilities
 python-dateutil==2.9.0.post0
-pyyaml==6.0.1
+pyyaml==6.0.3
 requests==2.33.0
 
 # Observability

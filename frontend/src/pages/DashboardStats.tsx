@@ -31,10 +31,7 @@ export default function DashboardStats({ stats, isLoading }: Readonly<DashboardS
       {isLoading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {['a', 'b', 'c', 'd'].map((k) => (
-            <div
-              key={k}
-              className="card p-4 h-24 skeleton-shimmer"
-            />
+            <div key={k} className="card p-4 h-24 skeleton-shimmer" />
           ))}
         </div>
       )}
@@ -64,7 +61,12 @@ export default function DashboardStats({ stats, isLoading }: Readonly<DashboardS
         <div className="card card-hover p-4">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
-            <ArcGauge percent={storagePercent} color={storageArcColor(storagePercent)} size={40} strokeWidth={3} />
+            <ArcGauge
+              percent={storagePercent}
+              color={storageArcColor(storagePercent)}
+              size={40}
+              strokeWidth={3}
+            />
           </div>
           <p className="stat-value text-2xl font-bold mt-1 text-gray-900 dark:text-white">
             {storagePercent}%

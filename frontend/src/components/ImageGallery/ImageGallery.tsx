@@ -127,10 +127,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => (
-          <div
-            key={k}
-            className="aspect-square skeleton-shimmer rounded-xl"
-          />
+          <div key={k} className="aspect-square skeleton-shimmer rounded-xl" />
         ))}
       </div>
     );
@@ -214,9 +211,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           <div
             key={img.id}
             className={`group relative card overflow-hidden cursor-pointer transition-colors ${
-              selectable && selected?.has(img.id)
-                ? 'border-primary'
-                : ''
+              selectable && selected?.has(img.id) ? 'border-primary' : ''
             }`}
           >
             <button

@@ -192,10 +192,7 @@ export default function CleanupTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['frames', 'storage', 'satellites', 'bands'].map((stat) => (
-              <div
-                key={`stat-skel-${stat}`}
-                className="card-inner p-3 space-y-2"
-              >
+              <div key={`stat-skel-${stat}`} className="card-inner p-3 space-y-2">
                 <div className="h-8 w-16 skeleton-shimmer rounded" />
                 <div className="h-4 w-20 skeleton-shimmer rounded" />
               </div>
@@ -423,10 +420,7 @@ export default function CleanupTab() {
             </p>
           )}
           {rules.map((rule) => (
-            <div
-              key={rule.id}
-              className="flex items-center justify-between card-inner p-4"
-            >
+            <div key={rule.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{rule.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">

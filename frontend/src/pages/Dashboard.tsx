@@ -169,7 +169,12 @@ export default function Dashboard() {
         <div className="card card-hover p-4">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
-            <ArcGauge percent={storagePercent} color={storageArcColor(storagePercent)} size={40} strokeWidth={3} />
+            <ArcGauge
+              percent={storagePercent}
+              color={storageArcColor(storagePercent)}
+              size={40}
+              strokeWidth={3}
+            />
           </div>
           <p className="stat-value text-2xl font-bold mt-1 text-gray-900 dark:text-white">
             {storagePercent}%
@@ -208,7 +213,10 @@ export default function Dashboard() {
             const cfg = statusIcon[check.status] ?? statusIcon.ok;
             const StatusIcon = cfg.icon;
             return (
-              <div key={item.key} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
+              <div
+                key={item.key}
+                className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300"
+              >
                 <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} />
                 <span>{item.label}</span>
                 {check.latency_ms != null && (
@@ -252,29 +260,33 @@ export default function Dashboard() {
       )}
 
       {/* GOES stats empty state (API returned but no data) */}
-      {!goesLoading && goesStats && totalGoesFrames === 0 && !statsLoading && stats?.total_images !== 0 && (
-        <div className="card p-6 text-center">
-          <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
-          <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-            Fetch GOES data to see stats here
-          </p>
-          <button
-            type="button"
-            onClick={handleFetchLatest}
-            disabled={fetchingLatest}
-            data-testid="dashboard-fetch-latest"
-            className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 transition-all btn-interactive"
-          >
-            {fetchingLatest ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Satellite className="w-5 h-5" />
-            )}
-            {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
-          </button>
-        </div>
-      )}
+      {!goesLoading &&
+        goesStats &&
+        totalGoesFrames === 0 &&
+        !statsLoading &&
+        stats?.total_images !== 0 && (
+          <div className="card p-6 text-center">
+            <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
+              Fetch GOES data to see stats here
+            </p>
+            <button
+              type="button"
+              onClick={handleFetchLatest}
+              disabled={fetchingLatest}
+              data-testid="dashboard-fetch-latest"
+              className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 transition-all btn-interactive"
+            >
+              {fetchingLatest ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Satellite className="w-5 h-5" />
+              )}
+              {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
+            </button>
+          </div>
+        )}
 
       {/* Satellite Data Section */}
       {goesStats && totalGoesFrames > 0 && (
@@ -287,7 +299,9 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-reveal">
             <div className="card-inner p-3">
-              <p className="stat-value text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
+              <p className="stat-value text-2xl font-bold text-primary">
+                {totalGoesFrames.toLocaleString()}
+              </p>
               <p className="text-sm text-gray-600 dark:text-slate-400">Total Frames</p>
             </div>
             {goesStats.frames_by_satellite &&
@@ -348,7 +362,12 @@ export default function Dashboard() {
                   const entries = Object.entries(goesStats.storage_by_satellite);
                   const maxVal = Math.max(...entries.map(([, v]) => v), 1);
                   const colors = ['bg-primary', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
-                  const glows = ['shadow-primary/20', 'shadow-violet-400/20', 'shadow-amber-400/20', 'shadow-emerald-400/20'];
+                  const glows = [
+                    'shadow-primary/20',
+                    'shadow-violet-400/20',
+                    'shadow-amber-400/20',
+                    'shadow-emerald-400/20',
+                  ];
                   return entries.map(([sat, size], i) => (
                     <div key={sat} className="flex items-center gap-3">
                       <span className="text-xs text-gray-600 dark:text-slate-400 w-20 truncate">

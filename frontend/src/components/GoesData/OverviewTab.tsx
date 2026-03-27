@@ -290,10 +290,7 @@ export default function OverviewTab() {
           </div>
           <div className="space-y-3">
             {recentJobs.map((job) => (
-              <div
-                key={job.id}
-                className="flex items-center justify-between card-inner p-3"
-              >
+              <div key={job.id} className="flex items-center justify-between card-inner p-3">
                 <div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
                     {job.status_message || 'Fetch Job'}
@@ -353,10 +350,7 @@ export default function OverviewTab() {
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Object.entries(storageBands).map(([bandKey, size]) => (
-                    <div
-                      key={bandKey}
-                      className="card-inner p-3 space-y-2"
-                    >
+                    <div key={bandKey} className="card-inner p-3 space-y-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {bandKey}
                       </div>

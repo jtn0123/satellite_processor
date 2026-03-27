@@ -212,10 +212,7 @@ export default function PresetsTab() {
             </p>
           )}
           {presets.map((preset) => (
-            <div
-              key={preset.id}
-              className="flex items-center justify-between card-inner p-4"
-            >
+            <div key={preset.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{preset.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">
@@ -347,10 +344,7 @@ export default function PresetsTab() {
             </p>
           )}
           {schedules.map((sched) => (
-            <div
-              key={sched.id}
-              className="flex items-center justify-between card-inner p-4"
-            >
+            <div key={sched.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{sched.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">

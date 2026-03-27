@@ -11,9 +11,7 @@ function SkeletonItem({
   switch (variant) {
     case 'card':
       return (
-        <div
-          className={`card overflow-hidden ${className}`}
-        >
+        <div className={`card overflow-hidden ${className}`}>
           <div className="aspect-video skeleton-shimmer rounded-t" />
           <div className="p-3 space-y-2">
             <div className="h-3 skeleton-shimmer rounded w-3/4" />
@@ -22,18 +20,10 @@ function SkeletonItem({
         </div>
       );
     case 'thumbnail':
-      return (
-        <div
-          className={`aspect-video skeleton-shimmer rounded ${className}`}
-        />
-      );
+      return <div className={`aspect-video skeleton-shimmer rounded ${className}`} />;
     case 'text':
     default:
-      return (
-        <div
-          className={`h-4 skeleton-shimmer rounded w-3/4 ${className}`}
-        />
-      );
+      return <div className={`h-4 skeleton-shimmer rounded w-3/4 ${className}`} />;
   }
 }
 

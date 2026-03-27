@@ -7,13 +7,16 @@ describe('useReducedMotion', () => {
 
   function mockMatchMedia(matches: boolean) {
     listeners = [];
-    vi.stubGlobal('matchMedia', vi.fn().mockImplementation(() => ({
-      matches,
-      addEventListener: (_event: string, cb: () => void) => {
-        listeners.push(cb);
-      },
-      removeEventListener: vi.fn(),
-    })));
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation(() => ({
+        matches,
+        addEventListener: (_event: string, cb: () => void) => {
+          listeners.push(cb);
+        },
+        removeEventListener: vi.fn(),
+      })),
+    );
   }
 
   afterEach(() => {
@@ -36,15 +39,18 @@ describe('useReducedMotion', () => {
     let currentMatches = false;
     listeners = [];
 
-    vi.stubGlobal('matchMedia', vi.fn().mockImplementation(() => ({
-      get matches() {
-        return currentMatches;
-      },
-      addEventListener: (_event: string, cb: () => void) => {
-        listeners.push(cb);
-      },
-      removeEventListener: vi.fn(),
-    })));
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation(() => ({
+        get matches() {
+          return currentMatches;
+        },
+        addEventListener: (_event: string, cb: () => void) => {
+          listeners.push(cb);
+        },
+        removeEventListener: vi.fn(),
+      })),
+    );
 
     const { result } = renderHook(() => useReducedMotion());
     expect(result.current).toBe(false);
@@ -60,11 +66,14 @@ describe('useReducedMotion', () => {
 
   it('cleans up event listener on unmount', () => {
     const removeEventListener = vi.fn();
-    vi.stubGlobal('matchMedia', vi.fn().mockImplementation(() => ({
-      matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener,
-    })));
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener,
+      })),
+    );
 
     const { unmount } = renderHook(() => useReducedMotion());
     unmount();

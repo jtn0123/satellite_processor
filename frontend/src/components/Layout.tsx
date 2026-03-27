@@ -42,7 +42,6 @@ const manageLinks = [
   ...(showErrorDashboard ? [{ to: '/errors', icon: AlertTriangle, label: 'Error Logs' }] : []),
 ];
 
-
 export default function Layout() {
   const [versionInfo, setVersionInfo] = useState({ version: '', commit: '', display: '' });
   const [drawerOpen, setDrawerOpen] = useState(false);

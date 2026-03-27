@@ -95,9 +95,7 @@ describe('ArcGauge', () => {
     const strokeWidth = 6;
     const expectedRadius = (size - strokeWidth) / 2; // 29
 
-    const { container } = render(
-      <ArcGauge percent={50} size={size} strokeWidth={strokeWidth} />,
-    );
+    const { container } = render(<ArcGauge percent={50} size={size} strokeWidth={strokeWidth} />);
     const circles = container.querySelectorAll('circle');
 
     for (const circle of circles) {

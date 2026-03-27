@@ -116,10 +116,7 @@ export default function CollectionsTab() {
       {!isLoading && !isError && (
         <div className="@container grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
           {(collections ?? []).map((c) => (
-            <div
-              key={c.id}
-              className="cv-auto card p-5 space-y-3"
-            >
+            <div key={c.id} className="cv-auto card p-5 space-y-3">
               {editingId === c.id ? (
                 <div className="flex gap-2">
                   <input

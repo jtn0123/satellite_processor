@@ -70,10 +70,7 @@ export default function PresetsPage() {
       ) : (
         <div className="space-y-2">
           {presetList.map((p) => (
-            <div
-              key={p.id}
-              className="card card-hover px-5 py-4 flex items-center gap-4 group"
-            >
+            <div key={p.id} className="card card-hover px-5 py-4 flex items-center gap-4 group">
               <BookOpen className="w-5 h-5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 {editingName === p.name ? (

@@ -34,10 +34,7 @@ export default function FrameGridContent({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
-          <div
-            key={key}
-            className="card overflow-hidden"
-          >
+          <div key={key} className="card overflow-hidden">
             <div className="aspect-video skeleton-shimmer rounded-t" />
             <div className="p-2 space-y-2">
               <div className="h-3 skeleton-shimmer rounded w-3/4" />

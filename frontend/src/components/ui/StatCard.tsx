@@ -10,7 +10,13 @@ interface StatCardProps {
 }
 
 /** Stat card with animated count-up number and monospace display. */
-export default function StatCard({ label, value, icon: Icon, color, hero }: Readonly<StatCardProps>) {
+export default function StatCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  hero,
+}: Readonly<StatCardProps>) {
   const displayValue = useCountUp(value);
 
   return (

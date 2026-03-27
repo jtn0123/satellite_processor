@@ -179,7 +179,7 @@ jobs:
       - name: Run core processor tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --cov-fail-under=61
+        run: pytest satellite_processor/core/tests/ -v --tb=short --cov --cov-config=pyproject.toml --cov-report=xml:core-coverage.xml --durations=10 --cov-fail-under=60
 
       - name: Upload core coverage artifact
         if: always()

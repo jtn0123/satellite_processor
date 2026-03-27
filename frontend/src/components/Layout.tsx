@@ -29,11 +29,14 @@ import { useJobToasts } from '../hooks/useJobToasts';
 
 const showErrorDashboard = import.meta.env.DEV || !!import.meta.env.VITE_API_KEY;
 
-const links = [
+const mainLinks = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/live', icon: Radio, label: 'Live' },
   { to: '/goes', icon: Satellite, label: 'Browse & Fetch' },
   { to: '/animate', icon: Sparkles, label: 'Animate' },
+];
+
+const manageLinks = [
   { to: '/jobs', icon: ListTodo, label: 'Jobs' },
   { to: '/settings', icon: Cog, label: 'Settings' },
   ...(showErrorDashboard ? [{ to: '/errors', icon: AlertTriangle, label: 'Error Logs' }] : []),
@@ -178,23 +181,51 @@ export default function Layout() {
       {/* Desktop Sidebar */}
       <aside
         data-testid="desktop-sidebar"
-        className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50"
+        className="hidden md:flex flex-col w-64 bg-gray-50/80 dark:bg-space-900 backdrop-blur-sm sidebar-light border-r border-gray-200 dark:border-space-700/50"
       >
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-200 dark:border-space-700/50">
-          <Satellite className="w-6 h-6 text-primary" />
-          <span className="text-lg font-bold tracking-tight">SatTracker</span>
+        <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-200 dark:border-space-700/50 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="relative">
+            <Satellite className="w-6 h-6 text-primary" />
+            <span className="absolute inset-0 rounded-full border border-primary/20 animate-[ping_3s_ease-in-out_infinite] opacity-20" />
+          </div>
+          <span className="text-lg tracking-tight">
+            <span className="font-medium">Sat</span>
+            <span className="font-bold text-primary">Tracker</span>
+          </span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {links.map((l) => (
+          {mainLinks.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
               end={l.to === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-ring ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 focus-ring ${
                   isActive
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border border-transparent'
+                    ? 'bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary nav-glow-left'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 hover:translate-x-0.5 border-l-2 border-transparent'
+                }`
+              }
+              aria-label={l.label}
+            >
+              <l.icon className="w-5 h-5" />
+              {l.label}
+            </NavLink>
+          ))}
+          <div className="mx-3 border-t border-gray-100 dark:border-space-700/30 my-2" />
+          <div className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+            Manage
+          </div>
+          {manageLinks.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.to === '/'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 focus-ring ${
+                  isActive
+                    ? 'bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary nav-glow-left'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 hover:translate-x-0.5 border-l-2 border-transparent'
                 }`
               }
               aria-label={l.label}
@@ -225,14 +256,14 @@ export default function Layout() {
             Shortcuts
           </button>
         </div>
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-space-700/50 space-y-2">
+        <div className="px-4 py-4 border-t border-gray-200 dark:border-space-700/50 space-y-3">
           <div className="flex items-center justify-between">
             <ConnectionStatus />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-space-800/50 rounded-lg p-1">
               <NotificationBell />
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
               >
@@ -241,22 +272,20 @@ export default function Layout() {
             </div>
           </div>
           {/* #15: Clickable version footer */}
-          <div className="text-sm text-gray-500 dark:text-slate-400 flex items-center gap-2">
-            <Cpu className="w-4 h-4" />
-            <button
-              onClick={() => setShowWhatsNew(true)}
-              className="hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-300 transition-colors text-left relative"
-              aria-label="Show changelog"
-            >
-              Satellite Processor {versionInfo.display}
-              {hasNewVersion && (
-                <span
-                  className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse"
-                  aria-label="New version available"
-                />
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowWhatsNew(true)}
+            className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-slate-500 hover:text-gray-500 dark:hover:text-slate-400 transition-colors text-left relative w-full"
+            aria-label="Show changelog"
+          >
+            <Cpu className="w-3 h-3" />
+            <span className="font-mono">{versionInfo.display || 'dev'}</span>
+            {hasNewVersion && (
+              <span
+                className="w-2 h-2 bg-primary rounded-full animate-soft-pulse"
+                aria-label="New version available"
+              />
+            )}
+          </button>
         </div>
       </aside>
 
@@ -279,10 +308,13 @@ export default function Layout() {
           aria-modal="true"
           className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50 z-50 transform translate-x-0 transition-transform duration-200 ease-out md:hidden p-0 m-0 max-h-none h-full"
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-space-700/50">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-space-700/50 bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="flex items-center gap-2.5">
               <Satellite className="w-5 h-5 text-primary" />
-              <span className="font-bold">SatTracker</span>
+              <span className="tracking-tight">
+                <span className="font-medium">Sat</span>
+                <span className="font-bold text-primary">Tracker</span>
+              </span>
             </div>
             <button
               onClick={() => setDrawerOpen(false)}
@@ -293,16 +325,39 @@ export default function Layout() {
             </button>
           </div>
           <nav className="px-3 py-4 space-y-1">
-            {links.map((l) => (
+            {mainLinks.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 end={l.to === '/'}
                 onClick={closeDrawer}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-colors active:scale-[0.97] active:bg-primary/5 ${
+                  `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97] active:bg-primary/5 ${
                     isActive
-                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                      ? 'bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary nav-glow-left'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border-l-2 border-transparent'
+                  }`
+                }
+                aria-label={l.label}
+              >
+                <l.icon className="w-5 h-5" />
+                {l.label}
+              </NavLink>
+            ))}
+            <div className="mx-3 border-t border-gray-100 dark:border-space-700/30 my-2" />
+            <div className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+              Manage
+            </div>
+            {manageLinks.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.to === '/'}
+                onClick={closeDrawer}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-3 min-h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97] active:bg-primary/5 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary nav-glow-left'
                       : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 border-l-2 border-transparent'
                   }`
                 }
@@ -317,7 +372,7 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden relative z-1">
         <header
           className={`md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50 ${isLivePage ? 'hidden' : ''}`}
         >
@@ -330,13 +385,16 @@ export default function Layout() {
           </button>
           <div className="flex items-center gap-2">
             <Satellite className="w-5 h-5 text-primary" />
-            <span className="font-bold">SatTracker</span>
+            <span className="tracking-tight">
+              <span className="font-medium">Sat</span>
+              <span className="font-bold text-primary">Tracker</span>
+            </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-space-800/50 rounded-lg p-0.5">
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
+              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors focus-ring"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -356,7 +414,7 @@ export default function Layout() {
                 </div>
               }
             >
-              <div key={location.pathname} className="animate-fade-in">
+              <div key={location.pathname} className="animate-page-enter">
                 <Outlet />
               </div>
             </Suspense>

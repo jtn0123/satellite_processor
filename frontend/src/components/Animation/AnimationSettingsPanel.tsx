@@ -32,7 +32,7 @@ export default function AnimationSettingsPanel({
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-5">
+    <div className="card p-6 space-y-5">
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Sliders className="w-5 h-5 text-primary" /> Animation Settings
       </h3>

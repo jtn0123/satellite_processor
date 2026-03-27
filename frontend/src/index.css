@@ -4,38 +4,62 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Deep Space palette — primary: teal-blue, accent: amber/gold */
-  --color-primary: #0ea5e9;
-  --color-primary-dark: #0284c7;
-  --color-primary-light: #38bdf8;
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Deep Space palette — primary: cyan, accent: amber/gold */
+  --color-primary: #06b6d4;
+  --color-primary-dark: #0891b2;
+  --color-primary-light: #22d3ee;
+  --color-primary-50: #ecfeff;
+  --color-primary-900: #164e63;
 
   --color-accent: #f59e0b;
   --color-accent-dark: #d97706;
   --color-accent-light: #fbbf24;
 
+  /* Secondary accent — violet for highlights, badges, active states */
+  --color-accent-secondary: #8b5cf6;
+  --color-accent-secondary-dark: #7c3aed;
+  --color-accent-secondary-light: #a78bfa;
+
   --color-success: #22c55e;
   --color-success-muted: #16a34a;
+  --color-warning: #f59e0b;
+  --color-warning-muted: #d97706;
   --color-error: #ef4444;
   --color-error-muted: #dc2626;
+  --color-info: #06b6d4;
+  --color-info-muted: #0891b2;
 
+  /* Deep Space palette — enriched with subtle hue shifts */
   --color-space-500: #2d6094;
-  --color-space-600: #254d7a;
-  --color-space-700: #1e3a5f;
-  --color-space-750: #1a2d4d;
-  --color-space-800: #132240;
-  --color-space-850: #0f1d32;
-  --color-space-900: #0a1628;
-  --color-space-950: #060d1b;
+  --color-space-600: #234e7c;
+  --color-space-700: #1b3d65;
+  --color-space-750: #162f50;
+  --color-space-800: #11233f;
+  --color-space-850: #0d1a30;
+  --color-space-900: #091425;
+  --color-space-950: #050c18;
 
-  --color-accent-sky: #38bdf8;
+  --color-accent-sky: #22d3ee;
   --color-accent-blue: #3b82f6;
   --color-accent-indigo: #6366f1;
-  --color-accent-glow: #0ea5e9;
+  --color-accent-glow: #06b6d4;
 
-  --background-color-card: #0f1d32;
-  --background-color-card-hover: #132240;
+  --background-color-card: #0d1a30;
+  --background-color-card-hover: #11233f;
 
-  --border-color-subtle: #1e3a5f;
+  --border-color-subtle: #1b3d65;
+
+  /* Light mode surface tokens */
+  --color-surface-light: #f0f7ff;
+  --color-surface-light-alt: #e8f1fb;
+  --color-surface-light-elevated: #ffffff;
+  --color-border-light: #c7d8e8;
+  --color-border-light-subtle: #dce7f1;
 
   --background-color-card-light: #ffffff;
   --background-color-card-hover-light: #f8fafc;
@@ -62,10 +86,87 @@ body {
     color 0.3s ease;
 }
 
-/* Deep Space gradient background (dark mode) */
+/* Heading typography — Inter with tight tracking */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+h1 {
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+/* Stat numbers — monospace for alignment */
+.stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* === Atmospheric Backgrounds === */
+
+/* Dark mode: star field + nebula + base gradient */
 .dark body {
-  background: linear-gradient(180deg, #060d1b 0%, #0a1628 100%);
+  background:
+    /* Tiny stars — dense, dim */
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 45%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 15%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 70%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 35%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 60%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 90%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 55%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 85%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 25%, rgba(255, 255, 255, 0.45) 0%, transparent 100%),
+    /* Medium stars — fewer, brighter */
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(200, 220, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 50%, rgba(200, 220, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 75%, rgba(200, 220, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 10%, rgba(200, 220, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 10% 65%, rgba(200, 220, 255, 0.55) 0%, transparent 100%),
+    /* Bright accent stars — colored */
+    radial-gradient(2px 2px at 30% 40%, rgba(6, 182, 212, 0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 100%),
+    /* Subtle nebula glow */
+    radial-gradient(ellipse 600px 400px at 20% 80%, rgba(6, 182, 212, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 300px at 80% 20%, rgba(139, 92, 246, 0.02) 0%, transparent 70%),
+    /* Base gradient */ linear-gradient(180deg, #050c18 0%, #091425 40%, #0d1a30 100%);
   background-attachment: fixed;
+}
+
+/* Light mode: sky-tinted gradient */
+:root:not(.dark) body {
+  background:
+    radial-gradient(ellipse 800px 600px at 30% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 70% 80%, rgba(245, 158, 11, 0.03) 0%, transparent 70%),
+    linear-gradient(180deg, #f0f7ff 0%, #e8f1fb 50%, #f0f4f8 100%);
+  background-attachment: fixed;
+}
+
+/* Noise/grain texture overlay — both modes */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+:root:not(.dark) body::after {
+  opacity: 0.015;
 }
 
 /* Touch-friendly button targets on mobile (WCAG 2.5.5 — 44px minimum) */
@@ -82,8 +183,6 @@ body {
 button:disabled {
   cursor: not-allowed;
 }
-
-/* Light mode overrides — consolidated (single :root:not(.dark) block below) */
 
 /* Dark theme scrollbar */
 ::-webkit-scrollbar {
@@ -120,6 +219,229 @@ input[type='range']:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
   outline-offset: 2px;
 }
+
+/* === Card System === */
+
+/* Base card */
+.card {
+  background: color-mix(in srgb, var(--color-space-800) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-space-600) 30%, transparent);
+  border-radius: 0.75rem;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle top-edge highlight for depth */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 8%, transparent) 0%,
+    transparent 40%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Card hover — border brighten + glow */
+.card-hover:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+.card-hover:active {
+  transform: translateY(0) scale(0.995);
+  box-shadow: none;
+}
+
+/* Interactive card — clickable */
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent),
+    0 4px 16px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+.card-interactive:active {
+  transform: translateY(0) scale(0.995);
+  box-shadow: none;
+}
+
+/* Inner card — nested content areas */
+.card-inner {
+  @apply bg-gray-100 dark:bg-space-800 rounded-lg;
+  transition: background-color 0.3s ease;
+}
+
+/* Elevated card — high prominence */
+.card-elevated {
+  background: color-mix(in srgb, var(--color-space-800) 80%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-space-600) 35%, transparent);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 24px color-mix(in srgb, black 15%, transparent);
+}
+
+/* Light mode card overrides */
+:root:not(.dark) .card {
+  background: color-mix(in srgb, white 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-light);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:root:not(.dark) .card::before {
+  display: none;
+}
+
+:root:not(.dark) .card-hover:hover,
+:root:not(.dark) .card-interactive:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+:root:not(.dark) .card-inner {
+  background-color: #f1f5f9;
+}
+
+:root:not(.dark) .card-elevated {
+  background: white;
+  border: 1px solid var(--color-border-light);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* === Glassmorphism Cards (upgraded) === */
+
+.glass-card {
+  background: color-mix(in srgb, var(--color-space-800) 55%, transparent);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid color-mix(in srgb, var(--color-space-500) 25%, transparent);
+  border-radius: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 5%, transparent),
+    transparent 50%,
+    color-mix(in srgb, var(--color-accent-secondary) 3%, transparent) 100%
+  );
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--color-primary) 8%, transparent),
+    inset 0 0 20px color-mix(in srgb, var(--color-primary) 3%, transparent);
+}
+
+:root:not(.dark) .glass-card {
+  background: color-mix(in srgb, white 80%, transparent);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--color-primary) 6%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 3%, transparent),
+    transparent 60%
+  );
+}
+
+/* Hero card — gradient border + glow */
+.glass-card-hero {
+  background: color-mix(in srgb, var(--color-space-800) 60%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-radius: 1rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--color-primary) 15%, transparent),
+    0 0 60px color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+/* Animated gradient border for hero cards */
+.glass-card-hero::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 50%, transparent),
+    color-mix(in srgb, var(--color-accent-secondary) 30%, transparent),
+    color-mix(in srgb, var(--color-primary) 20%, transparent)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glass-card-hero:hover {
+  box-shadow:
+    0 0 40px color-mix(in srgb, var(--color-primary) 20%, transparent),
+    0 0 80px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+:root:not(.dark) .glass-card-hero {
+  background: white;
+  border: 1px solid transparent;
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--color-primary) 10%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root:not(.dark) .glass-card-hero::before {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 40%, transparent),
+    color-mix(in srgb, var(--color-primary) 15%, transparent)
+  );
+}
+
+/* === Animations === */
 
 /* Toast slide-in animation */
 @keyframes slide-in {
@@ -196,13 +518,149 @@ input[type='range']:focus-visible {
   animation: fade-out 1.5s ease-out 0.5s forwards;
 }
 
+/* Page enter — enhanced with blur */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 0.25s ease-out;
+}
+
+/* Staggered reveal for card grids */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-reveal > * {
+  opacity: 0;
+  animation: reveal-up 0.4s ease-out forwards;
+}
+.stagger-reveal > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-reveal > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.stagger-reveal > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.stagger-reveal > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.stagger-reveal > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.stagger-reveal > *:nth-child(6) {
+  animation-delay: 300ms;
+}
+.stagger-reveal > *:nth-child(7) {
+  animation-delay: 360ms;
+}
+.stagger-reveal > *:nth-child(8) {
+  animation-delay: 420ms;
+}
+.stagger-reveal > *:nth-child(n + 9) {
+  animation-delay: 480ms;
+}
+
+/* Number glow — brief flash when stat updates */
+@keyframes number-glow {
+  0% {
+    text-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
+  100% {
+    text-shadow: none;
+  }
+}
+.animate-number-glow {
+  animation: number-glow 1s ease-out;
+}
+
+/* Glow pulse for hero cards / active elements */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 30px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Soft pulse — gentler alternative to animate-pulse */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.animate-soft-pulse {
+  animation: soft-pulse 2s ease-in-out infinite;
+}
+
+/* Directional tab content transitions */
+@keyframes tab-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes tab-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-tab-slide-left {
+  animation: tab-slide-left 0.2s ease-out;
+}
+.animate-tab-slide-right {
+  animation: tab-slide-right 0.2s ease-out;
+}
+
 /* Modal/overlay entry animations using @starting-style */
 .modal-overlay {
   opacity: 1;
-  transition: opacity 0.2s ease-out;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition:
+    opacity 0.25s ease-out,
+    backdrop-filter 0.25s ease-out;
 
   @starting-style {
     opacity: 0;
+    backdrop-filter: blur(0px);
   }
 }
 
@@ -210,13 +668,31 @@ input[type='range']:focus-visible {
   opacity: 1;
   transform: scale(1) translateY(0);
   transition:
-    opacity 0.2s ease-out,
-    transform 0.2s ease-out;
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
   @starting-style {
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
+    transform: scale(0.92) translateY(12px);
   }
+}
+
+/* Top-edge highlight for modal panels */
+.modal-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-primary) 20%, transparent),
+    transparent
+  );
+  border-radius: 1px;
+  pointer-events: none;
 }
 
 /* Dropdown/popover entry animation */
@@ -243,6 +719,16 @@ input[type='range']:focus-visible {
   }
 }
 
+/* BottomSheet entry animation */
+.bottom-sheet-enter {
+  transform: translateY(0);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @starting-style {
+    transform: translateY(100%);
+  }
+}
+
 /* Skeleton → content fade transition */
 @keyframes skeleton-fade-out {
   from {
@@ -264,6 +750,23 @@ input[type='range']:focus-visible {
 
 .animate-shimmer {
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Enhanced skeleton shimmer — gradient-based */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-space-800) 25%,
+    color-mix(in srgb, var(--color-space-700) 50%, transparent) 50%,
+    var(--color-space-800) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+:root:not(.dark) .skeleton-shimmer {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
 }
 
 .content-fade-in {
@@ -303,6 +806,7 @@ input[type='range']:focus-visible {
 
 /* Smooth theme transition on cards and panels */
 .bg-card,
+.card,
 .glass-card,
 aside,
 header {
@@ -312,13 +816,59 @@ header {
     border-color 0.3s ease;
 }
 
+/* === Navigation === */
+
+/* Active nav item glow */
+.nav-glow-left {
+  box-shadow: inset 3px 0 12px -4px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Tab active indicator */
+.tab-active {
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 1px;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+/* Tab bar gradient edge masks */
+.tab-scroll-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 12px,
+    black calc(100% - 12px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 12px,
+    black calc(100% - 12px),
+    transparent
+  );
+}
+
+/* Sidebar light mode */
+:root:not(.dark) .sidebar-light {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
 /* Leaflet fixes */
 .leaflet-container {
   background: #f0f0f0 !important;
 }
 
 .dark .leaflet-container {
-  background: #0a1628 !important;
+  background: #091425 !important;
 }
 
 /* Performance: content-visibility for virtualized frame lists */
@@ -347,43 +897,6 @@ header {
 }
 .hover-mix-darken:hover {
   background-color: color-mix(in srgb, currentColor 12%, var(--tw-bg-base, transparent));
-}
-
-/* Glassmorphism for stat cards */
-.glass-card {
-  background: color-mix(in srgb, var(--color-space-800) 65%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--color-space-600) 40%, transparent);
-  background-image: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-primary) 5%, transparent),
-    transparent 60%
-  );
-}
-
-/* Light mode glass */
-:root:not(.dark) .glass-card {
-  background: color-mix(in srgb, white 80%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, #94a3b8 25%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #0ea5e9 8%, transparent);
-}
-
-/* Hero card — more visual weight for live image & stats */
-.glass-card-hero {
-  background: color-mix(in srgb, var(--color-space-800) 65%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-  box-shadow: 0 0 20px 2px color-mix(in srgb, var(--color-primary) 12%, transparent);
-}
-
-:root:not(.dark) .glass-card-hero {
-  background: white;
-  border: 1px solid color-mix(in srgb, #0ea5e9 20%, transparent);
-  box-shadow: 0 2px 12px color-mix(in srgb, #0ea5e9 12%, transparent);
 }
 
 /* Primary button with color-mix hover */
@@ -452,4 +965,36 @@ header {
 :root:not(.dark) .bg-space-850,
 :root:not(.dark) .bg-space-900 {
   background-color: #f3f4f6;
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-reveal > *,
+  .animate-scale-in,
+  .animate-number-glow,
+  .animate-fade-in,
+  .animate-page-enter,
+  .animate-slide-in,
+  .animate-slide-up,
+  .animate-tab-slide-left,
+  .animate-tab-slide-right {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-soft-pulse,
+  .animate-glow-pulse {
+    animation-duration: 0s !important;
+  }
+  .skeleton-shimmer {
+    animation: none !important;
+    background: var(--color-space-800) !important;
+  }
+  .modal-panel,
+  .modal-overlay,
+  .dropdown-enter,
+  .sidebar-enter,
+  .bottom-sheet-enter {
+    transition-duration: 0.01ms !important;
+  }
 }

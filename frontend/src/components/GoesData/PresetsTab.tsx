@@ -140,7 +140,7 @@ export default function PresetsTab() {
   return (
     <div className="space-y-6">
       {/* Presets Section */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Fetch Presets</h2>
           <button
@@ -212,10 +212,7 @@ export default function PresetsTab() {
             </p>
           )}
           {presets.map((preset) => (
-            <div
-              key={preset.id}
-              className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-4"
-            >
+            <div key={preset.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{preset.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">
@@ -265,7 +262,7 @@ export default function PresetsTab() {
       </div>
 
       {/* Schedules Section */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Clock className="w-5 h-5" /> Schedules
@@ -281,7 +278,7 @@ export default function PresetsTab() {
         </div>
 
         {showScheduleCreate && (
-          <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
+          <div className="mb-4 card-inner p-4 space-y-3">
             <input
               aria-label="Schedule name"
               placeholder="Schedule name"
@@ -347,10 +344,7 @@ export default function PresetsTab() {
             </p>
           )}
           {schedules.map((sched) => (
-            <div
-              key={sched.id}
-              className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-4"
-            >
+            <div key={sched.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{sched.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">
@@ -413,7 +407,7 @@ function PresetForm({
   };
 
   return (
-    <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
+    <div className="mb-4 card-inner p-4 space-y-3">
       <h3 className="text-sm font-medium text-gray-600 dark:text-slate-300">{title}</h3>
       <input
         aria-label="Preset name"

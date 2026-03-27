@@ -49,10 +49,10 @@ function renderJobList() {
 }
 
 describe('Card styling consistency', () => {
-  it('job list cards use rounded-xl', () => {
+  it('job list cards use card utility class', () => {
     const { container } = renderJobList();
     const buttons = container.querySelectorAll('button');
-    const jobCards = Array.from(buttons).filter((b) => b.className.includes('rounded-xl'));
+    const jobCards = Array.from(buttons).filter((b) => b.className.includes('card'));
     expect(jobCards.length).toBeGreaterThan(0);
   });
 

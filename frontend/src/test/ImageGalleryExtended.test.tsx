@@ -126,7 +126,7 @@ describe('ImageGallery - loading state', () => {
   it('shows skeleton when loading', () => {
     isLoading = true;
     const { container } = render(<ImageGallery />, { wrapper });
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.skeleton-shimmer').length).toBeGreaterThan(0);
   });
 });
 

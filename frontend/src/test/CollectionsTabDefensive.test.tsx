@@ -45,7 +45,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   it('shows loading skeletons', () => {
     mockedApi.get.mockReturnValue(new Promise(() => {}));
     renderWithProviders(<CollectionsTab />);
-    const pulseElements = document.querySelectorAll('.animate-pulse');
+    const pulseElements = document.querySelectorAll('.skeleton-shimmer');
     expect(pulseElements.length).toBeGreaterThan(0);
   });
 

@@ -50,7 +50,7 @@ export function ConfirmDialog({
             {imageType === 'single' ? `Single Band (${band})` : imageType.replace('_', ' ')}
           </div>
           {estimate && (
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 mt-2">
+            <div className="card-inner p-3 mt-2">
               <div className="font-medium">
                 ~{estimate.frames} frames · ~{estimate.sizeMb} MB
               </div>

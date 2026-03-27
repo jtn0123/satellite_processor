@@ -245,7 +245,7 @@ function LogConsole({
   logRef: React.RefObject<HTMLDivElement | null>;
 }>) {
   return (
-    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Logs</h3>
         <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       </button>
 
       {/* ── Header card ────────────────────────────────── */}
-      <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
+      <div className="card p-6">
         <JobHeader
           jobId={jobId}
           status={status}
@@ -443,7 +443,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
       {/* ── Parameters ─────────────────────────────────── */}
       {paramEntries.length > 0 && (
-        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
+        <div className="card p-6">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
             Job Parameters
           </h3>
@@ -465,7 +465,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
 
       {/* ── Timeline ───────────────────────────────────── */}
       {timelineSteps.length > 0 && (
-        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
+        <div className="card p-6">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Timeline</h3>
           <div className="flex items-center gap-0">
             {timelineSteps.map((step, i) => (

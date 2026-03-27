@@ -164,27 +164,27 @@ export default function CleanupTab() {
   return (
     <div className="space-y-6">
       {/* Storage Overview */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="card p-6">
         <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
           <HardDrive className="w-5 h-5" /> Storage Usage
         </h2>
         {stats ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="text-2xl font-bold">{stats.total_frames}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Total Frames</div>
             </div>
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="text-2xl font-bold">{formatBytes(stats.total_size_bytes)}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Total Storage</div>
             </div>
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="text-2xl font-bold">
                 {Object.keys(stats.by_satellite ?? {}).length}
               </div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Satellites</div>
             </div>
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="text-2xl font-bold">{Object.keys(stats.by_band ?? {}).length}</div>
               <div className="text-sm text-gray-500 dark:text-slate-400">Bands</div>
             </div>
@@ -192,12 +192,9 @@ export default function CleanupTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['frames', 'storage', 'satellites', 'bands'].map((stat) => (
-              <div
-                key={`stat-skel-${stat}`}
-                className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2"
-              >
-                <div className="h-8 w-16 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
-                <div className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-slate-700 rounded" />
+              <div key={`stat-skel-${stat}`} className="card-inner p-3 space-y-2">
+                <div className="h-8 w-16 skeleton-shimmer rounded" />
+                <div className="h-4 w-20 skeleton-shimmer rounded" />
               </div>
             ))}
           </div>
@@ -206,7 +203,7 @@ export default function CleanupTab() {
 
       {/* Per-Satellite Breakdown */}
       {storageStats && satellites.length > 0 && (
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="card p-6">
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
             <Satellite className="w-5 h-5" /> Storage by Satellite
           </h2>
@@ -248,7 +245,7 @@ export default function CleanupTab() {
               const satData = storageStats.satellites[sat];
               const sectors = Object.entries(satData.sectors);
               return (
-                <div key={sat} className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4">
+                <div key={sat} className="card-inner p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`w-3 h-3 rounded-full ${getSatColor(sat)}`} />
                     <span className="font-semibold">{sat}</span>
@@ -288,7 +285,7 @@ export default function CleanupTab() {
       )}
 
       {/* Cleanup Rules */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Cleanup Rules</h2>
           <div className="flex gap-2">
@@ -338,7 +335,7 @@ export default function CleanupTab() {
         )}
 
         {showCreate && (
-          <div className="mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-4 space-y-3">
+          <div className="mb-4 card-inner p-4 space-y-3">
             <input
               aria-label="Rule name"
               placeholder="Rule name"
@@ -423,10 +420,7 @@ export default function CleanupTab() {
             </p>
           )}
           {rules.map((rule) => (
-            <div
-              key={rule.id}
-              className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-4"
-            >
+            <div key={rule.id} className="flex items-center justify-between card-inner p-4">
               <div>
                 <div className="font-medium">{rule.name}</div>
                 <div className="text-sm text-gray-500 dark:text-slate-400">

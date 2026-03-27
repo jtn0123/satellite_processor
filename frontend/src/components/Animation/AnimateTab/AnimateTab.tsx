@@ -224,7 +224,7 @@ export default function AnimateTab() {
       {animationItems.length > 0 &&
         animationItems[0].status === 'completed' &&
         animationItems[0].output_path && (
-          <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
+          <div className="card p-4">
             <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">
               Latest Animation
             </h4>

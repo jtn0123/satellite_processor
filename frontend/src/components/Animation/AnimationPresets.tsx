@@ -63,7 +63,7 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
   });
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+    <div className="card p-6 space-y-4">
       <h3 className="text-lg font-semibold">Presets</h3>
 
       {/* Load preset */}

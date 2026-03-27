@@ -34,7 +34,7 @@ export default function BrowseToolbar({
   onExport,
 }: Readonly<BrowseToolbarProps>) {
   return (
-    <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 border border-gray-200 dark:border-slate-800">
+    <div className="flex items-center justify-between card px-4 py-3">
       <div className="flex items-center gap-3">
         <button
           onClick={selectAll}

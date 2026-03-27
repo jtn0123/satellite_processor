@@ -15,7 +15,7 @@ const mockStats = {
 describe('DashboardCharts', () => {
   it('renders loading skeleton when isLoading', () => {
     const { container } = render(<DashboardCharts goesStats={undefined} isLoading={true} />);
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    expect(container.querySelector('.skeleton-shimmer')).toBeInTheDocument();
   });
 
   it('returns null when no stats', () => {

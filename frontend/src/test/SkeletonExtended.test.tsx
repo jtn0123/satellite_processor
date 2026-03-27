@@ -5,13 +5,13 @@ import Skeleton from '../components/GoesData/Skeleton';
 describe('Skeleton', () => {
   it('renders single text skeleton by default', () => {
     const { container } = render(<Skeleton />);
-    const pulses = container.querySelectorAll('.animate-pulse');
+    const pulses = container.querySelectorAll('.skeleton-shimmer');
     expect(pulses.length).toBe(1);
   });
 
   it('renders multiple skeletons with count', () => {
     const { container } = render(<Skeleton count={5} />);
-    const pulses = container.querySelectorAll('.animate-pulse');
+    const pulses = container.querySelectorAll('.skeleton-shimmer');
     expect(pulses.length).toBe(5);
   });
 
@@ -32,7 +32,7 @@ describe('Skeleton', () => {
 
   it('card variant renders inner text placeholders', () => {
     const { container } = render(<Skeleton variant="card" />);
-    const pulses = container.querySelectorAll('.animate-pulse');
+    const pulses = container.querySelectorAll('.skeleton-shimmer');
     // aspect-video + 2 text lines = 3
     expect(pulses.length).toBe(3);
   });

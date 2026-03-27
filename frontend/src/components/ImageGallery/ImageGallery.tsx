@@ -127,10 +127,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => (
-          <div
-            key={k}
-            className="aspect-square bg-white dark:bg-space-800/70 rounded-xl animate-pulse"
-          />
+          <div key={k} className="aspect-square skeleton-shimmer rounded-xl" />
         ))}
       </div>
     );
@@ -213,10 +210,8 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
         {displayed.map((img) => (
           <div
             key={img.id}
-            className={`group relative bg-white dark:bg-space-800/70 border rounded-xl overflow-hidden cursor-pointer transition-colors ${
-              selectable && selected?.has(img.id)
-                ? 'border-primary'
-                : 'border-gray-200 dark:border-space-700/50 hover:border-space-600'
+            className={`group relative card overflow-hidden cursor-pointer transition-colors ${
+              selectable && selected?.has(img.id) ? 'border-primary' : ''
             }`}
           >
             <button
@@ -303,7 +298,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
       {preview && (
         <dialog
           open
-          className="fixed inset-0 bg-black/40 dark:bg-black/80 z-50 flex items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-none"
+          className="fixed inset-0 bg-black/40 dark:bg-black/80 z-50 flex items-center justify-center p-4 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
           onCancel={closePreview}
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
@@ -314,7 +309,7 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
             aria-label="Close preview"
             tabIndex={-1}
           />
-          <div className="relative bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default">
+          <div className="relative card-elevated rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default modal-panel">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
               <button

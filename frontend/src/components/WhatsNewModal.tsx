@@ -68,7 +68,7 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
       <div
         ref={dialogRef}
         aria-label="What's New"
-        className="relative bg-white dark:bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel z-[60]"
+        className="relative card-elevated rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto modal-panel z-[60]"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

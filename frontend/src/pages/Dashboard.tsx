@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useStats, useHealthDetailed } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
-  ListTodo,
   Activity,
   HardDrive,
   Database,
@@ -22,14 +21,16 @@ import {
 } from 'lucide-react';
 import JobList from '../components/Jobs/JobList';
 import QueryErrorBox from '../components/QueryErrorBox';
+import StatCard from '../components/ui/StatCard';
+import ArcGauge from '../components/ui/ArcGauge';
 import { formatBytes } from '../utils/format';
 import { showToast } from '../utils/toast';
 import api from '../api/client';
 
-function storageBarColor(percent: number): string {
-  if (percent > 90) return 'bg-red-400';
-  if (percent > 70) return 'bg-yellow-400';
-  return 'bg-emerald-400';
+function storageArcColor(percent: number): string {
+  if (percent > 90) return '#ef4444';
+  if (percent > 70) return '#fbbf24';
+  return '#22c55e';
 }
 
 const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
@@ -43,11 +44,11 @@ const statusIcon: Record<string, { icon: React.ElementType; color: string }> = {
 
 const statusColors: Record<string, string> = {
   completed: 'bg-emerald-400',
-  running: 'bg-amber-400 animate-pulse',
+  running: 'bg-amber-400 animate-soft-pulse',
   failed: 'bg-red-400',
 };
 
-interface DashboardStats {
+interface DashboardGoesStats {
   total_frames: number;
   frames_by_satellite: Record<string, number>;
   last_fetch_time: string | null;
@@ -73,7 +74,7 @@ export default function Dashboard() {
     isLoading: goesLoading,
     isError: goesError,
     refetch: refetchGoes,
-  } = useQuery<DashboardStats>({
+  } = useQuery<DashboardGoesStats>({
     queryKey: ['goes-dashboard-stats'],
     queryFn: () => api.get('/satellite/dashboard-stats').then((r) => r.data),
     staleTime: 30_000,
@@ -82,28 +83,11 @@ export default function Dashboard() {
 
   const storageUsed = stats?.storage?.used ?? 0;
   const storageTotal = stats?.storage?.total ?? 1;
-  const storagePercent = Math.round((storageUsed / storageTotal) * 100);
+  const storagePercent = storageTotal > 0 ? Math.round((storageUsed / storageTotal) * 100) : 0;
 
   const checks = health?.checks ?? {};
 
   const totalGoesFrames = goesStats?.total_frames ?? 0;
-  const showOnboarding = !statsLoading && stats?.total_images === 0 && totalGoesFrames === 0;
-
-  const statCards = [
-    { label: 'GOES Frames', value: totalGoesFrames, icon: Satellite, color: 'text-sky-400' },
-    {
-      label: 'Total Jobs',
-      value: stats?.total_jobs ?? 0,
-      icon: ListTodo,
-      color: 'text-violet-400',
-    },
-    {
-      label: 'Active Jobs',
-      value: stats?.active_jobs ?? 0,
-      icon: Activity,
-      color: 'text-amber-400',
-    },
-  ];
 
   const [fetchingLatest, setFetchingLatest] = useState(false);
   const handleFetchLatest = async () => {
@@ -144,50 +128,117 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Stats cards */}
+      {/* Stats cards — hero + standard + storage */}
       {statsLoading && !statsError && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {['a', 'b', 'c', 'd'].map((k) => (
             <div
               key={k}
-              className="bg-gray-200/50 dark:bg-white/[0.06] border border-gray-200 dark:border-space-700/50 rounded-xl p-4 h-24 animate-pulse"
+              className={`card p-4 h-24 skeleton-shimmer ${k === 'a' ? 'md:col-span-2' : ''}`}
             />
           ))}
         </div>
       )}
       <div
-        className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${statsLoading && !statsError ? 'hidden' : ''}`}
+        className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${statsLoading && !statsError ? 'hidden' : 'stagger-reveal'}`}
       >
-        {statCards.map((s) => (
-          <div
-            key={s.label}
-            className="bg-white/75 dark:bg-space-800/70 backdrop-blur-sm border border-gray-200 dark:border-space-700/50 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-space-700 transition-colors inset-shadow-sm dark:inset-shadow-white/5"
-          >
-            <div className="flex items-center justify-between">
-              <s.icon className={`w-5 h-5 ${s.color}`} />
-            </div>
-            <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{s.value}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">{s.label}</p>
-          </div>
-        ))}
+        {/* Hero stat — GOES Frames */}
+        <StatCard
+          label="GOES Frames"
+          value={totalGoesFrames}
+          icon={Satellite}
+          color="text-primary"
+          hero
+        />
 
-        {/* Storage card */}
-        <div className="bg-white/75 dark:bg-space-800/70 backdrop-blur-sm border border-gray-200 dark:border-space-700/50 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-space-700 transition-colors inset-shadow-sm dark:inset-shadow-white/5">
+        {/* Standard stats */}
+        <StatCard
+          label="Total Jobs"
+          value={stats?.total_jobs ?? 0}
+          icon={Activity}
+          color="text-violet-400"
+        />
+        <StatCard
+          label="Active Jobs"
+          value={stats?.active_jobs ?? 0}
+          icon={Activity}
+          color="text-amber-400"
+        />
+
+        {/* Storage card — arc gauge */}
+        <div className="card card-hover p-4">
           <div className="flex items-center justify-between">
             <HardDrive className="w-5 h-5 text-emerald-400" />
-            <span className="text-xs text-gray-400 dark:text-slate-500">{storagePercent}%</span>
-          </div>
-          <div className="mt-3 h-2.5 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${storageBarColor(storagePercent)}`}
-              style={{ width: `${storagePercent}%` }}
+            <ArcGauge
+              percent={storagePercent}
+              color={storageArcColor(storagePercent)}
+              size={40}
+              strokeWidth={3}
             />
           </div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1.5">
+          <p className="stat-value text-2xl font-bold mt-1 text-gray-900 dark:text-white">
+            {storagePercent}%
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">
             {formatBytes(storageUsed)} / {formatBytes(storageTotal)}
           </p>
         </div>
       </div>
+
+      {/* System Health — horizontal status strip */}
+      {health && (
+        <output
+          className="card p-3 flex items-center gap-4 flex-wrap"
+          aria-label="System health status"
+        >
+          <div className="flex items-center gap-2">
+            {(() => {
+              const cfg = statusIcon[health.status] ?? statusIcon.ok;
+              const Icon = cfg.icon;
+              return (
+                <>
+                  <Icon className={`w-4 h-4 ${cfg.color}`} aria-hidden="true" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                    System
+                  </span>
+                  <span className="sr-only">{health.status}</span>
+                </>
+              );
+            })()}
+          </div>
+          <div className="w-px h-4 bg-gray-200 dark:bg-space-700" />
+          {[
+            { key: 'database', label: 'Database', icon: Database },
+            { key: 'redis', label: 'Redis', icon: Server },
+            { key: 'disk', label: 'Disk', icon: HardDrive },
+          ].map((item) => {
+            const check = checks[item.key];
+            if (!check) return null;
+            const cfg = statusIcon[check.status] ?? statusIcon.ok;
+            const StatusIcon = cfg.icon;
+            return (
+              <div
+                key={item.key}
+                className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300"
+              >
+                <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} aria-hidden="true" />
+                <span>{item.label}</span>
+                <span className="sr-only">{check.status}</span>
+                {check.latency_ms != null && (
+                  <span className="text-gray-400 dark:text-slate-500 font-mono text-[10px]">
+                    {check.latency_ms}ms
+                  </span>
+                )}
+                {check.free_gb != null && (
+                  <span className="text-gray-400 dark:text-slate-500 font-mono text-[10px]">
+                    {check.free_gb}GB
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </output>
+      )}
 
       {/* GOES stats error fallback */}
       {goesError && (
@@ -198,69 +249,76 @@ export default function Dashboard() {
         />
       )}
 
-      {/* GOES stats loading skeleton (#9) */}
+      {/* GOES stats loading skeleton */}
       {goesLoading && !goesError && (
-        <div className="bg-gray-200/50 dark:bg-white/[0.06] border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4 animate-pulse">
+        <div className="card p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-white/10" />
-            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-white/10" />
+            <div className="w-5 h-5 rounded skeleton-shimmer" />
+            <div className="h-5 w-32 rounded skeleton-shimmer" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((k) => (
-              <div key={k} className="bg-gray-100 dark:bg-white/[0.06] rounded-lg p-3 h-16" />
+              <div key={k} className="card-inner p-3 h-16 skeleton-shimmer" />
             ))}
           </div>
         </div>
       )}
 
       {/* GOES stats empty state (API returned but no data) */}
-      {!goesLoading && goesStats && totalGoesFrames === 0 && !showOnboarding && (
-        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 text-center">
-          <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
-          <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-            Fetch GOES data to see stats here
-          </p>
-          <button
-            type="button"
-            onClick={handleFetchLatest}
-            disabled={fetchingLatest}
-            data-testid="dashboard-fetch-latest"
-            className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
-          >
-            {fetchingLatest ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Satellite className="w-5 h-5" />
-            )}
-            {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
-          </button>
-        </div>
-      )}
+      {!goesLoading &&
+        goesStats &&
+        totalGoesFrames === 0 &&
+        !statsLoading &&
+        stats?.total_images !== 0 && (
+          <div className="card p-6 text-center">
+            <Satellite className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-slate-400">No satellite data yet</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
+              Fetch GOES data to see stats here
+            </p>
+            <button
+              type="button"
+              onClick={handleFetchLatest}
+              disabled={fetchingLatest}
+              data-testid="dashboard-fetch-latest"
+              className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 transition-all btn-interactive"
+            >
+              {fetchingLatest ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Satellite className="w-5 h-5" />
+              )}
+              {fetchingLatest ? 'Fetching...' : 'Fetch Latest CONUS'}
+            </button>
+          </div>
+        )}
 
-      {/* #1: Satellite Data Section */}
+      {/* Satellite Data Section */}
       {goesStats && totalGoesFrames > 0 && (
-        <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4">
+        <div className="glass-card p-6 space-y-4">
           <div className="flex items-center gap-2">
+            <span className="w-1 h-5 bg-primary rounded-full" aria-hidden="true" />
             <Satellite className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Satellite Data</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
-              <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-reveal">
+            <div className="card-inner p-3">
+              <p className="stat-value text-2xl font-bold text-primary">
+                {totalGoesFrames.toLocaleString()}
+              </p>
               <p className="text-sm text-gray-600 dark:text-slate-400">Total Frames</p>
             </div>
             {goesStats.frames_by_satellite &&
               Object.entries(goesStats.frames_by_satellite).map(([sat, count]) => (
-                <div key={sat} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div key={sat} className="card-inner p-3">
+                  <p className="stat-value text-2xl font-bold text-gray-900 dark:text-white">
                     {count.toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400">{sat}</p>
                 </div>
               ))}
-            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -271,10 +329,10 @@ export default function Dashboard() {
               </div>
               <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">Last Fetch</p>
             </div>
-            <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+            <div className="card-inner p-3">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="stat-value text-2xl font-bold text-gray-900 dark:text-white">
                   {goesStats.active_schedules}
                 </p>
               </div>
@@ -288,7 +346,7 @@ export default function Dashboard() {
             onClick={handleFetchLatest}
             disabled={fetchingLatest}
             data-testid="dashboard-fetch-latest"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 transition-all btn-interactive"
           >
             {fetchingLatest ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -308,19 +366,25 @@ export default function Dashboard() {
                 {(() => {
                   const entries = Object.entries(goesStats.storage_by_satellite);
                   const maxVal = Math.max(...entries.map(([, v]) => v), 1);
-                  const colors = ['bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
+                  const colors = ['bg-primary', 'bg-violet-400', 'bg-amber-400', 'bg-emerald-400'];
+                  const glows = [
+                    'shadow-primary/20',
+                    'shadow-violet-400/20',
+                    'shadow-amber-400/20',
+                    'shadow-emerald-400/20',
+                  ];
                   return entries.map(([sat, size], i) => (
                     <div key={sat} className="flex items-center gap-3">
                       <span className="text-xs text-gray-600 dark:text-slate-400 w-20 truncate">
                         {sat}
                       </span>
-                      <div className="flex-1 h-3 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2.5 bg-gray-200 dark:bg-space-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${colors[i % colors.length]}`}
+                          className={`h-full rounded-full ${colors[i % colors.length]} shadow-sm ${glows[i % glows.length]} transition-all duration-500`}
                           style={{ width: `${(size / maxVal) * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-400 dark:text-slate-500 w-16 text-right">
+                      <span className="text-xs text-gray-400 dark:text-slate-500 w-16 text-right font-mono">
                         {formatBytes(size)}
                       </span>
                     </div>
@@ -339,7 +403,7 @@ export default function Dashboard() {
                 {goesStats.recent_jobs.slice(0, 5).map((job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between bg-gray-100 dark:bg-space-800 rounded-lg px-3 py-2 text-sm"
+                    className="flex items-center justify-between card-inner px-3 py-2 text-sm"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -350,7 +414,7 @@ export default function Dashboard() {
                         {job.status_message || job.status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500 font-mono">
                       <span>{new Date(job.created_at).toLocaleString()}</span>
                     </div>
                   </div>
@@ -363,15 +427,15 @@ export default function Dashboard() {
 
       {/* Unified Onboarding — shown when no images */}
       {!statsLoading && stats?.total_images === 0 && (
-        <div className="bg-white dark:bg-space-800/70 border border-primary/20 rounded-xl p-6">
+        <div className="card p-6 border-primary/20">
           <div className="flex items-center gap-2 mb-4">
             <Rocket className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Get Started</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-4 stagger-reveal">
             <Link
               to="/live"
-              className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors"
+              className="card-interactive p-4 flex items-start gap-3 border-t-2 border-t-primary"
             >
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <Radio className="w-5 h-5 text-primary" />
@@ -387,7 +451,7 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/goes"
-              className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors"
+              className="card-interactive p-4 flex items-start gap-3 border-t-2 border-t-violet-400"
             >
               <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
                 <Satellite className="w-5 h-5 text-violet-400" />
@@ -403,7 +467,7 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/jobs"
-              className="flex items-start gap-3 p-4 bg-gray-100 dark:bg-space-800 rounded-lg hover:bg-gray-200 dark:hover:bg-space-700 transition-colors"
+              className="card-interactive p-4 flex items-start gap-3 border-t-2 border-t-emerald-400"
             >
               <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
                 <Download className="w-5 h-5 text-emerald-400" />
@@ -422,7 +486,7 @@ export default function Dashboard() {
               onClick={handleFetchLatest}
               disabled={fetchingLatest}
               data-testid="dashboard-fetch-latest"
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 transition-all btn-interactive"
             >
               {fetchingLatest ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -448,83 +512,26 @@ export default function Dashboard() {
         <button
           type="button"
           onClick={() => navigate('/goes')}
-          className="flex items-center gap-2 px-5 py-2.5 min-h-11 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
+          className="flex items-center gap-2 px-5 py-2.5 min-h-11 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-sm font-medium transition-all focus-ring active:scale-[0.97] btn-interactive"
         >
           <Download className="w-4 h-4" /> Browse & Fetch
         </button>
         <button
           type="button"
           onClick={() => navigate('/animate')}
-          className="flex items-center gap-2 px-5 py-2.5 min-h-11 bg-space-700 hover:bg-space-600 border border-gray-200 dark:border-space-700/50 rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97]"
+          className="flex items-center gap-2 px-5 py-2.5 min-h-11 card border border-gray-200 dark:border-space-700/50 rounded-xl text-sm font-medium transition-colors focus-ring active:scale-[0.97] hover:border-primary/30"
         >
           <Satellite className="w-4 h-4" /> Create Animation
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Recent jobs - #5: with progress bars */}
-        <div className="md:col-span-2">
-          <h2 className="text-lg font-semibold mb-3">Recent Jobs</h2>
-          <JobList onSelect={(id) => navigate(`/jobs?id=${id}`)} limit={5} />
-        </div>
-
-        {/* System Health */}
-        <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            System Health
-          </h2>
-          <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
-            {/* Overall status */}
-            {health && (
-              <div className="flex items-center gap-2 pb-3 border-b border-gray-200 dark:border-space-700/50">
-                {(() => {
-                  const cfg = statusIcon[health.status] ?? statusIcon.ok;
-                  const Icon = cfg.icon;
-                  return (
-                    <>
-                      <Icon className={`w-5 h-5 ${cfg.color}`} />
-                      <span className="text-sm font-medium capitalize">{health.status}</span>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Individual checks */}
-            {[
-              { key: 'database', label: 'Database', icon: Database },
-              { key: 'redis', label: 'Redis', icon: Server },
-              { key: 'disk', label: 'Disk', icon: HardDrive },
-            ].map((item) => {
-              const check = checks[item.key];
-              if (!check) return null;
-              const cfg = statusIcon[check.status] ?? statusIcon.ok;
-              const StatusIcon = cfg.icon;
-              return (
-                <div key={item.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
-                    <item.icon className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-                    {item.label}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {check.latency_ms != null && (
-                      <span className="text-xs text-gray-400 dark:text-slate-500">
-                        {check.latency_ms}ms
-                      </span>
-                    )}
-                    {check.free_gb != null && (
-                      <span className="text-xs text-gray-400 dark:text-slate-500">
-                        {check.free_gb}GB free
-                      </span>
-                    )}
-                    <StatusIcon className={`w-4 h-4 ${cfg.color}`} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Recent Jobs — full width */}
+      <div>
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <span className="w-1 h-5 bg-violet-400 rounded-full" aria-hidden="true" />
+          <span>Recent Jobs</span>
+        </h2>
+        <JobList onSelect={(id) => navigate(`/jobs?id=${id}`)} limit={5} />
       </div>
     </div>
   );

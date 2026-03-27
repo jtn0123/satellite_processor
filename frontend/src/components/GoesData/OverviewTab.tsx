@@ -203,13 +203,13 @@ export default function OverviewTab() {
 
       {/* Latest from AWS */}
       {catalogLatest && (
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="card p-6">
           <div className="flex items-center gap-2 mb-4">
             <Satellite className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-gray-900 dark:text-white">Latest Available on AWS</h3>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-4 flex-1 min-w-[200px]">
+            <div className="card-inner p-4 flex-1 min-w-[200px]">
               <div className="text-sm text-gray-500 dark:text-slate-400">
                 {catalogLatest.satellite}
               </div>
@@ -227,7 +227,7 @@ export default function OverviewTab() {
 
       {/* Storage Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
+        <div className="glass-card p-6 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center gap-2 mb-2">
             <HardDrive className="w-4 h-4 text-primary" />
             <span className="text-sm text-gray-500 dark:text-slate-400">Total Frames</span>
@@ -236,7 +236,7 @@ export default function OverviewTab() {
             {totalFrames?.toLocaleString() ?? '—'}
           </div>
         </div>
-        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
+        <div className="glass-card p-6 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center gap-2 mb-2">
             <HardDrive className="w-4 h-4 text-emerald-400" />
             <span className="text-sm text-gray-500 dark:text-slate-400">Disk Usage</span>
@@ -245,7 +245,7 @@ export default function OverviewTab() {
             {totalSizeBytes == null ? '—' : formatBytes(totalSizeBytes)}
           </div>
         </div>
-        <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800 inset-shadow-sm dark:inset-shadow-white/5">
+        <div className="glass-card p-6 inset-shadow-sm dark:inset-shadow-white/5">
           <div className="flex items-center gap-2 mb-2">
             <Satellite className="w-4 h-4 text-amber-400" />
             <span className="text-sm text-gray-500 dark:text-slate-400">Satellites</span>
@@ -283,17 +283,14 @@ export default function OverviewTab() {
 
       {/* Recent Activity */}
       {recentJobs.length > 0 && (
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+        <div className="card p-6">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
           </div>
           <div className="space-y-3">
             {recentJobs.map((job) => (
-              <div
-                key={job.id}
-                className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-3"
-              >
+              <div key={job.id} className="flex items-center justify-between card-inner p-3">
                 <div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
                     {job.status_message || 'Fetch Job'}
@@ -320,7 +317,7 @@ export default function OverviewTab() {
 
             {/* Storage by Satellite */}
             {Object.keys(bySatellite).length > 0 && (
-              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+              <div className="card p-6 space-y-4">
                 <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">
                   Storage by Satellite
                 </h4>
@@ -347,16 +344,13 @@ export default function OverviewTab() {
 
             {/* Storage by Band */}
             {Object.keys(storageBands).length > 0 && (
-              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+              <div className="card p-6 space-y-4">
                 <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">
                   Storage by Band
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Object.entries(storageBands).map(([bandKey, size]) => (
-                    <div
-                      key={bandKey}
-                      className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 space-y-2"
-                    >
+                    <div key={bandKey} className="card-inner p-3 space-y-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {bandKey}
                       </div>

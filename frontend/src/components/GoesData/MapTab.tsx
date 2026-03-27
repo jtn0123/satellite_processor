@@ -126,7 +126,7 @@ export default function MapTab() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 card p-6">
         <div>
           <label
             htmlFor="map-satellite"
@@ -209,10 +209,7 @@ export default function MapTab() {
       </div>
 
       {/* Map */}
-      <div
-        className="relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden"
-        style={{ height: '600px' }}
-      >
+      <div className="relative card overflow-hidden" style={{ height: '600px' }}>
         {frameLoading && (
           <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/30 pointer-events-none">
             <div className="flex items-center gap-2 bg-gray-900/80 text-white px-4 py-2 rounded-lg">

@@ -16,7 +16,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('Layout', () => {
   it('renders sidebar with app name', () => {
     render(<Layout />, { wrapper });
-    expect(screen.getAllByText('SatTracker').length).toBeGreaterThan(0);
+    // Branding is split: <span>Sat</span><span class="text-primary">Tracker</span>
+    expect(screen.getAllByText('Sat').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tracker').length).toBeGreaterThan(0);
   });
 
   it('renders navigation links', () => {

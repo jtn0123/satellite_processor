@@ -11,29 +11,19 @@ function SkeletonItem({
   switch (variant) {
     case 'card':
       return (
-        <div
-          className={`bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden ${className}`}
-        >
-          <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
+        <div className={`card overflow-hidden ${className}`}>
+          <div className="aspect-video skeleton-shimmer rounded-t" />
           <div className="p-3 space-y-2">
-            <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
-            <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
+            <div className="h-3 skeleton-shimmer rounded w-3/4" />
+            <div className="h-3 skeleton-shimmer rounded w-1/2" />
           </div>
         </div>
       );
     case 'thumbnail':
-      return (
-        <div
-          className={`aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded ${className}`}
-        />
-      );
+      return <div className={`aspect-video skeleton-shimmer rounded ${className}`} />;
     case 'text':
     default:
-      return (
-        <div
-          className={`h-4 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4 ${className}`}
-        />
-      );
+      return <div className={`h-4 skeleton-shimmer rounded w-3/4 ${className}`} />;
   }
 }
 

@@ -498,13 +498,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           autoFetch={autoFetch}
           onAutoFetchChange={(v) => setAutoFetch(v)}
           autoFetchDisabled={isHimawariSatellite(satellite) || band === 'GEOCOLOR' || isMeso}
-          autoFetchDisabledReason={
-            isHimawariSatellite(satellite)
-              ? 'Auto-fetch not yet available for Himawari'
-              : isMeso
-                ? 'Auto-fetch not available for mesoscale sectors'
-                : 'Auto-fetch not available for GeoColor — CDN images update automatically'
-          }
+          autoFetchDisabledReason={getAutoFetchDisabledReason(satellite, isMeso)}
         />
       </div>
 

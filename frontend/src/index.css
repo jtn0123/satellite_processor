@@ -858,7 +858,7 @@ header {
 }
 
 /* Sidebar light mode */
-.sidebar-light {
+:root:not(.dark) .sidebar-light {
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
 }
 

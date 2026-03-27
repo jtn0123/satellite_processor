@@ -187,9 +187,8 @@ export default function Dashboard() {
 
       {/* System Health — horizontal status strip */}
       {health && (
-        <div
+        <output
           className="card p-3 flex items-center gap-4 flex-wrap"
-          role="status"
           aria-label="System health status"
         >
           <div className="flex items-center gap-2">
@@ -238,7 +237,7 @@ export default function Dashboard() {
               </div>
             );
           })}
-        </div>
+        </output>
       )}
 
       {/* GOES stats error fallback */}
@@ -298,7 +297,7 @@ export default function Dashboard() {
       {goesStats && totalGoesFrames > 0 && (
         <div className="glass-card p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <span className="w-1 h-5 bg-primary rounded-full" />
+            <span className="w-1 h-5 bg-primary rounded-full" aria-hidden="true" />
             <Satellite className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Satellite Data</h2>
           </div>
@@ -529,8 +528,8 @@ export default function Dashboard() {
       {/* Recent Jobs — full width */}
       <div>
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <span className="w-1 h-5 bg-violet-400 rounded-full" />
-          Recent Jobs
+          <span className="w-1 h-5 bg-violet-400 rounded-full" aria-hidden="true" />
+          <span>Recent Jobs</span>
         </h2>
         <JobList onSelect={(id) => navigate(`/jobs?id=${id}`)} limit={5} />
       </div>

@@ -10,10 +10,19 @@ export function useCountUp(target: number, duration = 800): number {
     const diff = target - start;
     if (diff === 0) return;
 
+    // Skip animation when user prefers reduced motion
+    const prefersReducedMotion =
+      globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+
     const startTime = performance.now();
     let raf: number;
 
     const step = (now: number) => {
+      if (prefersReducedMotion) {
+        setValue(target);
+        prev.current = target;
+        return;
+      }
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic

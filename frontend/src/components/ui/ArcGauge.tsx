@@ -12,9 +12,10 @@ export default function ArcGauge({
   size = 48,
   strokeWidth = 4,
 }: Readonly<ArcGaugeProps>) {
+  const clampedPercent = Math.max(0, Math.min(100, Number.isFinite(percent) ? percent : 0));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percent / 100) * circumference;
+  const offset = circumference - (clampedPercent / 100) * circumference;
 
   return (
     <svg width={size} height={size} className="transform -rotate-90">

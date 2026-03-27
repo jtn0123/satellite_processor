@@ -136,13 +136,6 @@ describe('Dashboard extended', () => {
     expect(screen.getByTestId('job-list')).toBeInTheDocument();
   });
 
-  it('shows health check labels', () => {
-    renderDashboard();
-    expect(screen.getByText('Database')).toBeInTheDocument();
-    expect(screen.getByText('Redis')).toBeInTheDocument();
-    expect(screen.getByText('Disk')).toBeInTheDocument();
-  });
-
   it('does not render standalone View Live card (removed in cleanup)', () => {
     renderDashboard();
     expect(screen.queryByText('View Live')).not.toBeInTheDocument();

@@ -20,7 +20,7 @@ export default function EmptyState({
     <div className="flex flex-col items-center justify-center py-16 space-y-4">
       <div className="relative w-16 h-16 flex items-center justify-center">
         {/* Rotating dashed outer ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-dashed border-primary/30 animate-[spin_12s_linear_infinite]" />
+        <div className="absolute inset-0 rounded-full border-2 border-dashed border-primary/30 motion-safe:animate-[spin_12s_linear_infinite]" />
         <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-space-800 flex items-center justify-center text-gray-400 dark:text-slate-500">
           {icon}
         </div>

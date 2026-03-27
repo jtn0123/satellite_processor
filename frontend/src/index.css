@@ -576,6 +576,9 @@ input[type='range']:focus-visible {
 .stagger-reveal > *:nth-child(8) {
   animation-delay: 420ms;
 }
+.stagger-reveal > *:nth-child(n + 9) {
+  animation-delay: 480ms;
+}
 
 /* Number glow — brief flash when stat updates */
 @keyframes number-glow {
@@ -982,6 +985,10 @@ header {
   .animate-soft-pulse,
   .animate-glow-pulse {
     animation-duration: 0s !important;
+  }
+  .skeleton-shimmer {
+    animation: none !important;
+    background: var(--color-space-800) !important;
   }
   .modal-panel,
   .modal-overlay,

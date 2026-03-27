@@ -24,7 +24,7 @@ interface DashboardStatsProps {
 export default function DashboardStats({ stats, isLoading }: Readonly<DashboardStatsProps>) {
   const storageUsed = stats?.storage?.used ?? 0;
   const storageTotal = stats?.storage?.total ?? 1;
-  const storagePercent = Math.round((storageUsed / storageTotal) * 100);
+  const storagePercent = storageTotal > 0 ? Math.round((storageUsed / storageTotal) * 100) : 0;
 
   return (
     <>

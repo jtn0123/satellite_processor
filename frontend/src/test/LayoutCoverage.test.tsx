@@ -67,8 +67,8 @@ describe('Layout coverage boost', () => {
     renderLayout();
     // Should not throw
     // Branding is split: <span>Sat</span><span class="text-primary">Tracker</span>
-    expect(screen.getAllByText(/Sat/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Tracker/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sat').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tracker').length).toBeGreaterThan(0);
   });
 
   it('renders desktop sidebar with all nav links', () => {

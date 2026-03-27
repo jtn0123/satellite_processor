@@ -83,7 +83,7 @@ export default function Dashboard() {
 
   const storageUsed = stats?.storage?.used ?? 0;
   const storageTotal = stats?.storage?.total ?? 1;
-  const storagePercent = Math.round((storageUsed / storageTotal) * 100);
+  const storagePercent = storageTotal > 0 ? Math.round((storageUsed / storageTotal) * 100) : 0;
 
   const checks = health?.checks ?? {};
 
@@ -187,17 +187,22 @@ export default function Dashboard() {
 
       {/* System Health — horizontal status strip */}
       {health && (
-        <div className="card p-3 flex items-center gap-4 flex-wrap">
+        <div
+          className="card p-3 flex items-center gap-4 flex-wrap"
+          role="status"
+          aria-label="System health status"
+        >
           <div className="flex items-center gap-2">
             {(() => {
               const cfg = statusIcon[health.status] ?? statusIcon.ok;
               const Icon = cfg.icon;
               return (
                 <>
-                  <Icon className={`w-4 h-4 ${cfg.color}`} />
+                  <Icon className={`w-4 h-4 ${cfg.color}`} aria-hidden="true" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                     System
                   </span>
+                  <span className="sr-only">{health.status}</span>
                 </>
               );
             })()}
@@ -217,8 +222,9 @@ export default function Dashboard() {
                 key={item.key}
                 className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300"
               >
-                <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} aria-hidden="true" />
                 <span>{item.label}</span>
+                <span className="sr-only">{check.status}</span>
                 {check.latency_ms != null && (
                   <span className="text-gray-400 dark:text-slate-500 font-mono text-[10px]">
                     {check.latency_ms}ms

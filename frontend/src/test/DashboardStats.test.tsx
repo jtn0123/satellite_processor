@@ -29,9 +29,11 @@ describe('DashboardStats', () => {
     expect(screen.getByText('Total Jobs')).toBeInTheDocument();
     expect(screen.getByText('Active Jobs')).toBeInTheDocument();
     // StatCard uses useCountUp which animates values via requestAnimationFrame
-    // Check that stat-value elements exist
+    // Check that stat-value elements exist and contain numeric content
     const statValues = document.querySelectorAll('.stat-value');
     expect(statValues.length).toBeGreaterThan(0);
+    const hasNumericContent = Array.from(statValues).some((el) => /\d/.test(el.textContent ?? ''));
+    expect(hasNumericContent).toBe(true);
   });
 
   it('renders storage card with percentage', () => {

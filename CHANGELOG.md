@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/jtn0123/satellite_processor/compare/v1.40.1...v1.41.0) (2026-03-27)
+
+
+### Features
+
+* **frontend:** comprehensive visual redesign ([#366](https://github.com/jtn0123/satellite_processor/issues/366)) ([d08fe0f](https://github.com/jtn0123/satellite_processor/commit/d08fe0f216c5fd807d89055a634ef83f3283a66b)), closes [#06b6d4](https://github.com/jtn0123/satellite_processor/issues/06b6d4)
+
 ## [1.40.1](https://github.com/jtn0123/satellite_processor/compare/v1.40.0...v1.40.1) (2026-03-21)
 
 

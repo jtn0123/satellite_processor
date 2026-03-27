@@ -31,6 +31,7 @@ from ..utils import safe_remove, utcnow
 logger = logging.getLogger(__name__)
 
 _JOB_NOT_FOUND = "Job not found"
+_REVOKE_FAIL_MSG = "Failed to revoke Celery task %s"
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -241,7 +242,7 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
         except Exception:
-            logger.warning("Failed to revoke Celery task %s", task_id)
+            logger.warning(_REVOKE_FAIL_MSG, task_id)
 
     # Clean up partial output files
     output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
@@ -286,7 +287,7 @@ async def bulk_delete_jobs(
             try:
                 celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
             except Exception:
-                logger.warning("Failed to revoke Celery task %s", task_id)
+                logger.warning(_REVOKE_FAIL_MSG, task_id)
 
         if use_delete_files:
             total_bytes_freed += await _delete_job_files(db, job)
@@ -323,7 +324,7 @@ async def delete_job(
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
         except Exception:
-            logger.warning("Failed to revoke Celery task %s", task_id)
+            logger.warning(_REVOKE_FAIL_MSG, task_id)
 
     bytes_freed = 0
     if delete_files:

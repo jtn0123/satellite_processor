@@ -26,6 +26,12 @@ import type { MonitorPreset } from '../monitorPresets';
 import { isHimawariSatellite } from '../../../utils/sectorHelpers';
 import type { SectorOption, BandOption } from '../liveTabUtils';
 
+function getAutoFetchDisabledReason(satellite: string, isMeso: boolean): string {
+  if (isHimawariSatellite(satellite)) return 'Auto-fetch not yet available for Himawari';
+  if (isMeso) return 'Auto-fetch not available for mesoscale sectors';
+  return 'Auto-fetch not available for GeoColor — CDN images update automatically';
+}
+
 interface LiveImageAreaProps {
   readonly containerRef: RefObject<HTMLDivElement | null>;
   readonly imageRef: RefObject<HTMLImageElement | null>;
@@ -403,13 +409,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
             compareMode={compareMode}
             onCompareModeChange={setCompareMode}
             autoFetchDisabled={isHimawariSatellite(satellite) || band === 'GEOCOLOR' || isMeso}
-            autoFetchDisabledReason={
-              isHimawariSatellite(satellite)
-                ? 'Auto-fetch not yet available for Himawari'
-                : isMeso
-                  ? 'Auto-fetch not available for mesoscale sectors'
-                  : 'Auto-fetch not available for GeoColor — CDN images update automatically'
-            }
+            autoFetchDisabledReason={getAutoFetchDisabledReason(satellite, isMeso)}
           />
 
           <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">

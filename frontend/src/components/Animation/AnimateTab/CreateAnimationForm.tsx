@@ -1,7 +1,14 @@
 import { Film, Sliders, Clock } from 'lucide-react';
 import type { AnimationConfig, PreviewRangeResponse } from '../types';
 import type { CollectionType } from '../../GoesData/types';
-import { SATELLITES, SECTORS, BANDS, QUICK_HOURS } from '../types';
+import {
+  SATELLITES,
+  SECTORS,
+  GOES_BANDS,
+  HIMAWARI_BANDS,
+  HIMAWARI_SATELLITES,
+  QUICK_HOURS,
+} from '../types';
 import FrameRangePreview from '../FrameRangePreview';
 
 interface CreateAnimationFormProps {
@@ -149,7 +156,10 @@ export function CreateAnimationForm({
                   onChange={(e) => updateConfig({ band: e.target.value })}
                   className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
                 >
-                  {BANDS.map((b) => (
+                  {(HIMAWARI_SATELLITES.includes(config.satellite)
+                    ? HIMAWARI_BANDS
+                    : GOES_BANDS
+                  ).map((b) => (
                     <option key={b} value={b}>
                       {b}
                     </option>

@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useCountUp } from '../hooks/useCountUp';
 
 describe('useCountUp', () => {
-  let rafCallbacks: Array<(time: number) => void>;
+  let rafCallbacks: ((time: number) => void)[];
   let rafId: number;
   let originalRaf: typeof requestAnimationFrame;
   let originalCancelRaf: typeof cancelAnimationFrame;

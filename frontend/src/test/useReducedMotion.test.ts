@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
 describe('useReducedMotion', () => {
-  let listeners: Array<() => void>;
+  let listeners: (() => void)[];
 
   function mockMatchMedia(matches: boolean) {
     listeners = [];

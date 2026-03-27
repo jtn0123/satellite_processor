@@ -16,7 +16,14 @@ function getAutoFetchButtonClass(autoFetch: boolean, disabled?: boolean): string
   return 'bg-white/10 border border-white/20 text-white/80';
 }
 
-export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFetch, onAutoFetchChange, autoFetchDisabled, autoFetchDisabledReason }: Readonly<MobileControlsFabProps>) {
+export default function MobileControlsFab({
+  monitoring,
+  onToggleMonitor,
+  autoFetch,
+  onAutoFetchChange,
+  autoFetchDisabled,
+  autoFetchDisabledReason,
+}: Readonly<MobileControlsFabProps>) {
   const [open, setOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
   const openedAt = useRef<number>(0);
@@ -30,16 +37,26 @@ export default function MobileControlsFab({ monitoring, onToggleMonitor, autoFet
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [open]);
 
   return (
     <div ref={fabRef} className="relative">
       {open && (
-        <div id="fab-menu" className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]" data-testid="fab-menu">
+        <div
+          id="fab-menu"
+          className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]"
+          data-testid="fab-menu"
+        >
           <button
             type="button"
-            onClick={() => { onToggleMonitor(); setOpen(false); }}
+            onClick={() => {
+              onToggleMonitor();
+              setOpen(false);
+            }}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
               monitoring
                 ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'

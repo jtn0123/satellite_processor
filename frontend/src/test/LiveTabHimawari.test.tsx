@@ -33,9 +33,14 @@ const PRODUCTS = {
 };
 
 const FRAME = {
-  id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'GEOCOLOR',
+  id: '1',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'GEOCOLOR',
   capture_time: new Date(Date.now() - 600000).toISOString(),
-  file_size: 1024, width: 5424, height: 3000,
+  file_size: 1024,
+  width: 5424,
+  height: 3000,
   image_url: '/api/satellite/frames/test-id/image',
   thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
@@ -88,7 +93,9 @@ describe('LiveTab - Himawari satellite switching', () => {
 
     // Expand satellite options and select Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     // Verify status pill shows Himawari-9 and TrueColor
@@ -105,7 +112,9 @@ describe('LiveTab - Himawari satellite switching', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     // Wait for switch to complete
@@ -149,7 +158,9 @@ describe('LiveTab - Himawari satellite switching', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     await waitFor(() => {
@@ -169,7 +180,9 @@ describe('LiveTab - Himawari satellite switching', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     await waitFor(() => {
@@ -214,7 +227,9 @@ describe('LiveTab - Himawari satellite switching', () => {
 
     // Switch to Himawari-9
     fireEvent.click(screen.getByTestId('pill-strip-satellite'));
-    await waitFor(() => expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('satellite-option-Himawari-9')).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByTestId('satellite-option-Himawari-9'));
 
     // Should show "no preview available" for Himawari

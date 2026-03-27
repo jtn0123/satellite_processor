@@ -23,7 +23,15 @@ function makeContainerRef(width: number, height: number): RefObject<HTMLElement>
   return {
     current: {
       getBoundingClientRect: () => ({
-        width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}),
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
       }),
     } as unknown as HTMLElement,
   };
@@ -42,7 +50,7 @@ function makeWheelEvent(deltaY: number, clientX = 0, clientY = 0) {
   return { deltaY, clientX, clientY, preventDefault: () => {} } as unknown as React.WheelEvent;
 }
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
+function makeTouchEvent(touches: { clientX: number; clientY: number }[]) {
   return { touches, preventDefault: () => {} } as unknown as React.TouchEvent;
 }
 
@@ -79,27 +87,21 @@ function coverScale(containerW: number, containerH: number, imageAspect: number)
 
 describe('CdnImage: always uses object-contain (never object-cover)', () => {
   it('renders object-contain class on img element', () => {
-    const { container } = render(
-      <CdnImage src="https://example.com/test.png" alt="test" />,
-    );
+    const { container } = render(<CdnImage src="https://example.com/test.png" alt="test" />);
     const img = container.querySelector('img');
     expect(img).not.toBeNull();
     expect(img!.className).toContain('object-contain');
   });
 
   it('does NOT apply object-cover class', () => {
-    const { container } = render(
-      <CdnImage src="https://example.com/test.png" alt="test" />,
-    );
+    const { container } = render(<CdnImage src="https://example.com/test.png" alt="test" />);
     const img = container.querySelector('img');
     expect(img).not.toBeNull();
     expect(img!.className).not.toContain('object-cover');
   });
 
   it('object-contain is unconditional', () => {
-    const { container } = render(
-      <CdnImage src="https://example.com/test.png" alt="test" />,
-    );
+    const { container } = render(<CdnImage src="https://example.com/test.png" alt="test" />);
     const img = container.querySelector('img');
     expect(img!.className).toContain('object-contain');
     expect(img!.className).not.toContain('object-cover');
@@ -115,7 +117,10 @@ describe('clampTranslate: full-edge pan reachability', () => {
   // to see every edge of the image (under object-contain layout).
 
   it('wide image (16:9) in square container at scale 3 — can reach right edge', () => {
-    const containerW = 800, containerH = 800, aspect = 16 / 9, scale = 3;
+    const containerW = 800,
+      containerH = 800,
+      aspect = 16 / 9,
+      scale = 3;
     const { renderedW } = objectContainDims(containerW, containerH, aspect);
     // renderedW = min(800, 800 * 16/9) = min(800, 1422) = 800
     // maxX = (800 * 3 - 800) / 2 = 800
@@ -126,7 +131,10 @@ describe('clampTranslate: full-edge pan reachability', () => {
   });
 
   it('wide image (16:9) in square container at scale 3 — can reach left edge', () => {
-    const containerW = 800, containerH = 800, aspect = 16 / 9, scale = 3;
+    const containerW = 800,
+      containerH = 800,
+      aspect = 16 / 9,
+      scale = 3;
     const { renderedW } = objectContainDims(containerW, containerH, aspect);
     const expectedMinX = -(renderedW * scale - containerW) / 2;
     const result = clampTranslate(-9999, 0, scale, containerW, containerH, aspect);
@@ -135,7 +143,10 @@ describe('clampTranslate: full-edge pan reachability', () => {
   });
 
   it('tall image (3:5) in wide container at scale 2 — can reach bottom edge', () => {
-    const containerW = 1200, containerH = 600, aspect = 3 / 5, scale = 2;
+    const containerW = 1200,
+      containerH = 600,
+      aspect = 3 / 5,
+      scale = 2;
     const { renderedH } = objectContainDims(containerW, containerH, aspect);
     // renderedH = min(600, 1200 / (3/5)) = min(600, 2000) = 600
     const expectedMaxY = (renderedH * scale - containerH) / 2;
@@ -144,7 +155,10 @@ describe('clampTranslate: full-edge pan reachability', () => {
   });
 
   it('tall image (3:5) in wide container at scale 2 — can reach top edge', () => {
-    const containerW = 1200, containerH = 600, aspect = 3 / 5, scale = 2;
+    const containerW = 1200,
+      containerH = 600,
+      aspect = 3 / 5,
+      scale = 2;
     const { renderedH } = objectContainDims(containerW, containerH, aspect);
     const expectedMinY = -(renderedH * scale - containerH) / 2;
     const result = clampTranslate(0, -9999, scale, containerW, containerH, aspect);
@@ -173,23 +187,30 @@ describe('clampTranslate: full-edge pan reachability', () => {
     { aspect: 4 / 3, label: '4:3' },
     { aspect: 1, label: '1:1' },
     { aspect: 3 / 4, label: '3:4' },
-  ])('asymmetric aspect $label at scale 2 in 800x600 container — full edge access', ({ aspect }) => {
-    const cw = 800, ch = 600, scale = 2;
-    const { renderedW, renderedH } = objectContainDims(cw, ch, aspect);
-    const expectedMaxX = Math.max(0, (renderedW * scale - cw) / 2);
-    const expectedMaxY = Math.max(0, (renderedH * scale - ch) / 2);
+  ])(
+    'asymmetric aspect $label at scale 2 in 800x600 container — full edge access',
+    ({ aspect }) => {
+      const cw = 800,
+        ch = 600,
+        scale = 2;
+      const { renderedW, renderedH } = objectContainDims(cw, ch, aspect);
+      const expectedMaxX = Math.max(0, (renderedW * scale - cw) / 2);
+      const expectedMaxY = Math.max(0, (renderedH * scale - ch) / 2);
 
-    const maxResult = clampTranslate(9999, 9999, scale, cw, ch, aspect);
-    expect(maxResult.tx).toBe(expectedMaxX);
-    expect(maxResult.ty).toBe(expectedMaxY);
-  });
+      const maxResult = clampTranslate(9999, 9999, scale, cw, ch, aspect);
+      expect(maxResult.tx).toBe(expectedMaxX);
+      expect(maxResult.ty).toBe(expectedMaxY);
+    },
+  );
 
   it.each([
     { aspect: 2 / 1, label: '2:1' },
     { aspect: 16 / 9, label: '16:9' },
     { aspect: 5 / 3, label: '5:3' },
   ])('$label image at scale 5 in 1920x1080 container — large pan range', ({ aspect }) => {
-    const cw = 1920, ch = 1080, scale = 5;
+    const cw = 1920,
+      ch = 1080,
+      scale = 5;
     const { renderedW, renderedH } = objectContainDims(cw, ch, aspect);
     const expectedMaxX = Math.max(0, (renderedW * scale - cw) / 2);
     const expectedMaxY = Math.max(0, (renderedH * scale - ch) / 2);
@@ -268,9 +289,7 @@ describe('useImageZoom: eliminateLetterbox cover-scale', () => {
     // Same 5:3 in 800x800, but without eliminateLetterbox
     const containerRef = makeContainerRef(800, 800);
     const imageRef = makeImageRef(5000, 3000);
-    const { result } = renderHook(() =>
-      useImageZoom({ containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
     // One zoom tick (scale ~1.15)
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100)));
@@ -292,8 +311,12 @@ describe('useImageZoom: eliminateLetterbox cover-scale', () => {
 
     // Zoom in once then pan hard right
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100)));
-    act(() => result.current.handlers.onMouseDown({ clientX: 400, clientY: 400 } as React.MouseEvent));
-    act(() => result.current.handlers.onMouseMove({ clientX: 9999, clientY: 400 } as React.MouseEvent));
+    act(() =>
+      result.current.handlers.onMouseDown({ clientX: 400, clientY: 400 } as React.MouseEvent),
+    );
+    act(() =>
+      result.current.handlers.onMouseMove({ clientX: 9999, clientY: 400 } as React.MouseEvent),
+    );
 
     const transform = result.current.style.transform as string;
     const { tx, scale: visualScale } = parseTransform(transform);
@@ -315,9 +338,7 @@ describe('useImageZoom: zoom toward cursor', () => {
   it('wheel zoom at right edge of container shifts translate left', () => {
     const containerRef = makeContainerRef(800, 600);
     const imageRef = makeImageRef(5000, 3000);
-    const { result } = renderHook(() =>
-      useImageZoom({ containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
     // Zoom in with cursor at right edge (800, 300)
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100, 800, 300)));
@@ -334,9 +355,7 @@ describe('useImageZoom: zoom toward cursor', () => {
   it('wheel zoom at left edge of container shifts translate right', () => {
     const containerRef = makeContainerRef(800, 600);
     const imageRef = makeImageRef(5000, 3000);
-    const { result } = renderHook(() =>
-      useImageZoom({ containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
     // Zoom in with cursor at left edge (0, 300)
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100, 0, 300)));
@@ -351,9 +370,7 @@ describe('useImageZoom: zoom toward cursor', () => {
   it('wheel zoom at center keeps translate near zero', () => {
     const containerRef = makeContainerRef(800, 600);
     const imageRef = makeImageRef(5000, 3000);
-    const { result } = renderHook(() =>
-      useImageZoom({ containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
     // Zoom in at center (400, 300)
     act(() => result.current.handlers.onWheel(makeWheelEvent(-100, 400, 300)));
@@ -368,9 +385,7 @@ describe('useImageZoom: zoom toward cursor', () => {
   it('pinch zoom at off-center point preserves focal point', () => {
     const containerRef = makeContainerRef(800, 600);
     const imageRef = makeImageRef(5000, 3000);
-    const { result } = renderHook(() =>
-      useImageZoom({ containerRef, imageRef }),
-    );
+    const { result } = renderHook(() => useImageZoom({ containerRef, imageRef }));
 
     // Start pinch at offset position (midpoint ~150, 100)
     const startTouches = [
@@ -416,7 +431,9 @@ describe('edge reachability regression', () => {
     // This test verifies the clamp math is correct for object-contain
     // (which is what the code should use).
     const aspect = 2 / 1;
-    const cw = 400, ch = 300, scale = 3;
+    const cw = 400,
+      ch = 300,
+      scale = 3;
     const maxResult = clampTranslate(9999, 9999, scale, cw, ch, aspect);
     const minResult = clampTranslate(-9999, -9999, scale, cw, ch, aspect);
 
@@ -433,7 +450,9 @@ describe('edge reachability regression', () => {
     // Typical CONUS image: ~5424x3000 (aspect ≈ 1.808)
     // Typical container: 1200x700
     const aspect = 5424 / 3000; // ~1.808
-    const cw = 1200, ch = 700, scale = 3;
+    const cw = 1200,
+      ch = 700,
+      scale = 3;
     const { renderedW, renderedH } = objectContainDims(cw, ch, aspect);
     // renderedW = min(1200, 700*1.808) = min(1200, 1265.6) = 1200
     // renderedH = min(700, 1200/1.808) = min(700, 663.7) = 663.7
@@ -452,7 +471,9 @@ describe('edge reachability regression', () => {
     // Full Disk: roughly square (5424x5424, aspect = 1)
     // Container: 1920x1080
     const aspect = 1;
-    const cw = 1920, ch = 1080, scale = 5;
+    const cw = 1920,
+      ch = 1080,
+      scale = 5;
     const { renderedW, renderedH } = objectContainDims(cw, ch, aspect);
     // renderedW = min(1920, 1080*1) = 1080
     // renderedH = min(1080, 1920/1) = 1080

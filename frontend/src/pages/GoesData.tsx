@@ -1,12 +1,6 @@
 import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  Satellite,
-  Download,
-  Grid3X3,
-  Map,
-  BarChart3,
-} from 'lucide-react';
+import { Satellite, Download, Grid3X3, Map, BarChart3 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
@@ -35,7 +29,9 @@ const tabs: TabDef[] = [
   { id: 'stats', label: 'Stats', icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
-const tabLabels: Record<TabId, string> = Object.fromEntries(tabs.map((t) => [t.id, t.label])) as Record<TabId, string>;
+const tabLabels: Record<TabId, string> = Object.fromEntries(
+  tabs.map((t) => [t.id, t.label]),
+) as Record<TabId, string>;
 const allTabIds: TabId[] = tabs.map((t) => t.id);
 
 function TabLoadingFallback() {
@@ -75,26 +71,35 @@ export default function GoesData() {
   const [subView, setSubView] = useState<string | null>(null);
 
   // Wrap changeTab to also update URL
-  const changeTab = useCallback((tab: TabId) => {
-    setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
-  }, [setSearchParams]);
+  const changeTab = useCallback(
+    (tab: TabId) => {
+      setSearchParams(tab === 'browse' ? {} : { tab }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   // Keyboard shortcuts: 1-4 switch tabs
   const shortcuts = useMemo(() => {
     const map: Record<string, () => void> = {};
     allTabIds.forEach((id, i) => {
       const key = String(i + 1);
-      map[key] = () => { changeTab(id); setSubView(null); };
+      map[key] = () => {
+        changeTab(id);
+        setSubView(null);
+      };
     });
     return map;
   }, [changeTab]);
 
   useHotkeys(shortcuts);
 
-  const handleSwipe = useCallback((tab: TabId) => {
-    changeTab(tab);
-    setSubView(null);
-  }, [changeTab]);
+  const handleSwipe = useCallback(
+    (tab: TabId) => {
+      changeTab(tab);
+      setSubView(null);
+    },
+    [changeTab],
+  );
 
   const swipeRef = useSwipeTabs({
     tabs: allTabIds,
@@ -160,9 +165,7 @@ export default function GoesData() {
     return (
       <TabErrorBoundary tabName={tab.name} key={activeTab}>
         <Suspense fallback={<TabLoadingFallback />}>
-          <div className="content-fade-in">
-            {tab.component}
-          </div>
+          <div className="content-fade-in">{tab.component}</div>
         </Suspense>
       </TabErrorBoundary>
     );
@@ -174,17 +177,26 @@ export default function GoesData() {
         <Satellite className="w-7 h-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Browse & Fetch</h1>
-          <div className="hidden md:block"><Breadcrumb segments={breadcrumbSegments} /></div>
+          <div className="hidden md:block">
+            <Breadcrumb segments={breadcrumbSegments} />
+          </div>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5" role="tablist" aria-label="Satellite Data tabs">
+      <div
+        className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center -mx-4 px-4 md:mx-0 md:px-1.5"
+        role="tablist"
+        aria-label="Satellite Data tabs"
+      >
         {tabs.map((tab) => (
           <button
             type="button"
             key={tab.id}
-            onClick={() => { changeTab(tab.id); setSubView(null); }}
+            onClick={() => {
+              changeTab(tab.id);
+              setSubView(null);
+            }}
             role="tab"
             aria-label={`${tab.label} tab`}
             aria-selected={activeTab === tab.id}

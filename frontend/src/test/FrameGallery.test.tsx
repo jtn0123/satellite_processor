@@ -6,7 +6,8 @@ import FrameGallery from '../components/GoesData/FrameGallery';
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn((url: string) => {
-      if (url.includes('stats')) return Promise.resolve({ data: { by_satellite: { 'GOES-16': 10 }, by_band: { C02: 5 } } });
+      if (url.includes('stats'))
+        return Promise.resolve({ data: { by_satellite: { 'GOES-16': 10 }, by_band: { C02: 5 } } });
       return Promise.resolve({ data: { items: [], total: 0, limit: 24 } });
     }),
   },

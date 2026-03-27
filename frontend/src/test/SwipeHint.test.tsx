@@ -22,7 +22,9 @@ describe('SwipeHint', () => {
     render(<SwipeHint />);
     expect(screen.getByTestId('swipe-hint-left')).toBeInTheDocument();
 
-    act(() => { vi.advanceTimersByTime(3600); });
+    act(() => {
+      vi.advanceTimersByTime(3600);
+    });
 
     expect(screen.queryByTestId('swipe-hint-left')).not.toBeInTheDocument();
     expect(localStorage.getItem('liveSwipeHintSeen')).toBe('1');

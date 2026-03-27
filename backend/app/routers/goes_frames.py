@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import io
 import logging
-import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -36,6 +35,7 @@ from ..models.goes_data import (
 )
 from ..models.pagination import PaginatedResponse
 from ..services.cache import get_cached, invalidate, make_cache_key
+from ..utils import safe_remove
 from ..utils.path_validation import validate_file_path
 
 logger = logging.getLogger(__name__)
@@ -197,10 +197,7 @@ async def list_frames(
         )
 
     sort_col = getattr(GoesFrame, sort, GoesFrame.capture_time)
-    if order == "desc":
-        query = query.order_by(sort_col.desc())
-    else:
-        query = query.order_by(sort_col.asc())
+    query = query.order_by(sort_col.desc()) if order == "desc" else query.order_by(sort_col.asc())
 
     total = (await db.execute(count_query)).scalar() or 0
     offset = (page - 1) * limit
@@ -358,10 +355,7 @@ async def bulk_delete_frames(
     for frame in frames:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+                safe_remove(path)
 
     # Bug #17: Delete FK references before deleting frames
     await db.execute(delete(CollectionFrame).where(CollectionFrame.frame_id.in_(payload.ids)))

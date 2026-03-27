@@ -26,22 +26,58 @@ interface LatestFrame {
 
 const SECTOR_BOUNDS: Record<string, Record<string, LatLngBoundsExpression>> = {
   'GOES-16': {
-    FullDisk: [[-81.33, -156.29], [81.33, 6.29]],
-    CONUS: [[14, -135], [58, -60]],
-    Mesoscale1: [[24, -110], [50, -70]],
-    Mesoscale2: [[24, -110], [50, -70]],
+    FullDisk: [
+      [-81.33, -156.29],
+      [81.33, 6.29],
+    ],
+    CONUS: [
+      [14, -135],
+      [58, -60],
+    ],
+    Mesoscale1: [
+      [24, -110],
+      [50, -70],
+    ],
+    Mesoscale2: [
+      [24, -110],
+      [50, -70],
+    ],
   },
   'GOES-18': {
-    FullDisk: [[-81.33, -216.29], [81.33, -53.71]],
-    CONUS: [[14, -170], [58, -95]],
-    Mesoscale1: [[24, -145], [50, -105]],
-    Mesoscale2: [[24, -145], [50, -105]],
+    FullDisk: [
+      [-81.33, -216.29],
+      [81.33, -53.71],
+    ],
+    CONUS: [
+      [14, -170],
+      [58, -95],
+    ],
+    Mesoscale1: [
+      [24, -145],
+      [50, -105],
+    ],
+    Mesoscale2: [
+      [24, -145],
+      [50, -105],
+    ],
   },
   'GOES-19': {
-    FullDisk: [[-81.33, -156.29], [81.33, 6.29]],
-    CONUS: [[14, -135], [58, -60]],
-    Mesoscale1: [[24, -110], [50, -70]],
-    Mesoscale2: [[24, -110], [50, -70]],
+    FullDisk: [
+      [-81.33, -156.29],
+      [81.33, 6.29],
+    ],
+    CONUS: [
+      [14, -135],
+      [58, -60],
+    ],
+    Mesoscale1: [
+      [24, -110],
+      [50, -70],
+    ],
+    Mesoscale2: [
+      [24, -110],
+      [50, -70],
+    ],
   },
 };
 
@@ -64,9 +100,14 @@ export default function MapTab() {
     queryFn: () => api.get('/satellite/products').then((r) => r.data),
   });
 
-  const { data: frame, isLoading: frameLoading, isError: frameError } = useQuery<LatestFrame>({
+  const {
+    data: frame,
+    isLoading: frameLoading,
+    isError: frameError,
+  } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () => api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () =>
+      api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     retry: false,
   });
 
@@ -87,33 +128,79 @@ export default function MapTab() {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
         <div>
-          <label htmlFor="map-satellite" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Satellite</label>
-          <select id="map-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-            {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+          <label
+            htmlFor="map-satellite"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Satellite
+          </label>
+          <select
+            id="map-satellite"
+            value={satellite}
+            onChange={(e) => setSatellite(e.target.value)}
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden"
+          >
+            {(products?.satellites ?? []).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </div>
         <div>
-          <label htmlFor="map-sector" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Sector</label>
-          <select id="map-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-            {(products?.sectors ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          <label
+            htmlFor="map-sector"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Sector
+          </label>
+          <select
+            id="map-sector"
+            value={sector}
+            onChange={(e) => setSector(e.target.value)}
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden"
+          >
+            {(products?.sectors ?? []).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
           </select>
         </div>
         <div>
-          <label htmlFor="map-band" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Band</label>
-          <select id="map-band" value={band} onChange={(e) => setBand(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden">
-            {(products?.bands ?? []).map((b) => <option key={b.id} value={b.id}>{b.id} — {b.description}</option>)}
+          <label
+            htmlFor="map-band"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
+            Band
+          </label>
+          <select
+            id="map-band"
+            value={band}
+            onChange={(e) => setBand(e.target.value)}
+            className="w-full rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-hidden"
+          >
+            {(products?.bands ?? []).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.id} — {b.description}
+              </option>
+            ))}
           </select>
         </div>
         <div className="md:col-span-2">
-          <label htmlFor="map-overlay-opacity" className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">
+          <label
+            htmlFor="map-overlay-opacity"
+            className="block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1"
+          >
             Overlay Opacity: {Math.round(opacity * 100)}%
           </label>
           <input
             id="map-overlay-opacity"
-            type="range" min={0} max={1} step={0.05} value={opacity}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={opacity}
             onChange={(e) => setOpacity(Number(e.target.value))}
             className="w-full accent-primary mt-1"
             aria-label={`Overlay opacity: ${Math.round(opacity * 100)}%`}
@@ -122,7 +209,10 @@ export default function MapTab() {
       </div>
 
       {/* Map */}
-      <div className="relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden" style={{ height: '600px' }}>
+      <div
+        className="relative bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden"
+        style={{ height: '600px' }}
+      >
         {frameLoading && (
           <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/30 pointer-events-none">
             <div className="flex items-center gap-2 bg-gray-900/80 text-white px-4 py-2 rounded-lg">
@@ -161,11 +251,7 @@ export default function MapTab() {
             </LayersControl.BaseLayer>
             {imageUrl && (
               <LayersControl.Overlay checked name="GOES Overlay">
-                <ImageOverlay
-                  url={imageUrl}
-                  bounds={bounds}
-                  opacity={opacity}
-                />
+                <ImageOverlay url={imageUrl} bounds={bounds} opacity={opacity} />
               </LayersControl.Overlay>
             )}
           </LayersControl>
@@ -176,7 +262,8 @@ export default function MapTab() {
       {frame ? (
         <div className="text-sm text-gray-500 dark:text-slate-400 flex items-center gap-2">
           <Satellite className="w-4 h-4" />
-          Showing {frame.satellite} · {frame.band} · {frame.sector} · captured {new Date(frame.capture_time).toLocaleString()}
+          Showing {frame.satellite} · {frame.band} · {frame.sector} · captured{' '}
+          {new Date(frame.capture_time).toLocaleString()}
         </div>
       ) : (
         <div className="text-sm text-gray-400 dark:text-slate-500">

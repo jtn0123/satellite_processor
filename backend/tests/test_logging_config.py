@@ -246,9 +246,8 @@ class TestRequestLoggingMiddleware:
         """If the app raises before sending response.start, status defaults to 500."""
         middleware = RequestLoggingMiddleware(raising_app)
         scope = {"type": "http", "method": "GET", "path": "/boom"}
-        with pytest.raises(RuntimeError):
-            with caplog.at_level(logging.INFO, logger="wide_event"):
-                await middleware(scope, AsyncMock(), AsyncMock())
+        with pytest.raises(RuntimeError), caplog.at_level(logging.INFO, logger="wide_event"):
+            await middleware(scope, AsyncMock(), AsyncMock())
         # No log record since exception propagated before log line
         # This tests that the middleware doesn't swallow exceptions
 
@@ -257,9 +256,8 @@ class TestRequestLoggingMiddleware:
         """When the app raises, the wide event includes error details."""
         middleware = RequestLoggingMiddleware(raising_app)
         scope = {"type": "http", "method": "GET", "path": "/boom"}
-        with pytest.raises(RuntimeError):
-            with caplog.at_level(logging.INFO, logger="wide_event"):
-                await middleware(scope, AsyncMock(), AsyncMock())
+        with pytest.raises(RuntimeError), caplog.at_level(logging.INFO, logger="wide_event"):
+            await middleware(scope, AsyncMock(), AsyncMock())
         # The finally block should still emit a log even on exception
         wide_records = [r for r in caplog.records if r.name == "wide_event"]
         if wide_records:

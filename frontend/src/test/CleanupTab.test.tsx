@@ -17,7 +17,6 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
@@ -53,14 +52,23 @@ describe('CleanupTab', () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/cleanup-rules') {
         return Promise.resolve({
-          data: [{
-            id: '1', name: 'Age Rule', rule_type: 'max_age_days', value: 30,
-            protect_collections: true, is_active: true, created_at: '2024-06-01',
-          }],
+          data: [
+            {
+              id: '1',
+              name: 'Age Rule',
+              rule_type: 'max_age_days',
+              value: 30,
+              protect_collections: true,
+              is_active: true,
+              created_at: '2024-06-01',
+            },
+          ],
         });
       }
       if (url === '/satellite/frames/stats') {
-        return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
+        return Promise.resolve({
+          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
+        });
       }
       return Promise.resolve({ data: {} });
     });

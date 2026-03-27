@@ -41,25 +41,58 @@ const completedAnimation = {
   job_id: null,
 };
 
-const pendingAnimation = { ...completedAnimation, id: 'anim-2', name: 'Pending Anim', status: 'pending', output_path: null, file_size: 0 };
-const processingAnimation = { ...completedAnimation, id: 'anim-3', name: 'Processing Anim', status: 'processing', output_path: null, file_size: 0 };
-const failedAnimation = { ...completedAnimation, id: 'anim-4', name: 'Failed Anim', status: 'failed', output_path: null, file_size: 0, error: 'Out of memory' };
-const gifAnimation = { ...completedAnimation, id: 'anim-5', name: 'GIF Anim', format: 'gif', output_path: '/output/test.gif' };
-
+const pendingAnimation = {
+  ...completedAnimation,
+  id: 'anim-2',
+  name: 'Pending Anim',
+  status: 'pending',
+  output_path: null,
+  file_size: 0,
+};
+const processingAnimation = {
+  ...completedAnimation,
+  id: 'anim-3',
+  name: 'Processing Anim',
+  status: 'processing',
+  output_path: null,
+  file_size: 0,
+};
+const failedAnimation = {
+  ...completedAnimation,
+  id: 'anim-4',
+  name: 'Failed Anim',
+  status: 'failed',
+  output_path: null,
+  file_size: 0,
+  error: 'Out of memory',
+};
+const gifAnimation = {
+  ...completedAnimation,
+  id: 'anim-5',
+  name: 'GIF Anim',
+  format: 'gif',
+  output_path: '/output/test.gif',
+};
 
 function setupDefaultMocks(animations: unknown[] = []) {
   mockGet.mockImplementation((url: string) => {
     if (url === '/satellite/animations') {
-      return Promise.resolve({ data: { items: animations, total: animations.length, page: 1, limit: 20 } });
+      return Promise.resolve({
+        data: { items: animations, total: animations.length, page: 1, limit: 20 },
+      });
     }
     if (url === '/satellite/collections') {
       return Promise.resolve({ data: [{ id: 'col-1', name: 'My Collection', frame_count: 50 }] });
     }
     if (url === '/satellite/frames/preview-range') {
-      return Promise.resolve({ data: { frames: [], total_count: 10, capture_interval_minutes: 10 } });
+      return Promise.resolve({
+        data: { frames: [], total_count: 10, capture_interval_minutes: 10 },
+      });
     }
     if (url === '/satellite/products') {
-      return Promise.resolve({ data: { satellites: ['GOES-16', 'GOES-18', 'GOES-19'], default_satellite: 'GOES-19' } });
+      return Promise.resolve({
+        data: { satellites: ['GOES-16', 'GOES-18', 'GOES-19'], default_satellite: 'GOES-19' },
+      });
     }
     return Promise.resolve({ data: {} });
   });
@@ -304,12 +337,15 @@ describe('AnimateTab (Unified)', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/satellite/animations/from-range', expect.objectContaining({
-        sector: 'CONUS',
-        band: 'C02',
-        fps: 10,
-        format: 'mp4',
-      }));
+      expect(mockPost).toHaveBeenCalledWith(
+        '/satellite/animations/from-range',
+        expect.objectContaining({
+          sector: 'CONUS',
+          band: 'C02',
+          fps: 10,
+          format: 'mp4',
+        }),
+      );
     });
   });
 
@@ -331,9 +367,12 @@ describe('AnimateTab (Unified)', () => {
     fireEvent.change(select, { target: { value: 'col-1' } });
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith('/satellite/animations', expect.objectContaining({
-        collection_id: 'col-1',
-      }));
+      expect(mockPost).toHaveBeenCalledWith(
+        '/satellite/animations',
+        expect.objectContaining({
+          collection_id: 'col-1',
+        }),
+      );
     });
   });
 

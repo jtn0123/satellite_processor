@@ -14,29 +14,18 @@ const FIXED_INTEGRITY =
   'sha512-vsBFgptblYk3SADKpDTsHkJl0DJw2P/yXjD4GgZjpDJdZGNiAGpbFm6bvePcp7PCA9YPLzQ3YrN5dRApDoXjg==';
 const FIXED_RESOLVED = `https://registry.npmjs.org/minimatch/-/minimatch-${FIXED_VERSION}.tgz`;
 
-const targetDir = path.join(
-  __dirname,
-  '..',
-  'node_modules',
-  'npm',
-  'node_modules',
-  'minimatch'
-);
+const targetDir = path.join(__dirname, '..', 'node_modules', 'npm', 'node_modules', 'minimatch');
 
 if (!fs.existsSync(targetDir)) {
   process.exit(0);
 }
 
-const pkg = JSON.parse(
-  fs.readFileSync(path.join(targetDir, 'package.json'), 'utf8')
-);
+const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'package.json'), 'utf8'));
 
 const [major, minor, patch] = pkg.version.split('.').map(Number);
 
 if (major === 10 && (minor < 2 || (minor === 2 && patch <= 2))) {
-  console.log(
-    `Patching bundled minimatch@${pkg.version} -> ${FIXED_VERSION} (security fix)`
-  );
+  console.log(`Patching bundled minimatch@${pkg.version} -> ${FIXED_VERSION} (security fix)`);
 
   // 1. Patch the actual files
   const tmpDir = path.join(__dirname, '..', '.minimatch-patch-tmp');
@@ -47,9 +36,7 @@ if (major === 10 && (minor < 2 || (minor === 2 && patch <= 2))) {
       stdio: 'pipe',
     });
 
-    const tarball = fs
-      .readdirSync(tmpDir)
-      .find((f) => f.startsWith('minimatch-'));
+    const tarball = fs.readdirSync(tmpDir).find((f) => f.startsWith('minimatch-'));
     execSync(`tar xzf ${tarball}`, { cwd: tmpDir, stdio: 'pipe' });
     fs.cpSync(path.join(tmpDir, 'package'), targetDir, {
       recursive: true,

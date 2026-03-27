@@ -34,15 +34,15 @@ test.describe('Theme toggle', () => {
     }
 
     // Get initial theme state
-    const initialClass = await page.locator('html').getAttribute('class') ?? '';
-    const initialDataTheme = await page.locator('html').getAttribute('data-theme') ?? '';
+    const initialClass = (await page.locator('html').getAttribute('class')) ?? '';
+    const initialDataTheme = (await page.locator('html').getAttribute('data-theme')) ?? '';
 
     await toggleBtn.click();
     await page.waitForTimeout(500);
 
     // Check that something changed (class or data-theme attribute)
-    const afterClass = await page.locator('html').getAttribute('class') ?? '';
-    const afterDataTheme = await page.locator('html').getAttribute('data-theme') ?? '';
+    const afterClass = (await page.locator('html').getAttribute('class')) ?? '';
+    const afterDataTheme = (await page.locator('html').getAttribute('data-theme')) ?? '';
 
     const changed = initialClass !== afterClass || initialDataTheme !== afterDataTheme;
     expect(changed).toBeTruthy();
@@ -53,11 +53,13 @@ test.describe('Theme toggle', () => {
     await page.waitForTimeout(1_000);
 
     // Find and click theme toggle
-    const toggle = page.locator(
-      'button[aria-label*="theme"], button[aria-label*="Theme"], button[aria-label*="dark"], button[aria-label*="light"], button[data-testid*="theme"]'
-    ).first();
+    const toggle = page
+      .locator(
+        'button[aria-label*="theme"], button[aria-label*="Theme"], button[aria-label*="dark"], button[aria-label*="light"], button[data-testid*="theme"]',
+      )
+      .first();
 
-    if (!await toggle.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (!(await toggle.isVisible({ timeout: 2_000 }).catch(() => false))) {
       test.skip(true, 'No theme toggle button found');
       return;
     }
@@ -66,16 +68,16 @@ test.describe('Theme toggle', () => {
     await page.waitForTimeout(500);
 
     // Capture current theme state
-    const themeClass = await page.locator('html').getAttribute('class') ?? '';
-    const themeData = await page.locator('html').getAttribute('data-theme') ?? '';
+    const themeClass = (await page.locator('html').getAttribute('class')) ?? '';
+    const themeData = (await page.locator('html').getAttribute('data-theme')) ?? '';
 
     // Navigate to a different page
     await navigateTo(page, '/browse');
     await page.waitForTimeout(1_000);
 
     // Verify theme persisted
-    const afterClass = await page.locator('html').getAttribute('class') ?? '';
-    const afterData = await page.locator('html').getAttribute('data-theme') ?? '';
+    const afterClass = (await page.locator('html').getAttribute('class')) ?? '';
+    const afterData = (await page.locator('html').getAttribute('data-theme')) ?? '';
 
     // At least one indicator should match
     const persisted = afterClass === themeClass || afterData === themeData;

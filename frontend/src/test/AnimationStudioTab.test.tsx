@@ -18,15 +18,17 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+    if (url === '/satellite/products')
+      return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
     if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
-    if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
-    if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url === '/satellite/animations')
+      return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
+    if (url.includes('/satellite/frames'))
+      return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 20 } });
     return Promise.resolve({ data: {} });
   });
 });
@@ -59,11 +61,17 @@ describe('AnimationStudioTab', () => {
 
   it('handles collections API returning paginated object instead of array', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({ data: { items: [{ id: '1', name: 'Test Col', frame_count: 10 }], total: 1 } });
-      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/collections')
+        return Promise.resolve({
+          data: { items: [{ id: '1', name: 'Test Col', frame_count: 10 }], total: 1 },
+        });
+      if (url === '/satellite/products')
+        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
       if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
-      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/animations')
+        return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -79,11 +87,30 @@ describe('AnimationStudioTab', () => {
 
   it('handles crop-presets API returning paginated object', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/crop-presets') return Promise.resolve({ data: { items: [{ id: '1', name: 'Center Crop', x: 0, y: 0, width: 100, height: 100, created_at: '2024-01-01' }], total: 1 } });
-      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/crop-presets')
+        return Promise.resolve({
+          data: {
+            items: [
+              {
+                id: '1',
+                name: 'Center Crop',
+                x: 0,
+                y: 0,
+                width: 100,
+                height: 100,
+                created_at: '2024-01-01',
+              },
+            ],
+            total: 1,
+          },
+        });
+      if (url === '/satellite/products')
+        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
       if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/animations')
+        return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -97,8 +124,10 @@ describe('AnimationStudioTab', () => {
       if (url === '/satellite/products') return Promise.resolve({ data: null });
       if (url === '/satellite/collections') return Promise.resolve({ data: [] });
       if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
-      if (url === '/satellite/animations') return Promise.resolve({ data: { items: [], total: 0 } });
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url === '/satellite/animations')
+        return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     const { container } = renderWithProviders(<AnimationStudioTab />);
@@ -109,11 +138,14 @@ describe('AnimationStudioTab', () => {
 
   it('handles animations API returning null items', async () => {
     mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/animations') return Promise.resolve({ data: { items: null, total: 0 } });
-      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/animations')
+        return Promise.resolve({ data: { items: null, total: 0 } });
+      if (url === '/satellite/products')
+        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
       if (url === '/satellite/collections') return Promise.resolve({ data: [] });
       if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);
@@ -130,19 +162,95 @@ describe('AnimationStudioTab', () => {
         return Promise.resolve({
           data: {
             items: [
-              { id: '1', name: 'Test Anim', status: 'completed', frame_count: 24, fps: 10, format: 'mp4', quality: 'high', crop_preset_id: null, false_color: false, scale: '100%', output_path: '/tmp/anim.mp4', file_size: 5000, duration_seconds: 2.4, created_at: '2024-06-01', completed_at: '2024-06-01', error: '', job_id: null },
-              { id: '2', name: 'Failed Anim', status: 'failed', frame_count: 0, fps: 10, format: 'gif', quality: 'low', crop_preset_id: null, false_color: false, scale: '50%', output_path: null, file_size: 0, duration_seconds: 0, created_at: '2024-06-01', completed_at: null, error: 'Out of memory', job_id: null },
-              { id: '3', name: 'Pending Anim', status: 'pending', frame_count: 12, fps: 5, format: 'mp4', quality: 'medium', crop_preset_id: null, false_color: false, scale: '100%', output_path: null, file_size: 0, duration_seconds: 0, created_at: '2024-06-01', completed_at: null, error: '', job_id: null },
-              { id: '4', name: 'Processing Anim', status: 'processing', frame_count: 12, fps: 5, format: 'mp4', quality: 'medium', crop_preset_id: null, false_color: false, scale: '100%', output_path: null, file_size: 0, duration_seconds: 0, created_at: '2024-06-01', completed_at: null, error: '', job_id: 'j1' },
+              {
+                id: '1',
+                name: 'Test Anim',
+                status: 'completed',
+                frame_count: 24,
+                fps: 10,
+                format: 'mp4',
+                quality: 'high',
+                crop_preset_id: null,
+                false_color: false,
+                scale: '100%',
+                output_path: '/tmp/anim.mp4',
+                file_size: 5000,
+                duration_seconds: 2.4,
+                created_at: '2024-06-01',
+                completed_at: '2024-06-01',
+                error: '',
+                job_id: null,
+              },
+              {
+                id: '2',
+                name: 'Failed Anim',
+                status: 'failed',
+                frame_count: 0,
+                fps: 10,
+                format: 'gif',
+                quality: 'low',
+                crop_preset_id: null,
+                false_color: false,
+                scale: '50%',
+                output_path: null,
+                file_size: 0,
+                duration_seconds: 0,
+                created_at: '2024-06-01',
+                completed_at: null,
+                error: 'Out of memory',
+                job_id: null,
+              },
+              {
+                id: '3',
+                name: 'Pending Anim',
+                status: 'pending',
+                frame_count: 12,
+                fps: 5,
+                format: 'mp4',
+                quality: 'medium',
+                crop_preset_id: null,
+                false_color: false,
+                scale: '100%',
+                output_path: null,
+                file_size: 0,
+                duration_seconds: 0,
+                created_at: '2024-06-01',
+                completed_at: null,
+                error: '',
+                job_id: null,
+              },
+              {
+                id: '4',
+                name: 'Processing Anim',
+                status: 'processing',
+                frame_count: 12,
+                fps: 5,
+                format: 'mp4',
+                quality: 'medium',
+                crop_preset_id: null,
+                false_color: false,
+                scale: '100%',
+                output_path: null,
+                file_size: 0,
+                duration_seconds: 0,
+                created_at: '2024-06-01',
+                completed_at: null,
+                error: '',
+                job_id: 'j1',
+              },
             ],
-            total: 4, page: 1, limit: 20,
+            total: 4,
+            page: 1,
+            limit: 20,
           },
         });
       }
-      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+      if (url === '/satellite/products')
+        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
       if (url === '/satellite/collections') return Promise.resolve({ data: [] });
       if (url === '/satellite/crop-presets') return Promise.resolve({ data: [] });
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0 } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0 } });
       return Promise.resolve({ data: {} });
     });
     renderWithProviders(<AnimationStudioTab />);

@@ -35,21 +35,38 @@ const PRODUCTS = {
 };
 
 const FRAME = {
-  id: '1', satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
+  id: '1',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'C02',
   capture_time: new Date(Date.now() - 600000).toISOString(),
-  file_path: '/tmp/test.nc', file_size: 1024, width: 5424, height: 3000,
-  thumbnail_path: '/tmp/thumb.png', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  file_path: '/tmp/test.nc',
+  file_size: 1024,
+  width: 5424,
+  height: 3000,
+  thumbnail_path: '/tmp/thumb.png',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG = {
   scan_time: new Date(Date.now() - 300000).toISOString(),
-  size: 2048, key: 'test-key',
-  satellite: 'GOES-16', sector: 'CONUS', band: 'C02',
+  size: 2048,
+  key: 'test-key',
+  satellite: 'GOES-16',
+  sector: 'CONUS',
+  band: 'C02',
 };
 
 function renderLiveTab() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return render(<MemoryRouter><QueryClientProvider client={qc}><LiveTab /></QueryClientProvider></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <LiveTab />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
 }
 
 beforeEach(() => {
@@ -59,9 +76,25 @@ beforeEach(() => {
     if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
     if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: FRAME });
     if (url.startsWith('/satellite/catalog/latest')) return Promise.resolve({ data: CATALOG });
-    if (url.startsWith('/satellite/catalog/available')) return Promise.resolve({ data: { satellite: 'GOES-16', available_sectors: ['CONUS'], checked_at: new Date().toISOString() } });
-    if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: [FRAME, { ...FRAME, id: '2', capture_time: new Date(Date.now() - 1200000).toISOString() }] });
-    if (url.startsWith('/jobs/')) return Promise.resolve({ data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' } });
+    if (url.startsWith('/satellite/catalog/available'))
+      return Promise.resolve({
+        data: {
+          satellite: 'GOES-16',
+          available_sectors: ['CONUS'],
+          checked_at: new Date().toISOString(),
+        },
+      });
+    if (url.startsWith('/satellite/frames'))
+      return Promise.resolve({
+        data: [
+          FRAME,
+          { ...FRAME, id: '2', capture_time: new Date(Date.now() - 1200000).toISOString() },
+        ],
+      });
+    if (url.startsWith('/jobs/'))
+      return Promise.resolve({
+        data: { id: 'job-1', status: 'running', progress: 50, status_message: 'Downloading' },
+      });
     return Promise.resolve({ data: {} });
   });
 });
@@ -221,7 +254,12 @@ describe('LiveTab - Interactions', () => {
   });
 
   it('renders image with file_path when no thumbnail', async () => {
-    const noThumbFrame = { ...FRAME, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail' };
+    const noThumbFrame = {
+      ...FRAME,
+      thumbnail_path: null,
+      image_url: '/api/satellite/frames/test-id/image',
+      thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+    };
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/satellite/products') return Promise.resolve({ data: PRODUCTS });
       if (url.startsWith('/satellite/latest')) return Promise.resolve({ data: noThumbFrame });

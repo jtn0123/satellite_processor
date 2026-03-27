@@ -21,25 +21,34 @@ export function usePullToRefresh({
   const pullDistanceRef = useRef(0);
   const touchStartY = useRef<number | null>(null);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (!enabled || isRefreshing) { touchStartY.current = null; return; }
-    const el = containerRef.current;
-    // Only activate when scrolled to top
-    if (el && el.scrollTop <= 0) {
-      touchStartY.current = e.touches[0].clientY;
-    }
-  }, [enabled, isRefreshing]);
+  const handleTouchStart = useCallback(
+    (e: TouchEvent) => {
+      if (!enabled || isRefreshing) {
+        touchStartY.current = null;
+        return;
+      }
+      const el = containerRef.current;
+      // Only activate when scrolled to top
+      if (el && el.scrollTop <= 0) {
+        touchStartY.current = e.touches[0].clientY;
+      }
+    },
+    [enabled, isRefreshing],
+  );
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (dy > 0) {
-      e.preventDefault();
-      const dist = Math.min(dy * 0.5, threshold * 1.5);
-      pullDistanceRef.current = dist;
-      setPullDistance(dist);
-    }
-  }, [threshold]);
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (touchStartY.current === null) return;
+      const dy = e.touches[0].clientY - touchStartY.current;
+      if (dy > 0) {
+        e.preventDefault();
+        const dist = Math.min(dy * 0.5, threshold * 1.5);
+        pullDistanceRef.current = dist;
+        setPullDistance(dist);
+      }
+    },
+    [threshold],
+  );
 
   const handleTouchEnd = useCallback(async () => {
     if (touchStartY.current === null) return;

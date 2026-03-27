@@ -22,7 +22,15 @@ vi.mock('../hooks/useApi', () => ({
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn().mockResolvedValue({
-      data: { total_frames: 0, frames_by_satellite: {}, last_fetch_time: null, active_schedules: 0, recent_jobs: [], storage_by_satellite: {}, storage_by_band: {} },
+      data: {
+        total_frames: 0,
+        frames_by_satellite: {},
+        last_fetch_time: null,
+        active_schedules: 0,
+        recent_jobs: [],
+        storage_by_satellite: {},
+        storage_by_band: {},
+      },
     }),
     post: vi.fn().mockResolvedValue({ data: { job_id: 'test' } }),
   },

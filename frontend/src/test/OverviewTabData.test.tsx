@@ -36,12 +36,22 @@ vi.mock('../api/client', () => ({
               'GOES-18': 2000000,
             },
             storage_by_band: {
-              'C02': 2500000,
-              'C13': 2500000,
+              C02: 2500000,
+              C13: 2500000,
             },
             recent_jobs: [
-              { id: '1', status: 'completed', created_at: new Date().toISOString(), status_message: 'Done' },
-              { id: '2', status: 'failed', created_at: new Date().toISOString(), status_message: 'Error' },
+              {
+                id: '1',
+                status: 'completed',
+                created_at: new Date().toISOString(),
+                status_message: 'Done',
+              },
+              {
+                id: '2',
+                status: 'failed',
+                created_at: new Date().toISOString(),
+                status_message: 'Error',
+              },
               { id: '3', status: 'running', created_at: null, status_message: 'In progress' },
             ],
           },

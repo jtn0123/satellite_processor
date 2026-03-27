@@ -19,7 +19,7 @@ test.describe.serial('GOES Fetch Flow', () => {
       end_time: now.toISOString(),
     });
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { job_id: string };
+    const body = (await res.json()) as { job_id: string };
     expect(body.job_id).toBeTruthy();
     jobId = body.job_id;
   });
@@ -27,7 +27,7 @@ test.describe.serial('GOES Fetch Flow', () => {
   test('job appears in the jobs list', async ({ request }) => {
     const res = await apiGet(request, '/api/jobs');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { items: Array<{ id: string }> };
+    const body = (await res.json()) as { items: { id: string }[] };
     const found = body.items.some((j) => j.id === jobId);
     expect(found).toBeTruthy();
   });
@@ -48,14 +48,14 @@ test.describe.serial('GOES Fetch Flow', () => {
   test('frames endpoint returns data', async ({ request }) => {
     const res = await apiGet(request, '/api/satellite/frames?limit=10');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { items: unknown[]; total: number };
+    const body = (await res.json()) as { items: unknown[]; total: number };
     expect(body.total).toBeGreaterThanOrEqual(0);
   });
 
   test('products endpoint lists available satellites and bands', async ({ request }) => {
     const res = await apiGet(request, '/api/satellite/products');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { satellites: string[] };
+    const body = (await res.json()) as { satellites: string[] };
     expect(body.satellites).toBeTruthy();
     expect(body.satellites.length).toBeGreaterThan(0);
   });

@@ -13,11 +13,27 @@ import { useMonitorMode } from '../../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../../hooks/useLiveFetchJob';
 import { useCountdownDisplay } from '../../../hooks/useCountdownDisplay';
 import { useSwipeBand } from '../../../hooks/useSwipeBand';
-import { isMesoSector, isHimawariSatellite, getDefaultSector, getDefaultBand } from '../../../utils/sectorHelpers';
+import {
+  isMesoSector,
+  isHimawariSatellite,
+  getDefaultSector,
+  getDefaultBand,
+} from '../../../utils/sectorHelpers';
 import BandPillStrip from '../BandPillStrip';
-import { getSectorsForSatellite, getBandsForSatellite, isCompositeBand, getDisabledBands } from '../liveTabUtils';
+import {
+  getSectorsForSatellite,
+  getBandsForSatellite,
+  isCompositeBand,
+  getDisabledBands,
+} from '../liveTabUtils';
 
-import { resolveImageUrls, computeFreshness, exitFullscreenSafe, enterFullscreenSafe, buildOuterClassName } from './liveHelpers';
+import {
+  resolveImageUrls,
+  computeFreshness,
+  exitFullscreenSafe,
+  enterFullscreenSafe,
+  buildOuterClassName,
+} from './liveHelpers';
 import { isNotFoundError, useZoomHint, useFullscreenSync, useLiveShortcuts } from './useLiveHooks';
 import { LiveImageArea } from './LiveImageArea';
 
@@ -31,7 +47,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   useEffect(() => {
     if (!isMobile) return;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isMobile]);
 
   const [satellite, setSatellite] = useState('');
@@ -55,25 +73,42 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     resetCountdownRef.current?.();
   }, []);
 
-  const applyMonitorConfig = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
-    setSatellite(config.satellite);
-    setSector(config.sector);
-    setBand(config.band);
-    setRefreshInterval(config.interval);
-  }, []);
+  const applyMonitorConfig = useCallback(
+    (config: { satellite: string; sector: string; band: string; interval: number }) => {
+      setSatellite(config.satellite);
+      setSector(config.sector);
+      setBand(config.band);
+      setRefreshInterval(config.interval);
+    },
+    [],
+  );
 
-  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } = useMonitorMode(onMonitorChange, satellite, sector, band, refetchRef, handleRefetchWithCountdown);
+  const { monitoring, autoFetch, setAutoFetch, toggleMonitor, startMonitorRaw, stopMonitor } =
+    useMonitorMode(
+      onMonitorChange,
+      satellite,
+      sector,
+      band,
+      refetchRef,
+      handleRefetchWithCountdown,
+    );
 
-  const startMonitor = useCallback((config: { satellite: string; sector: string; band: string; interval: number }) => {
-    startMonitorRaw(() => applyMonitorConfig(config));
-  }, [startMonitorRaw, applyMonitorConfig]);
+  const startMonitor = useCallback(
+    (config: { satellite: string; sector: string; band: string; interval: number }) => {
+      startMonitorRaw(() => applyMonitorConfig(config));
+    },
+    [startMonitorRaw, applyMonitorConfig],
+  );
 
-  const applyPreset = useCallback((preset: MonitorPreset) => {
-    setSatellite(preset.satellite || satellite);
-    setSector(preset.sector);
-    setBand(preset.band || band);
-    setRefreshInterval(preset.interval);
-  }, [satellite, band]);
+  const applyPreset = useCallback(
+    (preset: MonitorPreset) => {
+      setSatellite(preset.satellite || satellite);
+      setSector(preset.sector);
+      setBand(preset.band || band);
+      setRefreshInterval(preset.interval);
+    },
+    [satellite, band],
+  );
 
   // Mobile overlay auto-hide
   const [overlayVisible, setOverlayVisible] = useState(true);
@@ -99,7 +134,11 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     resetCountdownRef.current?.();
   }, []);
 
-  const { containerRef: pullContainerRef, isRefreshing: isPullRefreshing, pullDistance } = usePullToRefresh({
+  const {
+    containerRef: pullContainerRef,
+    isRefreshing: isPullRefreshing,
+    pullDistance,
+  } = usePullToRefresh({
     onRefresh: handlePullRefresh,
     enabled: !zoom.isZoomed,
   });
@@ -149,61 +188,107 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const { data: frame, isLoading, isError, refetch } = useQuery<LatestFrame>({
+  const {
+    data: frame,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<LatestFrame>({
     queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () => api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () =>
+      api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
     retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
   });
 
-  useEffect(() => { refetchRef.current = refetch; }, [refetch]);
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
 
   const { data: recentFrames } = useQuery<LatestFrame[]>({
     queryKey: ['goes-frames-compare', satellite, sector, band],
-    queryFn: () => api.get('/satellite/frames', { params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' } }).then((r) => r.data),
+    queryFn: () =>
+      api
+        .get('/satellite/frames', {
+          params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' },
+        })
+        .then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite && compareMode,
   });
 
   const { data: catalogLatest } = useQuery<CatalogLatest>({
     queryKey: ['goes-catalog-latest-live', satellite, sector, band],
-    queryFn: () => api.get('/satellite/catalog/latest', { params: { satellite, sector, band } }).then((r) => r.data),
+    queryFn: () =>
+      api
+        .get('/satellite/catalog/latest', { params: { satellite, sector, band } })
+        .then((r) => r.data),
     refetchInterval: refreshInterval,
     enabled: !!satellite,
     retry: 1,
   });
 
   const { display: countdownDisplay, resetCountdown } = useCountdownDisplay(refreshInterval);
-  useEffect(() => { resetCountdownRef.current = resetCountdown; }, [resetCountdown]);
+  useEffect(() => {
+    resetCountdownRef.current = resetCountdown;
+  }, [resetCountdown]);
 
-  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(products, band, setBand, satellite);
+  const { swipeToast, handleTouchStart, handleTouchEnd } = useSwipeBand(
+    products,
+    band,
+    setBand,
+    satellite,
+  );
 
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
 
   const { activeJobId, activeJob, fetchNow, lastFetchFailed } = useLiveFetchJob({
-    satellite, sector, band, autoFetch, catalogLatest: catalogLatest ?? null,
-    frame: frame ?? null, lastAutoFetchTimeRef: lastAutoFetchTime, lastAutoFetchMsRef: lastAutoFetchMs, refetch,
+    satellite,
+    sector,
+    band,
+    autoFetch,
+    catalogLatest: catalogLatest ?? null,
+    frame: frame ?? null,
+    lastAutoFetchTimeRef: lastAutoFetchTime,
+    lastAutoFetchMsRef: lastAutoFetchMs,
+    refetch,
   });
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     const isCurrentlyFullscreen = !!document.fullscreenElement;
-    await (isCurrentlyFullscreen ? exitFullscreenSafe() : enterFullscreenSafe(containerRef.current));
+    await (isCurrentlyFullscreen
+      ? exitFullscreenSafe()
+      : enterFullscreenSafe(containerRef.current));
     setIsFullscreen(!isCurrentlyFullscreen);
   }, []);
 
   useFullscreenSync(setIsFullscreen, zoom);
 
   useLiveShortcuts({
-    bands: products?.bands, band, isZoomed: zoom.isZoomed, isFullscreen, monitoring,
-    setBand, toggleFullscreen, setCompareMode, toggleMonitor, setLiveAnnouncement,
-    zoomIn: zoom.zoomIn, zoomOut: zoom.zoomOut, zoomReset: zoom.reset,
+    bands: products?.bands,
+    band,
+    isZoomed: zoom.isZoomed,
+    isFullscreen,
+    monitoring,
+    setBand,
+    toggleFullscreen,
+    setCompareMode,
+    toggleMonitor,
+    setLiveAnnouncement,
+    zoomIn: zoom.zoomIn,
+    zoomOut: zoom.zoomOut,
+    zoomReset: zoom.reset,
   });
 
   const handleImageTap = useDoubleTap(
-    () => { if (isMobile) toggleOverlay(); },
-    () => { (zoom.isZoomed ? zoom.reset : zoom.zoomIn)(); },
+    () => {
+      if (isMobile) toggleOverlay();
+    },
+    () => {
+      (zoom.isZoomed ? zoom.reset : zoom.zoomIn)();
+    },
     300,
   );
 
@@ -212,7 +297,15 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite, sector, band, zoom.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isMeso = isMesoSector(sector);
-  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(catalogLatest, frame, recentFrames, satellite, sector, band, isMobile);
+  const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(
+    catalogLatest,
+    frame,
+    recentFrames,
+    satellite,
+    sector,
+    band,
+    isMobile,
+  );
   const freshnessInfo = computeFreshness(catalogLatest, frame);
   const isComposite = isCompositeBand(band, satellite);
 
@@ -232,7 +325,12 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
 
   return (
     <div ref={pullContainerRef} className={buildOuterClassName(zoom.isZoomed)}>
-      <div aria-live="polite" aria-atomic="true" className="sr-only" data-testid="live-a11y-announcer">
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        data-testid="live-a11y-announcer"
+      >
         {liveAnnouncement}
       </div>
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isPullRefreshing} />

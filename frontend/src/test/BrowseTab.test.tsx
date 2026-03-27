@@ -22,8 +22,12 @@ vi.mock('../hooks/useDebounce', () => ({
 import BrowseTab from '../components/GoesData/BrowseTab';
 import api from '../api/client';
 
-const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn>; delete: ReturnType<typeof vi.fn> };
-
+const mockedApi = api as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -33,7 +37,8 @@ beforeEach(() => {
         data: { items: [], total: 0, page: 1, per_page: 24, pages: 0 },
       });
     }
-    if (url === '/satellite/products') return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
+    if (url === '/satellite/products')
+      return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
     if (url === '/satellite/tags') return Promise.resolve({ data: [] });
     if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: {} });

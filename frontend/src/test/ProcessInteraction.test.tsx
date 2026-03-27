@@ -15,8 +15,22 @@ vi.mock('../hooks/usePageTitle', () => ({ usePageTitle: vi.fn() }));
 vi.mock('../hooks/useApi', () => ({
   useImages: vi.fn(() => ({
     data: [
-      { id: 'img-1', filename: 'test1.nc', path: '/tmp/test1.nc', satellite: 'GOES-16', band: 'C02', created_at: '2024-01-01' },
-      { id: 'img-2', filename: 'test2.nc', path: '/tmp/test2.nc', satellite: 'GOES-16', band: 'C13', created_at: '2024-01-02' },
+      {
+        id: 'img-1',
+        filename: 'test1.nc',
+        path: '/tmp/test1.nc',
+        satellite: 'GOES-16',
+        band: 'C02',
+        created_at: '2024-01-01',
+      },
+      {
+        id: 'img-2',
+        filename: 'test2.nc',
+        path: '/tmp/test2.nc',
+        satellite: 'GOES-16',
+        band: 'C13',
+        created_at: '2024-01-02',
+      },
     ],
     isLoading: false,
   })),
@@ -42,7 +56,9 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><Process /></MemoryRouter>
+      <MemoryRouter>
+        <Process />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -55,7 +71,9 @@ describe('Process page - with images interactions', () => {
   it('renders heading and description', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /process images/i })).toBeInTheDocument();
-    expect(screen.getByText(/select images and configure processing parameters/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/select images and configure processing parameters/i),
+    ).toBeInTheDocument();
   });
 
   it('shows Select Images heading with count when images exist', () => {

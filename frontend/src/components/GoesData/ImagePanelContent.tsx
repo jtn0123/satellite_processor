@@ -21,7 +21,22 @@ export interface ImagePanelContentProps {
   imageRef?: Ref<HTMLImageElement>;
 }
 
-export default function ImagePanelContent({ isLoading, isError, imageUrl, compareMode, satellite, band, sector, zoomStyle, prevImageUrl, comparePosition, onPositionChange, frameTime, prevFrameTime, imageRef }: Readonly<ImagePanelContentProps>) {
+export default function ImagePanelContent({
+  isLoading,
+  isError,
+  imageUrl,
+  compareMode,
+  satellite,
+  band,
+  sector,
+  zoomStyle,
+  prevImageUrl,
+  comparePosition,
+  onPositionChange,
+  frameTime,
+  prevFrameTime,
+  imageRef,
+}: Readonly<ImagePanelContentProps>) {
   if (isLoading || (!imageUrl && !isError)) {
     return (
       <div className="w-full h-full flex items-center justify-center" data-testid="loading-shimmer">
@@ -31,7 +46,10 @@ export default function ImagePanelContent({ isLoading, isError, imageUrl, compar
   }
   if (isError && !imageUrl) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center" data-testid="live-error-state">
+      <div
+        className="relative w-full h-full flex items-center justify-center"
+        data-testid="live-error-state"
+      >
         <ShimmerLoader />
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <span className="text-xs text-white/60 font-medium">Image unavailable · Retrying…</span>

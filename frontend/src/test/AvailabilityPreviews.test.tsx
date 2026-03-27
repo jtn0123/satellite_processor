@@ -15,9 +15,7 @@ const MOCK_SECTORS = [
 
 describe('BandPicker with thumbnails', () => {
   it('renders with satellite and sector props', () => {
-    wrap(
-      <BandPicker value="C02" onChange={() => {}} satellite="GOES-19" sector="CONUS" />,
-    );
+    wrap(<BandPicker value="C02" onChange={() => {}} satellite="GOES-19" sector="CONUS" />);
     expect(screen.getByText('C02')).toBeInTheDocument();
   });
 
@@ -27,9 +25,7 @@ describe('BandPicker with thumbnails', () => {
   });
 
   it('accepts satellite and sector props without error', () => {
-    wrap(
-      <BandPicker value="C02" onChange={() => {}} satellite="GOES-19" sector="CONUS" />,
-    );
+    wrap(<BandPicker value="C02" onChange={() => {}} satellite="GOES-19" sector="CONUS" />);
     // Verify band cards render correctly with the new props
     expect(screen.getByText('C02')).toBeInTheDocument();
     expect(screen.getByText('C01')).toBeInTheDocument();
@@ -39,12 +35,7 @@ describe('BandPicker with thumbnails', () => {
 describe('SectorPicker with thumbnails', () => {
   it('renders with satellite prop', () => {
     wrap(
-      <SectorPicker
-        value="CONUS"
-        onChange={() => {}}
-        sectors={MOCK_SECTORS}
-        satellite="GOES-19"
-      />,
+      <SectorPicker value="CONUS" onChange={() => {}} sectors={MOCK_SECTORS} satellite="GOES-19" />,
     );
     expect(screen.getByText('CONUS')).toBeInTheDocument();
     expect(screen.getByText('FullDisk')).toBeInTheDocument();

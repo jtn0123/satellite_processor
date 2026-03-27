@@ -22,7 +22,12 @@ function getStaleLevel(captureTime: string): StaleLevel {
   return 'green';
 }
 
-export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobId, onFetchNow }: Readonly<StaleDataBannerProps>) {
+export default function StaleDataBanner({
+  freshnessInfo,
+  captureTime,
+  activeJobId,
+  onFetchNow,
+}: Readonly<StaleDataBannerProps>) {
   const staleLevel = getStaleLevel(captureTime);
 
   if (staleLevel === 'green' && freshnessInfo.behindMin <= 0) {
@@ -30,15 +35,27 @@ export default function StaleDataBanner({ freshnessInfo, captureTime, activeJobI
   }
 
   return (
-    <div role="alert" className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}>
-      {staleLevel === 'red'
-        ? <AlertTriangle className="w-4 h-4 shrink-0" />
-        : <Clock className="w-4 h-4 shrink-0" />}
+    <div
+      role="alert"
+      className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}
+    >
+      {staleLevel === 'red' ? (
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+      ) : (
+        <Clock className="w-4 h-4 shrink-0" />
+      )}
       <span className="text-sm flex-1">
         {staleLevel === 'red' && <strong>Data is stale! </strong>}
-        {freshnessInfo.behindMin > 0
-          ? <>AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is <strong>{freshnessInfo.localAge}</strong> ({freshnessInfo.behindMin} min behind)</>
-          : <>Your latest frame is <strong>{freshnessInfo.localAge}</strong></>}
+        {freshnessInfo.behindMin > 0 ? (
+          <>
+            AWS has a frame from <strong>{freshnessInfo.awsAge}</strong>, your latest is{' '}
+            <strong>{freshnessInfo.localAge}</strong> ({freshnessInfo.behindMin} min behind)
+          </>
+        ) : (
+          <>
+            Your latest frame is <strong>{freshnessInfo.localAge}</strong>
+          </>
+        )}
       </span>
       <button
         onClick={onFetchNow}

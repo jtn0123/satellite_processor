@@ -93,10 +93,7 @@ export function useMonitorWebSocket(
               (!f?.band || f.band === parsed.band);
             if (matches) {
               setLastEvent(parsed as FrameIngestEvent);
-              showToast(
-                'info',
-                `New frame: ${parsed.satellite} ${parsed.sector} ${parsed.band}`,
-              );
+              showToast('info', `New frame: ${parsed.satellite} ${parsed.sector} ${parsed.band}`);
             }
           } else if (parsed.type === 'job_completed') {
             // A job completed — trigger refetch to pick up new frames

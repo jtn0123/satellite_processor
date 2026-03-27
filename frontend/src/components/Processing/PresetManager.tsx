@@ -30,7 +30,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
     if (!saveName.trim()) return;
     createPreset.mutate(
       { name: saveName.trim(), params: currentParams },
-      { onSuccess: () => setSaveName('') }
+      { onSuccess: () => setSaveName('') },
     );
   };
 
@@ -41,7 +41,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
     }
     renamePreset.mutate(
       { oldName, newName: newName.trim() },
-      { onSuccess: () => setEditingName(null) }
+      { onSuccess: () => setEditingName(null) },
     );
   };
 
@@ -146,7 +146,10 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
           message="You can recreate it later."
           confirmLabel="Delete"
           isPending={deletePreset.isPending}
-          onConfirm={() => { deletePreset.mutate(deletePresetName); setDeletePresetName(null); }}
+          onConfirm={() => {
+            deletePreset.mutate(deletePresetName);
+            setDeletePresetName(null);
+          }}
           onCancel={() => setDeletePresetName(null)}
         />
       )}

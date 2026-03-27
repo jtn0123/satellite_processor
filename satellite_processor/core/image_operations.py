@@ -559,14 +559,11 @@ class ImageOperations:
         return processed
 
     def interpolate_frames_with_options(self, frame_paths: list[str | Path], options: dict) -> list[np.ndarray | None]:
-        """Interpolate frames based on options."""
-        if options.get("interpolation_enabled"):
-            quality = options.get("interpolation_quality", "medium")
-            Interpolator(model_path=f"model_{quality}.pth", processing_speed="fast")
-            frames = []
-            for path in frame_paths:
-                frames.append(self.process_image(path, options))
-            return frames
+        """Interpolate frames based on options.
+
+        TODO(#358): wire Interpolator to actually interpolate between frames.
+        Currently the interpolation_enabled branch is a no-op stub.
+        """
         return [self.process_image(path, options) for path in frame_paths]
 
 

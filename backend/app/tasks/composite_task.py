@@ -63,10 +63,7 @@ def _normalize_band(band_array, ref_shape):
 
     if band_array.shape != ref_shape:
         bmin, bmax = band_array.min(), band_array.max()
-        if bmax > bmin:
-            normalized = (band_array - bmin) / (bmax - bmin) * 255
-        else:
-            normalized = np.zeros_like(band_array)
+        normalized = (band_array - bmin) / (bmax - bmin) * 255 if bmax > bmin else np.zeros_like(band_array)
         img_resized = PILImage.fromarray(normalized.astype(np.uint8)).resize(
             (ref_shape[1], ref_shape[0]), PILImage.BILINEAR
         )

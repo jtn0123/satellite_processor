@@ -367,9 +367,11 @@ class TestAnimationWorkDirGuard:
         mock_session = MagicMock()
         mock_session.query.return_value.filter.return_value.first.return_value = None
 
-        with patch("app.tasks.animation_tasks._get_sync_db", return_value=mock_session):
-            with pytest.raises((RuntimeError, Exception)):
-                generate_animation("job-1", "anim-1")
+        with (
+            patch("app.tasks.animation_tasks._get_sync_db", return_value=mock_session),
+            pytest.raises((RuntimeError, Exception)),
+        ):
+            generate_animation("job-1", "anim-1")
 
 
 class TestCacheInvalidate:

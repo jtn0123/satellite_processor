@@ -42,14 +42,20 @@ test.beforeEach(async ({ page }) => {
 test.describe('View frame details', () => {
   test('browse tab shows frame cards', async ({ page }) => {
     await page.goto('/goes');
-    const browseTab = page.locator('main [role="tab"]').filter({ hasText: /browse/i }).first();
+    const browseTab = page
+      .locator('main [role="tab"]')
+      .filter({ hasText: /browse/i })
+      .first();
     await browseTab.click();
     await expect(page.locator('text=GOES-19').first()).toBeAttached({ timeout: 5000 });
   });
 
   test('browse tab shows frames', async ({ page }) => {
     await page.goto('/goes');
-    const browseTab = page.locator('[role="tab"]').filter({ hasText: /browse/i }).first();
+    const browseTab = page
+      .locator('[role="tab"]')
+      .filter({ hasText: /browse/i })
+      .first();
     await browseTab.click();
     await expect(page.locator('text=GOES-19').first()).toBeAttached({ timeout: 5000 });
   });

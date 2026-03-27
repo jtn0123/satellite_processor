@@ -53,7 +53,11 @@ export default function FrameGallery() {
 
   const formatTime = (t: string) => {
     const d = new Date(t);
-    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return (
+      d.toLocaleDateString() +
+      ' ' +
+      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
   };
 
   return (
@@ -62,24 +66,34 @@ export default function FrameGallery() {
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={satellite}
-          onChange={(e) => { setSatellite(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSatellite(e.target.value);
+            setPage(1);
+          }}
           aria-label="Filter by satellite"
           className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
         >
           <option value="">All Satellites</option>
           {satellites.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
         <select
           value={band}
-          onChange={(e) => { setBand(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setBand(e.target.value);
+            setPage(1);
+          }}
           aria-label="Filter by band"
           className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden"
         >
           <option value="">All Bands</option>
           {bands.map((b) => (
-            <option key={b} value={b}>{b}</option>
+            <option key={b} value={b}>
+              {b}
+            </option>
           ))}
         </select>
 
@@ -105,8 +119,11 @@ export default function FrameGallery() {
       {/* Grid */}
       {isLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {['a','b','c','d','e','f','g','h','i','j','k','l'].map((id) => (
-            <div key={`skel-${id}`} className="aspect-square bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'].map((id) => (
+            <div
+              key={`skel-${id}`}
+              className="aspect-square bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse"
+            />
           ))}
         </div>
       )}
@@ -117,7 +134,11 @@ export default function FrameGallery() {
         </div>
       )}
       {!isLoading && frames.length > 0 && (
-        <div role="grid" aria-label="Satellite image gallery" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div
+          role="grid"
+          aria-label="Satellite image gallery"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"
+        >
           {frames.map((frame) => {
             const isSelected = compareFrames.some((f) => f.id === frame.id);
             return (
@@ -139,12 +160,20 @@ export default function FrameGallery() {
                     loading="lazy"
                   />
                 </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-left" aria-hidden="true">
-                  <p className="text-xs font-medium text-white">{frame.satellite} · {frame.band}</p>
+                <div
+                  className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-left"
+                  aria-hidden="true"
+                >
+                  <p className="text-xs font-medium text-white">
+                    {frame.satellite} · {frame.band}
+                  </p>
                   <p className="text-[10px] text-white/70">{formatTime(frame.capture_time)}</p>
                 </div>
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-black text-xs font-bold" aria-hidden="true">
+                  <div
+                    className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-black text-xs font-bold"
+                    aria-hidden="true"
+                  >
                     {compareFrames.findIndex((f) => f.id === frame.id) + 1}
                   </div>
                 )}
@@ -194,7 +223,10 @@ export default function FrameGallery() {
         <CompareView
           frameA={compareFrames[0]}
           frameB={compareFrames[1]}
-          onClose={() => { setCompareFrames([]); setCompareMode(false); }}
+          onClose={() => {
+            setCompareFrames([]);
+            setCompareMode(false);
+          }}
         />
       )}
     </div>

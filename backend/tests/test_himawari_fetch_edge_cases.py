@@ -122,7 +122,7 @@ class TestCollectTimestampsInRange:
         def side_effect(sector, band, date):
             if date.day == 3:
                 return [{"scan_time": "2026-03-03T23:50:00+00:00", "key": "k1", "size": 1000}]
-            elif date.day == 4:
+            if date.day == 4:
                 return [{"scan_time": "2026-03-04T00:10:00+00:00", "key": "k2", "size": 1000}]
             return []
 

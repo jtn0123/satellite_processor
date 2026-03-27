@@ -7,26 +7,51 @@ vi.mock('../hooks/useFocusTrap', () => ({
 }));
 
 const frame = {
-  id: 'f1', satellite: 'GOES-16', band: 'C02', sector: 'CONUS',
-  capture_time: '2026-01-01T12:00:00Z', file_path: '/p.png',
-  thumbnail_path: '/t.png', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail', file_size: 1024,
+  id: 'f1',
+  satellite: 'GOES-16',
+  band: 'C02',
+  sector: 'CONUS',
+  capture_time: '2026-01-01T12:00:00Z',
+  file_path: '/p.png',
+  thumbnail_path: '/t.png',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  file_size: 1024,
 };
 
 describe('ComparisonModal', () => {
   it('renders dialog', () => {
-    render(<ComparisonModal frameA={frame as never} frameB={{ ...frame, id: 'f2' } as never} onClose={vi.fn()} />);
+    render(
+      <ComparisonModal
+        frameA={frame as never}
+        frameB={{ ...frame, id: 'f2' } as never}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('calls onClose on close button', () => {
     const onClose = vi.fn();
-    render(<ComparisonModal frameA={frame as never} frameB={{ ...frame, id: 'f2' } as never} onClose={onClose} />);
+    render(
+      <ComparisonModal
+        frameA={frame as never}
+        frameB={{ ...frame, id: 'f2' } as never}
+        onClose={onClose}
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Close comparison'));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('shows mode toggle buttons', () => {
-    render(<ComparisonModal frameA={frame as never} frameB={{ ...frame, id: 'f2' } as never} onClose={vi.fn()} />);
+    render(
+      <ComparisonModal
+        frameA={frame as never}
+        frameB={{ ...frame, id: 'f2' } as never}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/side by side/i)).toBeInTheDocument();
   });
 });

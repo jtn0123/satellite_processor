@@ -21,15 +21,27 @@ interface BrowseModalsProps {
   processingJobId: string | null;
 }
 
-export default function BrowseModals({ showAddToCollection, collectionFrameIds, onCloseCollection, showTagModal, tagFrameIds, onCloseTag, previewFrame, onClosePreview, allFrames, onNavigatePreview, compareFrames, onCloseCompare, processingJobId }: Readonly<BrowseModalsProps>) {
+export default function BrowseModals({
+  showAddToCollection,
+  collectionFrameIds,
+  onCloseCollection,
+  showTagModal,
+  tagFrameIds,
+  onCloseTag,
+  previewFrame,
+  onClosePreview,
+  allFrames,
+  onNavigatePreview,
+  compareFrames,
+  onCloseCompare,
+  processingJobId,
+}: Readonly<BrowseModalsProps>) {
   return (
     <>
       {showAddToCollection && (
         <AddToCollectionModal frameIds={collectionFrameIds} onClose={onCloseCollection} />
       )}
-      {showTagModal && (
-        <TagModal frameIds={tagFrameIds} onClose={onCloseTag} />
-      )}
+      {showTagModal && <TagModal frameIds={tagFrameIds} onClose={onCloseTag} />}
       {previewFrame && (
         <FramePreviewModal
           frame={previewFrame}
@@ -39,7 +51,11 @@ export default function BrowseModals({ showAddToCollection, collectionFrameIds, 
         />
       )}
       {compareFrames && (
-        <ComparisonModal frameA={compareFrames[0]} frameB={compareFrames[1]} onClose={onCloseCompare} />
+        <ComparisonModal
+          frameA={compareFrames[0]}
+          frameB={compareFrames[1]}
+          onClose={onCloseCompare}
+        />
       )}
       {processingJobId && (
         <div className="text-sm text-emerald-400 flex items-center gap-2">

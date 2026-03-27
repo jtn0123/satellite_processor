@@ -14,8 +14,12 @@ vi.mock('./liveTabUtils', async () => {
 });
 
 describe('CdnImage', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('renders img with correct src', () => {
     render(<CdnImage src="https://cdn.example.com/image.jpg" alt="test" />);
@@ -47,7 +51,9 @@ describe('CdnImage', () => {
     expect(screen.getByTestId('cdn-image-error')).toBeInTheDocument();
 
     // Advance past 10s retry timer
-    act(() => { vi.advanceTimersByTime(10_000); });
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
 
     // Should be back to showing the image (with cache-buster in src)
     const img = screen.getByRole('img');

@@ -52,7 +52,12 @@ const goesStatsWithJobs = {
   active_schedules: 2,
   recent_jobs: [
     { id: '1', status: 'completed', created_at: '2026-01-01T00:00:00Z', status_message: 'Done' },
-    { id: '2', status: 'running', created_at: '2026-01-01T01:00:00Z', status_message: 'In progress' },
+    {
+      id: '2',
+      status: 'running',
+      created_at: '2026-01-01T01:00:00Z',
+      status_message: 'In progress',
+    },
     { id: '3', status: 'failed', created_at: '2026-01-01T02:00:00Z', status_message: 'Error' },
     { id: '4', status: 'pending', created_at: '2026-01-01T03:00:00Z', status_message: 'Waiting' },
   ],

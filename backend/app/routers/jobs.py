@@ -26,11 +26,12 @@ from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
-from ..utils import utcnow
+from ..utils import safe_remove, utcnow
 
 logger = logging.getLogger(__name__)
 
 _JOB_NOT_FOUND = "Job not found"
+_REVOKE_FAIL_MSG = "Failed to revoke Celery task %s"
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -114,15 +115,10 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     frames = frames_result.scalars().all()
 
     for frame in frames:
-        # Delete thumbnail
-        if frame.thumbnail_path and os.path.isfile(frame.thumbnail_path):
-            bytes_freed += os.path.getsize(frame.thumbnail_path)
-            os.remove(frame.thumbnail_path)
-
-        # Delete frame file
-        if frame.file_path and os.path.isfile(frame.file_path):
-            bytes_freed += os.path.getsize(frame.file_path)
-            os.remove(frame.file_path)
+        if frame.thumbnail_path:
+            bytes_freed += safe_remove(frame.thumbnail_path)
+        if frame.file_path:
+            bytes_freed += safe_remove(frame.file_path)
 
         # Delete CollectionFrame join records
         await db.execute(select(CollectionFrame).where(CollectionFrame.frame_id == frame.id))
@@ -245,8 +241,8 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if task_id:
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except OSError:
-            logger.warning("Failed to revoke Celery task %s", task_id)
+        except Exception:
+            logger.warning(_REVOKE_FAIL_MSG, task_id)
 
     # Clean up partial output files
     output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
@@ -290,8 +286,8 @@ async def bulk_delete_jobs(
         if task_id and job.status in ("pending", "processing"):
             try:
                 celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-            except OSError:
-                pass
+            except Exception:
+                logger.warning(_REVOKE_FAIL_MSG, task_id)
 
         if use_delete_files:
             total_bytes_freed += await _delete_job_files(db, job)
@@ -327,8 +323,8 @@ async def delete_job(
     if task_id and job.status in ("pending", "processing"):
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except OSError:
-            pass
+        except Exception:
+            logger.warning(_REVOKE_FAIL_MSG, task_id)
 
     bytes_freed = 0
     if delete_files:
@@ -406,5 +402,4 @@ async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
     """Mark stale processing and pending jobs as failed."""
     from ..services.stale_jobs import cleanup_all_stale
 
-    result = await cleanup_all_stale(db)
-    return result
+    return await cleanup_all_stale(db)

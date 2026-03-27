@@ -87,7 +87,9 @@ describe('errorReporter', () => {
   });
 
   it('subscriber errors do not cascade', () => {
-    const badSub = vi.fn(() => { throw new Error('subscriber crash'); });
+    const badSub = vi.fn(() => {
+      throw new Error('subscriber crash');
+    });
     const goodSub = vi.fn();
     onError(badSub);
     onError(goodSub);

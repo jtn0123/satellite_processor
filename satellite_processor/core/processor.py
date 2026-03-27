@@ -220,9 +220,8 @@ class SatelliteImageProcessor:
 
         if sanchez_files:
             return self.file_manager.keep_file_order(sanchez_files)
-        else:
-            self.logger.warning("No files were processed with false color")
-            return current_files
+        self.logger.warning("No files were processed with false color")
+        return current_files
 
     def _stage_crop(
         self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
@@ -250,9 +249,8 @@ class SatelliteImageProcessor:
 
         if cropped_files:
             return self.file_manager.keep_file_order(cropped_files)
-        else:
-            self.logger.warning("No files were cropped, using original files")
-            return current_files
+        self.logger.warning("No files were cropped, using original files")
+        return current_files
 
     def _stage_timestamp(
         self, current_files: list[Path], dirs: dict[str, Path], pool: multiprocessing.pool.Pool
@@ -421,9 +419,8 @@ class SatelliteImageProcessor:
             if cv2.imwrite(str(output_path), timestamped):
                 logger.debug(f"Successfully saved timestamped image: {output_path.name}")
                 return str(output_path)
-            else:
-                logger.error(f"Failed to save timestamped image: {output_path}")
-                return None
+            logger.error(f"Failed to save timestamped image: {output_path}")
+            return None
 
         except Exception as e:
             logger.error(f"Error in timestamp processing: {e}", exc_info=True)
@@ -615,8 +612,7 @@ class SatelliteImageProcessor:
                     self.options.get("crop_height", img.shape[0]),
                 )
 
-            img = ImageOperations.add_timestamp(img, image_path)
-            return img
+            return ImageOperations.add_timestamp(img, image_path)
 
         except Exception as e:
             self.logger.error(f"Failed to process {image_path}: {e}", exc_info=True)
@@ -859,11 +855,9 @@ class SatelliteImageProcessor:
 
         with multiprocessing.Pool(processes=num_processes) as pool:
             total = len(images)
-            completed = 0
 
             results = pool.imap_unordered(self._save_single_image, tasks)
-            for _ in results:
-                completed += 1
+            for completed, _ in enumerate(results, 1):
                 progress = int((completed / total) * 100)
                 self._emit_progress("Saving processed images", progress)
 
@@ -923,13 +917,12 @@ class SatelliteImageProcessor:
         """Process a single image with proper dimension handling"""
         try:
             output_dir = str(Path(options["temp_dir"]) / "sanchez_outputs")
-            img = ImageOperations.apply_false_color_and_read(
+            return ImageOperations.apply_false_color_and_read(
                 str(image_path),
                 output_dir,
                 options.get("sanchez_path", ""),
                 options.get("underlay_path", ""),
             )
-            return img
 
         except Exception as e:
             self.logger.error(f"Error processing {image_path}: {e}", exc_info=True)

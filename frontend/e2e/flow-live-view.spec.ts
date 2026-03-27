@@ -115,14 +115,20 @@ test.describe('Live flow', () => {
     await page.goto('/live');
     // Image container only renders when catalog/frame data is available
     const container = page.locator('[data-testid="live-image-container"]');
-    const emptyState = page.getByText('No frames loaded yet').or(page.getByText('No local frames available'));
+    const emptyState = page
+      .getByText('No frames loaded yet')
+      .or(page.getByText('No local frames available'));
     await expect(container.or(emptyState)).toBeVisible({ timeout: 10000 });
   });
 
   test('error state appears on image load failure', async ({ page }) => {
     // Override image routes to return 404 to trigger error state
-    await page.route('**/api/satellite/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
-    await page.route('**/api/satellite/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/latest*', (route) =>
+      route.fulfill({ status: 404, json: { detail: 'not found' } }),
+    );
+    await page.route('**/api/satellite/catalog/latest*', (route) =>
+      route.fulfill({ status: 404, json: { detail: 'not found' } }),
+    );
     // Also block CDN fallback images so error state appears
     await page.route('**/cdn.star.nesdis.noaa.gov/**', (route) => route.abort('connectionrefused'));
     await page.goto('/live');
@@ -174,7 +180,7 @@ test.describe('Live flow', () => {
     await expect(page.locator('h1')).toContainText('Live', { timeout: 10000 });
     // Breadcrumb nav should not be visible on mobile
     const breadcrumb = page.locator('nav[aria-label="Breadcrumb"]');
-    if (await breadcrumb.count() > 0) {
+    if ((await breadcrumb.count()) > 0) {
       await expect(breadcrumb).not.toBeVisible();
     }
   });
@@ -184,14 +190,21 @@ test.describe('Live flow', () => {
   test('cached image banner is dismissible', async ({ page }) => {
     // Pre-seed cached image data so the banner appears on error fallback
     await page.addInitScript(() => {
-      localStorage.setItem('live-last-image-meta', JSON.stringify({
-        url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        satellite: 'GOES-19', band: 'C02', sector: 'CONUS',
-        timestamp: new Date().toISOString(),
-      }));
+      localStorage.setItem(
+        'live-last-image-meta',
+        JSON.stringify({
+          url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          satellite: 'GOES-19',
+          band: 'C02',
+          sector: 'CONUS',
+          timestamp: new Date().toISOString(),
+        }),
+      );
     });
     // Make the live image fail so it falls back to cached
-    await page.route('**/api/satellite/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/latest*', (route) =>
+      route.fulfill({ status: 404, json: { detail: 'not found' } }),
+    );
     // Also make thumbnail/image URLs fail
     await page.route('**/api/satellite/frames/*/image', (route) => route.fulfill({ status: 500 }));
     await page.goto('/live');

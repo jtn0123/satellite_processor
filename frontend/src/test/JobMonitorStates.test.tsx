@@ -13,11 +13,45 @@ const baseJob = {
 
 const jobs: Record<string, object> = {
   pending: { ...baseJob, status: 'pending', progress: 0, status_message: 'Queued' },
-  processing: { ...baseJob, status: 'processing', progress: 45, status_message: 'Downloading...', started_at: '2026-01-01T00:01:00Z' },
-  completed: { ...baseJob, status: 'completed', progress: 100, output_path: '/out', completed_at: '2026-01-01T00:05:00Z', started_at: '2026-01-01T00:01:00Z' },
-  completed_partial: { ...baseJob, status: 'completed_partial', progress: 100, output_path: '/out', status_message: 'Fetched 150 of 300', completed_at: '2026-01-01T00:05:00Z', started_at: '2026-01-01T00:01:00Z' },
-  failed: { ...baseJob, status: 'failed', progress: 0, error: 'S3 timeout', completed_at: '2026-01-01T00:02:00Z', started_at: '2026-01-01T00:01:00Z' },
-  cancelled: { ...baseJob, status: 'cancelled', progress: 30, completed_at: '2026-01-01T00:03:00Z', started_at: '2026-01-01T00:01:00Z' },
+  processing: {
+    ...baseJob,
+    status: 'processing',
+    progress: 45,
+    status_message: 'Downloading...',
+    started_at: '2026-01-01T00:01:00Z',
+  },
+  completed: {
+    ...baseJob,
+    status: 'completed',
+    progress: 100,
+    output_path: '/out',
+    completed_at: '2026-01-01T00:05:00Z',
+    started_at: '2026-01-01T00:01:00Z',
+  },
+  completed_partial: {
+    ...baseJob,
+    status: 'completed_partial',
+    progress: 100,
+    output_path: '/out',
+    status_message: 'Fetched 150 of 300',
+    completed_at: '2026-01-01T00:05:00Z',
+    started_at: '2026-01-01T00:01:00Z',
+  },
+  failed: {
+    ...baseJob,
+    status: 'failed',
+    progress: 0,
+    error: 'S3 timeout',
+    completed_at: '2026-01-01T00:02:00Z',
+    started_at: '2026-01-01T00:01:00Z',
+  },
+  cancelled: {
+    ...baseJob,
+    status: 'cancelled',
+    progress: 30,
+    completed_at: '2026-01-01T00:03:00Z',
+    started_at: '2026-01-01T00:01:00Z',
+  },
 };
 
 vi.mock('../hooks/useApi', () => ({

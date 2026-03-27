@@ -9,7 +9,7 @@ test.describe('Error Reporting', () => {
   test('health detailed endpoint returns system info', async ({ request }) => {
     const res = await apiGet(request, '/api/health/detailed');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body).toBeTruthy();
   });
 

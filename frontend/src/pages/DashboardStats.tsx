@@ -1,9 +1,4 @@
-import {
-  Image,
-  ListTodo,
-  Activity,
-  HardDrive,
-} from 'lucide-react';
+import { Image, ListTodo, Activity, HardDrive } from 'lucide-react';
 import { formatBytes } from '../utils/format';
 
 function storageBarColor(percent: number): string {
@@ -13,20 +8,32 @@ function storageBarColor(percent: number): string {
 }
 
 interface DashboardStatsProps {
-  stats: {
-    total_images: number;
-    total_jobs: number;
-    active_jobs: number;
-    storage?: { used: number; total: number };
-  } | undefined;
+  stats:
+    | {
+        total_images: number;
+        total_jobs: number;
+        active_jobs: number;
+        storage?: { used: number; total: number };
+      }
+    | undefined;
   isLoading: boolean;
 }
 
 export default function DashboardStats({ stats, isLoading }: Readonly<DashboardStatsProps>) {
   const statCards = [
     { label: 'Total Images', value: stats?.total_images ?? 0, icon: Image, color: 'text-sky-400' },
-    { label: 'Total Jobs', value: stats?.total_jobs ?? 0, icon: ListTodo, color: 'text-violet-400' },
-    { label: 'Active Jobs', value: stats?.active_jobs ?? 0, icon: Activity, color: 'text-amber-400' },
+    {
+      label: 'Total Jobs',
+      value: stats?.total_jobs ?? 0,
+      icon: ListTodo,
+      color: 'text-violet-400',
+    },
+    {
+      label: 'Active Jobs',
+      value: stats?.active_jobs ?? 0,
+      icon: Activity,
+      color: 'text-amber-400',
+    },
   ];
 
   const storageUsed = stats?.storage?.used ?? 0;
@@ -37,12 +44,17 @@ export default function DashboardStats({ stats, isLoading }: Readonly<DashboardS
     <>
       {isLoading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["a","b","c","d"].map((k) => (
-            <div key={k} className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 h-24 animate-pulse" />
+          {['a', 'b', 'c', 'd'].map((k) => (
+            <div
+              key={k}
+              className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 h-24 animate-pulse"
+            />
           ))}
         </div>
       )}
-      <div className={`@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4 ${isLoading ? 'hidden' : ''}`}>
+      <div
+        className={`@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4 ${isLoading ? 'hidden' : ''}`}
+      >
         {statCards.map((s) => (
           <div
             key={s.label}

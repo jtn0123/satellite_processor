@@ -25,16 +25,32 @@ interface StudioFrameSelectionProps {
 }
 
 export function StudioFrameSelection({
-  selectionMode, setSelectionMode,
-  satellite, setSatellite, band, setBand, sector, setSector,
-  startDate, setStartDate, endDate, setEndDate,
-  collectionId, setCollectionId,
-  products, collections, previewFrames,
+  selectionMode,
+  setSelectionMode,
+  satellite,
+  setSatellite,
+  band,
+  setBand,
+  sector,
+  setSector,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  collectionId,
+  setCollectionId,
+  products,
+  collections,
+  previewFrames,
 }: StudioFrameSelectionProps) {
   const isHimawari = satellite ? isHimawariSatellite(satellite) : false;
   const bandInfoMap = isHimawari ? HIMAWARI_BAND_INFO : BAND_INFO;
-  const sectorOptions = satellite ? getSectorsForSatellite(satellite, products?.sectors) : (products?.sectors ?? []);
-  const bandOptions = satellite ? getBandsForSatellite(satellite, products?.bands) : (products?.bands ?? []);
+  const sectorOptions = satellite
+    ? getSectorsForSatellite(satellite, products?.sectors)
+    : (products?.sectors ?? []);
+  const bandOptions = satellite
+    ? getBandsForSatellite(satellite, products?.bands)
+    : (products?.bands ?? []);
 
   return (
     <div className="lg:col-span-2 space-y-4">
@@ -44,14 +60,18 @@ export function StudioFrameSelection({
         </h3>
 
         <div role="group" aria-label="Frame selection mode" className="flex gap-2">
-          <button onClick={() => setSelectionMode('filters')}
+          <button
+            onClick={() => setSelectionMode('filters')}
             aria-pressed={selectionMode === 'filters'}
-            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'filters' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'filters' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}
+          >
             By Filters
           </button>
-          <button onClick={() => setSelectionMode('collection')}
+          <button
+            onClick={() => setSelectionMode('collection')}
             aria-pressed={selectionMode === 'collection'}
-            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'collection' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+            className={`px-3 py-1.5 text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${selectionMode === 'collection' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}
+          >
             From Collection
           </button>
         </div>
@@ -59,17 +79,39 @@ export function StudioFrameSelection({
         {selectionMode === 'filters' ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="anim-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
-              <select id="anim-satellite" value={satellite} onChange={(e) => setSatellite(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+              <label
+                htmlFor="anim-satellite"
+                className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+              >
+                Satellite
+              </label>
+              <select
+                id="anim-satellite"
+                value={satellite}
+                onChange={(e) => setSatellite(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+              >
                 <option value="">All</option>
-                {(products?.satellites ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+                {(products?.satellites ?? []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label htmlFor="anim-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
-              <select id="anim-band" value={band} onChange={(e) => setBand(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+              <label
+                htmlFor="anim-band"
+                className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+              >
+                Band
+              </label>
+              <select
+                id="anim-band"
+                value={band}
+                onChange={(e) => setBand(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+              >
                 <option value="">All</option>
                 {bandOptions.map((b) => {
                   const info = bandInfoMap[b.id];
@@ -79,36 +121,87 @@ export function StudioFrameSelection({
                   } else if (b.description) {
                     suffix = ` — ${b.description}`;
                   }
-                  return <option key={b.id} value={b.id}>{b.id}{suffix}</option>;
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {b.id}
+                      {suffix}
+                    </option>
+                  );
                 })}
               </select>
             </div>
             <div>
-              <label htmlFor="anim-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
-              <select id="anim-sector" value={sector} onChange={(e) => setSector(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+              <label
+                htmlFor="anim-sector"
+                className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+              >
+                Sector
+              </label>
+              <select
+                id="anim-sector"
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+              >
                 <option value="">All</option>
-                {sectorOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sectorOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label htmlFor="anim-start-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Start Date</label>
-              <input id="anim-start-date" type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+              <label
+                htmlFor="anim-start-date"
+                className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+              >
+                Start Date
+              </label>
+              <input
+                id="anim-start-date"
+                type="datetime-local"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+              />
             </div>
             <div>
-              <label htmlFor="anim-end-date" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">End Date</label>
-              <input id="anim-end-date" type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5" />
+              <label
+                htmlFor="anim-end-date"
+                className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+              >
+                End Date
+              </label>
+              <input
+                id="anim-end-date"
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+              />
             </div>
           </div>
         ) : (
           <div>
-            <label htmlFor="anim-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
-            <select id="anim-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
-              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5">
+            <label
+              htmlFor="anim-collection"
+              className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+            >
+              Collection
+            </label>
+            <select
+              id="anim-collection"
+              value={collectionId}
+              onChange={(e) => setCollectionId(e.target.value)}
+              className="w-full rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1.5"
+            >
               <option value="">Select collection...</option>
-              {(collections ?? []).map((c) => <option key={c.id} value={c.id}>{c.name} ({c.frame_count ?? 0} frames)</option>)}
+              {(collections ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.frame_count ?? 0} frames)
+                </option>
+              ))}
             </select>
           </div>
         )}
@@ -124,8 +217,13 @@ export function StudioFrameSelection({
                 <div key={frame.id} className="shrink-0 w-24">
                   <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
                     {(frame.thumbnail_url ?? frame.image_url) ? (
-                      <img src={frame.thumbnail_url ?? frame.image_url}
-                        alt={`${frame.satellite} ${frame.band} preview`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      <img
+                        src={frame.thumbnail_url ?? frame.image_url}
+                        alt={`${frame.satellite} ${frame.band} preview`}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Satellite className="w-4 h-4 text-gray-400 dark:text-slate-600" />

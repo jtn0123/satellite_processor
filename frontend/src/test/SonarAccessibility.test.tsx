@@ -30,7 +30,9 @@ const makeFrame = (id: string) => ({
   capture_time: '2024-01-01T00:00:00Z',
   file_path: '/test.nc',
   file_size: 1024,
-  thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  thumbnail_path: null,
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
   width: 1000,
   height: 1000,
   tags: [],
@@ -59,7 +61,9 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
       end_date: '',
       name: '',
     };
-    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />);
+    render(
+      <AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />,
+    );
 
     const fieldsets = document.querySelectorAll('fieldset');
     expect(fieldsets.length).toBe(4);
@@ -76,16 +80,23 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
 
   it('fieldsets have no visible border styling', () => {
     const config = {
-      satellite: 'GOES-18', sector: 'CONUS', band: 'Band13',
-      fps: 10, resolution: 'preview' as const, format: 'mp4' as const,
-      quality: 'medium' as const, loop_style: 'forward' as const,
+      satellite: 'GOES-18',
+      sector: 'CONUS',
+      band: 'Band13',
+      fps: 10,
+      resolution: 'preview' as const,
+      format: 'mp4' as const,
+      quality: 'medium' as const,
+      loop_style: 'forward' as const,
       overlays: { show_timestamp: true, show_label: true, show_colorbar: false },
       date_range: { start: '', end: '' },
       start_date: '',
       end_date: '',
       name: '',
     };
-    render(<AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />);
+    render(
+      <AnimationSettingsPanel config={config} captureIntervalMinutes={10} onChange={() => {}} />,
+    );
 
     const fieldsets = document.querySelectorAll('fieldset');
     fieldsets.forEach((fs) => {
@@ -96,7 +107,11 @@ describe('Fieldset accessibility (role="group" → <fieldset>)', () => {
 
 describe('Shared Modal component', () => {
   it('renders dialog with backdrop button', () => {
-    render(<Modal onClose={() => {}} ariaLabel="Test Modal"><p>Content</p></Modal>);
+    render(
+      <Modal onClose={() => {}} ariaLabel="Test Modal">
+        <p>Content</p>
+      </Modal>,
+    );
     expect(document.querySelector('dialog')).toBeTruthy();
     expect(screen.getByLabelText('Close modal')).toBeTruthy();
     expect(screen.getByText('Content')).toBeTruthy();
@@ -104,30 +119,47 @@ describe('Shared Modal component', () => {
 
   it('calls onClose when backdrop button is clicked', () => {
     const onClose = vi.fn();
-    render(<Modal onClose={onClose} ariaLabel="Test Modal"><p>Hi</p></Modal>);
+    render(
+      <Modal onClose={onClose} ariaLabel="Test Modal">
+        <p>Hi</p>
+      </Modal>,
+    );
     fireEvent.click(screen.getByLabelText('Close modal'));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('calls onClose on close-modal event', () => {
     const onClose = vi.fn();
-    render(<Modal onClose={onClose} ariaLabel="Test Modal"><p>Hi</p></Modal>);
+    render(
+      <Modal onClose={onClose} ariaLabel="Test Modal">
+        <p>Hi</p>
+      </Modal>,
+    );
     globalThis.dispatchEvent(new Event('close-modal'));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('applies custom overlay and panel classNames', () => {
     render(
-      <Modal onClose={() => {}} ariaLabel="Custom" overlayClassName="custom-overlay" panelClassName="custom-panel">
+      <Modal
+        onClose={() => {}}
+        ariaLabel="Custom"
+        overlayClassName="custom-overlay"
+        panelClassName="custom-panel"
+      >
         <p>Custom</p>
-      </Modal>
+      </Modal>,
     );
     expect(document.querySelector('.custom-overlay')).toBeTruthy();
     expect(document.querySelector('.custom-panel')).toBeTruthy();
   });
 
   it('sets aria-label on the panel div', () => {
-    render(<Modal onClose={() => {}} ariaLabel="My Dialog"><p>X</p></Modal>);
+    render(
+      <Modal onClose={() => {}} ariaLabel="My Dialog">
+        <p>X</p>
+      </Modal>,
+    );
     expect(screen.getByLabelText('My Dialog')).toBeTruthy();
   });
 });
@@ -282,7 +314,9 @@ describe('ImageViewer accessibility', () => {
   it('navigates with arrow buttons when multiple frames', () => {
     const frames = [makeFrame('1'), makeFrame('2'), makeFrame('3')];
     const onNavigate = vi.fn();
-    render(<ImageViewer frame={frames[1]} frames={frames} onClose={() => {}} onNavigate={onNavigate} />);
+    render(
+      <ImageViewer frame={frames[1]} frames={frames} onClose={() => {}} onNavigate={onNavigate} />,
+    );
 
     // Both prev and next buttons should be visible for middle frame
     const buttons = document.querySelectorAll('button');

@@ -14,7 +14,6 @@ import api from '../api/client';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedApi = api as any;
 
-
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -40,7 +39,10 @@ describe('StatsTab', () => {
       data: {
         total_frames: 1234,
         total_size_bytes: 5_000_000,
-        by_satellite: { 'GOES-16': { count: 800, size: 3_000_000 }, 'GOES-18': { count: 434, size: 2_000_000 } },
+        by_satellite: {
+          'GOES-16': { count: 800, size: 3_000_000 },
+          'GOES-18': { count: 434, size: 2_000_000 },
+        },
         by_band: { C02: { count: 500, size: 2_000_000 }, C13: { count: 734, size: 3_000_000 } },
       },
     });

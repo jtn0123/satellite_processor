@@ -103,7 +103,9 @@ export default function ConnectionStatus() {
 
   return (
     <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
-      <span className={`w-2.5 h-2.5 rounded-full ${cfg.color} ${status === 'reconnecting' ? 'animate-pulse' : ''}`} />
+      <span
+        className={`w-2.5 h-2.5 rounded-full ${cfg.color} ${status === 'reconnecting' ? 'animate-pulse' : ''}`}
+      />
       {status === 'disconnected' ? 'Offline' : cfg.label}
     </div>
   );

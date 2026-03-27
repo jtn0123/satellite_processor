@@ -48,7 +48,12 @@ function timelineDotColor(step: { label: string; done: boolean }): string {
 }
 
 function isTerminalStatus(status: string): boolean {
-  return status === 'completed' || status === 'completed_partial' || status === 'failed' || status === 'cancelled';
+  return (
+    status === 'completed' ||
+    status === 'completed_partial' ||
+    status === 'failed' ||
+    status === 'cancelled'
+  );
 }
 
 function computeDuration(
@@ -74,7 +79,7 @@ const TERMINAL_STATUS_LABELS: Record<string, string> = {
 function buildTimelineSteps(
   job: { created_at: string; started_at?: string; completed_at?: string } | null,
   status: string,
-): Array<{ label: string; time: string | null; done: boolean }> {
+): { label: string; time: string | null; done: boolean }[] {
   if (!job) return [];
   const terminalLabel = TERMINAL_STATUS_LABELS[status];
   const finalStep = terminalLabel
@@ -138,22 +143,27 @@ function JobHeader({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-semibold font-mono break-all">{jobId}</h2>
-        <button onClick={onCopy} className="text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" title="Copy Job ID">
+        <button
+          onClick={onCopy}
+          className="text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+          title="Copy Job ID"
+        >
           {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {connected && (
           <span className="flex items-center gap-1 text-xs text-green-400">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />{' '}
-            Live
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" /> Live
           </span>
         )}
         <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClass(status)}`}>
           {status}
         </span>
         {durationMs > 0 && (
-          <span className="text-xs text-gray-500 dark:text-slate-400">{formatDuration(durationMs)}</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">
+            {formatDuration(durationMs)}
+          </span>
         )}
       </div>
     </div>
@@ -207,7 +217,8 @@ function timelineConnectorClass(nextDone: boolean): string {
 
 function logFilterButtonClass(lvl: string, logFilter: string | null): string {
   const isActive = (lvl === 'all' && !logFilter) || logFilter === lvl;
-  if (isActive) return 'px-1.5 py-0.5 rounded text-xs transition-colors bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-white';
+  if (isActive)
+    return 'px-1.5 py-0.5 rounded text-xs transition-colors bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-white';
   return 'px-1.5 py-0.5 rounded text-xs transition-colors text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300';
 }
 
@@ -268,9 +279,16 @@ function LogConsole({
           <span className="text-slate-600">No logs yet…</span>
         ) : (
           filteredLogs.map((entry, i) => (
-            <div key={`${entry.timestamp}-${i}`} className={`${LOG_COLORS[entry.level] ?? 'text-slate-400'} leading-5`}>
-              <span className="text-gray-400 dark:text-slate-600">[{fmtTime(entry.timestamp)}]</span>{' '}
-              <span className="text-gray-400 dark:text-slate-500 uppercase w-12 inline-block">{entry.level}</span>{' '}
+            <div
+              key={`${entry.timestamp}-${i}`}
+              className={`${LOG_COLORS[entry.level] ?? 'text-slate-400'} leading-5`}
+            >
+              <span className="text-gray-400 dark:text-slate-600">
+                [{fmtTime(entry.timestamp)}]
+              </span>{' '}
+              <span className="text-gray-400 dark:text-slate-500 uppercase w-12 inline-block">
+                {entry.level}
+              </span>{' '}
               {entry.message}
             </div>
           ))
@@ -285,7 +303,9 @@ function LogConsole({
 function useClipboard(jobId: string) {
   const [copied, setCopied] = useState(false);
   const copyId = useCallback(() => {
-    navigator.clipboard.writeText(jobId).catch(() => showToast('error', 'Failed to copy job ID to clipboard'));
+    navigator.clipboard
+      .writeText(jobId)
+      .catch(() => showToast('error', 'Failed to copy job ID to clipboard'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [jobId]);
@@ -341,22 +361,32 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
   const { copied, copyId } = useClipboard(jobId);
   const now = useDurationTicker(status);
   const durationMs = computeDuration(job, status, now);
-  const { filteredLogs, logFilter, setLogFilter, autoScroll, setAutoScroll, logRef } = useJobLogs(jobId, wsLogs);
+  const { filteredLogs, logFilter, setLogFilter, autoScroll, setAutoScroll, logRef } = useJobLogs(
+    jobId,
+    wsLogs,
+  );
 
   /* ── Actions ──────────────────────────────────────────── */
   const handleDelete = useCallback(() => {
-    api.delete(`/jobs/${jobId}`).then(() => onBack()).catch(() => showToast('error', 'Failed to delete job'));
+    api
+      .delete(`/jobs/${jobId}`)
+      .then(() => onBack())
+      .catch(() => showToast('error', 'Failed to delete job'));
   }, [jobId, onBack]);
 
   const handleCancel = useCallback(() => {
-    api.delete(`/jobs/${jobId}`).then(() => refetch()).catch(() => showToast('error', 'Failed to cancel job'));
+    api
+      .delete(`/jobs/${jobId}`)
+      .then(() => refetch())
+      .catch(() => showToast('error', 'Failed to cancel job'));
   }, [jobId, refetch]);
 
   const handleRetry = useCallback(() => {
     if (!job) return;
     api
       .post('/jobs', { job_type: job.job_type, params: job.params, input_path: job.input_path })
-      .then(() => onBack()).catch(() => showToast('error', 'Failed to retry job'));
+      .then(() => onBack())
+      .catch(() => showToast('error', 'Failed to retry job'));
   }, [job, onBack]);
 
   /* ── Params display ───────────────────────────────────── */
@@ -414,11 +444,18 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       {/* ── Parameters ─────────────────────────────────── */}
       {paramEntries.length > 0 && (
         <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Job Parameters</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+            Job Parameters
+          </h3>
           <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-3 gap-3 text-sm">
             {paramEntries.map(([key, val]) => (
-              <div key={key} className="bg-gray-100 dark:bg-space-700/50 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2">
-                <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">{key.replaceAll('_', ' ')}</p>
+              <div
+                key={key}
+                className="bg-gray-100 dark:bg-space-700/50 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2"
+              >
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase">
+                  {key.replaceAll('_', ' ')}
+                </p>
                 <p className="font-medium truncate">{formatParamValue(val)}</p>
               </div>
             ))}
@@ -435,9 +472,13 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
               <div key={step.label} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div className={`w-3 h-3 rounded-full ${timelineDotColor(step)}`} />
-                  <span className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">{step.label}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">
+                    {step.label}
+                  </span>
                   {step.time && (
-                    <span className="text-[10px] text-gray-400 dark:text-slate-500">{fmtTime(step.time)}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500">
+                      {fmtTime(step.time)}
+                    </span>
                   )}
                 </div>
                 {i < timelineSteps.length - 1 && (
@@ -479,7 +520,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
             className="inline-flex items-center gap-2 px-4 py-2 btn-primary-mix text-white rounded-xl text-sm font-medium transition-colors focus-ring btn-interactive"
           >
             <Download className="w-4 h-4" /> Download Output
-          </a>  
+          </a>
         </div>
       )}
     </div>

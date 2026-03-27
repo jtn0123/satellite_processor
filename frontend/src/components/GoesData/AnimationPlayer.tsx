@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GoesFrame } from './types';
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Repeat,
-  Maximize,
-  Minimize,
-  X,
-} from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Maximize, Minimize, X } from 'lucide-react';
 
 interface AnimationPlayerProps {
   frames: GoesFrame[];
@@ -33,10 +24,7 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
   const frameCount = frames.length;
   const currentFrame = frames[currentIndex];
 
-  const imageUrl = useCallback(
-    (frame: GoesFrame) => `/api/satellite/frames/${frame.id}/image`,
-    [],
-  );
+  const imageUrl = useCallback((frame: GoesFrame) => `/api/satellite/frames/${frame.id}/image`, []);
 
   // Preload frames ahead
   useEffect(() => {
@@ -148,7 +136,11 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
       <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
         <div className="text-white text-center">
           <p>No frames to animate</p>
-          <button type="button" onClick={onClose} className="mt-4 px-4 py-2 bg-slate-700 rounded-lg min-h-[44px] min-w-[44px]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-4 px-4 py-2 bg-slate-700 rounded-lg min-h-[44px] min-w-[44px]"
+          >
             Close
           </button>
         </div>
@@ -172,11 +164,13 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           </span>
           {currentFrame && (
             <span className="ml-3 text-slate-400">
-              {new Date(currentFrame.capture_time).toLocaleString()} · {currentFrame.satellite} · {currentFrame.band} · {currentFrame.sector}
+              {new Date(currentFrame.capture_time).toLocaleString()} · {currentFrame.satellite} ·{' '}
+              {currentFrame.band} · {currentFrame.sector}
             </span>
           )}
         </div>
-        <button type="button"
+        <button
+          type="button"
           onClick={onClose}
           className="p-2 text-slate-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Close player"
@@ -215,7 +209,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
 
         {/* Button row */}
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          <button type="button"
+          <button
+            type="button"
             onClick={stepBack}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label="Previous frame"
@@ -223,7 +218,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             <SkipBack className="w-5 h-5" />
           </button>
 
-          <button type="button"
+          <button
+            type="button"
             onClick={togglePlay}
             className="p-3 bg-sky-600 hover:bg-sky-500 text-white rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label={playing ? 'Pause' : 'Play'}
@@ -231,7 +227,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
             {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
           </button>
 
-          <button type="button"
+          <button
+            type="button"
             onClick={stepForward}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label="Next frame"
@@ -242,7 +239,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           {/* Speed control */}
           <div className="flex items-center gap-1 ml-4">
             {SPEEDS.map((s) => (
-              <button type="button"
+              <button
+                type="button"
                 key={s}
                 onClick={() => setSpeed(s)}
                 className={`px-2 py-1 text-xs rounded min-h-[44px] min-w-[44px] flex items-center justify-center ${
@@ -258,7 +256,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           </div>
 
           {/* Loop toggle */}
-          <button type="button"
+          <button
+            type="button"
             onClick={() => setLoop((l) => !l)}
             className={`p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center ${
               loop
@@ -271,7 +270,8 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
           </button>
 
           {/* Fullscreen */}
-          <button type="button"
+          <button
+            type="button"
             onClick={toggleFullscreen}
             className="p-2 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-700"
             aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}

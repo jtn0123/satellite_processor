@@ -29,7 +29,9 @@ describe('PullToRefreshIndicator', () => {
   });
 
   it('uses custom threshold for progress calculation', () => {
-    const { container } = render(<PullToRefreshIndicator pullDistance={50} isRefreshing={false} threshold={100} />);
+    const { container } = render(
+      <PullToRefreshIndicator pullDistance={50} isRefreshing={false} threshold={100} />,
+    );
     // Should render — pullDistance > 0
     expect(container.innerHTML).not.toBe('');
   });

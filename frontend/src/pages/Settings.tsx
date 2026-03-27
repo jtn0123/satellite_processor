@@ -3,7 +3,22 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSettings, useUpdateSettings } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { Save, RefreshCw, CheckCircle2, AlertCircle, HardDrive, ChevronRight, Upload, Layers, Trash2, FlaskConical, Info, Settings as SettingsIcon, Database, Monitor } from 'lucide-react';
+import {
+  Save,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  HardDrive,
+  ChevronRight,
+  Upload,
+  Layers,
+  Trash2,
+  FlaskConical,
+  Info,
+  Settings as SettingsIcon,
+  Database,
+  Monitor,
+} from 'lucide-react';
 import api from '../api/client';
 import { formatBytes } from '../utils/format';
 
@@ -46,7 +61,12 @@ function TabLoadingFallback() {
 
 /* ─── Sub-components ─── */
 
-function CollapsibleSection({ title, icon, children, defaultOpen = false }: Readonly<{
+function CollapsibleSection({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+}: Readonly<{
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
@@ -63,13 +83,13 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false }: Read
       >
         {icon}
         <span className="text-lg font-semibold flex-1">{title}</span>
-        <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight
+          className={`w-5 h-5 text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
+        />
       </button>
       {open && (
         <div className="px-6 pb-6">
-          <Suspense fallback={<TabLoadingFallback />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={<TabLoadingFallback />}>{children}</Suspense>
         </div>
       )}
     </div>
@@ -97,7 +117,8 @@ function StorageSection() {
         <HardDrive className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold">Storage</h2>
         <span className="text-sm text-gray-500 dark:text-slate-400 ml-auto">
-          {formatBytes(storage.total_size_bytes ?? 0)} · {(storage.total_frames ?? 0).toLocaleString()} frames
+          {formatBytes(storage.total_size_bytes ?? 0)} ·{' '}
+          {(storage.total_frames ?? 0).toLocaleString()} frames
         </span>
       </div>
 
@@ -113,7 +134,9 @@ function StorageSection() {
                   style={{ width: `${((info?.size ?? 0) / maxSatSize) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-gray-400 dark:text-slate-500 w-24 text-right">{formatBytes(info?.size ?? 0)} ({info?.count ?? 0})</span>
+              <span className="text-xs text-gray-400 dark:text-slate-500 w-24 text-right">
+                {formatBytes(info?.size ?? 0)} ({info?.count ?? 0})
+              </span>
             </div>
           ))}
         </div>
@@ -135,8 +158,12 @@ function StorageSection() {
                 {bandEntries.map(([band, info]) => (
                   <tr key={band} className="border-b border-gray-200 dark:border-slate-700/50">
                     <td className="py-1.5 pr-4 text-gray-600 dark:text-slate-300">{band}</td>
-                    <td className="py-1.5 pr-4 text-gray-500 dark:text-slate-400">{(info?.count ?? 0).toLocaleString()}</td>
-                    <td className="py-1.5 text-gray-500 dark:text-slate-400">{formatBytes(info?.size ?? 0)}</td>
+                    <td className="py-1.5 pr-4 text-gray-500 dark:text-slate-400">
+                      {(info?.count ?? 0).toLocaleString()}
+                    </td>
+                    <td className="py-1.5 text-gray-500 dark:text-slate-400">
+                      {formatBytes(info?.size ?? 0)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -173,7 +200,9 @@ function VersionInfo() {
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-gray-500 dark:text-slate-400">Version</dt>
-            <dd className="font-mono text-gray-900 dark:text-white">{version ? `v${version}` : '—'}</dd>
+            <dd className="font-mono text-gray-900 dark:text-white">
+              {version ? `v${version}` : '—'}
+            </dd>
           </div>
           {shortSha && (
             <div className="flex justify-between">
@@ -236,7 +265,9 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
         <h2 className="text-lg font-semibold">Processing Defaults</h2>
         <div className="grid gap-4">
           <div>
-            <label htmlFor="false-color" className="text-sm text-gray-500 dark:text-slate-400">Default False Color</label>
+            <label htmlFor="false-color" className="text-sm text-gray-500 dark:text-slate-400">
+              Default False Color
+            </label>
             <select
               id="false-color"
               value={(form.default_false_color as string) ?? 'vegetation'}
@@ -249,18 +280,43 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               <option value="dust">Dust RGB</option>
               <option value="airmass">Air Mass</option>
             </select>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Color composite applied to satellite imagery.</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Color composite applied to satellite imagery.
+            </p>
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <input id="timestamp-enabled" type="checkbox" checked={(form.timestamp_enabled as boolean) ?? true} onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })} className="w-4 h-4" />
-              <label htmlFor="timestamp-enabled" className="text-sm text-gray-500 dark:text-slate-400">Timestamp Enabled</label>
+              <input
+                id="timestamp-enabled"
+                type="checkbox"
+                checked={(form.timestamp_enabled as boolean) ?? true}
+                onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <label
+                htmlFor="timestamp-enabled"
+                className="text-sm text-gray-500 dark:text-slate-400"
+              >
+                Timestamp Enabled
+              </label>
             </div>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Burn a date/time overlay onto each frame.</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Burn a date/time overlay onto each frame.
+            </p>
           </div>
           <div>
-            <label htmlFor="timestamp-position" className="text-sm text-gray-500 dark:text-slate-400">Timestamp Position</label>
-            <select id="timestamp-position" value={(form.timestamp_position as string) ?? 'bottom-left'} onChange={(e) => setForm({ ...form, timestamp_position: e.target.value })} className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm">
+            <label
+              htmlFor="timestamp-position"
+              className="text-sm text-gray-500 dark:text-slate-400"
+            >
+              Timestamp Position
+            </label>
+            <select
+              id="timestamp-position"
+              value={(form.timestamp_position as string) ?? 'bottom-left'}
+              onChange={(e) => setForm({ ...form, timestamp_position: e.target.value })}
+              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+            >
               <option value="top-left">Top Left</option>
               <option value="top-right">Top Right</option>
               <option value="bottom-left">Bottom Left</option>
@@ -268,40 +324,99 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
             </select>
           </div>
           <div>
-            <label htmlFor="video-fps" className="text-sm text-gray-500 dark:text-slate-400">Video FPS</label>
-            <input id="video-fps" type="number" min={1} max={120} value={(form.video_fps as number) ?? 24} onChange={(e) => setForm({ ...form, video_fps: Number(e.target.value) })} className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm" />
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Range: 1–120, default 24.</p>
+            <label htmlFor="video-fps" className="text-sm text-gray-500 dark:text-slate-400">
+              Video FPS
+            </label>
+            <input
+              id="video-fps"
+              type="number"
+              min={1}
+              max={120}
+              value={(form.video_fps as number) ?? 24}
+              onChange={(e) => setForm({ ...form, video_fps: Number(e.target.value) })}
+              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Range: 1–120, default 24.
+            </p>
           </div>
           <div>
-            <label htmlFor="video-codec" className="text-sm text-gray-500 dark:text-slate-400">Video Codec</label>
-            <select id="video-codec" value={(form.video_codec as string) ?? 'h264'} onChange={(e) => setForm({ ...form, video_codec: e.target.value })} className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm">
+            <label htmlFor="video-codec" className="text-sm text-gray-500 dark:text-slate-400">
+              Video Codec
+            </label>
+            <select
+              id="video-codec"
+              value={(form.video_codec as string) ?? 'h264'}
+              onChange={(e) => setForm({ ...form, video_codec: e.target.value })}
+              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+            >
               <option value="h264">H.264</option>
               <option value="hevc">HEVC (H.265)</option>
               <option value="av1">AV1</option>
             </select>
           </div>
           <div>
-            <label htmlFor="max-frames" className="text-sm text-gray-500 dark:text-slate-400">Max Frames per Fetch</label>
-            <input id="max-frames" type="number" min={50} max={1000} value={(form.max_frames_per_fetch as number) ?? 200} onChange={(e) => setForm({ ...form, max_frames_per_fetch: Number(e.target.value) })} className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm" />
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Range: 50–1000, default 200.</p>
+            <label htmlFor="max-frames" className="text-sm text-gray-500 dark:text-slate-400">
+              Max Frames per Fetch
+            </label>
+            <input
+              id="max-frames"
+              type="number"
+              min={50}
+              max={1000}
+              value={(form.max_frames_per_fetch as number) ?? 200}
+              onChange={(e) => setForm({ ...form, max_frames_per_fetch: Number(e.target.value) })}
+              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Range: 50–1000, default 200.
+            </p>
           </div>
           <div>
-            <label htmlFor="video-quality" className="text-sm text-gray-500 dark:text-slate-400">Video Quality (CRF)</label>
-            <input id="video-quality" type="number" min={0} max={51} value={(form.video_quality as number) ?? 23} onChange={(e) => setForm({ ...form, video_quality: Number(e.target.value) })} className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm" />
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Range: 0–51, default 23.</p>
+            <label htmlFor="video-quality" className="text-sm text-gray-500 dark:text-slate-400">
+              Video Quality (CRF)
+            </label>
+            <input
+              id="video-quality"
+              type="number"
+              min={0}
+              max={51}
+              value={(form.video_quality as number) ?? 23}
+              onChange={(e) => setForm({ ...form, video_quality: Number(e.target.value) })}
+              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Range: 0–51, default 23.
+            </p>
           </div>
-          <button type="button" onClick={handleSave} disabled={updateSettings.isPending} className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium w-fit transition-colors disabled:opacity-50">
-            {updateSettings.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={updateSettings.isPending}
+            className="flex items-center gap-2 px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg text-sm font-medium w-fit transition-colors disabled:opacity-50"
+          >
+            {updateSettings.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
             Save Settings
           </button>
           {saveError && (
             <output className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-red-400/10 text-red-400">
-              <AlertCircle className="w-4 h-4" />{saveError}
+              <AlertCircle className="w-4 h-4" />
+              {saveError}
             </output>
           )}
           {toast && (
-            <output className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${toast.type === 'success' ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}`}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            <output
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-opacity ${toast.type === 'success' ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}`}
+            >
+              {toast.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <AlertCircle className="w-4 h-4" />
+              )}
               {toast.message}
             </output>
           )}
@@ -315,7 +430,11 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
 function DataTabContent() {
   return (
     <div className="space-y-6">
-      <CollapsibleSection title="Cleanup Rules" icon={<Trash2 className="w-5 h-5 text-red-400" />} defaultOpen>
+      <CollapsibleSection
+        title="Cleanup Rules"
+        icon={<Trash2 className="w-5 h-5 text-red-400" />}
+        defaultOpen
+      >
         <CleanupTab />
       </CollapsibleSection>
       <CollapsibleSection title="Composites" icon={<Layers className="w-5 h-5 text-violet-400" />}>
@@ -324,7 +443,10 @@ function DataTabContent() {
       <CollapsibleSection title="Manual Upload" icon={<Upload className="w-5 h-5 text-sky-400" />}>
         <UploadZone />
       </CollapsibleSection>
-      <CollapsibleSection title="Processing" icon={<FlaskConical className="w-5 h-5 text-amber-400" />}>
+      <CollapsibleSection
+        title="Processing"
+        icon={<FlaskConical className="w-5 h-5 text-amber-400" />}
+      >
         <ProcessingForm selectedImages={[]} />
       </CollapsibleSection>
     </div>
@@ -349,24 +471,38 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
   const tabFromUrl = searchParams.get('tab') as SettingsTabId | null;
   const activeTab: SettingsTabId = tabFromUrl && allTabIds.has(tabFromUrl) ? tabFromUrl : 'config';
 
-  const changeTab = useCallback((tab: SettingsTabId) => {
-    setSearchParams(tab === 'config' ? {} : { tab }, { replace: true });
-  }, [setSearchParams]);
+  const changeTab = useCallback(
+    (tab: SettingsTabId) => {
+      setSearchParams(tab === 'config' ? {} : { tab }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-1">
-          <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
+        <nav
+          aria-label="Breadcrumb"
+          className="hidden md:flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-1"
+        >
+          <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+            Home
+          </Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span aria-current="page" className="text-gray-900 dark:text-white">Settings</span>
+          <span aria-current="page" className="text-gray-900 dark:text-white">
+            Settings
+          </span>
         </nav>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Application configuration</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center" role="tablist" aria-label="Settings tabs">
+      <div
+        className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center"
+        role="tablist"
+        aria-label="Settings tabs"
+      >
         {tabs.map((tab) => (
           <button
             type="button"
@@ -428,8 +564,12 @@ export default function SettingsPage() {
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <div className="bg-red-100 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-6 text-center max-w-md">
           <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Failed to load settings</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">Something went wrong while fetching your configuration.</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+            Failed to load settings
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+            Something went wrong while fetching your configuration.
+          </p>
           <button
             type="button"
             onClick={() => globalThis.location.reload()}
@@ -442,5 +582,7 @@ export default function SettingsPage() {
     );
   }
 
-  return <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />;
+  return (
+    <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />
+  );
 }

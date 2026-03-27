@@ -60,7 +60,9 @@ test.describe('Frame filtering E2E', () => {
     await page.waitForTimeout(2_000);
 
     // Look for band filter
-    const bandFilter = page.locator('select[name*="band"], select[data-testid*="band"], [data-testid*="band-filter"]').first();
+    const bandFilter = page
+      .locator('select[name*="band"], select[data-testid*="band"], [data-testid*="band-filter"]')
+      .first();
     if (await bandFilter.isVisible({ timeout: 2_000 }).catch(() => false)) {
       const options = await bandFilter.locator('option').allTextContents();
       if (options.length > 1) {
@@ -83,7 +85,9 @@ test.describe('Frame filtering E2E', () => {
     await page.waitForTimeout(2_000);
 
     // Look for a reset/clear button
-    const clearBtn = page.locator('button:has-text("Clear"), button:has-text("Reset"), button[aria-label*="clear"]').first();
+    const clearBtn = page
+      .locator('button:has-text("Clear"), button:has-text("Reset"), button[aria-label*="clear"]')
+      .first();
     if (await clearBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await clearBtn.click();
       await page.waitForTimeout(1_000);

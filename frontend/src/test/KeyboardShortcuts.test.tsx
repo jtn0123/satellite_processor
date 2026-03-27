@@ -11,12 +11,20 @@ vi.mock('react-router-dom', async () => {
 
 describe('KeyboardShortcuts', () => {
   it('renders nothing when closed', () => {
-    const { container } = render(<MemoryRouter><KeyboardShortcuts /></MemoryRouter>);
+    const { container } = render(
+      <MemoryRouter>
+        <KeyboardShortcuts />
+      </MemoryRouter>,
+    );
     expect(container.innerHTML).toBe('');
   });
 
   it('dispatches close-modal on Escape keydown', () => {
-    render(<MemoryRouter><KeyboardShortcuts /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <KeyboardShortcuts />
+      </MemoryRouter>,
+    );
     const handler = vi.fn();
     globalThis.addEventListener('close-modal', handler);
     fireEvent.keyDown(document, { key: 'Escape' });

@@ -68,7 +68,7 @@ function renderMonitor(jobId = 'job-err-test') {
       <MemoryRouter>
         <JobMonitor jobId={jobId} onBack={vi.fn()} />
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -96,7 +96,11 @@ describe('JobMonitorErrors', () => {
       expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to copy job ID to clipboard');
     });
 
-    Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, writable: true, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      writable: true,
+      configurable: true,
+    });
   });
 
   it('job delete failure shows toast', async () => {

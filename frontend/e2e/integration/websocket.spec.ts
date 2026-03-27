@@ -139,7 +139,8 @@ test.describe('WebSocket job progress', () => {
     const parsed = JSON.parse(firstMessage) as Record<string, unknown>;
     expect(typeof parsed).toBe('object');
     // Messages should have at least a type, status, or event field
-    const hasExpectedField = 'type' in parsed || 'status' in parsed || 'job_id' in parsed || 'event' in parsed;
+    const hasExpectedField =
+      'type' in parsed || 'status' in parsed || 'job_id' in parsed || 'event' in parsed;
     expect(hasExpectedField).toBeTruthy();
   });
 });

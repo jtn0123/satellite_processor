@@ -1,12 +1,12 @@
 /**
  * Defensive data extraction utilities for API responses.
- * 
+ *
  * API responses may return:
  * - A raw array: [...]
  * - A paginated object: { items: [...], total: N, ... }
  * - An error object: { detail: "..." }
  * - undefined/null
- * 
+ *
  * These helpers ensure we always get a safe array to .map() over.
  */
 

@@ -5,7 +5,11 @@ import EmptyState from '../components/GoesData/EmptyState';
 describe('EmptyState', () => {
   it('renders icon, title, and description', () => {
     render(
-      <EmptyState icon={<span data-testid="icon">📡</span>} title="No frames" description="Try fetching some data" />
+      <EmptyState
+        icon={<span data-testid="icon">📡</span>}
+        title="No frames"
+        description="Try fetching some data"
+      />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.getByText('No frames')).toBeInTheDocument();
@@ -15,7 +19,12 @@ describe('EmptyState', () => {
   it('renders action button when action prop provided', () => {
     const onClick = vi.fn();
     render(
-      <EmptyState icon={<span>📡</span>} title="No data" description="Fetch now" action={{ label: 'Fetch', onClick }} />
+      <EmptyState
+        icon={<span>📡</span>}
+        title="No data"
+        description="Fetch now"
+        action={{ label: 'Fetch', onClick }}
+      />,
     );
     const btn = screen.getByText('Fetch');
     expect(btn).toBeInTheDocument();

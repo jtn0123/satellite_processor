@@ -1,12 +1,18 @@
 import { Component, type ReactNode } from 'react';
 
-interface Props { children: ReactNode; }
-interface State { hasError: boolean; }
+interface Props {
+  children: ReactNode;
+}
+interface State {
+  hasError: boolean;
+}
 
 export default class ImageErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 
-  static getDerivedStateFromError(): State { return { hasError: true }; }
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
+  }
 
   componentDidCatch(error: Error) {
     console.error('ImageErrorBoundary caught:', error);

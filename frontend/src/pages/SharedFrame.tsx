@@ -33,7 +33,11 @@ function formatTimeRemaining(expiresAt: string): { text: string; urgent: boolean
 export default function SharedFramePage() {
   const { token } = useParams<{ token: string }>();
 
-  const { data: frame, isLoading, error } = useQuery<SharedFrame>({
+  const {
+    data: frame,
+    isLoading,
+    error,
+  } = useQuery<SharedFrame>({
     queryKey: ['shared', token],
     queryFn: () => api.get(`/shared/${token}`).then((r) => r.data),
     enabled: !!token,
@@ -54,9 +58,7 @@ export default function SharedFramePage() {
       <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">
         <div className="text-center space-y-4">
           <Satellite className="w-16 h-16 mx-auto text-gray-600" />
-          <h1 className="text-2xl font-bold">
-            {status === 410 ? 'Link Expired' : 'Not Found'}
-          </h1>
+          <h1 className="text-2xl font-bold">{status === 410 ? 'Link Expired' : 'Not Found'}</h1>
           <p className="text-gray-400">
             {status === 410
               ? 'This share link has expired.'
@@ -81,15 +83,18 @@ export default function SharedFramePage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {frame.expires_at && (() => {
-              const { text, urgent } = formatTimeRemaining(frame.expires_at);
-              return (
-                <span className={`flex items-center gap-1.5 text-xs ${urgent ? 'text-amber-400' : 'text-gray-400'}`}>
-                  <Clock className="w-3.5 h-3.5" />
-                  {text}
-                </span>
-              );
-            })()}
+            {frame.expires_at &&
+              (() => {
+                const { text, urgent } = formatTimeRemaining(frame.expires_at);
+                return (
+                  <span
+                    className={`flex items-center gap-1.5 text-xs ${urgent ? 'text-amber-400' : 'text-gray-400'}`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    {text}
+                  </span>
+                );
+              })()}
             <a
               href={`/api/shared/${token}/image`}
               download

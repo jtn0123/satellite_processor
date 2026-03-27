@@ -21,7 +21,9 @@ const frame = {
   sector: 'CONUS',
   capture_time: '2026-01-01T12:00:00Z',
   file_path: '/path/to/file.nc',
-  thumbnail_path: '/path/to/thumb.png', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  thumbnail_path: '/path/to/thumb.png',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
   file_size: 2048000,
   width: 1920,
   height: 1080,
@@ -88,7 +90,12 @@ describe('FramePreviewModal', () => {
     const frame2 = { ...frame, id: 'f2' };
     const onNavigate = vi.fn();
     renderWithQuery(
-      <FramePreviewModal frame={frame as never} onClose={vi.fn()} allFrames={[frame, frame2] as never[]} onNavigate={onNavigate} />
+      <FramePreviewModal
+        frame={frame as never}
+        onClose={vi.fn()}
+        allFrames={[frame, frame2] as never[]}
+        onNavigate={onNavigate}
+      />,
     );
     fireEvent.keyDown(document, { key: 'ArrowRight' });
     expect(onNavigate).toHaveBeenCalledWith(frame2);
@@ -98,7 +105,12 @@ describe('FramePreviewModal', () => {
     const frame2 = { ...frame, id: 'f2' };
     const onNavigate = vi.fn();
     renderWithQuery(
-      <FramePreviewModal frame={frame2 as never} onClose={vi.fn()} allFrames={[frame, frame2] as never[]} onNavigate={onNavigate} />
+      <FramePreviewModal
+        frame={frame2 as never}
+        onClose={vi.fn()}
+        allFrames={[frame, frame2] as never[]}
+        onNavigate={onNavigate}
+      />,
     );
     fireEvent.keyDown(document, { key: 'ArrowLeft' });
     expect(onNavigate).toHaveBeenCalledWith(frame);

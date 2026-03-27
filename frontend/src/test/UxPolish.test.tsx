@@ -10,7 +10,8 @@ type IOCallback = IntersectionObserverCallback;
 
 function setupIO() {
   let storedCb: IOCallback | null = null;
-  const instances: Array<{ observe: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }> = [];
+  const instances: { observe: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }[] =
+    [];
 
   class MockIO {
     observe = vi.fn();
@@ -28,7 +29,10 @@ function setupIO() {
     const inst = instances[instances.length - 1];
     if (storedCb && inst) {
       act(() => {
-        storedCb!([{ isIntersecting: true } as IntersectionObserverEntry], inst as unknown as IntersectionObserver);
+        storedCb!(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          inst as unknown as IntersectionObserver,
+        );
       });
     }
   }
@@ -86,15 +90,27 @@ const mockedApi = api as any;
 
 function renderBrowse() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return render(<QueryClientProvider client={qc}><BrowseTab /></QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={qc}>
+      <BrowseTab />
+    </QueryClientProvider>,
+  );
 }
 
 describe('BrowseTab — clear filters button', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-      if (url === '/satellite/products') return Promise.resolve({ data: { satellites: ['G16', 'G18'], bands: [{ id: 'C01' }], sectors: [{ id: 'CONUS', name: 'CONUS' }] } });
+      if (url.includes('/satellite/frames'))
+        return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
+      if (url === '/satellite/products')
+        return Promise.resolve({
+          data: {
+            satellites: ['G16', 'G18'],
+            bands: [{ id: 'C01' }],
+            sectors: [{ id: 'CONUS', name: 'CONUS' }],
+          },
+        });
       if (url === '/satellite/tags') return Promise.resolve({ data: [] });
       if (url === '/satellite/collections') return Promise.resolve({ data: [] });
       return Promise.resolve({ data: {} });

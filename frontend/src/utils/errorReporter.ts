@@ -60,7 +60,9 @@ function scheduleFlush(): void {
 /** Subscribe to all reported errors. Returns an unsubscribe function. */
 export function onError(fn: ErrorSubscriber): () => void {
   subscribers.add(fn);
-  return () => { subscribers.delete(fn); };
+  return () => {
+    subscribers.delete(fn);
+  };
 }
 
 /** Read-only snapshot of all errors captured this session. */
@@ -90,7 +92,11 @@ export function reportError(error: unknown, context?: string): void {
   if (errorLog.length > 100) errorLog.splice(0, errorLog.length - 100);
 
   if (isDev) {
-    console.error(`[ErrorReporter] ${report.context ?? 'unknown'}:`, report.message, report.stack ?? '');
+    console.error(
+      `[ErrorReporter] ${report.context ?? 'unknown'}:`,
+      report.message,
+      report.stack ?? '',
+    );
   }
 
   if (isProd) {
@@ -103,7 +109,11 @@ export function reportError(error: unknown, context?: string): void {
 
   // Notify subscribers
   subscribers.forEach((fn) => {
-    try { fn(report); } catch { /* subscriber errors must not cascade */ }
+    try {
+      fn(report);
+    } catch {
+      /* subscriber errors must not cascade */
+    }
   });
 }
 

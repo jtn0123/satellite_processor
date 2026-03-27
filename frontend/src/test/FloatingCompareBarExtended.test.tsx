@@ -5,10 +5,20 @@ import type { GoesFrame } from '../components/GoesData/types';
 
 function makeFrame(id: string): GoesFrame {
   return {
-    id, satellite: 'GOES-19', sector: 'FullDisk', band: 'C02',
-    capture_time: '2025-01-01T00:00:00Z', file_path: `/data/${id}.nc`,
-    file_size: 1024, width: 1000, height: 1000, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
-    tags: [], collections: [],
+    id,
+    satellite: 'GOES-19',
+    sector: 'FullDisk',
+    band: 'C02',
+    capture_time: '2025-01-01T00:00:00Z',
+    file_path: `/data/${id}.nc`,
+    file_size: 1024,
+    width: 1000,
+    height: 1000,
+    thumbnail_path: null,
+    image_url: '/api/satellite/frames/test-id/image',
+    thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+    tags: [],
+    collections: [],
   };
 }
 
@@ -36,7 +46,12 @@ describe('FloatingCompareBar — extended', () => {
   });
 
   it('hides Compare for 3+ frames', () => {
-    render(<FloatingCompareBar selectedFrames={[makeFrame('1'), makeFrame('2'), makeFrame('3')]} {...handlers} />);
+    render(
+      <FloatingCompareBar
+        selectedFrames={[makeFrame('1'), makeFrame('2'), makeFrame('3')]}
+        {...handlers}
+      />,
+    );
     expect(screen.queryByLabelText('Compare selected frames')).not.toBeInTheDocument();
   });
 
@@ -52,21 +67,35 @@ describe('FloatingCompareBar — extended', () => {
 
   it('calls onClear', () => {
     const onClear = vi.fn();
-    render(<FloatingCompareBar selectedFrames={[makeFrame('1')]} {...handlers} onClear={onClear} />);
+    render(
+      <FloatingCompareBar selectedFrames={[makeFrame('1')]} {...handlers} onClear={onClear} />,
+    );
     fireEvent.click(screen.getByLabelText('Clear selection'));
     expect(onClear).toHaveBeenCalledOnce();
   });
 
   it('calls onCompare', () => {
     const onCompare = vi.fn();
-    render(<FloatingCompareBar selectedFrames={[makeFrame('1'), makeFrame('2')]} {...handlers} onCompare={onCompare} />);
+    render(
+      <FloatingCompareBar
+        selectedFrames={[makeFrame('1'), makeFrame('2')]}
+        {...handlers}
+        onCompare={onCompare}
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Compare selected frames'));
     expect(onCompare).toHaveBeenCalledOnce();
   });
 
   it('calls onAnimate', () => {
     const onAnimate = vi.fn();
-    render(<FloatingCompareBar selectedFrames={[makeFrame('1'), makeFrame('2')]} {...handlers} onAnimate={onAnimate} />);
+    render(
+      <FloatingCompareBar
+        selectedFrames={[makeFrame('1'), makeFrame('2')]}
+        {...handlers}
+        onAnimate={onAnimate}
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Animate selected frames'));
     expect(onAnimate).toHaveBeenCalledOnce();
   });

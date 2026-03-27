@@ -9,7 +9,7 @@ describe('useSwipeTabs', () => {
         tabs: ['a', 'b', 'c'],
         activeTab: 'b',
         onSwipe: vi.fn(),
-      })
+      }),
     );
     expect(result.current).toHaveProperty('current');
   });
@@ -21,7 +21,7 @@ describe('useSwipeTabs', () => {
         tabs: ['a', 'b', 'c'],
         activeTab: 'b',
         onSwipe,
-      })
+      }),
     );
     expect(onSwipe).not.toHaveBeenCalled();
   });

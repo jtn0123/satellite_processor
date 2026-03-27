@@ -31,7 +31,6 @@ vi.mock('leaflet', () => ({
 
 import MapTab from '../components/GoesData/MapTab';
 
-
 describe('MapTab', () => {
   it('renders without crashing', () => {
     renderWithProviders(<MapTab />);

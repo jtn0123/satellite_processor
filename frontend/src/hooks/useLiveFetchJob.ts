@@ -16,22 +16,42 @@ function shouldAutoFetch(
   if (!autoFetch || !catalogLatest || !frame || hasActiveJob) return false;
   const catalogTime = new Date(catalogLatest.scan_time).getTime();
   const localTime = new Date(frame.capture_time).getTime();
-  return catalogTime > localTime && lastAutoFetchTime !== catalogLatest.scan_time && Date.now() - lastAutoFetchMs > 30000;
+  return (
+    catalogTime > localTime &&
+    lastAutoFetchTime !== catalogLatest.scan_time &&
+    Date.now() - lastAutoFetchMs > 30000
+  );
 }
 
 export function useLiveFetchJob({
-  satellite, sector, band, autoFetch, catalogLatest, frame,
-  lastAutoFetchTimeRef, lastAutoFetchMsRef, refetch,
+  satellite,
+  sector,
+  band,
+  autoFetch,
+  catalogLatest,
+  frame,
+  lastAutoFetchTimeRef,
+  lastAutoFetchMsRef,
+  refetch,
 }: {
-  satellite: string; sector: string; band: string; autoFetch: boolean;
-  catalogLatest: CatalogLatest | null; frame: LatestFrame | null;
+  satellite: string;
+  sector: string;
+  band: string;
+  autoFetch: boolean;
+  catalogLatest: CatalogLatest | null;
+  frame: LatestFrame | null;
   lastAutoFetchTimeRef: React.MutableRefObject<string | null>;
   lastAutoFetchMsRef: React.MutableRefObject<number>;
   refetch: () => Promise<unknown>;
 }) {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
-  const { data: activeJob } = useQuery<{ id: string; status: string; progress: number; status_message: string }>({
+  const { data: activeJob } = useQuery<{
+    id: string;
+    status: string;
+    progress: number;
+    status_message: string;
+  }>({
     queryKey: ['live-job', activeJobId],
     queryFn: () => api.get(`/jobs/${activeJobId}`).then((r) => r.data),
     enabled: !!activeJobId,
@@ -50,7 +70,10 @@ export function useLiveFetchJob({
 
   const fetchNow = useCallback(async () => {
     if (band === 'GEOCOLOR') {
-      showToast('error', 'GEOCOLOR is a CDN-only composite and cannot be fetched. Select a band (C01–C16).');
+      showToast(
+        'error',
+        'GEOCOLOR is a CDN-only composite and cannot be fetched. Select a band (C01–C16).',
+      );
       return;
     }
     const isMeso = isMesoSector(sector);
@@ -75,7 +98,9 @@ export function useLiveFetchJob({
 
     try {
       const res = await api.post('/satellite/fetch', {
-        satellite: satellite.toUpperCase(), sector, band,
+        satellite: satellite.toUpperCase(),
+        sector,
+        band,
         start_time: startDate,
         end_time: endDate,
       });
@@ -88,7 +113,17 @@ export function useLiveFetchJob({
 
   useEffect(() => {
     if (band === 'GEOCOLOR') return;
-    if (!shouldAutoFetch(autoFetch, catalogLatest, frame, lastAutoFetchTimeRef.current, lastAutoFetchMsRef.current, !!activeJobId)) return;
+    if (
+      !shouldAutoFetch(
+        autoFetch,
+        catalogLatest,
+        frame,
+        lastAutoFetchTimeRef.current,
+        lastAutoFetchMsRef.current,
+        !!activeJobId,
+      )
+    )
+      return;
     lastAutoFetchTimeRef.current = catalogLatest!.scan_time;
     lastAutoFetchMsRef.current = Date.now();
     let cancelled = false;
@@ -105,11 +140,25 @@ export function useLiveFetchJob({
           setActiveJobId(res.data.job_id);
           showToast('success', 'Auto-fetching new frame from AWS');
         }
-      } catch { /* auto-fetch failure is non-critical */ }
+      } catch {
+        /* auto-fetch failure is non-critical */
+      }
     };
     doAutoFetch();
-    return () => { cancelled = true; };
-  }, [autoFetch, catalogLatest, frame, satellite, sector, band, lastAutoFetchTimeRef, lastAutoFetchMsRef, activeJobId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    autoFetch,
+    catalogLatest,
+    frame,
+    satellite,
+    sector,
+    band,
+    lastAutoFetchTimeRef,
+    lastAutoFetchMsRef,
+    activeJobId,
+  ]);
 
   // Track whether the last fetch job completed but no frame appeared
   const [lastFetchFailed, setLastFetchFailed] = useState(false);

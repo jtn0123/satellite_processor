@@ -14,10 +14,16 @@ interface InlineFetchProgressProps {
 
 function getStatusContent(job: Job) {
   if (job.status === JOB_STATUS.COMPLETED) {
-    return <span className="text-sm text-emerald-600 dark:text-emerald-300 font-medium">✓ Fetch complete</span>;
+    return (
+      <span className="text-sm text-emerald-600 dark:text-emerald-300 font-medium">
+        ✓ Fetch complete
+      </span>
+    );
   }
   if (job.status === JOB_STATUS.FAILED) {
-    return <span className="text-sm text-red-600 dark:text-red-300 font-medium">✗ Fetch failed</span>;
+    return (
+      <span className="text-sm text-red-600 dark:text-red-300 font-medium">✗ Fetch failed</span>
+    );
   }
   return null;
 }
@@ -26,7 +32,10 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
   const statusContent = getStatusContent(job);
 
   return (
-    <output aria-live="polite" className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3">
+    <output
+      aria-live="polite"
+      className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3"
+    >
       {statusContent ?? (
         <>
           <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
@@ -36,7 +45,10 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
               <span className="text-xs">{Math.round(job.progress)}%</span>
             </div>
             <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${job.progress}%` }} />
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${job.progress}%` }}
+              />
             </div>
           </div>
         </>

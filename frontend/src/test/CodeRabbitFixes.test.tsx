@@ -13,7 +13,7 @@ describe('CodeRabbit button type fixes', () => {
   it('AddToCollectionModal buttons have type="button"', () => {
     render(withQC(<AddToCollectionModal frameIds={['1']} onClose={() => {}} />));
     const buttons = document.querySelectorAll('button');
-    buttons.forEach(btn => {
+    buttons.forEach((btn) => {
       expect(btn.getAttribute('type')).toBe('button');
     });
   });
@@ -21,7 +21,7 @@ describe('CodeRabbit button type fixes', () => {
   it('TagModal buttons have type="button"', () => {
     render(withQC(<TagModal frameIds={['1']} onClose={() => {}} />));
     const buttons = document.querySelectorAll('button');
-    buttons.forEach(btn => {
+    buttons.forEach((btn) => {
       expect(btn.getAttribute('type')).toBe('button');
     });
   });
@@ -44,26 +44,68 @@ describe('CodeRabbit button type fixes', () => {
 import FramePreviewModal from '../components/GoesData/FramePreviewModal';
 
 describe('FramePreviewModal crop area', () => {
-  const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail', tags: [], collections: [] };
+  const frame = {
+    id: '1',
+    satellite: 'GOES-16',
+    band: 'Band02',
+    sector: 'CONUS',
+    capture_time: '2024-01-01T00:00:00Z',
+    file_size: 1024,
+    file_path: '/test.nc',
+    width: 1000,
+    height: 800,
+    thumbnail_path: null,
+    image_url: '/api/satellite/frames/test-id/image',
+    thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+    tags: [],
+    collections: [],
+  };
 
   it('crop area is a button element', () => {
-    render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} allFrames={[frame]} onNavigate={() => {}} />));
+    render(
+      withQC(
+        <FramePreviewModal
+          frame={frame}
+          onClose={() => {}}
+          allFrames={[frame]}
+          onNavigate={() => {}}
+        />,
+      ),
+    );
     const cropBtn = screen.getByLabelText(/Crop area/);
     expect(cropBtn.tagName).toBe('BUTTON');
     expect(cropBtn.getAttribute('type')).toBe('button');
   });
 
   it('Escape key clears crop selection', () => {
-    render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} allFrames={[frame]} onNavigate={() => {}} />));
+    render(
+      withQC(
+        <FramePreviewModal
+          frame={frame}
+          onClose={() => {}}
+          allFrames={[frame]}
+          onNavigate={() => {}}
+        />,
+      ),
+    );
     const cropBtn = screen.getByLabelText(/Crop area/);
     fireEvent.keyDown(cropBtn, { key: 'Escape' });
     expect(cropBtn).toBeTruthy();
   });
 
   it('buttons have type="button"', () => {
-    render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} allFrames={[frame]} onNavigate={() => {}} />));
+    render(
+      withQC(
+        <FramePreviewModal
+          frame={frame}
+          onClose={() => {}}
+          allFrames={[frame]}
+          onNavigate={() => {}}
+        />,
+      ),
+    );
     const buttons = document.querySelectorAll('button');
-    buttons.forEach(btn => {
+    buttons.forEach((btn) => {
       expect(btn.getAttribute('type')).toBe('button');
     });
   });
@@ -77,7 +119,7 @@ describe('Modal action button coverage', () => {
       fireEvent.change(input, { target: { value: 'New Collection' } });
       // Create & Add button should appear with type="button"
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(btn => expect(btn.getAttribute('type')).toBe('button'));
+      buttons.forEach((btn) => expect(btn.getAttribute('type')).toBe('button'));
       expect(buttons.length).toBeGreaterThanOrEqual(3);
     }
   });
@@ -86,14 +128,29 @@ describe('Modal action button coverage', () => {
     render(withQC(<TagModal frameIds={['1']} onClose={() => {}} />));
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(2);
-    buttons.forEach(btn => expect(btn.getAttribute('type')).toBe('button'));
+    buttons.forEach((btn) => expect(btn.getAttribute('type')).toBe('button'));
   });
 
   it('FramePreviewModal all buttons have type="button"', () => {
-    const frame = { id: '1', satellite: 'GOES-16', band: 'Band02', sector: 'CONUS', capture_time: '2024-01-01T00:00:00Z', file_size: 1024, file_path: '/test.nc', width: 1000, height: 800, thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail', tags: [], collections: [] };
+    const frame = {
+      id: '1',
+      satellite: 'GOES-16',
+      band: 'Band02',
+      sector: 'CONUS',
+      capture_time: '2024-01-01T00:00:00Z',
+      file_size: 1024,
+      file_path: '/test.nc',
+      width: 1000,
+      height: 800,
+      thumbnail_path: null,
+      image_url: '/api/satellite/frames/test-id/image',
+      thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+      tags: [],
+      collections: [],
+    };
     render(withQC(<FramePreviewModal frame={frame} onClose={() => {}} />));
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(3);
-    buttons.forEach(btn => expect(btn.getAttribute('type')).toBe('button'));
+    buttons.forEach((btn) => expect(btn.getAttribute('type')).toBe('button'));
   });
 });

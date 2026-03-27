@@ -15,7 +15,7 @@ export function useFocusTrap(onClose: () => void) {
 
     // Focus first focusable element
     const focusable = container.querySelectorAll<HTMLElement>(
-      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     if (focusable.length > 0) {
       setTimeout(() => focusable[0].focus(), 0);
@@ -29,7 +29,7 @@ export function useFocusTrap(onClose: () => void) {
       if (e.key === 'Tab') {
         // Re-query focusable elements each time to handle dynamic content
         const currentFocusable = container.querySelectorAll<HTMLElement>(
-          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (currentFocusable.length === 0) return;
         const first = currentFocusable[0];

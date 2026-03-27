@@ -54,12 +54,23 @@ export default function DevErrorOverlay() {
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 bg-gray-800">
             <span className="font-semibold">Errors ({errors.length})</span>
             <div className="flex gap-1">
-              <button type="button" onClick={handleClear} className="p-2 hover:text-red-400" title="Clear"><Trash2 className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={toggle} className="p-2 hover:text-white" title="Close"><X className="w-3.5 h-3.5" /></button>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-2 hover:text-red-400"
+                title="Clear"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <button type="button" onClick={toggle} className="p-2 hover:text-white" title="Close">
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
           <div className="overflow-y-auto p-2 space-y-2 flex-1">
-            {errors.length === 0 && <p className="text-gray-500 text-center py-4">No errors captured</p>}
+            {errors.length === 0 && (
+              <p className="text-gray-500 text-center py-4">No errors captured</p>
+            )}
             {errors.map((e, i) => (
               <div key={`${e.timestamp}-${i}`} className="bg-gray-800 rounded p-2 space-y-0.5">
                 <div className="text-red-400 font-semibold">{e.context ?? 'unknown'}</div>

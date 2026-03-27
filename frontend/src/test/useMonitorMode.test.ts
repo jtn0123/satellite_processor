@@ -19,7 +19,9 @@ function makeArgs(overrides: Record<string, unknown> = {}) {
     satellite: 'GOES-18',
     sector: 'CONUS',
     band: 'Band02',
-    refetchRef: { current: vi.fn().mockResolvedValue(undefined) } as React.RefObject<(() => Promise<unknown>) | null>,
+    refetchRef: { current: vi.fn().mockResolvedValue(undefined) } as React.RefObject<
+      (() => Promise<unknown>) | null
+    >,
     onRefetch: vi.fn(),
     ...overrides,
   };
@@ -34,7 +36,14 @@ describe('useMonitorMode', () => {
   it('returns initial state with monitoring and autoFetch off', () => {
     const args = makeArgs();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
     expect(result.current.monitoring).toBe(false);
     expect(result.current.autoFetch).toBe(false);
@@ -43,7 +52,14 @@ describe('useMonitorMode', () => {
   it('toggleMonitor activates monitoring and autoFetch', () => {
     const args = makeArgs();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     act(() => result.current.toggleMonitor());
@@ -57,7 +73,14 @@ describe('useMonitorMode', () => {
   it('toggleMonitor deactivates monitoring on second call', () => {
     const args = makeArgs();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     act(() => result.current.toggleMonitor());
@@ -73,7 +96,14 @@ describe('useMonitorMode', () => {
     const args = makeArgs();
     const applyConfig = vi.fn();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     act(() => result.current.startMonitorRaw(applyConfig));
@@ -88,7 +118,14 @@ describe('useMonitorMode', () => {
   it('stopMonitor deactivates monitoring', () => {
     const args = makeArgs();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     act(() => result.current.toggleMonitor()); // activate
@@ -102,7 +139,14 @@ describe('useMonitorMode', () => {
   it('setAutoFetch updates autoFetch state', () => {
     const args = makeArgs();
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     act(() => result.current.setAutoFetch(true));
@@ -119,7 +163,14 @@ describe('useMonitorMode', () => {
     const { rerender } = renderHook(
       ({ event }) => {
         mockUseMonitorWebSocket.mockReturnValue({ lastEvent: event });
-        return useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch);
+        return useMonitorMode(
+          args.onMonitorChange,
+          args.satellite,
+          args.sector,
+          args.band,
+          args.refetchRef,
+          args.onRefetch,
+        );
       },
       { initialProps: { event: null as unknown } },
     );
@@ -128,7 +179,14 @@ describe('useMonitorMode', () => {
     // Can't easily toggle via result in this pattern, so let's use a different approach
     // Re-render with an event while monitoring
     mockUseMonitorWebSocket.mockReturnValue({
-      lastEvent: { type: 'frame_ingested', satellite: 'GOES-18', sector: 'CONUS', band: 'Band02', capture_time: '2024-01-01', timestamp: '2024-01-01' },
+      lastEvent: {
+        type: 'frame_ingested',
+        satellite: 'GOES-18',
+        sector: 'CONUS',
+        band: 'Band02',
+        capture_time: '2024-01-01',
+        timestamp: '2024-01-01',
+      },
     });
     rerender({ event: { type: 'frame_ingested' } });
 
@@ -139,15 +197,33 @@ describe('useMonitorMode', () => {
   it('passes monitoring state and params to useMonitorWebSocket', () => {
     const args = makeArgs();
     renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
-    expect(mockUseMonitorWebSocket).toHaveBeenCalledWith(false, { satellite: 'GOES-18', sector: 'CONUS', band: 'Band02' });
+    expect(mockUseMonitorWebSocket).toHaveBeenCalledWith(false, {
+      satellite: 'GOES-18',
+      sector: 'CONUS',
+      band: 'Band02',
+    });
   });
 
   it('works without optional onMonitorChange', () => {
     const args = makeArgs({ onMonitorChange: undefined });
     const { result } = renderHook(() =>
-      useMonitorMode(args.onMonitorChange, args.satellite, args.sector, args.band, args.refetchRef, args.onRefetch),
+      useMonitorMode(
+        args.onMonitorChange,
+        args.satellite,
+        args.sector,
+        args.band,
+        args.refetchRef,
+        args.onRefetch,
+      ),
     );
 
     // Should not throw

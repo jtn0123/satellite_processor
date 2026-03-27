@@ -103,20 +103,16 @@ describe('FrameCard UTC suffix', () => {
       file_size: 1024,
       width: 100,
       height: 100,
-      thumbnail_path: null, image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+      thumbnail_path: null,
+      image_url: '/api/satellite/frames/test-id/image',
+      thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
       tags: [],
       collections: [],
       created_at: new Date().toISOString(),
     };
-    render(
-      <FrameCard
-        frame={frame}
-        isSelected={false}
-        onClick={() => {}}
-        viewMode="grid"
-      />,
-      { wrapper: createWrapper() },
-    );
+    render(<FrameCard frame={frame} isSelected={false} onClick={() => {}} viewMode="grid" />, {
+      wrapper: createWrapper(),
+    });
     // The capture time should contain "UTC"
     const timeEl = screen.getByText(/UTC/);
     expect(timeEl).toBeInTheDocument();
@@ -126,16 +122,20 @@ describe('FrameCard UTC suffix', () => {
 // ---- Fix #20: FetchTab dynamic satellite ----
 describe('FetchTab dynamic satellite in quick chips', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        satellites: ['GOES-18', 'GOES-19'],
-        default_satellite: 'GOES-18',
-        satellite_availability: {},
-        sectors: [],
-        bands: [],
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            satellites: ['GOES-18', 'GOES-19'],
+            default_satellite: 'GOES-18',
+            satellite_availability: {},
+            sectors: [],
+            bands: [],
+          }),
       }),
-    }));
+    );
   });
 
   it('defaultSat variable is used for quick chips', () => {

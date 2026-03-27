@@ -44,7 +44,9 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
           setLoading(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const headerText = version ? `What's New — v${version}` : "What's New";
@@ -57,7 +59,12 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
       onCancel={close}
       aria-label="What's New dialog"
     >
-      <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={close} aria-label="Close dialog" tabIndex={-1} />
+      <button
+        className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default"
+        onClick={close}
+        aria-label="Close dialog"
+        tabIndex={-1}
+      />
       <div
         ref={dialogRef}
         aria-label="What's New"
@@ -73,18 +80,29 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
               )}
             </div>
           </div>
-          <button type="button" onClick={close} autoFocus className="p-2 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400" aria-label="Close">
+          <button
+            type="button"
+            onClick={close}
+            autoFocus
+            className="p-2 hover:bg-gray-100 dark:hover:bg-space-700 rounded-lg text-gray-500 dark:text-slate-400"
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="space-y-6">
           {loading && (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label="Loading changelog" />
+              <Loader2
+                className="w-6 h-6 animate-spin text-primary"
+                aria-label="Loading changelog"
+              />
             </div>
           )}
           {!loading && releases.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">No changelog entries available.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
+              No changelog entries available.
+            </p>
           )}
           {releases.map((release) => (
             <div key={release.version}>
@@ -102,7 +120,10 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
               </a>
               <ul className="space-y-1">
                 {release.changes.map((change) => (
-                  <li key={change} className="text-sm text-gray-600 dark:text-slate-300 flex items-start gap-2">
+                  <li
+                    key={change}
+                    className="text-sm text-gray-600 dark:text-slate-300 flex items-start gap-2"
+                  >
                     <span className="text-primary mt-1">•</span>
                     {change}
                   </li>
@@ -115,4 +136,3 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
     </dialog>
   );
 }
-

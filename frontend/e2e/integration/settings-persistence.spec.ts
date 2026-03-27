@@ -14,7 +14,9 @@ test.describe('Settings persistence', () => {
     expect(body).toBeTruthy();
 
     // Check for settings-related UI elements
-    const headingsOrLabels = await page.locator('h1, h2, h3, label, .section-title, [class*="section"]').count();
+    const headingsOrLabels = await page
+      .locator('h1, h2, h3, label, .section-title, [class*="section"]')
+      .count();
     expect(headingsOrLabels).toBeGreaterThan(0);
   });
 

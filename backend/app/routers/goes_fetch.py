@@ -221,14 +221,13 @@ async def detect_gaps(
 ):
     """Run gap detection and return coverage stats."""
     logger.debug("Gap detection requested")
-    stats = await get_coverage_stats(
+    return await get_coverage_stats(
         db,
         satellite=satellite,
         band=band,
         sector=sector,
         expected_interval=expected_interval,
     )
-    return stats
 
 
 @router.post("/backfill", response_model=GoesFetchResponse)

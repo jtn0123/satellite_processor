@@ -32,7 +32,7 @@ export default function MobileBottomNav() {
 
   const isMoreActive = moreRoutes.has(location.pathname);
 
-  const isTabActive = (tab: typeof primaryTabs[number]) => {
+  const isTabActive = (tab: (typeof primaryTabs)[number]) => {
     const path = location.pathname;
     if (tab.to === '/') return path === '/';
     return path === tab.to;
@@ -121,53 +121,56 @@ export default function MobileBottomNav() {
           className="flex items-center justify-around"
           onKeyDown={(e) => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-            const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button[role="tab"]'));
+            const buttons = Array.from(
+              e.currentTarget.querySelectorAll<HTMLElement>('button[role="tab"]'),
+            );
             const idx = buttons.indexOf(e.target as HTMLElement);
             if (idx < 0) return;
-            const next = e.key === 'ArrowRight' ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+            const next =
+              e.key === 'ArrowRight'
+                ? (idx + 1) % buttons.length
+                : (idx - 1 + buttons.length) % buttons.length;
             buttons[next].focus();
             e.preventDefault();
           }}
         >
-        {primaryTabs.map((tab) => {
-          const active = isTabActive(tab);
-          return (
-            <button
-              key={tab.label}
-              type="button"
-              role="tab"
-              aria-label={tab.label}
-              aria-selected={active}
-              onClick={() => {
-                setMoreOpen(false);
-                navigate(tab.to);
-              }}
-              className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors border-none bg-transparent ${
-                active
-                  ? 'text-primary'
-                  : 'text-gray-500 dark:text-slate-400'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          role="tab"
-          aria-label="More"
-          aria-selected={isMoreActive && !primaryTabs.some((t) => isTabActive(t))}
-          onClick={toggleMore}
-          className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors ${
-            isMoreActive && !primaryTabs.some((t) => isTabActive(t))
-              ? 'text-primary'
-              : 'text-gray-500 dark:text-slate-400'
-          }`}
-        >
-          <MoreHorizontal className="w-5 h-5" />
-          More
-        </button>
+          {primaryTabs.map((tab) => {
+            const active = isTabActive(tab);
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                role="tab"
+                aria-label={tab.label}
+                aria-selected={active}
+                onClick={() => {
+                  setMoreOpen(false);
+                  navigate(tab.to);
+                }}
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors border-none bg-transparent ${
+                  active ? 'text-primary' : 'text-gray-500 dark:text-slate-400'
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            role="tab"
+            aria-label="More"
+            aria-selected={isMoreActive && !primaryTabs.some((t) => isTabActive(t))}
+            onClick={toggleMore}
+            className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] min-w-[64px] px-2 py-1.5 text-xs font-medium transition-colors ${
+              isMoreActive && !primaryTabs.some((t) => isTabActive(t))
+                ? 'text-primary'
+                : 'text-gray-500 dark:text-slate-400'
+            }`}
+          >
+            <MoreHorizontal className="w-5 h-5" />
+            More
+          </button>
         </div>
       </nav>
     </>

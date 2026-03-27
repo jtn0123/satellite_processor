@@ -30,8 +30,7 @@ def real_image_file(tmp_path):
 
 @pytest.fixture
 def mock_pool():
-    pool = MagicMock(spec=multiprocessing.pool.Pool)
-    return pool
+    return MagicMock(spec=multiprocessing.pool.Pool)
 
 
 class TestValidateImage:

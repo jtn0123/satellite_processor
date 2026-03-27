@@ -16,5 +16,7 @@ export function showToast(type: ToastType, message: string) {
 
 export function subscribeToast(fn: (toast: ToastMessage) => void): () => void {
   listeners.add(fn);
-  return () => { listeners.delete(fn); };
+  return () => {
+    listeners.delete(fn);
+  };
 }

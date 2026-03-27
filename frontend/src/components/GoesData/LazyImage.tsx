@@ -32,7 +32,7 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
           observer.disconnect();
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '200px' },
     );
 
     observer.observe(el);
@@ -45,7 +45,10 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
   const renderContent = () => {
     if (hasError) {
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded" data-testid="image-error-placeholder">
+        <div
+          className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded"
+          data-testid="image-error-placeholder"
+        >
           <ImageOff className="w-8 h-8" aria-hidden="true" />
           <span className="text-xs font-medium">Image unavailable</span>
         </div>
@@ -67,7 +70,9 @@ export default function LazyImage({ src, alt, className, placeholder }: Readonly
         />
       );
     }
-    return placeholder ?? <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-slate-700" />;
+    return (
+      placeholder ?? <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-slate-700" />
+    );
   };
 
   return (

@@ -42,7 +42,9 @@
 }
 
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   font-size: 15px;
 
   @media (min-width: 640px) {
@@ -55,7 +57,9 @@ html {
 
 body {
   @apply bg-gray-50 text-gray-900 dark:text-gray-100 antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Deep Space gradient background (dark mode) */
@@ -66,7 +70,9 @@ body {
 
 /* Touch-friendly button targets on mobile (WCAG 2.5.5 — 44px minimum) */
 @media (max-width: 640px) {
-  button, [role="button"], a {
+  button,
+  [role='button'],
+  a {
     min-height: 2.75rem; /* 44px */
     min-width: 2.75rem;
   }
@@ -100,15 +106,17 @@ button:disabled {
 }
 
 .focus-ring:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 0 8px 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 /* Global focus-visible styles for keyboard navigation */
 button:not(.focus-ring):focus-visible,
 a:not(.focus-ring):focus-visible,
 select:not(.focus-ring):focus-visible,
-input[type="checkbox"]:focus-visible,
-input[type="range"]:focus-visible {
+input[type='checkbox']:focus-visible,
+input[type='range']:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
   outline-offset: 2px;
 }
@@ -201,7 +209,9 @@ input[type="range"]:focus-visible {
 .modal-panel {
   opacity: 1;
   transform: scale(1) translateY(0);
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
 
   @starting-style {
     opacity: 0;
@@ -213,7 +223,9 @@ input[type="range"]:focus-visible {
 .dropdown-enter {
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  transition:
+    opacity 0.15s ease-out,
+    transform 0.15s ease-out;
 
   @starting-style {
     opacity: 0;
@@ -260,7 +272,9 @@ input[type="range"]:focus-visible {
 
 /* Button micro-interactions */
 .btn-interactive {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn-interactive:hover {
@@ -292,7 +306,10 @@ input[type="range"]:focus-visible {
 .glass-card,
 aside,
 header {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* Leaflet fixes */
@@ -319,7 +336,9 @@ header {
 
 /* Text shadow for overlay text on satellite images */
 .text-shadow-overlay {
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.4);
+  text-shadow:
+    0 1px 3px rgb(0 0 0 / 0.8),
+    0 0 8px rgb(0 0 0 / 0.4);
 }
 
 /* color-mix() hover utilities — derive hover from base color */

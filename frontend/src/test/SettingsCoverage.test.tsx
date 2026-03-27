@@ -167,7 +167,12 @@ describe('Settings - storage section with data (System tab)', () => {
 
 describe('Settings - storage section empty (System tab)', () => {
   it('does not render satellite section when empty', async () => {
-    setupLoadedMocks({ by_satellite: {}, by_band: {}, total_size_bytes: 0, total_frames: 0 } as typeof STORAGE_DATA);
+    setupLoadedMocks({
+      by_satellite: {},
+      by_band: {},
+      total_size_bytes: 0,
+      total_frames: 0,
+    } as typeof STORAGE_DATA);
     render(<Settings />, { wrapper });
     fireEvent.click(await screen.findByRole('tab', { name: 'System tab' }));
     await waitFor(() => {

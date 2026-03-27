@@ -18,8 +18,10 @@ function renderApp() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><Layout /></MemoryRouter>
-    </QueryClientProvider>
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -27,7 +29,7 @@ describe('Accessibility checks', () => {
   it('all links have text content or aria-label', () => {
     renderApp();
     const links = screen.getAllByRole('link');
-    links.forEach(link => {
+    links.forEach((link) => {
       const hasContent = link.textContent?.trim() || link.getAttribute('aria-label');
       expect(hasContent).toBeTruthy();
     });
@@ -36,8 +38,12 @@ describe('Accessibility checks', () => {
   it('buttons have accessible names', () => {
     renderApp();
     const buttons = screen.getAllByRole('button');
-    buttons.forEach(btn => {
-      const accessible = btn.textContent?.trim() || btn.getAttribute('aria-label') || btn.getAttribute('title') || btn.querySelector('svg');
+    buttons.forEach((btn) => {
+      const accessible =
+        btn.textContent?.trim() ||
+        btn.getAttribute('aria-label') ||
+        btn.getAttribute('title') ||
+        btn.querySelector('svg');
       expect(accessible).toBeTruthy();
     });
   });
@@ -52,7 +58,7 @@ describe('Accessibility checks', () => {
   it('interactive elements are focusable', () => {
     renderApp();
     const interactive = document.querySelectorAll('button, a, input, select, textarea');
-    interactive.forEach(el => {
+    interactive.forEach((el) => {
       // Should not have tabindex=-1 unless intentionally hidden
       const tabIndex = el.getAttribute('tabindex');
       if (tabIndex) {
@@ -64,7 +70,7 @@ describe('Accessibility checks', () => {
   it('no images without alt text', () => {
     renderApp();
     const images = document.querySelectorAll('img');
-    images.forEach(img => {
+    images.forEach((img) => {
       expect(img.hasAttribute('alt')).toBe(true);
     });
   });

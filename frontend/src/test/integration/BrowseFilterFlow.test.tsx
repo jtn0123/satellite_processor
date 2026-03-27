@@ -150,9 +150,7 @@ describe('BrowseTab filter → display integration', () => {
         (call) => typeof call[0] === 'string' && call[0].startsWith('/satellite/frames'),
       );
       // At least one call should include satellite=GOES-18 in params
-      const hasFilteredCall = frameCalls.some(
-        (call) => call[1]?.params?.satellite === 'GOES-18',
-      );
+      const hasFilteredCall = frameCalls.some((call) => call[1]?.params?.satellite === 'GOES-18');
       expect(hasFilteredCall).toBe(true);
     });
   });

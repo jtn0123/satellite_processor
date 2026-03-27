@@ -57,7 +57,9 @@ test.describe('Live flow', () => {
     // Wait for page to fully load
     await page.waitForTimeout(2000);
     // Check for any form controls (MUI selects, native selects, buttons, etc.)
-    const controls = page.locator('select, [role="combobox"], [role="button"]:has-text("GOES"), button:has-text("GOES"), [class*="select" i]');
+    const controls = page.locator(
+      'select, [role="combobox"], [role="button"]:has-text("GOES"), button:has-text("GOES"), [class*="select" i]',
+    );
     const count = await controls.count();
     // At minimum there should be interactive controls
     expect(count).toBeGreaterThanOrEqual(0);

@@ -1,7 +1,6 @@
 """Animation studio endpoints — crop presets, animations, presets, and batch."""
 
 import logging
-import os
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -34,6 +33,7 @@ from ..models.animation import (
     FrameRangePreview,
 )
 from ..models.pagination import PaginatedResponse
+from ..utils import safe_remove
 
 logger = logging.getLogger(__name__)
 
@@ -406,10 +406,7 @@ async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)
     if not anim:
         raise APIError(404, "not_found", "Animation not found")
     if anim.output_path:
-        try:
-            os.remove(anim.output_path)
-        except OSError:
-            pass
+        safe_remove(anim.output_path)
     await db.delete(anim)
     await db.commit()
     return {"deleted": animation_id}

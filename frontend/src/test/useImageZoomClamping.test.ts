@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { clampTranslate, useImageZoom } from '../hooks/useImageZoom';
 import type { RefObject } from 'react';
 
-function makeTouchEvent(touches: Array<{ clientX: number; clientY: number }>) {
+function makeTouchEvent(touches: { clientX: number; clientY: number }[]) {
   return { touches, preventDefault: () => {} } as unknown as React.TouchEvent;
 }
 
@@ -18,7 +18,17 @@ function makeWheelEvent(deltaY: number, clientX = 0, clientY = 0) {
 function makeContainerRef(width: number, height: number): RefObject<HTMLElement> {
   return {
     current: {
-      getBoundingClientRect: () => ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }),
+      getBoundingClientRect: () => ({
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
     } as unknown as HTMLElement,
   };
 }
@@ -103,8 +113,12 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
     act(() => result.current.zoomIn());
     expect(result.current.isZoomed).toBe(true);
 
-    act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 100, clientY: 100 }])));
-    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 600, clientY: 500 }])));
+    act(() =>
+      result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 100, clientY: 100 }])),
+    );
+    act(() =>
+      result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 600, clientY: 500 }])),
+    );
 
     const transform = result.current.style.transform as string;
     const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
@@ -172,7 +186,9 @@ describe('useImageZoom with containerRef (pan clamping)', () => {
     act(() => result.current.zoomIn());
     // Pan should work unclamped (no crash)
     act(() => result.current.handlers.onTouchStart(makeTouchEvent([{ clientX: 0, clientY: 0 }])));
-    act(() => result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 999, clientY: 999 }])));
+    act(() =>
+      result.current.handlers.onTouchMove(makeTouchEvent([{ clientX: 999, clientY: 999 }])),
+    );
     expect(result.current.style.transform).toContain('translate(');
   });
 

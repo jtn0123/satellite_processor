@@ -40,8 +40,7 @@ export default function ComparisonModal({
   const left = swapped ? frameB : frameA;
   const right = swapped ? frameA : frameB;
 
-  const getUrl = (frame: GoesFrame) =>
-    frame.thumbnail_url ?? frame.image_url;
+  const getUrl = (frame: GoesFrame) => frame.thumbnail_url ?? frame.image_url;
 
   return (
     <Modal
@@ -54,20 +53,33 @@ export default function ComparisonModal({
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
         <h3 className="text-lg font-semibold">Compare Frames</h3>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setMode('side-by-side')}
+          <button
+            type="button"
+            onClick={() => setMode('side-by-side')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              mode === 'side-by-side' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-            }`}>
+              mode === 'side-by-side'
+                ? 'bg-primary text-gray-900 dark:text-white'
+                : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
             <Columns className="w-4 h-4" /> Side by Side
           </button>
-          <button type="button" onClick={() => setMode('slider')}
+          <button
+            type="button"
+            onClick={() => setMode('slider')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              mode === 'slider' ? 'bg-primary text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-            }`}>
+              mode === 'slider'
+                ? 'bg-primary text-gray-900 dark:text-white'
+                : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
             <SlidersHorizontal className="w-4 h-4" /> Slider
           </button>
-          <button type="button" onClick={() => setSwapped(!swapped)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <button
+            type="button"
+            onClick={() => setSwapped(!swapped)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
             <ArrowLeftRight className="w-4 h-4" /> Swap
           </button>
           <button type="button" onClick={onClose} aria-label="Close comparison">
@@ -83,13 +95,21 @@ export default function ComparisonModal({
             {[left, right].map((frame) => (
               <div key={frame.id} className="flex flex-col">
                 <div className="text-xs text-gray-500 dark:text-slate-400 mb-2 text-center">
-                  <span className="font-medium text-gray-900 dark:text-white">{frame.satellite}</span> · {frame.band} · {frame.sector}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {frame.satellite}
+                  </span>{' '}
+                  · {frame.band} · {frame.sector}
                   <br />
                   {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                 </div>
                 <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                  <img src={getUrl(frame)} alt={`${frame.satellite} ${frame.band}`} loading="lazy" decoding="async"
-                    className="max-w-full max-h-[60vh] object-contain" />
+                  <img
+                    src={getUrl(frame)}
+                    alt={`${frame.satellite} ${frame.band}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="max-w-full max-h-[60vh] object-contain"
+                  />
                 </div>
               </div>
             ))}
@@ -98,10 +118,12 @@ export default function ComparisonModal({
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400">
               <span>
-                <span className="font-medium text-gray-900 dark:text-white">{left.satellite}</span> · {left.band} · {new Date(left.capture_time).toLocaleString()}
+                <span className="font-medium text-gray-900 dark:text-white">{left.satellite}</span>{' '}
+                · {left.band} · {new Date(left.capture_time).toLocaleString()}
               </span>
               <span>
-                <span className="font-medium text-gray-900 dark:text-white">{right.satellite}</span> · {right.band} · {new Date(right.capture_time).toLocaleString()}
+                <span className="font-medium text-gray-900 dark:text-white">{right.satellite}</span>{' '}
+                · {right.band} · {new Date(right.capture_time).toLocaleString()}
               </span>
             </div>
             <div
@@ -110,12 +132,25 @@ export default function ComparisonModal({
               style={{ height: '60vh' }}
             >
               {/* Right image (full) */}
-              <img src={getUrl(right)} alt="Right" loading="lazy" decoding="async"
-                className="absolute inset-0 w-full h-full object-contain" />
+              <img
+                src={getUrl(right)}
+                alt="Right"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
               {/* Left image (clipped) */}
-              <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
-                <img src={getUrl(left)} alt="Left" loading="lazy" decoding="async"
-                  className="w-full h-full object-contain" />
+              <div
+                className="absolute inset-0"
+                style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+              >
+                <img
+                  src={getUrl(left)}
+                  alt="Left"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain"
+                />
               </div>
               {/* Slider handle */}
               <input

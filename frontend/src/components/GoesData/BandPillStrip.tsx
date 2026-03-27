@@ -12,19 +12,19 @@ interface SatelliteAvailabilityInfo {
 }
 
 interface BandPillStripProps {
-  bands: ReadonlyArray<Band>;
+  bands: readonly Band[];
   activeBand: string;
   onBandChange: (bandId: string) => void;
   satellite: string;
   sector: string;
-  satellites: ReadonlyArray<string>;
-  sectors: ReadonlyArray<Readonly<{ id: string; name: string; description?: string }>>;
+  satellites: readonly string[];
+  sectors: readonly Readonly<{ id: string; name: string; description?: string }>[];
   onSatelliteChange: (sat: string) => void;
   onSectorChange: (sector: string) => void;
   sectorName?: string;
   satelliteAvailability?: Readonly<Record<string, SatelliteAvailabilityInfo>>;
   variant?: 'mobile' | 'desktop';
-  disabledBands?: ReadonlyArray<string>;
+  disabledBands?: readonly string[];
 }
 
 const VARIANT_CLASSES = {
@@ -98,21 +98,24 @@ export default function BandPillStrip({
   );
 
   const satStatus = satelliteAvailability?.[satellite]?.status;
-  const satLabel = satStatus && satStatus !== 'operational' ? `${satellite} (${satStatus})` : satellite;
+  const satLabel =
+    satStatus && satStatus !== 'operational' ? `${satellite} (${satStatus})` : satellite;
 
   const activePillClass = 'bg-primary/20 border border-primary/50 text-primary font-semibold';
   const inactivePillClass = 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20';
 
-  const geoColorActiveClass = 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-semibold';
-  const geoColorInactiveClass = 'bg-emerald-500/10 border border-emerald-400/30 text-emerald-300/70 hover:bg-emerald-500/20';
+  const geoColorActiveClass =
+    'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-semibold';
+  const geoColorInactiveClass =
+    'bg-emerald-500/10 border border-emerald-400/30 text-emerald-300/70 hover:bg-emerald-500/20';
 
   return (
-    <div
-      className={`${VARIANT_CLASSES[variant]} ${SHARED_CLASSES}`}
-      data-testid="band-pill-strip"
-    >
+    <div className={`${VARIANT_CLASSES[variant]} ${SHARED_CLASSES}`} data-testid="band-pill-strip">
       {/* Top row: satellite + sector chips (or expanded options) */}
-      <div key={expandedGroup ?? 'default'} className="flex items-center gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide animate-fade-in">
+      <div
+        key={expandedGroup ?? 'default'}
+        className="flex items-center gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide animate-fade-in"
+      >
         {expandedGroup === null && (
           <>
             <button
@@ -193,7 +196,9 @@ export default function BandPillStrip({
             <button
               key={b.id}
               ref={isActive ? activeRef : undefined}
-              onClick={() => { if (!isDisabled) handleBandClick(b.id); }}
+              onClick={() => {
+                if (!isDisabled) handleBandClick(b.id);
+              }}
               disabled={isDisabled}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${pillClass}`}
               style={{ scrollSnapAlign: 'center' }}

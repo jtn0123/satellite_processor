@@ -36,7 +36,11 @@ export function useBrowseData(filterParams: Record<string, string>) {
   } = useInfiniteQuery<PaginatedFrames>({
     queryKey: ['goes-frames', filterParams],
     queryFn: ({ pageParam }) =>
-      api.get('/satellite/frames', { params: { ...filterParams, page: pageParam, limit: PAGE_LIMIT } }).then((r) => r.data),
+      api
+        .get('/satellite/frames', {
+          params: { ...filterParams, page: pageParam, limit: PAGE_LIMIT },
+        })
+        .then((r) => r.data),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const totalPages = Math.ceil((lastPage.total ?? 0) / (lastPage.limit || PAGE_LIMIT));
@@ -44,10 +48,7 @@ export function useBrowseData(filterParams: Record<string, string>) {
     },
   });
 
-  const frames = useMemo(
-    () => infiniteData?.pages.flatMap((p) => p.items) ?? [],
-    [infiniteData],
-  );
+  const frames = useMemo(() => infiniteData?.pages.flatMap((p) => p.items) ?? [], [infiniteData]);
   const totalFrames = infiniteData?.pages[0]?.total ?? 0;
 
   const handleRefresh = useCallback(async () => {
@@ -65,15 +66,28 @@ export function useBrowseData(filterParams: Record<string, string>) {
 
   const processMutation = useMutation({
     mutationFn: (frameIds: string[]) =>
-      api.post('/satellite/frames/process', { frame_ids: frameIds, params: {} }).then((r) => r.data),
+      api
+        .post('/satellite/frames/process', { frame_ids: frameIds, params: {} })
+        .then((r) => r.data),
     onSuccess: (data) => showToast('success', `Processing job created: ${data.job_id}`),
     onError: () => showToast('error', 'Failed to create processing job'),
   });
 
   return {
-    products, collections, collectionsError, tags, tagsError,
-    infiniteData, isLoading, frames, totalFrames,
-    fetchNextPage, hasNextPage, isFetchingNextPage,
-    handleRefresh, deleteMutation, processMutation,
+    products,
+    collections,
+    collectionsError,
+    tags,
+    tagsError,
+    infiniteData,
+    isLoading,
+    frames,
+    totalFrames,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    handleRefresh,
+    deleteMutation,
+    processMutation,
   };
 }

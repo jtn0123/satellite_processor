@@ -24,7 +24,9 @@ describe('DashboardCharts', () => {
   });
 
   it('returns null when total_frames is 0', () => {
-    const { container } = render(<DashboardCharts goesStats={{ ...mockStats, total_frames: 0 }} isLoading={false} />);
+    const { container } = render(
+      <DashboardCharts goesStats={{ ...mockStats, total_frames: 0 }} isLoading={false} />,
+    );
     expect(container.innerHTML).toBe('');
   });
 
@@ -51,7 +53,9 @@ describe('DashboardCharts', () => {
   });
 
   it('renders Never when no last_fetch_time', () => {
-    render(<DashboardCharts goesStats={{ ...mockStats, last_fetch_time: null }} isLoading={false} />);
+    render(
+      <DashboardCharts goesStats={{ ...mockStats, last_fetch_time: null }} isLoading={false} />,
+    );
     expect(screen.getByText('Never')).toBeInTheDocument();
   });
 
@@ -67,7 +71,9 @@ describe('DashboardCharts', () => {
   });
 
   it('hides storage section when empty', () => {
-    render(<DashboardCharts goesStats={{ ...mockStats, storage_by_satellite: {} }} isLoading={false} />);
+    render(
+      <DashboardCharts goesStats={{ ...mockStats, storage_by_satellite: {} }} isLoading={false} />,
+    );
     expect(screen.queryByText('Storage by Satellite')).not.toBeInTheDocument();
   });
 });

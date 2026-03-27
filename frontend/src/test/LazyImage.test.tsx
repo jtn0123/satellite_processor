@@ -27,10 +27,7 @@ beforeEach(() => {
 
 function triggerIntersection(isIntersecting: boolean) {
   act(() => {
-    observerCallback(
-      [{ isIntersecting } as IntersectionObserverEntry],
-      {} as IntersectionObserver
-    );
+    observerCallback([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver);
   });
 }
 
@@ -47,7 +44,13 @@ describe('LazyImage', () => {
   });
 
   it('shows custom placeholder before intersection', () => {
-    render(<LazyImage src="/img.png" alt="test" placeholder={<span data-testid="custom-ph">Loading...</span>} />);
+    render(
+      <LazyImage
+        src="/img.png"
+        alt="test"
+        placeholder={<span data-testid="custom-ph">Loading...</span>}
+      />,
+    );
     expect(screen.getByTestId('custom-ph')).toBeInTheDocument();
   });
 

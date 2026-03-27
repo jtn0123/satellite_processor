@@ -29,10 +29,14 @@ describe('useImageZoom zoomIn/reset', () => {
     const { result } = renderHook(() => useImageZoom());
     expect(result.current.isZoomed).toBe(false);
 
-    actHook(() => { result.current.zoomIn(); });
+    actHook(() => {
+      result.current.zoomIn();
+    });
     expect(result.current.isZoomed).toBe(true);
 
-    actHook(() => { result.current.reset(); });
+    actHook(() => {
+      result.current.reset();
+    });
     expect(result.current.isZoomed).toBe(false);
   });
 });

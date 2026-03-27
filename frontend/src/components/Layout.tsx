@@ -52,7 +52,11 @@ export default function Layout() {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof globalThis === 'undefined') return 'dark';
     let stored: string | null = null;
-    try { stored = localStorage.getItem('theme'); } catch { /* private browsing */ }
+    try {
+      stored = localStorage.getItem('theme');
+    } catch {
+      /* private browsing */
+    }
     if (stored === 'dark' || stored === 'light') return stored;
     // No manual preference - detect system
     const prefersDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -68,14 +72,22 @@ export default function Layout() {
       root.classList.add('light');
       root.classList.remove('dark');
     }
-    try { localStorage.setItem('theme', theme); } catch { /* private browsing */ }
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      /* private browsing */
+    }
     document.documentElement.style.transition = 'background-color 200ms, color 200ms';
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('theme-manual', 'true'); } catch { /* private browsing */ }
+      try {
+        localStorage.setItem('theme-manual', 'true');
+      } catch {
+        /* private browsing */
+      }
       return next;
     });
   }, []);
@@ -94,14 +106,24 @@ export default function Layout() {
         setVersionInfo({ version, commit, display: `v${version}${sha}` });
         // Auto-open only for minor/major version bumps (ignore patch-only changes)
         let lastSeen: string | null = null;
-        try { lastSeen = localStorage.getItem('whatsNewLastSeen'); } catch { /* private browsing */ }
+        try {
+          lastSeen = localStorage.getItem('whatsNewLastSeen');
+        } catch {
+          /* private browsing */
+        }
         if (version && isSignificantVersionBump(lastSeen ?? '', version)) {
           setHasNewVersion(true);
           setShowWhatsNew(true);
           // Persist immediately so the modal won't re-appear on navigation
-          try { localStorage.setItem('whatsNewLastSeen', version); } catch { /* private browsing */ }
+          try {
+            localStorage.setItem('whatsNewLastSeen', version);
+          } catch {
+            /* private browsing */
+          }
         }
-      } catch { /* version fetch failed, non-critical */ }
+      } catch {
+        /* version fetch failed, non-critical */
+      }
     };
     fetchVersion();
   }, []);
@@ -116,16 +138,24 @@ export default function Layout() {
   useEffect(() => {
     if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setDrawerOpen(false); return; }
+      if (e.key === 'Escape') {
+        setDrawerOpen(false);
+        return;
+      }
       if (e.key === 'Tab' && drawerRef.current) {
         const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
-          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener('keydown', handler);
@@ -146,7 +176,10 @@ export default function Layout() {
       <KeyboardShortcuts />
 
       {/* Desktop Sidebar */}
-      <aside data-testid="desktop-sidebar" className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50">
+      <aside
+        data-testid="desktop-sidebar"
+        className="hidden md:flex flex-col w-64 bg-white dark:bg-space-900 border-r border-gray-200 dark:border-space-700/50"
+      >
         <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-200 dark:border-space-700/50">
           <Satellite className="w-6 h-6 text-primary" />
           <span className="text-lg font-bold tracking-tight">SatTracker</span>
@@ -217,7 +250,10 @@ export default function Layout() {
             >
               Satellite Processor {versionInfo.display}
               {hasNewVersion && (
-                <span className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" aria-label="New version available" />
+                <span
+                  className="absolute -top-1 -right-3 w-2.5 h-2.5 bg-primary rounded-full animate-pulse"
+                  aria-label="New version available"
+                />
               )}
             </button>
           </div>
@@ -282,7 +318,9 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className={`md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50 ${isLivePage ? 'hidden' : ''}`}>
+        <header
+          className={`md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-space-900 border-b border-gray-200 dark:border-space-700/50 ${isLivePage ? 'hidden' : ''}`}
+        >
           <button
             onClick={() => setDrawerOpen(true)}
             className="p-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-space-800 text-gray-500 dark:text-slate-400 focus-ring active:scale-95 transition-transform"
@@ -306,9 +344,18 @@ export default function Layout() {
           </div>
         </header>
 
-        <main id="main-content" className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-16 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}>
+        <main
+          id="main-content"
+          className={`flex-1 ${isLivePage ? 'max-md:overflow-hidden max-md:p-0 max-md:pb-16 md:overflow-y-auto md:p-8' : 'overflow-y-auto p-4 md:p-8 pb-20 md:pb-8'}`}
+        >
           <ErrorBoundary>
-            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              }
+            >
               <div key={location.pathname} className="animate-fade-in">
                 <Outlet />
               </div>
@@ -333,7 +380,11 @@ export default function Layout() {
             setShowWhatsNew(false);
             setHasNewVersion(false);
             if (versionInfo.version) {
-              try { localStorage.setItem('whatsNewLastSeen', versionInfo.version); } catch { /* private browsing */ }
+              try {
+                localStorage.setItem('whatsNewLastSeen', versionInfo.version);
+              } catch {
+                /* private browsing */
+              }
             }
           }}
         />

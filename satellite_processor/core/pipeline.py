@@ -206,10 +206,13 @@ class Pipeline:
                 return []
 
             # Throttle if system is under pressure
-            if self._resource_monitor and hasattr(self._resource_monitor, "should_throttle"):
-                if self._resource_monitor.should_throttle():
-                    logger.info("System under pressure — throttling pipeline")
-                    time.sleep(0.5)
+            if (
+                self._resource_monitor
+                and hasattr(self._resource_monitor, "should_throttle")
+                and self._resource_monitor.should_throttle()
+            ):
+                logger.info("System under pressure — throttling pipeline")
+                time.sleep(0.5)
 
             logger.info(f"Running pipeline stage: {stage.name}")
             current = stage.run(current, pool, progress_callback, cancel_event=self._cancel_event)

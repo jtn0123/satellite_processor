@@ -14,12 +14,17 @@ vi.mock('../hooks/useApi', () => ({
   useImages: () => ({ data: [], isLoading: false }),
   useJobs: () => ({ data: [], isLoading: false, error: null }),
   useSystemStatus: () => ({
-    data: { cpu_percent: 10, memory: { total: 16e9, available: 12e9, percent: 25 }, disk: { total: 500e9, free: 400e9, percent: 20 } },
+    data: {
+      cpu_percent: 10,
+      memory: { total: 16e9, available: 12e9, percent: 25 },
+      disk: { total: 500e9, free: 400e9, percent: 20 },
+    },
     isLoading: false,
   }),
   useStats: () => ({
     data: { total_images: 0, total_jobs: 5, active_jobs: 1, storage: { used: 1e9, total: 10e9 } },
-    isLoading: false, isError: false,
+    isLoading: false,
+    isError: false,
   }),
   useHealthDetailed: () => ({
     data: {
@@ -34,18 +39,35 @@ vi.mock('../hooks/useApi', () => ({
 }));
 
 vi.mock('../api/client', () => ({
-  default: { get: vi.fn().mockResolvedValue({ data: { total_frames: 0, frames_by_satellite: {}, last_fetch_time: null, active_schedules: 0, recent_jobs: [], storage_by_satellite: {}, storage_by_band: {} } }) },
+  default: {
+    get: vi.fn().mockResolvedValue({
+      data: {
+        total_frames: 0,
+        frames_by_satellite: {},
+        last_fetch_time: null,
+        active_schedules: 0,
+        recent_jobs: [],
+        storage_by_satellite: {},
+        storage_by_band: {},
+      },
+    }),
+  },
 }));
 
-vi.mock('../components/Jobs/JobList', () => ({ default: () => <div data-testid="job-list">JobList</div> }));
+vi.mock('../components/Jobs/JobList', () => ({
+  default: () => <div data-testid="job-list">JobList</div>,
+}));
 
 const qc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-const renderDashboard = () => render(
-  <QueryClientProvider client={qc()}>
-    <MemoryRouter><Dashboard /></MemoryRouter>
-  </QueryClientProvider>
-);
+const renderDashboard = () =>
+  render(
+    <QueryClientProvider client={qc()}>
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 
 describe('Dashboard extended', () => {
   beforeEach(() => mockNavigate.mockClear());

@@ -6,7 +6,15 @@ import SettingsPage from '../pages/Settings';
 
 vi.mock('../hooks/useApi', () => ({
   useSettings: () => ({
-    data: { default_false_color: 'vegetation', timestamp_enabled: true, timestamp_position: 'bottom-left', video_fps: 24, video_codec: 'h264', max_frames_per_fetch: 200, video_quality: 23 },
+    data: {
+      default_false_color: 'vegetation',
+      timestamp_enabled: true,
+      timestamp_position: 'bottom-left',
+      video_fps: 24,
+      video_codec: 'h264',
+      max_frames_per_fetch: 200,
+      video_quality: 23,
+    },
     isLoading: false,
   }),
   useUpdateSettings: () => ({ mutate: vi.fn(), isPending: false }),
@@ -43,7 +51,9 @@ describe('Settings tabs', () => {
 
   it('defaults to Config tab showing Processing Defaults and About', () => {
     renderSettings();
-    expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
     expect(screen.getByText('Processing Defaults')).toBeTruthy();
     expect(screen.getByText('About')).toBeTruthy();
   });
@@ -51,7 +61,9 @@ describe('Settings tabs', () => {
   it('switches to Data tab showing collapsible sections', async () => {
     renderSettings();
     fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
-    expect(screen.getByRole('tab', { name: 'Data tab' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Data tab' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
     await waitFor(() => {
       expect(screen.getByText('Cleanup Rules')).toBeTruthy();
     });
@@ -63,7 +75,9 @@ describe('Settings tabs', () => {
   it('switches to System tab on click', () => {
     renderSettings();
     fireEvent.click(screen.getByRole('tab', { name: 'System tab' }));
-    expect(screen.getByRole('tab', { name: 'System tab' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'System tab' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
   });
 
   it('hides Config content when switching to Data tab', async () => {
@@ -78,7 +92,9 @@ describe('Settings tabs', () => {
   it('Config tab deselected when Data tab active', () => {
     renderSettings();
     fireEvent.click(screen.getByRole('tab', { name: 'Data tab' }));
-    expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tab', { name: 'Config tab' }).getAttribute('aria-selected')).toBe(
+      'false',
+    );
   });
 
   it('renders breadcrumb with Home and Settings', () => {

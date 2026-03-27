@@ -2,8 +2,11 @@ line-length = 120
 target-version = "py311"
 
 [lint]
-select = ["E", "F", "I", "UP", "B", "S"]
-ignore = ["E501", "B008", "B904", "S101", "S104", "S108", "S311"]
+select = ["E", "F", "I", "UP", "B", "S", "C90", "ERA", "PERF", "FURB", "T20", "SIM", "RET"]
+ignore = ["E501", "B008", "B904", "S108"]
+
+[lint.mccabe]
+max-complexity = 15
 
 [lint.per-file-ignores]
 # sys.path manipulation required before importing core modules
@@ -16,6 +19,14 @@ ignore = ["E501", "B008", "B904", "S101", "S104", "S108", "S311"]
 "satellite_processor/core/image_operations.py" = ["S603"]
 "satellite_processor/core/interpolation.py" = ["S603"]
 "satellite_processor/core/video_handler.py" = ["S603", "S607"]
+# assert in tests is expected
+"backend/tests/**" = ["S101"]
+"satellite_processor/core/tests/**" = ["S101"]
+# print statements in benchmarks/profiling/memory tests are intentional
+"backend/benchmarks/**" = ["T20"]
+"backend/tests/test_memory_profile.py" = ["T20"]
+# alembic migrations are write-once; contextlib.suppress reduces readability there
+"backend/alembic/versions/**" = ["SIM105"]
 
 [format]
 quote-style = "double"

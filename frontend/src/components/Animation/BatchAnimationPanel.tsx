@@ -13,10 +13,7 @@ export default function BatchAnimationPanel({ currentConfig }: Readonly<Props>) 
   const [items, setItems] = useState<BatchItem[]>([]);
 
   const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), config: { ...currentConfig } },
-    ]);
+    setItems((prev) => [...prev, { id: crypto.randomUUID(), config: { ...currentConfig } }]);
   };
 
   const removeItem = (id: string) => {
@@ -56,7 +53,8 @@ export default function BatchAnimationPanel({ currentConfig }: Readonly<Props>) 
 
       {items.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-slate-400">
-          No items queued. Click &quot;Add another&quot; to queue animations with different parameters.
+          No items queued. Click &quot;Add another&quot; to queue animations with different
+          parameters.
         </p>
       ) : (
         <div className="space-y-2">
@@ -71,8 +69,8 @@ export default function BatchAnimationPanel({ currentConfig }: Readonly<Props>) 
                   {item.config.satellite} · {item.config.sector} · {item.config.band}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
-                  {item.config.start_date ? new Date(item.config.start_date).toLocaleString() : '?'} →{' '}
-                  {item.config.end_date ? new Date(item.config.end_date).toLocaleString() : '?'}
+                  {item.config.start_date ? new Date(item.config.start_date).toLocaleString() : '?'}{' '}
+                  → {item.config.end_date ? new Date(item.config.end_date).toLocaleString() : '?'}
                 </p>
               </div>
               <span className="text-xs text-gray-500 dark:text-slate-400">

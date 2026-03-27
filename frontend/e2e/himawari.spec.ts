@@ -5,27 +5,133 @@ import { setupMockApi } from './helpers/mock-api';
 const PRODUCTS_WITH_HIMAWARI = {
   satellites: ['GOES-19', 'GOES-18', 'GOES-16', 'Himawari-9'],
   satellite_availability: {
-    'GOES-19': { available_from: '2024-01-01', available_to: null, status: 'active', description: 'GOES-East (active)' },
-    'GOES-18': { available_from: '2022-01-01', available_to: null, status: 'active', description: 'GOES-West (active)' },
-    'GOES-16': { available_from: '2017-01-01', available_to: '2025-04-07', status: 'historical', description: 'GOES-East (historical)' },
-    'Himawari-9': { available_from: '2022-12-13', available_to: null, status: 'active', description: 'Himawari-9 (JMA)' },
+    'GOES-19': {
+      available_from: '2024-01-01',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-East (active)',
+    },
+    'GOES-18': {
+      available_from: '2022-01-01',
+      available_to: null,
+      status: 'active',
+      description: 'GOES-West (active)',
+    },
+    'GOES-16': {
+      available_from: '2017-01-01',
+      available_to: '2025-04-07',
+      status: 'historical',
+      description: 'GOES-East (historical)',
+    },
+    'Himawari-9': {
+      available_from: '2022-12-13',
+      available_to: null,
+      status: 'active',
+      description: 'Himawari-9 (JMA)',
+    },
   },
   sectors: [
-    { id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPC', cadence_minutes: 5, typical_file_size_kb: 4000 },
-    { id: 'FullDisk', name: 'FullDisk', product: 'ABI-L2-CMIPF', cadence_minutes: 10, typical_file_size_kb: 12000 },
-    { id: 'FLDK', name: 'Full Disk', product: 'AHI-L1b-FLDK', cadence_minutes: 10, typical_file_size_kb: 15000 },
-    { id: 'Japan', name: 'Japan', product: 'AHI-L1b-Japan', cadence_minutes: 2.5, typical_file_size_kb: 3000 },
-    { id: 'Target', name: 'Target', product: 'AHI-L1b-Target', cadence_minutes: 2.5, typical_file_size_kb: 3000 },
+    {
+      id: 'CONUS',
+      name: 'CONUS',
+      product: 'ABI-L2-CMIPC',
+      cadence_minutes: 5,
+      typical_file_size_kb: 4000,
+    },
+    {
+      id: 'FullDisk',
+      name: 'FullDisk',
+      product: 'ABI-L2-CMIPF',
+      cadence_minutes: 10,
+      typical_file_size_kb: 12000,
+    },
+    {
+      id: 'FLDK',
+      name: 'Full Disk',
+      product: 'AHI-L1b-FLDK',
+      cadence_minutes: 10,
+      typical_file_size_kb: 15000,
+    },
+    {
+      id: 'Japan',
+      name: 'Japan',
+      product: 'AHI-L1b-Japan',
+      cadence_minutes: 2.5,
+      typical_file_size_kb: 3000,
+    },
+    {
+      id: 'Target',
+      name: 'Target',
+      product: 'AHI-L1b-Target',
+      cadence_minutes: 2.5,
+      typical_file_size_kb: 3000,
+    },
   ],
   bands: [
-    { id: 'GEOCOLOR', description: 'GeoColor (True Color Day / IR Night)', wavelength_um: 0, common_name: 'GeoColor', category: 'composite', use_case: 'True color composite' },
-    { id: 'C02', description: 'Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary visible' },
-    { id: 'C13', description: 'IR (10.3µm)', wavelength_um: 10.3, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
-    { id: 'TrueColor', description: 'True Color (RGB Composite)', wavelength_um: 0, common_name: 'TrueColor', category: 'composite', use_case: 'True color composite' },
-    { id: 'B01', description: 'Visible Blue (0.47µm)', wavelength_um: 0.47, common_name: 'Blue', category: 'visible', use_case: 'Visible blue' },
-    { id: 'B02', description: 'Visible Green (0.51µm)', wavelength_um: 0.51, common_name: 'Green', category: 'visible', use_case: 'Visible green' },
-    { id: 'B03', description: 'Visible Red (0.64µm)', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Visible red' },
-    { id: 'B13', description: 'Clean IR Longwave (10.4µm)', wavelength_um: 10.4, common_name: 'Clean IR', category: 'infrared', use_case: 'Clean IR window' },
+    {
+      id: 'GEOCOLOR',
+      description: 'GeoColor (True Color Day / IR Night)',
+      wavelength_um: 0,
+      common_name: 'GeoColor',
+      category: 'composite',
+      use_case: 'True color composite',
+    },
+    {
+      id: 'C02',
+      description: 'Red (0.64µm)',
+      wavelength_um: 0.64,
+      common_name: 'Red',
+      category: 'visible',
+      use_case: 'Primary visible',
+    },
+    {
+      id: 'C13',
+      description: 'IR (10.3µm)',
+      wavelength_um: 10.3,
+      common_name: 'Clean IR',
+      category: 'infrared',
+      use_case: 'Clean IR window',
+    },
+    {
+      id: 'TrueColor',
+      description: 'True Color (RGB Composite)',
+      wavelength_um: 0,
+      common_name: 'TrueColor',
+      category: 'composite',
+      use_case: 'True color composite',
+    },
+    {
+      id: 'B01',
+      description: 'Visible Blue (0.47µm)',
+      wavelength_um: 0.47,
+      common_name: 'Blue',
+      category: 'visible',
+      use_case: 'Visible blue',
+    },
+    {
+      id: 'B02',
+      description: 'Visible Green (0.51µm)',
+      wavelength_um: 0.51,
+      common_name: 'Green',
+      category: 'visible',
+      use_case: 'Visible green',
+    },
+    {
+      id: 'B03',
+      description: 'Visible Red (0.64µm)',
+      wavelength_um: 0.64,
+      common_name: 'Red',
+      category: 'visible',
+      use_case: 'Visible red',
+    },
+    {
+      id: 'B13',
+      description: 'Clean IR Longwave (10.4µm)',
+      wavelength_um: 10.4,
+      common_name: 'Clean IR',
+      category: 'infrared',
+      use_case: 'Clean IR window',
+    },
   ],
   default_satellite: 'GOES-19',
 };
@@ -96,9 +202,15 @@ test.describe('Live Tab — Himawari satellite switching', () => {
     await sectorChip.click();
 
     // Himawari sectors should be present
-    await expect(page.locator('[data-testid="sector-option-FLDK"]')).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('[data-testid="sector-option-Japan"]')).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('[data-testid="sector-option-Target"]')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('[data-testid="sector-option-FLDK"]')).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(page.locator('[data-testid="sector-option-Japan"]')).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(page.locator('[data-testid="sector-option-Target"]')).toBeVisible({
+      timeout: 5_000,
+    });
 
     // GOES sectors should NOT be present
     expect(await page.locator('[data-testid="sector-option-CONUS"]').count()).toBe(0);
@@ -108,8 +220,12 @@ test.describe('Live Tab — Himawari satellite switching', () => {
   test('no CDN preview available message shown for Himawari', async ({ page }) => {
     // Block CDN and local image sources so the Himawari no-preview message triggers
     await page.route('**/cdn.star.nesdis.noaa.gov/**', (route) => route.abort('connectionrefused'));
-    await page.route('**/api/satellite/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
-    await page.route('**/api/satellite/catalog/latest*', (route) => route.fulfill({ status: 404, json: { detail: 'not found' } }));
+    await page.route('**/api/satellite/latest*', (route) =>
+      route.fulfill({ status: 404, json: { detail: 'not found' } }),
+    );
+    await page.route('**/api/satellite/catalog/latest*', (route) =>
+      route.fulfill({ status: 404, json: { detail: 'not found' } }),
+    );
 
     await page.goto('/live');
     const satelliteChip = page.locator('[data-testid="pill-strip-satellite"]');
@@ -157,7 +273,9 @@ test.describe('Fetch Tab — Himawari', () => {
       await route.fulfill({ json: { job_id: 'fetch-job-1', status: 'pending', message: 'ok' } });
     });
     await page.route('**/api/satellite/fetch-composite', async (route: Route) => {
-      await route.fulfill({ json: { job_id: 'composite-job-1', status: 'pending', message: 'ok' } });
+      await route.fulfill({
+        json: { job_id: 'composite-job-1', status: 'pending', message: 'ok' },
+      });
     });
     await page.route('**/api/jobs**', async (route: Route) => {
       await route.fulfill({ json: { items: [], total: 0 } });
@@ -176,7 +294,9 @@ test.describe('Fetch Tab — Himawari', () => {
     await advancedBtn.click();
 
     // Use exact match to avoid matching the description text "Himawari-9 (JMA)"
-    await expect(page.getByText('Himawari-9', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Himawari-9', { exact: true }).first()).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test('Himawari quick fetch chips are shown on Fetch tab', async ({ page }) => {
@@ -252,7 +372,7 @@ test.describe('Presets Tab — Himawari', () => {
       const optionTexts: string[] = [];
       const count = await options.count();
       for (let i = 0; i < count; i++) {
-        optionTexts.push(await options.nth(i).textContent() ?? '');
+        optionTexts.push((await options.nth(i).textContent()) ?? '');
       }
       expect(optionTexts.some((t) => t.includes('FLDK'))).toBe(true);
     }
@@ -288,7 +408,7 @@ test.describe('Animation Studio — Himawari band names', () => {
       const bandTexts: string[] = [];
       const count = await bandOptions.count();
       for (let i = 0; i < count; i++) {
-        bandTexts.push(await bandOptions.nth(i).textContent() ?? '');
+        bandTexts.push((await bandOptions.nth(i).textContent()) ?? '');
       }
       // Find B13 entry — should contain "Clean IR"
       const b13Option = bandTexts.find((t) => t.includes('B13'));

@@ -9,8 +9,7 @@ from satellite_processor.core.settings_manager import SettingsManager
 def settings_mgr(tmp_path, monkeypatch):
     """Create a real SettingsManager using a temp directory."""
     monkeypatch.setenv("SETTINGS_DIR", str(tmp_path))
-    mgr = SettingsManager()
-    return mgr
+    return SettingsManager()
 
 
 class TestSettingsManager:

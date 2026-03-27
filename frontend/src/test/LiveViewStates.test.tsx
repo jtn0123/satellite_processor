@@ -15,7 +15,11 @@ vi.mock('../utils/toast', () => ({
 }));
 
 vi.mock('../hooks/usePullToRefresh', () => ({
-  usePullToRefresh: () => ({ containerRef: { current: null }, isRefreshing: false, pullDistance: 0 }),
+  usePullToRefresh: () => ({
+    containerRef: { current: null },
+    isRefreshing: false,
+    pullDistance: 0,
+  }),
 }));
 
 vi.mock('../hooks/useImageZoom', () => ({
@@ -27,14 +31,19 @@ vi.mock('../components/GoesData/PullToRefreshIndicator', () => ({
 }));
 
 vi.mock('../components/GoesData/StaleDataBanner', () => ({
-  default: ({ freshnessInfo, onFetchNow }: { freshnessInfo: { behindMin: number }; onFetchNow: () => void }) => (
+  default: ({
+    freshnessInfo,
+    onFetchNow,
+  }: {
+    freshnessInfo: { behindMin: number };
+    onFetchNow: () => void;
+  }) =>
     freshnessInfo.behindMin > 0 ? (
       <div data-testid="stale-banner">
         <span>Data is stale</span>
         <button onClick={onFetchNow}>Fetch Now</button>
       </div>
-    ) : null
-  ),
+    ) : null,
 }));
 
 vi.mock('../components/GoesData/CompareSlider', () => ({
@@ -82,7 +91,9 @@ const FRAME = {
   file_size: 4096,
   width: 5424,
   height: 3000,
-  thumbnail_path: '/data/thumb.jpg', image_url: '/api/satellite/frames/test-id/image', thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+  thumbnail_path: '/data/thumb.jpg',
+  image_url: '/api/satellite/frames/test-id/image',
+  thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
 };
 
 const CATALOG_LATEST = {
@@ -97,20 +108,27 @@ const CATALOG_LATEST = {
 function renderLive() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
-    <MemoryRouter><QueryClientProvider client={qc}><LiveTab /></QueryClientProvider></MemoryRouter>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <LiveTab />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 
-function setupMocks(overrides: {
-  products?: unknown;
-  frame?: unknown;
-  frameError?: boolean;
-  catalog?: unknown;
-  catalogError?: boolean;
-  frames?: unknown;
-} = {}) {
+function setupMocks(
+  overrides: {
+    products?: unknown;
+    frame?: unknown;
+    frameError?: boolean;
+    catalog?: unknown;
+    catalogError?: boolean;
+    frames?: unknown;
+  } = {},
+) {
   mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/products') return Promise.resolve({ data: overrides.products ?? PRODUCTS });
+    if (url === '/satellite/products')
+      return Promise.resolve({ data: overrides.products ?? PRODUCTS });
     if (url.startsWith('/satellite/latest')) {
       if (overrides.frameError) return Promise.reject(make404());
       return Promise.resolve({ data: overrides.frame ?? FRAME });
@@ -120,9 +138,16 @@ function setupMocks(overrides: {
       return Promise.resolve({ data: overrides.catalog ?? CATALOG_LATEST });
     }
     if (url.startsWith('/satellite/catalog/available')) {
-      return Promise.resolve({ data: { satellite: 'GOES-19', available_sectors: ['CONUS', 'FullDisk'], checked_at: new Date().toISOString() } });
+      return Promise.resolve({
+        data: {
+          satellite: 'GOES-19',
+          available_sectors: ['CONUS', 'FullDisk'],
+          checked_at: new Date().toISOString(),
+        },
+      });
     }
-    if (url.startsWith('/satellite/frames')) return Promise.resolve({ data: overrides.frames ?? [FRAME] });
+    if (url.startsWith('/satellite/frames'))
+      return Promise.resolve({ data: overrides.frames ?? [FRAME] });
     return Promise.resolve({ data: {} });
   });
 }
@@ -152,11 +177,14 @@ describe('LiveViewStates', () => {
     await waitFor(() => {
       // Live tab always has a CDN fallback URL — shows image, not empty state
       const img = screen.queryByRole('img');
-      const shimmer = screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
+      const shimmer =
+        screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
       expect(img ?? shimmer).toBeTruthy();
     });
     // "Fetch your first image" CTA should NOT render on Live tab
-    expect(screen.queryByRole('button', { name: /Fetch your first image/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Fetch your first image/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows frame image when frame exists', async () => {
@@ -191,7 +219,10 @@ describe('LiveViewStates', () => {
   });
 
   it('compare mode toggle shows CompareSlider', async () => {
-    const frames = [FRAME, { ...FRAME, id: 'f2', capture_time: new Date(Date.now() - 600000).toISOString() }];
+    const frames = [
+      FRAME,
+      { ...FRAME, id: 'f2', capture_time: new Date(Date.now() - 600000).toISOString() },
+    ];
     setupMocks({ frames });
     renderLive();
     await waitFor(() => {
@@ -339,11 +370,14 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     await waitFor(() => {
       // Direct CDN URL is always constructed — never shows empty state
       const img = screen.queryByRole('img');
-      const shimmer = screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
+      const shimmer =
+        screen.queryByTestId('loading-shimmer') ?? screen.queryByTestId('image-shimmer');
       expect(img ?? shimmer).toBeTruthy();
     });
     expect(screen.queryByText(/No local frames available/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Fetch your first image/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Fetch your first image/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('status pill shows satellite info when displaying catalog image', async () => {
@@ -375,8 +409,8 @@ describe('LiveView proxy-through (catalog S3 image)', () => {
     fireEvent.click(screen.getByTestId('satellite-option-GOES-16'));
     // After change, catalog query should be called again with new satellite
     await waitFor(() => {
-      const catalogCalls = mockedApi.get.mock.calls.filter(
-        (c: string[]) => c[0].startsWith('/satellite/catalog/latest')
+      const catalogCalls = mockedApi.get.mock.calls.filter((c: string[]) =>
+        c[0].startsWith('/satellite/catalog/latest'),
       );
       expect(catalogCalls.length).toBeGreaterThanOrEqual(2);
     });

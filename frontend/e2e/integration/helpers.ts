@@ -10,14 +10,19 @@ export { API_BASE, BASE_URL, API_KEY };
 export async function navigateTo(page: Page, path: string): Promise<void> {
   await page.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle', timeout: 15_000 });
   // Dismiss whats-new modal if present
-  const modal = page.locator('[data-testid="whats-new-modal"] button, .modal-close, [aria-label="Close"]').first();
+  const modal = page
+    .locator('[data-testid="whats-new-modal"] button, .modal-close, [aria-label="Close"]')
+    .first();
   if (await modal.isVisible({ timeout: 1_000 }).catch(() => false)) {
     await modal.click();
   }
 }
 
 /** Make an authenticated GET request */
-export async function apiGet(request: APIRequestContext, path: string): Promise<{
+export async function apiGet(
+  request: APIRequestContext,
+  path: string,
+): Promise<{
   status: number;
   body: unknown;
 }> {
@@ -30,7 +35,11 @@ export async function apiGet(request: APIRequestContext, path: string): Promise<
 }
 
 /** Make an authenticated POST request */
-export async function apiPost(request: APIRequestContext, path: string, data?: unknown): Promise<{
+export async function apiPost(
+  request: APIRequestContext,
+  path: string,
+  data?: unknown,
+): Promise<{
   status: number;
   body: unknown;
 }> {
@@ -44,7 +53,10 @@ export async function apiPost(request: APIRequestContext, path: string, data?: u
 }
 
 /** Make an authenticated DELETE request */
-export async function apiDelete(request: APIRequestContext, path: string): Promise<{
+export async function apiDelete(
+  request: APIRequestContext,
+  path: string,
+): Promise<{
   status: number;
   body: unknown;
 }> {
@@ -57,10 +69,14 @@ export async function apiDelete(request: APIRequestContext, path: string): Promi
 }
 
 /** Make a raw POST (no auth) */
-export async function apiPostRaw(request: APIRequestContext, path: string, options: {
-  data?: string;
-  headers?: Record<string, string>;
-}): Promise<{ status: number; body: unknown }> {
+export async function apiPostRaw(
+  request: APIRequestContext,
+  path: string,
+  options: {
+    data?: string;
+    headers?: Record<string, string>;
+  },
+): Promise<{ status: number; body: unknown }> {
   const res = await request.post(`${API_BASE}${path}`, {
     headers: options.headers ?? {},
     data: options.data,
@@ -71,7 +87,10 @@ export async function apiPostRaw(request: APIRequestContext, path: string, optio
 }
 
 /** Make an unauthenticated DELETE request */
-export async function apiDeleteNoAuth(request: APIRequestContext, path: string): Promise<{
+export async function apiDeleteNoAuth(
+  request: APIRequestContext,
+  path: string,
+): Promise<{
   status: number;
   body: unknown;
 }> {
@@ -81,7 +100,10 @@ export async function apiDeleteNoAuth(request: APIRequestContext, path: string):
 }
 
 /** Wait for API health check to succeed */
-export async function waitForApiHealth(request: APIRequestContext, maxWaitMs = 30_000): Promise<void> {
+export async function waitForApiHealth(
+  request: APIRequestContext,
+  maxWaitMs = 30_000,
+): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     try {
@@ -120,13 +142,15 @@ export async function waitForJob(
 }
 
 /** Build a GoesFetchRequest with sensible defaults (recent 1-hour window) */
-export function buildFetchRequest(overrides?: Partial<{
-  satellite: string;
-  sector: string;
-  band: string;
-  start_time: string;
-  end_time: string;
-}>): Record<string, string> {
+export function buildFetchRequest(
+  overrides?: Partial<{
+    satellite: string;
+    sector: string;
+    band: string;
+    start_time: string;
+    end_time: string;
+  }>,
+): Record<string, string> {
   const end = new Date();
   const start = new Date(end.getTime() - 60 * 60 * 1000);
   return {

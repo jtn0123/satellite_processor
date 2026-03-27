@@ -11,10 +11,31 @@ vi.mock('../api/client', () => ({
           data: {
             satellites: ['GOES-19'],
             satellite_availability: {
-              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active', description: 'GOES-East' },
+              'GOES-19': {
+                available_from: '2025-01-01',
+                available_to: null,
+                status: 'active',
+                description: 'GOES-East',
+              },
             },
-            sectors: [{ id: 'FullDisk', name: 'FullDisk', cadence_minutes: 10, typical_file_size_kb: 12000 }],
-            bands: [{ id: 'C02', description: 'Red Visible', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary' }],
+            sectors: [
+              {
+                id: 'FullDisk',
+                name: 'FullDisk',
+                cadence_minutes: 10,
+                typical_file_size_kb: 12000,
+              },
+            ],
+            bands: [
+              {
+                id: 'C02',
+                description: 'Red Visible',
+                wavelength_um: 0.64,
+                common_name: 'Red',
+                category: 'visible',
+                use_case: 'Primary',
+              },
+            ],
             default_satellite: 'GOES-19',
           },
         });

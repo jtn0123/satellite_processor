@@ -32,7 +32,7 @@ describe('Layout - mobile drawer', () => {
     // The dialog should be open
     const dialog = screen.getByLabelText('Navigation menu');
     expect(dialog).toHaveAttribute('open');
-    
+
     // Click close within the drawer (there are two "Close menu" buttons - overlay + X)
     const closeButtons = screen.getAllByLabelText('Close menu');
     fireEvent.click(closeButtons[closeButtons.length - 1]);

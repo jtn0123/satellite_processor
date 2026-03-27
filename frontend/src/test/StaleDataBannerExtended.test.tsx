@@ -16,7 +16,7 @@ describe('StaleDataBanner', () => {
         captureTime={recentTime}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(container.innerHTML).toBe('');
   });
@@ -28,7 +28,7 @@ describe('StaleDataBanner', () => {
         captureTime={recentTime}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/10 min behind/)).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('StaleDataBanner', () => {
         captureTime={staleTime}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(container.querySelector('.bg-amber-500\\/10')).toBeInTheDocument();
   });
@@ -52,7 +52,7 @@ describe('StaleDataBanner', () => {
         captureTime={veryStaleTime}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText('Data is stale!')).toBeInTheDocument();
   });
@@ -65,7 +65,7 @@ describe('StaleDataBanner', () => {
         captureTime={staleTime}
         activeJobId={null}
         onFetchNow={onFetchNow}
-      />
+      />,
     );
     fireEvent.click(screen.getByText('Fetch Now'));
     expect(onFetchNow).toHaveBeenCalledOnce();
@@ -78,7 +78,7 @@ describe('StaleDataBanner', () => {
         captureTime={staleTime}
         activeJobId="job-123"
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText('Fetch Now').closest('button')).toBeDisabled();
   });
@@ -90,7 +90,7 @@ describe('StaleDataBanner', () => {
         captureTime={staleTime}
         activeJobId={null}
         onFetchNow={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText('35 min ago')).toBeInTheDocument();
   });

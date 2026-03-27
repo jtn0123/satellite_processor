@@ -9,7 +9,16 @@ interface ConfirmDialogProps {
   readonly onCancel: () => void;
 }
 
-export function ConfirmDialog({ satellite, sector, imageType, band, estimate, isPending, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  satellite,
+  sector,
+  imageType,
+  band,
+  estimate,
+  isPending,
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
   return (
     <dialog
       open
@@ -18,18 +27,33 @@ export function ConfirmDialog({ satellite, sector, imageType, band, estimate, is
       onClose={onCancel}
       aria-labelledby="confirm-title"
     >
-      <button type="button" className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={onCancel} aria-label="Close dialog" tabIndex={-1} />
-      <div
-        className="relative bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
-      >
-        <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Fetch</h3>
+      <button
+        type="button"
+        className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default"
+        onClick={onCancel}
+        aria-label="Close dialog"
+        tabIndex={-1}
+      />
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]">
+        <h3 id="confirm-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+          Confirm Fetch
+        </h3>
         <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300">
-          <div><span className="text-gray-400">Satellite:</span> {satellite}</div>
-          <div><span className="text-gray-400">Sector:</span> {sector}</div>
-          <div><span className="text-gray-400">Type:</span> {imageType === 'single' ? `Single Band (${band})` : imageType.replace('_', ' ')}</div>
+          <div>
+            <span className="text-gray-400">Satellite:</span> {satellite}
+          </div>
+          <div>
+            <span className="text-gray-400">Sector:</span> {sector}
+          </div>
+          <div>
+            <span className="text-gray-400">Type:</span>{' '}
+            {imageType === 'single' ? `Single Band (${band})` : imageType.replace('_', ' ')}
+          </div>
           {estimate && (
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 mt-2">
-              <div className="font-medium">~{estimate.frames} frames · ~{estimate.sizeMb} MB</div>
+              <div className="font-medium">
+                ~{estimate.frames} frames · ~{estimate.sizeMb} MB
+              </div>
             </div>
           )}
         </div>

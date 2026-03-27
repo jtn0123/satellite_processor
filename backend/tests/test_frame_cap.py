@@ -114,7 +114,7 @@ def test_fetch_frames_retry_on_transient_error(mock_list, mock_s3_client, mock_p
     # Patch _retry_s3_operation to just call the function directly (bypass circuit breaker)
     with patch(
         "app.services.goes_fetcher._retry_s3_operation",
-        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)}),
+        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k != "operation"}),
     ):
         result = fetch_frames(
             satellite="GOES-16",
@@ -146,7 +146,7 @@ def test_fetch_frames_retry_exhausted(mock_list, mock_s3_client, mock_disk, tmp_
 
     with patch(
         "app.services.goes_fetcher._retry_s3_operation",
-        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k not in ("operation",)}),
+        side_effect=lambda fn, *a, **kw: fn(*a, **{k: v for k, v in kw.items() if k != "operation"}),
     ):
         result = fetch_frames(
             satellite="GOES-16",
@@ -214,7 +214,7 @@ def test_completed_partial_status_when_capped(mock_db, mock_progress, mock_updat
     # Use keyword or positional
     final_statuses = []
     for c in mock_update.call_args_list:
-        kw = c.kwargs if c.kwargs else {}
+        kw = c.kwargs or {}
         if "status" in kw:
             final_statuses.append(kw["status"])
     assert "completed_partial" in final_statuses
@@ -266,7 +266,7 @@ def test_completed_partial_status_when_some_failed(mock_db, mock_progress, mock_
 
     final_statuses = []
     for c in mock_update.call_args_list:
-        kw = c.kwargs if c.kwargs else {}
+        kw = c.kwargs or {}
         if "status" in kw:
             final_statuses.append(kw["status"])
     assert "completed_partial" in final_statuses
@@ -318,7 +318,7 @@ def test_completed_status_when_all_succeed(mock_db, mock_progress, mock_update, 
 
     final_statuses = []
     for c in mock_update.call_args_list:
-        kw = c.kwargs if c.kwargs else {}
+        kw = c.kwargs or {}
         if "status" in kw:
             final_statuses.append(kw["status"])
     assert "completed" in final_statuses
@@ -356,7 +356,7 @@ def test_failed_status_when_zero_frames(mock_db, mock_progress, mock_update, moc
 
     final_statuses = []
     for c in mock_update.call_args_list:
-        kw = c.kwargs if c.kwargs else {}
+        kw = c.kwargs or {}
         if "status" in kw:
             final_statuses.append(kw["status"])
     assert "failed" in final_statuses

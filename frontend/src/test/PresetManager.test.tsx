@@ -48,11 +48,13 @@ describe('PresetManager', () => {
 
   it('calls createPreset.mutate on save click', () => {
     renderWith(<PresetManager currentParams={currentParams} onLoadPreset={onLoadPreset} />);
-    fireEvent.change(screen.getByPlaceholderText(/preset name/i), { target: { value: 'My Preset' } });
+    fireEvent.change(screen.getByPlaceholderText(/preset name/i), {
+      target: { value: 'My Preset' },
+    });
     fireEvent.click(screen.getByText('Save'));
     expect(mockMutate).toHaveBeenCalledWith(
       { name: 'My Preset', params: currentParams },
-      expect.objectContaining({ onSuccess: expect.any(Function) })
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
 
@@ -94,7 +96,7 @@ describe('PresetManager', () => {
     fireEvent.keyDown(renameInput, { key: 'Enter' });
     expect(mockRenameMutate).toHaveBeenCalledWith(
       { oldName: 'Preset A', newName: 'New Name' },
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 

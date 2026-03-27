@@ -55,11 +55,34 @@ export function useBrowseFilters(): BrowseFilterState {
   const debouncedTag = useDebounce(filterTag, 300);
 
   const filterParams = useMemo(
-    () => buildFilterParams(sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag),
-    [sortBy, sortOrder, debouncedSat, debouncedBand, debouncedSector, debouncedCollection, debouncedTag],
+    () =>
+      buildFilterParams(
+        sortBy,
+        sortOrder,
+        debouncedSat,
+        debouncedBand,
+        debouncedSector,
+        debouncedCollection,
+        debouncedTag,
+      ),
+    [
+      sortBy,
+      sortOrder,
+      debouncedSat,
+      debouncedBand,
+      debouncedSector,
+      debouncedCollection,
+      debouncedTag,
+    ],
   );
 
-  const hasActiveFilters = !!(filterSat || filterBand || filterSector || filterCollection || filterTag);
+  const hasActiveFilters = !!(
+    filterSat ||
+    filterBand ||
+    filterSector ||
+    filterCollection ||
+    filterTag
+  );
 
   const clearAll = () => {
     setFilterSat('');
@@ -70,13 +93,20 @@ export function useBrowseFilters(): BrowseFilterState {
   };
 
   return {
-    filterSat, setFilterSat,
-    filterBand, setFilterBand,
-    filterSector, setFilterSector,
-    filterCollection, setFilterCollection,
-    filterTag, setFilterTag,
-    sortBy, setSortBy,
-    sortOrder, setSortOrder,
+    filterSat,
+    setFilterSat,
+    filterBand,
+    setFilterBand,
+    filterSector,
+    setFilterSector,
+    filterCollection,
+    setFilterCollection,
+    filterTag,
+    setFilterTag,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
     filterParams,
     hasActiveFilters,
     clearAll,

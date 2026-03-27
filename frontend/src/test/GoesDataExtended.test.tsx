@@ -29,7 +29,7 @@ function renderPage() {
           <Route path="/goes" element={<GoesData />} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -51,7 +51,9 @@ beforeEach(() => {
     if (url === '/satellite/collections') return Promise.resolve({ data: [] });
     if (url === '/satellite/tags') return Promise.resolve({ data: [] });
     if (url === '/satellite/frames/stats') {
-      return Promise.resolve({ data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} } });
+      return Promise.resolve({
+        data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
+      });
     }
     return Promise.resolve({ data: {} });
   });
@@ -94,8 +96,9 @@ describe('GoesData page extended', () => {
     renderPage();
     await waitFor(() => {
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(btn => {
-        const hasContent = btn.textContent || btn.getAttribute('aria-label') || btn.querySelector('svg');
+      buttons.forEach((btn) => {
+        const hasContent =
+          btn.textContent || btn.getAttribute('aria-label') || btn.querySelector('svg');
         expect(hasContent).toBeTruthy();
       });
     });

@@ -9,14 +9,14 @@ test.describe('Stack Health', () => {
   test('API health endpoint returns ok', async ({ request }) => {
     const res = await apiGet(request, '/api/health');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { status: string };
+    const body = (await res.json()) as { status: string };
     expect(body.status).toBe('ok');
   });
 
   test('API version endpoint returns version', async ({ request }) => {
     const res = await apiGet(request, '/api/health/version');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { version: string };
+    const body = (await res.json()) as { version: string };
     expect(body.version).toBeTruthy();
   });
 
@@ -39,14 +39,14 @@ test.describe('Stack Health', () => {
   test('GOES products endpoint returns satellite data', async ({ request }) => {
     const res = await apiGet(request, '/api/satellite/products');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { satellites: string[] };
+    const body = (await res.json()) as { satellites: string[] };
     expect(body.satellites.length).toBeGreaterThan(0);
   });
 
   test('health detailed endpoint returns structured system info', async ({ request }) => {
     const res = await apiGet(request, '/api/health/detailed');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body).toBeTruthy();
     expect(typeof body).toBe('object');
     // Should have some system info fields
@@ -81,7 +81,7 @@ test.describe('Stack Health', () => {
   test('products endpoint includes Himawari-9', async ({ request }) => {
     const res = await apiGet(request, '/api/satellite/products');
     expect(res.ok()).toBeTruthy();
-    const body = await res.json() as { satellites: string[] };
+    const body = (await res.json()) as { satellites: string[] };
     expect(body.satellites).toContain('Himawari-9');
   });
 
@@ -91,7 +91,7 @@ test.describe('Stack Health', () => {
     expect(res.status()).toBeGreaterThanOrEqual(200);
     expect(res.status()).toBeLessThan(500);
     if (res.ok()) {
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toBeTruthy();
       expect(typeof body).toBe('object');
     }

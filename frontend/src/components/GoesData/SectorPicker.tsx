@@ -1,6 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
 
-
 const SECTOR_DETAILS: Record<string, { description: string }> = {
   FullDisk: { description: 'Entire hemisphere view' },
   CONUS: { description: 'Continental United States' },
@@ -14,7 +13,7 @@ const SECTOR_DETAILS: Record<string, { description: string }> = {
 interface SectorPickerProps {
   value: string;
   onChange: (sector: string) => void;
-  sectors: Array<{ id: string; name: string; cadence_minutes?: number; typical_file_size_kb?: number }>;
+  sectors: { id: string; name: string; cadence_minutes?: number; typical_file_size_kb?: number }[];
   satellite?: string;
   disabled?: boolean;
 }
@@ -23,7 +22,12 @@ function formatSize(kb: number): string {
   return kb >= 1000 ? `~${(kb / 1000).toFixed(0)} MB` : `~${kb} KB`;
 }
 
-export default function SectorPicker({ value, onChange, sectors, disabled }: Readonly<SectorPickerProps>) {
+export default function SectorPicker({
+  value,
+  onChange,
+  sectors,
+  disabled,
+}: Readonly<SectorPickerProps>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {sectors.map((s) => {
@@ -57,7 +61,9 @@ export default function SectorPicker({ value, onChange, sectors, disabled }: Rea
               )}
             </div>
             {detail && (
-              <div className="text-xs text-gray-500 dark:text-slate-400 mb-2">{detail.description}</div>
+              <div className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                {detail.description}
+              </div>
             )}
             <div className="flex flex-wrap gap-3 text-[10px] text-gray-400 dark:text-slate-500">
               <span>Every {cadence} min</span>

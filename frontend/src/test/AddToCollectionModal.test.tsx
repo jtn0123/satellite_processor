@@ -5,7 +5,9 @@ import AddToCollectionModal from '../components/GoesData/AddToCollectionModal';
 
 vi.mock('../api/client', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({ data: [{ id: 'c1', name: 'Test Collection', frame_count: 5 }] })),
+    get: vi.fn(() =>
+      Promise.resolve({ data: [{ id: 'c1', name: 'Test Collection', frame_count: 5 }] }),
+    ),
     post: vi.fn(() => Promise.resolve({ data: { id: 'c2' } })),
   },
 }));
@@ -51,7 +53,9 @@ describe('AddToCollectionModal', () => {
 
   it('shows create button when name entered', () => {
     renderWithQuery(<AddToCollectionModal frameIds={['f1', 'f2']} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByPlaceholderText('Collection name'), { target: { value: 'New Coll' } });
+    fireEvent.change(screen.getByPlaceholderText('Collection name'), {
+      target: { value: 'New Coll' },
+    });
     expect(screen.getByText('Create & Add 2 frames')).toBeInTheDocument();
   });
 

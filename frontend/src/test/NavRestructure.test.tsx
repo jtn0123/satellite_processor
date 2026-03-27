@@ -31,7 +31,7 @@ function renderWithRouter(initialRoute = '/') {
           </Route>
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 

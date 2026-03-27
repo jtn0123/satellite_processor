@@ -1,7 +1,14 @@
 import { Film, Sliders, Clock } from 'lucide-react';
 import type { AnimationConfig, PreviewRangeResponse } from '../types';
 import type { CollectionType } from '../../GoesData/types';
-import { SATELLITES, SECTORS, BANDS, QUICK_HOURS } from '../types';
+import {
+  SATELLITES,
+  SECTORS,
+  GOES_BANDS,
+  HIMAWARI_BANDS,
+  HIMAWARI_SATELLITES,
+  QUICK_HOURS,
+} from '../types';
 import FrameRangePreview from '../FrameRangePreview';
 
 interface CreateAnimationFormProps {
@@ -21,10 +28,19 @@ interface CreateAnimationFormProps {
 }
 
 export function CreateAnimationForm({
-  config, updateConfig, sourceMode, setSourceMode,
-  collectionId, setCollectionId, collections,
-  handleQuickHours, previewEnabled,
-  previewData, previewLoading, previewError, onOpenSettings,
+  config,
+  updateConfig,
+  sourceMode,
+  setSourceMode,
+  collectionId,
+  setCollectionId,
+  collections,
+  handleQuickHours,
+  previewEnabled,
+  previewData,
+  previewLoading,
+  previewError,
+  onOpenSettings,
 }: CreateAnimationFormProps) {
   return (
     <div className="lg:col-span-2 space-y-4">
@@ -43,7 +59,10 @@ export function CreateAnimationForm({
         </div>
 
         <div>
-          <label htmlFor="animate-name" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
+          <label
+            htmlFor="animate-name"
+            className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+          >
             Animation Name
           </label>
           <input
@@ -85,34 +104,82 @@ export function CreateAnimationForm({
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="animate-satellite" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Satellite</label>
-                <select id="animate-satellite" value={config.satellite} onChange={(e) => updateConfig({ satellite: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2">
-                  {SATELLITES.map((s) => <option key={s} value={s}>{s}</option>)}
+                <label
+                  htmlFor="animate-satellite"
+                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                >
+                  Satellite
+                </label>
+                <select
+                  id="animate-satellite"
+                  value={config.satellite}
+                  onChange={(e) => updateConfig({ satellite: e.target.value })}
+                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                >
+                  {SATELLITES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="animate-sector" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Sector</label>
-                <select id="animate-sector" value={config.sector} onChange={(e) => updateConfig({ sector: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2">
-                  {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+                <label
+                  htmlFor="animate-sector"
+                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                >
+                  Sector
+                </label>
+                <select
+                  id="animate-sector"
+                  value={config.sector}
+                  onChange={(e) => updateConfig({ sector: e.target.value })}
+                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                >
+                  {SECTORS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="animate-band" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Band</label>
-                <select id="animate-band" value={config.band} onChange={(e) => updateConfig({ band: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2">
-                  {BANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+                <label
+                  htmlFor="animate-band"
+                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                >
+                  Band
+                </label>
+                <select
+                  id="animate-band"
+                  value={config.band}
+                  onChange={(e) => updateConfig({ band: e.target.value })}
+                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                >
+                  {(HIMAWARI_SATELLITES.includes(config.satellite)
+                    ? HIMAWARI_BANDS
+                    : GOES_BANDS
+                  ).map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <fieldset className="border-0 p-0 m-0">
-              <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">Quick Range</legend>
+              <legend className="text-xs text-gray-400 dark:text-slate-500 mb-2">
+                Quick Range
+              </legend>
               <div className="flex flex-wrap gap-2">
                 {QUICK_HOURS.map((h) => (
-                  <button key={h} type="button" onClick={() => handleQuickHours(h)}
-                    className="min-h-[44px] px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-colors flex items-center gap-1.5">
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => handleQuickHours(h)}
+                    className="min-h-[44px] px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-colors flex items-center gap-1.5"
+                  >
                     <Clock className="w-3.5 h-3.5" /> Last {h}h
                   </button>
                 ))}
@@ -121,25 +188,56 @@ export function CreateAnimationForm({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="animate-start" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Start Date/Time</label>
-                <input id="animate-start" type="datetime-local" value={config.start_date} onChange={(e) => updateConfig({ start_date: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2" />
+                <label
+                  htmlFor="animate-start"
+                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                >
+                  Start Date/Time
+                </label>
+                <input
+                  id="animate-start"
+                  type="datetime-local"
+                  value={config.start_date}
+                  onChange={(e) => updateConfig({ start_date: e.target.value })}
+                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                />
               </div>
               <div>
-                <label htmlFor="animate-end" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">End Date/Time</label>
-                <input id="animate-end" type="datetime-local" value={config.end_date} onChange={(e) => updateConfig({ end_date: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2" />
+                <label
+                  htmlFor="animate-end"
+                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                >
+                  End Date/Time
+                </label>
+                <input
+                  id="animate-end"
+                  type="datetime-local"
+                  value={config.end_date}
+                  onChange={(e) => updateConfig({ end_date: e.target.value })}
+                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                />
               </div>
             </div>
           </>
         ) : (
           <div>
-            <label htmlFor="animate-collection" className="block text-xs text-gray-400 dark:text-slate-500 mb-1">Collection</label>
-            <select id="animate-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}
-              className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2">
+            <label
+              htmlFor="animate-collection"
+              className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+            >
+              Collection
+            </label>
+            <select
+              id="animate-collection"
+              value={collectionId}
+              onChange={(e) => setCollectionId(e.target.value)}
+              className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+            >
               <option value="">Select collection...</option>
               {(collections ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.name} ({c.frame_count ?? 0} frames)</option>
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.frame_count ?? 0} frames)
+                </option>
               ))}
             </select>
           </div>

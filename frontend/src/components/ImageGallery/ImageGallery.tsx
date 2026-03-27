@@ -1,7 +1,16 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useImages, useDeleteImage } from '../../hooks/useApi';
 import { formatBytes } from '../../utils/format';
-import { X, Image as ImageIcon, Calendar, Satellite, Trash2, ImageOff, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import {
+  X,
+  Image as ImageIcon,
+  Calendar,
+  Satellite,
+  Trash2,
+  ImageOff,
+  SlidersHorizontal,
+  ArrowUpDown,
+} from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface SatImage {
@@ -44,12 +53,18 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 
   // Derive unique satellites and channels
   const satellites = useMemo(
-    () => [...new Set(allImages.map((i) => i.satellite).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [allImages]
+    () =>
+      [...new Set(allImages.map((i) => i.satellite).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [allImages],
   );
   const channels = useMemo(
-    () => [...new Set(allImages.map((i) => i.channel).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [allImages]
+    () =>
+      [...new Set(allImages.map((i) => i.channel).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [allImages],
   );
 
   // Filter and sort
@@ -75,16 +90,24 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
     if (!preview) return;
     previousFocusRef.current = document.activeElement as HTMLElement;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { closePreview(); return; }
+      if (e.key === 'Escape') {
+        closePreview();
+        return;
+      }
       if (e.key === 'Tab' && modalRef.current) {
         const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -94,14 +117,20 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortField(field); setSortDir('desc'); }
+    else {
+      setSortField(field);
+      setSortDir('desc');
+    }
   };
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {["a","b","c","d","e","f","g","h"].map((k) => (
-          <div key={k} className="aspect-square bg-white dark:bg-space-800/70 rounded-xl animate-pulse" />
+        {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => (
+          <div
+            key={k}
+            className="aspect-square bg-white dark:bg-space-800/70 rounded-xl animate-pulse"
+          />
         ))}
       </div>
     );
@@ -122,11 +151,13 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex items-center gap-1.5">
           <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-          {([
-            ['uploaded_at', 'Date'],
-            ['original_name', 'Name'],
-            ['satellite', 'Satellite'],
-          ] as [SortField, string][]).map(([field, label]) => (
+          {(
+            [
+              ['uploaded_at', 'Date'],
+              ['original_name', 'Name'],
+              ['satellite', 'Satellite'],
+            ] as [SortField, string][]
+          ).map(([field, label]) => (
             <button
               key={field}
               onClick={() => toggleSort(field)}
@@ -153,7 +184,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               >
                 <option value="">All Satellites</option>
                 {satellites.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             )}
@@ -166,7 +199,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               >
                 <option value="">All Channels</option>
                 {channels.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             )}
@@ -179,7 +214,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           <div
             key={img.id}
             className={`group relative bg-white dark:bg-space-800/70 border rounded-xl overflow-hidden cursor-pointer transition-colors ${
-              selectable && selected?.has(img.id) ? 'border-primary' : 'border-gray-200 dark:border-space-700/50 hover:border-space-600'
+              selectable && selected?.has(img.id)
+                ? 'border-primary'
+                : 'border-gray-200 dark:border-space-700/50 hover:border-space-600'
             }`}
           >
             <button
@@ -201,7 +238,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 />
                 <div className="absolute inset-0 flex-col items-center justify-center gap-1 hidden">
                   <ImageOff className="w-8 h-8 text-gray-400 dark:text-slate-500" />
-                  <span className="text-xs text-gray-400 dark:text-slate-500">Image unavailable</span>
+                  <span className="text-xs text-gray-400 dark:text-slate-500">
+                    Image unavailable
+                  </span>
                 </div>
               </div>
               {selectable && selected?.has(img.id) && (
@@ -242,19 +281,23 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
         ))}
       </div>
 
-      {deleteImageId && (() => {
-        const img = allImages.find((i) => i.id === deleteImageId);
-        return (
-          <ConfirmDialog
-            title={`Delete "${img?.original_name ?? 'image'}"?`}
-            message="This cannot be undone."
-            confirmLabel="Delete"
-            isPending={deleteImage.isPending}
-            onConfirm={() => { deleteImage.mutate(deleteImageId); setDeleteImageId(null); }}
-            onCancel={() => setDeleteImageId(null)}
-          />
-        );
-      })()}
+      {deleteImageId &&
+        (() => {
+          const img = allImages.find((i) => i.id === deleteImageId);
+          return (
+            <ConfirmDialog
+              title={`Delete "${img?.original_name ?? 'image'}"?`}
+              message="This cannot be undone."
+              confirmLabel="Delete"
+              isPending={deleteImage.isPending}
+              onConfirm={() => {
+                deleteImage.mutate(deleteImageId);
+                setDeleteImageId(null);
+              }}
+              onCancel={() => setDeleteImageId(null)}
+            />
+          );
+        })()}
 
       {/* Lightbox Preview Modal */}
       {preview && (
@@ -265,13 +308,20 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
           aria-label={`Image preview: ${preview.original_name}`}
           ref={modalRef}
         >
-          <button className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default" onClick={closePreview} aria-label="Close preview" tabIndex={-1} />
-          <div
-            className="relative bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default"
-          >
+          <button
+            className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default"
+            onClick={closePreview}
+            aria-label="Close preview"
+            tabIndex={-1}
+          />
+          <div className="relative bg-space-850 border border-gray-200 dark:border-space-700/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto text-left cursor-default">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-space-700/50">
               <h3 className="font-semibold truncate">{preview.original_name}</h3>
-              <button onClick={closePreview} aria-label="Close preview" className="focus-ring rounded-lg p-1">
+              <button
+                onClick={closePreview}
+                aria-label="Close preview"
+                className="focus-ring rounded-lg p-1"
+              >
                 <X className="w-5 h-5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white" />
               </button>
             </div>
@@ -286,7 +336,12 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
                 <Stat label="Satellite" value={preview.satellite || 'Unknown'} />
                 <Stat label="Channel" value={preview.channel || 'Unknown'} />
                 <Stat label="File Size" value={formatBytes(preview.file_size)} />
-                <Stat label="Captured" value={preview.captured_at ? new Date(preview.captured_at).toLocaleString() : 'N/A'} />
+                <Stat
+                  label="Captured"
+                  value={
+                    preview.captured_at ? new Date(preview.captured_at).toLocaleString() : 'N/A'
+                  }
+                />
                 <Stat label="Uploaded" value={new Date(preview.uploaded_at).toLocaleString()} />
               </div>
             </div>
@@ -300,7 +355,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
 function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="bg-space-700/50 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-2">
-      <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase tracking-wider">{label}</p>
+      <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+        {label}
+      </p>
       <p className="font-medium text-sm mt-0.5">{value}</p>
     </div>
   );

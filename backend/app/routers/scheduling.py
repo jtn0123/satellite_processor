@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 from datetime import timedelta
 
@@ -35,7 +34,7 @@ from ..models.scheduling import (
     FetchScheduleResponse,
     FetchScheduleUpdate,
 )
-from ..utils import utcnow
+from ..utils import safe_remove, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -461,10 +460,7 @@ async def run_cleanup_now(db: AsyncSession = Depends(get_db)):
     for frame in frames_to_delete:
         for path in [frame.file_path, frame.thumbnail_path]:
             if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+                safe_remove(path)
         freed += frame.file_size or 0
         await db.delete(frame)
     await db.commit()

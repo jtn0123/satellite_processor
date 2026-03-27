@@ -13,16 +13,52 @@ vi.mock('../api/client', () => ({
           data: {
             satellites: ['GOES-16', 'GOES-19'],
             satellite_availability: {
-              'GOES-16': { available_from: '2017-12-01', available_to: '2025-03-01', status: 'standby', description: 'Standby' },
-              'GOES-19': { available_from: '2025-01-01', available_to: null, status: 'active', description: 'GOES-East' },
+              'GOES-16': {
+                available_from: '2017-12-01',
+                available_to: '2025-03-01',
+                status: 'standby',
+                description: 'Standby',
+              },
+              'GOES-19': {
+                available_from: '2025-01-01',
+                available_to: null,
+                status: 'active',
+                description: 'GOES-East',
+              },
             },
             sectors: [
-              { id: 'CONUS', name: 'CONUS', product: 'ABI', cadence_minutes: 5, typical_file_size_kb: 4000 },
-              { id: 'FullDisk', name: 'Full Disk', product: 'ABI', cadence_minutes: 10, typical_file_size_kb: 12000 },
+              {
+                id: 'CONUS',
+                name: 'CONUS',
+                product: 'ABI',
+                cadence_minutes: 5,
+                typical_file_size_kb: 4000,
+              },
+              {
+                id: 'FullDisk',
+                name: 'Full Disk',
+                product: 'ABI',
+                cadence_minutes: 10,
+                typical_file_size_kb: 12000,
+              },
             ],
             bands: [
-              { id: 'C02', description: 'Red Visible', wavelength_um: 0.64, common_name: 'Red', category: 'visible', use_case: 'Primary' },
-              { id: 'C13', description: 'Clean IR', wavelength_um: 10.3, common_name: 'IR', category: 'infrared', use_case: 'Clouds' },
+              {
+                id: 'C02',
+                description: 'Red Visible',
+                wavelength_um: 0.64,
+                common_name: 'Red',
+                category: 'visible',
+                use_case: 'Primary',
+              },
+              {
+                id: 'C13',
+                description: 'Clean IR',
+                wavelength_um: 10.3,
+                common_name: 'IR',
+                category: 'infrared',
+                use_case: 'Clouds',
+              },
             ],
             default_satellite: 'GOES-19',
           },
@@ -41,12 +77,17 @@ vi.mock('../utils/toast', () => ({
 }));
 
 import api from '../api/client';
-const mockedApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
+const mockedApi = api as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+};
 
 function renderFetch() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
-    <QueryClientProvider client={qc}><FetchTab /></QueryClientProvider>
+    <QueryClientProvider client={qc}>
+      <FetchTab />
+    </QueryClientProvider>,
   );
 }
 
@@ -204,7 +245,10 @@ describe('FetchFlowComplete', () => {
     fireEvent.click(screen.getByText('Confirm'));
     await waitFor(() => {
       expect(mockedApi.post).toHaveBeenCalled();
-      expect(mockShowToast).toHaveBeenCalledWith('success', expect.stringContaining('test-job-123'));
+      expect(mockShowToast).toHaveBeenCalledWith(
+        'success',
+        expect.stringContaining('test-job-123'),
+      );
     });
   });
 

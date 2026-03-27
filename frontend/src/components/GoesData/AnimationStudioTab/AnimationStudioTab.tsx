@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
 import { showToast } from '../../../utils/toast';
-import type { Product, CollectionType, PaginatedFrames, CropPreset, PaginatedAnimations } from '../types';
+import type {
+  Product,
+  CollectionType,
+  PaginatedFrames,
+  CropPreset,
+  PaginatedAnimations,
+} from '../types';
 import { extractArray } from '../../../utils/safeData';
 
 import { StudioFrameSelection } from './StudioFrameSelection';
@@ -43,7 +49,12 @@ export default function AnimationStudioTab() {
     queryFn: () => api.get('/satellite/crop-presets').then((r) => extractArray(r.data)),
   });
 
-  const previewParams: Record<string, string | number> = { page: 1, limit: 20, sort: 'capture_time', order: 'asc' };
+  const previewParams: Record<string, string | number> = {
+    page: 1,
+    limit: 20,
+    sort: 'capture_time',
+    order: 'asc',
+  };
   if (selectionMode === 'filters') {
     if (satellite) previewParams.satellite = satellite;
     if (band) previewParams.band = band;
@@ -68,7 +79,11 @@ export default function AnimationStudioTab() {
     mutationFn: () => {
       const payload: Record<string, unknown> = {
         name: animName || `Animation ${new Date().toLocaleString()}`,
-        fps, format, quality, false_color: falseColor, scale,
+        fps,
+        format,
+        quality,
+        false_color: falseColor,
+        scale,
       };
       if (cropPresetId) payload.crop_preset_id = cropPresetId;
       if (selectionMode === 'filters') {
@@ -82,13 +97,19 @@ export default function AnimationStudioTab() {
       }
       return api.post('/satellite/animations', payload).then((r) => r.data);
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation job created!'); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animations'] });
+      showToast('success', 'Animation job created!');
+    },
     onError: () => showToast('error', 'Failed to create animation'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/satellite/animations/${id}`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animations'] }); showToast('success', 'Animation deleted'); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animations'] });
+      showToast('success', 'Animation deleted');
+    },
     onError: () => showToast('error', 'Failed to delete animation'),
   });
 
@@ -96,25 +117,40 @@ export default function AnimationStudioTab() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <StudioFrameSelection
-          selectionMode={selectionMode} setSelectionMode={setSelectionMode}
-          satellite={satellite} setSatellite={setSatellite}
-          band={band} setBand={setBand}
-          sector={sector} setSector={setSector}
-          startDate={startDate} setStartDate={setStartDate}
-          endDate={endDate} setEndDate={setEndDate}
-          collectionId={collectionId} setCollectionId={setCollectionId}
-          products={products} collections={collections}
+          selectionMode={selectionMode}
+          setSelectionMode={setSelectionMode}
+          satellite={satellite}
+          setSatellite={setSatellite}
+          band={band}
+          setBand={setBand}
+          sector={sector}
+          setSector={setSector}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+          collectionId={collectionId}
+          setCollectionId={setCollectionId}
+          products={products}
+          collections={collections}
           previewFrames={previewFrames}
         />
 
         <StudioSettings
-          animName={animName} setAnimName={setAnimName}
-          fps={fps} setFps={setFps}
-          format={format} setFormat={setFormat}
-          quality={quality} setQuality={setQuality}
-          cropPresetId={cropPresetId} setCropPresetId={setCropPresetId}
-          falseColor={falseColor} setFalseColor={setFalseColor}
-          scale={scale} setScale={setScale}
+          animName={animName}
+          setAnimName={setAnimName}
+          fps={fps}
+          setFps={setFps}
+          format={format}
+          setFormat={setFormat}
+          quality={quality}
+          setQuality={setQuality}
+          cropPresetId={cropPresetId}
+          setCropPresetId={setCropPresetId}
+          falseColor={falseColor}
+          setFalseColor={setFalseColor}
+          scale={scale}
+          setScale={setScale}
           cropPresets={cropPresets}
           canGenerate={!!previewFrames?.total}
           isPending={createMutation.isPending}

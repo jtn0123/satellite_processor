@@ -31,13 +31,13 @@ function mockFetchFailure() {
 }
 
 describe('WhatsNewModal', () => {
-  it('renders What\'s New heading with version', async () => {
+  it("renders What's New heading with version", async () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} version="1.0.1" />);
     expect(screen.getByText("What's New — v1.0.1")).toBeInTheDocument();
   });
 
-  it('renders What\'s New heading without version', async () => {
+  it("renders What's New heading without version", async () => {
     mockFetchSuccess();
     render(<WhatsNewModal onClose={vi.fn()} />);
     expect(screen.getByText("What's New")).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('WhatsNewModal', () => {
       expect(links).toHaveLength(2);
       expect(links[0].closest('a')).toHaveAttribute(
         'href',
-        'https://github.com/jtn0123/satellite_processor/releases/tag/v1.0.1'
+        'https://github.com/jtn0123/satellite_processor/releases/tag/v1.0.1',
       );
     });
   });
@@ -173,7 +173,7 @@ describe('WhatsNewModal version tracking', () => {
           closeFn();
         }}
         version="1.0.1"
-      />
+      />,
     );
     fireEvent.click(screen.getByLabelText('Close'));
     expect(localStorage.getItem('whatsNewLastSeen')).toBe('1.0.1');

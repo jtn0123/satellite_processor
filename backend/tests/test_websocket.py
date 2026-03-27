@@ -13,7 +13,7 @@ import app.main as main_module
 async def _slow_get_message(**kwargs):
     """Mock get_message that yields control like real Redis would."""
     await asyncio.sleep(0.5)
-    return None
+    return
 
 
 def _mock_redis_client():
@@ -38,7 +38,7 @@ def test_job_websocket_connect():
 
     main_module.get_redis_client = lambda: mock_client
     try:
-        with TestClient(main_module.app) as sync_client:
+        with TestClient(main_module.app) as sync_client:  # noqa: SIM117
             with sync_client.websocket_connect("/ws/jobs/test-job-id") as ws:
                 data = ws.receive_json()
                 assert data["type"] == "connected"
@@ -56,7 +56,7 @@ def test_events_websocket_connect():
 
     main_module.get_redis_client = lambda: mock_client
     try:
-        with TestClient(main_module.app) as sync_client:
+        with TestClient(main_module.app) as sync_client:  # noqa: SIM117
             with sync_client.websocket_connect("/ws/events") as ws:
                 data = ws.receive_json()
                 assert data["type"] == "connected"
@@ -68,7 +68,7 @@ def test_status_websocket_connect():
     """Status heartbeat WebSocket should accept and send connected message."""
     from starlette.testclient import TestClient
 
-    with TestClient(main_module.app) as sync_client:
+    with TestClient(main_module.app) as sync_client:  # noqa: SIM117
         with sync_client.websocket_connect("/ws/status") as ws:
             data = ws.receive_json()
             assert data["type"] == "connected"

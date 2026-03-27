@@ -41,7 +41,9 @@ export default function ProcessPage() {
         <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-8 text-center">
           <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-slate-500" />
           <p className="text-gray-600 dark:text-slate-300 font-medium">No images yet</p>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Upload some satellite images to get started.</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+            Upload some satellite images to get started.
+          </p>
           <Link
             to="/upload"
             className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors"
@@ -52,25 +54,27 @@ export default function ProcessPage() {
       )}
 
       {/* Image selection */}
-      {(images as unknown[]).length > 0 && <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">
-            Select Images{' '}
-            <span className="text-sm text-gray-500 dark:text-slate-400 font-normal">
-              ({selected.size} selected)
-            </span>
-          </h2>
-          {selected.size > 0 && (
-            <button
-              onClick={() => setSelected(new Set())}
-              className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              Clear selection
-            </button>
-          )}
+      {(images as unknown[]).length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">
+              Select Images{' '}
+              <span className="text-sm text-gray-500 dark:text-slate-400 font-normal">
+                ({selected.size} selected)
+              </span>
+            </h2>
+            {selected.size > 0 && (
+              <button
+                onClick={() => setSelected(new Set())}
+                className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
+          <ImageGallery selectable selected={selected} onToggle={toggle} />
         </div>
-        <ImageGallery selectable selected={selected} onToggle={toggle} />
-      </div>}
+      )}
 
       {/* Presets + Processing config */}
       {selected.size > 0 && (

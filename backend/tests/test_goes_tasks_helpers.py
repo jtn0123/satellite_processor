@@ -233,11 +233,6 @@ def test_detect_gaps_no_gaps(mock_db):
     assert len(gaps) == 0
 
 
-# ---------------------------------------------------------------------------
-# _build_fetch_result (goes_fetcher)
-# ---------------------------------------------------------------------------
-
-
 def test_build_fetch_result():
     from app.services.goes_fetcher import _build_fetch_result
 
@@ -249,11 +244,6 @@ def test_build_fetch_result():
         "attempted": 5,
         "failed_downloads": 1,
     }
-
-
-# ---------------------------------------------------------------------------
-# _download_and_convert_frame (goes_fetcher)
-# ---------------------------------------------------------------------------
 
 
 @patch("app.services.goes_fetcher._netcdf_to_png_from_file")

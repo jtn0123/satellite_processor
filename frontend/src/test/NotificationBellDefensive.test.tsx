@@ -46,7 +46,18 @@ describe('NotificationBell - Defensive Scenarios', () => {
 
   it('handles API returning paginated object instead of array', async () => {
     mockedApi.get.mockResolvedValue({
-      data: { items: [{ id: 'n1', message: 'Test notification', type: 'fetch_complete', read: false, created_at: '2026-01-01T12:00:00Z' }], total: 1 },
+      data: {
+        items: [
+          {
+            id: 'n1',
+            message: 'Test notification',
+            type: 'fetch_complete',
+            read: false,
+            created_at: '2026-01-01T12:00:00Z',
+          },
+        ],
+        total: 1,
+      },
     });
     renderWithQuery(<NotificationBell />);
     fireEvent.click(screen.getByRole('button'));
@@ -74,9 +85,27 @@ describe('NotificationBell - Defensive Scenarios', () => {
   it('shows unread count badge', async () => {
     mockedApi.get.mockResolvedValue({
       data: [
-        { id: 'n1', message: 'Unread 1', type: 'fetch_complete', read: false, created_at: '2026-01-01T12:00:00Z' },
-        { id: 'n2', message: 'Unread 2', type: 'fetch_complete', read: false, created_at: '2026-01-01T11:00:00Z' },
-        { id: 'n3', message: 'Read', type: 'fetch_complete', read: true, created_at: '2026-01-01T10:00:00Z' },
+        {
+          id: 'n1',
+          message: 'Unread 1',
+          type: 'fetch_complete',
+          read: false,
+          created_at: '2026-01-01T12:00:00Z',
+        },
+        {
+          id: 'n2',
+          message: 'Unread 2',
+          type: 'fetch_complete',
+          read: false,
+          created_at: '2026-01-01T11:00:00Z',
+        },
+        {
+          id: 'n3',
+          message: 'Read',
+          type: 'fetch_complete',
+          read: true,
+          created_at: '2026-01-01T10:00:00Z',
+        },
       ],
     });
     renderWithQuery(<NotificationBell />);
@@ -87,7 +116,11 @@ describe('NotificationBell - Defensive Scenarios', () => {
 
   it('shows 9+ when more than 9 unread', async () => {
     const notifications = Array.from({ length: 12 }, (_, i) => ({
-      id: `n${i}`, message: `Notification ${i}`, type: 'fetch_complete', read: false, created_at: '2026-01-01T12:00:00Z',
+      id: `n${i}`,
+      message: `Notification ${i}`,
+      type: 'fetch_complete',
+      read: false,
+      created_at: '2026-01-01T12:00:00Z',
     }));
     mockedApi.get.mockResolvedValue({ data: notifications });
     renderWithQuery(<NotificationBell />);
@@ -98,7 +131,15 @@ describe('NotificationBell - Defensive Scenarios', () => {
 
   it('shows no badge when all are read', async () => {
     mockedApi.get.mockResolvedValue({
-      data: [{ id: 'n1', message: 'Read', type: 'fetch_complete', read: true, created_at: '2026-01-01T12:00:00Z' }],
+      data: [
+        {
+          id: 'n1',
+          message: 'Read',
+          type: 'fetch_complete',
+          read: true,
+          created_at: '2026-01-01T12:00:00Z',
+        },
+      ],
     });
     renderWithQuery(<NotificationBell />);
     await waitFor(() => {
@@ -110,7 +151,11 @@ describe('NotificationBell - Defensive Scenarios', () => {
 
   it('only shows first 10 notifications in dropdown', async () => {
     const notifications = Array.from({ length: 15 }, (_, i) => ({
-      id: `n${i}`, message: `Notification ${i}`, type: 'fetch_complete', read: false, created_at: '2026-01-01T12:00:00Z',
+      id: `n${i}`,
+      message: `Notification ${i}`,
+      type: 'fetch_complete',
+      read: false,
+      created_at: '2026-01-01T12:00:00Z',
     }));
     mockedApi.get.mockResolvedValue({ data: notifications });
     renderWithQuery(<NotificationBell />);

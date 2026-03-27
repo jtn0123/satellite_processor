@@ -17,11 +17,16 @@ export default function CollectionsTab() {
   const [animatingFrames, setAnimatingFrames] = useState<GoesFrame[] | null>(null);
   const [loadingAnimateId, setLoadingAnimateId] = useState<string | null>(null);
 
-  const { data: collections, isLoading, isError } = useQuery<CollectionType[]>({
+  const {
+    data: collections,
+    isLoading,
+    isError,
+  } = useQuery<CollectionType[]>({
     queryKey: ['goes-collections'],
-    queryFn: () => api.get('/satellite/collections').then((r) => {
-      return extractArray(r.data);
-    }),
+    queryFn: () =>
+      api.get('/satellite/collections').then((r) => {
+        return extractArray(r.data);
+      }),
   });
 
   const createMutation = useMutation({
@@ -78,12 +83,20 @@ export default function CollectionsTab() {
     <div className="space-y-4">
       {/* Create new */}
       <div className="flex gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
-        <input aria-label="New collection name" type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+        <input
+          aria-label="New collection name"
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
           placeholder="New collection name"
           className="flex-1 rounded-lg bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-3 py-2"
-          onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()} />
-        <button onClick={() => createMutation.mutate()} disabled={!newName || createMutation.isPending}
-          className="px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50">
+          onKeyDown={(e) => e.key === 'Enter' && newName && createMutation.mutate()}
+        />
+        <button
+          onClick={() => createMutation.mutate()}
+          disabled={!newName || createMutation.isPending}
+          className="px-4 py-2 btn-primary-mix text-gray-900 dark:text-white rounded-lg disabled:opacity-50"
+        >
           Create
         </button>
       </div>
@@ -96,44 +109,82 @@ export default function CollectionsTab() {
         </div>
       )}
       {!isLoading && isError && (
-        <div className="text-sm text-red-400 text-center py-8">Failed to load collections. Please try again.</div>
+        <div className="text-sm text-red-400 text-center py-8">
+          Failed to load collections. Please try again.
+        </div>
       )}
       {!isLoading && !isError && (
         <div className="@container grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
           {(collections ?? []).map((c) => (
-            <div key={c.id} className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3">
+            <div
+              key={c.id}
+              className="cv-auto bg-gray-50 dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 space-y-3"
+            >
               {editingId === c.id ? (
                 <div className="flex gap-2">
-                  <input aria-label="Edit collection name" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                  <input
+                    aria-label="Edit collection name"
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
                     className="flex-1 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white px-2 py-1 text-sm"
-                    onKeyDown={(e) => e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })} />
-                  <button onClick={() => updateMutation.mutate({ id: c.id, name: editName })}
-                    className="text-xs text-emerald-400 hover:text-emerald-300">Save</button>
-                  <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 dark:text-slate-400">Cancel</button>
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && updateMutation.mutate({ id: c.id, name: editName })
+                    }
+                  />
+                  <button
+                    onClick={() => updateMutation.mutate({ id: c.id, name: editName })}
+                    className="text-xs text-emerald-400 hover:text-emerald-300"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="text-xs text-gray-500 dark:text-slate-400"
+                  >
+                    Cancel
+                  </button>
                 </div>
               ) : (
                 <div className="flex items-start justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{c.name}</h3>
                   <div className="flex gap-1">
-                    <button onClick={() => { setEditingId(c.id); setEditName(c.name); }}
-                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">Edit</button>
+                    <button
+                      onClick={() => {
+                        setEditingId(c.id);
+                        setEditName(c.name);
+                      }}
+                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleAnimate(c.id)}
                       disabled={!!loadingAnimateId || !c.frame_count}
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
                       aria-label={`Animate collection ${c.name}`}
                     >
-                      <Play className="w-3 h-3 inline" /> {loadingAnimateId === c.id ? '...' : 'Animate'}
+                      <Play className="w-3 h-3 inline" />{' '}
+                      {loadingAnimateId === c.id ? '...' : 'Animate'}
                     </button>
                     <button
-                      onClick={() => globalThis.open(`/api/satellite/frames/export?collection_id=${c.id}&format=csv`, '_blank')}
+                      onClick={() =>
+                        globalThis.open(
+                          `/api/satellite/frames/export?collection_id=${c.id}&format=csv`,
+                          '_blank',
+                        )
+                      }
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                       aria-label={`Export collection ${c.name}`}
                     >
                       <FileDown className="w-3 h-3 inline" /> Export
                     </button>
-                    <button onClick={() => deleteMutation.mutate(c.id)}
-                      className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                    <button
+                      onClick={() => deleteMutation.mutate(c.id)}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               )}
@@ -141,7 +192,9 @@ export default function CollectionsTab() {
                 <span>{c.frame_count ?? 0} frames</span>
                 <span>{new Date(c.created_at).toLocaleDateString()}</span>
               </div>
-              {c.description && <p className="text-xs text-gray-400 dark:text-slate-500">{c.description}</p>}
+              {c.description && (
+                <p className="text-xs text-gray-400 dark:text-slate-500">{c.description}</p>
+              )}
             </div>
           ))}
           {(collections ?? []).length === 0 && (
@@ -157,10 +210,7 @@ export default function CollectionsTab() {
       )}
 
       {animatingFrames && (
-        <AnimationPlayer
-          frames={animatingFrames}
-          onClose={() => setAnimatingFrames(null)}
-        />
+        <AnimationPlayer frames={animatingFrames} onClose={() => setAnimatingFrames(null)} />
       )}
     </div>
   );

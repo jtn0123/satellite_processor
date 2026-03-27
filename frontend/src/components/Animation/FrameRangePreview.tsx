@@ -19,7 +19,7 @@ function SkeletonCard() {
 export default function FrameRangePreview({ data, isLoading, isError }: Readonly<Props>) {
   if (isLoading) {
     return (
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800">
+      <div className="card p-4">
         <div className="flex gap-4">
           <SkeletonCard />
           <SkeletonCard />
@@ -40,7 +40,7 @@ export default function FrameRangePreview({ data, isLoading, isError }: Readonly
 
   if (!data || data.frames.length === 0) {
     return (
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 text-center">
+      <div className="card p-6 text-center">
         <ImageOff className="w-8 h-8 text-gray-400 dark:text-slate-600 mx-auto mb-2" />
         <p className="text-sm text-gray-500 dark:text-slate-400">No frames found in this range.</p>
       </div>
@@ -50,7 +50,7 @@ export default function FrameRangePreview({ data, isLoading, isError }: Readonly
   const labels = ['First', 'Middle', 'Last'];
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3">
+    <div className="card p-4 space-y-3">
       <div className="flex gap-4 overflow-x-auto">
         {data.frames.map((frame, i) => (
           <div key={frame.id} className="flex-1 min-w-[120px]">

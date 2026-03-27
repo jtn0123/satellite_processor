@@ -84,7 +84,7 @@ describe('CleanupTab - storage stats display', () => {
     mockedApi.get.mockImplementation(() => new Promise(() => {}));
     renderWithProviders(<CleanupTab />);
     // Should show skeleton placeholders
-    expect(document.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.skeleton-shimmer').length).toBeGreaterThan(0);
   });
 });
 

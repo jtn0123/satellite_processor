@@ -37,14 +37,14 @@ export default function ConfirmDialog({
     >
       <button
         type="button"
-        className="fixed inset-0 w-full h-full bg-transparent border-none cursor-default"
+        className="fixed inset-0 w-full h-full bg-black/50 dark:bg-black/70 border-none cursor-default modal-overlay"
         onClick={onCancel}
         aria-label="Close dialog"
         tabIndex={-1}
       />
       <div
         ref={trapRef}
-        className="relative bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full space-y-4 border border-gray-200 dark:border-slate-700 mx-auto mt-[30vh]"
+        className="relative card-elevated rounded-2xl p-6 max-w-sm w-full space-y-4 mx-auto modal-panel shadow-2xl"
       >
         <div className="flex items-center gap-3">
           <div

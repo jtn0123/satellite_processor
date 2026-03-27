@@ -46,7 +46,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
   };
 
   return (
-    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-4 space-y-4">
+    <div className="card p-4 space-y-4">
       <div className="flex items-center gap-2">
         <BookOpen className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-semibold">Presets</h3>

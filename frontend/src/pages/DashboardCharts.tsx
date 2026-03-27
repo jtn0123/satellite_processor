@@ -21,14 +21,14 @@ export default function DashboardCharts({ goesStats, isLoading }: Readonly<Dashb
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4 animate-pulse">
+      <div className="card p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-gray-200 dark:bg-space-700 rounded" />
-          <div className="h-5 w-32 bg-gray-200 dark:bg-space-700 rounded" />
+          <div className="w-5 h-5 skeleton-shimmer rounded" />
+          <div className="h-5 w-32 skeleton-shimmer rounded" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {['a', 'b', 'c', 'd'].map((k) => (
-            <div key={k} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3 h-16" />
+            <div key={k} className="card-inner p-3 h-16 skeleton-shimmer" />
           ))}
         </div>
       </div>
@@ -38,27 +38,27 @@ export default function DashboardCharts({ goesStats, isLoading }: Readonly<Dashb
   if (!goesStats || totalGoesFrames === 0) return null;
 
   return (
-    <div className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 space-y-4">
+    <div className="card p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Satellite className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-semibold">Satellite Data</h2>
       </div>
 
       <div className="@container grid grid-cols-1 @xs:grid-cols-2 @md:grid-cols-4 gap-4">
-        <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+        <div className="card-inner p-3">
           <p className="text-2xl font-bold text-primary">{totalGoesFrames.toLocaleString()}</p>
           <p className="text-xs text-gray-500 dark:text-slate-400">Total Frames</p>
         </div>
         {goesStats.frames_by_satellite &&
           Object.entries(goesStats.frames_by_satellite).map(([sat, count]) => (
-            <div key={sat} className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+            <div key={sat} className="card-inner p-3">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {count.toLocaleString()}
               </p>
               <p className="text-xs text-gray-500 dark:text-slate-400">{sat}</p>
             </div>
           ))}
-        <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+        <div className="card-inner p-3">
           <div className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
             <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -69,7 +69,7 @@ export default function DashboardCharts({ goesStats, isLoading }: Readonly<Dashb
           </div>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Last Fetch</p>
         </div>
-        <div className="bg-gray-100 dark:bg-space-800 rounded-lg p-3">
+        <div className="card-inner p-3">
           <div className="flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
             <p className="text-2xl font-bold text-gray-900 dark:text-white">

@@ -36,12 +36,12 @@ export default function FrameGridContent({
         {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
           <div
             key={key}
-            className="bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 overflow-hidden"
+            className="card overflow-hidden"
           >
-            <div className="aspect-video animate-pulse bg-gray-200 dark:bg-slate-700 rounded-t" />
+            <div className="aspect-video skeleton-shimmer rounded-t" />
             <div className="p-2 space-y-2">
-              <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
-              <div className="h-3 animate-pulse bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
+              <div className="h-3 skeleton-shimmer rounded w-3/4" />
+              <div className="h-3 skeleton-shimmer rounded w-1/2" />
             </div>
           </div>
         ))}

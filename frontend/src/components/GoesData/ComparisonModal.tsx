@@ -47,7 +47,7 @@ export default function ComparisonModal({
       onClose={onClose}
       ariaLabel="Compare Frames"
       overlayClassName="fixed inset-0 bg-black/40 dark:bg-black/80 flex items-center justify-center z-50 modal-overlay m-0 w-full h-full max-w-none max-h-none border-none"
-      panelClassName="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-panel"
+      panelClassName="card-elevated rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-panel"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">

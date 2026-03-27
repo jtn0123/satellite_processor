@@ -5,13 +5,13 @@ import Skeleton from '../components/GoesData/Skeleton';
 describe('Skeleton', () => {
   it('renders a single text skeleton by default', () => {
     const { container } = render(<Skeleton />);
-    const pulses = container.querySelectorAll('.animate-pulse');
+    const pulses = container.querySelectorAll('.skeleton-shimmer');
     expect(pulses.length).toBe(1);
   });
 
   it('renders multiple skeletons when count > 1', () => {
     const { container } = render(<Skeleton count={4} />);
-    const pulses = container.querySelectorAll('.animate-pulse');
+    const pulses = container.querySelectorAll('.skeleton-shimmer');
     expect(pulses.length).toBe(4);
   });
 

@@ -63,7 +63,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
     return (
       <div className="space-y-2">
         {['a', 'b', 'c'].map((k) => (
-          <div key={k} className="h-14 bg-white dark:bg-space-800/70 rounded-xl animate-pulse" />
+          <div key={k} className="h-14 skeleton-shimmer rounded-xl" />
         ))}
       </div>
     );
@@ -99,7 +99,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
           <button
             type="button"
             key={job.id}
-            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700 rounded-xl px-4 py-3 sm:px-4 sm:py-3 hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer group transition-colors w-full text-left"
+            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left"
             onClick={() => onSelect?.(job.id)}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>

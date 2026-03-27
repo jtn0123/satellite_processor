@@ -32,7 +32,7 @@ export default function QueryErrorBox({
   }
 
   return (
-    <div className="bg-white dark:bg-space-800 border border-gray-200 dark:border-space-700/50 rounded-xl p-6 text-center">
+    <div className="card p-6 text-center">
       <Icon className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-2" />
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">{message}</p>
       {onRetry && (

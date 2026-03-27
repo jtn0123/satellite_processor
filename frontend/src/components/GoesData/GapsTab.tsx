@@ -93,7 +93,7 @@ export default function GapsTab() {
       </div>
 
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 card p-6">
         <div>
           <label
             htmlFor="gap-satellite"
@@ -204,7 +204,7 @@ export default function GapsTab() {
         <div className="space-y-4">
           {/* Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+            <div className="glass-card p-6">
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1">Coverage</div>
               <div
                 className={`text-3xl font-bold ${(() => {
@@ -216,11 +216,11 @@ export default function GapsTab() {
                 {coverage.coverage_percent.toFixed(1)}%
               </div>
             </div>
-            <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+            <div className="glass-card p-6">
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1">Gaps Found</div>
               <div className="text-3xl font-bold text-amber-400">{coverage.gap_count}</div>
             </div>
-            <div className="glass-card rounded-xl p-6 border border-gray-200 dark:border-slate-800">
+            <div className="glass-card p-6">
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1">Total Frames</div>
               <div className="text-3xl font-bold text-primary">{coverage.total_frames}</div>
             </div>
@@ -257,7 +257,7 @@ export default function GapsTab() {
 
           {/* Gap list */}
           {coverage.gaps.length > 0 && (
-            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-slate-800">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Detected Gaps</h3>
                 <button

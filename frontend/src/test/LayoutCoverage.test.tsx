@@ -66,7 +66,9 @@ describe('Layout coverage boost', () => {
     mockGet.mockImplementation(() => Promise.reject(new Error('fail')));
     renderLayout();
     // Should not throw
-    expect(screen.getAllByText(/sattracker/i).length).toBeGreaterThan(0);
+    // Branding is split: <span>Sat</span><span class="text-primary">Tracker</span>
+    expect(screen.getAllByText(/Sat/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tracker/i).length).toBeGreaterThan(0);
   });
 
   it('renders desktop sidebar with all nav links', () => {

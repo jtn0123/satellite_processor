@@ -118,7 +118,7 @@ export default function CompositesTab() {
   return (
     <div className="space-y-6">
       {/* Recipe Selection */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+      <div className="card p-6 space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Layers className="w-5 h-5 text-primary" /> Composite Recipes
         </h3>
@@ -154,7 +154,7 @@ export default function CompositesTab() {
 
       {/* Generate Form */}
       {selectedRecipe && (
-        <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+        <div className="card p-6 space-y-4">
           <h3 className="text-lg font-semibold">Generate Composite</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -234,7 +234,7 @@ export default function CompositesTab() {
       )}
 
       {/* History */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 border border-gray-200 dark:border-slate-800 space-y-4">
+      <div className="card p-6 space-y-4">
         <h3 className="text-lg font-semibold">Generated Composites</h3>
         {composites && (composites.items ?? []).length > 0 ? (
           <div className="space-y-3">

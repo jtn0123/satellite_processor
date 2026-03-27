@@ -172,7 +172,7 @@ export default function FetchTab() {
     return (
       <div className="space-y-4">
         {['skel-source', 'skel-what', 'skel-when'].map((id) => (
-          <div key={id} className="h-24 animate-pulse bg-gray-200 dark:bg-slate-700 rounded-xl" />
+          <div key={id} className="h-24 skeleton-shimmer rounded-xl" />
         ))}
       </div>
     );
@@ -282,7 +282,7 @@ export default function FetchTab() {
       )}
 
       {/* Saved Presets (collapsible) */}
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+      <div className="card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowPresets((p) => !p)}

@@ -117,14 +117,18 @@ describe('Dashboard extended', () => {
     expect(screen.getByText('10%')).toBeInTheDocument();
   });
 
-  it('renders System Health section', () => {
+  it('renders system status strip', () => {
     renderDashboard();
-    expect(screen.getByText('System Health')).toBeInTheDocument();
+    // System Health is now a horizontal status strip with "System" label
+    expect(screen.getByText('System')).toBeInTheDocument();
   });
 
-  it('shows healthy status', () => {
+  it('shows health check services', () => {
     renderDashboard();
-    expect(screen.getByText('healthy')).toBeInTheDocument();
+    // The health status is shown via icons/pills per service, not as text "healthy"
+    expect(screen.getByText('Database')).toBeInTheDocument();
+    expect(screen.getByText('Redis')).toBeInTheDocument();
+    expect(screen.getByText('Disk')).toBeInTheDocument();
   });
 
   it('renders JobList component', () => {

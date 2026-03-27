@@ -499,7 +499,7 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
 
       {/* Tab bar */}
       <div
-        className="flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide items-center"
+        className="relative flex gap-1 bg-gray-50 dark:bg-slate-900 rounded-xl p-1.5 border border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide tab-scroll-mask items-center"
         role="tablist"
         aria-label="Settings tabs"
       >
@@ -513,7 +513,7 @@ function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown>
             aria-selected={activeTab === tab.id}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
               activeTab === tab.id
-                ? 'bg-primary text-gray-900 dark:text-white shadow-lg shadow-primary/20 glow-primary'
+                ? 'bg-gradient-to-b from-primary to-primary-dark text-white shadow-lg shadow-primary/20 glow-primary tab-active'
                 : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
             }`}
           >

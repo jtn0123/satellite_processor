@@ -22,7 +22,7 @@ export default function FilterSidebar({
 }: Readonly<FilterSidebarProps>) {
   return (
     <div className={`w-64 shrink-0 space-y-4 ${showMobileFilters ? 'block' : 'hidden'} md:block`}>
-      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-800 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
+      <div className="card p-4 space-y-3 inset-shadow-sm dark:inset-shadow-white/5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Filters</h3>
           {filters.hasActiveFilters && (

@@ -54,10 +54,10 @@ function FrameCardGrid({
 }: Readonly<Omit<FrameCardProps, 'viewMode'>>) {
   return (
     <div
-      className={`relative bg-gray-100 dark:bg-slate-800 rounded-xl border overflow-hidden transition-all inset-shadow-sm dark:inset-shadow-white/5 ${
+      className={`relative card overflow-hidden transition-all inset-shadow-sm dark:inset-shadow-white/5 ${
         isSelected
           ? 'border-primary ring-1 ring-primary glow-primary'
-          : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
+          : 'hover:border-gray-300 dark:hover:border-slate-600'
       }`}
     >
       {/* Thumbnail area — clickable */}

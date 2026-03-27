@@ -45,7 +45,7 @@ export default function PresetsPage() {
         </div>
         <div className="space-y-2">
           {['a', 'b', 'c', 'd'].map((k) => (
-            <div key={k} className="h-16 bg-white dark:bg-space-800/70 rounded-lg animate-pulse" />
+            <div key={k} className="h-16 skeleton-shimmer rounded-lg" />
           ))}
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function PresetsPage() {
           {presetList.map((p) => (
             <div
               key={p.id}
-              className="bg-white dark:bg-space-800/70 border border-gray-200 dark:border-space-700/50 rounded-xl px-5 py-4 flex items-center gap-4 group hover:bg-gray-50 dark:bg-space-800 transition-colors"
+              className="card card-hover px-5 py-4 flex items-center gap-4 group"
             >
               <BookOpen className="w-5 h-5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">

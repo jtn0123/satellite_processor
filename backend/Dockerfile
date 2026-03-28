@@ -39,8 +39,10 @@ COPY backend/alembic /app/alembic
 COPY backend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-RUN mkdir -p /app/data/output /app/data/uploads /app/data/temp && \
-    adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+# Data directories are created at runtime by entrypoint.sh and config.py.
+# Do NOT pre-create /app/data subdirs here — it causes Docker volume
+# initialization races ("mkdir: file exists") on CI runners.
+RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000

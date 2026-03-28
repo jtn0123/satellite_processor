@@ -37,7 +37,7 @@ def _get_sync_db():
 
     if _sync_engine is None:
         sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
-        _sync_engine = create_engine(sync_url, pool_size=5, max_overflow=10, pool_recycle=3600)
+        _sync_engine = create_engine(sync_url, pool_size=5, max_overflow=10, pool_recycle=1800, pool_pre_ping=True)
         _SessionFactory = sessionmaker(bind=_sync_engine)
     return _SessionFactory()
 

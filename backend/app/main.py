@@ -1,6 +1,7 @@
 """FastAPI application entry point"""
 
 import asyncio
+import hmac
 import json
 import logging
 import shutil
@@ -135,7 +136,7 @@ async def lifespan(app: FastAPI):
 
         from .db.database import async_session as _seed_session
         from .db.models import FetchPreset as _FP
-        from .routers.scheduling import DEFAULT_FETCH_PRESETS
+        from .routers.scheduling_presets import DEFAULT_FETCH_PRESETS
 
         async with _seed_session() as _db:
             for _pdef in DEFAULT_FETCH_PRESETS:
@@ -203,7 +204,8 @@ async def api_key_auth(request: Request, call_next):
         )
         if not skip:
             key = request.headers.get("X-API-Key", "")
-            if key != app_settings.api_key:
+            if not hmac.compare_digest(key, app_settings.api_key):
+                logger.warning("Rejected API request with invalid key: %s %s", request.method, path)
                 return JSONResponse(
                     status_code=401,
                     content={"error": "unauthorized", "detail": "Invalid or missing API key"},
@@ -356,7 +358,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
         or websocket.headers.get("authorization", "").removeprefix("Bearer ")
         or websocket.query_params.get("api_key", "")  # deprecated, kept for compat
     )
-    if key == app_settings.api_key:
+    if hmac.compare_digest(key, app_settings.api_key):
         return True
 
     # Phase 2: Accept connection and wait for first-message auth
@@ -364,7 +366,11 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     try:
         # Wait up to 5 seconds for auth message
         msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
-        if isinstance(msg, dict) and msg.get("type") == "auth" and msg.get("api_key") == app_settings.api_key:
+        if (
+            isinstance(msg, dict)
+            and msg.get("type") == "auth"
+            and hmac.compare_digest(msg.get("api_key", ""), app_settings.api_key)
+        ):
             return True
     except (TimeoutError, WebSocketDisconnect, ConnectionError, RuntimeError, json.JSONDecodeError):
         pass

@@ -11,6 +11,7 @@ PATTERN_FORMAT = r"^(mp4|gif)$"
 PATTERN_QUALITY = r"^(low|medium|high)$"
 PATTERN_RESOLUTION = r"^(preview|full)$"
 PATTERN_LOOP_STYLE = r"^(forward|pingpong|hold)$"
+PATTERN_SCALE = r"^\d{1,3}%$"
 
 # --- Crop Preset schemas ---
 
@@ -67,7 +68,7 @@ class AnimationCreate(BaseModel):
     """Request schema for creating an animation from selected frames or filters."""
 
     name: str = Field("Untitled Animation", min_length=1, max_length=200)
-    frame_ids: list[str] | None = None
+    frame_ids: list[str] | None = Field(None, min_length=1, max_length=5000)
     # Filter-based frame selection (alternative to frame_ids)
     satellite: str | None = None
     band: str | None = None
@@ -84,7 +85,7 @@ class AnimationCreate(BaseModel):
     overlay: OverlaySettings | None = None
     crop_preset_id: str | None = None
     false_color: bool = False
-    scale: str = "100%"
+    scale: str = Field("100%", pattern=PATTERN_SCALE)
 
 
 class AnimationResponse(BaseModel):

@@ -150,7 +150,7 @@ async def fetch_composite(
         },
     )
     db.add(job)
-    await db.commit()
+    await db.flush()
 
     result, message = _dispatch_composite_task(job_id, job.params, payload.satellite, payload.recipe, len(bands))
     job.task_id = str(result.id)
@@ -194,7 +194,7 @@ async def fetch_goes(
         },
     )
     db.add(job)
-    await db.commit()
+    await db.flush()
 
     result, message = _dispatch_fetch_task(job_id, job.params, payload.satellite)
     job.task_id = str(result.id)
@@ -253,11 +253,13 @@ async def backfill_gaps(
         },
     )
     db.add(job)
-    await db.commit()
+    await db.flush()
 
     from ..tasks.fetch_task import backfill_gaps as backfill_task
 
-    backfill_task.delay(job_id, job.params)
+    result = backfill_task.delay(job_id, job.params)
+    job.task_id = str(result.id)
+    await db.commit()
 
     return GoesFetchResponse(
         job_id=job_id,

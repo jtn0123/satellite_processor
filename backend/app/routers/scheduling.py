@@ -35,6 +35,7 @@ from ..models.scheduling import (
     FetchScheduleUpdate,
 )
 from ..utils import safe_remove, utcnow
+from .scheduling_presets import DEFAULT_FETCH_PRESETS
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +43,6 @@ _FETCH_PRESET_NOT_FOUND = "Fetch preset not found"
 _SCHEDULE_NOT_FOUND = "Schedule not found"
 
 router = APIRouter(prefix="/api/satellite", tags=["scheduling"])
-
-
-# ── Default preset definitions ────────────────────────────
-
-DEFAULT_FETCH_PRESETS = [
-    {
-        "name": "Himawari FLDK True Color",
-        "satellite": "Himawari-9",
-        "sector": "FLDK",
-        "band": "TrueColor",
-        "description": "Full disk true color composite",
-    },
-]
 
 
 # ── Seed Defaults ─────────────────────────────────────────

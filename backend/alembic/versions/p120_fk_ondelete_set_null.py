@@ -12,57 +12,51 @@ down_revision = "o110_cleanup_satellite_filter"
 branch_labels = None
 depends_on = None
 
+# PostgreSQL auto-generates FK names as {table}_{column}_fkey
+_FK_ONDELETE_SET_NULL = "SET NULL"
+
 
 def upgrade() -> None:
-    with op.batch_alter_table("goes_frames") as batch_op:
-        batch_op.drop_constraint(None, type_="foreignkey")
-        batch_op.create_foreign_key(
-            "fk_goes_frames_source_job_id",
-            "jobs",
-            ["source_job_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
+    # goes_frames.source_job_id
+    op.drop_constraint("goes_frames_source_job_id_fkey", "goes_frames", type_="foreignkey")
+    op.create_foreign_key(
+        "goes_frames_source_job_id_fkey", "goes_frames", "jobs", ["source_job_id"], ["id"],
+        ondelete=_FK_ONDELETE_SET_NULL,
+    )
 
-    with op.batch_alter_table("animations") as batch_op:
-        batch_op.drop_constraint(None, type_="foreignkey")
-        batch_op.create_foreign_key(
-            "fk_animations_crop_preset_id",
-            "crop_presets",
-            ["crop_preset_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
-        batch_op.create_foreign_key(
-            "fk_animations_job_id",
-            "jobs",
-            ["job_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
+    # animations.crop_preset_id
+    op.drop_constraint("animations_crop_preset_id_fkey", "animations", type_="foreignkey")
+    op.create_foreign_key(
+        "animations_crop_preset_id_fkey", "animations", "crop_presets", ["crop_preset_id"], ["id"],
+        ondelete=_FK_ONDELETE_SET_NULL,
+    )
 
-    with op.batch_alter_table("composites") as batch_op:
-        batch_op.drop_constraint(None, type_="foreignkey")
-        batch_op.create_foreign_key(
-            "fk_composites_job_id",
-            "jobs",
-            ["job_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
+    # animations.job_id
+    op.drop_constraint("animations_job_id_fkey", "animations", type_="foreignkey")
+    op.create_foreign_key(
+        "animations_job_id_fkey", "animations", "jobs", ["job_id"], ["id"],
+        ondelete=_FK_ONDELETE_SET_NULL,
+    )
+
+    # composites.job_id
+    op.drop_constraint("composites_job_id_fkey", "composites", type_="foreignkey")
+    op.create_foreign_key(
+        "composites_job_id_fkey", "composites", "jobs", ["job_id"], ["id"],
+        ondelete=_FK_ONDELETE_SET_NULL,
+    )
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("composites") as batch_op:
-        batch_op.drop_constraint("fk_composites_job_id", type_="foreignkey")
-        batch_op.create_foreign_key(None, "jobs", ["job_id"], ["id"])
+    op.drop_constraint("composites_job_id_fkey", "composites", type_="foreignkey")
+    op.create_foreign_key("composites_job_id_fkey", "composites", "jobs", ["job_id"], ["id"])
 
-    with op.batch_alter_table("animations") as batch_op:
-        batch_op.drop_constraint("fk_animations_job_id", type_="foreignkey")
-        batch_op.create_foreign_key(None, "jobs", ["job_id"], ["id"])
-        batch_op.drop_constraint("fk_animations_crop_preset_id", type_="foreignkey")
-        batch_op.create_foreign_key(None, "crop_presets", ["crop_preset_id"], ["id"])
+    op.drop_constraint("animations_job_id_fkey", "animations", type_="foreignkey")
+    op.create_foreign_key("animations_job_id_fkey", "animations", "jobs", ["job_id"], ["id"])
 
-    with op.batch_alter_table("goes_frames") as batch_op:
-        batch_op.drop_constraint("fk_goes_frames_source_job_id", type_="foreignkey")
-        batch_op.create_foreign_key(None, "jobs", ["source_job_id"], ["id"])
+    op.drop_constraint("animations_crop_preset_id_fkey", "animations", type_="foreignkey")
+    op.create_foreign_key(
+        "animations_crop_preset_id_fkey", "animations", "crop_presets", ["crop_preset_id"], ["id"],
+    )
+
+    op.drop_constraint("goes_frames_source_job_id_fkey", "goes_frames", type_="foreignkey")
+    op.create_foreign_key("goes_frames_source_job_id_fkey", "goes_frames", "jobs", ["source_job_id"], ["id"])

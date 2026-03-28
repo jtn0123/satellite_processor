@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -34,8 +35,10 @@ class TestGenerateThumbnail:
     def test_generates_thumbnail(self, sample_image, tmp_path):
         result = generate_thumbnail(sample_image, str(tmp_path))
         assert result is not None
-        assert Path(result).exists()
-        assert "thumb_" in Path(result).name
+        thumb = Path(result)
+        assert thumb.exists()
+        assert thumb.name.startswith("thumb_")
+        assert thumb.parent.name == "thumbnails"
 
     def test_thumbnail_size(self, sample_image, tmp_path):
         from PIL import Image
@@ -51,15 +54,16 @@ class TestGenerateThumbnail:
 
     def test_output_in_thumbnails_subdir(self, sample_image, tmp_path):
         result = generate_thumbnail(sample_image, str(tmp_path))
-        assert "thumbnails" in result
+        thumb = Path(result)
+        assert thumb.parent.name == "thumbnails"
+        assert thumb.parent.parent == tmp_path
 
-    def test_default_output_dir(self, sample_image):
+    def test_default_output_dir(self, sample_image, tmp_path):
         result = generate_thumbnail(sample_image)
         assert result is not None
         assert Path(result).exists()
-        # Clean up
-        Path(result).unlink(missing_ok=True)
-        Path(result).parent.rmdir()
+        # Cleanup: tmp_path owns sample_image's parent, so clean the sibling thumbnails dir
+        shutil.rmtree(Path(result).parent, ignore_errors=True)
 
     def test_nonexistent_source(self):
         result = generate_thumbnail("/nonexistent/image.png")

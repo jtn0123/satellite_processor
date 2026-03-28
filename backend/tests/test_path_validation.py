@@ -37,6 +37,23 @@ class TestValidateFilePath:
         assert result == test_file.resolve()
 
     @patch("app.utils.path_validation.settings")
+    def test_rejects_sibling_prefix_path(self, mock_settings, tmp_path):
+        """Ensure /data-evil doesn't match /data via startswith."""
+        storage = tmp_path / "data"
+        storage.mkdir()
+        sibling = tmp_path / "data-evil"
+        sibling.mkdir()
+        evil_file = sibling / "steal.txt"
+        evil_file.touch()
+
+        mock_settings.storage_path = str(storage)
+        mock_settings.output_dir = str(tmp_path / "output")
+
+        with pytest.raises(APIError) as exc_info:
+            validate_file_path(str(evil_file))
+        assert exc_info.value.status_code == 403
+
+    @patch("app.utils.path_validation.settings")
     def test_rejects_path_traversal(self, mock_settings, tmp_path):
         storage = tmp_path / "data"
         storage.mkdir()

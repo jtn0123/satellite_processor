@@ -82,7 +82,7 @@ class FileManager:
         """Clean up temporary directory"""
         if temp_dir and temp_dir.exists():
             try:
-                shutil.rmtree(temp_dir, ignore_errors=True)
+                shutil.rmtree(temp_dir)
                 with self._lock:
                     self._temp_dirs.discard(temp_dir)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")

@@ -105,6 +105,18 @@ class TestMarkStalePendingJobs:
         assert count == 2
 
     @pytest.mark.asyncio
+    async def test_pending_stale_set_to_failed(self, db_with_stale_pending):
+        await mark_stale_pending_jobs(db_with_stale_pending)
+        from sqlalchemy import select
+
+        result = await db_with_stale_pending.execute(select(Job).where(Job.status == "failed"))
+        failed = result.scalars().all()
+        assert len(failed) == 2
+        for job in failed:
+            assert "never picked up" in job.status_message
+            assert job.completed_at is not None
+
+    @pytest.mark.asyncio
     async def test_pending_with_task_id_untouched(self, db_with_stale_pending):
         await mark_stale_pending_jobs(db_with_stale_pending)
         from sqlalchemy import select

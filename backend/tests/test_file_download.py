@@ -59,6 +59,12 @@ class TestDownloadFile:
         assert resp.status_code == 403
 
     @pytest.mark.asyncio
+    async def test_relative_path_traversal_blocked(self, client_with_storage):
+        client, storage = client_with_storage
+        resp = await client.get("/api/download", params={"path": "../../../etc/passwd"})
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
     async def test_empty_path_rejected(self, client_with_storage):
         client, _ = client_with_storage
         resp = await client.get("/api/download", params={"path": ""})

@@ -111,8 +111,6 @@ class TestInvalidate:
     async def test_redis_failure_returns_zero(self, mock_redis):
         import redis.exceptions
 
-        with patch.object(
-            mock_redis, "scan_iter", side_effect=redis.exceptions.ConnectionError
-        ):
+        with patch.object(mock_redis, "scan_iter", side_effect=redis.exceptions.ConnectionError):
             deleted = await invalidate("cache:*")
             assert deleted == 0

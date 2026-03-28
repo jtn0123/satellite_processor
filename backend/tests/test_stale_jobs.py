@@ -69,9 +69,7 @@ class TestMarkStaleJobs:
         await mark_stale_jobs(db_with_stale_processing)
         from sqlalchemy import select
 
-        result = await db_with_stale_processing.execute(
-            select(Job).where(Job.status == "failed")
-        )
+        result = await db_with_stale_processing.execute(select(Job).where(Job.status == "failed"))
         failed = result.scalars().all()
         assert len(failed) == 2
         for job in failed:
@@ -83,9 +81,7 @@ class TestMarkStaleJobs:
         await mark_stale_jobs(db_with_stale_processing)
         from sqlalchemy import select
 
-        result = await db_with_stale_processing.execute(
-            select(Job).where(Job.status == "processing")
-        )
+        result = await db_with_stale_processing.execute(select(Job).where(Job.status == "processing"))
         processing = result.scalars().all()
         assert len(processing) == 1
 
@@ -113,9 +109,7 @@ class TestMarkStalePendingJobs:
         await mark_stale_pending_jobs(db_with_stale_pending)
         from sqlalchemy import select
 
-        result = await db_with_stale_pending.execute(
-            select(Job).where(Job.status == "pending")
-        )
+        result = await db_with_stale_pending.execute(select(Job).where(Job.status == "pending"))
         pending = result.scalars().all()
         # 1 fresh + 1 with task_id = 2 remaining pending
         assert len(pending) == 2

@@ -11,6 +11,7 @@ PATTERN_FORMAT = r"^(mp4|gif)$"
 PATTERN_QUALITY = r"^(low|medium|high)$"
 PATTERN_RESOLUTION = r"^(preview|full)$"
 PATTERN_LOOP_STYLE = r"^(forward|pingpong|hold)$"
+PATTERN_SCALE = r"^\d{1,3}%$"
 
 # --- Crop Preset schemas ---
 
@@ -84,7 +85,7 @@ class AnimationCreate(BaseModel):
     overlay: OverlaySettings | None = None
     crop_preset_id: str | None = None
     false_color: bool = False
-    scale: str = Field("100%", pattern=r"^\d{1,3}%$")
+    scale: str = Field("100%", pattern=PATTERN_SCALE)
 
 
 class AnimationResponse(BaseModel):

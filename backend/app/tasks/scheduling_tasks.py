@@ -90,7 +90,11 @@ def check_schedules(self):
         session.commit()
         logger.info("Schedule check complete: %d jobs launched", len(due))
 
-    except (SQLAlchemyError, ConnectionError, SoftTimeLimitExceeded):
+    except SoftTimeLimitExceeded:
+        session.rollback()
+        logger.exception("check_schedules timed out")
+        raise
+    except (SQLAlchemyError, ConnectionError):
         session.rollback()
         logger.exception("Error checking schedules")
     finally:
@@ -204,7 +208,11 @@ def run_cleanup(self):
         session.commit()
         logger.info("Cleanup complete: deleted %d frames, freed %d bytes", total_deleted, total_freed)
 
-    except (SQLAlchemyError, OSError, SoftTimeLimitExceeded):
+    except SoftTimeLimitExceeded:
+        session.rollback()
+        logger.exception("run_cleanup timed out")
+        raise
+    except (SQLAlchemyError, OSError):
         session.rollback()
         logger.exception("Error running cleanup")
     finally:

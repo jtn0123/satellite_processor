@@ -352,7 +352,7 @@ class VideoHandler:
             self.logger.error(f"Encoding failed: {e}", exc_info=True)
             return False
         finally:
-            if process:
+            if process and process.poll() is None:
                 try:
                     process.terminate()
                     process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)

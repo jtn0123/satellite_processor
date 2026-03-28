@@ -358,7 +358,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
         or websocket.headers.get("authorization", "").removeprefix("Bearer ")
         or websocket.query_params.get("api_key", "")  # deprecated, kept for compat
     )
-    if key == app_settings.api_key:
+    if hmac.compare_digest(key, app_settings.api_key):
         return True
 
     # Phase 2: Accept connection and wait for first-message auth
@@ -366,7 +366,11 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     try:
         # Wait up to 5 seconds for auth message
         msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
-        if isinstance(msg, dict) and msg.get("type") == "auth" and msg.get("api_key") == app_settings.api_key:
+        if (
+            isinstance(msg, dict)
+            and msg.get("type") == "auth"
+            and hmac.compare_digest(msg.get("api_key", ""), app_settings.api_key)
+        ):
             return True
     except (TimeoutError, WebSocketDisconnect, ConnectionError, RuntimeError, json.JSONDecodeError):
         pass

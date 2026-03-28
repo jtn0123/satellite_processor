@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/jtn0123/satellite_processor/compare/v1.41.0...v1.42.0) (2026-03-28)
+
+
+### Features
+
+* **frontend:** polish Live View with glass tier system and floating dock ([#368](https://github.com/jtn0123/satellite_processor/issues/368)) ([b143907](https://github.com/jtn0123/satellite_processor/commit/b143907ee5494f026e7841af8b43e541af51e962))
+
 # [1.41.0](https://github.com/jtn0123/satellite_processor/compare/v1.40.1...v1.41.0) (2026-03-27)
 
 

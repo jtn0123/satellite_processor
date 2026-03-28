@@ -92,7 +92,7 @@ def check_schedules(self):
 
     except SoftTimeLimitExceeded:
         session.rollback()
-        logger.exception("check_schedules timed out")
+        logger.warning("check_schedules timed out")
         raise
     except (SQLAlchemyError, ConnectionError):
         session.rollback()
@@ -210,7 +210,7 @@ def run_cleanup(self):
 
     except SoftTimeLimitExceeded:
         session.rollback()
-        logger.exception("run_cleanup timed out")
+        logger.warning("run_cleanup timed out")
         raise
     except (SQLAlchemyError, OSError):
         session.rollback()

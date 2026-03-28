@@ -11,7 +11,7 @@ PATTERN_FORMAT = r"^(mp4|gif)$"
 PATTERN_QUALITY = r"^(low|medium|high)$"
 PATTERN_RESOLUTION = r"^(preview|full)$"
 PATTERN_LOOP_STYLE = r"^(forward|pingpong|hold)$"
-PATTERN_SCALE = r"^\d{1,3}%$"
+PATTERN_SCALE = r"^[1-9]\d{0,2}%$"
 
 # --- Crop Preset schemas ---
 

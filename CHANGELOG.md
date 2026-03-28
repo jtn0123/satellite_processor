@@ -1,3 +1,10 @@
+## [1.42.1](https://github.com/jtn0123/satellite_processor/compare/v1.42.0...v1.42.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* address validated code review findings across backend and core engine ([#369](https://github.com/jtn0123/satellite_processor/issues/369)) ([4eb7888](https://github.com/jtn0123/satellite_processor/commit/4eb7888317ee7c0ac4f02fb07b4fe9dea6ae63ad))
+
 # [1.42.0](https://github.com/jtn0123/satellite_processor/compare/v1.41.0...v1.42.0) (2026-03-28)
 
 

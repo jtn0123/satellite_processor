@@ -371,11 +371,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
     try:
         # Wait up to 5 seconds for auth message
         msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
-        if (
-            isinstance(msg, dict)
-            and msg.get("type") == "auth"
-            and _verify_api_key(msg.get("api_key", ""))
-        ):
+        if isinstance(msg, dict) and msg.get("type") == "auth" and _verify_api_key(msg.get("api_key", "")):
             return True
     except (TimeoutError, WebSocketDisconnect, ConnectionError, RuntimeError, json.JSONDecodeError):
         pass

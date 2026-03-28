@@ -857,6 +857,70 @@ header {
   );
 }
 
+/* === Live View Glass Tier System === */
+
+/* Tier 1 — Subtle Glass: buttons, pills, small interactive elements */
+.glass-t1 {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-t1:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Tier 2 — Medium Glass: status indicators, banners, toolbars */
+.glass-t2 {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Tier 3 — Heavy Glass: panels, dropdown menus, FAB menus */
+.glass-t3 {
+  background: color-mix(in srgb, var(--color-space-900) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+/* Live status badge — animated glow border when monitoring */
+@keyframes status-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--color-primary) 20%, transparent),
+      0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 16px color-mix(in srgb, var(--color-primary) 35%, transparent),
+      0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.status-badge-glow {
+  animation: status-glow 3s ease-in-out infinite;
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Floating dock container */
+.live-dock {
+  background: color-mix(in srgb, var(--color-space-900) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 -4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 /* Sidebar light mode */
 :root:not(.dark) .sidebar-light {
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);

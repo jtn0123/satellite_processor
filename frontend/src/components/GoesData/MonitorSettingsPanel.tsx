@@ -69,10 +69,10 @@ export default function MonitorSettingsPanel({
     <div ref={panelRef} className="relative" data-testid="monitor-settings-panel">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`p-2 rounded-lg backdrop-blur-md border transition-colors min-w-[44px] min-h-[44px] ${
+        className={`p-2 rounded-lg glass-t1 transition-all duration-150 min-w-[44px] min-h-[44px] ${
           isMonitoring
-            ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
-            : 'bg-white/10 border-white/20 text-white/80 hover:text-white hover:bg-white/20'
+            ? 'text-emerald-300 !bg-emerald-500/20 !border-emerald-400/30'
+            : 'text-white/80 hover:text-white'
         }`}
         title="Monitor settings"
         aria-label="Monitor settings"
@@ -82,7 +82,7 @@ export default function MonitorSettingsPanel({
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-80 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 p-4 space-y-4"
+          className="absolute right-0 top-full mt-2 w-80 glass-t3 rounded-xl z-50 p-4 space-y-4"
           data-testid="monitor-settings-dropdown"
         >
           <div className="flex items-center justify-between">
@@ -99,7 +99,7 @@ export default function MonitorSettingsPanel({
 
           {/* Presets */}
           <fieldset className="space-y-1.5 border-0 p-0 m-0">
-            <legend className="text-xs text-white/60 uppercase tracking-wider">
+            <legend className="font-mono text-[10px] text-white/60 uppercase tracking-widest">
               Quick Presets
             </legend>
             {MONITOR_PRESETS.map((preset) => (
@@ -121,7 +121,7 @@ export default function MonitorSettingsPanel({
 
           {/* Custom config */}
           <fieldset className="space-y-2 border-0 border-t border-white/10 p-0 m-0 pt-3">
-            <legend className="text-xs text-white/60 uppercase tracking-wider">
+            <legend className="font-mono text-[10px] text-white/60 uppercase tracking-widest">
               Custom Configuration
             </legend>
             <div className="grid grid-cols-2 gap-2">
@@ -201,7 +201,7 @@ export default function MonitorSettingsPanel({
                   });
                   setOpen(false);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 rounded-lg text-sm font-medium hover:bg-emerald-500/30 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 rounded-lg text-sm font-medium hover:bg-emerald-500/30 transition-all btn-interactive"
                 data-testid="monitor-start-btn"
               >
                 <Play className="w-4 h-4" />

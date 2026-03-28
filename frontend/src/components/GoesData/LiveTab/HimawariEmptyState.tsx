@@ -76,8 +76,12 @@ export default function HimawariEmptyState({
       className="flex flex-col items-center justify-center gap-6 text-center p-8 h-full"
       data-testid="himawari-no-preview"
     >
-      <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-        <Satellite className="w-8 h-8 text-primary/70" />
+      <div className="relative w-20 h-20 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-2 border-dashed border-primary/20 motion-safe:animate-[spin_20s_linear_infinite]" />
+        <div className="absolute inset-2 rounded-full border border-primary/10" />
+        <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <Satellite className="w-6 h-6 text-primary/70" />
+        </div>
       </div>
       <div className="space-y-2">
         <h3 className="text-white text-lg font-semibold">No Himawari-9 data yet</h3>

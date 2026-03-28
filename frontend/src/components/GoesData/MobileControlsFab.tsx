@@ -48,7 +48,7 @@ export default function MobileControlsFab({
       {open && (
         <div
           id="fab-menu"
-          className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 min-w-[180px]"
+          className="absolute bottom-14 right-0 flex flex-col gap-2 p-3 rounded-xl glass-t3 min-w-[180px] animate-slide-up"
           data-testid="fab-menu"
         >
           <button
@@ -81,7 +81,7 @@ export default function MobileControlsFab({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg"
+        className="w-12 h-12 rounded-full glass-t2 flex flex-col items-center justify-center text-white/80 hover:text-white transition-all duration-150 hover:scale-105 active:scale-95"
         aria-label="Toggle controls"
         aria-expanded={open}
         aria-controls="fab-menu"

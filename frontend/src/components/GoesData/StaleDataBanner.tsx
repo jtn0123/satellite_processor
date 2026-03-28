@@ -37,7 +37,7 @@ export default function StaleDataBanner({
   return (
     <div
       role="alert"
-      className={`${COLORS[staleLevel]} border rounded-xl px-6 py-3 flex items-center gap-3`}
+      className={`${COLORS[staleLevel]} border rounded-xl backdrop-blur-md px-6 py-3 flex items-center gap-3 shadow-md shadow-black/20`}
     >
       {staleLevel === 'red' ? (
         <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -60,7 +60,7 @@ export default function StaleDataBanner({
       <button
         onClick={onFetchNow}
         disabled={!!activeJobId}
-        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-all btn-interactive disabled:opacity-50"
       >
         <Download className="w-3.5 h-3.5" />
         Fetch Now

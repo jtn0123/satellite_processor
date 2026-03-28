@@ -191,8 +191,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
-def _verify_api_key(key: str) -> bool:
+def _verify_api_key(key: object) -> bool:
     """Timing-safe API key verification."""
+    if not isinstance(key, str):
+        return False
     return hmac.compare_digest(key, app_settings.api_key)
 
 

@@ -191,6 +191,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
+def _verify_api_key(key: str) -> bool:
+    """Timing-safe API key verification."""
+    return hmac.compare_digest(key, app_settings.api_key)
+
+
 # #21: API key auth middleware (optional — disabled when API_KEY env var is empty)
 @app.middleware("http")
 async def api_key_auth(request: Request, call_next):
@@ -204,7 +209,7 @@ async def api_key_auth(request: Request, call_next):
         )
         if not skip:
             key = request.headers.get("X-API-Key", "")
-            if not hmac.compare_digest(key, app_settings.api_key):
+            if not _verify_api_key(key):
                 logger.warning("Rejected API request with invalid key: %s %s", request.method, path)
                 return JSONResponse(
                     status_code=401,
@@ -358,7 +363,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
         or websocket.headers.get("authorization", "").removeprefix("Bearer ")
         or websocket.query_params.get("api_key", "")  # deprecated, kept for compat
     )
-    if hmac.compare_digest(key, app_settings.api_key):
+    if _verify_api_key(key):
         return True
 
     # Phase 2: Accept connection and wait for first-message auth
@@ -369,7 +374,7 @@ async def _ws_authenticate(websocket: WebSocket) -> bool:
         if (
             isinstance(msg, dict)
             and msg.get("type") == "auth"
-            and hmac.compare_digest(msg.get("api_key", ""), app_settings.api_key)
+            and _verify_api_key(msg.get("api_key", ""))
         ):
             return True
     except (TimeoutError, WebSocketDisconnect, ConnectionError, RuntimeError, json.JSONDecodeError):

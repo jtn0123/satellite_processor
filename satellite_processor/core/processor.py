@@ -466,13 +466,12 @@ class SatelliteImageProcessor:
         """Terminate any running FFmpeg processes."""
         with self._ffmpeg_lock:
             processes = list(self._ffmpeg_processes)
+            self._ffmpeg_processes.clear()
         for process in processes:
             try:
                 if process.poll() is None:
                     process.terminate()
                     process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)
-                with self._ffmpeg_lock:
-                    self._ffmpeg_processes.discard(process)
             except Exception as e:
                 self.logger.error(f"Error terminating FFmpeg process: {e}", exc_info=True)
 

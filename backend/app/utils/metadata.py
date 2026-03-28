@@ -16,10 +16,8 @@ def parse_satellite_metadata(filename: str) -> dict:
     if match:
         captured_at = datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
 
-    upper = filename.upper()
-    if "GOES-16" in upper:
-        satellite = "GOES-16"
-    elif "GOES-18" in upper:
-        satellite = "GOES-18"
+    sat_match = re.search(r"(GOES-\d+)", filename, re.IGNORECASE)
+    if sat_match:
+        satellite = sat_match.group(1).upper()
 
     return {"satellite": satellite, "captured_at": captured_at}

@@ -152,9 +152,14 @@ async def fetch_composite(
     db.add(job)
     await db.flush()
 
-    result, message = _dispatch_composite_task(job_id, job.params, payload.satellite, payload.recipe, len(bands))
-    job.task_id = str(result.id)
-    await db.commit()
+    try:
+        result, message = _dispatch_composite_task(job_id, job.params, payload.satellite, payload.recipe, len(bands))
+        job.task_id = str(result.id)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Failed to dispatch composite task for job %s", job_id)
+        raise APIError(503, "task_dispatch_failed", "Failed to enqueue task — broker may be unavailable")
 
     await invalidate("cache:dashboard-stats*")
 
@@ -196,9 +201,14 @@ async def fetch_goes(
     db.add(job)
     await db.flush()
 
-    result, message = _dispatch_fetch_task(job_id, job.params, payload.satellite)
-    job.task_id = str(result.id)
-    await db.commit()
+    try:
+        result, message = _dispatch_fetch_task(job_id, job.params, payload.satellite)
+        job.task_id = str(result.id)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Failed to dispatch fetch task for job %s", job_id)
+        raise APIError(503, "task_dispatch_failed", "Failed to enqueue task — broker may be unavailable")
 
     await invalidate("cache:dashboard-stats*")
 

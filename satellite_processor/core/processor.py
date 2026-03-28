@@ -348,10 +348,13 @@ class SatelliteImageProcessor:
                 self._emit_status("🎥 Stage 4/4: Creating video...")
                 success = self._create_video(current_files, dirs["final"])
                 if success:
-                    video_path = next(dirs["final"].glob("*.mp4"))
-                    self._emit_output_ready(video_path)
-                    self._emit_status("✨ Processing completed successfully!")
-                    return True
+                    video_files = list(dirs["final"].glob("*.mp4"))
+                    if video_files:
+                        self._emit_output_ready(video_files[0])
+                        self._emit_status("✨ Processing completed successfully!")
+                        return True
+                    self.logger.error("Video creation reported success but no .mp4 found in %s", dirs["final"])
+                    return False
 
             return False
 

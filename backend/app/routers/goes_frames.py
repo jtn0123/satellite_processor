@@ -196,7 +196,13 @@ async def list_frames(
             .where(Tag.name == tag)
         )
 
-    sort_col = getattr(GoesFrame, sort, GoesFrame.capture_time)
+    _SORT_FIELDS = {
+        "capture_time": GoesFrame.capture_time,
+        "file_size": GoesFrame.file_size,
+        "satellite": GoesFrame.satellite,
+        "created_at": GoesFrame.created_at,
+    }
+    sort_col = _SORT_FIELDS.get(sort, GoesFrame.capture_time)
     query = query.order_by(sort_col.desc()) if order == "desc" else query.order_by(sort_col.asc())
 
     total = (await db.execute(count_query)).scalar() or 0

@@ -82,12 +82,7 @@ class FileManager:
         """Clean up temporary directory"""
         if temp_dir and temp_dir.exists():
             try:
-                for file in temp_dir.glob("*"):
-                    try:
-                        file.unlink(missing_ok=True)
-                    except Exception as e:
-                        self.logger.error(f"Error removing temp file {file}: {e}", exc_info=True)
-                temp_dir.rmdir()
+                shutil.rmtree(temp_dir, ignore_errors=True)
                 with self._lock:
                     self._temp_dirs.discard(temp_dir)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")

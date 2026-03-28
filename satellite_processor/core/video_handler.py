@@ -108,6 +108,7 @@ class VideoHandler:
         self._processor = None
         self.process = psutil.Process()
         self._is_processing = False
+        self.cancelled = False
 
     def set_processor(self, processor):
         """Set reference to main processor for process tracking"""
@@ -605,6 +606,7 @@ class VideoHandler:
 
     def cancel(self) -> None:
         """Cancel an ongoing FFmpeg process"""
+        self.cancelled = True
         try:
             if self._current_process and self._current_process.poll() is None:
                 self._current_process.terminate()

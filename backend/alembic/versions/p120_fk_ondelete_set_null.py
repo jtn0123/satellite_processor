@@ -20,28 +20,44 @@ def upgrade() -> None:
     # goes_frames.source_job_id
     op.drop_constraint("goes_frames_source_job_id_fkey", "goes_frames", type_="foreignkey")
     op.create_foreign_key(
-        "goes_frames_source_job_id_fkey", "goes_frames", "jobs", ["source_job_id"], ["id"],
+        "goes_frames_source_job_id_fkey",
+        "goes_frames",
+        "jobs",
+        ["source_job_id"],
+        ["id"],
         ondelete=_FK_ONDELETE_SET_NULL,
     )
 
     # animations.crop_preset_id
     op.drop_constraint("animations_crop_preset_id_fkey", "animations", type_="foreignkey")
     op.create_foreign_key(
-        "animations_crop_preset_id_fkey", "animations", "crop_presets", ["crop_preset_id"], ["id"],
+        "animations_crop_preset_id_fkey",
+        "animations",
+        "crop_presets",
+        ["crop_preset_id"],
+        ["id"],
         ondelete=_FK_ONDELETE_SET_NULL,
     )
 
     # animations.job_id
     op.drop_constraint("animations_job_id_fkey", "animations", type_="foreignkey")
     op.create_foreign_key(
-        "animations_job_id_fkey", "animations", "jobs", ["job_id"], ["id"],
+        "animations_job_id_fkey",
+        "animations",
+        "jobs",
+        ["job_id"],
+        ["id"],
         ondelete=_FK_ONDELETE_SET_NULL,
     )
 
     # composites.job_id
     op.drop_constraint("composites_job_id_fkey", "composites", type_="foreignkey")
     op.create_foreign_key(
-        "composites_job_id_fkey", "composites", "jobs", ["job_id"], ["id"],
+        "composites_job_id_fkey",
+        "composites",
+        "jobs",
+        ["job_id"],
+        ["id"],
         ondelete=_FK_ONDELETE_SET_NULL,
     )
 
@@ -55,7 +71,11 @@ def downgrade() -> None:
 
     op.drop_constraint("animations_crop_preset_id_fkey", "animations", type_="foreignkey")
     op.create_foreign_key(
-        "animations_crop_preset_id_fkey", "animations", "crop_presets", ["crop_preset_id"], ["id"],
+        "animations_crop_preset_id_fkey",
+        "animations",
+        "crop_presets",
+        ["crop_preset_id"],
+        ["id"],
     )
 
     op.drop_constraint("goes_frames_source_job_id_fkey", "goes_frames", type_="foreignkey")

@@ -68,7 +68,7 @@ class AnimationCreate(BaseModel):
     """Request schema for creating an animation from selected frames or filters."""
 
     name: str = Field("Untitled Animation", min_length=1, max_length=200)
-    frame_ids: list[str] | None = Field(None, max_length=5000)
+    frame_ids: list[str] | None = Field(None, min_length=1, max_length=5000)
     # Filter-based frame selection (alternative to frame_ids)
     satellite: str | None = None
     band: str | None = None

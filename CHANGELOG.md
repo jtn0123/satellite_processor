@@ -1,3 +1,10 @@
+## [1.42.2](https://github.com/jtn0123/satellite_processor/compare/v1.42.1...v1.42.2) (2026-03-28)
+
+
+### Bug Fixes
+
+* simplify review cleanup — regex, lock, log level, DRY auth ([#370](https://github.com/jtn0123/satellite_processor/issues/370)) ([2698702](https://github.com/jtn0123/satellite_processor/commit/2698702467786d673ed64de06bee6478e7827404))
+
 ## [1.42.1](https://github.com/jtn0123/satellite_processor/compare/v1.42.0...v1.42.1) (2026-03-28)
 
 

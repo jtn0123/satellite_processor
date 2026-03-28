@@ -325,7 +325,8 @@ class VideoHandler:
 
             self._current_process = process
             if self._processor:
-                self._processor._ffmpeg_processes.add(process)
+                with self._processor._ffmpeg_lock:
+                    self._processor._ffmpeg_processes.add(process)
 
             while process.poll() is None:
                 if process.stderr:
@@ -337,7 +338,8 @@ class VideoHandler:
             _, stderr = process.communicate()
 
             if self._processor:
-                self._processor._ffmpeg_processes.discard(process)
+                with self._processor._ffmpeg_lock:
+                    self._processor._ffmpeg_processes.discard(process)
             self._current_process = None
 
             if process.returncode != 0:
@@ -353,6 +355,7 @@ class VideoHandler:
             if process:
                 try:
                     process.terminate()
+                    process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)
                 except Exception as e:
                     self.logger.error(f"Error terminating process: {e}", exc_info=True)
 
@@ -590,7 +593,7 @@ class VideoHandler:
         ]
 
         try:
-            subprocess.run(ffmpeg_cmd, capture_output=True, check=True)
+            subprocess.run(ffmpeg_cmd, capture_output=True, check=True, timeout=FFMPEG_TIMEOUT_SECONDS)
             self.logger.info(f"Transcoding completed: {output_video}.{output_format}")
             return True
         except subprocess.CalledProcessError as e:

@@ -121,7 +121,6 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
             bytes_freed += safe_remove(frame.file_path)
 
         # Delete CollectionFrame join records
-        await db.execute(select(CollectionFrame).where(CollectionFrame.frame_id == frame.id))
         await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id == frame.id))
 
         await db.delete(frame)

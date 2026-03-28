@@ -132,6 +132,7 @@ class SatelliteImageProcessor:
         self._is_processing = False
 
         # Add FFmpeg process tracking
+        self._ffmpeg_lock = threading.Lock()
         self._ffmpeg_processes: set = set()
 
     def _emit_status(self, message: str):
@@ -463,12 +464,15 @@ class SatelliteImageProcessor:
 
     def _terminate_ffmpeg_processes(self) -> None:
         """Terminate any running FFmpeg processes."""
-        for process in self._ffmpeg_processes.copy():
+        with self._ffmpeg_lock:
+            processes = list(self._ffmpeg_processes)
+        for process in processes:
             try:
                 if process.poll() is None:
                     process.terminate()
                     process.wait(timeout=PROCESS_TERMINATE_TIMEOUT_SECONDS)
-                    self._ffmpeg_processes.remove(process)
+                with self._ffmpeg_lock:
+                    self._ffmpeg_processes.discard(process)
             except Exception as e:
                 self.logger.error(f"Error terminating FFmpeg process: {e}", exc_info=True)
 
@@ -616,82 +620,6 @@ class SatelliteImageProcessor:
 
         except Exception as e:
             self.logger.error(f"Failed to process {image_path}: {e}", exc_info=True)
-            return None
-
-    @staticmethod
-    def _process_single_image_static(**params):
-        """Static method for parallel processing"""
-        try:
-            img_path = str(params["img_path"])
-            output_dir = str(params["output_dir"])
-            options = params.get("options", {})
-            settings = params.get("settings", {})
-
-            img = cv2.imread(img_path)
-            if img is None:
-                raise ValueError(f"Failed to read image: {img_path}")
-
-            if options.get("crop_enabled"):
-                img = ImageOperations.crop_image(
-                    img,
-                    options.get("crop_x", 0),
-                    options.get("crop_y", 0),
-                    options.get("crop_width", img.shape[1]),
-                    options.get("crop_height", img.shape[0]),
-                )
-
-            if options.get("false_color"):
-                sanchez_path = settings.get("sanchez_path")
-                underlay_path = settings.get("underlay_path")
-                if sanchez_path and underlay_path:
-                    sanchez_path = str(Path(sanchez_path))
-                    underlay_path = str(Path(underlay_path))
-                    img_path = str(Path(img_path))
-
-                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                    output_file = Path(output_dir) / f"processed_{Path(img_path).stem}_{timestamp}.jpg"
-                    output_file = str(output_file)
-
-                    cmd = [
-                        f'"{sanchez_path}"',
-                        "-s",
-                        f'"{img_path}"',
-                        "-u",
-                        f'"{underlay_path}"',
-                        "-o",
-                        f'"{output_file}"',
-                        "-nogui",
-                        "-falsecolor",
-                        "-format",
-                        "jpg",
-                    ]
-
-                    cmd_str = " ".join(cmd)
-                    logger.debug(f"Running command: {cmd_str}")
-                    subprocess.run(cmd_str, shell=True, check=True)  # noqa: S602,S603,S607  # subprocess args are constructed internally, no user input
-
-                    img = cv2.imread(output_file)
-                    if img is None:
-                        raise ValueError(f"Failed to load processed image: {output_file}")
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            out_filename = generate_processed_filename(Path(img_path), timestamp, "processed").replace(
-                Path(img_path).suffix, ".png"
-            )
-            output_path = Path(output_dir)
-            output_path.mkdir(parents=True, exist_ok=True)
-            out_path = output_path / out_filename
-
-            if not cv2.imwrite(str(out_path), img):
-                raise OSError(f"Failed to save image to {out_path}")
-
-            if not out_path.exists():
-                raise OSError(f"Output file was not created: {out_path}")
-
-            return str(out_path)
-
-        except Exception as e:
-            logger.error(f"Failed to process {params.get('img_path')}: {e}", exc_info=True)
             return None
 
     def cancel(self) -> None:

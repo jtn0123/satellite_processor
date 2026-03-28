@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -24,6 +25,7 @@ class FileManager:
 
     def __init__(self) -> None:
         self.logger: logging.Logger = logging.getLogger(__name__)
+        self._lock = threading.Lock()
         self._temp_dirs: set[Path] = set()
         self._temp_files: set[Path] = set()
 
@@ -71,7 +73,8 @@ class FileManager:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         temp_dir = base_dir / f"{prefix}_{timestamp}"
         temp_dir.mkdir(parents=True, exist_ok=True)
-        self._temp_dirs.add(temp_dir)
+        with self._lock:
+            self._temp_dirs.add(temp_dir)
         self.logger.info(f"Created temporary directory: {temp_dir}")
         return temp_dir
 
@@ -85,7 +88,8 @@ class FileManager:
                     except Exception as e:
                         self.logger.error(f"Error removing temp file {file}: {e}", exc_info=True)
                 temp_dir.rmdir()
-                self._temp_dirs.discard(temp_dir)
+                with self._lock:
+                    self._temp_dirs.discard(temp_dir)
                 self.logger.debug(f"Cleaned up temporary directory: {temp_dir}")
             except Exception as e:
                 self.logger.error(f"Error cleaning up temp directory: {e}", exc_info=True)
@@ -136,7 +140,8 @@ class FileManager:
             temp_dir.mkdir(parents=True, exist_ok=True)
             os.chmod(temp_dir, 0o700)
 
-            self._temp_dirs.add(temp_dir)
+            with self._lock:
+                self._temp_dirs.add(temp_dir)
             self.logger.debug(f"Created temporary directory: {temp_dir}")
             return temp_dir
 
@@ -146,30 +151,35 @@ class FileManager:
 
     def cleanup(self):
         """Clean up all temporary files and directories"""
-        for path in self._temp_files:
+        with self._lock:
+            files = list(self._temp_files)
+            dirs = list(self._temp_dirs)
+            self._temp_files.clear()
+            self._temp_dirs.clear()
+
+        for path in files:
             try:
                 path.unlink(missing_ok=True)
                 self.logger.debug(f"Removed temporary file: {path}")
             except Exception as e:
                 self.logger.error(f"Error removing temp file {path}: {e}", exc_info=True)
 
-        for path in self._temp_dirs:
+        for path in dirs:
             try:
                 shutil.rmtree(path, ignore_errors=True)
                 self.logger.debug(f"Removed temporary directory: {path}")
             except Exception as e:
                 self.logger.error(f"Error removing temp directory {path}: {e}", exc_info=True)
 
-        self._temp_files.clear()
-        self._temp_dirs.clear()
-
     def track_temp_file(self, file_path: Path):
         """Add a file to be tracked for cleanup"""
-        self._temp_files.add(Path(file_path))
+        with self._lock:
+            self._temp_files.add(Path(file_path))
 
     def track_temp_dir(self, dir_path: Path):
         """Add a directory to be tracked for cleanup"""
-        self._temp_dirs.add(Path(dir_path))
+        with self._lock:
+            self._temp_dirs.add(Path(dir_path))
 
     def keep_file_order(self, files: list[Path]) -> list[Path]:
         """Ensure files stay in chronological order"""

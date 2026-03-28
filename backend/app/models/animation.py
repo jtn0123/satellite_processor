@@ -67,7 +67,7 @@ class AnimationCreate(BaseModel):
     """Request schema for creating an animation from selected frames or filters."""
 
     name: str = Field("Untitled Animation", min_length=1, max_length=200)
-    frame_ids: list[str] | None = None
+    frame_ids: list[str] | None = Field(None, max_length=5000)
     # Filter-based frame selection (alternative to frame_ids)
     satellite: str | None = None
     band: str | None = None
@@ -84,7 +84,7 @@ class AnimationCreate(BaseModel):
     overlay: OverlaySettings | None = None
     crop_preset_id: str | None = None
     false_color: bool = False
-    scale: str = "100%"
+    scale: str = Field("100%", pattern=r"^\d{1,3}%$")
 
 
 class AnimationResponse(BaseModel):

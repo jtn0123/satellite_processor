@@ -120,7 +120,7 @@ class TagCreate(BaseModel):
     """Request schema for creating a tag with name and color."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    color: str = "#3b82f6"
+    color: str = Field("#3b82f6", pattern=r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 class TagResponse(BaseModel):

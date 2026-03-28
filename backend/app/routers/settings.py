@@ -10,7 +10,6 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm.attributes import flag_modified
 
 from ..config import settings
 from ..db.database import get_db
@@ -91,12 +90,7 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
         # Dict/list values must be serialized to JSON strings for the text column.
         if isinstance(value, (dict, list)):
             value = json.dumps(value)
-        existing = (await db.execute(select(AppSetting).where(AppSetting.key == key))).scalars().first()
-        if existing:
-            existing.value = value
-            flag_modified(existing, "value")
-        else:
-            db.add(AppSetting(key=key, value=value))
+        await db.merge(AppSetting(key=key, value=value))
     await db.commit()
 
 

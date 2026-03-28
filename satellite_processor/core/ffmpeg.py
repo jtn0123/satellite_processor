@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -257,21 +258,24 @@ def _build_concat_from_list(
 ) -> tuple[list[str], Path | None]:
     """Build concat-based input command."""
     temp_dir = Path(tempfile.mkdtemp())
-    list_file = temp_dir / "frames.txt"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    frame_files = _collect_frame_files(input_dir)
-    _write_concat_file(list_file, frame_files, options, fix_unc=fix_unc)
-    cmd = [
-        str(ffmpeg_path).replace("\\", "/"),
-        "-y",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        str(list_file).replace("\\", "/"),
-    ]
-    return cmd, temp_dir
+    try:
+        list_file = temp_dir / "frames.txt"
+        frame_files = _collect_frame_files(input_dir)
+        _write_concat_file(list_file, frame_files, options, fix_unc=fix_unc)
+        cmd = [
+            str(ffmpeg_path).replace("\\", "/"),
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(list_file).replace("\\", "/"),
+        ]
+        return cmd, temp_dir
+    except Exception:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
 
 
 def _append_hardware_flags(cmd: list[str], hardware: str) -> None:

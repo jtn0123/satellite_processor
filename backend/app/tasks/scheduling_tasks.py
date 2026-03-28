@@ -7,6 +7,7 @@ import os
 import uuid
 from datetime import timedelta
 
+from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
@@ -65,7 +66,7 @@ def _launch_schedule_job(session, schedule, preset, now):
         fetch_goes_data.delay(job_id, job.params)
 
 
-@celery_app.task(bind=True, name="check_schedules")
+@celery_app.task(bind=True, name="check_schedules", soft_time_limit=300, time_limit=360)
 def check_schedules(self):
     """Check for due schedules and kick off fetch jobs."""
     from ..db.models import FetchPreset, FetchSchedule
@@ -89,7 +90,7 @@ def check_schedules(self):
         session.commit()
         logger.info("Schedule check complete: %d jobs launched", len(due))
 
-    except (SQLAlchemyError, ConnectionError):
+    except (SQLAlchemyError, ConnectionError, SoftTimeLimitExceeded):
         session.rollback()
         logger.exception("Error checking schedules")
     finally:
@@ -168,7 +169,7 @@ def _delete_frame_files(frame):
                 logger.warning("Failed to delete frame file: %s", path, exc_info=True)
 
 
-@celery_app.task(bind=True, name="run_cleanup")
+@celery_app.task(bind=True, name="run_cleanup", soft_time_limit=600, time_limit=660)
 def run_cleanup(self):
     """Run cleanup based on active rules."""
     from ..db.models import CleanupRule
@@ -203,7 +204,7 @@ def run_cleanup(self):
         session.commit()
         logger.info("Cleanup complete: deleted %d frames, freed %d bytes", total_deleted, total_freed)
 
-    except (SQLAlchemyError, OSError):
+    except (SQLAlchemyError, OSError, SoftTimeLimitExceeded):
         session.rollback()
         logger.exception("Error running cleanup")
     finally:

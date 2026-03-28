@@ -28,11 +28,11 @@ interface BandPillStripProps {
 }
 
 const VARIANT_CLASSES = {
-  mobile: 'fixed bottom-16 left-0 right-0 z-20',
-  desktop: 'absolute bottom-0 left-0 right-0 z-10 rounded-t-xl',
+  mobile: 'fixed bottom-16 left-2 right-2 z-20 rounded-2xl',
+  desktop: 'absolute bottom-3 left-3 right-3 z-10 rounded-2xl',
 } as const;
 
-const SHARED_CLASSES = 'bg-black/70 backdrop-blur-md border-t border-white/10';
+const SHARED_CLASSES = 'live-dock';
 
 export default function BandPillStrip({
   bands,
@@ -101,7 +101,8 @@ export default function BandPillStrip({
   const satLabel =
     satStatus && satStatus !== 'operational' ? `${satellite} (${satStatus})` : satellite;
 
-  const activePillClass = 'bg-primary/20 border border-primary/50 text-primary font-semibold';
+  const activePillClass =
+    'bg-primary/20 border border-primary/40 text-primary font-semibold tab-active';
   const inactivePillClass = 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/20';
 
   const geoColorActiveClass =
@@ -120,14 +121,14 @@ export default function BandPillStrip({
           <>
             <button
               onClick={handleSatelliteChipClick}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 text-xs font-medium hover:bg-white/20 transition-colors shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 font-mono text-[10px] font-medium hover:bg-white/20 transition-colors shrink-0"
               data-testid="pill-strip-satellite"
             >
               {satLabel} ▾
             </button>
             <button
               onClick={handleSectorChipClick}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 text-xs font-medium hover:bg-white/20 transition-colors shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 font-mono text-[10px] font-medium hover:bg-white/20 transition-colors shrink-0"
               data-testid="pill-strip-sector"
             >
               {sectorName ?? sector} ▾
@@ -177,7 +178,7 @@ export default function BandPillStrip({
       {/* Bottom row: scrollable band pills */}
       <div
         ref={scrollRef}
-        className="flex items-center gap-2 px-3 pb-2 pt-1 overflow-x-auto scrollbar-hide"
+        className="flex items-center gap-2 px-3 pb-2 pt-1 overflow-x-auto scrollbar-hide tab-scroll-mask"
         style={{ scrollSnapType: 'x mandatory' }}
       >
         {bands.map((b) => {
@@ -200,7 +201,7 @@ export default function BandPillStrip({
                 if (!isDisabled) handleBandClick(b.id);
               }}
               disabled={isDisabled}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${pillClass}`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 whitespace-nowrap ${pillClass} ${isActive ? 'scale-110' : 'hover:scale-105'}`}
               style={{ scrollSnapAlign: 'center' }}
               data-testid={`band-pill-${b.id}`}
               aria-label={`Select band ${getFriendlyBandLabel(b.id, b.description, 'short', satellite)}${isActive ? ' (active)' : ''}${isDisabled ? ' (unavailable for this sector)' : ''}`}

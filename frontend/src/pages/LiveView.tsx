@@ -26,8 +26,10 @@ export default function LiveView() {
                 className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-400/30"
                 data-testid="monitor-header-indicator"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-emerald-400 font-medium">Monitoring</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-soft-pulse" />
+                <span className="font-mono text-[10px] text-emerald-400 font-medium uppercase tracking-wider">
+                  Monitoring
+                </span>
               </span>
             )}
           </div>

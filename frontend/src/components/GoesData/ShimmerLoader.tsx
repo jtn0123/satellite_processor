@@ -5,7 +5,7 @@
 export default function ShimmerLoader() {
   return (
     <div className="absolute inset-0 z-10 overflow-hidden rounded-lg" data-testid="shimmer-loader">
-      <div className="w-full h-full bg-slate-800 relative">
+      <div className="w-full h-full bg-space-900 relative">
         <div
           className="absolute inset-0 animate-shimmer"
           style={{

@@ -15,7 +15,7 @@ export default function FullscreenButton({
     <button
       type="button"
       onClick={onClick}
-      className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]"
+      className="p-2 rounded-lg glass-t1 text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all duration-150 min-h-[44px] min-w-[44px]"
       title={label}
       aria-label={label}
     >

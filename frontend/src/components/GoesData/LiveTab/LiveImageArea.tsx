@@ -388,14 +388,14 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       {swipeToast && (
         <div
           aria-live="assertive"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 px-4 py-2 rounded-lg bg-black/70 backdrop-blur-md text-white text-sm font-medium pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 px-4 py-2 rounded-xl glass-t2 text-white text-sm font-medium pointer-events-none"
         >
           {swipeToast}
         </div>
       )}
 
       <div
-        className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/50 via-black/15 to-transparent pointer-events-none transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         data-testid="controls-overlay"
       >
         <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-4 py-3">
@@ -412,7 +412,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
             autoFetchDisabledReason={getAutoFetchDisabledReason(satellite, isMeso)}
           />
 
-          <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-2 justify-end flex-shrink-0">
+          <div className="col-span-2 sm:col-span-1 sm:ml-auto flex items-center gap-1.5 justify-end flex-shrink-0 glass-t2 rounded-xl px-1.5 py-1.5">
             <MonitorSettingsPanel
               isMonitoring={monitoring}
               interval={refreshInterval}
@@ -432,12 +432,12 @@ export function LiveImageArea(props: LiveImageAreaProps) {
                 refetch();
                 resetCountdown();
               }}
-              className="p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] relative overflow-hidden"
+              className="p-2 rounded-lg glass-t1 text-white/80 hover:text-white transition-all duration-150 min-h-[44px] min-w-[44px] relative overflow-hidden"
               title="Refresh now"
               aria-label="Refresh now"
             >
               <RefreshCw className="w-4 h-4" />
-              <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] text-white/50 text-center w-full">
+              <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono text-white/50 text-center w-full">
                 Next: {countdownDisplay}
               </span>
             </button>
@@ -507,7 +507,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-30 flex justify-center pointer-events-none animate-fade-out"
           data-testid="zoom-hint"
         >
-          <span className="px-4 py-2 rounded-lg bg-black/60 backdrop-blur-md text-white/80 text-sm font-medium">
+          <span className="px-4 py-2 rounded-xl glass-t2 text-white/80 text-sm font-medium">
             Pinch to exit zoom
           </span>
         </div>
@@ -516,7 +516,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       {zoom.isZoomed && (
         <div className="absolute top-20 right-4 z-10 flex items-center gap-2">
           <span
-            className="bg-black/60 text-white/70 text-xs px-2.5 py-1.5 rounded-lg pointer-events-none min-h-[44px] flex items-center"
+            className="glass-t2 text-white/70 text-xs font-mono px-2.5 py-1.5 rounded-lg pointer-events-none min-h-[44px] flex items-center"
             aria-live="polite"
             aria-label={`Zoom level ${Math.round(zoom.scale * 100)}%`}
             data-testid="zoom-level-indicator"
@@ -526,7 +526,7 @@ export function LiveImageArea(props: LiveImageAreaProps) {
           <button
             type="button"
             onClick={zoom.reset}
-            className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="glass-t1 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-150 min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             Reset zoom
           </button>

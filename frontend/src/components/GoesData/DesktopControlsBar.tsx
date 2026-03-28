@@ -16,19 +16,19 @@ interface DesktopControlsBarProps {
 
 function getWatchButtonClass(active: boolean): string {
   return active
-    ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'
-    : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20';
+    ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/30'
+    : 'bg-white/5 border border-white/10 text-white/80 hover:text-white hover:bg-white/15';
 }
 
 function getToggleSwitchClass(autoFetch: boolean, disabled?: boolean): string {
   if (disabled) return 'bg-gray-600 opacity-40 cursor-not-allowed';
-  return autoFetch ? 'bg-amber-500' : 'bg-gray-600';
+  return autoFetch ? 'bg-primary' : 'bg-gray-600';
 }
 
 function getCompareButtonClass(active: boolean): string {
   return active
-    ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30'
-    : 'bg-white/10 border border-white/20 text-white/80 hover:text-white hover:bg-white/20';
+    ? 'bg-blue-500/20 border border-blue-400/30 text-blue-300 hover:bg-blue-500/30'
+    : 'bg-white/5 border border-white/10 text-white/80 hover:text-white hover:bg-white/15';
 }
 
 export default function DesktopControlsBar({
@@ -48,11 +48,11 @@ export default function DesktopControlsBar({
   const selectClass = autoFetch ? 'hover:bg-white/20' : 'opacity-40 cursor-not-allowed';
 
   return (
-    <div className="hidden sm:flex items-center gap-2 ml-2">
+    <div className="hidden sm:flex items-center gap-2 ml-2 glass-t2 rounded-xl px-2 py-1.5">
       <button
         type="button"
         onClick={onToggleMonitor}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getWatchButtonClass(monitoring)}`}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 min-h-[44px] ${getWatchButtonClass(monitoring)}`}
         title={watchLabel}
         aria-label={watchLabel}
         data-testid="watch-toggle-btn"
@@ -100,7 +100,7 @@ export default function DesktopControlsBar({
         role="switch"
         aria-checked={compareMode}
         onClick={() => onCompareModeChange((v) => !v)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getCompareButtonClass(compareMode)}`}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 min-h-[44px] ${getCompareButtonClass(compareMode)}`}
         title={compareMode ? 'Disable compare' : 'Enable compare'}
       >
         <Columns2 className="w-3.5 h-3.5 text-blue-400" />

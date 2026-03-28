@@ -34,7 +34,7 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
   return (
     <output
       aria-live="polite"
-      className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3"
+      className="glass-t2 !border-primary/20 rounded-xl px-6 py-3 flex items-center gap-3"
     >
       {statusContent ?? (
         <>
@@ -42,11 +42,11 @@ export default function InlineFetchProgress({ job }: Readonly<InlineFetchProgres
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between text-sm text-gray-700 dark:text-slate-300 mb-1">
               <span>{job.status_message || 'Fetching…'}</span>
-              <span className="text-xs">{Math.round(job.progress)}%</span>
+              <span className="font-mono text-xs">{Math.round(job.progress)}%</span>
             </div>
             <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all duration-300"
+                className="h-full bg-primary rounded-full shadow-sm shadow-primary/30 transition-all duration-300"
                 style={{ width: `${job.progress}%` }}
               />
             </div>

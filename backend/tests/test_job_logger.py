@@ -98,8 +98,9 @@ class TestLogJobSync:
         assert data["message"] == "Status update"
 
     def test_redis_failure_does_not_raise(self):
-        import redis.exceptions
         from unittest.mock import MagicMock
+
+        import redis.exceptions
 
         session = MagicMock()
         redis_client = MagicMock()

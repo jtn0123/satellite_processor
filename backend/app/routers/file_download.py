@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/api", tags=["files"])
 @limiter.limit("120/minute")
 async def download_file(
     request: Request,
-    path: str = Query(..., description="Absolute path to the file inside the data directory"),
+    path: Annotated[str, Query(description="Absolute path to the file inside the data directory")],
 ) -> FileResponse:
     """Serve a file from the data directory.
 

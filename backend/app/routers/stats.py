@@ -3,12 +3,11 @@
 import logging
 import shutil
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from sqlalchemy import case, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import GoesFrame, Image, Job
 from ..rate_limit import limiter
 
@@ -19,7 +18,7 @@ router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 @router.get("")
 @limiter.limit("30/minute")
-async def get_stats(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_stats(request: Request, db: DbSession):
     """Return dashboard stats: counts and storage usage."""
     logger.debug("Stats requested")
     total_images = (await db.execute(select(func.count()).select_from(Image))).scalar_one()
@@ -49,7 +48,7 @@ async def get_stats(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/storage/breakdown")
 @limiter.limit("30/minute")
-async def storage_breakdown(request: Request, db: AsyncSession = Depends(get_db)):
+async def storage_breakdown(request: Request, db: DbSession):
     """Storage breakdown grouped by satellite, band, and age bucket."""
     logger.debug("Storage breakdown requested")
     from datetime import UTC, datetime, timedelta

@@ -3,12 +3,13 @@
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import (
     Animation,
     AnimationPreset,
@@ -165,8 +166,8 @@ async def _query_frame_ids(
 
 @router.post("/crop-presets", response_model=CropPresetResponse)
 async def create_crop_preset(
-    payload: CropPresetCreate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[CropPresetCreate, Body()],
+    db: DbSession,
 ):
     logger.info("Creating crop preset")
     existing = await db.execute(select(CropPreset).where(CropPreset.name == payload.name))
@@ -187,7 +188,7 @@ async def create_crop_preset(
 
 
 @router.get("/crop-presets", response_model=list[CropPresetResponse])
-async def list_crop_presets(db: AsyncSession = Depends(get_db)):
+async def list_crop_presets(db: DbSession):
     logger.debug("Listing crop presets")
     result = await db.execute(select(CropPreset).order_by(CropPreset.name))
     return [CropPresetResponse.model_validate(p) for p in result.scalars().all()]
@@ -196,8 +197,8 @@ async def list_crop_presets(db: AsyncSession = Depends(get_db)):
 @router.put("/crop-presets/{preset_id}", response_model=CropPresetResponse)
 async def update_crop_preset(
     preset_id: str,
-    payload: CropPresetUpdate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[CropPresetUpdate, Body()],
+    db: DbSession,
 ):
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
     preset = result.scalars().first()
@@ -215,7 +216,7 @@ async def update_crop_preset(
 @router.delete("/crop-presets/{preset_id}")
 async def delete_crop_preset(
     preset_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     logger.info("Deleting crop preset: id=%s", preset_id)
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
@@ -232,8 +233,8 @@ async def delete_crop_preset(
 
 @router.post("/animations", response_model=AnimationResponse)
 async def create_animation(
-    payload: AnimationCreate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[AnimationCreate, Body()],
+    db: DbSession,
 ):
     """Create an animation generation job."""
     logger.info("Creating animation")
@@ -279,8 +280,8 @@ async def create_animation(
 
 @router.post("/animations/from-range", response_model=AnimationResponse)
 async def create_animation_from_range(
-    payload: AnimationFromRange = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[AnimationFromRange, Body()],
+    db: DbSession,
 ):
     """Create animation from a satellite/sector/band time range."""
     frame_ids = await _query_frame_ids(
@@ -309,8 +310,8 @@ async def create_animation_from_range(
 
 @router.post("/animations/recent", response_model=AnimationResponse)
 async def create_animation_recent(
-    payload: AnimationRecent = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[AnimationRecent, Body()],
+    db: DbSession,
 ):
     """Create animation from the last N hours of frames."""
     end_time = datetime.now(UTC)
@@ -341,8 +342,8 @@ async def create_animation_recent(
 
 @router.post("/animations/batch", response_model=list[AnimationResponse])
 async def create_animation_batch(
-    payload: BatchAnimationRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[BatchAnimationRequest, Body()],
+    db: DbSession,
 ):
     """Create multiple animation jobs at once."""
     results = []
@@ -374,9 +375,9 @@ async def create_animation_batch(
 
 @router.get("/animations", response_model=PaginatedResponse[AnimationResponse])
 async def list_animations(
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    db: DbSession,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     logger.debug("Listing animations")
     count = (await db.execute(select(func.count(Animation.id)))).scalar() or 0
@@ -387,7 +388,7 @@ async def list_animations(
 
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
-async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+async def get_animation(animation_id: str, db: DbSession):
     logger.debug("Animation requested: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -398,7 +399,7 @@ async def get_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/animations/{animation_id}")
-async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_animation(animation_id: str, db: DbSession):
     logger.info("Deleting animation: id=%s", animation_id)
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -417,12 +418,12 @@ async def delete_animation(animation_id: str, db: AsyncSession = Depends(get_db)
 
 @router.get("/frames/preview-range", response_model=FrameRangePreview)
 async def preview_frame_range(
-    satellite: str = Query(...),
-    sector: str = Query(...),
-    band: str = Query(...),
-    start_time: datetime = Query(...),
-    end_time: datetime = Query(...),
-    db: AsyncSession = Depends(get_db),
+    satellite: Annotated[str, Query()],
+    sector: Annotated[str, Query()],
+    band: Annotated[str, Query()],
+    start_time: Annotated[datetime, Query()],
+    end_time: Annotated[datetime, Query()],
+    db: DbSession,
 ):
     """Preview frames in a time range — returns count and 3 sample frames."""
     base_filter = [
@@ -481,7 +482,7 @@ async def preview_frame_range(
 
 
 @router.get("/animation-presets", response_model=list[AnimationPresetResponse])
-async def list_animation_presets(db: AsyncSession = Depends(get_db)):
+async def list_animation_presets(db: DbSession):
     logger.debug("Listing animation presets")
     result = await db.execute(select(AnimationPreset).order_by(AnimationPreset.name))
     return [AnimationPresetResponse.model_validate(p) for p in result.scalars().all()]
@@ -489,8 +490,8 @@ async def list_animation_presets(db: AsyncSession = Depends(get_db)):
 
 @router.post("/animation-presets", response_model=AnimationPresetResponse)
 async def create_animation_preset(
-    payload: AnimationPresetCreate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[AnimationPresetCreate, Body()],
+    db: DbSession,
 ):
     logger.info("Creating animation preset")
     existing = await db.execute(select(AnimationPreset).where(AnimationPreset.name == payload.name))
@@ -517,7 +518,7 @@ async def create_animation_preset(
 @router.get("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
 async def get_animation_preset(
     preset_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
@@ -530,8 +531,8 @@ async def get_animation_preset(
 @router.put("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
 async def update_animation_preset(
     preset_id: str,
-    payload: AnimationPresetUpdate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[AnimationPresetUpdate, Body()],
+    db: DbSession,
 ):
     logger.info("Updating animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")
@@ -551,7 +552,7 @@ async def update_animation_preset(
 @router.delete("/animation-presets/{preset_id}")
 async def delete_animation_preset(
     preset_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     logger.info("Deleting animation preset: id=%s", preset_id)
     validate_uuid(preset_id, "preset_id")

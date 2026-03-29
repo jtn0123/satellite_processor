@@ -3,12 +3,12 @@
 import logging
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Composite, Job
 from ..errors import APIError, validate_uuid
 from ..models.goes import CompositeCreateRequest, CompositeResponse
@@ -28,8 +28,8 @@ def list_composite_recipes():
 
 @router.post("/composites")
 async def create_composite(
-    payload: CompositeCreateRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[CompositeCreateRequest, Body()],
+    db: DbSession,
 ):
     """Create a band composite image via Celery task."""
     logger.info("Creating composite")
@@ -84,9 +84,9 @@ async def create_composite(
 
 @router.get("/composites", response_model=PaginatedResponse[CompositeResponse])
 async def list_composites(
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    db: DbSession,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     """List generated composites."""
     logger.debug("Listing composites")
@@ -116,7 +116,7 @@ async def list_composites(
 
 
 @router.get("/composites/{composite_id}")
-async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
+async def get_composite(composite_id: str, db: DbSession):
     """Get composite detail."""
     logger.debug("Composite requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")
@@ -141,7 +141,7 @@ async def get_composite(composite_id: str, db: AsyncSession = Depends(get_db)):
 
 # Bug #11: Dedicated composite image endpoint
 @router.get("/composites/{composite_id}/image")
-async def get_composite_image(composite_id: str, db: AsyncSession = Depends(get_db)):
+async def get_composite_image(composite_id: str, db: DbSession):
     """Serve the composite image file."""
     logger.debug("Composite image requested: id=%s", composite_id)
     validate_uuid(composite_id, "composite_id")

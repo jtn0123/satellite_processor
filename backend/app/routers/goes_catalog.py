@@ -2,14 +2,14 @@
 
 import asyncio
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import DEFAULT_SATELLITE
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import GoesFrame
 from ..errors import APIError
 from ..rate_limit import limiter
@@ -112,10 +112,10 @@ async def list_products(response: Response):
 @limiter.limit("20/minute")
 async def catalog(
     request: Request,
-    satellite: str = Query(DEFAULT_SATELLITE),
-    sector: str = Query("CONUS"),
-    band: str = Query("C02"),
-    date: str | None = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
+    sector: Annotated[str, Query()] = "CONUS",
+    band: Annotated[str, Query()] = "C02",
+    date: Annotated[str | None, Query(description="Date in YYYY-MM-DD format, defaults to today")] = None,
 ):
     """Query NOAA S3 for available GOES captures."""
     logger.debug("GOES catalog requested")
@@ -146,9 +146,9 @@ async def catalog(
 async def catalog_latest(
     request: Request,
     response: Response,
-    satellite: str = Query(DEFAULT_SATELLITE),
-    sector: str = Query("CONUS"),
-    band: str = Query("C02"),
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
+    sector: Annotated[str, Query()] = "CONUS",
+    band: Annotated[str, Query()] = "C02",
 ):
     """Return the most recent available frame on S3 (checks last 2 hours)."""
     logger.debug("GOES catalog latest requested")
@@ -171,7 +171,7 @@ async def catalog_latest(
 @limiter.limit("10/minute")
 async def catalog_available(
     request: Request,
-    satellite: str = Query(DEFAULT_SATELLITE),
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
 ):
     """Check which sectors have recent data (last 2 hours) on S3."""
     logger.debug("GOES catalog available requested")
@@ -190,9 +190,9 @@ async def catalog_available(
 @limiter.limit("10/minute")
 async def band_sample_thumbnails(
     request: Request,
-    satellite: str = Query(DEFAULT_SATELLITE),
-    sector: str = Query("CONUS"),
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
+    sector: Annotated[str, Query()] = "CONUS",
 ):
     """Return thumbnail URLs for the latest frame of each band."""
     logger.debug("Band sample thumbnails requested")
@@ -230,9 +230,9 @@ async def band_sample_thumbnails(
 @limiter.limit("30/minute")
 async def band_availability(
     request: Request,
-    satellite: str = Query(DEFAULT_SATELLITE),
-    sector: str = Query("CONUS"),
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
+    sector: Annotated[str, Query()] = "CONUS",
 ):
     """Return frame count per band for the given satellite/sector."""
     logger.debug("Band availability requested")
@@ -252,10 +252,10 @@ async def band_availability(
 async def get_latest_frame(
     request: Request,
     response: Response,
-    satellite: str = Query(DEFAULT_SATELLITE),
-    sector: str = Query("CONUS"),
-    band: str = Query("C02"),
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
+    sector: Annotated[str, Query()] = "CONUS",
+    band: Annotated[str, Query()] = "C02",
 ):
     """Return the most recent GoesFrame for the given satellite/sector/band."""
     logger.debug("Latest frame requested")

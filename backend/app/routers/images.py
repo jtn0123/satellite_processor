@@ -9,13 +9,12 @@ from pathlib import Path
 from typing import Annotated
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
+from fastapi import APIRouter, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image as PILImage
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Image
 from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
@@ -51,7 +50,7 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 
 @router.post("/upload")
 @limiter.limit("10/minute")
-async def upload_image(request: Request, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
     """Upload a satellite image using chunked streaming to avoid OOM on large files."""
     logger.info("Image upload started: filename=%s", file.filename)
     if not file.filename:
@@ -119,9 +118,9 @@ async def upload_image(request: Request, file: UploadFile = File(...), db: Async
 
 @router.get("", response_model=PaginatedResponse[ImageResponse])
 async def list_images(
+    db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    db: AsyncSession = Depends(get_db),
 ):
     """List uploaded images with pagination"""
     logger.debug("Listing images: page=%d, limit=%d", page, limit)
@@ -143,7 +142,7 @@ async def list_images(
 @router.delete("/bulk")
 async def bulk_delete_images(
     payload: BulkDeleteRequest,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     """Bulk delete images by IDs."""
     logger.info("Bulk delete requested: count=%d", len(payload.ids))
@@ -164,7 +163,7 @@ async def bulk_delete_images(
 
 @router.delete("/{image_id}")
 @limiter.limit("10/minute")
-async def delete_image(request: Request, image_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_image(request: Request, image_id: str, db: DbSession):
     """Delete an uploaded image"""
     logger.info("Deleting image: id=%s", image_id)
     validate_uuid(image_id, "image_id")
@@ -179,7 +178,7 @@ async def delete_image(request: Request, image_id: str, db: AsyncSession = Depen
 
 
 @router.get("/{image_id}/thumbnail")
-async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
+async def get_thumbnail(image_id: str, db: DbSession):
     """Return a ~256px thumbnail"""
     logger.debug("Thumbnail requested: image_id=%s", image_id)
     validate_uuid(image_id, "image_id")
@@ -218,7 +217,7 @@ async def get_thumbnail(image_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{image_id}/full")
-async def get_full_image(image_id: str, db: AsyncSession = Depends(get_db)):
+async def get_full_image(image_id: str, db: DbSession):
     """Return the original image file"""
     logger.debug("Full image requested: image_id=%s", image_id)
     validate_uuid(image_id, "image_id")

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Preset
 from ..errors import APIError
 from ..models.settings import PresetCreate
@@ -26,9 +26,9 @@ router = APIRouter(prefix="/api/presets", tags=["presets"])
 
 @router.get("")
 async def list_presets(
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """List presets with pagination (#160)."""
     logger.debug("Listing presets: limit=%d, offset=%d", limit, offset)
@@ -38,7 +38,7 @@ async def list_presets(
 
 
 @router.post("")
-async def create_preset(preset_in: PresetCreate, db: AsyncSession = Depends(get_db)):
+async def create_preset(preset_in: PresetCreate, db: DbSession):
     """Create a preset"""
     logger.info("Creating preset: name=%s", preset_in.name)
     result = await db.execute(select(Preset).where(Preset.name == preset_in.name))
@@ -53,7 +53,7 @@ async def create_preset(preset_in: PresetCreate, db: AsyncSession = Depends(get_
 
 
 @router.patch("/{name}")
-async def rename_preset(name: str, body: PresetRename, db: AsyncSession = Depends(get_db)):
+async def rename_preset(name: str, body: PresetRename, db: DbSession):
     """Rename a preset"""
     logger.info("Renaming preset: %s -> %s", name, body.name)
     result = await db.execute(select(Preset).where(Preset.name == name))
@@ -74,7 +74,7 @@ async def rename_preset(name: str, body: PresetRename, db: AsyncSession = Depend
 
 
 @router.delete("/{name}")
-async def delete_preset(name: str, db: AsyncSession = Depends(get_db)):
+async def delete_preset(name: str, db: DbSession):
     """Delete a preset by name"""
     logger.info("Deleting preset: name=%s", name)
     result = await db.execute(select(Preset).where(Preset.name == name))

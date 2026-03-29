@@ -8,11 +8,10 @@ import time
 from typing import Annotated
 
 import psutil
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +107,10 @@ async def system_info():
 
 @router.get("/failed-jobs")
 async def list_failed_jobs(
+    db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     task_name: Annotated[str | None, Query()] = None,
-    db: AsyncSession = Depends(get_db),
 ):
     """List failed Celery tasks from the dead-letter table (paginated)."""
     from ..models.failed_job import FailedJob

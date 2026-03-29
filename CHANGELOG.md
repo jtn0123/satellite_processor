@@ -1,3 +1,10 @@
+## [1.42.4](https://github.com/jtn0123/satellite_processor/compare/v1.42.3...v1.42.4) (2026-03-29)
+
+
+### Bug Fixes
+
+* resolve dogfood findings — cache crash, UI bugs, accessibility ([#372](https://github.com/jtn0123/satellite_processor/issues/372)) ([7d928cc](https://github.com/jtn0123/satellite_processor/commit/7d928ccb7307817e0b14a092e87d2ebbfeb20eb2))
+
 ## [1.42.3](https://github.com/jtn0123/satellite_processor/compare/v1.42.2...v1.42.3) (2026-03-29)
 
 

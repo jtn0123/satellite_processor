@@ -115,8 +115,6 @@ interface LiveImageAreaProps {
   readonly fetchNow: () => void;
   readonly lastFetchFailed: boolean;
   readonly catalogLatest: { scan_time?: string } | null | undefined;
-  /** @deprecated kept for backward compat; the a11y announcer lives in LiveTab */
-  readonly liveAnnouncement?: string;
 }
 
 interface ImageContentProps {

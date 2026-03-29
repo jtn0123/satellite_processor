@@ -393,7 +393,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
         fetchNow={fetchNow}
         lastFetchFailed={lastFetchFailed}
         catalogLatest={catalogLatest}
-        liveAnnouncement={liveAnnouncement}
       />
 
       {isMobile && products?.bands && !zoom.isZoomed && (

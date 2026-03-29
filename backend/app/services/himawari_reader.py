@@ -390,6 +390,24 @@ def _radiance_to_bt(radiance: np.ndarray, header: HSDHeader) -> np.ndarray:
     return bt.astype(np.float32)
 
 
+def _detect_segment_dimensions(
+    segments: list[np.ndarray | None],
+    expected_columns: int | None,
+) -> tuple[int | None, int | None]:
+    """Infer width and lines-per-segment from the first non-None segments."""
+    width = expected_columns
+    lines_per_seg: int | None = None
+    for seg in segments:
+        if seg is not None:
+            if width is None:
+                width = seg.shape[1]
+            elif seg.shape[1] != width:
+                raise ValueError(f"Segment width mismatch: expected {width}, got {seg.shape[1]}")
+            if lines_per_seg is None:
+                lines_per_seg = seg.shape[0]
+    return width, lines_per_seg
+
+
 def assemble_segments(
     segments: list[np.ndarray | None],
     expected_columns: int | None = None,
@@ -418,31 +436,19 @@ def assemble_segments(
     if len(segments) != 10:
         raise ValueError(f"Expected 10 segments, got {len(segments)}")
 
-    # Determine width from first non-None segment
-    width: int | None = expected_columns
-    lines_per_seg: int | None = None
-    for seg in segments:
-        if seg is not None:
-            if width is None:
-                width = seg.shape[1]
-            elif seg.shape[1] != width:
-                raise ValueError(f"Segment width mismatch: expected {width}, got {seg.shape[1]}")
-            if lines_per_seg is None:
-                lines_per_seg = seg.shape[0]
+    width, lines_per_seg = _detect_segment_dimensions(segments, expected_columns)
 
     if width is None:
         raise ValueError("Cannot determine image width: all segments are None and no expected_columns given")
     if lines_per_seg is None:
         lines_per_seg = 550  # IR default
 
-    strips: list[np.ndarray] = []
-    for seg in segments:
-        if seg is None:
-            strips.append(np.full((lines_per_seg, width), np.nan, dtype=np.float32))
-        else:
-            strips.append(seg.astype(np.float32))
-
-    return np.vstack(strips)
+    return np.vstack(
+        [
+            seg.astype(np.float32) if seg is not None else np.full((lines_per_seg, width), np.nan, dtype=np.float32)
+            for seg in segments
+        ]
+    )
 
 
 def _decompress_and_parse_segment(seg_bytes: bytes, index: int) -> tuple[np.ndarray | None, int | None]:

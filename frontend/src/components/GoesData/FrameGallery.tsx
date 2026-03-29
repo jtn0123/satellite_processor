@@ -100,7 +100,7 @@ export default function FrameGallery() {
         <button
           onClick={() => setCompareMode(!compareMode)}
           aria-pressed={compareMode}
-          aria-label={`Compare mode${compareMode && compareFrames.length > 0 ? `, ${compareFrames.length} of 2 selected` : ''}`}
+          aria-label={compareMode && compareFrames.length > 0 ? `Compare mode, ${compareFrames.length} of 2 selected` : 'Compare mode'}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
             compareMode
               ? 'bg-primary text-gray-900 dark:text-white'
@@ -141,11 +141,14 @@ export default function FrameGallery() {
         >
           {frames.map((frame) => {
             const isSelected = compareFrames.some((f) => f.id === frame.id);
+            const actionHint = compareMode
+              ? isSelected ? ', selected for comparison' : ', select for comparison'
+              : ', click to view';
             return (
               <button
                 key={frame.id}
                 onClick={() => (compareMode ? toggleCompareSelect(frame) : setViewerFrame(frame))}
-                aria-label={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}${compareMode ? (isSelected ? ', selected for comparison' : ', select for comparison') : ', click to view'}`}
+                aria-label={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}${actionHint}`}
                 className={`group relative rounded-xl overflow-hidden border transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
                   isSelected
                     ? 'border-primary ring-2 ring-primary/50'

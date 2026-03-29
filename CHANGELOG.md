@@ -1,3 +1,10 @@
+## [1.42.5](https://github.com/jtn0123/satellite_processor/compare/v1.42.4...v1.42.5) (2026-03-29)
+
+
+### Bug Fixes
+
+* prevent TOCTOU race in job cancellation ([#373](https://github.com/jtn0123/satellite_processor/issues/373)) ([c484523](https://github.com/jtn0123/satellite_processor/commit/c484523ff69e9a4702dd3b4ae2b9568acab1d8f1))
+
 ## [1.42.4](https://github.com/jtn0123/satellite_processor/compare/v1.42.3...v1.42.4) (2026-03-29)
 
 

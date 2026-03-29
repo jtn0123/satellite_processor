@@ -100,7 +100,11 @@ export default function FrameGallery() {
         <button
           onClick={() => setCompareMode(!compareMode)}
           aria-pressed={compareMode}
-          aria-label={compareMode && compareFrames.length > 0 ? `Compare mode, ${compareFrames.length} of 2 selected` : 'Compare mode'}
+          aria-label={
+            compareMode && compareFrames.length > 0
+              ? `Compare mode, ${compareFrames.length} of 2 selected`
+              : 'Compare mode'
+          }
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-hidden ${
             compareMode
               ? 'bg-primary text-gray-900 dark:text-white'
@@ -142,7 +146,9 @@ export default function FrameGallery() {
           {frames.map((frame) => {
             const isSelected = compareFrames.some((f) => f.id === frame.id);
             const actionHint = compareMode
-              ? isSelected ? ', selected for comparison' : ', select for comparison'
+              ? isSelected
+                ? ', selected for comparison'
+                : ', select for comparison'
               : ', click to view';
             return (
               <button

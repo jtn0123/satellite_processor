@@ -82,6 +82,45 @@ class TestCancelJob:
         resp = await client.post("/api/jobs/not-a-uuid/cancel")
         assert resp.status_code in (404, 422)
 
+    async def test_cancel_concurrent_completion_returns_conflict(self, client, db):
+        """If job status changes between SELECT and atomic UPDATE, returns 409."""
+        from app.db.database import get_db
+        from app.main import app
+        from sqlalchemy import update as sql_update
+        from sqlalchemy.sql.dml import Update as UpdateStmt
+
+        from tests.conftest import TestSessionLocal
+
+        jid = _uuid()
+        db.add(Job(id=jid, status="processing", task_id="task-race"))
+        await db.commit()
+
+        async def racing_get_db():
+            async with TestSessionLocal() as session:
+                real_execute = session.execute
+
+                async def intercept(stmt, *args, **kwargs):
+                    if isinstance(stmt, UpdateStmt):
+                        # Simulate a concurrent worker completing the job
+                        async with TestSessionLocal() as s2:
+                            await s2.execute(sql_update(Job).where(Job.id == jid).values(status="completed"))
+                            await s2.commit()
+                    return await real_execute(stmt, *args, **kwargs)
+
+                session.execute = intercept
+                yield session
+
+        original = app.dependency_overrides[get_db]
+        app.dependency_overrides[get_db] = racing_get_db
+        try:
+            with patch("app.routers.jobs.celery_app"):
+                resp = await client.post(f"/api/jobs/{jid}/cancel")
+        finally:
+            app.dependency_overrides[get_db] = original
+
+        assert resp.status_code == 409
+        assert resp.json()["error"] == "conflict"
+
 
 # ── Delete with files ────────────────────────────────────────────
 

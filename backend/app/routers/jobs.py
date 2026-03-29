@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..celery_app import celery_app
@@ -235,7 +235,21 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.status not in ("pending", "processing"):
         raise APIError(400, "not_cancellable", f"Job is already {job.status}")
 
-    # Revoke Celery task
+    # Atomic status transition — prevents TOCTOU race where a concurrent
+    # worker could complete the job between our SELECT and this UPDATE.
+    now = utcnow()
+    upd = await db.execute(
+        update(Job)
+        .where(Job.id == job_id, Job.status.in_(("pending", "processing")))
+        .values(status="cancelled", completed_at=now, status_message="Cancelled by user")
+    )
+    if upd.rowcount == 0:
+        await db.refresh(job)
+        raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
+
+    await db.commit()
+
+    # Side effects only after successful atomic transition
     task_id = _get_job_task_id(job)
     if task_id:
         try:
@@ -243,16 +257,9 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
         except Exception:
             logger.warning(_REVOKE_FAIL_MSG, task_id)
 
-    # Clean up partial output files
     output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
     if os.path.isdir(output_path):
         shutil.rmtree(output_path, ignore_errors=True)
-
-    job.status = "cancelled"
-    job.completed_at = utcnow()
-    job.status_message = "Cancelled by user"
-    await db.commit()
-    await db.refresh(job)
 
     return {"cancelled": True, "job_id": job.id}
 

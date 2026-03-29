@@ -4,16 +4,14 @@ import logging
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Annotated
 
 import zipstream
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Job
 from ..errors import APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
@@ -97,7 +95,7 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
 
 @router.get("/{job_id}/download")
 @limiter.limit("20/minute")
-async def download_job_output(request: Request, job_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
+async def download_job_output(request: Request, job_id: str, db: DbSession):
     """Download job output as a single file or zip of all outputs."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -141,7 +139,7 @@ async def download_job_output(request: Request, job_id: str, db: Annotated[Async
 
 @router.post("/bulk-download")
 @limiter.limit("5/minute")
-async def bulk_download(request: Request, payload: BulkDeleteRequest, db: Annotated[AsyncSession, Depends(get_db)]):
+async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSession):
     """Download outputs from multiple jobs as a single zip.
 
     #155: Uses BulkDeleteRequest (renamed concept — reuses ids list Pydantic model)

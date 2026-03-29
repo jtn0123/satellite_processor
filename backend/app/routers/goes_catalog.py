@@ -4,13 +4,12 @@ import asyncio
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import DEFAULT_SATELLITE
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import GoesFrame
 from ..errors import APIError
 from ..rate_limit import limiter
@@ -191,7 +190,7 @@ async def catalog_available(
 @limiter.limit("10/minute")
 async def band_sample_thumbnails(
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
 ):
@@ -231,7 +230,7 @@ async def band_sample_thumbnails(
 @limiter.limit("30/minute")
 async def band_availability(
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
 ):
@@ -253,7 +252,7 @@ async def band_availability(
 async def get_latest_frame(
     request: Request,
     response: Response,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
     band: Annotated[str, Query()] = "C02",

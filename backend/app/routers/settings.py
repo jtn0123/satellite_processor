@@ -3,16 +3,16 @@
 import json
 import logging
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Literal
 
 import sqlalchemy.exc
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import AppSetting
 from ..errors import APIError
 
@@ -95,7 +95,7 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
 
 
 @router.get("")
-async def get_settings(db: Annotated[AsyncSession, Depends(get_db)]):
+async def get_settings(db: DbSession):
     try:
         return await _load_from_db(db)
     except sqlalchemy.exc.SQLAlchemyError:
@@ -104,7 +104,7 @@ async def get_settings(db: Annotated[AsyncSession, Depends(get_db)]):
 
 
 @router.put("")
-async def update_settings(body: SettingsUpdate, db: Annotated[AsyncSession, Depends(get_db)]):
+async def update_settings(body: SettingsUpdate, db: DbSession):
     try:
         current = await _load_from_db(db)
         update_data = body.model_dump(exclude_none=True)

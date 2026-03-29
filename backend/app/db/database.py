@@ -6,7 +6,9 @@
 
 import asyncio
 import logging
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -41,6 +43,10 @@ async def get_db():
     """Dependency for getting async DB session"""
     async with async_session() as session:
         yield session
+
+
+# Shared type alias for FastAPI route handlers
+DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def init_db(max_retries: int = 5, base_delay: float = 1.0):

@@ -7,11 +7,10 @@ import uuid
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Body, Request
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import (
     FetchPreset,
     Job,
@@ -50,7 +49,7 @@ DEFAULT_FETCH_PRESETS = [
 
 @router.post("/fetch-presets/seed-defaults")
 @limiter.limit("10/minute")
-async def seed_default_presets(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
+async def seed_default_presets(request: Request, db: DbSession):
     """Create default fetch presets if they don't already exist."""
     logger.info("Seeding default fetch presets")
     created = []
@@ -81,7 +80,7 @@ async def seed_default_presets(request: Request, db: Annotated[AsyncSession, Dep
 async def create_fetch_preset(
     request: Request,
     payload: Annotated[FetchPresetCreate, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Creating fetch preset")
     preset = FetchPreset(
@@ -100,7 +99,7 @@ async def create_fetch_preset(
 
 @router.get("/fetch-presets", response_model=list[FetchPresetResponse])
 @limiter.limit("60/minute")
-async def list_fetch_presets(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
+async def list_fetch_presets(request: Request, db: DbSession):
     logger.debug("Listing fetch presets")
     result = await db.execute(select(FetchPreset).order_by(FetchPreset.created_at.desc()))
     return [FetchPresetResponse.model_validate(p) for p in result.scalars().all()]
@@ -112,7 +111,7 @@ async def update_fetch_preset(
     request: Request,
     preset_id: str,
     payload: Annotated[FetchPresetUpdate, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Updating fetch preset: id=%s", preset_id)
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
@@ -133,7 +132,7 @@ async def update_fetch_preset(
 async def delete_fetch_preset(
     request: Request,
     preset_id: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Deleting fetch preset: id=%s", preset_id)
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
@@ -150,7 +149,7 @@ async def delete_fetch_preset(
 async def run_fetch_preset(
     request: Request,
     preset_id: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     """Execute a preset immediately (fetches last 1 hour of data)."""
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))

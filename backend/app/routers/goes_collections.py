@@ -6,13 +6,12 @@ import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Collection, CollectionFrame, GoesFrame
 from ..errors import APIError
 from ..models.goes_data import (
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-collections"])
 @router.post("/collections", response_model=CollectionResponse)
 async def create_collection(
     payload: Annotated[CollectionCreate, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Creating collection: name=%s", payload.name)
     existing = await db.execute(select(Collection).where(Collection.name == payload.name))
@@ -62,7 +61,7 @@ async def create_collection(
 
 @router.get("/collections", response_model=PaginatedResponse[CollectionResponse])
 async def list_collections(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
@@ -98,7 +97,7 @@ async def list_collections(
 async def update_collection(
     collection_id: str,
     payload: Annotated[CollectionUpdate, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Updating collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
@@ -130,7 +129,7 @@ async def update_collection(
 @router.delete("/collections/{collection_id}")
 async def delete_collection(
     collection_id: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Deleting collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
@@ -146,7 +145,7 @@ async def delete_collection(
 async def add_frames_to_collection(
     collection_id: str,
     payload: Annotated[CollectionFramesRequest, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Adding frames to collection: id=%s", collection_id)
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
@@ -170,7 +169,7 @@ async def add_frames_to_collection(
 @router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
 async def list_collection_frames(
     collection_id: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
@@ -207,7 +206,7 @@ async def list_collection_frames(
 @router.get("/collections/{collection_id}/export")
 async def export_collection(
     collection_id: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     format: Annotated[str, Query(pattern="^(csv|json)$")] = "json",  # noqa: A002
     limit: Annotated[int, Query(ge=1)] = 1000,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -248,7 +247,7 @@ async def export_collection(
 async def remove_frames_from_collection(
     collection_id: str,
     payload: Annotated[CollectionFramesRequest, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     logger.info("Removing frames from collection: id=%s", collection_id)
     result = await db.execute(

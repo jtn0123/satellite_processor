@@ -6,11 +6,10 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Query, Request
 from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import Job
 from ..errors import APIError
 from ..models.goes import (
@@ -121,7 +120,7 @@ def _dispatch_fetch_task(job_id: str, params: dict, satellite: str) -> tuple:
 async def fetch_composite(
     request: Request,
     payload: Annotated[FetchCompositeRequest, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     """Fetch multiple bands and auto-composite. Max 50 frames per request."""
     logger.info("Composite fetch requested")
@@ -176,7 +175,7 @@ async def fetch_composite(
 async def fetch_goes(
     request: Request,
     payload: Annotated[GoesFetchRequest, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     """Kick off a GOES data fetch job."""
     logger.info("GOES fetch requested")
@@ -224,7 +223,7 @@ async def fetch_goes(
 @limiter.limit("10/minute")
 async def detect_gaps(
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     satellite: Annotated[str | None, Query()] = None,
     band: Annotated[str | None, Query()] = None,
     sector: Annotated[str | None, Query()] = None,
@@ -246,7 +245,7 @@ async def detect_gaps(
 async def backfill_gaps(
     request: Request,
     payload: Annotated[GoesBackfillRequest, Body()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
 ):
     """Fill detected gaps (one-shot, not automatic)."""
     logger.info("Backfill gaps requested")

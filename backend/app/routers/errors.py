@@ -4,13 +4,12 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_db
+from ..db.database import DbSession
 from ..db.models import ErrorLog
 from ..rate_limit import limiter
 
@@ -41,9 +40,7 @@ class ErrorReportOut(BaseModel):
 
 @router.post("", status_code=201)
 @limiter.limit("10/minute")
-async def report_error(
-    request: Request, body: ErrorReportIn, db: Annotated[AsyncSession, Depends(get_db)]
-) -> JSONResponse:
+async def report_error(request: Request, body: ErrorReportIn, db: DbSession) -> JSONResponse:
     """Collect a frontend error report. No auth required."""
     # NOTE: Client IP stored for abuse detection and rate-limit correlation.
     # Consider periodic purge of old error logs to limit PII retention.
@@ -67,7 +64,7 @@ async def report_error(
 
 @router.get("")
 async def list_errors(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> dict:
@@ -101,7 +98,7 @@ async def list_errors(
 
 
 @router.delete("")
-async def clear_errors(db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
+async def clear_errors(db: DbSession) -> dict:
     """Clear all error logs. Auth required (handled by global middleware)."""
     result = await db.execute(delete(ErrorLog))
     await db.commit()

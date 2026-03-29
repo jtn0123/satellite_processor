@@ -1,3 +1,10 @@
+## [1.42.7](https://github.com/jtn0123/satellite_processor/compare/v1.42.6...v1.42.7) (2026-03-29)
+
+
+### Bug Fixes
+
+* resolve SonarCloud security and middleware findings ([#376](https://github.com/jtn0123/satellite_processor/issues/376)) ([c2a91a0](https://github.com/jtn0123/satellite_processor/commit/c2a91a0712c5ff9934a534cf5f6ff224caa3d705))
+
 ## [1.42.6](https://github.com/jtn0123/satellite_processor/compare/v1.42.5...v1.42.6) (2026-03-29)
 
 

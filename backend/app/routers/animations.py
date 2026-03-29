@@ -34,7 +34,7 @@ from ..models.animation import (
     FrameRangePreview,
 )
 from ..models.pagination import PaginatedResponse
-from ..utils import safe_remove
+from ..utils import safe_remove, sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +218,7 @@ async def delete_crop_preset(
     preset_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting crop preset: id=%s", preset_id)
+    logger.info("Deleting crop preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -389,7 +389,7 @@ async def list_animations(
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
 async def get_animation(animation_id: str, db: DbSession):
-    logger.debug("Animation requested: id=%s", animation_id)
+    logger.debug("Animation requested: id=%s", sanitize_log(animation_id))
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
@@ -400,7 +400,7 @@ async def get_animation(animation_id: str, db: DbSession):
 
 @router.delete("/animations/{animation_id}")
 async def delete_animation(animation_id: str, db: DbSession):
-    logger.info("Deleting animation: id=%s", animation_id)
+    logger.info("Deleting animation: id=%s", sanitize_log(animation_id))
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
     anim = result.scalars().first()
@@ -534,7 +534,7 @@ async def update_animation_preset(
     payload: Annotated[AnimationPresetUpdate, Body()],
     db: DbSession,
 ):
-    logger.info("Updating animation preset: id=%s", preset_id)
+    logger.info("Updating animation preset: id=%s", sanitize_log(preset_id))
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()
@@ -554,7 +554,7 @@ async def delete_animation_preset(
     preset_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting animation preset: id=%s", preset_id)
+    logger.info("Deleting animation preset: id=%s", sanitize_log(preset_id))
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()

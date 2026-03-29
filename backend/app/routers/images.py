@@ -22,6 +22,7 @@ from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..services.storage import storage_service
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 @limiter.limit("10/minute")
 async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
     """Upload a satellite image using chunked streaming to avoid OOM on large files."""
-    logger.info("Image upload started: filename=%s", file.filename)
+    logger.info("Image upload started: filename=%s", sanitize_log(file.filename))
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
@@ -165,7 +166,7 @@ async def bulk_delete_images(
 @limiter.limit("10/minute")
 async def delete_image(request: Request, image_id: str, db: DbSession):
     """Delete an uploaded image"""
-    logger.info("Deleting image: id=%s", image_id)
+    logger.info("Deleting image: id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()
@@ -180,7 +181,7 @@ async def delete_image(request: Request, image_id: str, db: DbSession):
 @router.get("/{image_id}/thumbnail")
 async def get_thumbnail(image_id: str, db: DbSession):
     """Return a ~256px thumbnail"""
-    logger.debug("Thumbnail requested: image_id=%s", image_id)
+    logger.debug("Thumbnail requested: image_id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
     from ..config import settings as app_settings
 
@@ -219,7 +220,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
 @router.get("/{image_id}/full")
 async def get_full_image(image_id: str, db: DbSession):
     """Return the original image file"""
-    logger.debug("Full image requested: image_id=%s", image_id)
+    logger.debug("Full image requested: image_id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalar_one_or_none()

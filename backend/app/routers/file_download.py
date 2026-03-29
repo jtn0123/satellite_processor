@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from ..config import settings
 from ..errors import APIError, validate_safe_path
 from ..rate_limit import limiter
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ async def download_file(
     The path must resolve to a location within the configured storage path.
     Path traversal attempts are rejected.
     """
-    logger.info("File download requested: path=%s", path)
+    logger.info("File download requested: path=%s", sanitize_log(path))
     if not path:
         raise APIError(400, "bad_request", "path parameter is required")
 

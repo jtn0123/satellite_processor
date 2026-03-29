@@ -35,7 +35,7 @@ from ..models.scheduling import (
     FetchScheduleResponse,
     FetchScheduleUpdate,
 )
-from ..utils import safe_remove, utcnow
+from ..utils import safe_remove, sanitize_log, utcnow
 from .scheduling_presets import DEFAULT_FETCH_PRESETS
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ async def update_fetch_preset(
     payload: Annotated[FetchPresetUpdate, Body()],
     db: DbSession,
 ):
-    logger.info("Updating fetch preset: id=%s", preset_id)
+    logger.info("Updating fetch preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -128,7 +128,7 @@ async def delete_fetch_preset(
     preset_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting fetch preset: id=%s", preset_id)
+    logger.info("Deleting fetch preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -233,7 +233,7 @@ async def update_schedule(
     payload: Annotated[FetchScheduleUpdate, Body()],
     db: DbSession,
 ):
-    logger.info("Updating schedule: id=%s", schedule_id)
+    logger.info("Updating schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
     )
@@ -268,7 +268,7 @@ async def delete_schedule(
     schedule_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting schedule: id=%s", schedule_id)
+    logger.info("Deleting schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(select(FetchSchedule).where(FetchSchedule.id == schedule_id))
     schedule = result.scalars().first()
     if not schedule:
@@ -283,7 +283,7 @@ async def toggle_schedule(
     schedule_id: str,
     db: DbSession,
 ):
-    logger.info("Toggling schedule: id=%s", schedule_id)
+    logger.info("Toggling schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
     )
@@ -349,7 +349,7 @@ async def update_cleanup_rule(
     payload: Annotated[CleanupRuleUpdate, Body()],
     db: DbSession,
 ):
-    logger.info("Updating cleanup rule: id=%s", rule_id)
+    logger.info("Updating cleanup rule: id=%s", sanitize_log(rule_id))
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
     if not rule:
@@ -368,7 +368,7 @@ async def delete_cleanup_rule(
     rule_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting cleanup rule: id=%s", rule_id)
+    logger.info("Deleting cleanup rule: id=%s", sanitize_log(rule_id))
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
     if not rule:

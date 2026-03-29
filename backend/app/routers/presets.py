@@ -13,6 +13,7 @@ from ..db.database import DbSession
 from ..db.models import Preset
 from ..errors import APIError
 from ..models.settings import PresetCreate
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ async def list_presets(
 @router.post("")
 async def create_preset(preset_in: PresetCreate, db: DbSession):
     """Create a preset"""
-    logger.info("Creating preset: name=%s", preset_in.name)
+    logger.info("Creating preset: name=%s", sanitize_log(preset_in.name))
     result = await db.execute(select(Preset).where(Preset.name == preset_in.name))
     if result.scalar_one_or_none():
         raise APIError(409, "duplicate_preset", f"Preset '{preset_in.name}' already exists")
@@ -55,7 +56,7 @@ async def create_preset(preset_in: PresetCreate, db: DbSession):
 @router.patch("/{name}")
 async def rename_preset(name: str, body: PresetRename, db: DbSession):
     """Rename a preset"""
-    logger.info("Renaming preset: %s -> %s", name, body.name)
+    logger.info("Renaming preset: %s -> %s", sanitize_log(name), sanitize_log(body.name))
     result = await db.execute(select(Preset).where(Preset.name == name))
     preset = result.scalar_one_or_none()
     if not preset:
@@ -76,7 +77,7 @@ async def rename_preset(name: str, body: PresetRename, db: DbSession):
 @router.delete("/{name}")
 async def delete_preset(name: str, db: DbSession):
     """Delete a preset by name"""
-    logger.info("Deleting preset: name=%s", name)
+    logger.info("Deleting preset: name=%s", sanitize_log(name))
     result = await db.execute(select(Preset).where(Preset.name == name))
     preset = result.scalar_one_or_none()
     if not preset:

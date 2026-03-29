@@ -13,6 +13,7 @@ from ..db.models import Composite, Job
 from ..errors import APIError, validate_uuid
 from ..models.goes import CompositeCreateRequest, CompositeResponse
 from ..models.pagination import PaginatedResponse
+from ..utils import sanitize_log
 from ._goes_shared import COMPOSITE_RECIPES
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ async def list_composites(
 @router.get("/composites/{composite_id}")
 async def get_composite(composite_id: str, db: DbSession):
     """Get composite detail."""
-    logger.debug("Composite requested: id=%s", composite_id)
+    logger.debug("Composite requested: id=%s", sanitize_log(composite_id))
     validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()
@@ -143,7 +144,7 @@ async def get_composite(composite_id: str, db: DbSession):
 @router.get("/composites/{composite_id}/image")
 async def get_composite_image(composite_id: str, db: DbSession):
     """Serve the composite image file."""
-    logger.debug("Composite image requested: id=%s", composite_id)
+    logger.debug("Composite image requested: id=%s", sanitize_log(composite_id))
     validate_uuid(composite_id, "composite_id")
     result = await db.execute(select(Composite).where(Composite.id == composite_id))
     c = result.scalars().first()

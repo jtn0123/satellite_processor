@@ -14,6 +14,7 @@ from ..db.models import FrameTag, Tag
 from ..errors import APIError
 from ..models.goes_data import TagCreate, TagResponse
 from ..models.pagination import PaginatedResponse
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ async def create_tag(
     db: DbSession,
 ):
     # Check uniqueness
-    logger.info("Creating tag: name=%s", payload.name)
+    logger.info("Creating tag: name=%s", sanitize_log(payload.name))
     existing = await db.execute(select(Tag).where(Tag.name == payload.name))
     if existing.scalars().first():
         raise APIError(409, "conflict", "Tag already exists")
@@ -52,7 +53,7 @@ async def list_tags(
 
 @router.delete("/tags/{tag_id}")
 async def delete_tag(tag_id: str, db: DbSession):
-    logger.info("Deleting tag: id=%s", tag_id)
+    logger.info("Deleting tag: id=%s", sanitize_log(tag_id))
     result = await db.execute(select(Tag).where(Tag.id == tag_id))
     tag = result.scalars().first()
     if not tag:

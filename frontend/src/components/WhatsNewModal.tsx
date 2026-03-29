@@ -115,6 +115,7 @@ export default function WhatsNewModal({ onClose, version, commit }: Readonly<Wha
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors mb-2"
+                aria-label={`View v${release.version} on GitHub`}
               >
                 View on GitHub <ExternalLink className="w-3 h-3" />
               </a>

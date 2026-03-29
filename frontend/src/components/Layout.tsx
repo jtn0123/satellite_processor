@@ -248,7 +248,7 @@ export default function Layout() {
           </a>
           {/* #9: Keyboard shortcut button */}
           <button
-            onClick={() => globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
+            onClick={() => globalThis.dispatchEvent(new CustomEvent('toggle-keyboard-shortcuts'))}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-space-800 transition-colors focus-ring w-full"
             aria-label="Keyboard shortcuts"
           >

@@ -103,8 +103,9 @@ export default function Dashboard() {
         end_time: now.toISOString(),
       });
       showToast('success', `Fetching latest CONUS imagery... (Job ${res.data.job_id})`);
-    } catch {
-      showToast('error', 'Failed to fetch latest imagery');
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      showToast('error', detail ?? 'Failed to fetch latest imagery');
     } finally {
       setFetchingLatest(false);
     }

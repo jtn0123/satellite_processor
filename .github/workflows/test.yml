@@ -397,12 +397,12 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  # SonarQube analysis — runs after tests, even if they fail
+  # SonarCloud analysis — runs after tests, even if they fail
   sonarqube:
-    name: SonarQube Scan
+    name: SonarCloud Scan
     needs: [changes, backend, frontend]
     if: always() && needs.changes.result == 'success'
-    runs-on: [self-hosted, sonar]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
       group: sonar-${{ github.head_ref || github.ref_name }}
@@ -412,33 +412,9 @@ jobs:
       pull-requests: write
       statuses: write
     steps:
-      - name: Clean workspace and scanner cache
-        run: |
-          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.* 2>/dev/null || true
-          rm -rf /tmp/runner/work/satellite_processor/satellite_processor/.scannerwork 2>/dev/null || true
-          rm -rf "$HOME/.sonar" 2>/dev/null || true
-          rm -rf /opt/hostedtoolcache/sonar-scanner-cli 2>/dev/null || true
-          rm -rf /tmp/.scannerwork 2>/dev/null || true
-
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-          clean: true
-
-      - name: Verify clean workspace
-        run: |
-          echo "Files in workspace:"
-          ls -la
-          echo "---"
-          echo "Looking for contaminated dirs..."
-          for dir in src receiver; do
-            if [ -d "$dir" ]; then
-              echo "ERROR: Found contaminated directory: $dir — removing"
-              rm -rf "$dir"
-            fi
-          done
-          echo "Source file count (should be ~380):"
-          find . -name "*.ts" -o -name "*.tsx" -o -name "*.py" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | wc -l
 
       - name: Download backend coverage shards
         id: dl-backend
@@ -527,11 +503,11 @@ jobs:
             echo "args=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@2ee92e02d31cfc8cae25e92fd19109b2a23b8f98 # v4
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: ${{ steps.sonar-args.outputs.args }}
 
@@ -542,20 +518,19 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
-      - name: Post SonarQube summary to PR
+      - name: Post SonarCloud summary to PR
         if: always() && (github.event_name == 'pull_request' || steps.pr-info.outputs.number)
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           script: |
             const prNumber = context.payload.pull_request?.number || parseInt('${{ steps.pr-info.outputs.number }}', 10);
-            const sonarUrl = process.env.SONAR_HOST_URL;
+            const sonarUrl = 'https://sonarcloud.io';
             const sonarToken = process.env.SONAR_TOKEN;
-            const projectKey = 'satellite_processor';
+            const projectKey = 'jtn0123_satellite_processor';
             const commitSha = context.sha;
 
             const auth = Buffer.from(sonarToken + ':').toString('base64');
@@ -607,7 +582,7 @@ jobs:
                 }
               }
             } catch (e) {
-              console.log('Failed to fetch SonarQube data:', e.message);
+              console.log('Failed to fetch SonarCloud data:', e.message);
             }
 
             // --- Fetch OVERALL project measures ---
@@ -781,7 +756,7 @@ jobs:
                 return `| ${typeIcon[i.type] || '❓'} | ${i.severity || 'N/A'} | \`${loc}\` | ${(i.message || '').substring(0, 100)} |`;
               }).join('\n');
 
-              const moreText = totalIssues > 20 ? `\n\n*... and ${totalIssues - 20} more — [view all on SonarQube](${sonarUrl}/project/issues?id=${projectKey}&pullRequest=${prNumber})*` : '';
+              const moreText = totalIssues > 20 ? `\n\n*... and ${totalIssues - 20} more — [view all on SonarCloud](${sonarUrl}/project/issues?id=${projectKey}&pullRequest=${prNumber})*` : '';
 
               issuesSection = [
                 '', `### Issues (${totalIssues} found)`,
@@ -813,7 +788,7 @@ jobs:
                   const loc = i.line ? `${component}:${i.line}` : component;
                   return `| ${i.severity || 'N/A'} | \`${loc}\` | ${(i.message || '').substring(0, 80)} |`;
                 }).join('\n');
-                const viewAll = items.length > cap ? `\n\n[View all on SonarQube](${sonarUrl}/project/issues?id=${projectKey}&types=${items[0].type}&statuses=OPEN)` : '';
+                const viewAll = items.length > cap ? `\n\n[View all on SonarCloud](${sonarUrl}/project/issues?id=${projectKey}&types=${items[0].type}&statuses=OPEN)` : '';
                 return [
                   '<details>',
                   `<summary>${icon} ${items.length} ${label}${showingNote}</summary>`,
@@ -838,7 +813,7 @@ jobs:
             // --- Build final comment body with dedup marker ---
             const body = [
               '<!-- sonarqube-summary -->',
-              `## ${gateIcon} SonarQube Analysis`,
+              `## ${gateIcon} SonarCloud Analysis`,
               '',
               badges,
               '',
@@ -874,10 +849,10 @@ jobs:
               `| 📋 Duplication | ${pct(overallMeasures.duplicated_lines_density)} |`,
               overallIssuesSection,
               '',
-              `[View full analysis on SonarQube](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
+              `[View full analysis on SonarCloud](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})`,
               '',
               '---',
-              `*SonarQube · \`${commitSha.substring(0, 7)}\` · ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC*`
+              `*SonarCloud · \`${commitSha.substring(0, 7)}\` · ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC*`
             ].join('\n');
 
             // --- Dedup: find existing comment with marker, update or create ---
@@ -891,7 +866,7 @@ jobs:
               c.user.login === 'github-actions[bot]' && c.body.includes('<!-- sonarqube-summary -->')
             );
 
-            // Delete old SonarQube comment if it exists, then post fresh
+            // Delete old SonarCloud comment if it exists, then post fresh
             if (existing) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
@@ -918,7 +893,7 @@ jobs:
               });
 
               const botReviewComments = reviewComments.filter(c =>
-                c.user.login === 'github-actions[bot]' && c.body.includes('SonarQube')
+                c.user.login === 'github-actions[bot]' && c.body.includes('SonarCloud')
               );
 
               for (const rc of botReviewComments) {
@@ -940,7 +915,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     pull_number: prNumber,
-                    body: `${icon} **SonarQube ${issue.severity}**: ${issue.message}\n\n[View in SonarQube](${sonarUrl}/project/issues?id=${projectKey}&open=${issue.key})`,
+                    body: `${icon} **SonarCloud ${issue.severity}**: ${issue.message}\n\n[View in SonarCloud](${sonarUrl}/project/issues?id=${projectKey}&open=${issue.key})`,
                     commit_id: commitSha,
                     path: issue.component.replace(`${projectKey}:`, ''),
                     line: issue.line,
@@ -984,7 +959,7 @@ jobs:
               state: state,
               target_url: runUrl,
               description: description,
-              context: 'SonarQube Quality Gate'
+              context: 'SonarCloud Quality Gate'
             });
 
   # Consolidate coverage from all shards + frontend and post PR summary

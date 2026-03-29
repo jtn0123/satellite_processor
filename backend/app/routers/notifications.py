@@ -9,6 +9,7 @@ from sqlalchemy import select
 from ..db.database import DbSession
 from ..db.models import Notification
 from ..errors import APIError
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ async def list_notifications(db: DbSession):
 @router.post("/{notification_id}/read")
 async def mark_read(notification_id: str, db: DbSession):
     """Mark a notification as read."""
-    logger.info("Marking notification read: id=%s", notification_id)
+    logger.info("Marking notification read: id=%s", sanitize_log(notification_id))
     result = await db.execute(select(Notification).where(Notification.id == notification_id))
     notif = result.scalars().first()
     if not notif:

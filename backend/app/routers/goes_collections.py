@@ -22,6 +22,7 @@ from ..models.goes_data import (
     GoesFrameResponse,
 )
 from ..models.pagination import PaginatedResponse
+from ..utils import sanitize_log
 from .goes_frames import MAX_EXPORT_LIMIT, _frames_to_csv, _frames_to_json_list
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ async def create_collection(
     payload: Annotated[CollectionCreate, Body()],
     db: DbSession,
 ):
-    logger.info("Creating collection: name=%s", payload.name)
+    logger.info("Creating collection: name=%s", sanitize_log(payload.name))
     existing = await db.execute(select(Collection).where(Collection.name == payload.name))
     if existing.scalar_one_or_none() is not None:
         raise APIError(409, "conflict", f"Collection '{payload.name}' already exists")
@@ -99,7 +100,7 @@ async def update_collection(
     payload: Annotated[CollectionUpdate, Body()],
     db: DbSession,
 ):
-    logger.info("Updating collection: id=%s", collection_id)
+    logger.info("Updating collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
@@ -131,7 +132,7 @@ async def delete_collection(
     collection_id: str,
     db: DbSession,
 ):
-    logger.info("Deleting collection: id=%s", collection_id)
+    logger.info("Deleting collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
     if not coll:
@@ -147,7 +148,7 @@ async def add_frames_to_collection(
     payload: Annotated[CollectionFramesRequest, Body()],
     db: DbSession,
 ):
-    logger.info("Adding frames to collection: id=%s", collection_id)
+    logger.info("Adding frames to collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -174,7 +175,7 @@ async def list_collection_frames(
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
     """Return ordered frames for a collection with pagination."""
-    logger.debug("Listing collection frames: id=%s", collection_id)
+    logger.debug("Listing collection frames: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
         raise APIError(404, "not_found", _COLLECTION_NOT_FOUND)
@@ -212,7 +213,7 @@ async def export_collection(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Export frame metadata for a collection."""
-    logger.info("Exporting collection: id=%s", collection_id)
+    logger.info("Exporting collection: id=%s", sanitize_log(collection_id))
     import io
 
     if limit > MAX_EXPORT_LIMIT:
@@ -249,7 +250,7 @@ async def remove_frames_from_collection(
     payload: Annotated[CollectionFramesRequest, Body()],
     db: DbSession,
 ):
-    logger.info("Removing frames from collection: id=%s", collection_id)
+    logger.info("Removing frames from collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(
         delete(CollectionFrame).where(
             CollectionFrame.collection_id == collection_id,

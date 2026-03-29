@@ -17,7 +17,7 @@ from ..config import settings
 from ..db.database import DbSession
 from ..db.models import GoesFrame, ShareLink
 from ..errors import APIError, validate_safe_path
-from ..utils import utcnow
+from ..utils import sanitize_log, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ async def create_share_link(
 @router.get("/api/shared/{token}", response_model=SharedFrameResponse)
 async def get_shared_frame(token: str, db: DbSession):
     """Public endpoint — retrieve frame info by share token."""
-    logger.info("Shared frame requested: token=%s...", token[:8])
+    logger.info("Shared frame requested: token=%s...", sanitize_log(token[:8]))
     link = await _get_valid_link(token, db)
     frame = link.frame
     return SharedFrameResponse(
@@ -91,7 +91,7 @@ async def get_shared_frame(token: str, db: DbSession):
 @router.get("/api/shared/{token}/image")
 async def get_shared_image(token: str, db: DbSession):
     """Public endpoint — serve the actual image for a share token."""
-    logger.info("Shared image requested: token=%s...", token[:8])
+    logger.info("Shared image requested: token=%s...", sanitize_log(token[:8]))
     link = await _get_valid_link(token, db)
     frame = link.frame
     try:

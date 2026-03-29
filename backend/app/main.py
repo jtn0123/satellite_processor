@@ -53,6 +53,7 @@ from .routers import (
 )
 from .routers import settings as settings_router
 from .security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
+from .utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 ws_logger = logging.getLogger("websocket")
@@ -212,7 +213,7 @@ async def api_key_auth(request: Request, call_next):
         if not skip:
             key = request.headers.get("X-API-Key", "")
             if not _verify_api_key(key):
-                logger.warning("Rejected API request with invalid key: %s %s", request.method, path)
+                logger.warning("Rejected API request with invalid key: %s %s", request.method, sanitize_log(path))
                 return JSONResponse(
                     status_code=401,
                     content={"error": "unauthorized", "detail": "Invalid or missing API key"},
@@ -437,7 +438,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         return
 
     await _ws_accept_if_needed(websocket)
-    ws_logger.info("WS connected: /ws/jobs/%s from %s", job_id, client_ip)
+    ws_logger.info("WS connected: /ws/jobs/%s from %s", sanitize_log(job_id), sanitize_log(client_ip))
     r = get_redis_client()
     pubsub = r.pubsub()
     await pubsub.subscribe(f"job:{job_id}")
@@ -455,7 +456,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
         for t in pending:
             t.cancel()
     except WebSocketDisconnect:
-        ws_logger.info("WS disconnected: /ws/jobs/%s from %s", job_id, client_ip)
+        ws_logger.info("WS disconnected: /ws/jobs/%s from %s", sanitize_log(job_id), sanitize_log(client_ip))
     finally:
         await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(f"job:{job_id}")
@@ -479,7 +480,7 @@ async def global_events_websocket(websocket: WebSocket):
         return
 
     await _ws_accept_if_needed(websocket)
-    ws_logger.info("WS connected: /ws/events from %s", client_ip)
+    ws_logger.info("WS connected: /ws/events from %s", sanitize_log(client_ip))
     r = get_redis_client()
     pubsub = r.pubsub()
     await pubsub.subscribe(GLOBAL_EVENT_CHANNEL)
@@ -508,7 +509,7 @@ async def global_events_websocket(websocket: WebSocket):
         for t in pending:
             t.cancel()
     except WebSocketDisconnect:
-        ws_logger.info("WS disconnected: /ws/events from %s", client_ip)
+        ws_logger.info("WS disconnected: /ws/events from %s", sanitize_log(client_ip))
     finally:
         await _ws_track(client_ip, -1)
         await pubsub.unsubscribe(GLOBAL_EVENT_CHANNEL)

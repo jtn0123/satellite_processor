@@ -12,6 +12,7 @@ from typing import Any
 import redis.exceptions
 
 from ..redis_pool import get_redis_client
+from ..utils import sanitize_log
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ async def get_cached(
         if cached is not None:
             return json.loads(cached)
     except (redis.exceptions.RedisError, OSError, RuntimeError, ValueError):
-        logger.warning("Redis cache read failed for %s", key, exc_info=True)
+        logger.warning("Redis cache read failed for %s", sanitize_log(key), exc_info=True)
         redis_client = None
 
     raw = fetch_fn()
@@ -47,7 +48,7 @@ async def get_cached(
         try:
             await redis_client.set(key, json.dumps(result, default=str), ex=ttl)
         except (redis.exceptions.RedisError, OSError, RuntimeError, ValueError):
-            logger.warning("Redis cache write failed for %s", key, exc_info=True)
+            logger.warning("Redis cache write failed for %s", sanitize_log(key), exc_info=True)
 
     return result
 

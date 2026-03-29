@@ -35,7 +35,7 @@ from ..models.goes_data import (
 )
 from ..models.pagination import PaginatedResponse
 from ..services.cache import get_cached, invalidate, make_cache_key
-from ..utils import safe_remove
+from ..utils import safe_remove, sanitize_log
 from ..utils.path_validation import validate_file_path
 
 logger = logging.getLogger(__name__)
@@ -335,7 +335,7 @@ async def export_frames(
 @router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
 async def get_frame(frame_id: str, db: DbSession):
     """Get single frame detail."""
-    logger.debug("Frame requested: frame_id=%s", frame_id)
+    logger.debug("Frame requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(
         select(GoesFrame)
@@ -429,7 +429,7 @@ async def process_frames(
 @router.get("/frames/{frame_id}/image")
 async def get_frame_image(frame_id: str, db: DbSession):
     """Serve the raw image file for a frame."""
-    logger.debug("Frame image requested: frame_id=%s", frame_id)
+    logger.debug("Frame image requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()
@@ -463,7 +463,7 @@ async def get_frame_image(frame_id: str, db: DbSession):
 @router.get("/frames/{frame_id}/thumbnail")
 async def get_frame_thumbnail(frame_id: str, db: DbSession):
     """Serve the thumbnail image for a frame."""
-    logger.debug("Frame thumbnail requested: frame_id=%s", frame_id)
+    logger.debug("Frame thumbnail requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalars().first()

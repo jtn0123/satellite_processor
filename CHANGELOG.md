@@ -1,3 +1,10 @@
+## [1.42.6](https://github.com/jtn0123/satellite_processor/compare/v1.42.5...v1.42.6) (2026-03-29)
+
+
+### Bug Fixes
+
+* resolve 9 SonarQube code smells across backend and frontend ([#374](https://github.com/jtn0123/satellite_processor/issues/374)) ([756ce29](https://github.com/jtn0123/satellite_processor/commit/756ce290043db5d16fbdf2dd9254ceecbf8b9e40))
+
 ## [1.42.5](https://github.com/jtn0123/satellite_processor/compare/v1.42.4...v1.42.5) (2026-03-29)
 
 

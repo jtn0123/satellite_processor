@@ -103,11 +103,7 @@ class TestCancelJob:
                     if isinstance(stmt, UpdateStmt):
                         # Simulate a concurrent worker completing the job
                         async with TestSessionLocal() as s2:
-                            await s2.execute(
-                                sql_update(Job)
-                                .where(Job.id == jid)
-                                .values(status="completed")
-                            )
+                            await s2.execute(sql_update(Job).where(Job.id == jid).values(status="completed"))
                             await s2.commit()
                     return await real_execute(stmt, *args, **kwargs)
 

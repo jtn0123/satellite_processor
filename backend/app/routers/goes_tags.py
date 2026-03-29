@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import delete, func, select
@@ -22,8 +23,8 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-tags"])
 
 @router.post("/tags", response_model=TagResponse)
 async def create_tag(
-    payload: TagCreate = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[TagCreate, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     # Check uniqueness
     logger.info("Creating tag: name=%s", payload.name)
@@ -39,9 +40,9 @@ async def create_tag(
 
 @router.get("/tags", response_model=PaginatedResponse[TagResponse])
 async def list_tags(
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    limit: int = Query(100, ge=1, le=500),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     logger.debug("Listing tags")
     total = (await db.execute(select(func.count(Tag.id)))).scalar() or 0
@@ -51,7 +52,7 @@ async def list_tags(
 
 
 @router.delete("/tags/{tag_id}")
-async def delete_tag(tag_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_tag(tag_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     logger.info("Deleting tag: id=%s", tag_id)
     result = await db.execute(select(Tag).where(Tag.id == tag_id))
     tag = result.scalars().first()

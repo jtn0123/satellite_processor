@@ -8,6 +8,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -51,7 +52,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-frames"])
 
 
 @router.get("/dashboard-stats")
-async def dashboard_stats(db: AsyncSession = Depends(get_db)):
+async def dashboard_stats(db: Annotated[AsyncSession, Depends(get_db)]):
     """Aggregated dashboard statistics for the GOES data overview."""
     logger.debug("Dashboard stats requested")
     cache_key = make_cache_key("dashboard-stats")
@@ -141,9 +142,9 @@ async def quick_fetch_options():
 
 @router.get("/frames", response_model=PaginatedResponse[GoesFrameResponse])
 async def list_frames(
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     satellite: str | None = None,
     band: str | None = None,
     sector: str | None = None,
@@ -151,8 +152,8 @@ async def list_frames(
     end_date: datetime | None = None,
     collection_id: str | None = None,
     tag: str | None = None,
-    sort: str = Query("capture_time", pattern="^(capture_time|file_size|satellite|created_at)$"),
-    order: str = Query("desc", pattern="^(asc|desc)$"),
+    sort: Annotated[str, Query(pattern="^(capture_time|file_size|satellite|created_at)$")] = "capture_time",
+    order: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
 ):
     """List GOES frames with filtering, sorting, pagination."""
     logger.debug("Listing frames: page=%d, limit=%d", page, limit)
@@ -220,7 +221,7 @@ async def list_frames(
 
 
 @router.get("/frames/stats", response_model=FrameStatsResponse)
-async def frame_stats(db: AsyncSession = Depends(get_db)):
+async def frame_stats(db: Annotated[AsyncSession, Depends(get_db)]):
     """Storage stats per satellite/band."""
     logger.debug("Frame stats requested")
     result = await db.execute(
@@ -293,10 +294,10 @@ def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
 # Bug #2: /frames/export MUST be registered before /frames/{frame_id}
 @router.get("/frames/export")
 async def export_frames(
-    format: str = Query("json", pattern="^(csv|json)$"),  # noqa: A002
-    db: AsyncSession = Depends(get_db),
-    limit: int = Query(1000, ge=1),
-    offset: int = Query(0, ge=0),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    format: Annotated[str, Query(pattern="^(csv|json)$")] = "json",  # noqa: A002
+    limit: Annotated[int, Query(ge=1)] = 1000,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Export frame metadata as CSV or JSON with pagination."""
     logger.info("Exporting frames")
@@ -333,7 +334,7 @@ async def export_frames(
 
 
 @router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
-async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
+async def get_frame(frame_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Get single frame detail."""
     logger.debug("Frame requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")
@@ -350,8 +351,8 @@ async def get_frame(frame_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.delete("/frames")
 async def bulk_delete_frames(
-    payload: BulkFrameDeleteRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[BulkFrameDeleteRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Bulk delete frames and their files."""
     logger.info("Bulk delete frames requested")
@@ -374,8 +375,8 @@ async def bulk_delete_frames(
 
 @router.post("/frames/tag")
 async def bulk_tag_frames(
-    payload: BulkTagRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[BulkTagRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
     logger.info("Bulk tagging frames")
@@ -391,8 +392,8 @@ async def bulk_tag_frames(
 
 @router.post("/frames/process")
 async def process_frames(
-    payload: ProcessFramesRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[ProcessFramesRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Send selected frames to the processing pipeline."""
     logger.info("Processing frames requested")
@@ -427,7 +428,7 @@ async def process_frames(
 
 
 @router.get("/frames/{frame_id}/image")
-async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
+async def get_frame_image(frame_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Serve the raw image file for a frame."""
     logger.debug("Frame image requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")
@@ -461,7 +462,7 @@ async def get_frame_image(frame_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/frames/{frame_id}/thumbnail")
-async def get_frame_thumbnail(frame_id: str, db: AsyncSession = Depends(get_db)):
+async def get_frame_thumbnail(frame_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Serve the thumbnail image for a frame."""
     logger.debug("Frame thumbnail requested: frame_id=%s", frame_id)
     validate_uuid(frame_id, "frame_id")

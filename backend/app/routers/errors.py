@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
@@ -40,7 +41,9 @@ class ErrorReportOut(BaseModel):
 
 @router.post("", status_code=201)
 @limiter.limit("10/minute")
-async def report_error(request: Request, body: ErrorReportIn, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+async def report_error(
+    request: Request, body: ErrorReportIn, db: Annotated[AsyncSession, Depends(get_db)]
+) -> JSONResponse:
     """Collect a frontend error report. No auth required."""
     # NOTE: Client IP stored for abuse detection and rate-limit correlation.
     # Consider periodic purge of old error logs to limit PII retention.
@@ -64,9 +67,9 @@ async def report_error(request: Request, body: ErrorReportIn, db: AsyncSession =
 
 @router.get("")
 async def list_errors(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    per_page: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> dict:
     """List recent errors with pagination. Auth required (handled by global middleware)."""
     total = (await db.execute(select(func.count(ErrorLog.id)))).scalar() or 0
@@ -98,7 +101,7 @@ async def list_errors(
 
 
 @router.delete("")
-async def clear_errors(db: AsyncSession = Depends(get_db)) -> dict:
+async def clear_errors(db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
     """Clear all error logs. Auth required (handled by global middleware)."""
     result = await db.execute(delete(ErrorLog))
     await db.commit()

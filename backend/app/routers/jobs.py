@@ -136,7 +136,7 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
 
 @router.post("", response_model=JobResponse)
 @limiter.limit("5/minute")
-async def create_job(request: Request, job_in: JobCreate, db: AsyncSession = Depends(get_db)):
+async def create_job(request: Request, job_in: JobCreate, db: Annotated[AsyncSession, Depends(get_db)]):
     """Create a processing job and dispatch to Celery"""
     output_dir = str(Path(settings.output_dir))
     resolved_params = await _resolve_image_ids(db, job_in.params)
@@ -174,9 +174,9 @@ async def create_job(request: Request, job_in: JobCreate, db: AsyncSession = Dep
 
 @router.get("", response_model=PaginatedResponse[JobResponse])
 async def list_jobs(
+    db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    db: AsyncSession = Depends(get_db),
 ):
     """List jobs with pagination"""
     count_result = await db.execute(select(func.count()).select_from(Job))
@@ -195,7 +195,7 @@ async def list_jobs(
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
+async def get_job(job_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Get job details"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -206,7 +206,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{job_id}", response_model=JobResponse)
-async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(get_db)):
+async def update_job(job_id: str, job_in: JobUpdate, db: Annotated[AsyncSession, Depends(get_db)]):
     """Partially update a job record"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -224,7 +224,7 @@ async def update_job(job_id: str, job_in: JobUpdate, db: AsyncSession = Depends(
 
 
 @router.post("/{job_id}/cancel")
-async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
+async def cancel_job(job_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Cancel a running job — revokes the Celery task and cleans up partial files."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -269,9 +269,9 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
 async def bulk_delete_jobs(
     request: Request,
     payload: BulkJobDeleteRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
     delete_files: Annotated[bool, Query()] = False,
     all_jobs: Annotated[bool, Query(alias="all")] = False,
-    db: AsyncSession = Depends(get_db),
 ):
     """Bulk delete jobs by IDs or all jobs."""
     use_delete_files = payload.delete_files or delete_files
@@ -316,8 +316,8 @@ async def bulk_delete_jobs(
 async def delete_job(
     request: Request,
     job_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     delete_files: Annotated[bool, Query()] = False,
-    db: AsyncSession = Depends(get_db),
 ):
     """Delete a job — optionally delete associated files and DB records."""
     validate_uuid(job_id, "job_id")
@@ -347,9 +347,9 @@ async def delete_job(
 @router.get("/{job_id}/logs")
 async def get_job_logs(
     job_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     level: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
-    db: AsyncSession = Depends(get_db),
 ):
     """Return logs for a job ordered by timestamp."""
     validate_uuid(job_id, "job_id")
@@ -371,7 +371,7 @@ async def get_job_logs(
 
 
 @router.get("/{job_id}/output")
-async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
+async def get_job_output(job_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Download job output"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -406,7 +406,7 @@ async def get_job_output(job_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/cleanup-stale")
-async def cleanup_stale_jobs(db: AsyncSession = Depends(get_db)):
+async def cleanup_stale_jobs(db: Annotated[AsyncSession, Depends(get_db)]):
     """Mark stale processing and pending jobs as failed."""
     from ..services.stale_jobs import cleanup_all_stale
 

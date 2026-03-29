@@ -108,10 +108,10 @@ async def system_info():
 
 @router.get("/failed-jobs")
 async def list_failed_jobs(
+    db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     task_name: Annotated[str | None, Query()] = None,
-    db: AsyncSession = Depends(get_db),
 ):
     """List failed Celery tasks from the dead-letter table (paginated)."""
     from ..models.failed_job import FailedJob

@@ -4,6 +4,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import Response
@@ -119,8 +120,8 @@ def _dispatch_fetch_task(job_id: str, params: dict, satellite: str) -> tuple:
 @limiter.limit("3/minute")
 async def fetch_composite(
     request: Request,
-    payload: FetchCompositeRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[FetchCompositeRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Fetch multiple bands and auto-composite. Max 50 frames per request."""
     logger.info("Composite fetch requested")
@@ -174,8 +175,8 @@ async def fetch_composite(
 @limiter.limit("5/minute")
 async def fetch_goes(
     request: Request,
-    payload: GoesFetchRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[GoesFetchRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Kick off a GOES data fetch job."""
     logger.info("GOES fetch requested")
@@ -223,11 +224,11 @@ async def fetch_goes(
 @limiter.limit("10/minute")
 async def detect_gaps(
     request: Request,
-    satellite: str | None = Query(None),
-    band: str | None = Query(None),
-    sector: str | None = Query(None),
-    expected_interval: float = Query(10.0, ge=0.5, le=60.0),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    satellite: Annotated[str | None, Query()] = None,
+    band: Annotated[str | None, Query()] = None,
+    sector: Annotated[str | None, Query()] = None,
+    expected_interval: Annotated[float, Query(ge=0.5, le=60.0)] = 10.0,
 ):
     """Run gap detection and return coverage stats."""
     logger.debug("Gap detection requested")
@@ -244,8 +245,8 @@ async def detect_gaps(
 @limiter.limit("2/minute")
 async def backfill_gaps(
     request: Request,
-    payload: GoesBackfillRequest = Body(...),
-    db: AsyncSession = Depends(get_db),
+    payload: Annotated[GoesBackfillRequest, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Fill detected gaps (one-shot, not automatic)."""
     logger.info("Backfill gaps requested")
@@ -282,11 +283,11 @@ async def backfill_gaps(
 @limiter.limit("30/minute")
 async def estimate_frame_count(
     request: Request,
-    satellite: str = Query(...),
-    sector: str = Query(...),
-    band: str = Query(...),
-    start_time: datetime = Query(...),
-    end_time: datetime = Query(...),
+    satellite: Annotated[str, Query()],
+    sector: Annotated[str, Query()],
+    band: Annotated[str, Query()],
+    start_time: Annotated[datetime, Query()],
+    end_time: Annotated[datetime, Query()],
 ):
     """Estimate frame count for a time range without downloading."""
     logger.debug("Frame count estimation requested")
@@ -308,10 +309,10 @@ async def estimate_frame_count(
 @limiter.limit("10/minute")
 async def preview_frame(
     request: Request,
-    satellite: str = Query(...),
-    sector: str = Query(...),
-    band: str = Query(...),
-    time: datetime = Query(...),
+    satellite: Annotated[str, Query()],
+    sector: Annotated[str, Query()],
+    band: Annotated[str, Query()],
+    time: Annotated[datetime, Query()],
 ):
     """Fetch a single frame preview."""
     logger.debug("Preview frame requested")

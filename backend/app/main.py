@@ -220,12 +220,15 @@ async def api_key_auth(request: Request, call_next):
     return await call_next(request)
 
 
-# Middleware stack (order matters — outermost first)
+# Middleware stack (last added = outermost in Starlette)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestBodyLimitMiddleware)
 app.add_middleware(CorrelationMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+# Backward-compat: /api/goes/* → /api/satellite/* (runs before routing)
+app.add_middleware(GoesToSatelliteRewriteMiddleware)
+# CORSMiddleware must be outermost so preflight responses always get CORS headers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=app_settings.cors_origins,
@@ -235,8 +238,6 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
     max_age=600,
 )
-# Backward-compat: /api/goes/* → /api/satellite/* (innermost — runs before routing)
-app.add_middleware(GoesToSatelliteRewriteMiddleware)
 
 # Register routers
 app.include_router(jobs.router)

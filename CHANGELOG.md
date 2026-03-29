@@ -1,3 +1,10 @@
+## [1.42.8](https://github.com/jtn0123/satellite_processor/compare/v1.42.7...v1.42.8) (2026-03-29)
+
+
+### Bug Fixes
+
+* sanitize user-controlled data in log statements (S5145) ([#378](https://github.com/jtn0123/satellite_processor/issues/378)) ([5cc933f](https://github.com/jtn0123/satellite_processor/commit/5cc933ffd21a0dbf01b1d7aaf791bf1f70cbdef5))
+
 ## [1.42.7](https://github.com/jtn0123/satellite_processor/compare/v1.42.6...v1.42.7) (2026-03-29)
 
 

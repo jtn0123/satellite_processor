@@ -1,3 +1,10 @@
+## [1.42.3](https://github.com/jtn0123/satellite_processor/compare/v1.42.2...v1.42.3) (2026-03-29)
+
+
+### Bug Fixes
+
+* code review — bug fixes, security hardening, and test coverage ([#371](https://github.com/jtn0123/satellite_processor/issues/371)) ([467385f](https://github.com/jtn0123/satellite_processor/commit/467385f655a11c3a7268c762ec8ceff2a5ed3fb5))
+
 ## [1.42.2](https://github.com/jtn0123/satellite_processor/compare/v1.42.1...v1.42.2) (2026-03-28)
 
 

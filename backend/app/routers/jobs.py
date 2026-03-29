@@ -258,7 +258,9 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/bulk")
+@limiter.limit("5/minute")
 async def bulk_delete_jobs(
+    request: Request,
     payload: BulkJobDeleteRequest,
     delete_files: Annotated[bool, Query()] = False,
     all_jobs: Annotated[bool, Query(alias="all")] = False,

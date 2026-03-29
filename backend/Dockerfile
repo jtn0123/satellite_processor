@@ -39,7 +39,9 @@ COPY backend/alembic /app/alembic
 COPY backend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-RUN mkdir -p /app/data/output /app/data/uploads /app/data/temp && \
+# Create /app/data so the volume mountpoint is owned by appuser.
+# Subdirectories are created at runtime by entrypoint.sh and config.py.
+RUN mkdir -p /app/data && \
     adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 

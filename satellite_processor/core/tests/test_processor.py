@@ -154,3 +154,103 @@ class TestParallelWorkers:
 
         result = SatelliteImageProcessor._parallel_crop(("/nonexistent.png", str(output_dir), {}))
         assert result is None
+
+
+class TestProcessWorkflow:
+    """Tests for the process() orchestration method."""
+
+    def test_already_processing_returns_false(self, processor):
+        processor._is_processing = True
+        assert processor.process() is False
+
+    def test_no_dirs_returns_false(self, processor):
+        processor.input_dir = None
+        processor.output_dir = None
+        assert processor.process() is False
+        assert processor._is_processing is False
+
+    @patch("satellite_processor.core.processor.validate_image", return_value=True)
+    @patch("satellite_processor.core.processor.Pipeline")
+    @patch("satellite_processor.core.processor.multiprocessing")
+    def test_successful_process(self, mock_mp, mock_pipeline_cls, _mock_validate, processor, tmp_path):
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        (input_dir / "frame.png").touch()
+
+        output_dir = tmp_path / "output"
+        processor.input_dir = str(input_dir)
+        processor.output_dir = str(output_dir)
+
+        mock_pool = MagicMock()
+        mock_mp.Pool.return_value = mock_pool
+        mock_mp.cpu_count.return_value = 4
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.run.return_value = [Path("frame.png")]
+        mock_pipeline_cls.return_value = mock_pipeline
+
+        # Mock video creation to succeed and produce an mp4
+        processor._create_video = MagicMock(return_value=True)
+        processor._emit_output_ready = MagicMock()
+        processor._emit_status = MagicMock()
+
+        # Create a fake mp4 in the final dir that process() will look for
+        with patch.object(Path, "glob", return_value=[Path("output.mp4")]):
+            result = processor.process()
+
+        assert result is True
+        processor._emit_output_ready.assert_called_once()
+        mock_pool.close.assert_called_once()
+        mock_pool.join.assert_called_once()
+        assert processor._is_processing is False
+
+    @patch("satellite_processor.core.processor.validate_image", return_value=True)
+    @patch("satellite_processor.core.processor.Pipeline")
+    @patch("satellite_processor.core.processor.multiprocessing")
+    def test_video_creation_failure(self, mock_mp, mock_pipeline_cls, _mock_validate, processor, tmp_path):
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        (input_dir / "frame.png").touch()
+
+        output_dir = tmp_path / "output"
+        processor.input_dir = str(input_dir)
+        processor.output_dir = str(output_dir)
+
+        mock_mp.Pool.return_value = MagicMock()
+        mock_mp.cpu_count.return_value = 4
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.run.return_value = [Path("frame.png")]
+        mock_pipeline_cls.return_value = mock_pipeline
+
+        processor._create_video = MagicMock(return_value=False)
+
+        result = processor.process()
+        assert result is False
+
+    @patch("satellite_processor.core.processor.validate_image", return_value=True)
+    @patch("satellite_processor.core.processor.Pipeline")
+    @patch("satellite_processor.core.processor.multiprocessing")
+    def test_no_mp4_after_video_creation(self, mock_mp, mock_pipeline_cls, _mock_validate, processor, tmp_path):
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        (input_dir / "frame.png").touch()
+
+        output_dir = tmp_path / "output"
+        processor.input_dir = str(input_dir)
+        processor.output_dir = str(output_dir)
+
+        mock_mp.Pool.return_value = MagicMock()
+        mock_mp.cpu_count.return_value = 4
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.run.return_value = [Path("frame.png")]
+        mock_pipeline_cls.return_value = mock_pipeline
+
+        processor._create_video = MagicMock(return_value=True)
+
+        # glob returns no mp4 files
+        with patch.object(Path, "glob", return_value=[]):
+            result = processor.process()
+
+        assert result is False

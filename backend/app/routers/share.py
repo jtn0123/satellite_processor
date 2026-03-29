@@ -49,7 +49,7 @@ async def create_share_link(
     hours: int = 72,
 ):
     """Create a public share link for a frame (expires in N hours, default 72)."""
-    logger.info("Creating share link: frame_id=%s, hours=%d", frame_id, hours)
+    logger.info("Creating share link: frame_id=%s, hours=%d", sanitize_log(frame_id), hours)
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalar_one_or_none()
     if not frame:

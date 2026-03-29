@@ -31,33 +31,35 @@ async def get_cached(
     fetch_fn: Callable[[], Any] | Callable[[], Awaitable[Any]],
 ) -> Any:
     """Return cached value or call fetch_fn, cache result, and return it."""
-    redis_client = get_redis_client()
     try:
+        redis_client = get_redis_client()
         cached = await redis_client.get(key)
         if cached is not None:
             return json.loads(cached)
-    except (redis.exceptions.RedisError, OSError, RuntimeError, json.JSONDecodeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError, ValueError, json.JSONDecodeError):
         logger.warning("Redis cache read failed for %s", key, exc_info=True)
+        redis_client = None
 
     raw = fetch_fn()
     result = await raw if inspect.isawaitable(raw) else raw
 
-    try:
-        await redis_client.set(key, json.dumps(result, default=str), ex=ttl)
-    except (redis.exceptions.RedisError, OSError, RuntimeError):
-        logger.warning("Redis cache write failed for %s", key, exc_info=True)
+    if redis_client is not None:
+        try:
+            await redis_client.set(key, json.dumps(result, default=str), ex=ttl)
+        except (redis.exceptions.RedisError, OSError, RuntimeError, ValueError):
+            logger.warning("Redis cache write failed for %s", key, exc_info=True)
 
     return result
 
 
 async def invalidate(pattern: str) -> int:
     """Delete keys matching a glob pattern. Returns count deleted."""
-    redis_client = get_redis_client()
     try:
+        redis_client = get_redis_client()
         keys: list[str] = [key async for key in redis_client.scan_iter(match=pattern, count=100)]
         if keys:
             deleted: int = await redis_client.delete(*keys)
             return deleted
-    except (redis.exceptions.RedisError, OSError, RuntimeError):
+    except (redis.exceptions.RedisError, OSError, RuntimeError, ValueError):
         logger.warning("Redis cache invalidate failed for %s", pattern, exc_info=True)
     return 0

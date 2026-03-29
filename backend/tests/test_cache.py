@@ -91,6 +91,14 @@ class TestGetCached:
             result = await get_cached("fail-key", ttl=60, fetch_fn=fetch_fn)
             assert result == "fallback"
 
+    @pytest.mark.asyncio
+    async def test_redis_client_creation_failure(self):
+        """If get_redis_client raises ValueError (bad URL), fetch_fn still works."""
+        with patch("app.services.cache.get_redis_client", side_effect=ValueError("invalid URL")):
+            fetch_fn = AsyncMock(return_value={"data": "ok"})
+            result = await get_cached("bad-redis", ttl=60, fetch_fn=fetch_fn)
+            assert result == {"data": "ok"}
+
 
 class TestInvalidate:
     @pytest.mark.asyncio

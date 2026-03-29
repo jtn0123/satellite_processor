@@ -26,9 +26,11 @@ api.interceptors.response.use(
       // Attach user-friendly message for consumers
       error.userMessage = message;
     }
-    // Don't report 404s on GOES endpoints — they're expected for empty data states (e.g., no frames yet)
+    // Don't report expected 404s — empty data states and invalid share links
+    const url = error.config?.url ?? '';
     const isExpected404 =
-      error.response?.status === 404 && error.config?.url?.startsWith('/satellite/');
+      error.response?.status === 404 &&
+      (url.startsWith('/satellite/') || url.startsWith('/shared/'));
     if (!isExpected404) {
       reportError(
         error,

@@ -21,6 +21,12 @@ export default function KeyboardShortcuts() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handler = () => setOpen((v) => !v);
+    globalThis.addEventListener('toggle-keyboard-shortcuts', handler);
+    return () => globalThis.removeEventListener('toggle-keyboard-shortcuts', handler);
+  }, []);
+
   const close = useCallback(() => setOpen(false), []);
 
   // Global Escape handler that dispatches custom event for modals

@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..celery_app import celery_app
@@ -248,11 +248,19 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if os.path.isdir(output_path):
         shutil.rmtree(output_path, ignore_errors=True)
 
-    job.status = "cancelled"
-    job.completed_at = utcnow()
-    job.status_message = "Cancelled by user"
+    # Atomic status transition — prevents TOCTOU race where a concurrent
+    # worker could complete the job between our SELECT and this UPDATE.
+    now = utcnow()
+    upd = await db.execute(
+        update(Job)
+        .where(Job.id == job_id, Job.status.in_(("pending", "processing")))
+        .values(status="cancelled", completed_at=now, status_message="Cancelled by user")
+    )
+    if upd.rowcount == 0:
+        await db.refresh(job)
+        raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
+
     await db.commit()
-    await db.refresh(job)
 
     return {"cancelled": True, "job_id": job.id}
 

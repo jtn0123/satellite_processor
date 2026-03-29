@@ -12,6 +12,7 @@ from app.tasks.scheduling_tasks import (
     _delete_frame_files,
     _get_protected_frame_ids,
     _launch_schedule_job,
+    _pick_frames_for_deletion,
 )
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -394,6 +395,72 @@ class TestCollectStorageBasedDeletions:
         rule = SimpleNamespace(value=1, satellite=None)
         result = _collect_storage_based_deletions(session, rule, set())
         assert result == []
+
+
+# ── _pick_frames_for_deletion ──────────────────────────
+
+
+class TestPickFramesForDeletion:
+    def test_picks_oldest_until_excess_freed(self):
+        f1 = SimpleNamespace(id="f1", file_size=500, created_at=_utcnow())
+        f2 = SimpleNamespace(id="f2", file_size=500, created_at=_utcnow())
+        f3 = SimpleNamespace(id="f3", file_size=500, created_at=_utcnow())
+        session = MagicMock()
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+            f3,
+        ]
+
+        rule = SimpleNamespace(satellite=None)
+        result = _pick_frames_for_deletion(session, rule, set(), 800)
+        assert result == [f1, f2]
+
+    def test_skips_protected_ids(self):
+        f1 = SimpleNamespace(id="f1", file_size=500, created_at=_utcnow())
+        f2 = SimpleNamespace(id="f2", file_size=500, created_at=_utcnow())
+        session = MagicMock()
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+        ]
+
+        rule = SimpleNamespace(satellite=None)
+        result = _pick_frames_for_deletion(session, rule, {"f1"}, 400)
+        assert result == [f2]
+
+    def test_empty_batch_returns_empty(self):
+        session = MagicMock()
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = []
+
+        rule = SimpleNamespace(satellite=None)
+        assert _pick_frames_for_deletion(session, rule, set(), 1000) == []
+
+    def test_filters_by_satellite(self):
+        f1 = SimpleNamespace(id="f1", file_size=1000, created_at=_utcnow())
+        session = MagicMock()
+        query_mock = session.query.return_value.order_by.return_value
+        query_mock.filter.return_value.offset.return_value.limit.return_value.all.return_value = [f1]
+
+        rule = SimpleNamespace(satellite="GOES-16")
+        result = _pick_frames_for_deletion(session, rule, set(), 500)
+        assert result == [f1]
+        query_mock.filter.assert_called()
+
+    def test_none_file_size_counted_as_zero(self):
+        f1 = SimpleNamespace(id="f1", file_size=None, created_at=_utcnow())
+        f2 = SimpleNamespace(id="f2", file_size=1000, created_at=_utcnow())
+        session = MagicMock()
+        session.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [
+            f1,
+            f2,
+        ]
+
+        rule = SimpleNamespace(satellite=None)
+        result = _pick_frames_for_deletion(session, rule, set(), 500)
+        # f1 contributes 0 bytes, so both needed to reach 500
+        assert f1 in result
+        assert f2 in result
 
 
 # ── _delete_frame_files ─────────────────────────────────

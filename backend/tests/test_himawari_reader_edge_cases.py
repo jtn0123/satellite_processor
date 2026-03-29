@@ -13,6 +13,7 @@ import pytest
 from app.services.himawari_reader import (
     HSDHeader,
     _decompress_and_parse_segment,
+    _detect_segment_dimensions,
     _find_segment_info,
     _parse_block1,
     _parse_block2,
@@ -278,6 +279,49 @@ class TestMissingSegmentsAssembly:
         assert (full[40:50] == 42.0).all()
         assert np.isnan(full[0:40]).all()
         assert np.isnan(full[50:100]).all()
+
+
+# ---------------------------------------------------------------------------
+# _detect_segment_dimensions
+# ---------------------------------------------------------------------------
+
+
+class TestDetectSegmentDimensions:
+    """Tests for the dimension-detection helper extracted from assemble_segments."""
+
+    def test_infers_from_first_non_none(self):
+        segs: list[np.ndarray | None] = [None, np.ones((10, 20)), None]
+        width, lines = _detect_segment_dimensions(segs, None)
+        assert width == 20
+        assert lines == 10
+
+    def test_uses_expected_columns_when_all_none(self):
+        segs: list[np.ndarray | None] = [None, None]
+        width, lines = _detect_segment_dimensions(segs, 100)
+        assert width == 100
+        assert lines is None
+
+    def test_returns_none_when_no_info(self):
+        segs: list[np.ndarray | None] = [None, None]
+        width, lines = _detect_segment_dimensions(segs, None)
+        assert width is None
+        assert lines is None
+
+    def test_raises_on_width_mismatch(self):
+        segs: list[np.ndarray | None] = [np.ones((10, 20)), np.ones((10, 30))]
+        with pytest.raises(ValueError, match="width mismatch"):
+            _detect_segment_dimensions(segs, None)
+
+    def test_expected_columns_validates_against_segments(self):
+        segs: list[np.ndarray | None] = [np.ones((10, 20))]
+        with pytest.raises(ValueError, match="width mismatch"):
+            _detect_segment_dimensions(segs, 30)
+
+    def test_consistent_widths_accepted(self):
+        segs = [np.ones((10, 50)), np.ones((15, 50)), np.ones((10, 50))]
+        width, lines = _detect_segment_dimensions(segs, None)
+        assert width == 50
+        assert lines == 10  # first non-None segment's rows
 
 
 # ---------------------------------------------------------------------------

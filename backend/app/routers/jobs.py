@@ -235,19 +235,6 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.status not in ("pending", "processing"):
         raise APIError(400, "not_cancellable", f"Job is already {job.status}")
 
-    # Revoke Celery task
-    task_id = _get_job_task_id(job)
-    if task_id:
-        try:
-            celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
-            logger.warning(_REVOKE_FAIL_MSG, task_id)
-
-    # Clean up partial output files
-    output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
-    if os.path.isdir(output_path):
-        shutil.rmtree(output_path, ignore_errors=True)
-
     # Atomic status transition — prevents TOCTOU race where a concurrent
     # worker could complete the job between our SELECT and this UPDATE.
     now = utcnow()
@@ -261,6 +248,18 @@ async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
         raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
 
     await db.commit()
+
+    # Side effects only after successful atomic transition
+    task_id = _get_job_task_id(job)
+    if task_id:
+        try:
+            celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
+        except Exception:
+            logger.warning(_REVOKE_FAIL_MSG, task_id)
+
+    output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
+    if os.path.isdir(output_path):
+        shutil.rmtree(output_path, ignore_errors=True)
 
     return {"cancelled": True, "job_id": job.id}
 

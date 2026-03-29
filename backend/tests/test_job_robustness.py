@@ -84,11 +84,11 @@ class TestCancelJob:
 
     async def test_cancel_concurrent_completion_returns_conflict(self, client, db):
         """If job status changes between SELECT and atomic UPDATE, returns 409."""
+        from app.db.database import get_db
+        from app.main import app
         from sqlalchemy import update as sql_update
         from sqlalchemy.sql.dml import Update as UpdateStmt
 
-        from app.db.database import get_db
-        from app.main import app
         from tests.conftest import TestSessionLocal
 
         jid = _uuid()

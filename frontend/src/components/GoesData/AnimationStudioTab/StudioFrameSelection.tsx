@@ -59,7 +59,7 @@ export function StudioFrameSelection({
           <Film className="w-5 h-5 text-primary" /> Frame Selection
         </h3>
 
-        <div role="group" aria-label="Frame selection mode" className="flex gap-2">
+        <fieldset aria-label="Frame selection mode" className="flex gap-2 border-none p-0 m-0">
           <button
             onClick={() => setSelectionMode('filters')}
             aria-pressed={selectionMode === 'filters'}
@@ -74,7 +74,7 @@ export function StudioFrameSelection({
           >
             From Collection
           </button>
-        </div>
+        </fieldset>
 
         {selectionMode === 'filters' ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

@@ -340,23 +340,19 @@ class SatelliteImageProcessor:
                 return False
 
             # STAGE 4: Video Creation (single process)
-            if self.cancelled:
+            self.logger.info("Starting video creation stage...")
+            self._emit_status("🎥 Stage 4/4: Creating video...")
+            if not self._create_video(current_files, dirs["final"]):
                 return False
 
-            if current_files:
-                self.logger.info("Starting video creation stage...")
-                self._emit_status("🎥 Stage 4/4: Creating video...")
-                success = self._create_video(current_files, dirs["final"])
-                if success:
-                    video_files = list(dirs["final"].glob("*.mp4"))
-                    if video_files:
-                        self._emit_output_ready(video_files[0])
-                        self._emit_status("✨ Processing completed successfully!")
-                        return True
-                    self.logger.error("Video creation reported success but no .mp4 found in %s", dirs["final"])
-                    return False
+            video_files = list(dirs["final"].glob("*.mp4"))
+            if not video_files:
+                self.logger.error("Video creation reported success but no .mp4 found in %s", dirs["final"])
+                return False
 
-            return False
+            self._emit_output_ready(video_files[0])
+            self._emit_status("✨ Processing completed successfully!")
+            return True
 
         except Exception as e:
             self.logger.error(f"Processing error: {e}", exc_info=True)

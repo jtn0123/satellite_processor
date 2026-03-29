@@ -141,7 +141,13 @@ def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> 
     if total_bytes <= max_bytes:
         return []
 
-    excess = total_bytes - max_bytes
+    return _pick_frames_for_deletion(session, rule, protected_ids, total_bytes - max_bytes)
+
+
+def _pick_frames_for_deletion(session, rule, protected_ids: set[str], excess: int) -> list:
+    """Select oldest unprotected frames to free enough storage."""
+    from ..db.models import GoesFrame
+
     freed = 0
     result = []
     batch_size = 500

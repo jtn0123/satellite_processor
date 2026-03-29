@@ -1,3 +1,10 @@
+## [1.42.9](https://github.com/jtn0123/satellite_processor/compare/v1.42.8...v1.42.9) (2026-03-29)
+
+
+### Bug Fixes
+
+* sanitize frame_id in share link log statement (S5145) ([#380](https://github.com/jtn0123/satellite_processor/issues/380)) ([58fb7c1](https://github.com/jtn0123/satellite_processor/commit/58fb7c197c1d4bc343a25c177dd09b85b3c9d63e))
+
 ## [1.42.8](https://github.com/jtn0123/satellite_processor/compare/v1.42.7...v1.42.8) (2026-03-29)
 
 

@@ -145,11 +145,10 @@ export default function FrameGallery() {
         >
           {frames.map((frame) => {
             const isSelected = compareFrames.some((f) => f.id === frame.id);
-            const actionHint = compareMode
-              ? isSelected
-                ? ', selected for comparison'
-                : ', select for comparison'
-              : ', click to view';
+            let actionHint = ', click to view';
+            if (compareMode) {
+              actionHint = isSelected ? ', selected for comparison' : ', select for comparison';
+            }
             return (
               <button
                 key={frame.id}

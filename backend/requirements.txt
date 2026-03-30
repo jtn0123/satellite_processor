@@ -35,7 +35,7 @@ celery[redis]==5.6.2
 redis==6.4.0  # pinned until kombu 5.7.0 releases with redis 7 support
 
 # Logging
-python-json-logger==4.0.0
+python-json-logger==4.1.0
 
 # Testing
 httpx==0.28.1

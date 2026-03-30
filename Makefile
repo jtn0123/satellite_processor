@@ -13,7 +13,7 @@ deploy: build prod
 
 lint:
 	cd backend && python -m ruff check .
-	cd frontend && npx eslint src/ 2>/dev/null || true
+	cd frontend && npx eslint src/
 
 test:
 	cd backend && pip install -r requirements.txt -q && pytest -v --tb=short

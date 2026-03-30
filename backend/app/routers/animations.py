@@ -137,6 +137,9 @@ async def _create_animation_from_frames(
     return anim
 
 
+MAX_ANIMATION_FRAMES = 10_000
+
+
 async def _query_frame_ids(
     db: AsyncSession,
     satellite: str,
@@ -156,6 +159,7 @@ async def _query_frame_ids(
             GoesFrame.capture_time <= end_time,
         )
         .order_by(GoesFrame.capture_time.asc())
+        .limit(MAX_ANIMATION_FRAMES)
     )
     result = await db.execute(query)
     return [r[0] for r in result.all()]
@@ -256,7 +260,7 @@ async def create_animation(
             query = query.join(CollectionFrame, CollectionFrame.frame_id == GoesFrame.id).where(
                 CollectionFrame.collection_id == payload.collection_id
             )
-        query = query.order_by(GoesFrame.capture_time.asc())
+        query = query.order_by(GoesFrame.capture_time.asc()).limit(MAX_ANIMATION_FRAMES)
         result = await db.execute(query)
         frame_ids = [r[0] for r in result.all()]
 

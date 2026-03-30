@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import timedelta
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -46,7 +47,7 @@ class SharedFrameResponse(BaseModel):
 async def create_share_link(
     frame_id: str,
     db: DbSession,
-    hours: int = 72,
+    hours: Annotated[int, Query(ge=1, le=8760)] = 72,
 ):
     """Create a public share link for a frame (expires in N hours, default 72)."""
     logger.info("Creating share link: frame_id=%s, hours=%d", sanitize_log(frame_id), hours)

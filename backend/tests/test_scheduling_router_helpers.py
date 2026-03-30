@@ -126,10 +126,9 @@ class TestCollectStorageDeletions:
         total_result.scalar.return_value = 2 * 1024 * 1024 * 1024
 
         frames_result = MagicMock()
-        frames_result.all.return_value = [
-            ("f1", 1024 * 1024 * 1024),
-            ("f2", 1024 * 1024 * 1024),
-        ]
+        frames_result.__iter__ = MagicMock(
+            return_value=iter([("f1", 1024 * 1024 * 1024), ("f2", 1024 * 1024 * 1024)])
+        )
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
@@ -145,9 +144,7 @@ class TestCollectStorageDeletions:
 
         # Protected IDs are filtered in the query, so only unprotected returned
         frames_result = MagicMock()
-        frames_result.all.return_value = [
-            ("f2", 1024 * 1024 * 1024),
-        ]
+        frames_result.__iter__ = MagicMock(return_value=iter([("f2", 1024 * 1024 * 1024)]))
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]
@@ -162,10 +159,9 @@ class TestCollectStorageDeletions:
         total_result.scalar.return_value = 2 * 1024 * 1024 * 1024
 
         frames_result = MagicMock()
-        frames_result.all.return_value = [
-            ("f1", None),
-            ("f2", 2 * 1024 * 1024 * 1024),
-        ]
+        frames_result.__iter__ = MagicMock(
+            return_value=iter([("f1", None), ("f2", 2 * 1024 * 1024 * 1024)])
+        )
 
         db = AsyncMock()
         db.execute.side_effect = [total_result, frames_result]

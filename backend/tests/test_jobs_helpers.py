@@ -143,3 +143,51 @@ class TestDeleteJobFiles:
 
         mock_to_thread.assert_called_once_with(_calc_dir_size, "/tmp/output-dir")
         assert result == 5000
+
+    @pytest.mark.asyncio
+    async def test_to_thread_called_for_goes_dir(self):
+        """Verify goes_<job_id> directory is also cleaned via to_thread."""
+        job = SimpleNamespace(id="test-job-5", output_path=None)
+
+        frames_result = MagicMock()
+        frames_result.scalars.return_value.all.return_value = []
+        db = AsyncMock()
+        db.execute.return_value = frames_result
+
+        def isdir_side_effect(p):
+            # The output_path doesn't exist, but the goes_ dir does
+            return "goes_test-job-5" in p
+
+        with (
+            patch("app.routers.jobs.os.path.isdir", side_effect=isdir_side_effect),
+            patch("app.routers.jobs.asyncio.to_thread", return_value=3000) as mock_to_thread,
+            patch("app.routers.jobs.shutil.rmtree"),
+        ):
+            result = await _delete_job_files(db, job)
+
+        # Should have been called once for the goes_ dir
+        assert mock_to_thread.call_count == 1
+        assert result == 3000
+
+    @pytest.mark.asyncio
+    async def test_both_dirs_cleaned(self):
+        """Verify both output_path and goes_ directories are cleaned."""
+        job = SimpleNamespace(id="test-job-6", output_path="/tmp/my-output")
+
+        frames_result = MagicMock()
+        frames_result.scalars.return_value.all.return_value = []
+        db = AsyncMock()
+        db.execute.return_value = frames_result
+
+        with (
+            patch("app.routers.jobs.os.path.isdir", return_value=True),
+            patch("app.routers.jobs.asyncio.to_thread", return_value=2000) as mock_to_thread,
+            patch("app.routers.jobs.shutil.rmtree") as mock_rmtree,
+        ):
+            result = await _delete_job_files(db, job)
+
+        # to_thread called for both directories
+        assert mock_to_thread.call_count == 2
+        assert result == 4000
+        # rmtree called for both
+        assert mock_rmtree.call_count == 2

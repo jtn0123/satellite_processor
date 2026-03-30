@@ -103,13 +103,13 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
     if os.path.isdir(output_path):
         bytes_freed += await asyncio.to_thread(_calc_dir_size, output_path)
-        shutil.rmtree(output_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, output_path, True)
 
     # Also check goes_<job_id> pattern
     goes_dir = str(Path(settings.output_dir) / f"goes_{job.id}")
     if os.path.isdir(goes_dir):
         bytes_freed += await asyncio.to_thread(_calc_dir_size, goes_dir)
-        shutil.rmtree(goes_dir, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, goes_dir, True)
 
     # Delete associated GoesFrame records and their files/thumbnails
     frames_result = await db.execute(select(GoesFrame).where(GoesFrame.source_job_id == job.id))
@@ -123,10 +123,14 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
         if frame.file_path:
             bytes_freed += safe_remove(frame.file_path)
 
-    # Bulk delete CollectionFrame join records and frames in two queries
+    # Bulk delete CollectionFrame join records and frames in chunks
+    # to avoid exceeding DB bind-parameter limits on large jobs
     if frame_ids:
-        await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id.in_(frame_ids)))
-        await db.execute(GoesFrame.__table__.delete().where(GoesFrame.id.in_(frame_ids)))
+        chunk_size = 500
+        for i in range(0, len(frame_ids), chunk_size):
+            chunk = frame_ids[i : i + chunk_size]
+            await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id.in_(chunk)))
+            await db.execute(GoesFrame.__table__.delete().where(GoesFrame.id.in_(chunk)))
 
     # Note: Image records don't have source_job_id so we can't easily
     # link them back to jobs. The frame files are already deleted above.

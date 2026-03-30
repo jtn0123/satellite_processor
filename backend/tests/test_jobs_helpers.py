@@ -52,8 +52,8 @@ class TestGetJobTaskId:
 
 class TestDeleteJobFiles:
     @pytest.mark.asyncio
-    async def test_uses_asyncio_to_thread_for_dir_size(self):
-        """Verify _calc_dir_size runs via asyncio.to_thread (not blocking)."""
+    async def test_skips_to_thread_when_no_dirs_exist(self):
+        """Verify asyncio.to_thread is skipped when neither cleanup directory exists."""
         job = SimpleNamespace(
             id="test-job-1",
             output_path=None,
@@ -126,7 +126,9 @@ class TestDeleteJobFiles:
 
     @pytest.mark.asyncio
     async def test_to_thread_called_for_existing_dir(self):
-        """Verify asyncio.to_thread is used for directory size calculation."""
+        """Verify asyncio.to_thread is used for both size calc and rmtree."""
+        import shutil
+
         job = SimpleNamespace(id="test-job-4", output_path="/tmp/output-dir")
 
         frames_result = MagicMock()
@@ -134,14 +136,16 @@ class TestDeleteJobFiles:
         db = AsyncMock()
         db.execute.return_value = frames_result
 
+        # to_thread is called twice: once for _calc_dir_size (returns 5000), once for rmtree (returns None)
         with (
             patch("app.routers.jobs.os.path.isdir", side_effect=lambda p: p == "/tmp/output-dir"),
-            patch("app.routers.jobs.asyncio.to_thread", return_value=5000) as mock_to_thread,
-            patch("app.routers.jobs.shutil.rmtree"),
+            patch("app.routers.jobs.asyncio.to_thread", side_effect=[5000, None]) as mock_to_thread,
         ):
             result = await _delete_job_files(db, job)
 
-        mock_to_thread.assert_called_once_with(_calc_dir_size, "/tmp/output-dir")
+        assert mock_to_thread.call_count == 2
+        mock_to_thread.assert_any_call(_calc_dir_size, "/tmp/output-dir")
+        mock_to_thread.assert_any_call(shutil.rmtree, "/tmp/output-dir", True)
         assert result == 5000
 
     @pytest.mark.asyncio
@@ -158,15 +162,14 @@ class TestDeleteJobFiles:
             # The output_path doesn't exist, but the goes_ dir does
             return "goes_test-job-5" in p
 
+        # to_thread called twice for goes_dir: _calc_dir_size + rmtree
         with (
             patch("app.routers.jobs.os.path.isdir", side_effect=isdir_side_effect),
-            patch("app.routers.jobs.asyncio.to_thread", return_value=3000) as mock_to_thread,
-            patch("app.routers.jobs.shutil.rmtree"),
+            patch("app.routers.jobs.asyncio.to_thread", side_effect=[3000, None]) as mock_to_thread,
         ):
             result = await _delete_job_files(db, job)
 
-        # Should have been called once for the goes_ dir
-        assert mock_to_thread.call_count == 1
+        assert mock_to_thread.call_count == 2
         assert result == 3000
 
     @pytest.mark.asyncio
@@ -179,15 +182,12 @@ class TestDeleteJobFiles:
         db = AsyncMock()
         db.execute.return_value = frames_result
 
+        # 4 to_thread calls: calc_size(output) + rmtree(output) + calc_size(goes) + rmtree(goes)
         with (
             patch("app.routers.jobs.os.path.isdir", return_value=True),
-            patch("app.routers.jobs.asyncio.to_thread", return_value=2000) as mock_to_thread,
-            patch("app.routers.jobs.shutil.rmtree") as mock_rmtree,
+            patch("app.routers.jobs.asyncio.to_thread", side_effect=[2000, None, 2000, None]) as mock_to_thread,
         ):
             result = await _delete_job_files(db, job)
 
-        # to_thread called for both directories
-        assert mock_to_thread.call_count == 2
+        assert mock_to_thread.call_count == 4
         assert result == 4000
-        # rmtree called for both
-        assert mock_rmtree.call_count == 2

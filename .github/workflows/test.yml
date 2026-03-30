@@ -168,13 +168,21 @@ jobs:
           DATABASE_URL: postgresql+psycopg2://test:test@localhost:5432/test_sat
         run: alembic upgrade head
 
-      - name: Run integration tests
+      - name: Run integration tests with coverage
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_sat
           REDIS_URL: redis://localhost:6379/0
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10
+        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --cov=app --cov-report=xml:integration-coverage.xml
+
+      - name: Upload integration coverage artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: integration-coverage
+          path: backend/integration-coverage.xml
+          retention-days: 1
 
       - name: Run core processor tests
         env:
@@ -400,7 +408,7 @@ jobs:
   # SonarCloud analysis — runs after tests, even if they fail
   sonarqube:
     name: SonarCloud Scan
-    needs: [changes, backend, frontend]
+    needs: [changes, backend, integration, frontend]
     if: always() && needs.changes.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -451,6 +459,14 @@ jobs:
         with:
           name: core-coverage
           path: .
+
+      - name: Download integration coverage
+        id: dl-integration
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: integration-coverage
+          path: backend/
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6

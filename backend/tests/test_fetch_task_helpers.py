@@ -25,8 +25,11 @@ class TestNoFramesMessage:
 class TestBuildStatusMessage:
     def test_all_fetched_no_cap(self):
         msg, status = _build_status_message(
-            "GOES-16", "CONUS", "C02",
-            datetime(2025, 1, 1), datetime(2025, 1, 2),
+            "GOES-16",
+            "CONUS",
+            "C02",
+            datetime(2025, 1, 1),
+            datetime(2025, 1, 2),
             fetched_count=10,
             total_available=10,
             was_capped=False,
@@ -38,8 +41,11 @@ class TestBuildStatusMessage:
 
     def test_capped_no_failures(self):
         msg, status = _build_status_message(
-            "GOES-16", "CONUS", "C02",
-            datetime(2025, 1, 1), datetime(2025, 1, 2),
+            "GOES-16",
+            "CONUS",
+            "C02",
+            datetime(2025, 1, 1),
+            datetime(2025, 1, 2),
             fetched_count=50,
             total_available=200,
             was_capped=True,
@@ -52,8 +58,11 @@ class TestBuildStatusMessage:
 
     def test_some_failed(self):
         msg, status = _build_status_message(
-            "GOES-16", "CONUS", "C02",
-            datetime(2025, 1, 1), datetime(2025, 1, 2),
+            "GOES-16",
+            "CONUS",
+            "C02",
+            datetime(2025, 1, 1),
+            datetime(2025, 1, 2),
             fetched_count=8,
             total_available=10,
             was_capped=False,
@@ -66,8 +75,11 @@ class TestBuildStatusMessage:
 
     def test_zero_fetched(self):
         msg, status = _build_status_message(
-            "GOES-16", "CONUS", "C02",
-            datetime(2025, 1, 1), datetime(2025, 1, 2),
+            "GOES-16",
+            "CONUS",
+            "C02",
+            datetime(2025, 1, 1),
+            datetime(2025, 1, 2),
             fetched_count=0,
             total_available=5,
             was_capped=False,
@@ -79,8 +91,11 @@ class TestBuildStatusMessage:
 
     def test_capped_with_failures(self):
         msg, status = _build_status_message(
-            "GOES-16", "CONUS", "C02",
-            datetime(2025, 1, 1), datetime(2025, 1, 2),
+            "GOES-16",
+            "CONUS",
+            "C02",
+            datetime(2025, 1, 1),
+            datetime(2025, 1, 2),
             fetched_count=40,
             total_available=200,
             was_capped=True,

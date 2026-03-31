@@ -6,9 +6,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from satellite_processor.core.ffmpeg import (
+    DEFAULT_FPS,
+    MAX_FPS,
+    MIN_FPS,
     SUPPORTED_ENCODERS,
     VALID_IMAGE_EXTENSIONS,
     VALID_VIDEO_EXTENSIONS,
+    _clamp_fps,
     _collect_frame_files,
     _write_concat_file,
     build_ffmpeg_command,
@@ -19,6 +23,35 @@ from satellite_processor.core.ffmpeg import (
     get_supported_encoders,
     validate_encoder,
 )
+
+
+class TestClampFps:
+    def test_valid_fps(self):
+        assert _clamp_fps({"fps": 30}) == 30
+
+    def test_default_when_missing(self):
+        assert _clamp_fps({}) == DEFAULT_FPS
+
+    def test_clamp_zero_to_min(self):
+        assert _clamp_fps({"fps": 0}) == MIN_FPS
+
+    def test_clamp_negative_to_min(self):
+        assert _clamp_fps({"fps": -5}) == MIN_FPS
+
+    def test_clamp_high_to_max(self):
+        assert _clamp_fps({"fps": 999}) == MAX_FPS
+
+    def test_boundary_min(self):
+        assert _clamp_fps({"fps": MIN_FPS}) == MIN_FPS
+
+    def test_boundary_max(self):
+        assert _clamp_fps({"fps": MAX_FPS}) == MAX_FPS
+
+    def test_invalid_type_returns_default(self):
+        assert _clamp_fps({"fps": "abc"}) == DEFAULT_FPS
+
+    def test_none_returns_default(self):
+        assert _clamp_fps({"fps": None}) == DEFAULT_FPS
 
 
 class TestGetCodec:

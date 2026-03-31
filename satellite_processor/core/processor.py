@@ -222,6 +222,7 @@ class SatelliteImageProcessor:
         if sanchez_files:
             return self.file_manager.keep_file_order(sanchez_files)
         self.logger.warning("No files were processed with false color")
+        self._emit_status("⚠️ False color processing failed — using original images")
         return current_files
 
     def _stage_crop(

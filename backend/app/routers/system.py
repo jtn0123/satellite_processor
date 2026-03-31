@@ -9,6 +9,7 @@ from typing import Annotated
 
 import psutil
 from fastapi import APIRouter, Query
+from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy import func, select
 
 from ..db.database import DbSession
@@ -82,7 +83,7 @@ async def system_info():
 
         active = await asyncio.to_thread(_check_celery)
         worker_status = "online" if active else "offline"
-    except Exception:  # kombu.exceptions.OperationalError, redis errors, etc.
+    except (ConnectionError, TimeoutError, OSError, KombuOperationalError):
         worker_status = "offline"
 
     uptime_seconds = time.time() - _start_time

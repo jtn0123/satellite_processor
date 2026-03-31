@@ -1,3 +1,11 @@
+## [1.42.13](https://github.com/jtn0123/satellite_processor/compare/v1.42.12...v1.42.13) (2026-03-31)
+
+
+### Bug Fixes
+
+* add subprocess timeouts, safe file ops, and PIL context managers ([#402](https://github.com/jtn0123/satellite_processor/issues/402)) ([0ec7f6e](https://github.com/jtn0123/satellite_processor/commit/0ec7f6e437eeb2802fe43094b4ae6632cd14ea7a))
+* cap process pool size, fix timer race, terminate pool on cancel ([#403](https://github.com/jtn0123/satellite_processor/issues/403)) ([41bff52](https://github.com/jtn0123/satellite_processor/commit/41bff527de65031d8d4d05e4a478d6a9b43f23fc))
+
 ## [1.42.12](https://github.com/jtn0123/satellite_processor/compare/v1.42.11...v1.42.12) (2026-03-31)
 
 

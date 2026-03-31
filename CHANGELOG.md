@@ -1,3 +1,10 @@
+## [1.42.11](https://github.com/jtn0123/satellite_processor/compare/v1.42.10...v1.42.11) (2026-03-31)
+
+
+### Bug Fixes
+
+* **ci:** skip SonarCloud scan on Dependabot PRs ([#401](https://github.com/jtn0123/satellite_processor/issues/401)) ([3d95c62](https://github.com/jtn0123/satellite_processor/commit/3d95c624b75d740eaa02f0d4412c427d01443155))
+
 ## [1.42.10](https://github.com/jtn0123/satellite_processor/compare/v1.42.9...v1.42.10) (2026-03-31)
 
 

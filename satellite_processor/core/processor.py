@@ -360,7 +360,10 @@ class SatelliteImageProcessor:
             return False
         finally:
             if pool is not None:
-                pool.close()
+                if self.cancelled:
+                    pool.terminate()
+                else:
+                    pool.close()
                 pool.join()
             self._is_processing = False
 
@@ -490,6 +493,7 @@ class SatelliteImageProcessor:
         try:
             self._terminate_ffmpeg_processes()
             self.file_manager.cleanup()
+            self._stop_resource_timer()
             self._stop_optional_resource("resource_monitor", "stop")
             self._stop_optional_resource("update_timer", "cancel")
 
@@ -684,7 +688,7 @@ class SatelliteImageProcessor:
     def _setup_resource_monitoring(self):
         """Setup resource monitoring timer using threading"""
         try:
-            self._resource_timer_running = True
+            self._resource_timer_stop = threading.Event()
             self._resource_timer = threading.Timer(RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick)
             self._resource_timer.daemon = True
             self._resource_timer.start()
@@ -693,13 +697,22 @@ class SatelliteImageProcessor:
 
     def _resource_timer_tick(self):
         """Periodic resource monitoring tick"""
-        if not self._resource_timer_running:
+        if self._resource_timer_stop.is_set():
             return
         self.update_resource_usage()
-        if self._resource_timer_running:
+        if not self._resource_timer_stop.is_set():
             self._resource_timer = threading.Timer(RESOURCE_MONITOR_INTERVAL_SECONDS, self._resource_timer_tick)
             self._resource_timer.daemon = True
             self._resource_timer.start()
+
+    def _stop_resource_timer(self):
+        """Stop the resource monitoring timer."""
+        stop_event = getattr(self, "_resource_timer_stop", None)
+        if stop_event:
+            stop_event.set()
+        timer = getattr(self, "_resource_timer", None)
+        if timer:
+            timer.cancel()
 
     def _load_preferences(self) -> None:
         """Load processor preferences"""

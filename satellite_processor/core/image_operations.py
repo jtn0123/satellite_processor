@@ -276,7 +276,7 @@ class ImageOperations:
             return []
 
         logger.info(f"Starting batch processing with {len(images)} images")
-        num_processes = max(1, multiprocessing.cpu_count() - 1)
+        num_processes = min(max(1, multiprocessing.cpu_count() - 1), 16)
         chunk_size = max(1, len(images) // num_processes)
 
         with multiprocessing.Pool(processes=num_processes, initializer=ImageOperations._init_worker) as pool:

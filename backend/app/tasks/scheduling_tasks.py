@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 from datetime import timedelta
 
@@ -11,7 +10,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
-from ..utils import utcnow
+from ..utils import safe_remove, utcnow
 from .helpers import _get_sync_db
 
 logger = logging.getLogger(__name__)
@@ -173,10 +172,7 @@ def _delete_frame_files(frame):
     """Remove a frame's files from disk."""
     for path in [frame.file_path, frame.thumbnail_path]:
         if path:
-            try:
-                os.remove(path)
-            except OSError:
-                logger.warning("Failed to delete frame file: %s", path, exc_info=True)
+            safe_remove(path)
 
 
 @celery_app.task(bind=True, name="run_cleanup", soft_time_limit=600, time_limit=660)

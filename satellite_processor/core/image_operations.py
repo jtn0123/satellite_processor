@@ -35,8 +35,16 @@ class ImageOperations:
     """Static methods for image processing"""
 
     @staticmethod
-    def crop_image(img: np.ndarray, x: int, y: int, width: int, height: int) -> np.ndarray:
-        """Crop the image to the specified rectangle."""
+    def crop_image(img: np.ndarray, x: int, y: int, width: int, height: int) -> np.ndarray | None:
+        """Crop the image to the specified rectangle, clamping to image bounds."""
+        img_h, img_w = img.shape[:2]
+        x = max(0, min(x, img_w))
+        y = max(0, min(y, img_h))
+        width = min(width, img_w - x)
+        height = min(height, img_h - y)
+        if width <= 0 or height <= 0:
+            logger.warning("Crop region is empty after clamping to image bounds (%dx%d)", img_w, img_h)
+            return None
         return img[y : y + height, x : x + width]
 
     @staticmethod

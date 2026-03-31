@@ -14,6 +14,8 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 from .goes_fetcher import _get_s3_client, _retry_s3_operation
 from .satellite_registry import SATELLITE_REGISTRY
 
@@ -129,7 +131,7 @@ def list_himawari_timestamps(
 
     try:
         objects = _list_s3_keys(bucket, prefix)
-    except Exception:
+    except (ClientError, BotoCoreError, ConnectionError, TimeoutError):
         logger.warning("Failed listing Himawari S3 %s/%s", bucket, prefix, exc_info=True)
         return []
 

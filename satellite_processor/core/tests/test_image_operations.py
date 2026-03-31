@@ -45,6 +45,36 @@ class TestCropImage:
 
         assert np.array_equal(cropped, img[y : y + h, x : x + w])
 
+    def test_crop_out_of_bounds_clamps(self):
+        """Test cropping with out-of-bounds coordinates clamps to image."""
+        img = np.ones((100, 200, 3), dtype=np.uint8)
+        cropped = ImageOperations.crop_image(img, x=150, y=50, width=100, height=100)
+
+        # width clamped to 200-150=50, height clamped to 100-50=50
+        assert cropped is not None
+        assert cropped.shape == (50, 50, 3)
+
+    def test_crop_negative_coords_clamps_to_zero(self):
+        """Negative coordinates are clamped to 0."""
+        img = np.ones((100, 100, 3), dtype=np.uint8)
+        # x=-10 clamps to 0, y=-5 clamps to 0
+        cropped = ImageOperations.crop_image(img, x=-10, y=-5, width=50, height=50)
+
+        assert cropped is not None
+        assert cropped.shape == (50, 50, 3)
+
+    def test_crop_completely_outside_returns_none(self):
+        """Crop region entirely outside image returns None."""
+        img = np.ones((100, 100, 3), dtype=np.uint8)
+        result = ImageOperations.crop_image(img, x=200, y=200, width=50, height=50)
+        assert result is None
+
+    def test_crop_zero_dimensions_returns_none(self):
+        """Zero-size crop returns None."""
+        img = np.ones((100, 100, 3), dtype=np.uint8)
+        result = ImageOperations.crop_image(img, x=0, y=0, width=0, height=50)
+        assert result is None
+
 
 class TestAddTimestamp:
     """Tests for ImageOperations.add_timestamp()"""

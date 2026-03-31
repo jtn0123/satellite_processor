@@ -23,6 +23,25 @@ logger = logging.getLogger(__name__)
 # --- Constants ---
 DEFAULT_BITRATE = "5000k"
 DEFAULT_FPS = 30
+MIN_FPS = 1
+MAX_FPS = 120
+
+
+def _clamp_fps(options: dict) -> int:
+    """Return a valid FPS value from options, clamped to [MIN_FPS, MAX_FPS]."""
+    fps = options.get("fps", DEFAULT_FPS)
+    try:
+        fps = int(fps)
+    except (TypeError, ValueError):
+        logger.warning("Invalid fps value %r, using default %d", fps, DEFAULT_FPS)
+        return DEFAULT_FPS
+    if fps < MIN_FPS or fps > MAX_FPS:
+        clamped = max(MIN_FPS, min(MAX_FPS, fps))
+        logger.warning("FPS %d out of range [%d, %d], clamped to %d", fps, MIN_FPS, MAX_FPS, clamped)
+        return clamped
+    return fps
+
+
 DEFAULT_PRESET = "slow"
 HIGH_BITRATE = "35M"
 HIGH_MAXRATE = "45M"
@@ -229,6 +248,7 @@ def _build_concat_input(
     input_dir: Path,
     options: dict,
     is_unc_path: bool,
+    fps: int = DEFAULT_FPS,
 ) -> tuple[list[str], Path | None]:
     """Build the input portion of the FFmpeg command using concat demuxer or pattern."""
     if is_unc_path:
@@ -241,7 +261,7 @@ def _build_concat_input(
             str(ffmpeg_path).replace("\\", "/"),
             "-y",
             "-framerate",
-            str(options.get("fps", DEFAULT_FPS)),
+            str(fps),
             "-i",
             input_pattern,
         ]
@@ -302,13 +322,14 @@ def build_ffmpeg_command(
         input_str = str(input_dir).replace("\\", "/")
         is_unc_path = input_str.startswith("//") or str(input_dir).startswith("\\\\")
 
-        cmd, temp_dir = _build_concat_input(ffmpeg_path, input_dir, options, is_unc_path)
+        fps = _clamp_fps(options)
+        cmd, temp_dir = _build_concat_input(ffmpeg_path, input_dir, options, is_unc_path, fps)
 
         if metadata := options.get("metadata"):
             for key, value in metadata.items():
                 cmd.extend(["-metadata", f'{key}="{value}"'])
 
-        cmd.extend(["-framerate", str(options.get("fps", DEFAULT_FPS))])
+        cmd.extend(["-framerate", str(fps)])
 
         hardware = options.get("hardware", "CPU")
         _append_hardware_flags(cmd, hardware)

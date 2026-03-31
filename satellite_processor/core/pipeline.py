@@ -119,7 +119,10 @@ class FalseColorStage(Stage):
             if progress_callback:
                 progress_callback(self.name, int((idx + 1) / total * 100))
 
-        return self.order_fn(results) if results else image_paths
+        if results:
+            return self.order_fn(results)
+        logger.warning("No files were processed with false color — using originals")
+        return image_paths
 
 
 class TimestampStage(Stage):

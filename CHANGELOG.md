@@ -1,3 +1,10 @@
+## [1.42.14](https://github.com/jtn0123/satellite_processor/compare/v1.42.13...v1.42.14) (2026-03-31)
+
+
+### Bug Fixes
+
+* FPS validation, crop bounds check, narrow except blocks ([#404](https://github.com/jtn0123/satellite_processor/issues/404)) ([665065e](https://github.com/jtn0123/satellite_processor/commit/665065e2c81d068a74a0f4ba319dddab21a70159))
+
 ## [1.42.13](https://github.com/jtn0123/satellite_processor/compare/v1.42.12...v1.42.13) (2026-03-31)
 
 

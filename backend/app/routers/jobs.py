@@ -1,5 +1,6 @@
 """Job CRUD and processing endpoints - dispatches to Celery workers"""
 
+import asyncio
 import logging
 import os
 import shutil
@@ -84,7 +85,7 @@ def _get_job_task_id(job: Job) -> str | None:
 
 
 def _calc_dir_size(path: str) -> int:
-    """Calculate total size of a directory in bytes."""
+    """Calculate total size of a directory in bytes (sync — call via to_thread)."""
     total = 0
     p = Path(path)
     if p.is_dir():
@@ -98,32 +99,47 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     """Delete all files and DB records associated with a job. Returns bytes freed."""
     bytes_freed = 0
 
-    # Delete output directory
+    # Delete output directory (run sync I/O off the event loop)
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
     if os.path.isdir(output_path):
-        bytes_freed += _calc_dir_size(output_path)
-        shutil.rmtree(output_path, ignore_errors=True)
+        bytes_freed += await asyncio.to_thread(_calc_dir_size, output_path)
+        await asyncio.to_thread(shutil.rmtree, output_path, True)
 
     # Also check goes_<job_id> pattern
     goes_dir = str(Path(settings.output_dir) / f"goes_{job.id}")
     if os.path.isdir(goes_dir):
-        bytes_freed += _calc_dir_size(goes_dir)
-        shutil.rmtree(goes_dir, ignore_errors=True)
+        bytes_freed += await asyncio.to_thread(_calc_dir_size, goes_dir)
+        await asyncio.to_thread(shutil.rmtree, goes_dir, True)
 
     # Delete associated GoesFrame records and their files/thumbnails
     frames_result = await db.execute(select(GoesFrame).where(GoesFrame.source_job_id == job.id))
     frames = frames_result.scalars().all()
 
+    frame_ids = []
+    paths_to_remove: list[str] = []
     for frame in frames:
+        frame_ids.append(frame.id)
         if frame.thumbnail_path:
-            bytes_freed += safe_remove(frame.thumbnail_path)
+            paths_to_remove.append(frame.thumbnail_path)
         if frame.file_path:
-            bytes_freed += safe_remove(frame.file_path)
+            paths_to_remove.append(frame.file_path)
 
-        # Delete CollectionFrame join records
-        await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id == frame.id))
+    # Batch file removal off the event loop
+    if paths_to_remove:
 
-        await db.delete(frame)
+        def _remove_all() -> int:
+            return sum(safe_remove(p) for p in paths_to_remove)
+
+        bytes_freed += await asyncio.to_thread(_remove_all)
+
+    # Bulk delete CollectionFrame join records and frames in chunks
+    # to avoid exceeding DB bind-parameter limits on large jobs
+    if frame_ids:
+        chunk_size = 500
+        for i in range(0, len(frame_ids), chunk_size):
+            chunk = frame_ids[i : i + chunk_size]
+            await db.execute(CollectionFrame.__table__.delete().where(CollectionFrame.frame_id.in_(chunk)))
+            await db.execute(GoesFrame.__table__.delete().where(GoesFrame.id.in_(chunk)))
 
     # Note: Image records don't have source_job_id so we can't easily
     # link them back to jobs. The frame files are already deleted above.

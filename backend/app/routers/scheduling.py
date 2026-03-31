@@ -489,17 +489,18 @@ async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[
     if total_bytes <= max_bytes:
         return set()
 
-    # Bug #10: Select only ID and file_size columns instead of full objects
+    # Bug #10: Select only ID and file_size columns instead of full objects.
+    # Iterate without .all() to avoid creating a second copy of all rows.
     query = select(GoesFrame.id, GoesFrame.file_size).order_by(GoesFrame.created_at.asc())
     if rule.satellite:
         query = query.where(GoesFrame.satellite == rule.satellite)
     if protected_ids:
         query = query.where(GoesFrame.id.notin_(protected_ids))
-    res = await db.execute(query)
+    result = await db.execute(query)
     excess = total_bytes - max_bytes
     freed = 0
     ids: set[str] = set()
-    for frame_id, file_size in res.all():
+    for frame_id, file_size in result:
         if freed >= excess:
             break
         ids.add(frame_id)

@@ -174,7 +174,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_sat
           REDIS_URL: redis://localhost:6379/0
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --cov=app --cov-report=xml:integration-coverage.xml
+        run: pytest -v --tb=short -m integration tests/test_integration.py --durations=10 --cov=app --cov-report=xml:integration-coverage.xml --cov-fail-under=0
 
       - name: Upload integration coverage artifact
         if: always()

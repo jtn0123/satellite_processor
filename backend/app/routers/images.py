@@ -31,17 +31,6 @@ _IMAGE_NOT_FOUND = "Image not found"
 router = APIRouter(prefix="/api/images", tags=["images"])
 
 
-def _validate_file_path(file_path: str) -> Path:
-    """#23: Validate that a file path is within the configured storage directory."""
-    from ..config import settings as app_settings
-
-    storage_root = Path(app_settings.storage_path).resolve()
-    resolved = Path(file_path).resolve()
-    if not str(resolved).startswith(str(storage_root)):
-        raise APIError(403, "forbidden", "File path outside storage directory")
-    return resolved
-
-
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB

@@ -107,6 +107,25 @@ class TestDeleteJobFiles:
         assert db.execute.call_count == 4
 
     @pytest.mark.asyncio
+    async def test_bulk_deletes_chunks_large_frame_sets(self):
+        """Verify frames are deleted in chunks when exceeding chunk_size of 500."""
+        frames = [SimpleNamespace(id=f"f{i}", file_path=None, thumbnail_path=None) for i in range(501)]
+
+        job = SimpleNamespace(id="test-job-chunked", output_path=None)
+
+        frames_result = MagicMock()
+        frames_result.scalars.return_value.all.return_value = frames
+
+        db = AsyncMock()
+        db.execute.return_value = frames_result
+
+        with patch("app.routers.jobs.os.path.isdir", return_value=False):
+            await _delete_job_files(db, job)
+
+        # 1 (select frames) + 2 (CF deletes for 2 chunks) + 2 (GF deletes for 2 chunks) + 1 (JobLog) = 6
+        assert db.execute.call_count == 6
+
+    @pytest.mark.asyncio
     async def test_no_frames_skips_bulk_delete(self):
         """When no frames exist, bulk delete queries should not be executed."""
         job = SimpleNamespace(id="test-job-3", output_path=None)

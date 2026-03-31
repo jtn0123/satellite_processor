@@ -116,12 +116,21 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
     frames = frames_result.scalars().all()
 
     frame_ids = []
+    paths_to_remove: list[str] = []
     for frame in frames:
         frame_ids.append(frame.id)
         if frame.thumbnail_path:
-            bytes_freed += safe_remove(frame.thumbnail_path)
+            paths_to_remove.append(frame.thumbnail_path)
         if frame.file_path:
-            bytes_freed += safe_remove(frame.file_path)
+            paths_to_remove.append(frame.file_path)
+
+    # Batch file removal off the event loop
+    if paths_to_remove:
+
+        def _remove_all() -> int:
+            return sum(safe_remove(p) for p in paths_to_remove)
+
+        bytes_freed += await asyncio.to_thread(_remove_all)
 
     # Bulk delete CollectionFrame join records and frames in chunks
     # to avoid exceeding DB bind-parameter limits on large jobs

@@ -49,8 +49,8 @@ def _load_band_images(
         )
         frame = session.execute(query).scalars().first()
         if frame and Path(frame.file_path).exists():
-            img = PILImage.open(frame.file_path).convert("L")
-            band_images.append(np.array(img, dtype=np.float32))
+            with PILImage.open(frame.file_path) as img:
+                band_images.append(np.array(img.convert("L"), dtype=np.float32))
         else:
             band_images.append(None)
     return band_images

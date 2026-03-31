@@ -329,7 +329,14 @@ class VideoHandler:
                 with self._processor._ffmpeg_lock:
                     self._processor._ffmpeg_processes.add(process)
 
+            start_time = time.monotonic()
             while process.poll() is None:
+                elapsed = time.monotonic() - start_time
+                if elapsed > FFMPEG_TIMEOUT_SECONDS:
+                    self.logger.error("FFmpeg timed out after %ds, killing process", FFMPEG_TIMEOUT_SECONDS)
+                    process.kill()
+                    process.wait()
+                    return False
                 if process.stderr:
                     line = process.stderr.readline()
                     if line:

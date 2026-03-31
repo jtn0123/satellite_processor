@@ -88,13 +88,18 @@ class ImageOperations:
             logger.info(f"Command: {' '.join(cmd)}")
 
             # Run Sanchez from its directory
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                shell=False,
-                cwd=str(sanchez_dir),
-            )
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    shell=False,
+                    cwd=str(sanchez_dir),
+                    timeout=300,
+                )
+            except subprocess.TimeoutExpired:
+                logger.error("Sanchez timed out after 300s for %s", input_path)
+                return False
 
             if result.returncode != 0:
                 logger.error(f"Sanchez error: {result.stderr}")

@@ -1,3 +1,10 @@
+## [1.42.10](https://github.com/jtn0123/satellite_processor/compare/v1.42.9...v1.42.10) (2026-03-31)
+
+
+### Bug Fixes
+
+* resolve backend performance and safety issues ([#385](https://github.com/jtn0123/satellite_processor/issues/385)) ([9741364](https://github.com/jtn0123/satellite_processor/commit/9741364d86a574fe38653c11ded72f916b2e6bf8))
+
 ## [1.42.9](https://github.com/jtn0123/satellite_processor/compare/v1.42.8...v1.42.9) (2026-03-29)
 
 

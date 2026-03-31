@@ -1,3 +1,10 @@
+## [1.42.12](https://github.com/jtn0123/satellite_processor/compare/v1.42.11...v1.42.12) (2026-03-31)
+
+
+### Bug Fixes
+
+* **security:** pin axios to 1.14.0, remove malicious plain-crypto-js ([#405](https://github.com/jtn0123/satellite_processor/issues/405)) ([e3088fe](https://github.com/jtn0123/satellite_processor/commit/e3088fea9a441e272a59b899ebcdc0137c0f2af5))
+
 ## [1.42.11](https://github.com/jtn0123/satellite_processor/compare/v1.42.10...v1.42.11) (2026-03-31)
 
 

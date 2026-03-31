@@ -409,7 +409,7 @@ jobs:
   sonarqube:
     name: SonarCloud Scan
     needs: [changes, backend, integration, frontend]
-    if: always() && needs.changes.result == 'success'
+    if: always() && needs.changes.result == 'success' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:

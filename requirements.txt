@@ -11,7 +11,7 @@ opencv-python-headless==4.13.0.92
 # Utilities
 python-dateutil==2.9.0.post0
 pyyaml==6.0.3
-requests==2.33.0
+requests==2.33.1
 
 # Observability
 prometheus_client>=0.20

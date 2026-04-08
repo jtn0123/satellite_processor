@@ -1,3 +1,10 @@
+## [1.42.15](https://github.com/jtn0123/satellite_processor/compare/v1.42.14...v1.42.15) (2026-04-08)
+
+
+### Bug Fixes
+
+* npm audit fix — resolve picomatch vulnerability in frontend ([336c51a](https://github.com/jtn0123/satellite_processor/commit/336c51a913b1e82f0a65cfa9f1c6ae8a65620d21))
+
 ## [1.42.14](https://github.com/jtn0123/satellite_processor/compare/v1.42.13...v1.42.14) (2026-03-31)
 
 

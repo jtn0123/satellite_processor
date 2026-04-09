@@ -20,6 +20,7 @@ import {
   Monitor,
 } from 'lucide-react';
 import api from '../api/client';
+import type { AppSettingsResponse, SettingsUpdate } from '../api/types';
 import { formatBytes } from '../utils/format';
 
 const CleanupTab = lazy(() => import('../components/GoesData/CleanupTab'));
@@ -248,9 +249,9 @@ function extractBackendValidationError(
 
 /* ─── Tab content components ─── */
 
-function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
+function ConfigTabContent({ settings }: Readonly<{ settings: AppSettingsResponse }>) {
   const updateSettings = useUpdateSettings();
-  const [form, setForm] = useState<Record<string, unknown>>(settings);
+  const [form, setForm] = useState<AppSettingsResponse>(settings);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   // JTN-434 ISSUE-039: track which field is currently invalid so we can set
@@ -287,7 +288,22 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
       setInvalidField('max_frames_per_fetch');
       return;
     }
-    updateSettings.mutate(form, {
+    // Build an explicit SettingsUpdate payload — the form state may carry
+    // extra fields coming back from GET /api/settings that the strict
+    // ``extra="forbid"`` PUT schema would reject. Only forward the keys the
+    // backend knows about.
+    const payload: SettingsUpdate = {
+      default_crop: form.default_crop,
+      default_false_color: form.default_false_color,
+      timestamp_enabled: form.timestamp_enabled,
+      timestamp_position: form.timestamp_position,
+      video_fps: form.video_fps,
+      video_codec: form.video_codec,
+      video_quality: form.video_quality,
+      max_frames_per_fetch: form.max_frames_per_fetch,
+      webhook_url: form.webhook_url,
+    };
+    updateSettings.mutate(payload, {
       onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
       onError: (err: unknown) => {
         // Surface backend 422 messages (e.g. "video_fps must be ≥ 1") inline
@@ -314,8 +330,13 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
             </label>
             <select
               id="false-color"
-              value={(form.default_false_color as string) ?? 'vegetation'}
-              onChange={(e) => setForm({ ...form, default_false_color: e.target.value })}
+              value={form.default_false_color ?? 'vegetation'}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  default_false_color: e.target.value as AppSettingsResponse['default_false_color'],
+                })
+              }
               className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             >
               <option value="vegetation">Vegetation (NDVI)</option>
@@ -333,7 +354,7 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               <input
                 id="timestamp-enabled"
                 type="checkbox"
-                checked={(form.timestamp_enabled as boolean) ?? true}
+                checked={form.timestamp_enabled ?? true}
                 onChange={(e) => setForm({ ...form, timestamp_enabled: e.target.checked })}
                 className="w-4 h-4"
               />
@@ -357,8 +378,13 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
             </label>
             <select
               id="timestamp-position"
-              value={(form.timestamp_position as string) ?? 'bottom-left'}
-              onChange={(e) => setForm({ ...form, timestamp_position: e.target.value })}
+              value={form.timestamp_position ?? 'bottom-left'}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  timestamp_position: e.target.value as AppSettingsResponse['timestamp_position'],
+                })
+              }
               className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             >
               <option value="top-left">Top Left</option>
@@ -376,7 +402,7 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               type="number"
               min={1}
               max={120}
-              value={(form.video_fps as number) ?? 24}
+              value={form.video_fps ?? 24}
               onChange={(e) => {
                 setForm({ ...form, video_fps: Number(e.target.value) });
                 if (invalidField === 'video_fps') setInvalidField(null);
@@ -406,8 +432,13 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
             </label>
             <select
               id="video-codec"
-              value={(form.video_codec as string) ?? 'h264'}
-              onChange={(e) => setForm({ ...form, video_codec: e.target.value })}
+              value={form.video_codec ?? 'h264'}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  video_codec: e.target.value as AppSettingsResponse['video_codec'],
+                })
+              }
               className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             >
               <option value="h264">H.264</option>
@@ -424,7 +455,7 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               type="number"
               min={50}
               max={1000}
-              value={(form.max_frames_per_fetch as number) ?? 200}
+              value={form.max_frames_per_fetch ?? 200}
               onChange={(e) => setForm({ ...form, max_frames_per_fetch: Number(e.target.value) })}
               className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             />
@@ -441,7 +472,7 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               type="number"
               min={0}
               max={51}
-              value={(form.video_quality as number) ?? 23}
+              value={form.video_quality ?? 23}
               onChange={(e) => setForm({ ...form, video_quality: Number(e.target.value) })}
               className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             />
@@ -526,7 +557,7 @@ function SystemTabContent() {
 
 /* ─── Main component ─── */
 
-function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
+function SettingsForm({ settings }: Readonly<{ settings: AppSettingsResponse }>) {
   const [searchParams, setSearchParams] = useSearchParams();
   // JTN-476 ISSUE-077: normalize ?tab= to lowercase so `?tab=DATA` and
   // `?tab=data` both select the Data tab.
@@ -644,7 +675,5 @@ export default function SettingsPage() {
     );
   }
 
-  return (
-    <SettingsForm key={JSON.stringify(settings)} settings={settings as Record<string, unknown>} />
-  );
+  return <SettingsForm key={JSON.stringify(settings)} settings={settings} />;
 }

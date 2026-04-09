@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ProcessingParams } from '../api/types';
 
 // Mock child components to isolate Process page
 vi.mock('../components/ImageGallery/ImageGallery', () => ({
@@ -23,7 +24,7 @@ vi.mock('../components/Processing/ProcessingForm', () => ({
     initialParams,
   }: {
     selectedImages: string[];
-    initialParams: Record<string, unknown> | null;
+    initialParams: ProcessingParams | null;
   }) => (
     <div data-testid="processing-form">
       <span data-testid="selected-count">{selectedImages.length}</span>
@@ -33,9 +34,16 @@ vi.mock('../components/Processing/ProcessingForm', () => ({
 }));
 
 vi.mock('../components/Processing/PresetManager', () => ({
-  default: ({ onLoadPreset }: { onLoadPreset: (params: Record<string, unknown>) => void }) => (
+  default: ({ onLoadPreset }: { onLoadPreset: (params: ProcessingParams) => void }) => (
     <div data-testid="preset-manager">
-      <button data-testid="load-preset" onClick={() => onLoadPreset({ crop: true })}>
+      <button
+        data-testid="load-preset"
+        onClick={() =>
+          onLoadPreset({
+            crop: { enabled: true, x: 0, y: 0, w: 100, h: 100 },
+          })
+        }
+      >
         Load
       </button>
     </div>

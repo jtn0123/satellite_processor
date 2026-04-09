@@ -4,13 +4,6 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { BookOpen, Trash2, Pencil, Check, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
-interface Preset {
-  id: string;
-  name: string;
-  params: Record<string, unknown>;
-  created_at: string;
-}
-
 export default function PresetsPage() {
   usePageTitle('Presets');
   const { data: presets = [], isLoading } = usePresets();
@@ -32,7 +25,7 @@ export default function PresetsPage() {
     );
   };
 
-  const presetList = presets as Preset[];
+  const presetList = presets;
 
   if (isLoading) {
     return (

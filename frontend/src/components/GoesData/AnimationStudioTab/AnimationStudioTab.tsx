@@ -77,7 +77,22 @@ export default function AnimationStudioTab() {
 
   const createMutation = useMutation({
     mutationFn: () => {
-      const payload: Record<string, unknown> = {
+      interface AnimationCreatePayload {
+        name: string;
+        fps: number;
+        format: 'mp4' | 'gif';
+        quality: 'low' | 'medium' | 'high';
+        false_color: boolean;
+        scale: string;
+        crop_preset_id?: string;
+        satellite?: string;
+        band?: string;
+        sector?: string;
+        start_date?: string;
+        end_date?: string;
+        collection_id?: string;
+      }
+      const payload: AnimationCreatePayload = {
         name: animName || `Animation ${new Date().toLocaleString()}`,
         fps,
         format,

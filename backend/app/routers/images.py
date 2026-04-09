@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 
 from ..db.database import DbSession
 from ..db.models import Image
-from ..errors import APIError, validate_safe_path, validate_uuid
+from ..errors import API_ERROR_RESPONSES, APIError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..models.image import ImageResponse
 from ..models.pagination import PaginatedResponse
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 _IMAGE_NOT_FOUND = "Image not found"
 
-router = APIRouter(prefix="/api/images", tags=["images"])
+router = APIRouter(prefix="/api/images", tags=["images"], responses=API_ERROR_RESPONSES)
 
 
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}

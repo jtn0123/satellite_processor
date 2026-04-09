@@ -97,9 +97,14 @@ export default function CdnImage({
     );
   }
 
+  // On mobile (<md) we let the wrapper be only as tall as the image
+  // (`h-auto`) so landscape-aspect frames take their natural display
+  // height instead of being letterboxed inside a tall flex-1 container.
+  // See JTN-428 — the image was visually pinned to the top ~30% of the
+  // viewport on iPhone-sized screens.
   return (
     <div
-      className="relative w-full h-full overflow-hidden md:rounded-lg md:border md:border-white/10 bg-slate-900"
+      className="relative w-full h-auto md:h-full max-h-full flex items-center justify-center overflow-hidden md:rounded-lg md:border md:border-white/10 bg-slate-900"
       data-testid="live-image-container"
     >
       {/* Cached image banner — absolute overlay, dismissible */}
@@ -135,7 +140,7 @@ export default function CdnImage({
         onError={handleError}
         onLoad={handleLoad}
         loading="eager"
-        className={`${className ?? ''} w-full h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`${className ?? ''} w-full h-auto max-h-full md:h-full object-contain md:rounded-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         {...props}
       />
     </div>

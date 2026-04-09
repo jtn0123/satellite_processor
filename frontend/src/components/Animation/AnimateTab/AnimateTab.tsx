@@ -10,18 +10,23 @@ import type { AnimationConfig, AnimationPreset, PreviewRangeResponse } from '../
 import type { PaginatedAnimations, CollectionType } from '../../GoesData/types';
 import { SATELLITES } from '../types';
 import { extractArray } from '../../../utils/safeData';
+import { defaultDateTimeRange } from '../../ui/dateTimeHelpers';
 
 import { QuickStartChips } from './QuickStartChips';
 import { AnimationHistory } from './AnimationHistory';
 import { CreateAnimationForm } from './CreateAnimationForm';
 import { MobileSettingsPanel } from './MobileSettingsPanel';
 
+// Default to "last hour → now" so the native datetime-local picker has a
+// real starting value (avoids Month=0 spinbutton state — see JTN-422).
+const DEFAULT_RANGE = defaultDateTimeRange(1);
+
 const DEFAULT_CONFIG: AnimationConfig = {
   satellite: SATELLITES[0],
   sector: 'CONUS',
   band: 'C02',
-  start_date: '',
-  end_date: '',
+  start_date: DEFAULT_RANGE.start,
+  end_date: DEFAULT_RANGE.end,
   fps: 10,
   format: 'mp4',
   quality: 'medium',

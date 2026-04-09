@@ -304,7 +304,10 @@ export function LiveImageArea(props: LiveImageAreaProps) {
       ? Math.floor((nowMs - new Date(frame.capture_time).getTime()) / 60000)
       : null;
 
-  const containerClass = `relative flex-1 ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`;
+  // JTN-428: on mobile we let CdnImage take its intrinsic height and
+  // vertically-center it in the flex-1 viewport, so landscape-aspect
+  // frames no longer cluster at the top of a tall letterboxed area.
+  const containerClass = `relative flex-1 flex items-center justify-center ${zoom.isZoomed ? 'overflow-clip' : 'overflow-hidden'}${isFullscreen ? ' fixed inset-0 z-50' : ''}`;
 
   function handleContainerTouchStart(e: ReactTouchEvent) {
     if (!compareMode) {

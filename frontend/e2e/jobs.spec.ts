@@ -44,7 +44,8 @@ test.describe('Jobs page - with data', () => {
   });
 
   test('job list renders with mocked data', async ({ page }) => {
+    // JTN-434 ISSUE-023: job_type now rendered via formatJobType.
     await page.goto('/jobs');
-    await expect(page.locator('text=image_process').first()).toBeVisible();
+    await expect(page.locator('text=Image Process').first()).toBeVisible();
   });
 });

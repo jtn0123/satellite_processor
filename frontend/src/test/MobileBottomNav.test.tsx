@@ -12,13 +12,23 @@ function renderWithRouter(initialRoute = '/goes') {
 }
 
 describe('MobileBottomNav', () => {
-  it('renders primary tab labels', () => {
+  it('renders primary tab labels in desktop-matching order', () => {
     renderWithRouter();
+    // JTN-428: primary tabs mirror the desktop sidebar main section
+    // (Dashboard → Live → Browse → Animate). Jobs and Settings now live
+    // under More so the two layouts stay in sync.
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
     expect(screen.getByText('Browse')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Jobs')).toBeInTheDocument();
+    expect(screen.getByText('Animate')).toBeInTheDocument();
     expect(screen.getByText('More')).toBeInTheDocument();
+  });
+
+  it('primary tabs are ordered Dashboard, Live, Browse, Animate, More', () => {
+    renderWithRouter();
+    const tabs = screen.getAllByRole('tab');
+    const names = tabs.map((t) => t.getAttribute('aria-label'));
+    expect(names).toEqual(['Dashboard', 'Live', 'Browse', 'Animate', 'More']);
   });
 
   it('renders mobile navigation landmark', () => {
@@ -43,10 +53,16 @@ describe('MobileBottomNav', () => {
     expect(dashTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Jobs tab is active on /jobs', () => {
+  it('Animate tab is active on /animate', () => {
+    renderWithRouter('/animate');
+    const animateTab = screen.getByRole('tab', { name: 'Animate' });
+    expect(animateTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('More tab is active on /jobs', () => {
     renderWithRouter('/jobs');
-    const jobsTab = screen.getByRole('tab', { name: 'Jobs' });
-    expect(jobsTab).toHaveAttribute('aria-selected', 'true');
+    const moreTab = screen.getByRole('tab', { name: 'More' });
+    expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });
 
   it('More button opens more menu', () => {
@@ -55,11 +71,11 @@ describe('MobileBottomNav', () => {
     expect(screen.getByLabelText('More navigation options')).toBeInTheDocument();
   });
 
-  it('More menu shows Settings and Animate links', () => {
+  it('More menu shows Jobs and Settings links', () => {
     renderWithRouter();
     fireEvent.click(screen.getByRole('tab', { name: 'More' }));
+    expect(screen.getByRole('link', { name: 'Jobs' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Animate' })).toBeInTheDocument();
   });
 
   it('Close button inside dialog closes more menu', () => {

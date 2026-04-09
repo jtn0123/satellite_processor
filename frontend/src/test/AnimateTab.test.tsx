@@ -205,9 +205,11 @@ describe('AnimateTab (Unified)', () => {
   });
 
   it('renders date range inputs and can change them', () => {
+    // JTN-422: shared DateTimeField component now uses the accessible
+    // "Start date and time" / "End date and time" labels.
     renderWithProviders(<AnimateTab />);
-    const startInput = screen.getByLabelText('Start Date/Time');
-    const endInput = screen.getByLabelText('End Date/Time');
+    const startInput = screen.getByLabelText('Start date and time');
+    const endInput = screen.getByLabelText('End date and time');
 
     fireEvent.change(startInput, { target: { value: '2026-01-01T00:00' } });
     fireEvent.change(endInput, { target: { value: '2026-01-02T00:00' } });
@@ -321,10 +323,20 @@ describe('AnimateTab (Unified)', () => {
     expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument();
   });
 
-  it('generate button is disabled when no date range set', () => {
+  it('generate button is disabled when date range is cleared', () => {
+    // JTN-422: date range now defaults to "last hour → now" so the button
+    // is enabled on arrival. Clearing both fields disables it again.
     renderWithProviders(<AnimateTab />);
+    fireEvent.change(screen.getByLabelText('Start date and time'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('End date and time'), { target: { value: '' } });
     const generateBtn = screen.getByRole('button', { name: /generate/i });
     expect(generateBtn).toBeDisabled();
+  });
+
+  it('generate button is enabled on mount with the default "last hour" range', () => {
+    renderWithProviders(<AnimateTab />);
+    const generateBtn = screen.getByRole('button', { name: /generate/i });
+    expect(generateBtn).not.toBeDisabled();
   });
 
   it('generate button triggers mutation after setting date range', async () => {
@@ -402,7 +414,7 @@ describe('AnimateTab (Unified)', () => {
     // Click a quick-start chip - should switch back to filters
     fireEvent.click(screen.getByText('🌅 Visible Timelapse'));
     // Should show filter UI again (date inputs)
-    expect(screen.getByLabelText('Start Date/Time')).toBeInTheDocument();
+    expect(screen.getByLabelText('Start date and time')).toBeInTheDocument();
   });
 
   it('handles generate mutation error', async () => {

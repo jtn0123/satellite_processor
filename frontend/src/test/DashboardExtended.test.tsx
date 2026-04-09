@@ -82,14 +82,15 @@ describe('Dashboard extended', () => {
     expect(screen.getByText('Get Started')).toBeInTheDocument();
   });
 
-  it('shows Fetch Now button in onboarding', () => {
+  it('shows Advanced Fetch button in onboarding', () => {
+    // JTN-434: accessible name must start with the visible text (WCAG 2.5.3).
     renderDashboard();
-    expect(screen.getByLabelText('Fetch satellite data now')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Advanced Fetch/)).toBeInTheDocument();
   });
 
-  it('navigates to /goes on Fetch Now click', () => {
+  it('navigates to /goes on Advanced Fetch click', () => {
     renderDashboard();
-    fireEvent.click(screen.getByLabelText('Fetch satellite data now'));
+    fireEvent.click(screen.getByLabelText(/^Advanced Fetch/));
     expect(mockNavigate).toHaveBeenCalledWith('/goes');
   });
 

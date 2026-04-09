@@ -37,3 +37,56 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 1) + '…';
 }
+
+/** Canonical image-type identifiers understood by the backend. */
+export type ImageTypeId = 'single' | 'true_color' | 'natural_color';
+
+/**
+ * Human-readable label for an image-type enum. Used across the Confirm
+ * modal, job list, and preset cards so a single value renders
+ * consistently (see JTN-434 ISSUE-023).
+ *
+ * Accepts any string — unknown values fall back to title-casing — so
+ * callers that pull the value from an API response don't need to cast.
+ */
+export function formatImageType(imageType: string, band?: string): string {
+  if (imageType === 'single') return band ? `Single Band (${band})` : 'Single Band';
+  if (imageType === 'true_color') return 'True Color';
+  if (imageType === 'natural_color') return 'Natural Color';
+  // Fallback for unexpected values: title-case whatever was passed.
+  return imageType
+    .split(/[_\s]+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ');
+}
+
+/**
+ * Human-readable label for a Celery job_type identifier (e.g.
+ * `goes_fetch_composite` → "GOES Fetch Composite"). Keeps mixed casing
+ * for known acronyms (GOES, CONUS). See JTN-434 ISSUE-023.
+ */
+export function formatJobType(jobType: string): string {
+  if (!jobType) return 'Unknown job';
+  const ACRONYMS = new Set(['goes', 'conus', 'himawari', 'hsd', 'cdn', 'api', 'ws']);
+  return jobType
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => {
+      const lower = part.toLowerCase();
+      if (ACRONYMS.has(lower)) return lower.toUpperCase();
+      return lower[0].toUpperCase() + lower.slice(1);
+    })
+    .join(' ');
+}
+
+/**
+ * Human-readable label for a GOES sector id. Matches the product-panel
+ * display names (e.g. `FullDisk` → "Full Disk"). See JTN-434.
+ */
+export function formatSectorName(sector: string): string {
+  if (!sector) return sector;
+  if (sector === 'FullDisk') return 'Full Disk';
+  if (sector === 'Mesoscale1') return 'Mesoscale 1';
+  if (sector === 'Mesoscale2') return 'Mesoscale 2';
+  return sector;
+}

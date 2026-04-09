@@ -500,7 +500,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => navigate('/goes')}
               className="flex items-center gap-2 px-5 py-2.5 btn-primary-mix text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-colors focus-ring"
-              aria-label="Fetch satellite data now"
+              aria-label="Advanced Fetch — open the satellite data fetch wizard"
             >
               <Download className="w-4 h-4" /> Advanced Fetch
             </button>

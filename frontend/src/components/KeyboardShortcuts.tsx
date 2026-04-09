@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { X, Keyboard } from 'lucide-react';
 
+// JTN-434: three rows of this list used to all read "Go to Settings",
+// making the dialog useless. Each row now describes its real destination.
 const shortcutList = [
   { keys: 'g d', label: 'Go to Dashboard' },
-  { keys: 'g u', label: 'Go to Settings' },
-  { keys: 'g p', label: 'Go to Settings' },
+  { keys: 'g l', label: 'Go to Live' },
+  { keys: 'g b', label: 'Go to Browse & Fetch' },
+  { keys: 'g a', label: 'Go to Animate' },
   { keys: 'g j', label: 'Go to Jobs' },
   { keys: 'g s', label: 'Go to Settings' },
-  { keys: 'g f', label: 'Go to Satellite Data' },
   { keys: '?', label: 'Show shortcuts' },
   { keys: 'Escape', label: 'Close any open modal' },
   { keys: '← →', label: 'Navigate frames in preview' },
@@ -44,11 +46,11 @@ export default function KeyboardShortcuts() {
   const shortcuts = useMemo(
     () => ({
       'g d': () => navigate('/'),
-      'g u': () => navigate('/settings'),
-      'g p': () => navigate('/settings'),
+      'g l': () => navigate('/live'),
+      'g b': () => navigate('/goes'),
+      'g a': () => navigate('/animate'),
       'g j': () => navigate('/jobs'),
       'g s': () => navigate('/settings'),
-      'g f': () => navigate('/goes'),
       '?': () => setOpen((v) => !v),
       Escape: close,
     }),

@@ -12,9 +12,10 @@ function renderNav(route = '/') {
 }
 
 describe('MobileBottomNav — extended', () => {
-  it('renders Jobs tab', () => {
+  it('renders Animate tab in the primary row', () => {
+    // JTN-428: primary tabs now mirror the desktop sidebar order.
     renderNav();
-    expect(screen.getByRole('tab', { name: 'Jobs' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Animate' })).toBeInTheDocument();
   });
 
   it('Browse tab is active on /goes with no tab param', () => {
@@ -32,9 +33,9 @@ describe('MobileBottomNav — extended', () => {
     expect(screen.getByRole('tab', { name: 'Browse' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('Jobs tab active on /jobs', () => {
-    renderNav('/jobs');
-    expect(screen.getByRole('tab', { name: 'Jobs' })).toHaveAttribute('aria-selected', 'true');
+  it('Animate tab active on /animate', () => {
+    renderNav('/animate');
+    expect(screen.getByRole('tab', { name: 'Animate' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('Dashboard tab active on /', () => {
@@ -48,8 +49,8 @@ describe('MobileBottomNav — extended', () => {
     expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('More tab active on /animate route', () => {
-    renderNav('/animate');
+  it('More tab active on /jobs route', () => {
+    renderNav('/jobs');
     const moreTab = screen.getByRole('tab', { name: 'More' });
     expect(moreTab).toHaveAttribute('aria-selected', 'true');
   });
@@ -57,7 +58,7 @@ describe('MobileBottomNav — extended', () => {
   it('primary tabs have role=tab', () => {
     renderNav();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(5); // Live, Browse, Dashboard, Jobs, More
+    expect(tabs.length).toBe(5); // Dashboard, Live, Browse, Animate, More
   });
 
   it('More menu links navigate and close sheet', () => {

@@ -76,14 +76,17 @@ test.describe('Job monitoring - with jobs', () => {
   });
 
   test('renders multiple jobs with different statuses', async ({ page }) => {
+    // JTN-434 ISSUE-023: job types are now rendered via `formatJobType` so
+    // snake_case identifiers become "GOES Fetch" / "Image Process" / etc.
+    // The raw identifier is still available via the `title` attribute.
     await page.goto('/jobs');
-    await expect(page.locator('text=goes_fetch').first()).toBeVisible();
-    await expect(page.locator('text=image_process').first()).toBeVisible();
-    await expect(page.locator('text=animation').first()).toBeVisible();
+    await expect(page.locator('text=GOES Fetch').first()).toBeVisible();
+    await expect(page.locator('text=Image Process').first()).toBeVisible();
+    await expect(page.locator('text=Animation').first()).toBeVisible();
   });
 
   test('shows job progress', async ({ page }) => {
     await page.goto('/jobs');
-    await expect(page.locator('text=goes_fetch').first()).toBeVisible();
+    await expect(page.locator('text=GOES Fetch').first()).toBeVisible();
   });
 });

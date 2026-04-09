@@ -10,6 +10,7 @@ import {
   QUICK_HOURS,
 } from '../types';
 import FrameRangePreview from '../FrameRangePreview';
+import { DateTimeField } from '../../ui/DateTimeField';
 
 interface CreateAnimationFormProps {
   readonly config: AnimationConfig;
@@ -187,36 +188,22 @@ export function CreateAnimationForm({
             </fieldset>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="animate-start"
-                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
-                >
-                  Start Date/Time
-                </label>
-                <input
-                  id="animate-start"
-                  type="datetime-local"
-                  value={config.start_date}
-                  onChange={(e) => updateConfig({ start_date: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="animate-end"
-                  className="block text-xs text-gray-400 dark:text-slate-500 mb-1"
-                >
-                  End Date/Time
-                </label>
-                <input
-                  id="animate-end"
-                  type="datetime-local"
-                  value={config.end_date}
-                  onChange={(e) => updateConfig({ end_date: e.target.value })}
-                  className="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
-                />
-              </div>
+              <DateTimeField
+                id="animate-start"
+                label="Start date and time"
+                labelClassName="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                inputClassName="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                value={config.start_date}
+                onChange={(v) => updateConfig({ start_date: v })}
+              />
+              <DateTimeField
+                id="animate-end"
+                label="End date and time"
+                labelClassName="block text-xs text-gray-400 dark:text-slate-500 mb-1"
+                inputClassName="w-full min-h-[44px] rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-3 py-2"
+                value={config.end_date}
+                onChange={(v) => updateConfig({ end_date: v })}
+              />
             </div>
           </>
         ) : (

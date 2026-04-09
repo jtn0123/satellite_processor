@@ -10,6 +10,7 @@ import {
   getDefaultBand,
 } from '../../../utils/sectorHelpers';
 
+import { defaultDateTimeRange } from '../../ui/dateTimeHelpers';
 import { QuickFetchSection } from './QuickFetchSection';
 import { SatelliteStep } from './SatelliteStep';
 import { WhatStep } from './WhatStep';
@@ -103,16 +104,20 @@ interface FetchPreset {
 const STEPS = ['Source', 'What', 'When'] as const;
 
 export default function FetchTab() {
+  // Default to "now − 1h" → "now" so the native datetime-local picker has
+  // a real starting value (not Month=0, Day=0, ...). See JTN-422.
+  const initialRange = useMemo(() => defaultDateTimeRange(1), []);
   // Lazy-init from persisted wizard state (JTN-476 ISSUE-074). Null-safe for
-  // SSR / tests without localStorage.
+  // SSR / tests without localStorage. Falls back to the default range so an
+  // empty persisted slot still produces a valid datetime-local value.
   const persisted = useRef<PersistedWizardState | null>(loadPersistedWizard()).current;
   const [step, setStep] = useState(persisted?.step ?? 0);
   const [satellite, setSatellite] = useState(persisted?.satellite ?? '');
   const [sector, setSector] = useState(persisted?.sector ?? 'FullDisk');
   const [band, setBand] = useState(persisted?.band ?? 'C02');
   const [imageType, setImageType] = useState<ImageType>(persisted?.imageType ?? 'single');
-  const [startTime, setStartTime] = useState(persisted?.startTime ?? '');
-  const [endTime, setEndTime] = useState(persisted?.endTime ?? '');
+  const [startTime, setStartTime] = useState(persisted?.startTime ?? initialRange.start);
+  const [endTime, setEndTime] = useState(persisted?.endTime ?? initialRange.end);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(persisted?.showAdvanced ?? false);

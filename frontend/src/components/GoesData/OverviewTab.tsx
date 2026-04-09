@@ -149,7 +149,7 @@ export default function OverviewTab() {
       },
     },
     {
-      label: 'Fetch Latest FullDisk',
+      label: 'Fetch Latest Full Disk',
       description: 'One-click full hemisphere download',
       icon: <Zap className="w-5 h-5" />,
       color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',

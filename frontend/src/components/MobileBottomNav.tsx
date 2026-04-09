@@ -11,19 +11,23 @@ import {
   X,
 } from 'lucide-react';
 
+// JTN-428: primary tab order mirrors the desktop sidebar
+// (Dashboard → Live → Browse → Animate) so users switching between layouts
+// hit the same positions. Jobs + Settings live under More, matching the
+// "Manage" section on desktop.
 const primaryTabs = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/live', label: 'Live', icon: Radio },
   { to: '/goes', label: 'Browse', icon: Grid3X3 },
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/jobs', label: 'Jobs', icon: ListTodo },
-];
-
-const moreLinks = [
-  { to: '/settings', label: 'Settings', icon: Cog },
   { to: '/animate', label: 'Animate', icon: Sparkles },
 ];
 
-const moreRoutes = new Set(['/settings', '/animate', '/upload', '/process', '/presets']);
+const moreLinks = [
+  { to: '/jobs', label: 'Jobs', icon: ListTodo },
+  { to: '/settings', label: 'Settings', icon: Cog },
+];
+
+const moreRoutes = new Set(['/jobs', '/settings', '/upload', '/process', '/presets']);
 
 export default function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);

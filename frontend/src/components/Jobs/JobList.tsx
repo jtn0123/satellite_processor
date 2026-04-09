@@ -17,6 +17,7 @@ import {
   filterJobsByStatus,
 } from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
+import { formatJobType } from '../../utils/formatters';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface Job {
@@ -106,25 +107,27 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
       {displayed.map((job) => {
         const cfg = statusConfig[job.status] || statusConfig[JOB_STATUS.PENDING];
         const Icon = cfg.icon;
+        const handleRowSelect = () => onSelect?.(job.id);
         const handleRowKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            onSelect?.(job.id);
+            handleRowSelect();
           }
         };
         return (
-          // JTN-412 ISSUE-024: previously this row was a <button> with nested
-          // <button> children (View / Delete). Nested interactive content is
-          // invalid HTML — the browser swallows clicks on the inner controls,
-          // which is why View/Delete looked "dead". Using a div with
+          // JTN-412 ISSUE-024 + JTN-423: previously this row was a <button>
+          // with nested <button> children (View / Delete). Nested interactive
+          // content is invalid HTML — the browser swallows clicks on the inner
+          // controls, which is why View/Delete looked "dead". Using a div with
           // role="button" keeps the whole-row click affordance while letting
           // the action icons receive their own events.
           <div
             role="button"
             tabIndex={0}
             key={job.id}
-            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left"
-            onClick={() => onSelect?.(job.id)}
+            aria-label={`Open job ${job.id.slice(0, 8)} (${job.job_type})`}
+            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50"
+            onClick={handleRowSelect}
             onKeyDown={handleRowKey}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
@@ -134,8 +137,11 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {job.job_type}
+                <span
+                  className="text-sm font-medium text-gray-900 dark:text-white"
+                  title={job.job_type}
+                >
+                  {formatJobType(job.job_type)}
                 </span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                   {job.status}

@@ -222,6 +222,30 @@ function VersionInfo() {
   );
 }
 
+/* ─── Helpers ─── */
+
+/**
+ * Extract a field-level error from a FastAPI 422 response of the form:
+ *   { detail: [{ loc: ["body", "video_fps"], msg: "...", ... }] }
+ * Returns null when the shape isn't recognised.
+ */
+function extractBackendValidationError(
+  err: unknown,
+): { field: string | null; message: string } | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = err as any;
+  const detail = e?.response?.data?.detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    const loc = Array.isArray(first?.loc) ? first.loc : [];
+    const field = loc.length > 1 ? String(loc[loc.length - 1]) : null;
+    const message = typeof first?.msg === 'string' ? first.msg : 'Validation failed';
+    return { field, message };
+  }
+  if (typeof detail === 'string') return { field: null, message: detail };
+  return null;
+}
+
 /* ─── Tab content components ─── */
 
 function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
@@ -229,6 +253,12 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
   const [form, setForm] = useState<Record<string, unknown>>(settings);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // JTN-434 ISSUE-039: track which field is currently invalid so we can set
+  // `aria-invalid` and `aria-describedby` for the matching input and show a
+  // field-level error near it. Previously, saving with FPS=0 silently did
+  // nothing — the form-level message was far from the field and there was
+  // no field-level indicator.
+  const [invalidField, setInvalidField] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -238,24 +268,38 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
 
   const handleSave = () => {
     setSaveError(null);
+    setInvalidField(null);
     const fps = Number(form.video_fps ?? 24);
     const crf = Number(form.video_quality ?? 23);
     const maxFrames = Number(form.max_frames_per_fetch ?? 200);
     if (fps < 1 || fps > 120 || !Number.isFinite(fps)) {
       setSaveError('Video FPS must be between 1 and 120.');
+      setInvalidField('video_fps');
       return;
     }
     if (crf < 0 || crf > 51 || !Number.isFinite(crf)) {
       setSaveError('Video Quality (CRF) must be between 0 and 51.');
+      setInvalidField('video_quality');
       return;
     }
     if (maxFrames < 50 || maxFrames > 1000 || !Number.isFinite(maxFrames)) {
       setSaveError('Max Frames per Fetch must be between 50 and 1000.');
+      setInvalidField('max_frames_per_fetch');
       return;
     }
     updateSettings.mutate(form, {
       onSuccess: () => setToast({ type: 'success', message: 'Settings saved successfully.' }),
-      onError: () => setSaveError('Failed to save settings. Please try again.'),
+      onError: (err: unknown) => {
+        // Surface backend 422 messages (e.g. "video_fps must be ≥ 1") inline
+        // on the matching field when possible.
+        const detail = extractBackendValidationError(err);
+        if (detail) {
+          setSaveError(detail.message);
+          if (detail.field) setInvalidField(detail.field);
+        } else {
+          setSaveError('Failed to save settings. Please try again.');
+        }
+      },
     });
   };
 
@@ -333,12 +377,28 @@ function ConfigTabContent({ settings }: Readonly<{ settings: Record<string, unkn
               min={1}
               max={120}
               value={(form.video_fps as number) ?? 24}
-              onChange={(e) => setForm({ ...form, video_fps: Number(e.target.value) })}
-              className="mt-1 w-full bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
+              onChange={(e) => {
+                setForm({ ...form, video_fps: Number(e.target.value) });
+                if (invalidField === 'video_fps') setInvalidField(null);
+              }}
+              aria-invalid={invalidField === 'video_fps' || undefined}
+              aria-describedby={
+                invalidField === 'video_fps' ? 'video-fps-error video-fps-hint' : 'video-fps-hint'
+              }
+              className={`mt-1 w-full bg-gray-200 dark:bg-slate-700 border rounded-lg px-3 py-2 text-sm ${
+                invalidField === 'video_fps'
+                  ? 'border-red-400 ring-1 ring-red-400/50'
+                  : 'border-gray-300 dark:border-slate-600'
+              }`}
             />
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+            <p id="video-fps-hint" className="text-xs text-gray-400 dark:text-slate-500 mt-1">
               Range: 1–120, default 24.
             </p>
+            {invalidField === 'video_fps' && saveError && (
+              <p id="video-fps-error" className="text-xs text-red-400 mt-1">
+                {saveError}
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="video-codec" className="text-sm text-gray-500 dark:text-slate-400">

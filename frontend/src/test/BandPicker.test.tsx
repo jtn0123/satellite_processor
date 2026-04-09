@@ -26,14 +26,25 @@ describe('BandPicker', () => {
   it('calls onChange when clicking a band', () => {
     const onChange = vi.fn();
     render(<BandPicker value="C02" onChange={onChange} />, { wrapper });
-    fireEvent.click(screen.getByText('C01').closest('button')!);
+    // Band cards are now div[role=button] (JTN-423) so we select by role.
+    const c01 = screen.getByText('C01').closest('[role="button"]') as HTMLElement;
+    fireEvent.click(c01);
     expect(onChange).toHaveBeenCalledWith('C01');
+  });
+
+  it('calls onChange when pressing Enter on a band card', () => {
+    const onChange = vi.fn();
+    render(<BandPicker value="C02" onChange={onChange} />, { wrapper });
+    const c03 = screen.getByText('C03').closest('[role="button"]') as HTMLElement;
+    fireEvent.keyDown(c03, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('C03');
   });
 
   it('highlights selected band', () => {
     render(<BandPicker value="C02" onChange={() => {}} />, { wrapper });
-    const c02Button = screen.getByText('C02').closest('button')!;
-    expect(c02Button.className).toContain('border-primary');
+    const c02Card = screen.getByText('C02').closest('[role="button"]') as HTMLElement;
+    expect(c02Card.className).toContain('border-primary');
+    expect(c02Card).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('filters bands by category', () => {
@@ -45,12 +56,23 @@ describe('BandPicker', () => {
     expect(screen.queryByText('C03')).not.toBeInTheDocument();
   });
 
-  it('disables buttons when disabled prop is true', () => {
-    render(<BandPicker value="C02" onChange={() => {}} disabled />, { wrapper });
-    const buttons = screen.getAllByRole('button');
-    // Filter buttons + band buttons should be disabled
-    buttons.forEach((btn) => {
-      expect(btn).toBeDisabled();
-    });
+  it('marks band cards as disabled via aria-disabled when prop is true', () => {
+    const onChange = vi.fn();
+    render(<BandPicker value="C02" onChange={onChange} disabled />, { wrapper });
+    const c01 = screen.getByText('C01').closest('[role="button"]') as HTMLElement;
+    expect(c01).toHaveAttribute('aria-disabled', 'true');
+    expect(c01).toHaveAttribute('tabindex', '-1');
+    // Clicking a disabled card must not fire onChange.
+    fireEvent.click(c01);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('no band card is a <button> (prevents nested-button invalidity)', () => {
+    render(<BandPicker value="C02" onChange={() => {}} />, { wrapper });
+    const c01Label = screen.getByText('C01');
+    // Walk up: closest interactive ancestor must NOT be a <button>.
+    const interactive = c01Label.closest('[role="button"]');
+    expect(interactive).not.toBeNull();
+    expect(interactive!.tagName).toBe('DIV');
   });
 });

@@ -280,3 +280,120 @@ class TestCancelJobRevokeBrokerDown:
         # unhandled exception to 500 — we just care that the narrow
         # ``except _REVOKE_ERRORS`` did NOT swallow the RuntimeError.
         assert resp.status_code == 500
+
+
+# ── bulk_delete_jobs + delete_job broker-down coverage ─────────────
+
+
+@pytest.mark.asyncio
+class TestBulkAndSingleDeleteRevokeBrokerDown:
+    """The narrowed ``except _REVOKE_ERRORS`` block lives in THREE sites:
+    cancel_job, bulk_delete_jobs, and delete_job. The first is covered
+    above; these tests lock in the other two so a future refactor can't
+    silently widen the catch again.
+    """
+
+    async def test_bulk_delete_tolerates_broker_outage(self, client, db, caplog):
+        """``bulk_delete_jobs`` revokes tasks for each pending/processing
+        job it deletes. A broker outage in the middle must log, not 500."""
+        from app.db.models import Job
+
+        jobs = [
+            Job(id=f"3{i}345678-1234-1234-1234-123456789012", status="processing", task_id=f"task-{i}")
+            for i in range(2)
+        ]
+        for j in jobs:
+            db.add(j)
+        await db.commit()
+
+        with (
+            patch("app.routers.jobs.celery_app") as mock_celery,
+            caplog.at_level(logging.WARNING, logger="app.routers.jobs"),
+        ):
+            mock_celery.control.revoke.side_effect = OperationalError("bulk broker down")
+            resp = await client.request(
+                "DELETE",
+                "/api/jobs/bulk",
+                json={"job_ids": [j.id for j in jobs]},
+            )
+
+        assert resp.status_code == 200
+        # Both task IDs should appear in the warning logs.
+        task_ids_in_logs = {
+            tid for record in caplog.records for tid in ("task-0", "task-1") if tid in record.getMessage()
+        }
+        assert task_ids_in_logs == {"task-0", "task-1"}
+
+    async def test_delete_job_tolerates_broker_outage(self, client, db, caplog):
+        """``delete_job`` also revokes a Celery task. A broker outage
+        still proceeds with the DB delete — a dangling task is harmless
+        once the row is gone."""
+        from app.db.models import Job
+
+        job = Job(
+            id="42345678-1234-1234-1234-123456789012",
+            status="processing",
+            task_id="delete-task-xyz",
+        )
+        db.add(job)
+        await db.commit()
+
+        with (
+            patch("app.routers.jobs.celery_app") as mock_celery,
+            caplog.at_level(logging.WARNING, logger="app.routers.jobs"),
+        ):
+            mock_celery.control.revoke.side_effect = OperationalError("delete broker down")
+            resp = await client.delete(f"/api/jobs/{job.id}")
+
+        assert resp.status_code == 200
+        assert any("delete-task-xyz" in r.getMessage() for r in caplog.records)
+
+
+# ── bulk_download end-to-end hits _collect_job_files path branches ──
+
+
+@pytest.mark.asyncio
+class TestBulkDownloadExercisesCollectJobFiles:
+    """``_collect_job_files`` runs inside ``bulk_download``. The existing
+    unit tests stub the function directly; this test goes through the
+    real endpoint so the narrowed ``except PathTraversalError`` /
+    ``except OSError`` branches are hit in a realistic call stack.
+    """
+
+    async def test_bulk_download_skips_traversal_job_and_returns_others(self, client, db, tmp_path):
+        from app.db.models import Job
+
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        good_output = allowed / "good"
+        good_output.mkdir()
+        (good_output / "frame.png").write_text("x")
+
+        good_job = Job(
+            id="52345678-1234-1234-1234-123456789012",
+            status="completed",
+            output_path=str(good_output),
+        )
+        evil_job = Job(
+            id="62345678-1234-1234-1234-123456789012",
+            status="completed",
+            # Path outside settings.output_dir → PathTraversalError inside
+            # _collect_job_files. Must be skipped, not 500.
+            output_path="/etc/passwd-fake",
+        )
+        db.add(good_job)
+        db.add(evil_job)
+        await db.commit()
+
+        with patch("app.routers.download.settings") as mock_settings:
+            mock_settings.output_dir = str(allowed)
+            resp = await client.post(
+                "/api/jobs/bulk-download",
+                json={"ids": [good_job.id, evil_job.id]},
+            )
+
+        # The evil job is skipped but the good job's frame still streams,
+        # so the endpoint returns a 200 zip rather than bubbling up a 500.
+        assert resp.status_code == 200
+        # Guards against a regression that silently returns an empty body.
+        assert len(resp.content) > 0

@@ -1,3 +1,5 @@
+import { formatImageType, formatSectorName } from '../../../utils/formatters';
+
 interface ConfirmDialogProps {
   readonly satellite: string;
   readonly sector: string;
@@ -43,11 +45,10 @@ export function ConfirmDialog({
             <span className="text-gray-400">Satellite:</span> {satellite}
           </div>
           <div>
-            <span className="text-gray-400">Sector:</span> {sector}
+            <span className="text-gray-400">Sector:</span> {formatSectorName(sector)}
           </div>
           <div>
-            <span className="text-gray-400">Type:</span>{' '}
-            {imageType === 'single' ? `Single Band (${band})` : imageType.replace('_', ' ')}
+            <span className="text-gray-400">Type:</span> {formatImageType(imageType, band)}
           </div>
           {estimate && (
             <div className="card-inner p-3 mt-2">

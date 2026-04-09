@@ -113,6 +113,8 @@ export default function App() {
               <Route path="upload" element={<Navigate to="/settings" replace />} />
               <Route path="process" element={<Navigate to="/settings" replace />} />
               <Route path="presets" element={<Navigate to="/settings" replace />} />
+              {/* JTN-434: /browse matches the "Browse & Fetch" nav label. */}
+              <Route path="browse" element={<Navigate to="/goes" replace />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

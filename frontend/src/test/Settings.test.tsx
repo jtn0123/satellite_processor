@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import Settings from '../pages/Settings';
@@ -69,5 +69,24 @@ describe('Settings', () => {
     const input = await screen.findByLabelText(/max frames per fetch/i, {}, { timeout: 3000 });
     expect(input).toBeInTheDocument();
     expect((input as HTMLInputElement).value).toBe('200');
+  });
+
+  // JTN-434 ISSUE-039: FPS=0 used to silently fail. Now the input gets
+  // aria-invalid + an inline error message is shown next to it.
+  it('sets aria-invalid on Video FPS and shows inline error when FPS=0 on save', async () => {
+    render(<Settings />, { wrapper });
+    const fpsInput = (await screen.findByLabelText(/video fps/i, {}, { timeout: 3000 })) as HTMLInputElement;
+    expect(fpsInput).toBeInTheDocument();
+    fireEvent.change(fpsInput, { target: { value: '0' } });
+    const saveBtn = screen.getByRole('button', { name: /save settings/i });
+    fireEvent.click(saveBtn);
+    await waitFor(() => {
+      expect(fpsInput).toHaveAttribute('aria-invalid', 'true');
+    });
+    // Error message should be linked via aria-describedby.
+    const describedBy = fpsInput.getAttribute('aria-describedby') ?? '';
+    expect(describedBy).toContain('video-fps-error');
+    const errorEl = document.getElementById('video-fps-error');
+    expect(errorEl?.textContent).toMatch(/between 1 and 120/i);
   });
 });

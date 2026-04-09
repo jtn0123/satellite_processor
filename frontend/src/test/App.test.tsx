@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
 import App from '../App';
 
 vi.mock('../api/client', () => ({
@@ -16,5 +16,24 @@ describe('App', () => {
     const { container } = render(<App />);
     // App has its own router, should render something
     expect(container.innerHTML.length).toBeGreaterThan(0);
+  });
+});
+
+// JTN-434 ISSUE-033: /browse used to return a 404 even though the sidebar
+// label is "Browse & Fetch". It now redirects to the canonical /goes route.
+describe('App routing', () => {
+  const originalPath = globalThis.location.pathname;
+  beforeEach(() => {
+    globalThis.history.pushState({}, '', '/browse');
+  });
+  afterEach(() => {
+    globalThis.history.pushState({}, '', originalPath);
+  });
+
+  it('/browse redirects to /goes', async () => {
+    render(<App />);
+    await waitFor(() => {
+      expect(globalThis.location.pathname).toBe('/goes');
+    });
   });
 });

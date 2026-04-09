@@ -83,7 +83,7 @@ describe('OverviewTab', () => {
   it('renders quick action buttons', () => {
     renderWithQuery(<OverviewTab />);
     expect(screen.getByText('Fetch Last Hour CONUS')).toBeInTheDocument();
-    expect(screen.getByText('Fetch Latest FullDisk')).toBeInTheDocument();
+    expect(screen.getByText('Fetch Latest Full Disk')).toBeInTheDocument();
     expect(screen.getByText('True Color Now')).toBeInTheDocument();
     expect(screen.getByText('View Gallery')).toBeInTheDocument();
   });

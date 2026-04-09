@@ -128,7 +128,7 @@ describe('OverviewTab with data', () => {
     renderWithQuery(<OverviewTab />);
     const handler = vi.fn();
     globalThis.addEventListener('switch-tab', handler);
-    fireEvent.click(screen.getByText('Fetch Latest FullDisk'));
+    fireEvent.click(screen.getByText('Fetch Latest Full Disk'));
     expect(handler).toHaveBeenCalledTimes(1);
     globalThis.removeEventListener('switch-tab', handler);
   });

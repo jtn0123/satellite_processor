@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import api from '../api/client';
 import { extractArray } from '../utils/safeData';
 import { showToast } from '../utils/toast';
+import { useIsWebSocketConnected } from './ConnectionStatus';
 
 interface Notification {
   id: string;
@@ -17,6 +18,7 @@ export default function NotificationBell() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const wsConnected = useIsWebSocketConnected();
 
   const {
     data: notifications,
@@ -28,7 +30,9 @@ export default function NotificationBell() {
       api.get('/notifications').then((r) => {
         return extractArray<Notification>(r.data);
       }),
-    refetchInterval: 30_000,
+    // See JTN-415: disable polling while the websocket is up, since the
+    // backend pushes notification updates over /ws/status.
+    refetchInterval: wsConnected ? false : 30_000,
     staleTime: 15_000,
     retry: false,
   });

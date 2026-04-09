@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useJobs, useDeleteJob } from '../../hooks/useApi';
 import {
   Trash2,
@@ -10,7 +11,11 @@ import {
   AlertTriangle,
   Download,
 } from 'lucide-react';
-import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
+import {
+  STATUS_FILTER_OPTIONS,
+  STATUS_FILTER_TO_BACKEND,
+  filterJobsByStatus,
+} from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
 import { formatJobType } from '../../utils/formatters';
 import ConfirmDialog from '../ConfirmDialog';
@@ -49,9 +54,15 @@ interface Props {
 }
 
 function JobList({ onSelect, limit }: Readonly<Props>) {
-  const { data: jobs = [], isLoading } = useJobs();
-  const deleteJob = useDeleteJob();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  // JTN-412 / JTN-476: push the selected filter to the backend. The server
+  // currently ignores `?status=` (backend fix is in PR2) but will honour it
+  // once landed. We still filter client-side below so the UI is correct in
+  // both the pre-fix and post-fix world.
+  const { data: jobs = [], isLoading } = useJobs({
+    status: STATUS_FILTER_TO_BACKEND[statusFilter],
+  });
+  const deleteJob = useDeleteJob();
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   const displayed = useMemo(() => {
@@ -97,10 +108,19 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
         const cfg = statusConfig[job.status] || statusConfig[JOB_STATUS.PENDING];
         const Icon = cfg.icon;
         const handleRowSelect = () => onSelect?.(job.id);
-        // Row is a div[role=button] rather than a <button> so the nested
-        // View/Delete controls can stay as valid <button> elements. Nested
-        // <button> in <button> is invalid HTML (see JTN-423).
+        const handleRowKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleRowSelect();
+          }
+        };
         return (
+          // JTN-412 ISSUE-024 + JTN-423: previously this row was a <button>
+          // with nested <button> children (View / Delete). Nested interactive
+          // content is invalid HTML — the browser swallows clicks on the inner
+          // controls, which is why View/Delete looked "dead". Using a div with
+          // role="button" keeps the whole-row click affordance while letting
+          // the action icons receive their own events.
           <div
             role="button"
             tabIndex={0}
@@ -108,12 +128,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             aria-label={`Open job ${job.id.slice(0, 8)} (${job.job_type})`}
             className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50"
             onClick={handleRowSelect}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleRowSelect();
-              }
-            }}
+            onKeyDown={handleRowKey}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon

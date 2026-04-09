@@ -39,10 +39,13 @@ def test_job_websocket_connect():
     main_module.get_redis_client = lambda: mock_client
     try:
         with TestClient(main_module.app) as sync_client:  # noqa: SIM117
-            with sync_client.websocket_connect("/ws/jobs/test-job-id") as ws:
+            with sync_client.websocket_connect("/ws/jobs/11111111-2222-3333-4444-555555555555") as ws:
                 data = ws.receive_json()
                 assert data["type"] == "connected"
-                assert data["job_id"] == "test-job-id"
+                # JTN-470: job_id must be a valid UUID. The mock test
+                # used to pass the literal "test-job-id" which is now
+                # rejected by the validation gate.
+                assert data["job_id"] == "11111111-2222-3333-4444-555555555555"
     finally:
         main_module.get_redis_client = original
 

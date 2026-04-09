@@ -528,7 +528,9 @@ function SystemTabContent() {
 
 function SettingsForm({ settings }: Readonly<{ settings: Record<string, unknown> }>) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get('tab') as SettingsTabId | null;
+  // JTN-476 ISSUE-077: normalize ?tab= to lowercase so `?tab=DATA` and
+  // `?tab=data` both select the Data tab.
+  const tabFromUrl = searchParams.get('tab')?.toLowerCase() as SettingsTabId | null;
   const activeTab: SettingsTabId = tabFromUrl && allTabIds.has(tabFromUrl) ? tabFromUrl : 'config';
 
   const changeTab = useCallback(

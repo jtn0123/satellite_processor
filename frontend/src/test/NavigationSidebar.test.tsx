@@ -7,6 +7,9 @@ import Layout from '../components/Layout';
 // Mock heavy child components to keep tests fast
 vi.mock('../components/ConnectionStatus', () => ({
   default: () => <div data-testid="connection-status" />,
+  // Exposed by ConnectionStatus for polling gates (JTN-415). Stub to
+  // "disconnected" so query hooks fall back to their normal polling paths.
+  useIsWebSocketConnected: () => false,
 }));
 vi.mock('../components/NotificationBell', () => ({
   default: () => <div data-testid="notification-bell" />,

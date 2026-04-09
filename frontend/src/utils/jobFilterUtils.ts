@@ -22,3 +22,18 @@ export function filterJobsByStatus<T extends JobLike>(
   const allowed = STATUS_FILTER_MAP[filter];
   return jobs.filter((j) => allowed.includes(j.status));
 }
+
+/**
+ * Serialized backend value for each UI filter option. Sent as the `status`
+ * query param on `/api/jobs` so the server can narrow the result set
+ * (the backend multi-status syntax is a comma-separated list).
+ *
+ * Used by `useJobs()` — the frontend still double-filters client-side so
+ * the UI stays correct while the backend half of JTN-412 is in flight.
+ */
+export const STATUS_FILTER_TO_BACKEND: Readonly<Record<StatusFilter, string | undefined>> = {
+  All: undefined,
+  Running: STATUS_FILTER_MAP.Running.join(','),
+  Completed: STATUS_FILTER_MAP.Completed.join(','),
+  Failed: STATUS_FILTER_MAP.Failed.join(','),
+};

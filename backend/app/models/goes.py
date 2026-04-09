@@ -9,6 +9,10 @@ from pydantic import BaseModel, Field, field_validator
 from ..config import DEFAULT_SATELLITE
 from ..services.satellite_registry import get_all_valid_bands, get_all_valid_satellites, get_all_valid_sectors
 
+# Shared validation messages — keep in one place so Sonar doesn't ding us for
+# literal duplication and so all three end_time validators stay in sync.
+_END_AFTER_START_MSG = "end_time must be after start_time"
+
 
 class GoesFetchRequest(BaseModel):
     """Request schema for fetching satellite frames within a time range. Max 24h window."""
@@ -59,7 +63,7 @@ class GoesFetchRequest(BaseModel):
     def validate_time_range(cls, v: datetime, info) -> datetime:
         start = info.data.get("start_time")
         if start and v <= start:
-            raise ValueError("end_time must be after start_time")
+            raise ValueError(_END_AFTER_START_MSG)
         # #207: Cap time range at 24 hours
         if start and (v - start) > timedelta(hours=24):
             raise ValueError("Time range must not exceed 24 hours")
@@ -67,10 +71,28 @@ class GoesFetchRequest(BaseModel):
 
 
 class GoesBackfillRequest(BaseModel):
-    satellite: str | None = None
-    band: str | None = None
-    sector: str = "FullDisk"
+    """Request schema for backfilling detected gaps.
+
+    JTN-460: satellite, sector, band, start_time, and end_time are now required
+    to prevent silent no-ops when an empty body is posted.
+    """
+
+    satellite: str = Field(..., description="Satellite name (required)")
+    sector: str = Field(..., description="Sector (required)")
+    band: str = Field(..., description="Band (required)")
+    start_time: datetime = Field(..., description="Start of the backfill range (ISO format)")
+    end_time: datetime = Field(..., description="End of the backfill range (ISO format)")
     expected_interval: float = Field(default=10.0, ge=0.5, le=60.0)
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_time_range(cls, v: datetime, info) -> datetime:
+        start = info.data.get("start_time")
+        if start and v <= start:
+            raise ValueError(_END_AFTER_START_MSG)
+        if start and (v - start) > timedelta(days=7):
+            raise ValueError("Backfill time range must not exceed 7 days")
+        return v
 
 
 class SatelliteAvailability(BaseModel):
@@ -168,7 +190,7 @@ class FetchCompositeRequest(BaseModel):
     def validate_time_range(cls, v: datetime, info) -> datetime:
         start = info.data.get("start_time")
         if start and v <= start:
-            raise ValueError("end_time must be after start_time")
+            raise ValueError(_END_AFTER_START_MSG)
         if start and (v - start) > timedelta(hours=24):
             raise ValueError("Time range must not exceed 24 hours")
         return v

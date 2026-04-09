@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import statistics
 from collections import Counter
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -83,6 +84,8 @@ async def find_gaps(
     sector: str | None = None,
     expected_interval: float = 10.0,
     tolerance: float = 1.5,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Find gaps in satellite image coverage.
 
@@ -93,6 +96,8 @@ async def find_gaps(
         sector: Filter by sector
         expected_interval: Expected interval between captures in minutes
         tolerance: Multiplier for expected interval to detect a gap
+        start_time: Only consider captures at or after this time
+        end_time: Only consider captures at or before this time
 
     Returns list of dicts with 'start', 'end', 'duration_minutes', 'expected_frames'.
     """
@@ -105,6 +110,10 @@ async def find_gaps(
         query = query.where(GoesFrame.band == band)
     if sector:
         query = query.where(GoesFrame.sector == sector)
+    if start_time is not None:
+        query = query.where(GoesFrame.capture_time >= start_time)
+    if end_time is not None:
+        query = query.where(GoesFrame.capture_time <= end_time)
 
     result = await db.execute(query)
     timestamps = [r[0] for r in result.all()]
@@ -141,14 +150,36 @@ async def get_coverage_stats(
     sector: str | None = None,
     expected_interval: float = 10.0,
     tolerance: float = 1.5,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
 ) -> dict[str, Any]:
     """Get coverage statistics for satellite images.
 
     Returns dict with 'coverage_percent', 'gap_count', 'total_frames',
     'expected_frames', 'time_range', 'gaps'.
     """
+    # JTN-460: Require start < end when both are supplied
+    if start_time is not None and end_time is not None and start_time >= end_time:
+        return {
+            "coverage_percent": 0.0,
+            "gap_count": 0,
+            "total_frames": 0,
+            "expected_frames": 0,
+            "time_range": None,
+            "gaps": [],
+        }
+
     # Bug #5 & #24: Pass sector to find_gaps for accurate gap detection
-    gaps = await find_gaps(db, satellite, band, sector=sector, expected_interval=expected_interval, tolerance=tolerance)
+    gaps = await find_gaps(
+        db,
+        satellite,
+        band,
+        sector=sector,
+        expected_interval=expected_interval,
+        tolerance=tolerance,
+        start_time=start_time,
+        end_time=end_time,
+    )
 
     # Get time range
     query = select(
@@ -162,6 +193,10 @@ async def get_coverage_stats(
         query = query.where(GoesFrame.band == band)
     if sector:
         query = query.where(GoesFrame.sector == sector)
+    if start_time is not None:
+        query = query.where(GoesFrame.capture_time >= start_time)
+    if end_time is not None:
+        query = query.where(GoesFrame.capture_time <= end_time)
 
     result = await db.execute(query)
     row = result.one()

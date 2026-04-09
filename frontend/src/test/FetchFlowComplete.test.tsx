@@ -101,6 +101,12 @@ async function expandAdvanced() {
 }
 
 describe('FetchFlowComplete', () => {
+  beforeEach(() => {
+    // JTN-476 ISSUE-074: wizard persists to localStorage between sessions.
+    // Reset so each test starts from a collapsed-wizard baseline.
+    localStorage.clear();
+  });
+
   it('step 0: satellite selection renders all options', async () => {
     renderFetch();
     await expandAdvanced();

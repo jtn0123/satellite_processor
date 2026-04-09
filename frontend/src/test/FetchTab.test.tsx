@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FetchTab from '../components/GoesData/FetchTab';
@@ -64,6 +64,12 @@ async function expandAdvanced() {
 }
 
 describe('FetchTab', () => {
+  beforeEach(() => {
+    // JTN-476 ISSUE-074: wizard state persists to localStorage; reset
+    // between tests so each starts from a collapsed wizard.
+    localStorage.clear();
+  });
+
   it('renders quick fetch chips by default', async () => {
     render(<FetchTab />, { wrapper });
     await waitFor(() => expect(screen.getByText('Quick Fetch')).toBeInTheDocument());

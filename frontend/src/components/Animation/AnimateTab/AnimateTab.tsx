@@ -118,8 +118,14 @@ export default function AnimateTab() {
       satellite: config.satellite,
       sector: config.sector,
       band: config.band,
-      start_date: config.start_date ? new Date(config.start_date).toISOString() : '',
-      end_date: config.end_date ? new Date(config.end_date).toISOString() : '',
+      // JTN-465: backend expects `start_time` / `end_time` on
+      // /satellite/frames/preview-range. We were sending `start_date` /
+      // `end_date`, which returned 422 Unprocessable Entity, so every
+      // Animate quick-start preset (Hurricane Watch, Visible Timelapse,
+      // Storm Cell, Full Disk, Fire Watch) silently showed an empty
+      // preview.
+      start_time: config.start_date ? new Date(config.start_date).toISOString() : '',
+      end_time: config.end_date ? new Date(config.end_date).toISOString() : '',
     }),
     [config.satellite, config.sector, config.band, config.start_date, config.end_date],
   );

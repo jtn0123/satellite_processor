@@ -63,7 +63,7 @@ class SharedFrameResponse(BaseModel):
     expires_at: str
 
 
-@router.post("/api/satellite/frames/{frame_id}/share", response_model=ShareLinkResponse)
+@router.post("/api/satellite/frames/{frame_id}/share")
 async def create_share_link(
     frame_id: str,
     db: DbSession,
@@ -110,7 +110,7 @@ async def create_share_link(
     )
 
 
-@router.get("/api/shared/{token}", response_model=SharedFrameResponse)
+@router.get("/api/shared/{token}")
 async def get_shared_frame(token: str, db: DbSession) -> SharedFrameResponse:
     """Public endpoint — retrieve frame info by share token."""
     logger.info("Shared frame requested: token=%s...", sanitize_log(token[:8]))

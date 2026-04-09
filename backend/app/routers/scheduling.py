@@ -117,7 +117,7 @@ def _build_preset_response(preset: FetchPreset, last_fetch_time: datetime | None
     return resp
 
 
-@router.post("/fetch-presets", response_model=FetchPresetResponse)
+@router.post("/fetch-presets")
 async def create_fetch_preset(
     payload: Annotated[FetchPresetCreate, Body()],
     db: DbSession,
@@ -137,7 +137,7 @@ async def create_fetch_preset(
     return _build_preset_response(preset, None)
 
 
-@router.get("/fetch-presets", response_model=list[FetchPresetResponse])
+@router.get("/fetch-presets")
 async def list_fetch_presets(db: DbSession) -> list[FetchPresetResponse]:
     logger.debug("Listing fetch presets")
     result = await db.execute(select(FetchPreset).order_by(FetchPreset.created_at.desc()))
@@ -146,7 +146,7 @@ async def list_fetch_presets(db: DbSession) -> list[FetchPresetResponse]:
     return [_build_preset_response(p, last_fetch_map.get(p.id)) for p in presets]
 
 
-@router.put("/fetch-presets/{preset_id}", response_model=FetchPresetResponse)
+@router.put("/fetch-presets/{preset_id}")
 async def update_fetch_preset(
     preset_id: str,
     payload: Annotated[FetchPresetUpdate, Body()],
@@ -249,7 +249,7 @@ async def run_fetch_preset(
 # ── Schedules ─────────────────────────────────────────────
 
 
-@router.post("/schedules", response_model=FetchScheduleResponse)
+@router.post("/schedules")
 async def create_schedule(
     payload: Annotated[FetchScheduleCreate, Body()],
     db: DbSession,
@@ -275,7 +275,7 @@ async def create_schedule(
     return await _schedule_response(db, schedule)
 
 
-@router.get("/schedules", response_model=list[FetchScheduleResponse])
+@router.get("/schedules")
 async def list_schedules(db: DbSession) -> list[FetchScheduleResponse]:
     logger.debug("Listing schedules")
     result = await db.execute(
@@ -285,7 +285,7 @@ async def list_schedules(db: DbSession) -> list[FetchScheduleResponse]:
     return [FetchScheduleResponse.model_validate(s) for s in schedules]
 
 
-@router.put("/schedules/{schedule_id}", response_model=FetchScheduleResponse)
+@router.put("/schedules/{schedule_id}")
 async def update_schedule(
     schedule_id: str,
     payload: Annotated[FetchScheduleUpdate, Body()],
@@ -336,7 +336,7 @@ async def delete_schedule(
     return {"deleted": schedule_id}
 
 
-@router.post("/schedules/{schedule_id}/toggle", response_model=FetchScheduleResponse)
+@router.post("/schedules/{schedule_id}/toggle")
 async def toggle_schedule(
     schedule_id: str,
     db: DbSession,
@@ -373,7 +373,7 @@ async def _schedule_response(db: AsyncSession, schedule: FetchSchedule) -> Fetch
 # ── Cleanup Rules ─────────────────────────────────────────
 
 
-@router.post("/cleanup-rules", response_model=CleanupRuleResponse)
+@router.post("/cleanup-rules")
 async def create_cleanup_rule(
     payload: Annotated[CleanupRuleCreate, Body()],
     db: DbSession,
@@ -394,14 +394,14 @@ async def create_cleanup_rule(
     return CleanupRuleResponse.model_validate(rule)
 
 
-@router.get("/cleanup-rules", response_model=list[CleanupRuleResponse])
+@router.get("/cleanup-rules")
 async def list_cleanup_rules(db: DbSession) -> list[CleanupRuleResponse]:
     logger.debug("Listing cleanup rules")
     result = await db.execute(select(CleanupRule).order_by(CleanupRule.created_at.desc()))
     return [CleanupRuleResponse.model_validate(r) for r in result.scalars().all()]
 
 
-@router.put("/cleanup-rules/{rule_id}", response_model=CleanupRuleResponse)
+@router.put("/cleanup-rules/{rule_id}")
 async def update_cleanup_rule(
     rule_id: str,
     payload: Annotated[CleanupRuleUpdate, Body()],
@@ -478,7 +478,7 @@ async def cleanup_storage_stats(db: DbSession) -> dict[str, Any]:
     }
 
 
-@router.get("/cleanup/preview", response_model=CleanupPreviewResponse)
+@router.get("/cleanup/preview")
 async def preview_cleanup(db: DbSession) -> CleanupPreviewResponse:
     """Dry-run: show what would be deleted by active cleanup rules."""
     logger.info("Preview cleanup requested")
@@ -499,7 +499,7 @@ async def preview_cleanup(db: DbSession) -> CleanupPreviewResponse:
     )
 
 
-@router.post("/cleanup/run", response_model=CleanupRunResponse)
+@router.post("/cleanup/run")
 async def run_cleanup_now(db: DbSession) -> CleanupRunResponse:
     """Manually trigger cleanup."""
     frames_to_delete = await _get_frames_to_cleanup(db)

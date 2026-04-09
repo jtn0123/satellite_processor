@@ -32,7 +32,7 @@ _COLLECTION_NOT_FOUND = "Collection not found"
 router = APIRouter(prefix="/api/satellite", tags=["satellite-collections"])
 
 
-@router.post("/collections", response_model=CollectionResponse)
+@router.post("/collections")
 async def create_collection(
     payload: Annotated[CollectionCreate, Body()],
     db: DbSession,
@@ -60,7 +60,7 @@ async def create_collection(
     )
 
 
-@router.get("/collections", response_model=PaginatedResponse[CollectionResponse])
+@router.get("/collections")
 async def list_collections(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -94,7 +94,7 @@ async def list_collections(
     return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
-@router.put("/collections/{collection_id}", response_model=CollectionResponse)
+@router.put("/collections/{collection_id}")
 async def update_collection(
     collection_id: str,
     payload: Annotated[CollectionUpdate, Body()],
@@ -167,7 +167,7 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
-@router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
+@router.get("/collections/{collection_id}/frames")
 async def list_collection_frames(
     collection_id: str,
     db: DbSession,

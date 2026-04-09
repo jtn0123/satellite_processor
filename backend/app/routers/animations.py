@@ -222,7 +222,7 @@ async def _query_frame_ids(
 # ── Crop Presets ──────────────────────────────────────────
 
 
-@router.post("/crop-presets", response_model=CropPresetResponse)
+@router.post("/crop-presets")
 async def create_crop_preset(
     payload: Annotated[CropPresetCreate, Body()],
     db: DbSession,
@@ -245,14 +245,14 @@ async def create_crop_preset(
     return CropPresetResponse.model_validate(preset)
 
 
-@router.get("/crop-presets", response_model=list[CropPresetResponse])
+@router.get("/crop-presets")
 async def list_crop_presets(db: DbSession) -> list[CropPresetResponse]:
     logger.debug("Listing crop presets")
     result = await db.execute(select(CropPreset).order_by(CropPreset.name))
     return [CropPresetResponse.model_validate(p) for p in result.scalars().all()]
 
 
-@router.put("/crop-presets/{preset_id}", response_model=CropPresetResponse)
+@router.put("/crop-presets/{preset_id}")
 async def update_crop_preset(
     preset_id: str,
     payload: Annotated[CropPresetUpdate, Body()],
@@ -289,7 +289,7 @@ async def delete_crop_preset(
 # ── Animations ──────────────────────────────────────────
 
 
-@router.post("/animations", response_model=AnimationResponse)
+@router.post("/animations")
 async def create_animation(
     payload: Annotated[AnimationCreate, Body()],
     db: DbSession,
@@ -336,7 +336,7 @@ async def create_animation(
     return _build_anim_response(anim)
 
 
-@router.post("/animations/from-range", response_model=AnimationResponse)
+@router.post("/animations/from-range")
 async def create_animation_from_range(
     payload: Annotated[AnimationFromRange, Body()],
     db: DbSession,
@@ -386,7 +386,7 @@ async def create_animation_from_range(
     return _build_anim_response(anim)
 
 
-@router.post("/animations/recent", response_model=AnimationResponse)
+@router.post("/animations/recent")
 async def create_animation_recent(
     payload: Annotated[AnimationRecent, Body()],
     db: DbSession,
@@ -418,7 +418,7 @@ async def create_animation_recent(
     return _build_anim_response(anim)
 
 
-@router.post("/animations/batch", response_model=list[AnimationResponse])
+@router.post("/animations/batch")
 async def create_animation_batch(
     payload: Annotated[BatchAnimationRequest, Body()],
     db: DbSession,
@@ -451,7 +451,7 @@ async def create_animation_batch(
     return results
 
 
-@router.get("/animations", response_model=PaginatedResponse[AnimationResponse])
+@router.get("/animations")
 async def list_animations(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -465,7 +465,7 @@ async def list_animations(
     return PaginatedResponse(items=items, total=count, page=page, limit=limit)
 
 
-@router.get("/animations/{animation_id}", response_model=AnimationResponse)
+@router.get("/animations/{animation_id}")
 async def get_animation(animation_id: str, db: DbSession) -> AnimationResponse:
     logger.debug("Animation requested: id=%s", sanitize_log(animation_id))
     validate_uuid(animation_id, "animation_id")
@@ -494,7 +494,7 @@ async def delete_animation(animation_id: str, db: DbSession) -> dict[str, Any]:
 # ── Frame Range Preview ──────────────────────────────────
 
 
-@router.get("/frames/preview-range", response_model=FrameRangePreview)
+@router.get("/frames/preview-range")
 async def preview_frame_range(
     satellite: Annotated[str, Query()],
     sector: Annotated[str, Query()],
@@ -559,14 +559,14 @@ async def preview_frame_range(
 # ── Animation Presets CRUD ──────────────────────────────
 
 
-@router.get("/animation-presets", response_model=list[AnimationPresetResponse])
+@router.get("/animation-presets")
 async def list_animation_presets(db: DbSession) -> list[AnimationPresetResponse]:
     logger.debug("Listing animation presets")
     result = await db.execute(select(AnimationPreset).order_by(AnimationPreset.name))
     return [AnimationPresetResponse.model_validate(p) for p in result.scalars().all()]
 
 
-@router.post("/animation-presets", response_model=AnimationPresetResponse)
+@router.post("/animation-presets")
 async def create_animation_preset(
     payload: Annotated[AnimationPresetCreate, Body()],
     db: DbSession,
@@ -593,7 +593,7 @@ async def create_animation_preset(
     return AnimationPresetResponse.model_validate(preset)
 
 
-@router.get("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
+@router.get("/animation-presets/{preset_id}")
 async def get_animation_preset(
     preset_id: str,
     db: DbSession,
@@ -606,7 +606,7 @@ async def get_animation_preset(
     return AnimationPresetResponse.model_validate(preset)
 
 
-@router.put("/animation-presets/{preset_id}", response_model=AnimationPresetResponse)
+@router.put("/animation-presets/{preset_id}")
 async def update_animation_preset(
     preset_id: str,
     payload: Annotated[AnimationPresetUpdate, Body()],

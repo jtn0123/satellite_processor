@@ -37,7 +37,7 @@ class NotificationResponse(BaseModel):
         )
 
 
-@router.get("", response_model=list[NotificationResponse])
+@router.get("")
 async def list_notifications(db: DbSession) -> list[NotificationResponse]:
     """Return last 50 notifications, newest first."""
     logger.debug("Listing notifications")

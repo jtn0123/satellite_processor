@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/satellite", tags=["satellite-tags"])
 
 
-@router.post("/tags", response_model=TagResponse)
+@router.post("/tags")
 async def create_tag(
     payload: Annotated[TagCreate, Body()],
     db: DbSession,
@@ -42,7 +42,7 @@ async def create_tag(
     return TagResponse.model_validate(tag)
 
 
-@router.get("/tags", response_model=PaginatedResponse[TagResponse])
+@router.get("/tags")
 async def list_tags(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,

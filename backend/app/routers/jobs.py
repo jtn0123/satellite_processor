@@ -234,7 +234,7 @@ async def create_job(
     return db_job
 
 
-@router.get("", response_model=PaginatedResponse[JobResponse])
+@router.get("")
 async def list_jobs(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,

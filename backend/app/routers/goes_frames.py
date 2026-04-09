@@ -140,7 +140,7 @@ async def quick_fetch_options() -> list[dict[str, Any]]:
 # ── Frames ────────────────────────────────────────────────────────────
 
 
-@router.get("/frames", response_model=PaginatedResponse[GoesFrameResponse])
+@router.get("/frames")
 async def list_frames(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -220,7 +220,7 @@ async def list_frames(
     )
 
 
-@router.get("/frames/stats", response_model=FrameStatsResponse)
+@router.get("/frames/stats")
 async def frame_stats(db: DbSession) -> FrameStatsResponse:
     """Storage stats per satellite/band."""
     logger.debug("Frame stats requested")
@@ -361,7 +361,7 @@ async def export_frames(
     )
 
 
-@router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
+@router.get("/frames/{frame_id}")
 async def get_frame(frame_id: str, db: DbSession) -> GoesFrameResponse:
     """Get single frame detail."""
     logger.debug("Frame requested: frame_id=%s", sanitize_log(frame_id))

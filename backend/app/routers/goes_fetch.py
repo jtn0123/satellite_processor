@@ -187,7 +187,7 @@ def _dispatch_fetch_task(job_id: str, params: dict[str, Any], satellite: str) ->
     return result, "GOES fetch job created"
 
 
-@router.post("/fetch-composite", response_model=GoesFetchResponse)
+@router.post("/fetch-composite")
 @limiter.limit("3/minute")
 async def fetch_composite(
     request: Request,
@@ -348,7 +348,7 @@ async def detect_gaps(
     )
 
 
-@router.post("/backfill", response_model=GoesFetchResponse)
+@router.post("/backfill")
 @limiter.limit("2/minute")
 async def backfill_gaps(
     request: Request,

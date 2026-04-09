@@ -176,7 +176,7 @@ async def upload_image(request: Request, file: Annotated[UploadFile, File()], db
     return {"id": db_image.id, "filename": db_image.original_name, "size": db_image.file_size}
 
 
-@router.get("", response_model=PaginatedResponse[ImageResponse])
+@router.get("")
 async def list_images(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,

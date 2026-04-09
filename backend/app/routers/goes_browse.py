@@ -84,7 +84,7 @@ async def create_composite(
     }
 
 
-@router.get("/composites", response_model=PaginatedResponse[CompositeResponse])
+@router.get("/composites")
 async def list_composites(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,

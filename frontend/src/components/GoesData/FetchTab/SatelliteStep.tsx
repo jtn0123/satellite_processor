@@ -1,6 +1,8 @@
 import { Satellite, ChevronRight } from 'lucide-react';
 import type { SatelliteAvailability } from '../types';
 import { formatAvailRange } from './fetchUtils';
+import { cn } from '../../../utils/cn';
+import { selectableCardClasses } from '../../../styles/variants';
 
 interface EnhancedProduct {
   satellites: string[];
@@ -28,11 +30,10 @@ export function SatelliteStep({ satellite, setSatellite, products, onNext }: Sat
               key={sat}
               type="button"
               onClick={() => setSatellite(sat)}
-              className={`text-left p-4 rounded-xl border transition-all ${
-                selected
-                  ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
-                  : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 hover:border-primary/30'
-              }`}
+              className={cn(
+                'text-left p-4 rounded-xl border transition-all',
+                selectableCardClasses(selected),
+              )}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">

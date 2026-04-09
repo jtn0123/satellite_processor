@@ -5,6 +5,8 @@ import { BAND_INFO, HIMAWARI_BAND_INFO, getBandInfoForSatellite } from '../../co
 import { isHimawariSatellite } from '../../utils/sectorHelpers';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
+import { cn } from '../../utils/cn';
+import { filterPillClasses, selectableCardClasses } from '../../styles/variants';
 
 interface BandPickerProps {
   value: string;
@@ -116,11 +118,10 @@ export default function BandPicker({
             type="button"
             onClick={() => setFilter(f.label)}
             disabled={disabled}
-            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-              filter === f.label
-                ? 'bg-primary/20 border-primary/50 text-primary'
-                : 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-primary/30'
-            }`}
+            className={cn(
+              'px-3 py-1 text-xs rounded-full border transition-colors',
+              filterPillClasses(filter === f.label),
+            )}
           >
             {f.label}
           </button>
@@ -163,11 +164,11 @@ export default function BandPicker({
                         handleSelect();
                       }
                     }}
-                    className={`text-left p-3 rounded-lg border transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                      selected
-                        ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
-                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 hover:border-primary/30'
-                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={cn(
+                      'text-left p-3 rounded-lg border transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50',
+                      selectableCardClasses(selected),
+                      disabled && 'opacity-50 cursor-not-allowed',
+                    )}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div

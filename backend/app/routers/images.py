@@ -32,7 +32,18 @@ router = APIRouter(prefix="/api/images", tags=["images"])
 
 
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
+ALLOWED_CONTENT_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/tiff",
+    "image/x-tiff",
+}
+# JTN-473 Issue B: previously 500 MB. The only thing a legitimate user
+# uploads here is a satellite frame (a few MB). A 50 MB cap keeps
+# headroom for enhanced-resolution exports without letting a single
+# request fill the disk.
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 
 # Background thumbnail pre-generation deferred — see GitHub issue #31
@@ -41,8 +52,14 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
 @router.post("/upload")
 @limiter.limit("10/minute")
 async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
-    """Upload a satellite image using chunked streaming to avoid OOM on large files."""
-    logger.info("Image upload started: filename=%s", sanitize_log(file.filename))
+    """Upload a satellite image using chunked streaming to avoid OOM on large files.
+
+    JTN-473 Issue B: now enforces a content-type allowlist in addition to
+    the extension allowlist, caps the body at 50 MB, and verifies the
+    bytes actually decode as an image via ``PIL.Image.verify()`` before
+    committing the row. Non-image files are rejected with 415.
+    """
+    logger.info("Image upload started: filename=%s", sanitize_log(file.filename or ""))
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
@@ -54,6 +71,27 @@ async def upload_image(request: Request, file: Annotated[UploadFile, File()], db
 
     if ext not in ALLOWED_EXTENSIONS:
         raise APIError(400, "invalid_file_type", f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
+
+    # Content-Type allowlist — we never want to accept ``application/octet-stream``
+    # or ``text/plain`` with a .png extension. None/empty means the client
+    # didn't declare one, which is also rejected.
+    declared_type = (file.content_type or "").lower().split(";")[0].strip()
+    if declared_type and declared_type not in ALLOWED_CONTENT_TYPES:
+        raise APIError(
+            415,
+            "invalid_content_type",
+            f"Content-Type {declared_type!r} is not allowed. Accepted: {sorted(ALLOWED_CONTENT_TYPES)}",
+        )
+
+    # Reject on Content-Length header before streaming anything, so truly
+    # huge bodies never touch the disk.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_SIZE:
+        raise APIError(
+            413,
+            "file_too_large",
+            f"File exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit",
+        )
 
     file_id = str(uuid.uuid4())
     dest_name = f"{file_id}_{safe_basename}"
@@ -68,15 +106,29 @@ async def upload_image(request: Request, file: Annotated[UploadFile, File()], db
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 dest.unlink(missing_ok=True)
-                raise APIError(413, "file_too_large", "File exceeds 500MB limit")
+                raise APIError(
+                    413,
+                    "file_too_large",
+                    f"File exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit",
+                )
             await f.write(chunk)
 
+    # JTN-473 Issue B: don't trust the extension — make PIL actually
+    # decode the bytes. ``verify()`` closes the file after checking, so
+    # we immediately reopen to pull width/height.
     width = height = None
     try:
         with PILImage.open(dest) as img:
+            img.verify()
+        with PILImage.open(dest) as img:
             width, height = img.size
-    except (OSError, ValueError):
-        pass
+    except Exception:
+        dest.unlink(missing_ok=True)
+        raise APIError(
+            415,
+            "invalid_image",
+            "Uploaded file could not be decoded as an image",
+        )
 
     satellite = None
     captured_at = None

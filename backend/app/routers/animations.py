@@ -1,6 +1,10 @@
 """Animation studio endpoints — crop presets, animations, presets, and batch."""
 
+import hashlib
+import json as json_mod
 import logging
+import threading
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -41,6 +45,56 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/satellite", tags=["animation-studio"])
 
 _ANIMATION_PRESET_NOT_FOUND = "Animation preset not found"
+
+# JTN-473 Issue E: short-term idempotency for ``POST .../animations/from-range``.
+# A double-click (or React StrictMode double-render) previously created N
+# identical animations. We hash the canonical request params and return the
+# existing animation id if we've seen the same hash within this window.
+_ANIMATION_IDEMPOTENCY_TTL_SECONDS = 30
+_animation_idempotency_cache: dict[str, tuple[float, str]] = {}
+_animation_idempotency_lock = threading.Lock()
+
+
+def _canonical_animation_key(payload: "AnimationFromRange") -> str:
+    """Build a stable hash key from the canonical animation request params."""
+    canonical = {
+        "satellite": payload.satellite,
+        "sector": payload.sector,
+        "band": payload.band,
+        "start_time": payload.start_time.isoformat(),
+        "end_time": payload.end_time.isoformat(),
+        "fps": payload.fps,
+        "format": payload.format,
+        "quality": payload.quality,
+        "resolution": payload.resolution,
+        "loop_style": payload.loop_style,
+    }
+    blob = json_mod.dumps(canonical, sort_keys=True).encode()
+    return hashlib.sha256(blob).hexdigest()
+
+
+def _idempotency_lookup(key: str) -> str | None:
+    now = time.monotonic()
+    with _animation_idempotency_lock:
+        # Evict expired entries so the dict doesn't grow unboundedly.
+        expired = [
+            k for k, (ts, _) in _animation_idempotency_cache.items() if now - ts > _ANIMATION_IDEMPOTENCY_TTL_SECONDS
+        ]
+        for k in expired:
+            del _animation_idempotency_cache[k]
+        entry = _animation_idempotency_cache.get(key)
+        if entry is None:
+            return None
+        ts, anim_id = entry
+        if now - ts > _ANIMATION_IDEMPOTENCY_TTL_SECONDS:
+            del _animation_idempotency_cache[key]
+            return None
+        return anim_id
+
+
+def _idempotency_store(key: str, animation_id: str) -> None:
+    with _animation_idempotency_lock:
+        _animation_idempotency_cache[key] = (time.monotonic(), animation_id)
 
 
 # ── Helpers ──────────────────────────────────────────
@@ -287,7 +341,23 @@ async def create_animation_from_range(
     payload: Annotated[AnimationFromRange, Body()],
     db: DbSession,
 ):
-    """Create animation from a satellite/sector/band time range."""
+    """Create animation from a satellite/sector/band time range.
+
+    Repeated identical requests within a 30 s window (see
+    ``_ANIMATION_IDEMPOTENCY_TTL_SECONDS``) are deduped and return the
+    first animation's response — prevents a double-click or React
+    StrictMode double-render from spawning 2+ workers (JTN-473 Issue E).
+    """
+    # JTN-473 Issue E: idempotency dedupe on canonical params.
+    idem_key = _canonical_animation_key(payload)
+    existing_id = _idempotency_lookup(idem_key)
+    if existing_id:
+        result = await db.execute(select(Animation).where(Animation.id == existing_id))
+        existing = result.scalars().first()
+        if existing:
+            logger.info("Animation idempotency hit: key=%s -> id=%s", idem_key[:8], existing_id)
+            return _build_anim_response(existing)
+
     frame_ids = await _query_frame_ids(
         db,
         payload.satellite,
@@ -297,7 +367,10 @@ async def create_animation_from_range(
         payload.end_time,
     )
     overlay_dict = payload.overlay.model_dump() if payload.overlay else None
-    name = f"{payload.satellite} {payload.sector} {payload.band}"
+    # JTN-473 Issue E (compounding): respect the user-supplied ``name``
+    # when present instead of silently overwriting it with the derived
+    # ``satellite sector band`` string.
+    name = payload.name or f"{payload.satellite} {payload.sector} {payload.band}"
     anim = await _create_animation_from_frames(
         db,
         frame_ids,
@@ -309,6 +382,7 @@ async def create_animation_from_range(
         loop_style=payload.loop_style,
         overlay=overlay_dict,
     )
+    _idempotency_store(idem_key, anim.id)
     return _build_anim_response(anim)
 
 

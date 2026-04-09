@@ -122,6 +122,16 @@ async def catalog(
     from datetime import UTC, datetime
 
     from ..services.catalog import catalog_list
+    from ..services.satellite_registry import validate_band, validate_satellite, validate_sector
+
+    # JTN-475 ISSUE-059: validate up-front so ``satellite=foo`` / ``band=C99``
+    # return 422 with the offending field instead of a generic 500.
+    try:
+        validate_satellite(satellite)
+        validate_sector(satellite, sector)
+        validate_band(satellite, band)
+    except ValueError as exc:
+        raise APIError(422, "invalid_params", str(exc))
 
     dt = None
     if date:
@@ -135,7 +145,10 @@ async def catalog(
 
     async def _fetch():
         loop = asyncio.get_running_loop()
-        items = await loop.run_in_executor(_s3_executor, lambda: catalog_list(satellite, sector, band, dt))
+        try:
+            items = await loop.run_in_executor(_s3_executor, lambda: catalog_list(satellite, sector, band, dt))
+        except (ValueError, KeyError) as exc:
+            raise APIError(422, "invalid_params", str(exc))
         return {"items": items, "total": len(items)}
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
@@ -154,12 +167,23 @@ async def catalog_latest(
     logger.debug("GOES catalog latest requested")
     response.headers["Cache-Control"] = "public, max-age=60"
     from ..services.catalog import catalog_latest as _catalog_latest
+    from ..services.satellite_registry import validate_band, validate_satellite, validate_sector
+
+    try:
+        validate_satellite(satellite)
+        validate_sector(satellite, sector)
+        validate_band(satellite, band)
+    except ValueError as exc:
+        raise APIError(422, "invalid_params", str(exc))
 
     cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}:{band}")
 
     async def _fetch():
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(_s3_executor, lambda: _catalog_latest(satellite, sector, band))
+        try:
+            return await loop.run_in_executor(_s3_executor, lambda: _catalog_latest(satellite, sector, band))
+        except (ValueError, KeyError) as exc:
+            raise APIError(422, "invalid_params", str(exc))
 
     result = await get_cached(cache_key, ttl=60, fetch_fn=_fetch)
     if not result:
@@ -176,12 +200,21 @@ async def catalog_available(
     """Check which sectors have recent data (last 2 hours) on S3."""
     logger.debug("GOES catalog available requested")
     from ..services.catalog import catalog_available as _catalog_available
+    from ..services.satellite_registry import validate_satellite
+
+    try:
+        validate_satellite(satellite)
+    except ValueError as exc:
+        raise APIError(422, "invalid_params", str(exc))
 
     cache_key = make_cache_key(f"catalog-available:{satellite}")
 
     async def _fetch():
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(_s3_executor, lambda: _catalog_available(satellite))
+        try:
+            return await loop.run_in_executor(_s3_executor, lambda: _catalog_available(satellite))
+        except (ValueError, KeyError) as exc:
+            raise APIError(422, "invalid_params", str(exc))
 
     return await get_cached(cache_key, ttl=120, fetch_fn=_fetch)
 

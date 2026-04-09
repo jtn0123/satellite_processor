@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,8 +37,19 @@ _REVOKE_FAIL_MSG = "Failed to revoke Celery task %s"
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
+_MAX_BULK_JOB_IDS = 500
+
+
 class BulkJobDeleteRequest(BaseModel):
-    job_ids: list[str] = []
+    """Request schema for ``DELETE /api/jobs/bulk`` (JTN-473 Issue D).
+
+    Previously an empty body, an empty array, and a 10 000-element array
+    were all accepted silently. ``job_ids`` is now capped at
+    :data:`_MAX_BULK_JOB_IDS`; the caller can still omit it entirely
+    when using ``?all=true``.
+    """
+
+    job_ids: list[str] = Field(default_factory=list, max_length=_MAX_BULK_JOB_IDS)
     delete_files: bool = False
 
 
@@ -180,8 +191,11 @@ async def create_job(request: Request, job_in: JobCreate, db: DbSession):
     else:
         task = celery_app.send_task("process_images", args=[db_job.id, task_params])
 
+    # JTN-421 ISSUE-028: previously the celery task id was echoed into the
+    # user-facing ``status_message`` field, which the Jobs page then rendered
+    # verbatim. The canonical place for the id is the dedicated ``task_id``
+    # column on the Job row — status_message is reserved for human text.
     db_job.task_id = task.id
-    db_job.status_message = f"celery_task_id:{task.id}"
     await db.commit()
     await db.refresh(db_job)
 
@@ -297,7 +311,14 @@ async def bulk_delete_jobs(
     elif payload.job_ids:
         result = await db.execute(select(Job).where(Job.id.in_(payload.job_ids)))
     else:
-        return {"deleted": [], "count": 0, "bytes_freed": 0}
+        # JTN-473 Issue D: empty body / empty job_ids used to 200 with an
+        # empty ``deleted`` array, hiding client bugs. Require either
+        # ``?all=true`` or a non-empty ``job_ids``.
+        raise APIError(
+            422,
+            "missing_ids",
+            "Provide a non-empty job_ids array or ?all=true",
+        )
 
     jobs = result.scalars().all()
 

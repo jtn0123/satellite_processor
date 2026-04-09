@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 PATTERN_HEX_COLOR = r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+
+# JTN-474 ISSUE-071: reject names that look like HTML/script injection so
+# error toasts and other UI surfaces never reflect ``<script>...</script>``
+# back to the user unescaped. React escapes by default but the contract is
+# safer if the server refuses to persist these in the first place.
+_HTML_TAG_RE = re.compile(r"<[^>]*>")
+
+
+def _reject_html_in_name(v: str) -> str:
+    if isinstance(v, str) and _HTML_TAG_RE.search(v):
+        raise ValueError("Name may not contain HTML tags")
+    return v
+
+
+# Bulk operation caps — prevent a malicious or buggy client from POSTing
+# 10k IDs in a single request (JTN-473 Issue D).
+MAX_BULK_IDS = 500
 
 # --- Frame schemas ---
 
@@ -53,14 +71,14 @@ class FrameStatsResponse(BaseModel):
 class BulkFrameDeleteRequest(BaseModel):
     """Request schema for bulk-deleting GOES frames by their IDs."""
 
-    ids: list[str] = Field(..., min_length=1)
+    ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
 
 
 class BulkTagRequest(BaseModel):
     """Request schema for applying tags to multiple frames at once."""
 
-    frame_ids: list[str] = Field(..., min_length=1)
-    tag_ids: list[str] = Field(..., min_length=1)
+    frame_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
+    tag_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
 
 
 class ProcessFramesRequest(BaseModel):
@@ -86,7 +104,17 @@ class CollectionCreate(BaseModel):
     """Request schema for creating a named frame collection."""
 
     name: str = Field(..., min_length=1, max_length=200)
-    description: str = ""
+    description: str = Field("", max_length=1000)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def clean_name(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                raise ValueError("Name may not be blank or whitespace-only")
+            _reject_html_in_name(v)
+        return v
 
 
 class CollectionUpdate(BaseModel):
@@ -123,6 +151,17 @@ class TagCreate(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100)
     color: str = Field("#3b82f6", pattern=PATTERN_HEX_COLOR)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def clean_name(cls, v):
+        """Trim whitespace and reject HTML tags (JTN-474 ISSUE-071, -072)."""
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                raise ValueError("Name may not be blank or whitespace-only")
+            _reject_html_in_name(v)
+        return v
 
 
 class TagResponse(BaseModel):

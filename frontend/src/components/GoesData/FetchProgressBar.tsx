@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import api from '../../api/client';
+import { useIsWebSocketConnected } from '../ConnectionStatus';
 
 interface JobSummary {
   id: string;
@@ -17,17 +18,29 @@ interface JobListResponse {
   total: number;
 }
 
+// Status buckets considered "live" for the progress bar. Kept in sync with
+// the backend filter we send on the /jobs request so both sides agree.
+const ACTIVE_STATUSES = new Set(['processing', 'pending']);
+
 export default function FetchProgressBar() {
   const [expanded, setExpanded] = useState(false);
+  const wsConnected = useIsWebSocketConnected();
 
   const { data } = useQuery<JobListResponse>({
     queryKey: ['active-jobs'],
     queryFn: () =>
       api.get('/jobs', { params: { status: 'processing,pending', limit: 10 } }).then((r) => r.data),
-    refetchInterval: 3000,
+    // JTN-415: drop polling to 0 when websocket is pushing updates.
+    refetchInterval: wsConnected ? false : 3000,
   });
 
-  const jobs = data?.items ?? [];
+  // JTN-412 ISSUE-025: header said "0 queued" while the body showed 10
+  // completed rows. Root cause: the backend currently ignores `?status=` (see
+  // JTN-412/JTN-476 ISSUE-075) so the response includes terminal jobs. Filter
+  // client-side so the header count and the rendered list always agree. Once
+  // the backend filter lands this becomes a no-op.
+  const allJobs = data?.items ?? [];
+  const jobs = allJobs.filter((j) => ACTIVE_STATUSES.has(j.status));
   const activeJob = jobs.find((j) => j.status === 'processing');
   const pendingCount = jobs.filter((j) => j.status === 'pending').length;
 

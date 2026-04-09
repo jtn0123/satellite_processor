@@ -66,7 +66,10 @@ function CombinedStatsTab() {
 export default function GoesData() {
   usePageTitle('Browse & Fetch');
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get('tab') as TabId | null;
+  // JTN-476 ISSUE-077: tab matching used to be case-sensitive, so `?tab=BROWSE`
+  // silently fell back to the default tab. Normalize to lowercase before
+  // matching so any case works.
+  const tabFromUrl = searchParams.get('tab')?.toLowerCase() as TabId | null;
   const activeTab: TabId = tabFromUrl && allTabIds.includes(tabFromUrl) ? tabFromUrl : 'browse';
   const [subView, setSubView] = useState<string | null>(null);
 

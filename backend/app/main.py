@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import shutil
+import uuid as _uuid_mod
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -75,7 +76,12 @@ class GoesToSatelliteRewriteMiddleware:
 
 
 # Paths that skip API key auth
-AUTH_SKIP_PATHS = {"/api/metrics", "/docs", "/redoc", "/openapi.json"}
+#
+# JTN-470: ``/api/metrics`` previously skipped auth, exposing job counts,
+# Celery task names and queue depths to any anonymous caller. It now requires
+# the same ``X-API-Key`` header as every other internal endpoint (when an API
+# key is configured).
+AUTH_SKIP_PATHS = {"/docs", "/redoc", "/openapi.json"}
 AUTH_SKIP_PREFIXES = ("/api/shared/", "/api/health")
 # POST /api/errors is unauthenticated (errors happen when auth fails too)
 AUTH_SKIP_METHODS_PATHS = {("POST", "/api/errors")}
@@ -323,8 +329,29 @@ async def openapi_json():
 WS_PING_INTERVAL = 30  # seconds
 WS_TOO_MANY_CONNECTIONS = "Too many connections"
 WS_MAX_CONNECTIONS_PER_IP = 10
+# JTN-470: WS close codes for invalid path parameters and auth failures.
+# 4400 mirrors HTTP 400 (bad request) in the private 4000-4999 range reserved
+# for application use by RFC 6455.
+WS_CODE_INVALID_JOB_ID = 4400
 _ws_connections: dict[str, int] = {}  # ip -> count
 _ws_lock = asyncio.Lock()
+
+
+def _is_valid_uuid(value: str) -> bool:
+    """Return True if ``value`` parses as a UUID.
+
+    JTN-470: ``/ws/jobs/{job_id}`` previously accepted arbitrary strings
+    (including 10KB payloads and SQL-injection-shaped inputs) and echoed them
+    back in the ``connected`` message. We validate the parameter as a UUID
+    before doing anything else to shrink the attack surface.
+    """
+    if not isinstance(value, str) or len(value) != 36:
+        return False
+    try:
+        _uuid_mod.UUID(value)
+    except (ValueError, AttributeError):
+        return False
+    return True
 
 
 async def _ws_track(ip: str, delta: int) -> bool:
@@ -428,7 +455,23 @@ async def _ws_ping(websocket: WebSocket) -> None:
 
 @app.websocket("/ws/jobs/{job_id}")
 async def job_websocket(websocket: WebSocket, job_id: str):
-    """WebSocket endpoint for real-time job progress via Redis pub/sub"""
+    """WebSocket endpoint for real-time job progress via Redis pub/sub.
+
+    JTN-470: ``job_id`` must be a valid UUID. Invalid values are rejected with
+    close code 4400 before auth, rate-limit tracking, or Redis subscription.
+    """
+    if not _is_valid_uuid(job_id):
+        # Accept briefly so we can send a structured close code; close reason
+        # is echoed by some clients but never the raw job_id.
+        await websocket.accept()
+        ws_logger.warning(
+            "WS rejected: /ws/jobs/<invalid> (len=%d) from %s",
+            len(job_id) if isinstance(job_id, str) else -1,
+            sanitize_log(websocket.client.host if websocket.client else "unknown"),
+        )
+        await websocket.close(code=WS_CODE_INVALID_JOB_ID, reason="Invalid job_id")
+        return
+
     if not await _ws_authenticate(websocket):
         return
 

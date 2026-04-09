@@ -20,10 +20,29 @@ async def test_auth_skip_openapi(client):
 
 
 @pytest.mark.asyncio
-async def test_auth_skip_metrics(client):
-    """/api/metrics should not require auth."""
+async def test_metrics_reachable_when_no_api_key(client):
+    """/api/metrics should be reachable when API_KEY is unset (debug/dev).
+
+    JTN-470: When an API key is configured, /api/metrics requires auth like
+    any other internal endpoint. In the test harness API_KEY is empty, so the
+    auth middleware is a no-op and the endpoint should respond 200.
+    """
     resp = await client.get("/api/metrics")
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_metrics_requires_api_key_when_set(client):
+    """/api/metrics must be gated when API_KEY is configured (JTN-470)."""
+    with patch("app.main.app_settings") as mock_settings:
+        mock_settings.api_key = "test-secret"
+        mock_settings.cors_origins = ["*"]
+        mock_settings.debug = False
+        mock_settings.redis_url = "redis://localhost:6379/0"
+        mock_settings.storage_path = "/tmp"
+
+        resp = await client.get("/api/metrics")
+        assert resp.status_code == 401
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@ import asyncio
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
@@ -107,8 +107,8 @@ def _validate_not_future(start_time: datetime, end_time: datetime) -> None:
 
 def _validate_satellite_availability(
     satellite: str,
-    start_time,
-    end_time,
+    start_time: datetime,
+    end_time: datetime,
 ) -> None:
     """Raise APIError if the requested time range falls outside satellite availability."""
     _validate_not_future(start_time, end_time)
@@ -135,8 +135,8 @@ def _validate_satellite_availability(
 
 def _validate_frame_count(
     sector: str,
-    start_time,
-    end_time,
+    start_time: datetime,
+    end_time: datetime,
     num_bands: int,
 ) -> None:
     """Raise APIError if the estimated frame count exceeds the limit."""
@@ -151,7 +151,9 @@ def _validate_frame_count(
         )
 
 
-def _dispatch_composite_task(job_id: str, params: dict, satellite: str, recipe: str, num_bands: int) -> tuple:
+def _dispatch_composite_task(
+    job_id: str, params: dict[str, Any], satellite: str, recipe: str, num_bands: int
+) -> tuple[Any, str]:
     """Dispatch to Himawari or GOES composite task. Returns (celery_result, message)."""
     from ..services.satellite_registry import SATELLITE_REGISTRY
 
@@ -168,7 +170,7 @@ def _dispatch_composite_task(job_id: str, params: dict, satellite: str, recipe: 
     return result, f"Composite fetch job created ({recipe}, {num_bands} bands)"
 
 
-def _dispatch_fetch_task(job_id: str, params: dict, satellite: str) -> tuple:
+def _dispatch_fetch_task(job_id: str, params: dict[str, Any], satellite: str) -> tuple[Any, str]:
     """Dispatch to Himawari or GOES fetch task. Returns (celery_result, message)."""
     from ..services.satellite_registry import SATELLITE_REGISTRY
 
@@ -185,13 +187,13 @@ def _dispatch_fetch_task(job_id: str, params: dict, satellite: str) -> tuple:
     return result, "GOES fetch job created"
 
 
-@router.post("/fetch-composite", response_model=GoesFetchResponse)
+@router.post("/fetch-composite")
 @limiter.limit("3/minute")
 async def fetch_composite(
     request: Request,
     payload: Annotated[FetchCompositeRequest, Body()],
     db: DbSession,
-):
+) -> GoesFetchResponse:
     """Fetch multiple bands and auto-composite. Max 50 frames per request."""
     logger.info("Composite fetch requested")
     bands = _get_composite_bands(payload.recipe)
@@ -252,7 +254,7 @@ async def fetch_goes(
     payload: Annotated[GoesFetchRequest, Body()],
     db: DbSession,
     idempotency_key: Annotated[str | None, Depends(idempotency_key_dependency)] = None,
-):
+) -> GoesFetchResponse | JSONResponse:
     """Kick off a GOES data fetch job.
 
     JTN-391: accepts an optional ``Idempotency-Key`` header — duplicate
@@ -325,7 +327,7 @@ async def detect_gaps(
     expected_interval: Annotated[float, Query(ge=0.5, le=60.0)] = 10.0,
     start_time: Annotated[datetime | None, Query()] = None,
     end_time: Annotated[datetime | None, Query()] = None,
-):
+) -> dict[str, Any]:
     """Run gap detection and return coverage stats.
 
     Optional ``start_time``/``end_time`` restrict the analysis to a time range.
@@ -346,13 +348,13 @@ async def detect_gaps(
     )
 
 
-@router.post("/backfill", response_model=GoesFetchResponse)
+@router.post("/backfill")
 @limiter.limit("2/minute")
 async def backfill_gaps(
     request: Request,
     payload: Annotated[GoesBackfillRequest, Body()],
     db: DbSession,
-):
+) -> GoesFetchResponse:
     """Fill detected gaps (one-shot, not automatic).
 
     JTN-460: Requires an explicit ``start_time``, ``end_time``, satellite,
@@ -400,7 +402,7 @@ async def estimate_frame_count(
     band: Annotated[str, Query()],
     start_time: Annotated[datetime, Query()],
     end_time: Annotated[datetime, Query()],
-):
+) -> dict[str, int]:
     """Estimate frame count for a time range without downloading.
 
     The ``expected_count`` field is the number of frames the satellite should
@@ -436,7 +438,7 @@ async def preview_frame(
     sector: Annotated[str, Query()],
     band: Annotated[str, Query()],
     time: Annotated[datetime, Query()],
-):
+) -> Response:
     """Fetch a single frame preview."""
     logger.debug("Preview frame requested")
     from ..services.goes_fetcher import fetch_single_preview

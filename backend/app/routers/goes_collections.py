@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query
 from fastapi.responses import StreamingResponse
@@ -32,11 +32,11 @@ _COLLECTION_NOT_FOUND = "Collection not found"
 router = APIRouter(prefix="/api/satellite", tags=["satellite-collections"])
 
 
-@router.post("/collections", response_model=CollectionResponse)
+@router.post("/collections")
 async def create_collection(
     payload: Annotated[CollectionCreate, Body()],
     db: DbSession,
-):
+) -> CollectionResponse:
     logger.info("Creating collection: name=%s", sanitize_log(payload.name))
     existing = await db.execute(select(Collection).where(Collection.name == payload.name))
     if existing.scalar_one_or_none() is not None:
@@ -60,12 +60,12 @@ async def create_collection(
     )
 
 
-@router.get("/collections", response_model=PaginatedResponse[CollectionResponse])
+@router.get("/collections")
 async def list_collections(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
-):
+) -> PaginatedResponse[CollectionResponse]:
     logger.debug("Listing collections")
     total = (await db.execute(select(func.count(Collection.id)))).scalar() or 0
     result = await db.execute(
@@ -94,12 +94,12 @@ async def list_collections(
     return PaginatedResponse(items=items, total=total, page=page, limit=limit)
 
 
-@router.put("/collections/{collection_id}", response_model=CollectionResponse)
+@router.put("/collections/{collection_id}")
 async def update_collection(
     collection_id: str,
     payload: Annotated[CollectionUpdate, Body()],
     db: DbSession,
-):
+) -> CollectionResponse:
     logger.info("Updating collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
@@ -131,7 +131,7 @@ async def update_collection(
 async def delete_collection(
     collection_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     coll = result.scalars().first()
@@ -147,7 +147,7 @@ async def add_frames_to_collection(
     collection_id: str,
     payload: Annotated[CollectionFramesRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Adding frames to collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
     if not result.scalars().first():
@@ -167,13 +167,13 @@ async def add_frames_to_collection(
     return {"added": added}
 
 
-@router.get("/collections/{collection_id}/frames", response_model=PaginatedResponse[GoesFrameResponse])
+@router.get("/collections/{collection_id}/frames")
 async def list_collection_frames(
     collection_id: str,
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
-):
+) -> PaginatedResponse[GoesFrameResponse]:
     """Return ordered frames for a collection with pagination."""
     logger.debug("Listing collection frames: id=%s", sanitize_log(collection_id))
     result = await db.execute(select(Collection).where(Collection.id == collection_id))
@@ -204,14 +204,14 @@ async def list_collection_frames(
     )
 
 
-@router.get("/collections/{collection_id}/export")
+@router.get("/collections/{collection_id}/export", response_model=None)
 async def export_collection(
     collection_id: str,
     db: DbSession,
     format: Annotated[str, Query(pattern="^(csv|json)$")] = "json",  # noqa: A002
     limit: Annotated[int, Query(ge=1)] = 1000,
     offset: Annotated[int, Query(ge=0)] = 0,
-):
+) -> StreamingResponse | list[dict[str, Any]]:
     """Export frame metadata for a collection."""
     logger.info("Exporting collection: id=%s", sanitize_log(collection_id))
     import io
@@ -249,7 +249,7 @@ async def remove_frames_from_collection(
     collection_id: str,
     payload: Annotated[CollectionFramesRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Removing frames from collection: id=%s", sanitize_log(collection_id))
     result = await db.execute(
         delete(CollectionFrame).where(

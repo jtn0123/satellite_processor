@@ -29,7 +29,8 @@ jobs:
               - 'backend/**'
               - 'satellite_processor/**'
               - 'requirements*.txt'
-              - 'backend/requirements.txt'
+              - 'backend/requirements.in'
+              - 'backend/requirements.lock'
             frontend:
               - 'frontend/**'
 
@@ -46,12 +47,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
 
       - name: Install dependencies
         run: |
           pip install uv
-          uv pip install --system -r backend/requirements.txt
+          uv pip install --system -r backend/requirements.lock
           uv pip install --system ruff pip-audit
 
       - name: Lint with ruff
@@ -88,7 +89,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
 
       - name: Install system dependencies
         run: |
@@ -104,7 +105,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install uv
-          uv pip install --system -r backend/requirements.txt
+          uv pip install --system -r backend/requirements.lock
 
       - name: Run backend tests with coverage
         working-directory: backend
@@ -141,7 +142,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
 
       - name: Start PostgreSQL
         run: |
@@ -168,7 +169,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install uv
-          uv pip install --system -r backend/requirements.txt
+          uv pip install --system -r backend/requirements.lock
 
       - name: Run alembic migrations
         working-directory: backend
@@ -218,12 +219,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
 
       - name: Install dependencies
         run: |
           pip install uv
-          uv pip install --system -r backend/requirements.txt
+          uv pip install --system -r backend/requirements.lock
 
       - name: Validate API contracts
         working-directory: backend

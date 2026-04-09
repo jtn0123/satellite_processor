@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
@@ -34,7 +34,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-catalog"])
 
 
 @router.get("/products")
-async def list_products(response: Response):
+async def list_products(response: Response) -> dict[str, Any]:
     """List available satellites, sectors, and bands with enhanced metadata.
 
     Returns all registered satellites (GOES + Himawari) with per-satellite
@@ -102,7 +102,7 @@ async def list_products(response: Response):
         "default_satellite": DEFAULT_SATELLITE,
     }
 
-    def _fetch():
+    def _fetch() -> dict[str, Any]:
         return products
 
     return await get_cached(cache_key, ttl=300, fetch_fn=_fetch)
@@ -116,7 +116,7 @@ async def catalog(
     sector: Annotated[str, Query()] = "CONUS",
     band: Annotated[str, Query()] = "C02",
     date: Annotated[str | None, Query(description="Date in YYYY-MM-DD format, defaults to today")] = None,
-):
+) -> Any:
     """Query NOAA S3 for available GOES captures."""
     logger.debug("GOES catalog requested")
     from datetime import UTC, datetime
@@ -143,7 +143,7 @@ async def catalog(
     effective_date = date or datetime.now(UTC).strftime("%Y-%m-%d")
     cache_key = make_cache_key(f"catalog:{satellite}:{sector}:{band}:{effective_date}")
 
-    async def _fetch():
+    async def _fetch() -> dict[str, Any]:
         loop = asyncio.get_running_loop()
         try:
             items = await loop.run_in_executor(_s3_executor, lambda: catalog_list(satellite, sector, band, dt))
@@ -162,7 +162,7 @@ async def catalog_latest(
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
     band: Annotated[str, Query()] = "C02",
-):
+) -> dict[str, Any]:
     """Return the most recent available frame on S3 (checks last 2 hours)."""
     logger.debug("GOES catalog latest requested")
     response.headers["Cache-Control"] = "public, max-age=60"
@@ -178,7 +178,7 @@ async def catalog_latest(
 
     cache_key = make_cache_key(f"catalog-latest:{satellite}:{sector}:{band}")
 
-    async def _fetch():
+    async def _fetch() -> dict[str, Any] | None:
         loop = asyncio.get_running_loop()
         try:
             return await loop.run_in_executor(_s3_executor, lambda: _catalog_latest(satellite, sector, band))
@@ -196,7 +196,7 @@ async def catalog_latest(
 async def catalog_available(
     request: Request,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
-):
+) -> dict[str, Any]:
     """Check which sectors have recent data (last 2 hours) on S3."""
     logger.debug("GOES catalog available requested")
     from ..services.catalog import catalog_available as _catalog_available
@@ -209,7 +209,7 @@ async def catalog_available(
 
     cache_key = make_cache_key(f"catalog-available:{satellite}")
 
-    async def _fetch():
+    async def _fetch() -> dict[str, Any]:
         loop = asyncio.get_running_loop()
         try:
             return await loop.run_in_executor(_s3_executor, lambda: _catalog_available(satellite))
@@ -226,14 +226,14 @@ async def band_sample_thumbnails(
     db: DbSession,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
-):
+) -> dict[str, Any]:
     """Return thumbnail URLs for the latest frame of each band."""
     logger.debug("Band sample thumbnails requested")
 
     cache_key = make_cache_key(f"band-samples:{satellite}:{sector}")
 
-    async def _fetch():
-        results = {}
+    async def _fetch() -> dict[str, Any]:
+        results: dict[str, str | None] = {}
         for band_id in VALID_BANDS:
             result = await db.execute(
                 select(GoesFrame.id, GoesFrame.thumbnail_path)
@@ -266,7 +266,7 @@ async def band_availability(
     db: DbSession,
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
-):
+) -> dict[str, Any]:
     """Return frame count per band for the given satellite/sector."""
     logger.debug("Band availability requested")
     from sqlalchemy import func
@@ -289,7 +289,7 @@ async def get_latest_frame(
     satellite: Annotated[str, Query()] = DEFAULT_SATELLITE,
     sector: Annotated[str, Query()] = "CONUS",
     band: Annotated[str, Query()] = "C02",
-):
+) -> dict[str, Any]:
     """Return the most recent GoesFrame for the given satellite/sector/band."""
     logger.debug("Latest frame requested")
     response.headers["Cache-Control"] = "public, max-age=30"

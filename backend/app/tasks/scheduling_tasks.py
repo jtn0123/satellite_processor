@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
+
+if TYPE_CHECKING:
+    from ..db.models import CleanupRule, FetchPreset, FetchSchedule, GoesFrame
 
 from ..celery_app import celery_app
 from ..utils import safe_remove, utcnow
@@ -16,7 +20,7 @@ from .helpers import _get_sync_db
 logger = logging.getLogger(__name__)
 
 
-def _launch_schedule_job(session, schedule, preset, now):
+def _launch_schedule_job(session: Any, schedule: FetchSchedule, preset: FetchPreset, now: datetime) -> None:
     """Create and dispatch a fetch job for a due schedule."""
     from ..db.models import Job
 
@@ -66,7 +70,7 @@ def _launch_schedule_job(session, schedule, preset, now):
 
 
 @celery_app.task(bind=True, name="check_schedules", soft_time_limit=300, time_limit=360)
-def check_schedules(self):
+def check_schedules(self: Any) -> None:
     """Check for due schedules and kick off fetch jobs."""
     from ..db.models import FetchPreset, FetchSchedule
 
@@ -100,7 +104,7 @@ def check_schedules(self):
         session.close()
 
 
-def _get_protected_frame_ids(session, protect_collections: bool) -> set[str]:
+def _get_protected_frame_ids(session: Any, protect_collections: bool) -> set[str]:
     """Return IDs of frames in collections if protection is enabled."""
     from sqlalchemy import select as sa_select
 
@@ -112,7 +116,7 @@ def _get_protected_frame_ids(session, protect_collections: bool) -> set[str]:
     return {r[0] for r in rows}
 
 
-def _collect_age_based_deletions(session, rule, protected_ids: set[str]) -> list:
+def _collect_age_based_deletions(session: Any, rule: CleanupRule, protected_ids: set[str]) -> list[GoesFrame]:
     """Find frames older than the rule's max age that are not protected."""
     from ..db.models import GoesFrame
 
@@ -124,7 +128,7 @@ def _collect_age_based_deletions(session, rule, protected_ids: set[str]) -> list
     return [f for f in frames if f.id not in protected_ids]
 
 
-def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> list:
+def _collect_storage_based_deletions(session: Any, rule: CleanupRule, protected_ids: set[str]) -> list[GoesFrame]:
     """Find oldest frames to delete to bring storage under the limit."""
     from sqlalchemy import func as sa_func
     from sqlalchemy import select as sa_select
@@ -143,7 +147,7 @@ def _collect_storage_based_deletions(session, rule, protected_ids: set[str]) -> 
     return _pick_frames_for_deletion(session, rule, protected_ids, total_bytes - max_bytes)
 
 
-def _pick_frames_for_deletion(session, rule, protected_ids: set[str], excess: int) -> list:
+def _pick_frames_for_deletion(session: Any, rule: CleanupRule, protected_ids: set[str], excess: int) -> list[GoesFrame]:
     """Select oldest unprotected frames to free enough storage."""
     from ..db.models import GoesFrame
 
@@ -168,7 +172,7 @@ def _pick_frames_for_deletion(session, rule, protected_ids: set[str], excess: in
     return result
 
 
-def _delete_frame_files(frame):
+def _delete_frame_files(frame: GoesFrame) -> None:
     """Remove a frame's files from disk."""
     for path in [frame.file_path, frame.thumbnail_path]:
         if path:
@@ -176,7 +180,7 @@ def _delete_frame_files(frame):
 
 
 @celery_app.task(bind=True, name="run_cleanup", soft_time_limit=600, time_limit=660)
-def run_cleanup(self):
+def run_cleanup(self: Any) -> None:
     """Run cleanup based on active rules."""
     from ..db.models import CleanupRule
 

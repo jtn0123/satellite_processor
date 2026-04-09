@@ -6,8 +6,12 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import ClientError
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from ..celery_app import celery_app
 from ..config import settings
@@ -19,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 def _load_band_images(
-    session,
+    session: Any,
     bands: list[str],
     satellite: str,
     sector: str,
     capture_time: datetime,
-) -> list:
+) -> list[np.ndarray | None]:
     """Load grayscale band images from the database, returning a list of arrays or None."""
     import numpy as np
     from PIL import Image as PILImage
@@ -56,7 +60,7 @@ def _load_band_images(
     return band_images
 
 
-def _normalize_band(band_array, ref_shape):
+def _normalize_band(band_array: np.ndarray, ref_shape: tuple[int, ...]) -> np.ndarray:
     """Normalize a single band array to uint8, resizing if needed."""
     import numpy as np
     from PIL import Image as PILImage
@@ -74,7 +78,7 @@ def _normalize_band(band_array, ref_shape):
     return np.zeros_like(band_array, dtype=np.uint8)
 
 
-def _compose_rgb(band_images: list):
+def _compose_rgb(band_images: list[np.ndarray | None]) -> Any:
     """Stack band images into an RGB PIL image."""
     import numpy as np
     from PIL import Image as PILImage
@@ -114,7 +118,7 @@ def _mark_composite_failed(composite_id: str, error: str) -> None:
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def generate_composite(self, composite_id: str, job_id: str, params: dict):
+def generate_composite(self: Any, composite_id: str, job_id: str, params: dict[str, Any]) -> None:
     """Generate a band composite image from multiple GOES bands."""
     from ..db.models import Composite
 
@@ -184,7 +188,7 @@ def generate_composite(self, composite_id: str, job_id: str, params: dict):
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def fetch_composite_data(self, job_id: str, params: dict):
+def fetch_composite_data(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Fetch multiple bands sequentially, then auto-queue composite generation."""
     _log = _make_job_logger(job_id)
     _log(f"Starting composite fetch: {params.get('recipe')}")

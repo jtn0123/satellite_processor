@@ -6,12 +6,13 @@ import csv
 import io
 import logging
 import uuid
+from collections.abc import AsyncIterator, Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
 
@@ -51,12 +52,12 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-frames"])
 
 
 @router.get("/dashboard-stats")
-async def dashboard_stats(db: DbSession):
+async def dashboard_stats(db: DbSession) -> dict[str, Any]:
     """Aggregated dashboard statistics for the GOES data overview."""
     logger.debug("Dashboard stats requested")
     cache_key = make_cache_key("dashboard-stats")
 
-    async def _fetch():
+    async def _fetch() -> dict[str, Any]:
         total = (await db.execute(select(func.count(GoesFrame.id)))).scalar() or 0
 
         sat_rows = (
@@ -126,7 +127,7 @@ async def dashboard_stats(db: DbSession):
 
 
 @router.get("/quick-fetch-options")
-async def quick_fetch_options():
+async def quick_fetch_options() -> list[dict[str, Any]]:
     """Return preset time ranges for quick GOES data fetching."""
     return [
         {"label": "Last Hour", "hours_back": 1},
@@ -139,7 +140,7 @@ async def quick_fetch_options():
 # ── Frames ────────────────────────────────────────────────────────────
 
 
-@router.get("/frames", response_model=PaginatedResponse[GoesFrameResponse])
+@router.get("/frames")
 async def list_frames(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -153,7 +154,7 @@ async def list_frames(
     tag: str | None = None,
     sort: Annotated[str, Query(pattern="^(capture_time|file_size|satellite|created_at)$")] = "capture_time",
     order: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
-):
+) -> PaginatedResponse[GoesFrameResponse]:
     """List GOES frames with filtering, sorting, pagination."""
     logger.debug("Listing frames: page=%d, limit=%d", page, limit)
     query = select(GoesFrame).options(
@@ -219,8 +220,8 @@ async def list_frames(
     )
 
 
-@router.get("/frames/stats", response_model=FrameStatsResponse)
-async def frame_stats(db: DbSession):
+@router.get("/frames/stats")
+async def frame_stats(db: DbSession) -> FrameStatsResponse:
     """Storage stats per satellite/band."""
     logger.debug("Frame stats requested")
     result = await db.execute(
@@ -276,7 +277,7 @@ def _frames_to_csv(frames: list[GoesFrame]) -> str:
     return output.getvalue()
 
 
-def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
+def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict[str, Any]]:
     return [
         {
             "id": f.id,
@@ -318,7 +319,7 @@ async def export_frames(
     format: Annotated[str | None, Query(pattern="^(csv|json)$")] = None,  # noqa: A002
     limit: Annotated[int, Query(ge=1)] = 1000,
     offset: Annotated[int, Query(ge=0)] = 0,
-):
+) -> StreamingResponse:
     """Export frame metadata as CSV or JSON with pagination.
 
     The default export format is CSV (the Browse "Export" button speaks
@@ -350,7 +351,7 @@ async def export_frames(
 
     items = _frames_to_json_list(frames)
 
-    async def _stream_json():
+    async def _stream_json() -> AsyncIterator[str]:
         yield json_mod.dumps(items)
 
     return StreamingResponse(
@@ -360,8 +361,8 @@ async def export_frames(
     )
 
 
-@router.get("/frames/{frame_id}", response_model=GoesFrameResponse)
-async def get_frame(frame_id: str, db: DbSession):
+@router.get("/frames/{frame_id}")
+async def get_frame(frame_id: str, db: DbSession) -> GoesFrameResponse:
     """Get single frame detail."""
     logger.debug("Frame requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
@@ -380,7 +381,7 @@ async def get_frame(frame_id: str, db: DbSession):
 async def bulk_delete_frames(
     payload: Annotated[BulkFrameDeleteRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Bulk delete frames and their files."""
     logger.info("Bulk delete frames requested")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id.in_(payload.ids)))
@@ -404,7 +405,7 @@ async def bulk_delete_frames(
 async def bulk_tag_frames(
     payload: Annotated[BulkTagRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Bulk tag frames using ON CONFLICT DO NOTHING for performance.
 
     JTN-474 ISSUE-061: previously the endpoint returned ``{"tagged":1}``
@@ -459,7 +460,7 @@ async def bulk_tag_frames(
 async def process_frames(
     payload: Annotated[ProcessFramesRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Send selected frames to the processing pipeline."""
     logger.info("Processing frames requested")
     result = await db.execute(select(GoesFrame.file_path).where(GoesFrame.id.in_(payload.frame_ids)))
@@ -493,7 +494,7 @@ async def process_frames(
 
 
 @router.get("/frames/{frame_id}/image")
-async def get_frame_image(frame_id: str, db: DbSession):
+async def get_frame_image(frame_id: str, db: DbSession) -> FileResponse:
     """Serve the raw image file for a frame.
 
     JTN-475 ISSUE-065: previously streamed via chunked-transfer with only
@@ -519,8 +520,6 @@ async def get_frame_image(frame_id: str, db: DbSession):
 
     import mimetypes
 
-    from fastapi.responses import FileResponse
-
     media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
 
     return FileResponse(
@@ -531,7 +530,7 @@ async def get_frame_image(frame_id: str, db: DbSession):
 
 
 @router.get("/frames/{frame_id}/thumbnail")
-async def get_frame_thumbnail(frame_id: str, db: DbSession):
+async def get_frame_thumbnail(frame_id: str, db: DbSession) -> StreamingResponse:
     """Serve the thumbnail image for a frame."""
     logger.debug("Frame thumbnail requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
@@ -555,7 +554,7 @@ async def get_frame_thumbnail(frame_id: str, db: DbSession):
 
     media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
 
-    def _iter():
+    def _iter() -> Iterator[bytes]:
         with open(file_path, "rb") as f:
             while chunk := f.read(65536):
                 yield chunk

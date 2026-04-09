@@ -4,6 +4,7 @@ import logging
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import redis.exceptions
 from sqlalchemy.exc import SQLAlchemyError
@@ -165,7 +166,7 @@ def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def process_images_task(self, job_id: str, params: dict):
+def process_images_task(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Batch image processing task"""
     start_time = time.monotonic()
     logger.info("Starting image processing job %s", job_id, extra={"job_id": job_id})
@@ -191,7 +192,7 @@ def process_images_task(self, job_id: str, params: dict):
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        def on_progress(operation: str, pct: int):
+        def on_progress(operation: str, pct: int) -> None:
             msg = f"{operation}: {pct}%"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
@@ -259,7 +260,7 @@ def process_images_task(self, job_id: str, params: dict):
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def create_video_task(self, job_id: str, params: dict):
+def create_video_task(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Video creation task"""
     start_time = time.monotonic()
     logger.info("Starting video creation job %s", job_id, extra={"job_id": job_id})
@@ -290,12 +291,12 @@ def create_video_task(self, job_id: str, params: dict):
         output_path = params.get("output_path", str(Path(settings.output_dir) / job_id))
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        def on_progress(operation: str, pct: int):
+        def on_progress(operation: str, pct: int) -> None:
             msg = f"{operation}: {pct}%"
             _publish_progress(job_id, pct, msg)
             _update_job_db(job_id, progress=pct, status_message=msg)
 
-        def on_status(msg: str):
+        def on_status(msg: str) -> None:
             _publish_progress(job_id, -1, msg)
             _update_job_db(job_id, status_message=msg)
 

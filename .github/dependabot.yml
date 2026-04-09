@@ -1,7 +1,23 @@
 version: 2
 updates:
+  # Root satellite_processor package (requirements.txt + requirements-dev.txt)
   - package-ecosystem: "pip"
     directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+
+  # Backend FastAPI app — tracks requirements.in, the hand-edited top-level
+  # deps file. After merging a bump here, regenerate the lock with:
+  #     uv pip compile backend/requirements.in \
+  #         -o backend/requirements.lock --generate-hashes --python-version 3.11
+  # and commit the lock in the same PR. CI and Docker install from the lock.
+  - package-ecosystem: "pip"
+    directory: "/backend"
     schedule:
       interval: "weekly"
       day: "monday"

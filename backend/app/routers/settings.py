@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import sqlalchemy.exc
 from fastapi import APIRouter
@@ -68,7 +68,7 @@ class SettingsUpdate(BaseModel):
     webhook_url: str | None = None
 
 
-def _load_file_defaults() -> dict:
+def _load_file_defaults() -> dict[str, Any]:
     """Load settings from legacy JSON file, falling back to hardcoded defaults."""
     if _SETTINGS_FILE.exists():
         try:
@@ -78,13 +78,13 @@ def _load_file_defaults() -> dict:
     return dict(_DEFAULTS)
 
 
-async def _load_from_db(db: AsyncSession) -> dict:
+async def _load_from_db(db: AsyncSession) -> dict[str, Any]:
     """Load all settings from database. If empty, seed from file/defaults."""
     result = await db.execute(select(AppSetting))
     rows = result.scalars().all()
 
     if rows:
-        data: dict = {}
+        data: dict[str, Any] = {}
         for row in rows:
             try:
                 data[row.key] = json.loads(row.value)
@@ -100,7 +100,7 @@ async def _load_from_db(db: AsyncSession) -> dict:
     return defaults
 
 
-async def _save_to_db(db: AsyncSession, data: dict) -> None:
+async def _save_to_db(db: AsyncSession, data: dict[str, Any]) -> None:
     """Upsert settings into the database."""
     for key, value in data.items():
         # Bug #1: Ensure all values are JSON-serializable primitives.
@@ -112,7 +112,7 @@ async def _save_to_db(db: AsyncSession, data: dict) -> None:
 
 
 @router.get("")
-async def get_settings(db: DbSession):
+async def get_settings(db: DbSession) -> dict[str, Any]:
     try:
         return await _load_from_db(db)
     except sqlalchemy.exc.SQLAlchemyError:
@@ -121,7 +121,7 @@ async def get_settings(db: DbSession):
 
 
 @router.put("")
-async def update_settings(body: SettingsUpdate, db: DbSession):
+async def update_settings(body: SettingsUpdate, db: DbSession) -> dict[str, Any]:
     try:
         current = await _load_from_db(db)
         update_data = body.model_dump(exclude_none=True)

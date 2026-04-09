@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/jtn0123/satellite_processor/compare/v1.43.0...v1.44.0) (2026-04-09)
+
+
+### Features
+
+* **backend:** slow-query logging + Celery queue separation ([#433](https://github.com/jtn0123/satellite_processor/issues/433)) ([08b04c4](https://github.com/jtn0123/satellite_processor/commit/08b04c416c9d337339ae893f586f6ea25489e131))
+
 # [1.43.0](https://github.com/jtn0123/satellite_processor/compare/v1.42.20...v1.43.0) (2026-04-09)
 
 

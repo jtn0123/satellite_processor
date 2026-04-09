@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
@@ -102,5 +102,26 @@ describe('GoesData page extended', () => {
         expect(hasContent).toBeTruthy();
       });
     });
+  });
+
+  // JTN-405: hover/focus/touch on the Map tab button fires a one-shot
+  // prefetch for the MapTab chunk. The handlers are wired only on that
+  // tab — other tabs stay idle. This test just verifies the hover /
+  // focus / touch handlers don't throw and don't change aria state,
+  // which is a proxy for "the side-effect path runs cleanly". Actual
+  // dynamic import behavior is validated by the MapTab chunk staying a
+  // separate entry in the build output.
+  it('Map tab button accepts hover/focus/touch without crashing', async () => {
+    renderPage();
+    const mapTab = await waitFor(() =>
+      screen.getAllByRole('tab', { name: /Map/i })[0],
+    );
+    expect(mapTab).toBeInTheDocument();
+    // Hover then focus then touch — none of these should throw or
+    // toggle selection on their own.
+    fireEvent.pointerEnter(mapTab);
+    fireEvent.focus(mapTab);
+    fireEvent.touchStart(mapTab);
+    expect(mapTab.getAttribute('aria-selected')).toBe('false');
   });
 });

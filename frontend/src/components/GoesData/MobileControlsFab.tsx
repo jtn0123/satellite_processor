@@ -16,6 +16,24 @@ function getAutoFetchButtonClass(autoFetch: boolean, disabled?: boolean): string
   return 'bg-white/10 border border-white/20 text-white/80';
 }
 
+/** Short visible label for the auto-fetch button. */
+function getAutoFetchText(autoFetch: boolean, disabled: boolean | undefined): string {
+  if (disabled) return 'Auto-fetch unavailable';
+  if (autoFetch) return 'Auto-fetch on';
+  return 'Auto-fetch off';
+}
+
+/** Full-sentence accessible name for the auto-fetch button. */
+function getAutoFetchAriaLabel(
+  autoFetch: boolean,
+  disabled: boolean | undefined,
+  reason: string | undefined,
+): string {
+  if (disabled) return `Auto-fetch unavailable: ${reason ?? 'not supported for this view'}`;
+  if (autoFetch) return 'Auto-fetch on — tap to turn off';
+  return 'Auto-fetch off — tap to turn on';
+}
+
 export default function MobileControlsFab({
   monitoring,
   onToggleMonitor,
@@ -42,6 +60,16 @@ export default function MobileControlsFab({
       document.removeEventListener('touchstart', handler);
     };
   }, [open]);
+
+  // JTN-428: surface real state ("Auto-fetch on/off/unavailable") instead
+  // of a bare "Auto-fetch N/A". Labels/text are precomputed to avoid
+  // nested ternaries (SonarCloud S3358).
+  const autoFetchText = getAutoFetchText(autoFetch, autoFetchDisabled);
+  const autoFetchLabel = getAutoFetchAriaLabel(
+    autoFetch,
+    autoFetchDisabled,
+    autoFetchDisabledReason,
+  );
 
   return (
     <div ref={fabRef} className="relative">
@@ -70,24 +98,13 @@ export default function MobileControlsFab({
             type="button"
             onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange(!autoFetch)}
             title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
-            aria-label={(() => {
-              if (autoFetchDisabled)
-                return `Auto-fetch unavailable: ${autoFetchDisabledReason ?? 'not supported for this view'}`;
-              return autoFetch
-                ? 'Auto-fetch on — tap to turn off'
-                : 'Auto-fetch off — tap to turn on';
-            })()}
+            aria-label={autoFetchLabel}
             disabled={autoFetchDisabled}
             className={`flex flex-col items-start px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getAutoFetchButtonClass(autoFetch, autoFetchDisabled)}`}
           >
             <span className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-400" />
-              {/* JTN-428: surface a real state label instead of "N/A". */}
-              {autoFetchDisabled
-                ? 'Auto-fetch unavailable'
-                : autoFetch
-                  ? 'Auto-fetch on'
-                  : 'Auto-fetch off'}
+              {autoFetchText}
             </span>
             {autoFetchDisabled && autoFetchDisabledReason && (
               <span className="text-[10px] text-white/40 leading-tight mt-0.5">

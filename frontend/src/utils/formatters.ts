@@ -38,15 +38,18 @@ export function truncate(str: string, maxLength: number): string {
   return str.slice(0, maxLength - 1) + '…';
 }
 
+/** Canonical image-type identifiers understood by the backend. */
+export type ImageTypeId = 'single' | 'true_color' | 'natural_color';
+
 /**
  * Human-readable label for an image-type enum. Used across the Confirm
  * modal, job list, and preset cards so a single value renders
  * consistently (see JTN-434 ISSUE-023).
+ *
+ * Accepts any string — unknown values fall back to title-casing — so
+ * callers that pull the value from an API response don't need to cast.
  */
-export function formatImageType(
-  imageType: 'single' | 'true_color' | 'natural_color' | string,
-  band?: string,
-): string {
+export function formatImageType(imageType: string, band?: string): string {
   if (imageType === 'single') return band ? `Single Band (${band})` : 'Single Band';
   if (imageType === 'true_color') return 'True Color';
   if (imageType === 'natural_color') return 'Natural Color';

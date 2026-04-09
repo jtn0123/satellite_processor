@@ -1,3 +1,10 @@
+## [1.42.20](https://github.com/jtn0123/satellite_processor/compare/v1.42.19...v1.42.20) (2026-04-09)
+
+
+### Performance Improvements
+
+* **frontend:** defer MapTab + consolidate Tailwind utilities (PR5 of 5) ([#428](https://github.com/jtn0123/satellite_processor/issues/428)) ([8922a67](https://github.com/jtn0123/satellite_processor/commit/8922a67e20ebc2f7e99d7d50abae786319a7303a))
+
 ## [1.42.19](https://github.com/jtn0123/satellite_processor/compare/v1.42.18...v1.42.19) (2026-04-09)
 
 

@@ -1,6 +1,10 @@
 """Pydantic schemas for processing settings"""
 
+import re
+
 from pydantic import BaseModel, Field, field_validator
+
+_HTML_TAG_RE = re.compile(r"<[^>]*>")
 
 
 class ProcessingSettings(BaseModel):
@@ -28,8 +32,11 @@ class PresetCreate(BaseModel):
     @field_validator("name", mode="before")
     @classmethod
     def strip_name(cls, v: str) -> str:
+        """Trim whitespace and reject HTML tags (JTN-474 ISSUE-071, -072)."""
         if isinstance(v, str):
-            return v.strip()
+            v = v.strip()
+            if _HTML_TAG_RE.search(v):
+                raise ValueError("Name may not contain HTML tags")
         return v
 
     @field_validator("params")

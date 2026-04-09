@@ -2,12 +2,48 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ..config import DEFAULT_SATELLITE
-from ..services.satellite_registry import get_all_valid_bands, get_all_valid_satellites, get_all_valid_sectors
+from ..services.satellite_registry import (
+    SATELLITE_REGISTRY,
+    get_all_valid_bands,
+    get_all_valid_satellites,
+    get_all_valid_sectors,
+)
+
+# Clock-skew grace window for schema-level future-date rejection.
+# Must match the worker-side helper in routers/goes_fetch.py.
+_FUTURE_GRACE = timedelta(minutes=30)
+
+
+def _reject_future_dt(dt: datetime, field: str) -> None:
+    """Reject a datetime that is meaningfully in the future (JTN-421 ISSUE-030)."""
+    now = datetime.now(UTC)
+    normalized = dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+    if normalized > now + _FUTURE_GRACE:
+        raise ValueError(f"{field} ({normalized.isoformat()}) is in the future; satellite data is not yet available")
+
+
+def _validate_triple(satellite: str, sector: str, band: str | None = None) -> None:
+    """Validate (satellite, sector[, band]) — satellite must support the sector/band.
+
+    Raises ``ValueError`` so Pydantic surfaces a 422 with the offending field
+    rather than letting a bare ``KeyError`` escape through the worker
+    (JTN-421 ISSUE-029, JTN-426).
+    """
+    cfg = SATELLITE_REGISTRY.get(satellite)
+    if cfg is None:
+        return  # caller's per-field validator will already have rejected this
+    if sector not in cfg.sectors:
+        valid = sorted(cfg.sectors)
+        raise ValueError(f"Sector {sector!r} is not valid for {satellite}. Valid sectors: {valid}")
+    if band is not None and band not in cfg.bands:
+        valid_bands = sorted(cfg.bands)
+        raise ValueError(f"Band {band!r} is not valid for {satellite}. Valid bands: {valid_bands}")
+
 
 # Shared validation messages — keep in one place so Sonar doesn't ding us for
 # literal duplication and so all three end_time validators stay in sync.
@@ -67,7 +103,19 @@ class GoesFetchRequest(BaseModel):
         # #207: Cap time range at 24 hours
         if start and (v - start) > timedelta(hours=24):
             raise ValueError("Time range must not exceed 24 hours")
+        _reject_future_dt(v, "end_time")
         return v
+
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_not_future(cls, v: datetime) -> datetime:
+        _reject_future_dt(v, "start_time")
+        return v
+
+    @model_validator(mode="after")
+    def validate_satellite_sector_band(self):
+        _validate_triple(self.satellite, self.sector, self.band)
+        return self
 
 
 class GoesBackfillRequest(BaseModel):
@@ -193,7 +241,19 @@ class FetchCompositeRequest(BaseModel):
             raise ValueError(_END_AFTER_START_MSG)
         if start and (v - start) > timedelta(hours=24):
             raise ValueError("Time range must not exceed 24 hours")
+        _reject_future_dt(v, "end_time")
         return v
+
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_not_future(cls, v: datetime) -> datetime:
+        _reject_future_dt(v, "start_time")
+        return v
+
+    @model_validator(mode="after")
+    def validate_satellite_sector(self):
+        _validate_triple(self.satellite, self.sector)
+        return self
 
 
 class GoesFetchResponse(BaseModel):

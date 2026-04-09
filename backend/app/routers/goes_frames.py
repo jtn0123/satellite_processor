@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
@@ -290,15 +290,41 @@ def _frames_to_json_list(frames: list[GoesFrame]) -> list[dict]:
     ]
 
 
+def _resolve_export_format(explicit: str | None, accept: str) -> str:
+    """Pick csv or json based on explicit ?format= or Accept header.
+
+    JTN-473 Issue C: previously the default was JSON even when the caller
+    sent ``Accept: text/csv`` (or the Browse "Export CSV" button didn't
+    wire through a ``?format=csv``). Now an explicit ``format=`` wins;
+    otherwise we honor the Accept header; otherwise we fall back to CSV
+    because that's the user-visible default in the UI.
+    """
+    if explicit:
+        return explicit
+    accept_lower = accept.lower()
+    # Check most specific first — ``text/csv`` before ``*/*``.
+    if "text/csv" in accept_lower or "application/csv" in accept_lower:
+        return "csv"
+    if "application/json" in accept_lower:
+        return "json"
+    return "csv"
+
+
 # Bug #2: /frames/export MUST be registered before /frames/{frame_id}
 @router.get("/frames/export")
 async def export_frames(
+    request: Request,
     db: DbSession,
-    format: Annotated[str, Query(pattern="^(csv|json)$")] = "json",  # noqa: A002
+    format: Annotated[str | None, Query(pattern="^(csv|json)$")] = None,  # noqa: A002
     limit: Annotated[int, Query(ge=1)] = 1000,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    """Export frame metadata as CSV or JSON with pagination."""
+    """Export frame metadata as CSV or JSON with pagination.
+
+    The default export format is CSV (the Browse "Export" button speaks
+    CSV). Callers can override with ``?format=json`` or by sending
+    ``Accept: application/json``.
+    """
     logger.info("Exporting frames")
     if limit > MAX_EXPORT_LIMIT:
         raise APIError(
@@ -308,11 +334,13 @@ async def export_frames(
         )
     import json as json_mod
 
+    effective_format = _resolve_export_format(format, request.headers.get("accept", ""))
+
     query = select(GoesFrame).order_by(GoesFrame.capture_time.desc()).offset(offset).limit(limit)
     result = await db.execute(query)
     frames = result.scalars().all()
 
-    if format == "csv":
+    if effective_format == "csv":
         csv_data = _frames_to_csv(frames)
         return StreamingResponse(
             io.BytesIO(csv_data.encode()),
@@ -377,16 +405,54 @@ async def bulk_tag_frames(
     payload: Annotated[BulkTagRequest, Body()],
     db: DbSession,
 ):
-    """Bulk tag frames using ON CONFLICT DO NOTHING for performance."""
+    """Bulk tag frames using ON CONFLICT DO NOTHING for performance.
+
+    JTN-474 ISSUE-061: previously the endpoint returned ``{"tagged":1}``
+    even when neither the frame nor the tag existed. Now we verify both
+    id lists exist in the DB and 404 if any are missing, and the
+    ``tagged`` count reflects the actual number of inserts attempted
+    (frames × tags).
+    """
     logger.info("Bulk tagging frames")
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+    # Verify frame_ids exist
+    frame_result = await db.execute(select(GoesFrame.id).where(GoesFrame.id.in_(payload.frame_ids)))
+    found_frame_ids = {r[0] for r in frame_result.all()}
+    missing_frames = [fid for fid in payload.frame_ids if fid not in found_frame_ids]
+    if missing_frames:
+        raise APIError(
+            404,
+            "frames_not_found",
+            f"{len(missing_frames)} frame id(s) do not exist: {missing_frames[:5]}"
+            + ("..." if len(missing_frames) > 5 else ""),
+        )
+
+    # Verify tag_ids exist
+    tag_result = await db.execute(select(Tag.id).where(Tag.id.in_(payload.tag_ids)))
+    found_tag_ids = {r[0] for r in tag_result.all()}
+    missing_tags = [tid for tid in payload.tag_ids if tid not in found_tag_ids]
+    if missing_tags:
+        raise APIError(
+            404,
+            "tags_not_found",
+            f"{len(missing_tags)} tag id(s) do not exist: {missing_tags[:5]}"
+            + ("..." if len(missing_tags) > 5 else ""),
+        )
+
     values = [{"frame_id": frame_id, "tag_id": tag_id} for frame_id in payload.frame_ids for tag_id in payload.tag_ids]
     if values:
-        stmt = pg_insert(FrameTag).values(values).on_conflict_do_nothing()
+        dialect_name = db.bind.dialect.name if db.bind else ""
+        if dialect_name == "postgresql":
+            stmt = pg_insert(FrameTag).values(values).on_conflict_do_nothing()
+        else:
+            # SQLite / other — use ``INSERT OR IGNORE`` semantics.
+            from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+            stmt = sqlite_insert(FrameTag).values(values).on_conflict_do_nothing()
         await db.execute(stmt)
     await db.commit()
-    return {"tagged": len(payload.frame_ids)}
+    return {"tagged": len(values), "frame_count": len(payload.frame_ids), "tag_count": len(payload.tag_ids)}
 
 
 @router.post("/frames/process")
@@ -428,7 +494,14 @@ async def process_frames(
 
 @router.get("/frames/{frame_id}/image")
 async def get_frame_image(frame_id: str, db: DbSession):
-    """Serve the raw image file for a frame."""
+    """Serve the raw image file for a frame.
+
+    JTN-475 ISSUE-065: previously streamed via chunked-transfer with only
+    ``Cache-Control``. Now uses Starlette ``FileResponse`` which emits
+    ``Content-Length``, ``Last-Modified``, ``ETag``, and ``Accept-Ranges``
+    so browsers can short-circuit re-downloads with a 304 and servers can
+    serve partial content for video previews.
+    """
     logger.debug("Frame image requested: frame_id=%s", sanitize_log(frame_id))
     validate_uuid(frame_id, "frame_id")
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
@@ -446,15 +519,12 @@ async def get_frame_image(frame_id: str, db: DbSession):
 
     import mimetypes
 
+    from fastapi.responses import FileResponse
+
     media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
 
-    def _iter():
-        with open(file_path, "rb") as f:
-            while chunk := f.read(65536):
-                yield chunk
-
-    return StreamingResponse(
-        _iter(),
+    return FileResponse(
+        str(file_path),
         media_type=media_type,
         headers={"Cache-Control": "public, max-age=86400"},
     )

@@ -4,7 +4,16 @@ import os
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+# Per-job-type required params. Enforced in ``JobCreate.require_meaningful_input``
+# so that ``POST /api/jobs -d '{}'`` 422s instead of silently spawning a stub
+# job that the Celery worker then fails with "Processing returned False"
+# (JTN-421 ISSUE-028).
+_JOB_TYPE_REQUIRED_INPUT = {
+    "image_process": ("image_ids", "image_paths"),
+    "video_create": ("image_ids", "image_paths"),
+}
 
 ALLOWED_PARAM_KEYS = {
     "image_ids",
@@ -86,6 +95,27 @@ class JobCreate(BaseModel):
         if os.path.isabs(v) and not v.startswith(("/data", "/tmp")):
             raise ValueError("Absolute path outside allowed directories")
         return v
+
+    @model_validator(mode="after")
+    def require_meaningful_input(self):
+        """Reject empty-body job create requests (JTN-421 ISSUE-028).
+
+        The stub job was accepted, dispatched, and then failed on the worker
+        with ``Processing returned False`` — wasting a worker slot and
+        polluting the Jobs list with ghost rows. Now we require callers to
+        supply either ``input_path`` (top-level or nested in params) or one
+        of the job-type's required params keys.
+        """
+        required_for_type = _JOB_TYPE_REQUIRED_INPUT.get(self.job_type, ())
+        if not required_for_type:
+            return self
+        has_required_param = any(self.params.get(key) for key in required_for_type)
+        has_any_input = bool(self.input_path) or bool(self.params.get("input_path")) or has_required_param
+        if not has_any_input:
+            raise ValueError(
+                f"job_type={self.job_type!r} requires input_path or at least one of: {list(required_for_type)}"
+            )
+        return self
 
 
 class JobResponse(BaseModel):

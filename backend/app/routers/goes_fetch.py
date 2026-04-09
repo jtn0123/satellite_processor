@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Query, Request
@@ -22,18 +22,82 @@ from ..rate_limit import limiter
 from ..services.cache import invalidate
 from ..services.gap_detector import get_coverage_stats
 from ..services.goes_fetcher import SATELLITE_AVAILABILITY, SECTOR_INTERVALS
-from ._goes_shared import _s3_executor
+from ..services.satellite_registry import validate_band, validate_sector
+from ._goes_shared import COMPOSITE_RECIPES, _s3_executor
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/satellite", tags=["satellite-fetch"])
 
 
-_COMPOSITE_RECIPE_BANDS: dict[str, list[str]] = {
-    "true_color": ["C01", "C02", "C03"],
-    "natural_color": ["C02", "C06", "C07"],
-    "himawari_true_color": ["B03", "B02", "B01"],
-}
+# Single source of truth for composite recipe band lists lives in
+# ``_goes_shared.COMPOSITE_RECIPES``. The fetch-composite endpoint only exposes
+# a subset of those recipes (the ones wired through the fetch pipeline), and
+# derives the band list — and unique-band list — from that shared map so the
+# two can't drift out of sync again (JTN-475 ISSUE-066).
+_FETCH_COMPOSITE_RECIPE_IDS: tuple[str, ...] = (
+    "true_color",
+    "natural_color",
+    "himawari_true_color",
+)
+
+
+def _get_composite_bands(recipe: str) -> list[str] | None:
+    """Return the unique ordered band list for a fetch-composite recipe."""
+    if recipe not in _FETCH_COMPOSITE_RECIPE_IDS:
+        return None
+    bands: list[str] = []
+    for band in COMPOSITE_RECIPES[recipe]["bands"]:
+        if band not in bands:
+            bands.append(band)
+    return bands
+
+
+def _validate_satellite_sector_band(satellite: str, sector: str, band: str | None = None) -> None:
+    """Validate (satellite, sector[, band]) tuple — raises APIError(422).
+
+    Catches the `KeyError: 'FLDK'` class of leaks where a sector valid for
+    Himawari gets submitted with a GOES satellite, etc. (JTN-421 ISSUE-029,
+    JTN-426).
+    """
+    try:
+        validate_sector(satellite, sector)
+        if band is not None:
+            validate_band(satellite, band)
+    except ValueError as exc:
+        raise APIError(422, "invalid_combination", str(exc))
+
+
+# Clock-skew grace window: allow fetch/animate time ranges that extend this far
+# past "now" so small client/server time-sync mismatches don't 422 the user.
+# Anything further out is a real future date (e.g. ``2099-01-01``) — 422.
+_FUTURE_GRACE = timedelta(minutes=30)
+
+
+def _validate_not_future(start_time: datetime, end_time: datetime) -> None:
+    """Reject fetch/animate ranges that extend meaningfully into the future.
+
+    JTN-421 ISSUE-030: previously ``end_time=2099-01-01`` was accepted, the
+    job spun up, and the worker did a pointless round trip to S3.
+    """
+    now = datetime.now(UTC)
+    cutoff = now + _FUTURE_GRACE
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=UTC)
+    if end_time.tzinfo is None:
+        end_time = end_time.replace(tzinfo=UTC)
+    if start_time > cutoff:
+        raise APIError(
+            422,
+            "future_start_time",
+            f"start_time ({start_time.isoformat()}) is in the future. Satellite data is not yet available.",
+        )
+    if end_time > cutoff:
+        raise APIError(
+            422,
+            "future_end_time",
+            f"end_time ({end_time.isoformat()}) is in the future. Satellite data is not yet available.",
+        )
 
 
 def _validate_satellite_availability(
@@ -42,6 +106,7 @@ def _validate_satellite_availability(
     end_time,
 ) -> None:
     """Raise APIError if the requested time range falls outside satellite availability."""
+    _validate_not_future(start_time, end_time)
     avail = SATELLITE_AVAILABILITY.get(satellite)
     if not avail:
         return
@@ -124,10 +189,15 @@ async def fetch_composite(
 ):
     """Fetch multiple bands and auto-composite. Max 50 frames per request."""
     logger.info("Composite fetch requested")
-    bands = _COMPOSITE_RECIPE_BANDS.get(payload.recipe)
+    bands = _get_composite_bands(payload.recipe)
     if not bands:
-        raise APIError(400, "bad_request", f"Unknown recipe: {payload.recipe}. Valid: {list(_COMPOSITE_RECIPE_BANDS)}")
+        raise APIError(
+            400,
+            "bad_request",
+            f"Unknown recipe: {payload.recipe}. Valid: {list(_FETCH_COMPOSITE_RECIPE_IDS)}",
+        )
 
+    _validate_satellite_sector_band(payload.satellite, payload.sector)
     _validate_satellite_availability(payload.satellite, payload.start_time, payload.end_time)
     _validate_frame_count(payload.sector, payload.start_time, payload.end_time, len(bands))
 
@@ -179,6 +249,7 @@ async def fetch_goes(
 ):
     """Kick off a GOES data fetch job."""
     logger.info("GOES fetch requested")
+    _validate_satellite_sector_band(payload.satellite, payload.sector, payload.band)
     _validate_satellite_availability(payload.satellite, payload.start_time, payload.end_time)
 
     job_id = str(uuid.uuid4())
@@ -306,12 +377,22 @@ async def estimate_frame_count(
     start_time: Annotated[datetime, Query()],
     end_time: Annotated[datetime, Query()],
 ):
-    """Estimate frame count for a time range without downloading."""
+    """Estimate frame count for a time range without downloading.
+
+    The ``expected_count`` field is the number of frames the satellite should
+    produce over the requested window (sector cadence × duration). It is NOT
+    a count of what already exists in the local DB — callers that need that
+    should hit ``/frames?...``. The legacy ``count`` field is preserved for
+    backwards compatibility (JTN-474 ISSUE-062).
+    """
     logger.debug("Frame count estimation requested")
 
     from ..services.goes_fetcher import list_available, validate_params
 
-    validate_params(satellite, sector, band)
+    try:
+        validate_params(satellite, sector, band)
+    except (ValueError, KeyError) as exc:
+        raise APIError(422, "invalid_params", str(exc))
     if start_time >= end_time:
         raise APIError(400, "invalid_range", "start_time must be before end_time")
 
@@ -319,7 +400,8 @@ async def estimate_frame_count(
     available = await loop.run_in_executor(
         _s3_executor, lambda: list_available(satellite, sector, band, start_time, end_time)
     )
-    return {"count": len(available)}
+    count = len(available)
+    return {"count": count, "expected_count": count}
 
 
 @router.get("/preview")
@@ -335,7 +417,16 @@ async def preview_frame(
     logger.debug("Preview frame requested")
     from ..services.goes_fetcher import fetch_single_preview
 
-    png_bytes = fetch_single_preview(satellite, sector, band, time)
+    # JTN-475 ISSUE-059: invalid satellite/band/sector previously leaked
+    # through ``fetch_single_preview -> validate_params -> ValueError`` as a
+    # generic 500. Validate up-front and return 422 with the offending field.
+    _validate_satellite_sector_band(satellite, sector, band)
+    try:
+        png_bytes = fetch_single_preview(satellite, sector, band, time)
+    except ValueError as exc:
+        raise APIError(422, "invalid_params", str(exc))
+    except KeyError as exc:
+        raise APIError(422, "invalid_params", f"Unknown parameter: {exc.args[0] if exc.args else exc!s}")
     if not png_bytes:
         raise APIError(404, "not_found", "No frame found near the requested time")
 

@@ -7,7 +7,7 @@ from typing import Literal
 
 import sqlalchemy.exc
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,19 +32,36 @@ _DEFAULTS = {
 }
 
 
+_CROP_MAX_AXIS = 32_000
+
+
 class CropSettings(BaseModel):
-    x: int = 0
-    y: int = 0
-    w: int = 1920
-    h: int = 1080
+    """Default crop bounds. All coordinates must be non-negative and within
+    a sane axis limit (JTN-474 ISSUE-060, -069)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    x: int = Field(default=0, ge=0, le=_CROP_MAX_AXIS)
+    y: int = Field(default=0, ge=0, le=_CROP_MAX_AXIS)
+    w: int = Field(default=1920, ge=1, le=_CROP_MAX_AXIS)
+    h: int = Field(default=1080, ge=1, le=_CROP_MAX_AXIS)
 
 
 class SettingsUpdate(BaseModel):
+    """Request schema for ``PUT /api/settings``.
+
+    JTN-474 ISSUE-073: ``extra="forbid"`` so typos like
+    ``completely_unknown_field`` return 422 instead of being silently
+    dropped on the floor.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     default_crop: CropSettings | None = None
     default_false_color: Literal["vegetation", "fire", "water_vapor", "dust", "airmass"] | None = None
     timestamp_enabled: bool | None = None
     timestamp_position: Literal["top-left", "top-right", "bottom-left", "bottom-right"] | None = None
-    video_fps: int | None = Field(default=None, ge=1, le=120)
+    video_fps: int | None = Field(default=None, ge=1, le=60)
     video_codec: Literal["h264", "hevc", "av1"] | None = None
     video_quality: int | None = Field(default=None, ge=0, le=51)
     max_frames_per_fetch: int | None = Field(default=None, ge=50, le=1000)

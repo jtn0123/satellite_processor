@@ -210,6 +210,10 @@ class TestBulkTagFrames:
         assert resp.status_code == 200
 
     async def test_bulk_tag_multiple_frames_and_tags(self, client, db):
+        """JTN-474 ISSUE-061: the ``tagged`` count now reflects the number
+        of (frame, tag) pairs that were actually inserted, not the frame
+        count. 2 frames × 2 tags = 4 new frame_tag rows.
+        """
         f1 = _frame()
         f2 = _frame()
         db.add(f1)
@@ -226,7 +230,10 @@ class TestBulkTagFrames:
             },
         )
         assert resp.status_code == 200
-        assert resp.json()["tagged"] == 2
+        body = resp.json()
+        assert body["tagged"] == 4
+        assert body["frame_count"] == 2
+        assert body["tag_count"] == 2
 
 
 @pytest.mark.asyncio

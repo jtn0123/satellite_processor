@@ -192,11 +192,13 @@ async def test_settings_quality_boundary(client):
 
 @pytest.mark.asyncio
 async def test_settings_fps_boundary(client):
+    """JTN-474 ISSUE-067: video_fps cap lowered from 120 to 60 to match
+    the animation preset cap — previously they disagreed."""
     resp = await client.put("/api/settings", json={"video_fps": 1})
     assert resp.status_code == 200
-    resp = await client.put("/api/settings", json={"video_fps": 120})
+    resp = await client.put("/api/settings", json={"video_fps": 60})
     assert resp.status_code == 200
-    resp = await client.put("/api/settings", json={"video_fps": 121})
+    resp = await client.put("/api/settings", json={"video_fps": 61})
     assert resp.status_code == 422
 
 

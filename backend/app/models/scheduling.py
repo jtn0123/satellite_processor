@@ -9,6 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field
 # --- Fetch Preset schemas ---
 
 
+# Cap schedule interval at one week — prevents ``interval_minutes=99999``
+# (69-day cron) slipping through unnoticed (JTN-474 ISSUE-070).
+MAX_SCHEDULE_INTERVAL_MINUTES = 10_080
+
+
 class FetchPresetCreate(BaseModel):
     """Request schema for creating a fetch preset with satellite/sector/band configuration."""
 
@@ -16,7 +21,7 @@ class FetchPresetCreate(BaseModel):
     satellite: str = Field(..., min_length=1, max_length=20)
     sector: str = Field(..., min_length=1, max_length=20)
     band: str = Field(..., min_length=1, max_length=10)
-    description: str = ""
+    description: str = Field("", max_length=500)
 
 
 class FetchPresetUpdate(BaseModel):
@@ -41,6 +46,10 @@ class FetchPresetResponse(BaseModel):
     band: str
     description: str
     created_at: datetime | None = None
+    # JTN-421 ISSUE-031: populated by the router (derived from jobs.completed_at
+    # of the most recent successful goes_fetch job for this preset). Null when
+    # the preset has never been run.
+    last_fetch_time: datetime | None = None
 
 
 # --- Fetch Schedule schemas ---
@@ -49,14 +58,14 @@ class FetchPresetResponse(BaseModel):
 class FetchScheduleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     preset_id: str
-    interval_minutes: int = Field(..., ge=1)
+    interval_minutes: int = Field(..., ge=1, le=MAX_SCHEDULE_INTERVAL_MINUTES)
     is_active: bool = False
 
 
 class FetchScheduleUpdate(BaseModel):
     name: str | None = None
     preset_id: str | None = None
-    interval_minutes: int | None = Field(None, ge=1)
+    interval_minutes: int | None = Field(None, ge=1, le=MAX_SCHEDULE_INTERVAL_MINUTES)
     is_active: bool | None = None
 
 

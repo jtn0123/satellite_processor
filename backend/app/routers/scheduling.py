@@ -76,6 +76,47 @@ async def seed_default_presets(db: DbSession):
 # ── Fetch Presets ─────────────────────────────────────────
 
 
+async def _get_preset_last_fetch_map(db: AsyncSession, preset_ids: list[str]) -> dict[str, datetime | None]:
+    """Return {preset_id: most_recent_completed_at} for the given presets.
+
+    JTN-421 ISSUE-031: the fetch-preset row has no ``last_fetch_time``
+    column, so we derive it from the jobs table by looking at the most
+    recent completed ``goes_fetch`` job whose ``params.preset_id`` matches.
+    This is best-effort: we pull ``completed_at`` from recent goes_fetch
+    jobs (capped, one query) and fold them down to a map.
+    """
+    if not preset_ids:
+        return {}
+    # Limit how many jobs we scan — we only need the most recent per preset.
+    # 500 rows covers the common case (8 presets × dozens of runs each).
+    result = await db.execute(
+        select(Job.params, Job.completed_at)
+        .where(Job.job_type == "goes_fetch")
+        .where(Job.status.in_(("completed", "completed_partial")))
+        .where(Job.completed_at.is_not(None))
+        .order_by(Job.completed_at.desc())
+        .limit(500)
+    )
+    out: dict[str, datetime | None] = dict.fromkeys(preset_ids)
+    wanted = set(preset_ids)
+    for params, completed_at in result.all():
+        if not isinstance(params, dict):
+            continue
+        pid = params.get("preset_id")
+        if pid in wanted and out.get(pid) is None:
+            out[pid] = completed_at
+            wanted.discard(pid)
+            if not wanted:
+                break
+    return out
+
+
+def _build_preset_response(preset: FetchPreset, last_fetch_time) -> FetchPresetResponse:
+    resp = FetchPresetResponse.model_validate(preset)
+    resp.last_fetch_time = last_fetch_time
+    return resp
+
+
 @router.post("/fetch-presets", response_model=FetchPresetResponse)
 async def create_fetch_preset(
     payload: Annotated[FetchPresetCreate, Body()],
@@ -93,14 +134,16 @@ async def create_fetch_preset(
     db.add(preset)
     await db.commit()
     await db.refresh(preset)
-    return FetchPresetResponse.model_validate(preset)
+    return _build_preset_response(preset, None)
 
 
 @router.get("/fetch-presets", response_model=list[FetchPresetResponse])
 async def list_fetch_presets(db: DbSession):
     logger.debug("Listing fetch presets")
     result = await db.execute(select(FetchPreset).order_by(FetchPreset.created_at.desc()))
-    return [FetchPresetResponse.model_validate(p) for p in result.scalars().all()]
+    presets = list(result.scalars().all())
+    last_fetch_map = await _get_preset_last_fetch_map(db, [p.id for p in presets])
+    return [_build_preset_response(p, last_fetch_map.get(p.id)) for p in presets]
 
 
 @router.put("/fetch-presets/{preset_id}", response_model=FetchPresetResponse)
@@ -120,7 +163,8 @@ async def update_fetch_preset(
             setattr(preset, field, val)
     await db.commit()
     await db.refresh(preset)
-    return FetchPresetResponse.model_validate(preset)
+    last_fetch_map = await _get_preset_last_fetch_map(db, [preset.id])
+    return _build_preset_response(preset, last_fetch_map.get(preset.id))
 
 
 @router.delete("/fetch-presets/{preset_id}")

@@ -7,9 +7,9 @@ import secrets
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Body, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,6 +23,26 @@ from ..utils import sanitize_log, utcnow
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["share"])
+
+# Bounds on share-link lifetime. 1 hour minimum to avoid links that expire
+# before they can be copy-pasted; 30 days maximum so callers can't mint
+# effectively-permanent links (JTN-473 Issue A).
+_SHARE_MIN_HOURS = 1
+_SHARE_MAX_HOURS = 24 * 30  # 30 days
+_SHARE_DEFAULT_HOURS = 72
+
+
+class ShareLinkRequest(BaseModel):
+    """Optional body for ``POST /api/satellite/frames/{frame_id}/share``.
+
+    Previously this endpoint only honored a ``?hours=`` query parameter; a
+    body field named ``expires_in_hours`` was accepted (because Pydantic
+    ignored it) but silently dropped. Both names are now accepted in the
+    body and validated with the same bounds as the query param.
+    """
+
+    expires_in_hours: int | None = Field(None, ge=_SHARE_MIN_HOURS, le=_SHARE_MAX_HOURS)
+    hours: int | None = Field(None, ge=_SHARE_MIN_HOURS, le=_SHARE_MAX_HOURS)
 
 
 class ShareLinkResponse(BaseModel):
@@ -47,17 +67,37 @@ class SharedFrameResponse(BaseModel):
 async def create_share_link(
     frame_id: str,
     db: DbSession,
-    hours: Annotated[int, Query(ge=1, le=8760)] = 72,
+    hours: Annotated[int, Query(ge=_SHARE_MIN_HOURS, le=_SHARE_MAX_HOURS)] = _SHARE_DEFAULT_HOURS,
+    payload: Annotated[ShareLinkRequest | None, Body()] = None,
 ):
-    """Create a public share link for a frame (expires in N hours, default 72)."""
-    logger.info("Creating share link: frame_id=%s, hours=%d", sanitize_log(frame_id), hours)
+    """Create a public share link for a frame.
+
+    The expiration window can be set three ways (body takes precedence over
+    query so frontends can POST a single JSON payload):
+
+    1. ``POST .../share`` body ``{"expires_in_hours": 24}``
+    2. ``POST .../share`` body ``{"hours": 24}`` (legacy alias)
+    3. ``POST .../share?hours=24`` (legacy query parameter)
+
+    Defaults to 72 hours. Valid range: 1 hour .. 30 days.
+    """
+    # Resolve the effective expiration window, preferring the body over
+    # the query parameter when both are set.
+    effective_hours: int = hours
+    if payload is not None:
+        if payload.expires_in_hours is not None:
+            effective_hours = payload.expires_in_hours
+        elif payload.hours is not None:
+            effective_hours = payload.hours
+
+    logger.info("Creating share link: frame_id=%s, hours=%d", sanitize_log(frame_id), effective_hours)
     result = await db.execute(select(GoesFrame).where(GoesFrame.id == frame_id))
     frame = result.scalar_one_or_none()
     if not frame:
         raise APIError(404, "share_error", "Frame not found")
 
     token = secrets.token_urlsafe(32)
-    expires = utcnow() + timedelta(hours=hours)
+    expires = utcnow() + timedelta(hours=effective_hours)
 
     link = ShareLink(token=token, frame_id=frame_id, expires_at=expires)
     db.add(link)

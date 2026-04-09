@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Query
 from sqlalchemy import delete, func, select
+from sqlalchemy.sql import func as sql_func
 
 from ..db.database import DbSession
 from ..db.models import FrameTag, Tag
@@ -26,9 +27,12 @@ async def create_tag(
     payload: Annotated[TagCreate, Body()],
     db: DbSession,
 ):
-    # Check uniqueness
+    """Create a tag. Tag names are compared case-insensitively for
+    uniqueness so "Severe Weather" and "severe weather" collide
+    (JTN-474 ISSUE-072).
+    """
     logger.info("Creating tag: name=%s", sanitize_log(payload.name))
-    existing = await db.execute(select(Tag).where(Tag.name == payload.name))
+    existing = await db.execute(select(Tag).where(sql_func.lower(Tag.name) == payload.name.lower()))
     if existing.scalars().first():
         raise APIError(409, "conflict", "Tag already exists")
     tag = Tag(id=str(uuid.uuid4()), name=payload.name, color=payload.color)

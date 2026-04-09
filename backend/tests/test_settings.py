@@ -28,10 +28,10 @@ async def test_settings_persist(client):
 
 @pytest.mark.asyncio
 async def test_update_settings_invalid_key(client):
-    """#54: Invalid keys should be rejected (ignored via exclude_none)."""
+    """JTN-474 ISSUE-073: unknown fields are now rejected (422) instead of
+    being silently dropped — previous behaviour masked client typos."""
     resp = await client.put("/api/settings", json={"nonexistent_key": "value"})
-    # Pydantic ignores extra fields by default, so valid keys still work
-    assert resp.status_code == 200
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio

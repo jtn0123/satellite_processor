@@ -304,11 +304,24 @@ jobs:
         working-directory: frontend
         run: npx prettier --check .
 
-      - name: Unit Tests with coverage
+      # Shard 1 runs the FULL suite with coverage so the 70% threshold
+      # defined in `vite.config.ts` is enforced against combined
+      # coverage. Shard 2 runs only its half without coverage as a
+      # parallel-execution sanity check. Sharded threshold checks would
+      # be misleading because a single shard only exercises ~half the
+      # codebase.
+      - name: Unit Tests with coverage (full suite, gate)
+        if: matrix.shard == 1
         working-directory: frontend
-        run: npx vitest run --coverage --shard=${{ matrix.shard }}/2
+        run: npx vitest run --coverage
+
+      - name: Unit Tests (shard 2, no coverage)
+        if: matrix.shard == 2
+        working-directory: frontend
+        run: npx vitest run --shard=${{ matrix.shard }}/2
 
       - name: Upload coverage artifact
+        if: matrix.shard == 1
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: frontend-coverage-shard${{ matrix.shard }}

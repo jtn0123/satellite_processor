@@ -1,15 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { http, HttpResponse, delay } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: [] })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 vi.mock('../components/GoesData/AnimationPlayer', () => ({
@@ -23,18 +16,8 @@ vi.mock('../components/GoesData/AnimationPlayer', () => ({
 }));
 
 import CollectionsTab from '../components/GoesData/CollectionsTab';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-    return Promise.resolve({ data: {} });
-  });
-});
+const server = setupMswServer();
 
 describe('CollectionsTab - Defensive Scenarios', () => {
   it('renders create collection input', () => {
@@ -43,14 +26,20 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('shows loading skeletons', () => {
-    mockedApi.get.mockReturnValue(new Promise(() => {}));
+    // Never-resolving handler to keep query in pending state.
+    server.use(
+      http.get('*/api/satellite/collections', async () => {
+        await delay('infinite');
+        return HttpResponse.json([]);
+      }),
+    );
     renderWithProviders(<CollectionsTab />);
     const pulseElements = document.querySelectorAll('.skeleton-shimmer');
     expect(pulseElements.length).toBeGreaterThan(0);
   });
 
   it('shows error state when API fails', async () => {
-    mockedApi.get.mockRejectedValue(new Error('Server error'));
+    server.use(http.get('*/api/satellite/collections', () => HttpResponse.error()));
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText(/Failed to load collections/i)).toBeInTheDocument();
@@ -65,24 +54,22 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('handles collections API returning paginated object', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: {
-            items: [
-              {
-                id: '1',
-                name: 'Test',
-                description: 'desc',
-                frame_count: 5,
-                created_at: '2024-01-01',
-              },
-            ],
-            total: 1,
-          },
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: '1',
+              name: 'Test',
+              description: 'desc',
+              frame_count: 5,
+              created_at: '2024-01-01',
+            },
+          ],
+          total: 1,
+        }),
+      ),
+    );
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText('Test')).toBeInTheDocument();
@@ -91,10 +78,7 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('handles collections API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({ data: null });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/collections', () => HttpResponse.json(null)));
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText(/Create your first collection/i)).toBeInTheDocument();
@@ -102,10 +86,9 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('handles collections API returning undefined', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({ data: undefined });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () => new HttpResponse('', { status: 200 })),
+    );
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText(/Create your first collection/i)).toBeInTheDocument();
@@ -113,21 +96,19 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('renders collection with zero frame_count', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: [
-            {
-              id: '1',
-              name: 'Empty Col',
-              description: '',
-              frame_count: 0,
-              created_at: '2024-01-01',
-            },
-          ],
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json([
+          {
+            id: '1',
+            name: 'Empty Col',
+            description: '',
+            frame_count: 0,
+            created_at: '2024-01-01',
+          },
+        ]),
+      ),
+    );
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText('Empty Col')).toBeInTheDocument();
@@ -136,21 +117,19 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('renders collection with null frame_count', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: [
-            {
-              id: '1',
-              name: 'Null Count',
-              description: '',
-              frame_count: null,
-              created_at: '2024-01-01',
-            },
-          ],
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json([
+          {
+            id: '1',
+            name: 'Null Count',
+            description: '',
+            frame_count: null,
+            created_at: '2024-01-01',
+          },
+        ]),
+      ),
+    );
     const { container } = renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(container.innerHTML).toContain('Null Count');
@@ -173,15 +152,13 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('shows edit/delete buttons on collection cards', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: [
-            { id: '1', name: 'Test', description: '', frame_count: 3, created_at: '2024-01-01' },
-          ],
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json([
+          { id: '1', name: 'Test', description: '', frame_count: 3, created_at: '2024-01-01' },
+        ]),
+      ),
+    );
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       expect(screen.getByText('Edit')).toBeInTheDocument();
@@ -190,15 +167,13 @@ describe('CollectionsTab - Defensive Scenarios', () => {
   });
 
   it('animate button disabled when frame_count is 0', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: [
-            { id: '1', name: 'Empty', description: '', frame_count: 0, created_at: '2024-01-01' },
-          ],
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json([
+          { id: '1', name: 'Empty', description: '', frame_count: 0, created_at: '2024-01-01' },
+        ]),
+      ),
+    );
     renderWithProviders(<CollectionsTab />);
     await waitFor(() => {
       const animBtn = screen.getByLabelText(/Animate collection Empty/);

@@ -29,11 +29,24 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
+      // Exclude test-only files (fixtures, MSW handlers, harness helpers)
+      // from the coverage denominator — they're test infrastructure, not
+      // production code, and shouldn't count against the threshold.
+      exclude: [
+        'src/test/**',
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'src/**/__tests__/**',
+        '**/*.d.ts',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+        'src/api/generated-types.ts',
+      ],
       thresholds: {
-        lines: 56,
-        functions: 56,
-        branches: 56,
-        statements: 56,
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
       },
     },
   },

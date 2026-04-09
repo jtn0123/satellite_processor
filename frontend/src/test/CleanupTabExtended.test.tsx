@@ -1,44 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { http, HttpResponse, delay } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: { deleted_frames: 5, freed_bytes: 10240 } })),
-    put: vi.fn(() => Promise.resolve({ data: { is_active: false } })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({
   showToast: vi.fn(),
 }));
 
 import CleanupTab from '../components/GoesData/CleanupTab';
-import api from '../api/client';
 
-const mockedApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
+const server = setupMswServer();
+
+const STATS_WITH_DATA = {
+  total_frames: 500,
+  total_size_bytes: 5368709120,
+  by_satellite: { 'GOES-16': { count: 300, size: 3e9 } },
+  by_band: { C02: { count: 200, size: 2e9 } },
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
-    if (url === '/satellite/frames/stats') {
-      return Promise.resolve({
-        data: {
-          total_frames: 500,
-          total_size_bytes: 5368709120,
-          by_satellite: { 'GOES-16': { count: 300, size: 3e9 } },
-          by_band: { C02: { count: 200, size: 2e9 } },
-        },
-      });
-    }
-    return Promise.resolve({ data: {} });
-  });
+  server.use(http.get('*/api/satellite/frames/stats', () => HttpResponse.json(STATS_WITH_DATA)));
 });
 
 describe('CleanupTab - confirm before cleanup', () => {
@@ -52,23 +34,37 @@ describe('CleanupTab - confirm before cleanup', () => {
   });
 
   it('runs cleanup when confirmed', async () => {
+    const runSpy = vi.fn();
+    server.use(
+      http.post('*/api/satellite/cleanup/run', () => {
+        runSpy();
+        return HttpResponse.json({ deleted_frames: 5, freed_bytes: 10240 });
+      }),
+    );
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('Run Now'));
     fireEvent.click(screen.getByText('Run Cleanup'));
     await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith('/satellite/cleanup/run');
+      expect(runSpy).toHaveBeenCalled();
     });
   });
 
   it('does not run cleanup when cancelled', async () => {
+    const runSpy = vi.fn();
+    server.use(
+      http.post('*/api/satellite/cleanup/run', () => {
+        runSpy();
+        return HttpResponse.json({ deleted_frames: 0, freed_bytes: 0 });
+      }),
+    );
     renderWithProviders(<CleanupTab />);
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('Run Now'));
     fireEvent.click(screen.getByText('Cancel'));
-    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(runSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -81,7 +77,16 @@ describe('CleanupTab - storage stats display', () => {
   });
 
   it('shows skeleton when stats loading', () => {
-    mockedApi.get.mockImplementation(() => new Promise(() => {}));
+    server.use(
+      http.get('*/api/satellite/frames/stats', async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+      http.get('*/api/satellite/cleanup-rules', async () => {
+        await delay('infinite');
+        return HttpResponse.json([]);
+      }),
+    );
     renderWithProviders(<CleanupTab />);
     // Should show skeleton placeholders
     expect(document.querySelectorAll('.skeleton-shimmer').length).toBeGreaterThan(0);

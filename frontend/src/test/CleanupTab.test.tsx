@@ -1,36 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 import CleanupTab from '../components/GoesData/CleanupTab';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
+const server = setupMswServer();
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
-    if (url === '/satellite/frames/stats') {
-      return Promise.resolve({
-        data: { total_frames: 100, total_size_bytes: 1024000, by_satellite: {}, by_band: {} },
-      });
-    }
-    if (url === '/satellite/cleanup/preview') {
-      return Promise.resolve({ data: { frame_count: 0, total_size_bytes: 0, frames: [] } });
-    }
-    return Promise.resolve({ data: {} });
-  });
+  // Most tests in this file expect non-zero stats.
+  server.use(
+    http.get('*/api/satellite/frames/stats', () =>
+      HttpResponse.json({
+        total_frames: 100,
+        total_size_bytes: 1024000,
+        by_satellite: {},
+        by_band: {},
+      }),
+    ),
+  );
 });
 
 describe('CleanupTab', () => {
@@ -49,29 +38,21 @@ describe('CleanupTab', () => {
   });
 
   it('renders rules list when data exists', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/cleanup-rules') {
-        return Promise.resolve({
-          data: [
-            {
-              id: '1',
-              name: 'Age Rule',
-              rule_type: 'max_age_days',
-              value: 30,
-              protect_collections: true,
-              is_active: true,
-              created_at: '2024-06-01',
-            },
-          ],
-        });
-      }
-      if (url === '/satellite/frames/stats') {
-        return Promise.resolve({
-          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
-        });
-      }
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/cleanup-rules', () =>
+        HttpResponse.json([
+          {
+            id: '1',
+            name: 'Age Rule',
+            rule_type: 'max_age_days',
+            value: 30,
+            protect_collections: true,
+            is_active: true,
+            created_at: '2024-06-01',
+          },
+        ]),
+      ),
+    );
     renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(screen.getByText('Age Rule')).toBeInTheDocument();

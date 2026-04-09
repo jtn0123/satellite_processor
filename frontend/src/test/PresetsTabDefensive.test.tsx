@@ -1,40 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
 import PresetsTab from '../components/GoesData/PresetsTab';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
-    if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
-    return Promise.resolve({ data: {} });
-  });
-});
+const server = setupMswServer();
 
 describe('PresetsTab - Defensive Scenarios', () => {
   it('handles presets API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: null });
-      if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/fetch-presets', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<PresetsTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -42,11 +20,7 @@ describe('PresetsTab - Defensive Scenarios', () => {
   });
 
   it('handles schedules API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets') return Promise.resolve({ data: [] });
-      if (url === '/satellite/schedules') return Promise.resolve({ data: null });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/schedules', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<PresetsTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -54,7 +28,10 @@ describe('PresetsTab - Defensive Scenarios', () => {
   });
 
   it('handles all APIs failing', async () => {
-    mockedApi.get.mockRejectedValue(new Error('Network error'));
+    server.use(
+      http.get('*/api/satellite/fetch-presets', () => HttpResponse.error()),
+      http.get('*/api/satellite/schedules', () => HttpResponse.error()),
+    );
     const { container } = renderWithProviders(<PresetsTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -62,41 +39,13 @@ describe('PresetsTab - Defensive Scenarios', () => {
   });
 
   it('handles presets API returning paginated object', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets')
-        return Promise.resolve({
-          data: {
-            items: [
-              {
-                id: '1',
-                name: 'Test Preset',
-                satellite: 'GOES-16',
-                sector: 'CONUS',
-                band: 'C02',
-                description: '',
-                created_at: '2024-01-01',
-              },
-            ],
-            total: 1,
-          },
-        });
-      if (url === '/satellite/schedules') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
-    const { container } = renderWithProviders(<PresetsTab />);
-    await waitFor(() => {
-      expect(container.innerHTML.length).toBeGreaterThan(0);
-    });
-  });
-
-  it('handles schedule with null preset reference', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/fetch-presets')
-        return Promise.resolve({
-          data: [
+    server.use(
+      http.get('*/api/satellite/fetch-presets', () =>
+        HttpResponse.json({
+          items: [
             {
               id: '1',
-              name: 'P1',
+              name: 'Test Preset',
               satellite: 'GOES-16',
               sector: 'CONUS',
               band: 'C02',
@@ -104,24 +53,46 @@ describe('PresetsTab - Defensive Scenarios', () => {
               created_at: '2024-01-01',
             },
           ],
-        });
-      if (url === '/satellite/schedules')
-        return Promise.resolve({
-          data: [
-            {
-              id: 's1',
-              name: 'Hourly',
-              preset_id: '1',
-              interval_minutes: 60,
-              is_active: true,
-              last_run_at: null,
-              next_run_at: null,
-              preset: null,
-            },
-          ],
-        });
-      return Promise.resolve({ data: {} });
+          total: 1,
+        }),
+      ),
+    );
+    const { container } = renderWithProviders(<PresetsTab />);
+    await waitFor(() => {
+      expect(container.innerHTML.length).toBeGreaterThan(0);
     });
+  });
+
+  it('handles schedule with null preset reference', async () => {
+    server.use(
+      http.get('*/api/satellite/fetch-presets', () =>
+        HttpResponse.json([
+          {
+            id: '1',
+            name: 'P1',
+            satellite: 'GOES-16',
+            sector: 'CONUS',
+            band: 'C02',
+            description: '',
+            created_at: '2024-01-01',
+          },
+        ]),
+      ),
+      http.get('*/api/satellite/schedules', () =>
+        HttpResponse.json([
+          {
+            id: 's1',
+            name: 'Hourly',
+            preset_id: '1',
+            interval_minutes: 60,
+            is_active: true,
+            last_run_at: null,
+            next_run_at: null,
+            preset: null,
+          },
+        ]),
+      ),
+    );
     const { container } = renderWithProviders(<PresetsTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);

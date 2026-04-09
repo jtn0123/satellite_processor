@@ -1,35 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
 import CleanupTab from '../components/GoesData/CleanupTab';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
-    if (url === '/satellite/frames/stats')
-      return Promise.resolve({
-        data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
-      });
-    return Promise.resolve({ data: {} });
-  });
-});
+const server = setupMswServer();
 
 describe('CleanupTab - Defensive Scenarios', () => {
   it('renders without crashing with empty data', async () => {
@@ -40,14 +19,7 @@ describe('CleanupTab - Defensive Scenarios', () => {
   });
 
   it('handles cleanup-rules API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: null });
-      if (url === '/satellite/frames/stats')
-        return Promise.resolve({
-          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/cleanup-rules', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -55,11 +27,7 @@ describe('CleanupTab - Defensive Scenarios', () => {
   });
 
   it('handles stats API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
-      if (url === '/satellite/frames/stats') return Promise.resolve({ data: null });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/frames/stats', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -67,7 +35,11 @@ describe('CleanupTab - Defensive Scenarios', () => {
   });
 
   it('handles all APIs failing', async () => {
-    mockedApi.get.mockRejectedValue(new Error('Network error'));
+    server.use(
+      http.get('*/api/satellite/cleanup-rules', () => HttpResponse.error()),
+      http.get('*/api/satellite/frames/stats', () => HttpResponse.error()),
+      http.get('*/api/satellite/cleanup/stats', () => HttpResponse.error()),
+    );
     const { container } = renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -75,14 +47,7 @@ describe('CleanupTab - Defensive Scenarios', () => {
   });
 
   it('handles stats with zero values (no division errors)', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/cleanup-rules') return Promise.resolve({ data: [] });
-      if (url === '/satellite/frames/stats')
-        return Promise.resolve({
-          data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
-        });
-      return Promise.resolve({ data: {} });
-    });
+    // Default handlers already return zero-valued stats — no overrides needed.
     renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(screen.getByText(/Storage Usage/i)).toBeInTheDocument();
@@ -90,36 +55,38 @@ describe('CleanupTab - Defensive Scenarios', () => {
   });
 
   it('renders multiple rules', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url === '/satellite/cleanup-rules')
-        return Promise.resolve({
-          data: [
-            {
-              id: '1',
-              name: 'Age Rule',
-              rule_type: 'max_age_days',
-              value: 30,
-              protect_collections: true,
-              is_active: true,
-              created_at: '2024-06-01',
-            },
-            {
-              id: '2',
-              name: 'Size Rule',
-              rule_type: 'max_storage_gb',
-              value: 100,
-              protect_collections: false,
-              is_active: false,
-              created_at: '2024-06-01',
-            },
-          ],
-        });
-      if (url === '/satellite/frames/stats')
-        return Promise.resolve({
-          data: { total_frames: 500, total_size_bytes: 50_000_000, by_satellite: {}, by_band: {} },
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/cleanup-rules', () =>
+        HttpResponse.json([
+          {
+            id: '1',
+            name: 'Age Rule',
+            rule_type: 'max_age_days',
+            value: 30,
+            protect_collections: true,
+            is_active: true,
+            created_at: '2024-06-01',
+          },
+          {
+            id: '2',
+            name: 'Size Rule',
+            rule_type: 'max_storage_gb',
+            value: 100,
+            protect_collections: false,
+            is_active: false,
+            created_at: '2024-06-01',
+          },
+        ]),
+      ),
+      http.get('*/api/satellite/frames/stats', () =>
+        HttpResponse.json({
+          total_frames: 500,
+          total_size_bytes: 50_000_000,
+          by_satellite: {},
+          by_band: {},
+        }),
+      ),
+    );
     renderWithProviders(<CleanupTab />);
     await waitFor(() => {
       expect(screen.getByText('Age Rule')).toBeInTheDocument();

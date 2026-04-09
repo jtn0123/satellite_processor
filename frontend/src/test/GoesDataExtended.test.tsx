@@ -1,22 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { http, HttpResponse } from 'msw';
+import { setupMswServer } from './mocks/msw';
 
 import GoesData from '../pages/GoesData';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
+const server = setupMswServer();
 
 function renderPage() {
   const qc = new QueryClient({
@@ -34,29 +25,15 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url === '/satellite/products') {
-      return Promise.resolve({
-        data: {
-          satellites: ['GOES-16', 'GOES-18'],
-          sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
-          bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
-        },
-      });
-    }
-    if (url.includes('/frames')) {
-      return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-    }
-    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-    if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-    if (url === '/satellite/frames/stats') {
-      return Promise.resolve({
-        data: { total_frames: 0, total_size_bytes: 0, by_satellite: {}, by_band: {} },
-      });
-    }
-    return Promise.resolve({ data: {} });
-  });
+  server.use(
+    http.get('*/api/satellite/products', () =>
+      HttpResponse.json({
+        satellites: ['GOES-16', 'GOES-18'],
+        sectors: [{ id: 'CONUS', name: 'CONUS', product: 'ABI-L2-CMIPF' }],
+        bands: [{ id: 'C02', description: 'Red (0.64µm)' }],
+      }),
+    ),
+  );
 });
 
 describe('GoesData page extended', () => {

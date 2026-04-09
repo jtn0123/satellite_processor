@@ -21,9 +21,7 @@ describe('CompositesTab - Defensive Scenarios', () => {
 
   it('handles composites API returning null items', async () => {
     server.use(
-      http.get('*/api/satellite/composites', () =>
-        HttpResponse.json({ items: null, total: 0 }),
-      ),
+      http.get('*/api/satellite/composites', () => HttpResponse.json({ items: null, total: 0 })),
     );
     const { container } = renderWithProviders(<CompositesTab />);
     await waitFor(() => {

@@ -20,9 +20,7 @@ const STATS_WITH_DATA = {
 };
 
 beforeEach(() => {
-  server.use(
-    http.get('*/api/satellite/frames/stats', () => HttpResponse.json(STATS_WITH_DATA)),
-  );
+  server.use(http.get('*/api/satellite/frames/stats', () => HttpResponse.json(STATS_WITH_DATA)));
 });
 
 describe('CleanupTab - confirm before cleanup', () => {

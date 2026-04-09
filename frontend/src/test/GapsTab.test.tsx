@@ -18,9 +18,7 @@ const DEFAULT_PRODUCTS = {
 };
 
 beforeEach(() => {
-  server.use(
-    http.get('*/api/satellite/products', () => HttpResponse.json(DEFAULT_PRODUCTS)),
-  );
+  server.use(http.get('*/api/satellite/products', () => HttpResponse.json(DEFAULT_PRODUCTS)));
 });
 
 describe('GapsTab', () => {

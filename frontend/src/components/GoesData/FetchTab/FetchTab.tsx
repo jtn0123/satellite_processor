@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { parseApiError } from '../../../utils/parseApiError';
 import { ChevronDown, Save } from 'lucide-react';
@@ -19,6 +19,60 @@ import { ConfirmDialog } from './ConfirmDialog';
 const PresetsTab = lazy(() => import('../PresetsTab'));
 
 type ImageType = 'single' | 'true_color' | 'natural_color';
+
+/**
+ * JTN-476 ISSUE-074: the Advanced Fetch wizard used to throw away all
+ * selections on a page refresh because state lived purely in component
+ * memory. Persist the wizard form + step number to localStorage under a
+ * versioned key so a refresh resumes where the user left off, and clear
+ * the saved state once the fetch is submitted or the dialog is cancelled.
+ *
+ * The key carries a version suffix so that incompatible future shapes will
+ * be discarded cleanly instead of crashing the restore path.
+ */
+const WIZARD_STORAGE_KEY = 'advancedFetchWizard.v1';
+
+interface PersistedWizardState {
+  showAdvanced: boolean;
+  step: number;
+  satellite: string;
+  sector: string;
+  band: string;
+  imageType: ImageType;
+  startTime: string;
+  endTime: string;
+}
+
+function loadPersistedWizard(): PersistedWizardState | null {
+  if (typeof globalThis.localStorage === 'undefined') return null;
+  try {
+    const raw = globalThis.localStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedWizardState>;
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    return {
+      showAdvanced: !!parsed.showAdvanced,
+      step: typeof parsed.step === 'number' ? parsed.step : 0,
+      satellite: typeof parsed.satellite === 'string' ? parsed.satellite : '',
+      sector: typeof parsed.sector === 'string' ? parsed.sector : 'FullDisk',
+      band: typeof parsed.band === 'string' ? parsed.band : 'C02',
+      imageType: (parsed.imageType as ImageType) ?? 'single',
+      startTime: typeof parsed.startTime === 'string' ? parsed.startTime : '',
+      endTime: typeof parsed.endTime === 'string' ? parsed.endTime : '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearPersistedWizard() {
+  if (typeof globalThis.localStorage === 'undefined') return;
+  try {
+    globalThis.localStorage.removeItem(WIZARD_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors (quota, private mode, etc.)
+  }
+}
 
 interface EnhancedProduct {
   satellites: string[];
@@ -49,17 +103,48 @@ interface FetchPreset {
 const STEPS = ['Source', 'What', 'When'] as const;
 
 export default function FetchTab() {
-  const [step, setStep] = useState(0);
-  const [satellite, setSatellite] = useState('');
-  const [sector, setSector] = useState('FullDisk');
-  const [band, setBand] = useState('C02');
-  const [imageType, setImageType] = useState<ImageType>('single');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  // Lazy-init from persisted wizard state (JTN-476 ISSUE-074). Null-safe for
+  // SSR / tests without localStorage.
+  const persisted = useRef<PersistedWizardState | null>(loadPersistedWizard()).current;
+  const [step, setStep] = useState(persisted?.step ?? 0);
+  const [satellite, setSatellite] = useState(persisted?.satellite ?? '');
+  const [sector, setSector] = useState(persisted?.sector ?? 'FullDisk');
+  const [band, setBand] = useState(persisted?.band ?? 'C02');
+  const [imageType, setImageType] = useState<ImageType>(persisted?.imageType ?? 'single');
+  const [startTime, setStartTime] = useState(persisted?.startTime ?? '');
+  const [endTime, setEndTime] = useState(persisted?.endTime ?? '');
   const [showConfirm, setShowConfirm] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(persisted?.showAdvanced ?? false);
   const [quickFetching, setQuickFetching] = useState<string | null>(null);
+
+  // Persist wizard state to localStorage whenever the user changes anything
+  // in the wizard. Only persists while the wizard is open — collapsing the
+  // wizard also clears the saved state to keep things tidy.
+  useEffect(() => {
+    if (typeof globalThis.localStorage === 'undefined') return;
+    if (!showAdvanced) {
+      // Only keep a snapshot while the wizard is actively in use.
+      clearPersistedWizard();
+      return;
+    }
+    try {
+      const payload: PersistedWizardState = {
+        showAdvanced,
+        step,
+        satellite,
+        sector,
+        band,
+        imageType,
+        startTime,
+        endTime,
+      };
+      globalThis.localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Storage may be unavailable (quota, private mode); persistence is
+      // best-effort so we swallow the error.
+    }
+  }, [showAdvanced, step, satellite, sector, band, imageType, startTime, endTime]);
 
   // Listen for prefill events from other tabs (e.g. LiveTab "Download Latest")
   useEffect(() => {
@@ -154,6 +239,9 @@ export default function FetchTab() {
     onSuccess: (data) => {
       showToast('success', `Fetch job created: ${data.job_id}`);
       setShowConfirm(false);
+      // JTN-476 ISSUE-074: wipe the persisted wizard after a successful
+      // submission so reloading doesn't restore a completed form.
+      clearPersistedWizard();
     },
     onError: (err: unknown) => {
       showToast('error', parseApiError(err, 'Failed to create fetch job'));

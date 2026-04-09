@@ -87,15 +87,34 @@ describe('FetchTab', () => {
     await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
   });
 
-  it('disables Fetch button when no times set', async () => {
+  it('disables Fetch button when times are cleared', async () => {
+    // JTN-422: times now default to "now − 1h → now" so the Fetch button is
+    // enabled on arrival. Clearing the start/end fields disables it again.
     render(<FetchTab />, { wrapper });
     await expandAdvanced();
     await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
-    await waitFor(() => expect(screen.getByLabelText(/start/i)).toBeInTheDocument());
+    const startInput = await screen.findByLabelText(/start date and time/i);
+    const endInput = screen.getByLabelText(/end date and time/i);
+    fireEvent.change(startInput, { target: { value: '' } });
+    fireEvent.change(endInput, { target: { value: '' } });
     const fetchBtn = screen.getByRole('button', { name: /^fetch$/i });
     expect(fetchBtn).toBeDisabled();
+  });
+
+  it('Fetch button is enabled with the default "last hour" range', async () => {
+    render(<FetchTab />, { wrapper });
+    await expandAdvanced();
+    await waitFor(() => expect(screen.getByText('Choose Satellite')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Next'));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/start date and time/i)).toBeInTheDocument(),
+    );
+    const fetchBtn = screen.getByRole('button', { name: /^fetch$/i });
+    expect(fetchBtn).not.toBeDisabled();
   });
 });

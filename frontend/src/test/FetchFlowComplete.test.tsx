@@ -154,17 +154,21 @@ describe('FetchFlowComplete', () => {
     });
   });
 
-  it('validation: fetch button disabled without times', async () => {
+  it('validation: fetch button disabled when times are cleared', async () => {
+    // JTN-422: times now default to "now − 1h → now" so clearing the fields
+    // is needed to reach the disabled state.
     renderFetch();
     await expandAdvanced();
     await waitFor(() => screen.getByText('Choose Satellite'));
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => screen.getByText('What to Fetch'));
     fireEvent.click(screen.getByText('Next'));
-    await waitFor(() => {
-      const fetchBtn = screen.getByText('Fetch');
-      expect(fetchBtn.closest('button')).toBeDisabled();
-    });
+    const startInput = await screen.findByLabelText(/start date and time/i);
+    const endInput = screen.getByLabelText(/end date and time/i);
+    fireEvent.change(startInput, { target: { value: '' } });
+    fireEvent.change(endInput, { target: { value: '' } });
+    const fetchBtn = screen.getByText('Fetch');
+    expect(fetchBtn.closest('button')).toBeDisabled();
   });
 
   it('quick hours buttons set correct time range', async () => {

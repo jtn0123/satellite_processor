@@ -10,6 +10,7 @@ import {
   getDefaultBand,
 } from '../../../utils/sectorHelpers';
 
+import { defaultDateTimeRange } from '../../ui/dateTimeHelpers';
 import { QuickFetchSection } from './QuickFetchSection';
 import { SatelliteStep } from './SatelliteStep';
 import { WhatStep } from './WhatStep';
@@ -54,8 +55,11 @@ export default function FetchTab() {
   const [sector, setSector] = useState('FullDisk');
   const [band, setBand] = useState('C02');
   const [imageType, setImageType] = useState<ImageType>('single');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  // Default to "now − 1h" → "now" so the native datetime-local picker has
+  // a real starting value (not Month=0, Day=0, ...). See JTN-422.
+  const initialRange = useMemo(() => defaultDateTimeRange(1), []);
+  const [startTime, setStartTime] = useState(initialRange.start);
+  const [endTime, setEndTime] = useState(initialRange.end);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);

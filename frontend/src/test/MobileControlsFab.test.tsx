@@ -45,7 +45,8 @@ describe('MobileControlsFab', () => {
     const onAutoFetch = vi.fn();
     render(<MobileControlsFab {...defaultProps} onAutoFetchChange={onAutoFetch} />);
     fireEvent.click(screen.getByTestId('fab-toggle'));
-    fireEvent.click(screen.getByText('Auto-fetch'));
+    // JTN-428: label is now "Auto-fetch off" / "Auto-fetch on" instead of "Auto-fetch".
+    fireEvent.click(screen.getByText('Auto-fetch off'));
     expect(onAutoFetch).toHaveBeenCalledWith(true);
   });
 
@@ -58,8 +59,11 @@ describe('MobileControlsFab', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('fab-toggle'));
-    expect(screen.getByText('Auto-fetch N/A')).toBeInTheDocument();
-    expect(screen.getByText('Auto-fetch N/A').closest('button')).toBeDisabled();
+    // JTN-428: "Auto-fetch N/A" replaced with "Auto-fetch unavailable"
+    // + a secondary line showing the real reason.
+    expect(screen.getByText('Auto-fetch unavailable')).toBeInTheDocument();
+    expect(screen.getByText('CDN only')).toBeInTheDocument();
+    expect(screen.getByText('Auto-fetch unavailable').closest('button')).toBeDisabled();
   });
 
   it('closes menu on second toggle click', () => {

@@ -43,10 +43,11 @@ describe('MobileBottomNav — click handlers', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('clicking Jobs tab navigates to /jobs', () => {
+  it('clicking Animate tab navigates to /animate', () => {
+    // JTN-428: Animate is now a primary tab; Jobs lives under More.
     renderNav();
-    fireEvent.click(screen.getByRole('tab', { name: 'Jobs' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/jobs');
+    fireEvent.click(screen.getByRole('tab', { name: 'Animate' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/animate');
   });
 
   it('clicking a primary tab closes the more menu if open', () => {

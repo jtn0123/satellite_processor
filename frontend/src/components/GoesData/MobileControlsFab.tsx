@@ -70,11 +70,28 @@ export default function MobileControlsFab({
             type="button"
             onClick={autoFetchDisabled ? undefined : () => onAutoFetchChange(!autoFetch)}
             title={autoFetchDisabled ? autoFetchDisabledReason : undefined}
+            aria-label={(() => {
+              if (autoFetchDisabled)
+                return `Auto-fetch unavailable: ${autoFetchDisabledReason ?? 'not supported for this view'}`;
+              return autoFetch ? 'Auto-fetch on — tap to turn off' : 'Auto-fetch off — tap to turn on';
+            })()}
             disabled={autoFetchDisabled}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getAutoFetchButtonClass(autoFetch, autoFetchDisabled)}`}
+            className={`flex flex-col items-start px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getAutoFetchButtonClass(autoFetch, autoFetchDisabled)}`}
           >
-            <Zap className="w-4 h-4 text-amber-400" />
-            {autoFetchDisabled ? 'Auto-fetch N/A' : 'Auto-fetch'}
+            <span className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-400" />
+              {/* JTN-428: surface a real state label instead of "N/A". */}
+              {autoFetchDisabled
+                ? 'Auto-fetch unavailable'
+                : autoFetch
+                  ? 'Auto-fetch on'
+                  : 'Auto-fetch off'}
+            </span>
+            {autoFetchDisabled && autoFetchDisabledReason && (
+              <span className="text-[10px] text-white/40 leading-tight mt-0.5">
+                {autoFetchDisabledReason}
+              </span>
+            )}
           </button>
         </div>
       )}

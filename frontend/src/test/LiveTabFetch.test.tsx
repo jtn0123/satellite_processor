@@ -119,6 +119,9 @@ describe('LiveTab - Fetch & Auto-fetch', () => {
           sector: 'CONUS',
           band: 'C02',
         }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }),
+        }),
       );
     });
   });

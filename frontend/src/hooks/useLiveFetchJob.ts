@@ -97,13 +97,19 @@ export function useLiveFetchJob({
     }
 
     try {
-      const res = await api.post('/satellite/fetch', {
-        satellite: satellite.toUpperCase(),
-        sector,
-        band,
-        start_time: startDate,
-        end_time: endDate,
-      });
+      // JTN-391: fresh Idempotency-Key per user-initiated fetch keeps
+      // double-taps from queueing two identical S3 downloads.
+      const res = await api.post(
+        '/satellite/fetch',
+        {
+          satellite: satellite.toUpperCase(),
+          sector,
+          band,
+          start_time: startDate,
+          end_time: endDate,
+        },
+        { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+      );
       setActiveJobId(res.data.job_id);
       showToast('success', isMeso ? 'Fetching mesoscale data…' : 'Fetching latest frame…');
     } catch {
@@ -129,13 +135,17 @@ export function useLiveFetchJob({
     let cancelled = false;
     const doAutoFetch = async () => {
       try {
-        const res = await api.post('/satellite/fetch', {
-          satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
-          sector: sector || catalogLatest!.sector,
-          band: band || catalogLatest!.band,
-          start_time: catalogLatest!.scan_time,
-          end_time: catalogLatest!.scan_time,
-        });
+        const res = await api.post(
+          '/satellite/fetch',
+          {
+            satellite: (satellite || catalogLatest!.satellite).toUpperCase(),
+            sector: sector || catalogLatest!.sector,
+            band: band || catalogLatest!.band,
+            start_time: catalogLatest!.scan_time,
+            end_time: catalogLatest!.scan_time,
+          },
+          { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+        );
         if (!cancelled) {
           setActiveJobId(res.data.job_id);
           showToast('success', 'Auto-fetching new frame from AWS');

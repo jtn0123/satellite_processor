@@ -6,12 +6,17 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Query, Request
-from fastapi.responses import Response
+from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi.responses import JSONResponse, Response
 
 from ..db.database import DbSession
 from ..db.models import Job
 from ..errors import APIError
+from ..idempotency import (
+    get_cached_response,
+    idempotency_key_dependency,
+    store_response,
+)
 from ..models.goes import (
     FetchCompositeRequest,
     GoesBackfillRequest,
@@ -246,9 +251,19 @@ async def fetch_goes(
     request: Request,
     payload: Annotated[GoesFetchRequest, Body()],
     db: DbSession,
+    idempotency_key: Annotated[str | None, Depends(idempotency_key_dependency)] = None,
 ):
-    """Kick off a GOES data fetch job."""
+    """Kick off a GOES data fetch job.
+
+    JTN-391: accepts an optional ``Idempotency-Key`` header — duplicate
+    requests with the same key return the cached first response.
+    """
     logger.info("GOES fetch requested")
+    if idempotency_key is not None:
+        cached = await get_cached_response("POST", "/api/satellite/fetch", idempotency_key)
+        if cached is not None:
+            return JSONResponse(status_code=cached["status_code"], content=cached["body"])
+
     _validate_satellite_sector_band(payload.satellite, payload.sector, payload.band)
     _validate_satellite_availability(payload.satellite, payload.start_time, payload.end_time)
 
@@ -283,11 +298,20 @@ async def fetch_goes(
 
     await invalidate("cache:dashboard-stats*")
 
-    return GoesFetchResponse(
+    response = GoesFetchResponse(
         job_id=job_id,
         status="pending",
         message=message,
     )
+    if idempotency_key is not None:
+        await store_response(
+            "POST",
+            "/api/satellite/fetch",
+            idempotency_key,
+            200,
+            response.model_dump(mode="json"),
+        )
+    return response
 
 
 @router.get("/gaps")

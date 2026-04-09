@@ -111,6 +111,9 @@ describe('useLiveFetchJob', () => {
         sector: 'CONUS',
         band: 'Band02',
       }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }),
+      }),
     );
     expect(result.current.activeJobId).toBe('job-123');
     expect(mockShowToast).toHaveBeenCalledWith('success', 'Fetching latest frame…');
@@ -136,6 +139,9 @@ describe('useLiveFetchJob', () => {
       expect.objectContaining({
         start_time: '2024-06-01T12:00:00Z',
         end_time: '2024-06-01T12:00:00Z',
+      }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }),
       }),
     );
   });
@@ -214,6 +220,9 @@ describe('useLiveFetchJob', () => {
           satellite: 'GOES-18',
           sector: 'CONUS',
           band: 'Band02',
+        }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }),
         }),
       );
     });
@@ -324,6 +333,9 @@ describe('useLiveFetchJob', () => {
       expect.objectContaining({
         start_time: '2024-06-01T12:00:00Z',
         end_time: '2024-06-01T12:00:00Z',
+      }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }),
       }),
     );
   });

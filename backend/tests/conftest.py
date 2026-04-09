@@ -50,6 +50,7 @@ def mock_redis():
         patch("app.services.cache.get_redis_client", return_value=fake),
         patch("app.routers.health.get_redis_client", return_value=fake),
         patch("app.main.get_redis_client", return_value=fake),
+        patch("app.idempotency.get_redis_client", return_value=fake),
     ):
         yield fake
 

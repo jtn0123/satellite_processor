@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Annotated
 
 from celery.exceptions import CeleryError
-from fastapi import APIRouter, Query, Request
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import FileResponse, JSONResponse
 from kombu.exceptions import KombuError
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
@@ -26,6 +26,11 @@ from ..db.models import (
     JobLog,
 )
 from ..errors import API_ERROR_RESPONSES, APIError, validate_safe_path, validate_uuid
+from ..idempotency import (
+    get_cached_response,
+    idempotency_key_dependency,
+    store_response,
+)
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -171,8 +176,23 @@ async def _delete_job_files(db: AsyncSession, job: Job) -> int:
 
 @router.post("", response_model=JobResponse)
 @limiter.limit("5/minute")
-async def create_job(request: Request, job_in: JobCreate, db: DbSession):
-    """Create a processing job and dispatch to Celery"""
+async def create_job(
+    request: Request,
+    job_in: JobCreate,
+    db: DbSession,
+    idempotency_key: Annotated[str | None, Depends(idempotency_key_dependency)] = None,
+):
+    """Create a processing job and dispatch to Celery.
+
+    JTN-391: if an ``Idempotency-Key`` header is supplied and a prior
+    request with the same key already succeeded, return the cached
+    response verbatim instead of creating a second Job row.
+    """
+    if idempotency_key is not None:
+        cached = await get_cached_response("POST", "/api/jobs", idempotency_key)
+        if cached is not None:
+            return JSONResponse(status_code=cached["status_code"], content=cached["body"])
+
     output_dir = str(Path(settings.output_dir))
     resolved_params = await _resolve_image_ids(db, job_in.params)
 
@@ -206,6 +226,10 @@ async def create_job(request: Request, job_in: JobCreate, db: DbSession):
     db_job.task_id = task.id
     await db.commit()
     await db.refresh(db_job)
+
+    if idempotency_key is not None:
+        body = JobResponse.model_validate(db_job).model_dump(mode="json")
+        await store_response("POST", "/api/jobs", idempotency_key, 200, body)
 
     return db_job
 

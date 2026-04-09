@@ -30,7 +30,7 @@ import re
 from typing import Any
 
 import redis.exceptions
-from fastapi import Header, Request
+from fastapi import Header
 
 from .errors import APIError
 from .redis_pool import get_redis_client
@@ -125,8 +125,7 @@ async def store_response(method: str, path: str, key: str, status_code: int, bod
         logger.debug("Idempotency cache write failed for %s", redis_key, exc_info=True)
 
 
-async def idempotency_key_dependency(
-    request: Request,
+def idempotency_key_dependency(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> str | None:
     """FastAPI dependency that validates the optional ``Idempotency-Key`` header.
@@ -136,12 +135,10 @@ async def idempotency_key_dependency(
     router needs the key both before (hit check) and after (store)
     running its own logic, so the lookup is done explicitly in the
     handler via :func:`get_cached_response` / :func:`store_response`.
+
+    Declared synchronous because the only work it does is header
+    parsing — FastAPI will run it in a threadpool automatically.
     """
-    # ``request`` is unused at runtime, but declaring it forces FastAPI
-    # to resolve this as a request-scoped dependency rather than an
-    # app-scoped singleton. Keeping the parameter also makes mocking in
-    # tests straightforward.
-    _ = request
     if idempotency_key is None:
         return None
     return _validate_key(idempotency_key)

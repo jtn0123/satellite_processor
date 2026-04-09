@@ -367,8 +367,18 @@ async def get_job_logs(
     level: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
-    """Return logs for a job ordered by timestamp."""
+    """Return logs for a job ordered by timestamp.
+
+    JTN-460: Previously this endpoint short-circuited and returned ``200 []``
+    for a nonexistent job, which was inconsistent with ``/jobs/{id}/output``
+    (which returns 404). The job is now validated first so that both
+    endpoints return 404 for unknown IDs.
+    """
     validate_uuid(job_id, "job_id")
+    job_exists = await db.execute(select(Job.id).where(Job.id == job_id))
+    if job_exists.scalar_one_or_none() is None:
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
+
     query = select(JobLog).where(JobLog.job_id == job_id)
     if level:
         query = query.where(JobLog.level == level)

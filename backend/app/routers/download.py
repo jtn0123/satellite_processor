@@ -13,13 +13,7 @@ from sqlalchemy import select
 from ..config import settings
 from ..db.database import DbSession
 from ..db.models import Job
-from ..errors import (
-    NotFoundError,
-    PathTraversalError,
-    ValidationError,
-    validate_safe_path,
-    validate_uuid,
-)
+from ..errors import APIError, PathTraversalError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
 
@@ -50,10 +44,8 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
     without buffering the entire archive in memory.
     """
     if len(files) > MAX_ZIP_FILES:
-        raise ValidationError(
-            f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files.",
-            error="export_too_large",
-            status_code=400,
+        raise APIError(
+            400, "export_too_large", f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files."
         )
 
     zs = zipstream.ZipStream(sized=False)
@@ -137,19 +129,15 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError("Job not found")
+        raise APIError(404, "not_found", "Job not found")
     if job.status not in ("completed", "completed_partial"):
-        raise ValidationError(
-            f"Job status is '{job.status}', not completed",
-            error="job_not_completed",
-            status_code=400,
-        )
+        raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
     safe_output = validate_safe_path(output_path, settings.output_dir)
 
     if not safe_output.exists():
-        raise NotFoundError("Output not found on disk")
+        raise APIError(404, "not_found", "Output not found on disk")
 
     # Single file
     if safe_output.is_file():
@@ -162,7 +150,7 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
         if _is_child_of(safe_output / f, safe_output) and (safe_output / f).resolve().is_file()
     ]
     if not files:
-        raise NotFoundError("No output files")
+        raise APIError(404, "not_found", "No output files")
 
     # Single file in dir
     if len(files) == 1:
@@ -187,7 +175,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
     """
     job_ids = payload.ids
     if not job_ids:
-        raise ValidationError("No job IDs provided", error="no_jobs", status_code=400)
+        raise APIError(400, "no_jobs", "No job IDs provided")
     for jid in job_ids:
         validate_uuid(jid, "job_id")
 
@@ -196,7 +184,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
     )
     jobs = result.scalars().all()
     if not jobs:
-        raise NotFoundError("No completed jobs found")
+        raise APIError(404, "not_found", "No completed jobs found")
 
     file_pairs: list[tuple[str, str]] = []
     for job in jobs:
@@ -204,7 +192,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
         file_pairs.extend(_collect_job_files(job, prefix))
 
     if not file_pairs:
-        raise NotFoundError("No output files found")
+        raise APIError(404, "not_found", "No output files found")
 
     return StreamingResponse(
         _zip_stream(file_pairs),

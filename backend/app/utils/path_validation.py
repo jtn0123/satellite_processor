@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from ..config import settings
-from ..errors import PathTraversalError
+from ..errors import APIError
 
 
 def validate_file_path(file_path: str) -> Path:
@@ -18,5 +18,5 @@ def validate_file_path(file_path: str) -> Path:
     in_storage = resolved == storage_root or resolved.startswith(storage_root + "/")
     in_output = resolved == output_root or resolved.startswith(output_root + "/")
     if not (in_storage or in_output):
-        raise PathTraversalError("File path outside allowed directories")
+        raise APIError(403, "forbidden", "File path outside allowed directories")
     return Path(resolved)

@@ -392,8 +392,11 @@ class TestBulkDownloadExercisesCollectJobFiles:
                 json={"ids": [good_job.id, evil_job.id]},
             )
 
-        # The evil job is skipped but the good job's frame still streams,
-        # so the endpoint returns a 200 zip rather than bubbling up a 500.
-        assert resp.status_code == 200
-        # Guards against a regression that silently returns an empty body.
+        # The evil job is skipped (PathTraversalError branch inside
+        # ``_collect_job_files``) but the good job's frame still streams,
+        # so the endpoint returns a 200 zip rather than bubbling up a
+        # 500. The assertion message includes the body so a future
+        # regression surfaces "No completed jobs found" / "Output not
+        # found" instead of a bare 404.
+        assert resp.status_code == 200, f"body={resp.text[:300]}"
         assert len(resp.content) > 0

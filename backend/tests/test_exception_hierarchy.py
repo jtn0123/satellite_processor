@@ -227,24 +227,26 @@ class TestAPIErrorHandlerAcrossHierarchy:
         }
 
 
-class TestValidateUuidUsesNotFoundError:
-    """JTN-392: validate_uuid now raises NotFoundError, not bare APIError."""
+class TestValidateUuidRaises404:
+    """``validate_uuid`` raises an ``APIError`` with status 404 on invalid input.
+
+    JTN-392 preserves the existing APIError call style in the helper so
+    migration can be incremental — subclasses are available for new code
+    but existing raises keep working.
+    """
 
     def test_valid_uuid_returns_value(self):
         value = "12345678-1234-1234-1234-123456789012"
         assert validate_uuid(value) == value
 
     def test_invalid_uuid_raises_not_found(self):
-        with pytest.raises(NotFoundError) as exc_info:
+        with pytest.raises(APIError) as exc_info:
             validate_uuid("not-a-uuid")
-        # NotFoundError is still an APIError, so old-style ``except
-        # APIError`` call sites keep working.
-        assert isinstance(exc_info.value, APIError)
         assert exc_info.value.status_code == 404
         assert "invalid id" in exc_info.value.detail
 
     def test_custom_name_in_detail(self):
-        with pytest.raises(NotFoundError) as exc_info:
+        with pytest.raises(APIError) as exc_info:
             validate_uuid("nope", name="job_id")
         assert "invalid job_id" in exc_info.value.detail
 

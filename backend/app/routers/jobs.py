@@ -25,14 +25,7 @@ from ..db.models import (
     Job,
     JobLog,
 )
-from ..errors import (
-    API_ERROR_RESPONSES,
-    ConflictError,
-    NotFoundError,
-    ValidationError,
-    validate_safe_path,
-    validate_uuid,
-)
+from ..errors import API_ERROR_RESPONSES, APIError, validate_safe_path, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -80,7 +73,7 @@ async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
     if len(images) != len(image_ids):
         found = {img.id for img in images}
         missing = [iid for iid in image_ids if iid not in found]
-        raise NotFoundError(f"Images not found: {missing}", error="images_not_found")
+        raise APIError(404, "images_not_found", f"Images not found: {missing}")
 
     staging_dir = Path(settings.temp_dir) / f"job_staging_{utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
     staging_dir.mkdir(parents=True, exist_ok=True)
@@ -246,7 +239,7 @@ async def get_job(job_id: str, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
     return job
 
 
@@ -257,7 +250,7 @@ async def update_job(job_id: str, job_in: JobUpdate, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     update_data = job_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -275,10 +268,10 @@ async def cancel_job(job_id: str, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     if job.status not in ("pending", "processing"):
-        raise ValidationError(f"Job is already {job.status}", error="not_cancellable", status_code=400)
+        raise APIError(400, "not_cancellable", f"Job is already {job.status}")
 
     # Atomic status transition — prevents TOCTOU race where a concurrent
     # worker could complete the job between our SELECT and this UPDATE.
@@ -290,7 +283,7 @@ async def cancel_job(job_id: str, db: DbSession):
     )
     if upd.rowcount == 0:
         await db.refresh(job)
-        raise ConflictError(f"Job status changed concurrently to {job.status}")
+        raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
 
     await db.commit()
 
@@ -332,10 +325,7 @@ async def bulk_delete_jobs(
         # JTN-473 Issue D: empty body / empty job_ids used to 200 with an
         # empty ``deleted`` array, hiding client bugs. Require either
         # ``?all=true`` or a non-empty ``job_ids``.
-        raise ValidationError(
-            "Provide a non-empty job_ids array or ?all=true",
-            error="missing_ids",
-        )
+        raise APIError(422, "missing_ids", "Provide a non-empty job_ids array or ?all=true")
 
     jobs = result.scalars().all()
 
@@ -380,7 +370,7 @@ async def delete_job(
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     # Revoke Celery task if still running
     task_id = _get_job_task_id(job)
@@ -420,7 +410,7 @@ async def get_job_logs(
     validate_uuid(job_id, "job_id")
     job_exists = await db.execute(select(Job.id).where(Job.id == job_id))
     if job_exists.scalar_one_or_none() is None:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
 
     query = select(JobLog).where(JobLog.job_id == job_id)
     if level:
@@ -446,11 +436,9 @@ async def get_job_output(job_id: str, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise NotFoundError(_JOB_NOT_FOUND)
+        raise APIError(404, "not_found", _JOB_NOT_FOUND)
     if job.status not in ("completed", "completed_partial"):
-        raise ValidationError(
-            f"Job is not completed (status: {job.status})", error="job_not_completed", status_code=400
-        )
+        raise APIError(400, "job_not_completed", f"Job is not completed (status: {job.status})")
 
     # #52: Use stored output_path from job record
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
@@ -458,14 +446,14 @@ async def get_job_output(job_id: str, db: DbSession):
     safe_output = validate_safe_path(output_path, settings.output_dir)
 
     if not safe_output.exists():
-        raise NotFoundError("Output not found")
+        raise APIError(404, "not_found", "Output not found")
 
     if safe_output.is_file():
         return FileResponse(str(safe_output), filename=safe_output.name)
 
     files = [f for f in sorted(os.listdir(safe_output)) if (safe_output / f).is_file()]
     if not files:
-        raise NotFoundError("No output files found")
+        raise APIError(404, "not_found", "No output files found")
 
     for ext in [".mp4", ".avi", ".mkv", ".zip"]:
         for f in files:

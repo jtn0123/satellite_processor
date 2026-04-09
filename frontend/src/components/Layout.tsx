@@ -111,6 +111,17 @@ export default function Layout() {
         let lastSeen: string | null = null;
         try {
           lastSeen = localStorage.getItem('whatsNewLastSeen');
+          // JTN-476 ISSUE-076: an earlier bug (JTN-418) caused the dismiss
+          // handler to persist the literal string "0.0.0" for every user.
+          // Once JTN-418 lands and the version becomes something real, the
+          // `lastSeen !== current` comparison would otherwise trigger the
+          // changelog popup for every existing user who had already
+          // dismissed it. One-shot migrate the placeholder forward to the
+          // current version so the dialog stays dismissed.
+          if (lastSeen === '0.0.0' && version && version !== '0.0.0') {
+            localStorage.setItem('whatsNewLastSeen', version);
+            lastSeen = version;
+          }
         } catch {
           /* private browsing */
         }

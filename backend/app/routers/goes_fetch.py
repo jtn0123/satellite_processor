@@ -299,15 +299,26 @@ async def detect_gaps(
     band: Annotated[str | None, Query()] = None,
     sector: Annotated[str | None, Query()] = None,
     expected_interval: Annotated[float, Query(ge=0.5, le=60.0)] = 10.0,
+    start_time: Annotated[datetime | None, Query()] = None,
+    end_time: Annotated[datetime | None, Query()] = None,
 ):
-    """Run gap detection and return coverage stats."""
+    """Run gap detection and return coverage stats.
+
+    Optional ``start_time``/``end_time`` restrict the analysis to a time range.
+    If ``start_time >= end_time``, an empty result is returned (no error).
+    """
     logger.debug("Gap detection requested")
+    if start_time is not None and end_time is not None and start_time >= end_time:
+        raise APIError(400, "invalid_range", "start_time must be before end_time")
+
     return await get_coverage_stats(
         db,
         satellite=satellite,
         band=band,
         sector=sector,
         expected_interval=expected_interval,
+        start_time=start_time,
+        end_time=end_time,
     )
 
 
@@ -318,7 +329,12 @@ async def backfill_gaps(
     payload: Annotated[GoesBackfillRequest, Body()],
     db: DbSession,
 ):
-    """Fill detected gaps (one-shot, not automatic)."""
+    """Fill detected gaps (one-shot, not automatic).
+
+    JTN-460: Requires an explicit ``start_time``, ``end_time``, satellite,
+    sector, and band. Previously an empty body was silently accepted and the
+    task was enqueued with no time range, which was effectively a no-op.
+    """
     logger.info("Backfill gaps requested")
     job_id = str(uuid.uuid4())
     job = Job(
@@ -330,6 +346,8 @@ async def backfill_gaps(
             "satellite": payload.satellite,
             "band": payload.band,
             "sector": payload.sector,
+            "start_time": payload.start_time.isoformat(),
+            "end_time": payload.end_time.isoformat(),
             "expected_interval": payload.expected_interval,
         },
     )

@@ -332,6 +332,8 @@ class TestGoesBackfill:
                     "satellite": "GOES-16",
                     "sector": "CONUS",
                     "band": "C02",
+                    "start_time": "2024-03-15T00:00:00",
+                    "end_time": "2024-03-15T06:00:00",
                     "expected_interval": 10.0,
                 },
             )

@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import { buildWsUrl, getWsApiKey } from '../api/ws';
 
-type Status = 'connected' | 'reconnecting' | 'disconnected';
+export type Status = 'connected' | 'reconnecting' | 'disconnected';
 
 const statusConfig: Record<Status, { color: string; label: string }> = {
   connected: { color: 'bg-green-400', label: 'Connected' },
@@ -87,6 +87,25 @@ function subscribe(cb: () => void) {
 
 function getSnapshot() {
   return currentStatus;
+}
+
+/**
+ * Hook exposing the shared `/ws/status` connection state.
+ *
+ * Uses the same external store that `ConnectionStatus` subscribes to, so
+ * callers can gate polling on whether the live websocket is up. Returns
+ * `true` while the websocket is connected.
+ *
+ * Subscribing also reference-counts the store, so the websocket opens on
+ * first use and closes when nothing is listening.
+ */
+// Hook lives next to the component because both need the module-level
+// subscription store; splitting into two files would duplicate the store
+// and break reference counting.
+// eslint-disable-next-line react-refresh/only-export-components
+export function useIsWebSocketConnected(): boolean {
+  const status = useSyncExternalStore(subscribe, getSnapshot, () => 'disconnected' as Status);
+  return status === 'connected';
 }
 
 export default function ConnectionStatus() {

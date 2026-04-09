@@ -382,7 +382,8 @@ class TestJobLogs:
         assert logs[0]["level"] == "error"
 
     async def test_get_logs_nonexistent_job(self, client):
-        # Logs endpoint returns empty list for non-existent job (no 404)
+        # JTN-460: Logs endpoint now returns 404 for non-existent jobs to
+        # match the behaviour of /jobs/{id}/output. Previously it returned
+        # ``200 []`` which silently masked typos and missing jobs.
         resp = await client.get(f"/api/jobs/{_uuid()}/logs")
-        assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.status_code == 404

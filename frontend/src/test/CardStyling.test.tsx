@@ -51,8 +51,15 @@ function renderJobList() {
 describe('Card styling consistency', () => {
   it('job list cards use card utility class', () => {
     const { container } = renderJobList();
-    const buttons = container.querySelectorAll('button');
-    const jobCards = Array.from(buttons).filter((b) => b.className.includes('card'));
+    // JTN-412 ISSUE-024: job rows used to be <button> elements wrapping
+    // nested buttons, which is invalid HTML and caused click handlers on
+    // the View/Delete icons to be swallowed. Rows are now <div
+    // role="button">, so look for any element carrying the card class
+    // instead of filtering to <button>.
+    const cardElements = container.querySelectorAll('[class*="card"]');
+    const jobCards = Array.from(cardElements).filter(
+      (el) => el.getAttribute('role') === 'button' || el.tagName === 'BUTTON',
+    );
     expect(jobCards.length).toBeGreaterThan(0);
   });
 

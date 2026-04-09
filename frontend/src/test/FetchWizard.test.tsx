@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FetchTab from '../components/GoesData/FetchTab';
@@ -90,6 +90,13 @@ async function expandAdvanced() {
 }
 
 describe('FetchTab Wizard', () => {
+  beforeEach(() => {
+    // JTN-476 ISSUE-074: the wizard now persists step/form state to
+    // localStorage across reloads. Tests must start from a clean slate so
+    // state from a previous test doesn't leak in.
+    localStorage.clear();
+  });
+
   it('renders step indicators', async () => {
     renderWithQuery(<FetchTab />);
     await expandAdvanced();

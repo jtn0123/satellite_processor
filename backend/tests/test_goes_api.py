@@ -130,6 +130,8 @@ class TestGoesBackfill:
                 "satellite": "GOES-16",
                 "band": "C02",
                 "sector": "FullDisk",
+                "start_time": "2024-03-15T00:00:00",
+                "end_time": "2024-03-15T06:00:00",
             },
         )
         assert resp.status_code == 200

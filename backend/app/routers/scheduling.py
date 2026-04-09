@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Body
@@ -187,13 +187,27 @@ async def run_fetch_preset(
     preset_id: str,
     db: DbSession,
 ):
-    """Execute a preset immediately (fetches last 1 hour of data)."""
+    """Execute a preset immediately (fetches last 1 hour of data).
+
+    JTN-460: Uses ``datetime.now(timezone.utc)`` consistently so that comparing
+    tz-aware DB timestamps (e.g. ``last_fetch_time``) with the in-request ``now``
+    can never raise ``TypeError: can't compare offset-naive and offset-aware
+    datetimes``. The naive form stored in the DB is derived from the same
+    moment so the two representations stay in sync.
+    """
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
         raise APIError(404, "not_found", _FETCH_PRESET_NOT_FOUND)
 
-    now = utcnow()
+    # Tz-aware "now" is used for any cross-boundary comparison (e.g. against
+    # aware timestamps loaded from Postgres TIMESTAMP WITH TIME ZONE columns)
+    # and the ISO strings stored in Job.params. The downstream fetch task
+    # parses these back with ``datetime.fromisoformat`` and will receive
+    # tz-aware values, matching S3 metadata comparisons.
+    now_aware = datetime.now(UTC)
+    start_aware = now_aware - timedelta(hours=1)
+
     job_id = str(uuid.uuid4())
     job = Job(
         id=job_id,
@@ -203,8 +217,8 @@ async def run_fetch_preset(
             "satellite": preset.satellite,
             "sector": preset.sector,
             "band": preset.band,
-            "start_time": (now - timedelta(hours=1)).isoformat(),
-            "end_time": now.isoformat(),
+            "start_time": start_aware.isoformat(),
+            "end_time": now_aware.isoformat(),
             "preset_id": preset.id,
         },
     )

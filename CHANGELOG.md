@@ -1,3 +1,11 @@
+## [1.42.17](https://github.com/jtn0123/satellite_processor/compare/v1.42.16...v1.42.17) (2026-04-09)
+
+
+### Bug Fixes
+
+* **backend:** gap-detection correctness + WS/metrics hardening ([#424](https://github.com/jtn0123/satellite_processor/issues/424)) ([f64eae3](https://github.com/jtn0123/satellite_processor/commit/f64eae387c548dd18dc86a5ca4b24d11972bed78))
+* **frontend:** unblock Live View, Jobs, polling regression, misc UX ([#425](https://github.com/jtn0123/satellite_processor/issues/425)) ([b85f203](https://github.com/jtn0123/satellite_processor/commit/b85f20301ca1dae1c0f3b50acca36b2cb1507674))
+
 ## [1.42.16](https://github.com/jtn0123/satellite_processor/compare/v1.42.15...v1.42.16) (2026-04-09)
 
 

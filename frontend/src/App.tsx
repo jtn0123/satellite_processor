@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import { Satellite } from 'lucide-react';
@@ -6,6 +6,21 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 import DevErrorOverlay from './components/DevErrorOverlay';
+
+/**
+ * JTN-476 ISSUE-078: paths with repeated slashes (e.g. `/goes//browse`) were
+ * falling through to the NotFound route. This wrapper collapses any run of
+ * slashes into a single `/` and redirects, so typos and malformed links
+ * land on the intended route instead of a 404.
+ */
+function PathNormalizer() {
+  const location = useLocation();
+  if (location.pathname.includes('//')) {
+    const normalized = location.pathname.replaceAll(/\/{2,}/g, '/');
+    return <Navigate to={`${normalized}${location.search}${location.hash}`} replace />;
+  }
+  return null;
+}
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const JobsPage = lazy(() => import('./pages/Jobs'));
@@ -42,6 +57,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <PathNormalizer />
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route

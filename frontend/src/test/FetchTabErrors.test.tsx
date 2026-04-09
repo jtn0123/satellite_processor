@@ -113,6 +113,8 @@ describe('FetchTab error handling', () => {
   beforeEach(() => {
     mockShowToast.mockClear();
     mockPost.mockClear();
+    // JTN-476 ISSUE-074: clear persisted wizard state between tests.
+    localStorage.clear();
   });
 
   it('shows default error message when detail is absent', async () => {

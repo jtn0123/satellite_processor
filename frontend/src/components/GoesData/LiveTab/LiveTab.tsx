@@ -110,24 +110,49 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     [satellite, band],
   );
 
-  // Mobile overlay auto-hide
+  // Mobile overlay auto-hide.
+  //
+  // JTN-408 ISSUE-011 (+007, +010, +005, +009): on desktop the overlay used
+  // to auto-hide after 5s of cursor inactivity, but the popovers and every
+  // control (band picker, sector picker, auto-fetch switch, monitor settings
+  // dropdown) live inside that overlay. When it faded, the controls became
+  // `opacity: 0; pointer-events: none` and silently swallowed all clicks.
+  //
+  // Fix: never auto-hide on desktop. The overlay is always visible on
+  // desktop; we only auto-hide it on mobile where screen real estate is
+  // precious and tapping the image reveals it again.
   const [overlayVisible, setOverlayVisible] = useState(true);
   const overlayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const resetOverlayTimer = useCallback(() => {
     clearTimeout(overlayTimer.current);
+    if (!isMobile) {
+      setOverlayVisible(true);
+      return;
+    }
     overlayTimer.current = setTimeout(() => setOverlayVisible(false), 5000);
-  }, []);
+  }, [isMobile]);
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional desktop/mobile sync */
   useEffect(() => {
+    if (!isMobile) {
+      setOverlayVisible(true);
+      return;
+    }
     resetOverlayTimer();
     return () => clearTimeout(overlayTimer.current);
-  }, [resetOverlayTimer]);
+  }, [resetOverlayTimer, isMobile]);
+  /* eslint-enable react-hooks/set-state-in-effect */
   const toggleOverlay = useCallback(() => {
+    if (!isMobile) {
+      // Desktop: overlay is pinned open, no toggle behavior needed.
+      setOverlayVisible(true);
+      return;
+    }
     setOverlayVisible((v) => {
       const next = !v;
       if (next) resetOverlayTimer();
       return next;
     });
-  }, [resetOverlayTimer]);
+  }, [resetOverlayTimer, isMobile]);
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();

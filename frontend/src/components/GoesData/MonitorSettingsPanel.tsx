@@ -65,6 +65,21 @@ export default function MonitorSettingsPanel({
   const [customSector, setCustomSector] = useState(sector);
   const [customBand, setCustomBand] = useState(band);
 
+  // JTN-408 ISSUE-012: the popover used to initialize customSatellite once
+  // from its prop and then never update it again — which meant the combobox
+  // defaulted to "GOES-16" even when the viewer was showing GOES-19. Sync
+  // the embedded form with the live viewer state whenever the popover opens
+  // so "Start Monitoring" reflects what the user is actually looking at.
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional prop sync on popover open */
+  useEffect(() => {
+    if (!open) return;
+    setCustomSatellite(satellite);
+    setCustomSector(sector);
+    setCustomBand(band);
+    setCustomInterval(interval);
+  }, [open, satellite, sector, band, interval]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   return (
     <div ref={panelRef} className="relative" data-testid="monitor-settings-panel">
       <button

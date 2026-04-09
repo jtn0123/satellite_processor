@@ -392,8 +392,20 @@ export function LiveImageArea(props: LiveImageAreaProps) {
         </div>
       )}
 
+      {/*
+        JTN-408 ISSUE-011: the top controls overlay used to auto-hide after
+        5s on desktop too. When it faded to `opacity: 0; pointer-events: none`
+        every child control (band picker, sector picker, Monitor Settings
+        popover, auto-fetch toggle, Compare) became unclickable — it looked
+        like those controls were "dead buttons" but they were just behind an
+        invisible, non-interactive ancestor.
+
+        We now keep the overlay fully interactive whenever it's visible.
+        Auto-hide is only applied on mobile; on desktop LiveTab pins
+        overlayVisible=true.
+      */}
       <div
-        className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/50 via-black/15 to-transparent pointer-events-none transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-black/50 via-black/15 to-transparent transition-opacity duration-300 ${overlayVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         data-testid="controls-overlay"
       >
         <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-4 py-3">

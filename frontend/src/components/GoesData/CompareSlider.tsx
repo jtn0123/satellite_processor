@@ -44,8 +44,20 @@ export default function CompareSlider({
           draggable={false}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-          No previous frame
+        // JTN-408 ISSUE-013: previously the Compare toggle would split the
+        // viewer into two panes even when there was nothing to compare
+        // against. Give the user an actionable empty state instead of a
+        // silent black pane.
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-6 text-gray-400 text-sm"
+          data-testid="compare-empty-state"
+        >
+          <Columns2 className="w-6 h-6 text-gray-500" aria-hidden="true" />
+          <div className="font-medium text-gray-300">No previous frame to compare</div>
+          <div className="text-xs text-gray-500 max-w-xs">
+            Compare will light up once a second frame is available. Try refreshing or waiting for
+            the next capture.
+          </div>
         </div>
       )}
       {/* Current (clipped) */}

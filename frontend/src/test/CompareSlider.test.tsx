@@ -19,9 +19,12 @@ describe('CompareSlider', () => {
     expect(screen.getByAltText('Previous frame')).toBeInTheDocument();
   });
 
-  it('shows "No previous frame" when prevImageUrl is null', () => {
+  it('shows an actionable empty state when prevImageUrl is null', () => {
     render(<CompareSlider {...baseProps} prevImageUrl={null} />);
-    expect(screen.getByText('No previous frame')).toBeInTheDocument();
+    // JTN-408 ISSUE-013: the empty state was enriched with a headline and a
+    // hint message. The heading text is stable so tests key off that.
+    expect(screen.getByTestId('compare-empty-state')).toBeInTheDocument();
+    expect(screen.getByText(/No previous frame to compare/i)).toBeInTheDocument();
   });
 
   it('applies clip path based on comparePosition', () => {

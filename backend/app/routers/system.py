@@ -5,7 +5,7 @@ import logging
 import platform
 import sys
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 import psutil
 from fastapi import APIRouter, Query
@@ -22,7 +22,7 @@ _start_time = time.time()
 
 
 @router.get("/status")
-async def system_status():
+async def system_status() -> dict[str, Any]:
     """Get system resource usage"""
     logger.debug("System status requested")
     # #28: cpu_percent(interval=0.1) blocks — run in thread
@@ -51,7 +51,7 @@ _system_info_cache: dict = {"data": None, "expires": 0.0}
 
 
 @router.get("/info")
-async def system_info():
+async def system_info() -> dict[str, Any]:
     """Get system information: Python version, uptime, disk, memory, worker status."""
     logger.debug("System info requested")
     now = time.time()
@@ -77,7 +77,7 @@ async def system_info():
     try:
         from ..celery_app import celery_app
 
-        def _check_celery():
+        def _check_celery() -> dict[str, Any] | None:
             inspector = celery_app.control.inspect(timeout=2)
             return inspector.active()
 
@@ -112,7 +112,7 @@ async def list_failed_jobs(
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     task_name: Annotated[str | None, Query()] = None,
-):
+) -> dict[str, Any]:
     """List failed Celery tasks from the dead-letter table (paginated)."""
     from ..models.failed_job import FailedJob
 

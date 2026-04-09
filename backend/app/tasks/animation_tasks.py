@@ -7,6 +7,12 @@ import math
 import shutil
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from ..db.models import CropPreset, GoesFrame
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -21,7 +27,7 @@ QUALITY_CRF = {"low": "28", "medium": "23", "high": "18"}
 PREVIEW_MAX_WIDTH = 1024
 
 
-def _apply_overlay(img, frame, overlay: dict, label_text: str):
+def _apply_overlay(img: np.ndarray, frame: GoesFrame, overlay: dict[str, Any], label_text: str) -> np.ndarray:
     """Burn text overlay onto a frame image using PIL."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
@@ -47,7 +53,7 @@ def _apply_overlay(img, frame, overlay: dict, label_text: str):
     return np.array(pil_img)[:, :, ::-1]  # RGB -> BGR
 
 
-def _apply_loop_style(frames, loop_style: str, fps: int) -> list:
+def _apply_loop_style(frames: list[GoesFrame], loop_style: str, fps: int) -> list[GoesFrame]:
     """Apply loop style (pingpong/hold) to the frame list."""
     if not frames:
         return frames
@@ -61,7 +67,7 @@ def _apply_loop_style(frames, loop_style: str, fps: int) -> list:
     return list(frames)
 
 
-def _build_overlay_label(overlay: dict | None, frames) -> str:
+def _build_overlay_label(overlay: dict[str, Any] | None, frames: list[GoesFrame]) -> str:
     """Build the overlay label text from the first frame."""
     if not (overlay and overlay.get("label") and frames):
         return ""
@@ -69,7 +75,7 @@ def _build_overlay_label(overlay: dict | None, frames) -> str:
     return f"{f0.satellite} {f0.sector} Band {f0.band.replace('C', '')}"
 
 
-def _process_single_frame(img, crop, resolution: str, scale: str):
+def _process_single_frame(img: np.ndarray, crop: CropPreset | None, resolution: str, scale: str) -> np.ndarray:
     """Apply crop, resolution, and scale transforms to a single frame image."""
     import cv2
 
@@ -94,8 +100,15 @@ def _process_single_frame(img, crop, resolution: str, scale: str):
 
 
 def _render_frames_to_dir(
-    frames, work_dir: Path, job_id: str, crop, resolution: str, scale: str, overlay: dict | None, label_text: str
-):
+    frames: list[GoesFrame],
+    work_dir: Path,
+    job_id: str,
+    crop: CropPreset | None,
+    resolution: str,
+    scale: str,
+    overlay: dict[str, Any] | None,
+    label_text: str,
+) -> int:
     """Read, transform, and write all frames to the working directory."""
     import cv2
 
@@ -127,7 +140,7 @@ def _render_frames_to_dir(
     return output_idx
 
 
-def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path: Path):
+def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path: Path) -> None:
     """Encode frames into GIF or MP4 using FFmpeg."""
     ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
     input_pattern = str(work_dir / "frame%06d.png")
@@ -174,7 +187,7 @@ def _encode_output(fmt: str, fps: int, quality: str, work_dir: Path, output_path
         _run_ffmpeg(cmd)
 
 
-def _run_ffmpeg(cmd: list[str]):
+def _run_ffmpeg(cmd: list[str]) -> None:
     """Run an FFmpeg command, capturing stderr for error reporting."""
     result = subprocess.run(cmd, capture_output=True)
     if result.returncode != 0:
@@ -183,7 +196,7 @@ def _run_ffmpeg(cmd: list[str]):
         raise subprocess.CalledProcessError(result.returncode, cmd, output=result.stdout, stderr=result.stderr)
 
 
-def _mark_animation_failed(session, animation_id: str, error: str):
+def _mark_animation_failed(session: Any, animation_id: str, error: str) -> None:
     """Mark the animation record as failed in the database."""
     from ..db.models import Animation
 
@@ -208,7 +221,7 @@ def _mark_animation_failed(session, animation_id: str, error: str):
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def generate_animation(self, job_id: str, animation_id: str):
+def generate_animation(self: Any, job_id: str, animation_id: str) -> None:
     """Generate an animation (MP4/GIF) from selected GOES frames."""
     from ..db.models import Animation, CropPreset, GoesFrame, Job
 

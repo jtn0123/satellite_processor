@@ -6,6 +6,7 @@ The ProcessorService class was removed (unused dead code — audit #3 finding #3
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ from satellite_processor.core.processor import SatelliteImageProcessor  # noqa: 
 from satellite_processor.core.settings_schema import to_core_settings  # noqa: E402
 
 
-def configure_processor(processor: SatelliteImageProcessor, params: dict):
+def configure_processor(processor: SatelliteImageProcessor, params: dict[str, Any]) -> None:
     """Configure processor settings from API params — single source of truth.
 
     Used by both the Celery tasks and any direct processor invocations.

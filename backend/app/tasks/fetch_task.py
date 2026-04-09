@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import redis.exceptions
 from botocore.exceptions import ClientError
@@ -182,7 +184,7 @@ def _build_status_message(
     return f"{parts[0]} ({', '.join(parts[1:])})", "completed_partial"
 
 
-def _make_job_logger(job_id: str):
+def _make_job_logger(job_id: str) -> Callable[..., None]:
     """Return a helper function that writes to the job log."""
 
     def _log(msg: str, level: str = "info") -> None:
@@ -212,10 +214,10 @@ def _log_s3_prefixes(satellite: str, sector: str, band: str, start_time: datetim
         current_hour += _td(hours=1)
 
 
-def _make_progress_callback(job_id: str, _log):
+def _make_progress_callback(job_id: str, _log: Callable[..., None]) -> Callable[[int, int], None]:
     """Return an on_progress callback for fetch_frames."""
 
-    def on_progress(current: int, total: int):
+    def on_progress(current: int, total: int) -> None:
         pct = int(current / total * 100) if total > 0 else 0
         msg = f"Downloading frame {current}/{total}"
         _publish_progress(job_id, pct, msg)
@@ -225,7 +227,9 @@ def _make_progress_callback(job_id: str, _log):
     return on_progress
 
 
-def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: bool = False) -> None:
+def _execute_goes_fetch(
+    job_id: str, params: dict[str, Any], _log: Callable[..., None], *, defer_final_update: bool = False
+) -> None:
     """Run the core GOES fetch logic: list, download, store, and report."""
     from ..services.goes_fetcher import fetch_frames, list_available
 
@@ -292,7 +296,7 @@ def _execute_goes_fetch(job_id: str, params: dict, _log, *, defer_final_update: 
         _publish_progress(job_id, 100, status_msg, final_status)
 
 
-def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
+def _handle_fetch_failure(job_id: str, error: Exception, _log: Callable[..., None]) -> None:
     """Handle a failed GOES fetch job."""
     logger.exception("GOES fetch job %s failed", job_id)
     _log(f"GOES fetch failed: {error}", "error")
@@ -333,7 +337,7 @@ def _build_fetch_idempotency_key(params: dict) -> str:
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def fetch_goes_data(self, job_id: str, params: dict):
+def fetch_goes_data(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Download GOES frames for a time range and create Image records."""
     logger.info("Starting GOES fetch job %s", job_id)
 
@@ -509,7 +513,7 @@ def _fill_single_gap(
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def backfill_gaps(self, job_id: str, params: dict):
+def backfill_gaps(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Run gap detection then fetch missing frames."""
     logger.info("Starting backfill job %s", job_id)
     _update_job_db(

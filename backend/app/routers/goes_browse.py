@@ -3,10 +3,11 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query
 from sqlalchemy import func, select
+from starlette.responses import FileResponse
 
 from ..db.database import DbSession
 from ..db.models import Composite, Job
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/api/satellite", tags=["satellite-browse"])
 
 
 @router.get("/composite-recipes")
-def list_composite_recipes():
+def list_composite_recipes() -> list[dict[str, Any]]:
     """List available composite recipes."""
     return [{"id": k, "name": v["name"], "bands": v["bands"]} for k, v in COMPOSITE_RECIPES.items()]
 
@@ -31,7 +32,7 @@ def list_composite_recipes():
 async def create_composite(
     payload: Annotated[CompositeCreateRequest, Body()],
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Create a band composite image via Celery task."""
     logger.info("Creating composite")
     recipe = payload.recipe
@@ -88,7 +89,7 @@ async def list_composites(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> PaginatedResponse[CompositeResponse]:
     """List generated composites."""
     logger.debug("Listing composites")
     total = (await db.execute(select(func.count(Composite.id)))).scalar() or 0
@@ -117,7 +118,7 @@ async def list_composites(
 
 
 @router.get("/composites/{composite_id}")
-async def get_composite(composite_id: str, db: DbSession):
+async def get_composite(composite_id: str, db: DbSession) -> dict[str, Any]:
     """Get composite detail."""
     logger.debug("Composite requested: id=%s", sanitize_log(composite_id))
     validate_uuid(composite_id, "composite_id")
@@ -142,7 +143,7 @@ async def get_composite(composite_id: str, db: DbSession):
 
 # Bug #11: Dedicated composite image endpoint
 @router.get("/composites/{composite_id}/image")
-async def get_composite_image(composite_id: str, db: DbSession):
+async def get_composite_image(composite_id: str, db: DbSession) -> FileResponse:
     """Serve the composite image file."""
     logger.debug("Composite image requested: id=%s", sanitize_log(composite_id))
     validate_uuid(composite_id, "composite_id")
@@ -160,8 +161,6 @@ async def get_composite_image(composite_id: str, db: DbSession):
         raise APIError(404, "not_found", "Composite image file not found on disk")
 
     import mimetypes
-
-    from starlette.responses import FileResponse
 
     media_type = mimetypes.guess_type(str(file_path))[0] or "image/png"
 

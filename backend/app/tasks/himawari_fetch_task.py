@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from botocore.exceptions import ClientError
@@ -58,7 +60,7 @@ def _list_segments_for_timestamp(
     s3 = _get_s3_client()
     paginator = s3.get_paginator("list_objects_v2")
 
-    def _do_list():
+    def _do_list() -> list[str]:
         keys: list[str] = []
         for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
             for obj in page.get("Contents", []):
@@ -80,7 +82,7 @@ def _download_segment(bucket: str, key: str) -> bytes:
     """
     s3 = _get_s3_client()
 
-    def _do_download():
+    def _do_download() -> bytes:
         resp = s3.get_object(Bucket=bucket, Key=key)
         return resp["Body"].read()
 
@@ -418,7 +420,7 @@ def _execute_himawari_fetch(job_id: str, params: dict, _log) -> None:
     _finalize_job(job_id, output_dir, status_msg, final_status, _log)
 
 
-def _make_job_logger(job_id: str):
+def _make_job_logger(job_id: str) -> Callable[..., None]:
     """Return a helper function that writes to the job log."""
     import redis.exceptions
     from sqlalchemy.exc import SQLAlchemyError
@@ -675,7 +677,7 @@ def _execute_himawari_true_color(job_id: str, params: dict, _log) -> None:
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def fetch_himawari_true_color(self, job_id: str, params: dict):
+def fetch_himawari_true_color(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Fetch Himawari True Color composite (B03+B02+B01) for a time range."""
     logger.info("Starting Himawari True Color job %s", job_id)
     _update_job_db(
@@ -715,7 +717,7 @@ def fetch_himawari_true_color(self, job_id: str, params: dict):
     retry_backoff_max=300,
     retry_jitter=True,
 )
-def fetch_himawari_data(self, job_id: str, params: dict):
+def fetch_himawari_data(self: Any, job_id: str, params: dict[str, Any]) -> None:
     """Download Himawari HSD segments for a time range, assemble, and create records."""
     logger.info("Starting Himawari fetch job %s", job_id)
     _update_job_db(

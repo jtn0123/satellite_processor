@@ -1,6 +1,7 @@
 """Notification events endpoints."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
@@ -37,7 +38,7 @@ class NotificationResponse(BaseModel):
 
 
 @router.get("", response_model=list[NotificationResponse])
-async def list_notifications(db: DbSession):
+async def list_notifications(db: DbSession) -> list[NotificationResponse]:
     """Return last 50 notifications, newest first."""
     logger.debug("Listing notifications")
     result = await db.execute(select(Notification).order_by(Notification.created_at.desc()).limit(50))
@@ -45,7 +46,7 @@ async def list_notifications(db: DbSession):
 
 
 @router.post("/{notification_id}/read")
-async def mark_read(notification_id: str, db: DbSession):
+async def mark_read(notification_id: str, db: DbSession) -> dict[str, Any]:
     """Mark a notification as read."""
     logger.info("Marking notification read: id=%s", sanitize_log(notification_id))
     result = await db.execute(select(Notification).where(Notification.id == notification_id))

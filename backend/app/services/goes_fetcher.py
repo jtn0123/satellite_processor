@@ -63,7 +63,7 @@ SECTOR_INTERVALS: dict[str, int] = {
 }
 
 
-def _get_s3_client():
+def _get_s3_client() -> Any:
     """Create an unsigned S3 client for public NOAA buckets."""
     return boto3.client(
         "s3",
@@ -159,7 +159,13 @@ def _handle_retry_exception(exc: Exception, attempt: int, max_retries: int, oper
     raise exc
 
 
-def _retry_s3_operation(func, *args, max_retries: int = S3_MAX_RETRIES, operation: str = "unknown", **kwargs):
+def _retry_s3_operation(
+    func: Any,
+    *args: Any,
+    max_retries: int = S3_MAX_RETRIES,
+    operation: str = "unknown",
+    **kwargs: Any,
+) -> Any:
     """Execute an S3 operation with exponential backoff retry and circuit breaker.
 
     Retries on transient errors: timeouts, throttling, connection issues.
@@ -249,7 +255,7 @@ def _list_hour(
     try:
         paginator = s3.get_paginator("list_objects_v2")
 
-        def _do_list():
+        def _do_list() -> list[Any]:
             return list(paginator.paginate(Bucket=bucket, Prefix=prefix))
 
         pages = _retry_s3_operation(_do_list, operation="list")

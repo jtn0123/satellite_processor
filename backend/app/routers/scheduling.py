@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body
 from sqlalchemy import func, select
@@ -50,7 +50,7 @@ router = APIRouter(prefix="/api/satellite", tags=["scheduling"])
 
 
 @router.post("/fetch-presets/seed-defaults")
-async def seed_default_presets(db: DbSession):
+async def seed_default_presets(db: DbSession) -> dict[str, Any]:
     """Create default fetch presets if they don't already exist."""
     logger.info("Seeding default fetch presets")
     created = []
@@ -111,7 +111,7 @@ async def _get_preset_last_fetch_map(db: AsyncSession, preset_ids: list[str]) ->
     return out
 
 
-def _build_preset_response(preset: FetchPreset, last_fetch_time) -> FetchPresetResponse:
+def _build_preset_response(preset: FetchPreset, last_fetch_time: datetime | None) -> FetchPresetResponse:
     resp = FetchPresetResponse.model_validate(preset)
     resp.last_fetch_time = last_fetch_time
     return resp
@@ -121,7 +121,7 @@ def _build_preset_response(preset: FetchPreset, last_fetch_time) -> FetchPresetR
 async def create_fetch_preset(
     payload: Annotated[FetchPresetCreate, Body()],
     db: DbSession,
-):
+) -> FetchPresetResponse:
     logger.info("Creating fetch preset")
     preset = FetchPreset(
         id=str(uuid.uuid4()),
@@ -138,7 +138,7 @@ async def create_fetch_preset(
 
 
 @router.get("/fetch-presets", response_model=list[FetchPresetResponse])
-async def list_fetch_presets(db: DbSession):
+async def list_fetch_presets(db: DbSession) -> list[FetchPresetResponse]:
     logger.debug("Listing fetch presets")
     result = await db.execute(select(FetchPreset).order_by(FetchPreset.created_at.desc()))
     presets = list(result.scalars().all())
@@ -151,7 +151,7 @@ async def update_fetch_preset(
     preset_id: str,
     payload: Annotated[FetchPresetUpdate, Body()],
     db: DbSession,
-):
+) -> FetchPresetResponse:
     logger.info("Updating fetch preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
@@ -171,7 +171,7 @@ async def update_fetch_preset(
 async def delete_fetch_preset(
     preset_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting fetch preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == preset_id))
     preset = result.scalars().first()
@@ -186,7 +186,7 @@ async def delete_fetch_preset(
 async def run_fetch_preset(
     preset_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Execute a preset immediately (fetches last 1 hour of data).
 
     JTN-460: Uses ``datetime.now(timezone.utc)`` consistently so that comparing
@@ -253,7 +253,7 @@ async def run_fetch_preset(
 async def create_schedule(
     payload: Annotated[FetchScheduleCreate, Body()],
     db: DbSession,
-):
+) -> FetchScheduleResponse:
     # Verify preset exists
     logger.info("Creating schedule")
     result = await db.execute(select(FetchPreset).where(FetchPreset.id == payload.preset_id))
@@ -276,7 +276,7 @@ async def create_schedule(
 
 
 @router.get("/schedules", response_model=list[FetchScheduleResponse])
-async def list_schedules(db: DbSession):
+async def list_schedules(db: DbSession) -> list[FetchScheduleResponse]:
     logger.debug("Listing schedules")
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).order_by(FetchSchedule.created_at.desc())
@@ -290,7 +290,7 @@ async def update_schedule(
     schedule_id: str,
     payload: Annotated[FetchScheduleUpdate, Body()],
     db: DbSession,
-):
+) -> FetchScheduleResponse:
     logger.info("Updating schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
@@ -325,7 +325,7 @@ async def update_schedule(
 async def delete_schedule(
     schedule_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(select(FetchSchedule).where(FetchSchedule.id == schedule_id))
     schedule = result.scalars().first()
@@ -340,7 +340,7 @@ async def delete_schedule(
 async def toggle_schedule(
     schedule_id: str,
     db: DbSession,
-):
+) -> FetchScheduleResponse:
     logger.info("Toggling schedule: id=%s", sanitize_log(schedule_id))
     result = await db.execute(
         select(FetchSchedule).options(selectinload(FetchSchedule.preset)).where(FetchSchedule.id == schedule_id)
@@ -377,7 +377,7 @@ async def _schedule_response(db: AsyncSession, schedule: FetchSchedule) -> Fetch
 async def create_cleanup_rule(
     payload: Annotated[CleanupRuleCreate, Body()],
     db: DbSession,
-):
+) -> CleanupRuleResponse:
     logger.info("Creating cleanup rule")
     rule = CleanupRule(
         id=str(uuid.uuid4()),
@@ -395,7 +395,7 @@ async def create_cleanup_rule(
 
 
 @router.get("/cleanup-rules", response_model=list[CleanupRuleResponse])
-async def list_cleanup_rules(db: DbSession):
+async def list_cleanup_rules(db: DbSession) -> list[CleanupRuleResponse]:
     logger.debug("Listing cleanup rules")
     result = await db.execute(select(CleanupRule).order_by(CleanupRule.created_at.desc()))
     return [CleanupRuleResponse.model_validate(r) for r in result.scalars().all()]
@@ -406,7 +406,7 @@ async def update_cleanup_rule(
     rule_id: str,
     payload: Annotated[CleanupRuleUpdate, Body()],
     db: DbSession,
-):
+) -> CleanupRuleResponse:
     logger.info("Updating cleanup rule: id=%s", sanitize_log(rule_id))
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
@@ -425,7 +425,7 @@ async def update_cleanup_rule(
 async def delete_cleanup_rule(
     rule_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting cleanup rule: id=%s", sanitize_log(rule_id))
     result = await db.execute(select(CleanupRule).where(CleanupRule.id == rule_id))
     rule = result.scalars().first()
@@ -437,7 +437,7 @@ async def delete_cleanup_rule(
 
 
 @router.get("/cleanup/stats")
-async def cleanup_storage_stats(db: DbSession):
+async def cleanup_storage_stats(db: DbSession) -> dict[str, Any]:
     """Per-satellite storage breakdown for the cleanup dashboard."""
     logger.debug("Cleanup storage stats requested")
     rows = (
@@ -453,7 +453,7 @@ async def cleanup_storage_stats(db: DbSession):
         )
     ).all()
 
-    satellites: dict = {}
+    satellites: dict[str, Any] = {}
     total_frames = 0
     total_size = 0
 
@@ -479,7 +479,7 @@ async def cleanup_storage_stats(db: DbSession):
 
 
 @router.get("/cleanup/preview", response_model=CleanupPreviewResponse)
-async def preview_cleanup(db: DbSession):
+async def preview_cleanup(db: DbSession) -> CleanupPreviewResponse:
     """Dry-run: show what would be deleted by active cleanup rules."""
     logger.info("Preview cleanup requested")
     frames_to_delete = await _get_frames_to_cleanup(db)
@@ -500,7 +500,7 @@ async def preview_cleanup(db: DbSession):
 
 
 @router.post("/cleanup/run", response_model=CleanupRunResponse)
-async def run_cleanup_now(db: DbSession):
+async def run_cleanup_now(db: DbSession) -> CleanupRunResponse:
     """Manually trigger cleanup."""
     frames_to_delete = await _get_frames_to_cleanup(db)
     freed = 0
@@ -522,7 +522,7 @@ async def _get_protected_ids(db: AsyncSession, protect_collections: bool) -> set
     return {r[0] for r in prot.all()}
 
 
-async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
+async def _collect_age_deletions(db: AsyncSession, rule: CleanupRule, protected_ids: set[str]) -> set[str]:
     """Find frame IDs older than max age that are not protected."""
     cutoff = utcnow() - timedelta(days=rule.value)
     # Bug #10: Select only IDs instead of full objects to avoid OOM
@@ -535,7 +535,7 @@ async def _collect_age_deletions(db: AsyncSession, rule, protected_ids: set[str]
     return {r[0] for r in res.all()}
 
 
-async def _collect_storage_deletions(db: AsyncSession, rule, protected_ids: set[str]) -> set[str]:
+async def _collect_storage_deletions(db: AsyncSession, rule: CleanupRule, protected_ids: set[str]) -> set[str]:
     """Find oldest frame IDs to delete to bring storage under the limit."""
     size_query = select(func.coalesce(func.sum(GoesFrame.file_size), 0))
     if rule.satellite:

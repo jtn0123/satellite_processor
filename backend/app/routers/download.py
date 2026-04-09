@@ -142,9 +142,9 @@ def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
     return result
 
 
-@router.get("/{job_id}/download")
+@router.get("/{job_id}/download", response_model=None)
 @limiter.limit("20/minute")
-async def download_job_output(request: Request, job_id: str, db: DbSession):
+async def download_job_output(request: Request, job_id: str, db: DbSession) -> FileResponse | StreamingResponse:
     """Download job output as a single file or zip of all outputs."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -190,7 +190,7 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
 
 @router.post("/bulk-download")
 @limiter.limit("5/minute")
-async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSession):
+async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSession) -> StreamingResponse:
     """Download outputs from multiple jobs as a single zip.
 
     #155: Uses BulkDeleteRequest (renamed concept — reuses ids list Pydantic model)

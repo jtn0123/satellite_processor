@@ -1,8 +1,12 @@
 """Shared Celery task helpers — Redis, sync DB, progress publishing."""
 
+from __future__ import annotations
+
 import json
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 
 import redis.exceptions
 
@@ -18,10 +22,10 @@ _TASK_IDEMPOTENCY_NAMESPACE = "task_idem"
 #: and should be retried anyway.
 TASK_IDEMPOTENCY_TTL_SECONDS = 3_600
 
-_redis = None
+_redis: Any = None
 
 
-def _get_redis():
+def _get_redis() -> Any:
     """Get Redis client with lazy initialization."""
     global _redis
     if _redis is None:
@@ -31,11 +35,11 @@ def _get_redis():
     return _redis
 
 
-_sync_engine = None
-_SessionFactory = None
+_sync_engine: Any = None
+_SessionFactory: Any = None
 
 
-def _get_sync_db():
+def _get_sync_db() -> Any:
     """Get a synchronous DB session for use in Celery tasks.
 
     Uses a proper sessionmaker bound to a single shared engine.
@@ -55,7 +59,7 @@ def _get_sync_db():
     return _SessionFactory()
 
 
-def _publish_progress(job_id: str, progress: int, message: str, status: str = "processing"):
+def _publish_progress(job_id: str, progress: int, message: str, status: str = "processing") -> None:
     """Publish progress update to Redis pub/sub. Fails silently if Redis is down."""
     try:
         payload = json.dumps(
@@ -86,7 +90,7 @@ def _publish_progress(job_id: str, progress: int, message: str, status: str = "p
 _last_progress_update: dict[str, int] = {}
 
 
-def _update_job_db(job_id: str, **kwargs):
+def _update_job_db(job_id: str, **kwargs: Any) -> None:
     """Update job record in the database (sync). Throttles progress-only updates to every 5%."""
     from ..db.models import Job
 
@@ -120,7 +124,7 @@ def _build_task_lock_key(key: str) -> str:
 
 
 @contextmanager
-def with_idempotency(key: str, ttl_seconds: int = TASK_IDEMPOTENCY_TTL_SECONDS):
+def with_idempotency(key: str, ttl_seconds: int = TASK_IDEMPOTENCY_TTL_SECONDS) -> Iterator[bool]:
     """Distributed-lock context manager for Celery task idempotency (JTN-398).
 
     Wraps a block of worker-side work with a Redis ``SET key value NX EX``

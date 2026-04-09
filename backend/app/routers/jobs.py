@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from celery.exceptions import CeleryError
 from fastapi import APIRouter, Depends, Query, Request
@@ -66,7 +66,7 @@ class BulkJobDeleteRequest(BaseModel):
     delete_files: bool = False
 
 
-async def _resolve_image_ids(db: AsyncSession, params: dict) -> dict:
+async def _resolve_image_ids(db: AsyncSession, params: dict[str, Any]) -> dict[str, Any]:
     """Resolve image_ids in params to file paths for the task."""
     image_ids = params.get("image_ids")
     if not image_ids:
@@ -181,7 +181,7 @@ async def create_job(
     job_in: JobCreate,
     db: DbSession,
     idempotency_key: Annotated[str | None, Depends(idempotency_key_dependency)] = None,
-):
+) -> Job | JSONResponse:
     """Create a processing job and dispatch to Celery.
 
     JTN-391: if an ``Idempotency-Key`` header is supplied and a prior
@@ -192,6 +192,7 @@ async def create_job(
         cached = await get_cached_response("POST", "/api/jobs", idempotency_key)
         if cached is not None:
             return JSONResponse(status_code=cached["status_code"], content=cached["body"])
+
 
     output_dir = str(Path(settings.output_dir))
     resolved_params = await _resolve_image_ids(db, job_in.params)
@@ -239,7 +240,7 @@ async def list_jobs(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> PaginatedResponse[JobResponse]:
     """List jobs with pagination"""
     count_result = await db.execute(select(func.count()).select_from(Job))
     total = count_result.scalar_one()
@@ -257,7 +258,7 @@ async def list_jobs(
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-async def get_job(job_id: str, db: DbSession):
+async def get_job(job_id: str, db: DbSession) -> Job:
     """Get job details"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -268,7 +269,7 @@ async def get_job(job_id: str, db: DbSession):
 
 
 @router.patch("/{job_id}", response_model=JobResponse)
-async def update_job(job_id: str, job_in: JobUpdate, db: DbSession):
+async def update_job(job_id: str, job_in: JobUpdate, db: DbSession) -> Job:
     """Partially update a job record"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -286,7 +287,7 @@ async def update_job(job_id: str, job_in: JobUpdate, db: DbSession):
 
 
 @router.post("/{job_id}/cancel")
-async def cancel_job(job_id: str, db: DbSession):
+async def cancel_job(job_id: str, db: DbSession) -> dict[str, Any]:
     """Cancel a running job — revokes the Celery task and cleans up partial files."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -344,7 +345,7 @@ async def bulk_delete_jobs(
     db: DbSession,
     delete_files: Annotated[bool, Query()] = False,
     all_jobs: Annotated[bool, Query(alias="all")] = False,
-):
+) -> dict[str, Any]:
     """Bulk delete jobs by IDs or all jobs."""
     use_delete_files = payload.delete_files or delete_files
 
@@ -395,7 +396,7 @@ async def delete_job(
     job_id: str,
     db: DbSession,
     delete_files: Annotated[bool, Query()] = False,
-):
+) -> dict[str, Any]:
     """Delete a job — optionally delete associated files and DB records."""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -430,7 +431,7 @@ async def get_job_logs(
     db: DbSession,
     level: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
-):
+) -> list[dict[str, Any]]:
     """Return logs for a job ordered by timestamp.
 
     JTN-460: Previously this endpoint short-circuited and returned ``200 []``
@@ -461,7 +462,7 @@ async def get_job_logs(
 
 
 @router.get("/{job_id}/output")
-async def get_job_output(job_id: str, db: DbSession):
+async def get_job_output(job_id: str, db: DbSession) -> FileResponse:
     """Download job output"""
     validate_uuid(job_id, "job_id")
     result = await db.execute(select(Job).where(Job.id == job_id))
@@ -496,7 +497,7 @@ async def get_job_output(job_id: str, db: DbSession):
 
 
 @router.post("/cleanup-stale")
-async def cleanup_stale_jobs(db: DbSession):
+async def cleanup_stale_jobs(db: DbSession) -> dict[str, Any]:
     """Mark stale processing and pending jobs as failed."""
     from ..services.stale_jobs import cleanup_all_stale
 

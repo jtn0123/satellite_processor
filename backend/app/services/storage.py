@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class StorageService:
     """Manage file storage for uploads and outputs"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.upload_dir = Path(settings.upload_dir)
         self.output_dir = Path(settings.output_dir)
         self.temp_dir = Path(settings.temp_dir)

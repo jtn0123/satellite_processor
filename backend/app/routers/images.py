@@ -6,7 +6,7 @@ import re
 import uuid
 from datetime import datetime as dt
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import aiofiles
 from fastapi import APIRouter, File, Query, Request, UploadFile
@@ -139,7 +139,7 @@ def _parse_image_metadata_from_filename(filename: str) -> tuple[str | None, dt |
 
 @router.post("/upload")
 @limiter.limit("10/minute")
-async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
+async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession) -> dict[str, Any]:
     """Upload a satellite image using chunked streaming to avoid OOM on large files.
 
     JTN-473 Issue B: enforces a content-type allowlist in addition to the
@@ -181,7 +181,7 @@ async def list_images(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> PaginatedResponse[ImageResponse]:
     """List uploaded images with pagination"""
     logger.debug("Listing images: page=%d, limit=%d", page, limit)
     count_result = await db.execute(select(func.count()).select_from(Image))
@@ -203,7 +203,7 @@ async def list_images(
 async def bulk_delete_images(
     payload: BulkDeleteRequest,
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Bulk delete images by IDs."""
     logger.info("Bulk delete requested: count=%d", len(payload.ids))
     ids = payload.ids
@@ -223,7 +223,7 @@ async def bulk_delete_images(
 
 @router.delete("/{image_id}")
 @limiter.limit("10/minute")
-async def delete_image(request: Request, image_id: str, db: DbSession):
+async def delete_image(request: Request, image_id: str, db: DbSession) -> dict[str, Any]:
     """Delete an uploaded image"""
     logger.info("Deleting image: id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
@@ -238,7 +238,7 @@ async def delete_image(request: Request, image_id: str, db: DbSession):
 
 
 @router.get("/{image_id}/thumbnail")
-async def get_thumbnail(image_id: str, db: DbSession):
+async def get_thumbnail(image_id: str, db: DbSession) -> FileResponse:
     """Return a ~256px thumbnail"""
     logger.debug("Thumbnail requested: image_id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
@@ -266,7 +266,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
     # #204: Run PIL thumbnail generation in a thread to avoid blocking the event loop
     import asyncio
 
-    def _generate_thumbnail():
+    def _generate_thumbnail() -> None:
         with PILImage.open(fp) as img:
             img.thumbnail((256, 256))
             img.convert("RGB").save(str(cache_path), format="JPEG", quality=80)
@@ -281,7 +281,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
 
 
 @router.get("/{image_id}/full")
-async def get_full_image(image_id: str, db: DbSession):
+async def get_full_image(image_id: str, db: DbSession) -> FileResponse:
     """Return the original image file"""
     logger.debug("Full image requested: image_id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")

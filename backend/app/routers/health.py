@@ -7,6 +7,7 @@ import re
 import shutil
 import time
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -101,7 +102,7 @@ def _collect_change(current: dict | None, line: str) -> None:
             current["changes"].append(msg)
 
 
-def _parse_changelog(limit: int = 5) -> list:
+def _parse_changelog(limit: int = 5) -> list[dict[str, Any]]:
     """Parse CHANGELOG.md into structured releases.
 
     The result is cached and invalidated when the underlying file's mtime
@@ -151,7 +152,7 @@ BUILD_DATE = os.environ.get("BUILD_DATE", "")
 
 
 @router.get("")
-async def health_basic():
+async def health_basic() -> dict[str, Any]:
     """Basic liveness check with dependency awareness.
 
     Returns 'ok' if core services are reachable, 'degraded' if DB or Redis
@@ -174,7 +175,7 @@ async def health_basic():
 
 
 @router.get("/version")
-async def version_info():
+async def version_info() -> dict[str, Any]:
     """Return app version and build info."""
     return {
         "version": VERSION,
@@ -184,7 +185,7 @@ async def version_info():
     }
 
 
-async def _check_database() -> dict:
+async def _check_database() -> dict[str, Any]:
     """Check database connectivity and latency."""
     try:
         t0 = time.monotonic()
@@ -196,7 +197,7 @@ async def _check_database() -> dict:
         return {"status": "error", "error": str(exc)}
 
 
-async def _check_redis() -> dict:
+async def _check_redis() -> dict[str, Any]:
     """Check Redis connectivity and latency using shared pool."""
     try:
         t0 = time.monotonic()
@@ -208,7 +209,7 @@ async def _check_redis() -> dict:
         return {"status": "error", "error": str(exc)}
 
 
-def _check_disk() -> dict:
+def _check_disk() -> dict[str, Any]:
     """Check available disk space."""
     try:
         usage = shutil.disk_usage(settings.storage_path)
@@ -220,7 +221,7 @@ def _check_disk() -> dict:
         return {"status": "error", "error": str(exc)}
 
 
-def _check_storage_dirs() -> dict:
+def _check_storage_dirs() -> dict[str, Any]:
     """Check storage directories exist and are writable."""
     try:
         for sub in [settings.upload_dir, settings.output_dir, settings.temp_dir]:
@@ -250,7 +251,7 @@ def _derive_overall(checks: dict) -> str:
 
 
 @router.get("/changelog")
-async def changelog():
+async def changelog() -> list[dict[str, Any]]:
     """Return parsed CHANGELOG.md as structured JSON."""
     logger.debug("Changelog requested")
     global _changelog_cache, _changelog_cache_mtime  # noqa: PLW0603
@@ -262,12 +263,12 @@ async def changelog():
     return _parse_changelog()
 
 
-async def _check_worker() -> dict:
+async def _check_worker() -> dict[str, Any]:
     """Check Celery worker connectivity."""
     try:
         from ..celery_app import celery_app
 
-        def _inspect():
+        def _inspect() -> dict[str, Any] | None:
             inspector = celery_app.control.inspect(timeout=2)
             return inspector.active()
 
@@ -281,7 +282,7 @@ async def _check_worker() -> dict:
 
 
 @router.get("/detailed")
-async def health_detailed():
+async def health_detailed() -> dict[str, Any]:
     """Detailed health check with dependency status."""
     logger.debug("Detailed health check requested")
     checks = {

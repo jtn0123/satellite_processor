@@ -110,7 +110,7 @@ def _list_s3_keys(bucket: str, prefix: str) -> list[dict[str, Any]]:
     s3 = _get_s3_client()
     paginator = s3.get_paginator("list_objects_v2")
 
-    def _do_list():
+    def _do_list() -> list[dict[str, Any]]:
         return [obj for page in paginator.paginate(Bucket=bucket, Prefix=prefix) for obj in page.get("Contents", [])]
 
     return _retry_s3_operation(_do_list, operation="himawari_list")

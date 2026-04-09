@@ -7,7 +7,7 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query
 from sqlalchemy import func, select
@@ -226,7 +226,7 @@ async def _query_frame_ids(
 async def create_crop_preset(
     payload: Annotated[CropPresetCreate, Body()],
     db: DbSession,
-):
+) -> CropPresetResponse:
     logger.info("Creating crop preset")
     existing = await db.execute(select(CropPreset).where(CropPreset.name == payload.name))
     if existing.scalars().first():
@@ -246,7 +246,7 @@ async def create_crop_preset(
 
 
 @router.get("/crop-presets", response_model=list[CropPresetResponse])
-async def list_crop_presets(db: DbSession):
+async def list_crop_presets(db: DbSession) -> list[CropPresetResponse]:
     logger.debug("Listing crop presets")
     result = await db.execute(select(CropPreset).order_by(CropPreset.name))
     return [CropPresetResponse.model_validate(p) for p in result.scalars().all()]
@@ -257,7 +257,7 @@ async def update_crop_preset(
     preset_id: str,
     payload: Annotated[CropPresetUpdate, Body()],
     db: DbSession,
-):
+) -> CropPresetResponse:
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
     preset = result.scalars().first()
     if not preset:
@@ -275,7 +275,7 @@ async def update_crop_preset(
 async def delete_crop_preset(
     preset_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting crop preset: id=%s", sanitize_log(preset_id))
     result = await db.execute(select(CropPreset).where(CropPreset.id == preset_id))
     preset = result.scalars().first()
@@ -293,7 +293,7 @@ async def delete_crop_preset(
 async def create_animation(
     payload: Annotated[AnimationCreate, Body()],
     db: DbSession,
-):
+) -> AnimationResponse:
     """Create an animation generation job."""
     logger.info("Creating animation")
     if payload.frame_ids:
@@ -340,7 +340,7 @@ async def create_animation(
 async def create_animation_from_range(
     payload: Annotated[AnimationFromRange, Body()],
     db: DbSession,
-):
+) -> AnimationResponse:
     """Create animation from a satellite/sector/band time range.
 
     Repeated identical requests within a 30 s window (see
@@ -390,7 +390,7 @@ async def create_animation_from_range(
 async def create_animation_recent(
     payload: Annotated[AnimationRecent, Body()],
     db: DbSession,
-):
+) -> AnimationResponse:
     """Create animation from the last N hours of frames."""
     end_time = datetime.now(UTC)
     start_time = end_time - timedelta(hours=payload.hours)
@@ -422,7 +422,7 @@ async def create_animation_recent(
 async def create_animation_batch(
     payload: Annotated[BatchAnimationRequest, Body()],
     db: DbSession,
-):
+) -> list[AnimationResponse]:
     """Create multiple animation jobs at once."""
     results = []
     for item in payload.animations:
@@ -456,7 +456,7 @@ async def list_animations(
     db: DbSession,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> PaginatedResponse[AnimationResponse]:
     logger.debug("Listing animations")
     count = (await db.execute(select(func.count(Animation.id)))).scalar() or 0
     offset = (page - 1) * limit
@@ -466,7 +466,7 @@ async def list_animations(
 
 
 @router.get("/animations/{animation_id}", response_model=AnimationResponse)
-async def get_animation(animation_id: str, db: DbSession):
+async def get_animation(animation_id: str, db: DbSession) -> AnimationResponse:
     logger.debug("Animation requested: id=%s", sanitize_log(animation_id))
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -477,7 +477,7 @@ async def get_animation(animation_id: str, db: DbSession):
 
 
 @router.delete("/animations/{animation_id}")
-async def delete_animation(animation_id: str, db: DbSession):
+async def delete_animation(animation_id: str, db: DbSession) -> dict[str, Any]:
     logger.info("Deleting animation: id=%s", sanitize_log(animation_id))
     validate_uuid(animation_id, "animation_id")
     result = await db.execute(select(Animation).where(Animation.id == animation_id))
@@ -502,7 +502,7 @@ async def preview_frame_range(
     start_time: Annotated[datetime, Query()],
     end_time: Annotated[datetime, Query()],
     db: DbSession,
-):
+) -> FrameRangePreview:
     """Preview frames in a time range — returns count and 3 sample frames."""
     base_filter = [
         GoesFrame.satellite == satellite,
@@ -560,7 +560,7 @@ async def preview_frame_range(
 
 
 @router.get("/animation-presets", response_model=list[AnimationPresetResponse])
-async def list_animation_presets(db: DbSession):
+async def list_animation_presets(db: DbSession) -> list[AnimationPresetResponse]:
     logger.debug("Listing animation presets")
     result = await db.execute(select(AnimationPreset).order_by(AnimationPreset.name))
     return [AnimationPresetResponse.model_validate(p) for p in result.scalars().all()]
@@ -570,7 +570,7 @@ async def list_animation_presets(db: DbSession):
 async def create_animation_preset(
     payload: Annotated[AnimationPresetCreate, Body()],
     db: DbSession,
-):
+) -> AnimationPresetResponse:
     logger.info("Creating animation preset")
     existing = await db.execute(select(AnimationPreset).where(AnimationPreset.name == payload.name))
     if existing.scalars().first():
@@ -597,7 +597,7 @@ async def create_animation_preset(
 async def get_animation_preset(
     preset_id: str,
     db: DbSession,
-):
+) -> AnimationPresetResponse:
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
     preset = result.scalars().first()
@@ -611,7 +611,7 @@ async def update_animation_preset(
     preset_id: str,
     payload: Annotated[AnimationPresetUpdate, Body()],
     db: DbSession,
-):
+) -> AnimationPresetResponse:
     logger.info("Updating animation preset: id=%s", sanitize_log(preset_id))
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))
@@ -631,7 +631,7 @@ async def update_animation_preset(
 async def delete_animation_preset(
     preset_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     logger.info("Deleting animation preset: id=%s", sanitize_log(preset_id))
     validate_uuid(preset_id, "preset_id")
     result = await db.execute(select(AnimationPreset).where(AnimationPreset.id == preset_id))

@@ -69,7 +69,7 @@ async def create_share_link(
     db: DbSession,
     hours: Annotated[int, Query(ge=_SHARE_MIN_HOURS, le=_SHARE_MAX_HOURS)] = _SHARE_DEFAULT_HOURS,
     payload: Annotated[ShareLinkRequest | None, Body()] = None,
-):
+) -> ShareLinkResponse:
     """Create a public share link for a frame.
 
     The expiration window can be set three ways (body takes precedence over
@@ -111,7 +111,7 @@ async def create_share_link(
 
 
 @router.get("/api/shared/{token}", response_model=SharedFrameResponse)
-async def get_shared_frame(token: str, db: DbSession):
+async def get_shared_frame(token: str, db: DbSession) -> SharedFrameResponse:
     """Public endpoint — retrieve frame info by share token."""
     logger.info("Shared frame requested: token=%s...", sanitize_log(token[:8]))
     link = await _get_valid_link(token, db)
@@ -130,7 +130,7 @@ async def get_shared_frame(token: str, db: DbSession):
 
 
 @router.get("/api/shared/{token}/image")
-async def get_shared_image(token: str, db: DbSession):
+async def get_shared_image(token: str, db: DbSession) -> FileResponse:
     """Public endpoint — serve the actual image for a share token."""
     logger.info("Shared image requested: token=%s...", sanitize_log(token[:8]))
     link = await _get_valid_link(token, db)

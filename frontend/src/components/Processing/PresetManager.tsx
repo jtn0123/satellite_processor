@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import { usePresets, useCreatePreset, useDeletePreset, useRenamePreset } from '../../hooks/useApi';
+import type { ProcessingParams } from '../../api/types';
 import { Save, Trash2, Pencil, Check, X, BookOpen } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
 
-interface Preset {
-  id: string;
-  name: string;
-  params: Record<string, unknown>;
-  created_at: string;
-}
-
 interface Props {
-  currentParams: Record<string, unknown>;
-  onLoadPreset: (params: Record<string, unknown>) => void;
+  currentParams: ProcessingParams;
+  onLoadPreset: (params: ProcessingParams) => void;
 }
 
 export default function PresetManager({ currentParams, onLoadPreset }: Readonly<Props>) {
@@ -73,9 +67,9 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
       </div>
 
       {/* Preset list */}
-      {(presets as Preset[]).length > 0 && (
+      {presets.length > 0 && (
         <div className="space-y-1.5">
-          {(presets as Preset[]).map((p) => (
+          {presets.map((p) => (
             <div
               key={p.id}
               className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:bg-space-800 group"

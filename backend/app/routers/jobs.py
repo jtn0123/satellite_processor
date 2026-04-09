@@ -23,7 +23,7 @@ from ..db.models import (
     Job,
     JobLog,
 )
-from ..errors import APIError, validate_safe_path, validate_uuid
+from ..errors import API_ERROR_RESPONSES, APIError, validate_safe_path, validate_uuid
 from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 _JOB_NOT_FOUND = "Job not found"
 _REVOKE_FAIL_MSG = "Failed to revoke Celery task %s"
 
-router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+router = APIRouter(prefix="/api/jobs", tags=["jobs"], responses=API_ERROR_RESPONSES)
 
 
 _MAX_BULK_JOB_IDS = 500

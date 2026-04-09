@@ -5,12 +5,13 @@ import ProcessingForm from '../components/Processing/ProcessingForm';
 import PresetManager from '../components/Processing/PresetManager';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useImages } from '../hooks/useApi';
+import type { ProcessingParams } from '../api/types';
 import { Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function ProcessPage() {
   usePageTitle('Process');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [presetParams, setPresetParams] = useState<Record<string, unknown> | null>(null);
+  const [presetParams, setPresetParams] = useState<ProcessingParams | null>(null);
   const navigate = useNavigate();
   const { data: images = [] } = useImages();
 
@@ -23,7 +24,7 @@ export default function ProcessPage() {
     });
   };
 
-  const handleLoadPreset = useCallback((params: Record<string, unknown>) => {
+  const handleLoadPreset = useCallback((params: ProcessingParams) => {
     setPresetParams(params);
   }, []);
 
@@ -37,7 +38,7 @@ export default function ProcessPage() {
       </div>
 
       {/* Empty state when no images */}
-      {(images as unknown[]).length === 0 && (
+      {images.length === 0 && (
         <div className="card p-8 text-center">
           <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-slate-500" />
           <p className="text-gray-600 dark:text-slate-300 font-medium">No images yet</p>
@@ -54,7 +55,7 @@ export default function ProcessPage() {
       )}
 
       {/* Image selection */}
-      {(images as unknown[]).length > 0 && (
+      {images.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">
@@ -90,7 +91,7 @@ export default function ProcessPage() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Presets</h2>
             <PresetManager
-              currentParams={{ images: selected.size }}
+              currentParams={{ image_ids: Array.from(selected) }}
               onLoadPreset={handleLoadPreset}
             />
           </div>

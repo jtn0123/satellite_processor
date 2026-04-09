@@ -62,8 +62,18 @@ describe('Process page - with images', () => {
   beforeEach(() => {
     vi.mocked(useImages).mockReturnValue({
       data: [
-        { id: 'img-1', filename: 'test1.nc', path: '/tmp/test1.nc' },
-        { id: 'img-2', filename: 'test2.nc', path: '/tmp/test2.nc' },
+        {
+          id: 'img-1',
+          filename: 'test1.nc',
+          original_name: 'test1.nc',
+          file_size: 1024,
+        },
+        {
+          id: 'img-2',
+          filename: 'test2.nc',
+          original_name: 'test2.nc',
+          file_size: 2048,
+        },
       ],
       isLoading: false,
     } as ReturnType<typeof useImages>);

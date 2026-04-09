@@ -144,7 +144,7 @@ export default function AnimateTab() {
   const generateMutation = useMutation({
     mutationFn: () => {
       if (sourceMode === 'collection' && collectionId) {
-        const payload: Record<string, unknown> = {
+        const payload = {
           name: config.name || `Collection Animation ${new Date().toLocaleString()}`,
           collection_id: collectionId,
           fps: config.fps,

@@ -106,6 +106,11 @@ export interface paths {
     /**
      * Get Job Logs
      * @description Return logs for a job ordered by timestamp.
+     *
+     *     JTN-460: Previously this endpoint short-circuited and returned ``200 []``
+     *     for a nonexistent job, which was inconsistent with ``/jobs/{id}/output``
+     *     (which returns 404). The job is now validated first so that both
+     *     endpoints return 404 for unknown IDs.
      */
     get: operations['get_job_logs_api_jobs__job_id__logs_get'];
     put?: never;
@@ -168,6 +173,11 @@ export interface paths {
     /**
      * Upload Image
      * @description Upload a satellite image using chunked streaming to avoid OOM on large files.
+     *
+     *     JTN-473 Issue B: enforces a content-type allowlist in addition to the
+     *     extension allowlist, caps the body at ~50 MB, and verifies the bytes
+     *     actually decode as an image via ``PIL.Image.verify()`` before
+     *     committing the row. Non-image files are rejected with 415.
      */
     post: operations['upload_image_api_images_upload_post'];
     delete?: never;
@@ -286,6 +296,10 @@ export interface paths {
     /**
      * List Presets
      * @description List presets with pagination (#160).
+     *
+     *     JTN-419: returns a typed ``list[PresetResponse]`` instead of a loosely
+     *     shaped ``list[dict]`` so openapi-typescript generates a concrete Preset
+     *     array — no more ``Record<string, unknown>`` fallbacks on the frontend.
      */
     get: operations['list_presets_api_presets_get'];
     put?: never;
@@ -596,6 +610,9 @@ export interface paths {
     /**
      * Detect Gaps
      * @description Run gap detection and return coverage stats.
+     *
+     *     Optional ``start_time``/``end_time`` restrict the analysis to a time range.
+     *     If ``start_time >= end_time``, an empty result is returned (no error).
      */
     get: operations['detect_gaps_api_satellite_gaps_get'];
     put?: never;
@@ -618,6 +635,10 @@ export interface paths {
     /**
      * Backfill Gaps
      * @description Fill detected gaps (one-shot, not automatic).
+     *
+     *     JTN-460: Requires an explicit ``start_time``, ``end_time``, satellite,
+     *     sector, and band. Previously an empty body was silently accepted and the
+     *     task was enqueued with no time range, which was effectively a no-op.
      */
     post: operations['backfill_gaps_api_satellite_backfill_post'];
     delete?: never;
@@ -636,6 +657,12 @@ export interface paths {
     /**
      * Estimate Frame Count
      * @description Estimate frame count for a time range without downloading.
+     *
+     *     The ``expected_count`` field is the number of frames the satellite should
+     *     produce over the requested window (sector cadence × duration). It is NOT
+     *     a count of what already exists in the local DB — callers that need that
+     *     should hit ``/frames?...``. The legacy ``count`` field is preserved for
+     *     backwards compatibility (JTN-474 ISSUE-062).
      */
     get: operations['estimate_frame_count_api_satellite_frame_count_get'];
     put?: never;
@@ -819,6 +846,11 @@ export interface paths {
     /**
      * Create Animation From Range
      * @description Create animation from a satellite/sector/band time range.
+     *
+     *     Repeated identical requests within a 30 s window (see
+     *     ``_ANIMATION_IDEMPOTENCY_TTL_SECONDS``) are deduped and return the
+     *     first animation's response — prevents a double-click or React
+     *     StrictMode double-render from spawning 2+ workers (JTN-473 Issue E).
      */
     post: operations['create_animation_from_range_api_satellite_animations_from_range_post'];
     delete?: never;
@@ -1036,6 +1068,10 @@ export interface paths {
     /**
      * Export Frames
      * @description Export frame metadata as CSV or JSON with pagination.
+     *
+     *     The default export format is CSV (the Browse "Export" button speaks
+     *     CSV). Callers can override with ``?format=json`` or by sending
+     *     ``Accept: application/json``.
      */
     get: operations['export_frames_api_satellite_frames_export_get'];
     put?: never;
@@ -1078,6 +1114,12 @@ export interface paths {
     /**
      * Bulk Tag Frames
      * @description Bulk tag frames using ON CONFLICT DO NOTHING for performance.
+     *
+     *     JTN-474 ISSUE-061: previously the endpoint returned ``{"tagged":1}``
+     *     even when neither the frame nor the tag existed. Now we verify both
+     *     id lists exist in the DB and 404 if any are missing, and the
+     *     ``tagged`` count reflects the actual number of inserts attempted
+     *     (frames × tags).
      */
     post: operations['bulk_tag_frames_api_satellite_frames_tag_post'];
     delete?: never;
@@ -1116,6 +1158,12 @@ export interface paths {
     /**
      * Get Frame Image
      * @description Serve the raw image file for a frame.
+     *
+     *     JTN-475 ISSUE-065: previously streamed via chunked-transfer with only
+     *     ``Cache-Control``. Now uses Starlette ``FileResponse`` which emits
+     *     ``Content-Length``, ``Last-Modified``, ``ETag``, and ``Accept-Ranges``
+     *     so browsers can short-circuit re-downloads with a 304 and servers can
+     *     serve partial content for video previews.
      */
     get: operations['get_frame_image_api_satellite_frames__frame_id__image_get'];
     put?: never;
@@ -1234,7 +1282,12 @@ export interface paths {
     /** List Tags */
     get: operations['list_tags_api_satellite_tags_get'];
     put?: never;
-    /** Create Tag */
+    /**
+     * Create Tag
+     * @description Create a tag. Tag names are compared case-insensitively for
+     *     uniqueness so "Severe Weather" and "severe weather" collide
+     *     (JTN-474 ISSUE-072).
+     */
     post: operations['create_tag_api_satellite_tags_post'];
     delete?: never;
     options?: never;
@@ -1493,6 +1546,12 @@ export interface paths {
     /**
      * Run Fetch Preset
      * @description Execute a preset immediately (fetches last 1 hour of data).
+     *
+     *     JTN-460: Uses ``datetime.now(timezone.utc)`` consistently so that comparing
+     *     tz-aware DB timestamps (e.g. ``last_fetch_time``) with the in-request ``now``
+     *     can never raise ``TypeError: can't compare offset-naive and offset-aware
+     *     datetimes``. The naive form stored in the DB is derived from the same
+     *     moment so the two representations stay in sync.
      */
     post: operations['run_fetch_preset_api_satellite_fetch_presets__preset_id__run_post'];
     delete?: never;
@@ -1701,7 +1760,16 @@ export interface paths {
     put?: never;
     /**
      * Create Share Link
-     * @description Create a public share link for a frame (expires in N hours, default 72).
+     * @description Create a public share link for a frame.
+     *
+     *     The expiration window can be set three ways (body takes precedence over
+     *     query so frontends can POST a single JSON payload):
+     *
+     *     1. ``POST .../share`` body ``{"expires_in_hours": 24}``
+     *     2. ``POST .../share`` body ``{"hours": 24}`` (legacy alias)
+     *     3. ``POST .../share?hours=24`` (legacy query parameter)
+     *
+     *     Defaults to 72 hours. Valid range: 1 hour .. 30 days.
      */
     post: operations['create_share_link_api_satellite_frames__frame_id__share_post'];
     delete?: never;
@@ -1806,6 +1874,37 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
+     * APIErrorResponse
+     * @description JSON envelope returned by :class:`APIError` and the global exception handlers.
+     *
+     *     Keeping this as a real Pydantic model (rather than an inline dict) is what
+     *     lets us reference it from the ``responses=`` kwarg on router decorators so
+     *     the OpenAPI schema publishes a proper error shape. Generated frontend
+     *     types then get a typed ``APIErrorResponse`` instead of ``unknown`` for
+     *     non-2xx bodies — JTN-419.
+     */
+    APIErrorResponse: {
+      /**
+       * Error
+       * @description Short machine-readable error code (e.g. 'not_found', 'invalid_file_type').
+       * @example not_found
+       */
+      error: string;
+      /**
+       * Detail
+       * @description Human-readable explanation of what went wrong. May be empty.
+       * @default
+       * @example Resource not found (invalid image_id)
+       */
+      detail: string;
+      /**
+       * Status Code
+       * @description HTTP status code mirrored in the body for clients that only read JSON.
+       * @example 404
+       */
+      status_code: number;
+    };
+    /**
      * AnimationCreate
      * @description Request schema for creating an animation from selected frames or filters.
      */
@@ -1873,6 +1972,8 @@ export interface components {
      * @description Create animation from a time range query.
      */
     AnimationFromRange: {
+      /** Name */
+      name?: string | null;
       /** Satellite */
       satellite: string;
       /** Sector */
@@ -1934,6 +2035,8 @@ export interface components {
        * @default 10
        */
       fps: number;
+      /** Hours Back */
+      hours_back?: number | null;
       /**
        * Format
        * @default mp4
@@ -2013,6 +2116,8 @@ export interface components {
       band?: string | null;
       /** Fps */
       fps?: number | null;
+      /** Hours Back */
+      hours_back?: number | null;
       /** Format */
       format?: string | null;
       /** Quality */
@@ -2209,13 +2314,18 @@ export interface components {
       /** Ids */
       ids: string[];
     };
-    /** BulkJobDeleteRequest */
+    /**
+     * BulkJobDeleteRequest
+     * @description Request schema for ``DELETE /api/jobs/bulk`` (JTN-473 Issue D).
+     *
+     *     Previously an empty body, an empty array, and a 10 000-element array
+     *     were all accepted silently. ``job_ids`` is now capped at
+     *     :data:`_MAX_BULK_JOB_IDS`; the caller can still omit it entirely
+     *     when using ``?all=true``.
+     */
     BulkJobDeleteRequest: {
-      /**
-       * Job Ids
-       * @default []
-       */
-      job_ids: string[];
+      /** Job Ids */
+      job_ids?: string[];
       /**
        * Delete Files
        * @default false
@@ -2476,7 +2586,11 @@ export interface components {
       /** Height */
       height?: number | null;
     };
-    /** CropSettings */
+    /**
+     * CropSettings
+     * @description Default crop bounds. All coordinates must be non-negative and within
+     *     a sane axis limit (JTN-474 ISSUE-060, -069).
+     */
     CropSettings: {
       /**
        * X
@@ -2585,6 +2699,8 @@ export interface components {
       description: string;
       /** Created At */
       created_at?: string | null;
+      /** Last Fetch Time */
+      last_fetch_time?: string | null;
     };
     /**
      * FetchPresetUpdate
@@ -2683,17 +2799,41 @@ export interface components {
       /** By Band */
       by_band: Record<string, Record<string, number>>;
     };
-    /** GoesBackfillRequest */
+    /**
+     * GoesBackfillRequest
+     * @description Request schema for backfilling detected gaps.
+     *
+     *     JTN-460: satellite, sector, band, start_time, and end_time are now required
+     *     to prevent silent no-ops when an empty body is posted.
+     */
     GoesBackfillRequest: {
-      /** Satellite */
-      satellite?: string | null;
-      /** Band */
-      band?: string | null;
+      /**
+       * Satellite
+       * @description Satellite name (required)
+       */
+      satellite: string;
       /**
        * Sector
-       * @default FullDisk
+       * @description Sector (required)
        */
       sector: string;
+      /**
+       * Band
+       * @description Band (required)
+       */
+      band: string;
+      /**
+       * Start Time
+       * Format: date-time
+       * @description Start of the backfill range (ISO format)
+       */
+      start_time: string;
+      /**
+       * End Time
+       * Format: date-time
+       * @description End of the backfill range (ISO format)
+       */
+      end_time: string;
       /**
        * Expected Interval
        * @default 10
@@ -3015,8 +3155,43 @@ export interface components {
       /** Params */
       params: Record<string, unknown>;
     };
+    /**
+     * PresetDeleted
+     * @description Response for preset deletion confirming the row was removed.
+     */
+    PresetDeleted: {
+      /**
+       * Deleted
+       * @default true
+       */
+      deleted: boolean;
+    };
     /** PresetRename */
     PresetRename: {
+      /** Name */
+      name: string;
+    };
+    /**
+     * PresetResponse
+     * @description Response schema for a processing preset with its stored parameters.
+     */
+    PresetResponse: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Params */
+      params: Record<string, unknown>;
+      /** Created At */
+      created_at: string;
+    };
+    /**
+     * PresetSummary
+     * @description Minimal response for preset create/rename operations.
+     */
+    PresetSummary: {
+      /** Id */
+      id: string;
       /** Name */
       name: string;
     };
@@ -3030,7 +3205,14 @@ export interface components {
       /** Params */
       params?: Record<string, unknown>;
     };
-    /** SettingsUpdate */
+    /**
+     * SettingsUpdate
+     * @description Request schema for ``PUT /api/settings``.
+     *
+     *     JTN-474 ISSUE-073: ``extra="forbid"`` so typos like
+     *     ``completely_unknown_field`` return 422 instead of being silently
+     *     dropped on the floor.
+     */
     SettingsUpdate: {
       default_crop?: components['schemas']['CropSettings'] | null;
       /** Default False Color */
@@ -3049,6 +3231,21 @@ export interface components {
       max_frames_per_fetch?: number | null;
       /** Webhook Url */
       webhook_url?: string | null;
+    };
+    /**
+     * ShareLinkRequest
+     * @description Optional body for ``POST /api/satellite/frames/{frame_id}/share``.
+     *
+     *     Previously this endpoint only honored a ``?hours=`` query parameter; a
+     *     body field named ``expires_in_hours`` was accepted (because Pydantic
+     *     ignored it) but silently dropped. Both names are now accepted in the
+     *     body and validated with the same bounds as the query param.
+     */
+    ShareLinkRequest: {
+      /** Expires In Hours */
+      expires_in_hours?: number | null;
+      /** Hours */
+      hours?: number | null;
     };
     /** ShareLinkResponse */
     ShareLinkResponse: {
@@ -3146,11 +3343,74 @@ export interface operations {
           'application/json': components['schemas']['PaginatedResponse_JobResponse_'];
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3175,11 +3435,74 @@ export interface operations {
           'application/json': components['schemas']['JobResponse'];
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3202,11 +3525,74 @@ export interface operations {
           'application/json': components['schemas']['JobResponse'];
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3231,11 +3617,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3262,11 +3711,74 @@ export interface operations {
           'application/json': components['schemas']['JobResponse'];
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3289,11 +3801,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3321,11 +3896,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3351,11 +3989,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3378,11 +4079,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3401,6 +4165,69 @@ export interface operations {
         headers: Record<string, unknown>;
         content: {
           'application/json': unknown;
+        };
+      };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3425,11 +4252,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3453,11 +4343,74 @@ export interface operations {
           'application/json': components['schemas']['PaginatedResponse_ImageResponse_'];
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3482,11 +4435,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3509,11 +4525,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3536,11 +4615,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3563,11 +4705,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3588,7 +4793,56 @@ export interface operations {
       200: {
         headers: Record<string, unknown>;
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['PresetResponse'][];
+        };
+      };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
       /** @description Validation Error */
@@ -3596,6 +4850,20 @@ export interface operations {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3617,7 +4885,56 @@ export interface operations {
       200: {
         headers: Record<string, unknown>;
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['PresetSummary'];
+        };
+      };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
       /** @description Validation Error */
@@ -3625,6 +4942,20 @@ export interface operations {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3644,7 +4975,56 @@ export interface operations {
       200: {
         headers: Record<string, unknown>;
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['PresetDeleted'];
+        };
+      };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
       /** @description Validation Error */
@@ -3652,6 +5032,20 @@ export interface operations {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3675,7 +5069,56 @@ export interface operations {
       200: {
         headers: Record<string, unknown>;
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['PresetSummary'];
+        };
+      };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
       /** @description Validation Error */
@@ -3683,6 +5126,20 @@ export interface operations {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -3768,6 +5225,69 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
     };
   };
   update_settings_api_settings_put: {
@@ -3790,11 +5310,74 @@ export interface operations {
           'application/json': unknown;
         };
       };
+      /** @description Bad Request — invalid payload or parameters. */
+      400: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unauthorized — missing or invalid API key. */
+      401: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Forbidden — path or operation rejected. */
+      403: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Not Found — resource does not exist. */
+      404: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Conflict — duplicate or concurrent change. */
+      409: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Payload Too Large — request body exceeded the limit. */
+      413: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Unsupported Media Type. */
+      415: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: Record<string, unknown>;
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Too Many Requests — rate limit exceeded. */
+      429: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
+        };
+      };
+      /** @description Internal Server Error. */
+      500: {
+        headers: Record<string, unknown>;
+        content: {
+          'application/json': components['schemas']['APIErrorResponse'];
         };
       };
     };
@@ -4054,6 +5637,8 @@ export interface operations {
         band?: string | null;
         sector?: string | null;
         expected_interval?: number;
+        start_time?: string | null;
+        end_time?: string | null;
       };
       header?: never;
       path?: never;
@@ -4801,6 +6386,8 @@ export interface operations {
   list_frames_api_satellite_frames_get: {
     parameters: {
       query?: {
+        page?: number;
+        limit?: number;
         satellite?: string | null;
         band?: string | null;
         sector?: string | null;
@@ -4810,8 +6397,6 @@ export interface operations {
         tag?: string | null;
         sort?: string;
         order?: string;
-        page?: number;
-        limit?: number;
       };
       header?: never;
       path?: never;
@@ -4885,7 +6470,7 @@ export interface operations {
   export_frames_api_satellite_frames_export_get: {
     parameters: {
       query?: {
-        format?: string;
+        format?: string | null;
         limit?: number;
         offset?: number;
       };
@@ -6033,7 +7618,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ShareLinkRequest'] | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

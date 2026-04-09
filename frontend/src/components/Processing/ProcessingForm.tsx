@@ -1,28 +1,52 @@
 import { useState } from 'react';
 import { useCreateJob } from '../../hooks/useApi';
+import type {
+  CropParams,
+  FalseColorParams,
+  FalseColorMethod,
+  JobCreate,
+  ProcessingParams,
+  ScaleParams,
+  TimestampParams,
+  TimestampPosition,
+  VideoCodec,
+  VideoInterpolation,
+  VideoParams,
+} from '../../api/types';
 import { Crop, Palette, Clock, Film, Rocket, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface Props {
   selectedImages: string[];
   onJobCreated?: () => void;
-  initialParams?: Record<string, unknown> | null;
+  initialParams?: ProcessingParams | null;
 }
 
-const defaultCrop = { enabled: false, x: 0, y: 0, w: 1920, h: 1080 };
-const defaultFalseColor = { enabled: false, method: 'vegetation' };
-const defaultTimestamp = { enabled: true, position: 'bottom-left' };
-const defaultScale = { enabled: false, factor: 1 };
-const defaultVideo = { fps: 24, codec: 'h264', quality: 23, interpolation: 'none' };
+const defaultCrop: CropParams = { enabled: false, x: 0, y: 0, w: 1920, h: 1080 };
+const defaultFalseColor: FalseColorParams = { enabled: false, method: 'vegetation' };
+const defaultTimestamp: TimestampParams = { enabled: true, position: 'bottom-left' };
+const defaultScale: ScaleParams = { enabled: false, factor: 1 };
+const defaultVideo: VideoParams = {
+  fps: 24,
+  codec: 'h264',
+  quality: 23,
+  interpolation: 'none',
+};
 
-function initFromParams<T extends Record<string, unknown>>(
+/**
+ * Merge a preset-provided sub-section (e.g. ``preset.params.crop``) onto the
+ * UI defaults. When a preset explicitly declares a section, we also flip the
+ * matching toggle on so users don't have to re-enable each section after
+ * loading a preset.
+ *
+ * Returns the defaults unchanged when the preset doesn't carry that key.
+ */
+function initFromParams<T extends object>(
   defaults: T,
-  params: Record<string, unknown> | undefined,
-  key: string,
+  preset: T | null | undefined,
   enableOnMatch = true,
 ): T {
-  if (!params || !(key in params)) return defaults;
-  const p = params[key] as Record<string, unknown>;
-  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...p } as T;
+  if (!preset) return defaults;
+  return { ...defaults, ...(enableOnMatch ? { enabled: true } : {}), ...preset };
 }
 
 export default function ProcessingForm({
@@ -30,22 +54,27 @@ export default function ProcessingForm({
   onJobCreated,
   initialParams,
 }: Readonly<Props>) {
-  const p = initialParams as Record<string, Record<string, unknown>> | undefined;
   const [step, setStep] = useState(0);
   const createJob = useCreateJob();
 
   // Processing params — initialized from preset if provided
-  const [crop, setCrop] = useState(() => initFromParams(defaultCrop, p, 'crop'));
-  const [falseColor, setFalseColor] = useState(() =>
-    initFromParams(defaultFalseColor, p, 'false_color'),
+  const [crop, setCrop] = useState<CropParams>(() =>
+    initFromParams(defaultCrop, initialParams?.crop ?? null),
   );
-  const [timestamp, setTimestamp] = useState(() =>
-    initFromParams(defaultTimestamp, p, 'timestamp'),
+  const [falseColor, setFalseColor] = useState<FalseColorParams>(() =>
+    initFromParams(defaultFalseColor, initialParams?.false_color ?? null),
   );
-  const [scale, setScale] = useState(() => initFromParams(defaultScale, p, 'scale'));
+  const [timestamp, setTimestamp] = useState<TimestampParams>(() =>
+    initFromParams(defaultTimestamp, initialParams?.timestamp ?? null),
+  );
+  const [scale, setScale] = useState<ScaleParams>(() =>
+    initFromParams(defaultScale, initialParams?.scale ?? null),
+  );
 
   // Video params
-  const [video, setVideo] = useState(() => initFromParams(defaultVideo, p, 'video', false));
+  const [video, setVideo] = useState<VideoParams>(() =>
+    initFromParams(defaultVideo, initialParams?.video ?? null, false),
+  );
 
   const steps = [
     { icon: Crop, label: 'Image Processing' },
@@ -54,17 +83,24 @@ export default function ProcessingForm({
   ];
 
   const handleLaunch = () => {
+    const processingParams: ProcessingParams = {
+      image_ids: selectedImages,
+      crop: crop.enabled ? crop : null,
+      false_color: falseColor.enabled ? falseColor : null,
+      timestamp: timestamp.enabled ? timestamp : null,
+      scale: scale.enabled ? scale : null,
+      video,
+    };
+    // Spread into a fresh record so the result is structurally assignable to
+    // ``JobCreate['params']`` (an open ``{ [key: string]: unknown }`` index
+    // signature). This is type-safe: every known ``ProcessingParams`` field
+    // is already ``unknown``-compatible.
+    const wireParams: JobCreate['params'] = { ...processingParams };
     createJob.mutate(
       {
         job_type: 'image_process',
-        params: {
-          image_ids: selectedImages,
-          crop: crop.enabled ? crop : null,
-          false_color: falseColor.enabled ? falseColor : null,
-          timestamp: timestamp.enabled ? timestamp : null,
-          scale: scale.enabled ? scale : null,
-          video,
-        },
+        params: wireParams,
+        input_path: '',
       },
       { onSuccess: () => onJobCreated?.() },
     );
@@ -131,7 +167,9 @@ export default function ProcessingForm({
             >
               <select
                 value={falseColor.method}
-                onChange={(e) => setFalseColor({ ...falseColor, method: e.target.value })}
+                onChange={(e) =>
+                  setFalseColor({ ...falseColor, method: e.target.value as FalseColorMethod })
+                }
                 className="bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
               >
                 <option value="vegetation">Vegetation (NDVI)</option>
@@ -151,7 +189,9 @@ export default function ProcessingForm({
             >
               <select
                 value={timestamp.position}
-                onChange={(e) => setTimestamp({ ...timestamp, position: e.target.value })}
+                onChange={(e) =>
+                  setTimestamp({ ...timestamp, position: e.target.value as TimestampPosition })
+                }
                 className="bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
               >
                 <option value="top-left">Top Left</option>
@@ -233,7 +273,7 @@ export default function ProcessingForm({
                 <select
                   id="proc-codec"
                   value={video.codec}
-                  onChange={(e) => setVideo({ ...video, codec: e.target.value })}
+                  onChange={(e) => setVideo({ ...video, codec: e.target.value as VideoCodec })}
                   className="mt-1 bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
                 >
                   <option value="h264">H.264</option>
@@ -251,7 +291,9 @@ export default function ProcessingForm({
                 <select
                   id="proc-interp"
                   value={video.interpolation}
-                  onChange={(e) => setVideo({ ...video, interpolation: e.target.value })}
+                  onChange={(e) =>
+                    setVideo({ ...video, interpolation: e.target.value as VideoInterpolation })
+                  }
                   className="mt-1 bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm w-full"
                 >
                   <option value="none">None</option>

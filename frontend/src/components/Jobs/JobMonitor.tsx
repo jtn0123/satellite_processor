@@ -57,7 +57,14 @@ function isTerminalStatus(status: string): boolean {
 }
 
 function computeDuration(
-  job: { completed_at?: string; started_at?: string; created_at: string } | null,
+  job:
+    | {
+        completed_at?: string | null;
+        started_at?: string | null;
+        created_at: string;
+      }
+    | null
+    | undefined,
   status: string,
   now: number,
 ): number {
@@ -77,7 +84,14 @@ const TERMINAL_STATUS_LABELS: Record<string, string> = {
 };
 
 function buildTimelineSteps(
-  job: { created_at: string; started_at?: string; completed_at?: string } | null,
+  job:
+    | {
+        created_at: string;
+        started_at?: string | null;
+        completed_at?: string | null;
+      }
+    | null
+    | undefined,
   status: string,
 ): { label: string; time: string | null; done: boolean }[] {
   if (!job) return [];
@@ -501,7 +515,7 @@ export default function JobMonitor({ jobId, onBack }: Readonly<Props>) {
       />
 
       {/* ── Error section ──────────────────────────────── */}
-      {showError && (
+      {showError && job?.error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
           <h3 className="text-sm font-semibold text-red-400 mb-2">Error</h3>
           <pre className="text-sm text-red-300 whitespace-pre-wrap font-mono break-all">

@@ -14,11 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..db.database import DbSession
 from ..db.models import AppSetting
-from ..errors import APIError
+from ..errors import API_ERROR_RESPONSES, APIError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/settings", tags=["settings"])
+router = APIRouter(prefix="/api/settings", tags=["settings"], responses=API_ERROR_RESPONSES)
 
 _SETTINGS_FILE = Path(settings.storage_path) / "app_settings.json"
 _DEFAULTS = {

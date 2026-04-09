@@ -242,6 +242,10 @@ async def get_thumbnail(image_id: str, db: DbSession):
     """Return a ~256px thumbnail"""
     logger.debug("Thumbnail requested: image_id=%s", sanitize_log(image_id))
     validate_uuid(image_id, "image_id")
+    # Re-parse through ``uuid.UUID`` so the value flowing into ``cache_path``
+    # is a freshly-constructed string CodeQL recognises as a path-traversal
+    # sanitizer barrier (validate_uuid alone is opaque to its taint analysis).
+    safe_image_id = str(uuid.UUID(image_id))
     from ..config import settings as app_settings
 
     result = await db.execute(select(Image).where(Image.id == image_id))
@@ -254,7 +258,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
         raise APIError(404, "not_found", "File not found on disk")
     cache_dir = Path(app_settings.storage_path) / "thumbnails"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = cache_dir / f"{image_id}.jpg"
+    cache_path = cache_dir / f"{safe_image_id}.jpg"
     if cache_path.exists():
         return FileResponse(
             str(cache_path), media_type=_CONTENT_TYPE_JPEG, headers={"Cache-Control": "public, max-age=86400"}

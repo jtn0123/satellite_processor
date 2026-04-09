@@ -133,9 +133,7 @@ describe('Settings - form interactions', () => {
     fireEvent.click(saveBtn);
     await waitFor(
       () => {
-        expect(
-          screen.getByText('Failed to save settings. Please try again.'),
-        ).toBeInTheDocument();
+        expect(screen.getByText('Failed to save settings. Please try again.')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );

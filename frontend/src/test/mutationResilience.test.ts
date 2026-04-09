@@ -97,9 +97,7 @@ describe('withBackoff', () => {
       throw err;
     });
     const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
-    await expect(
-      withBackoff(fn, { maxRetries: 3, initialDelayMs: 1, sleep }),
-    ).rejects.toBe(err);
+    await expect(withBackoff(fn, { maxRetries: 3, initialDelayMs: 1, sleep })).rejects.toBe(err);
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
@@ -109,9 +107,7 @@ describe('withBackoff', () => {
       throw err;
     });
     const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
-    await expect(
-      withBackoff(fn, { maxRetries: 5, initialDelayMs: 1, sleep }),
-    ).rejects.toBe(err);
+    await expect(withBackoff(fn, { maxRetries: 5, initialDelayMs: 1, sleep })).rejects.toBe(err);
     expect(fn).toHaveBeenCalledTimes(1);
     expect(sleep).not.toHaveBeenCalled();
   });
@@ -131,9 +127,7 @@ describe('withBackoff', () => {
       }),
     ).rejects.toBe(err);
     // Delays: 10000, 15000, 15000, 15000, 15000 (5 retries between 6 attempts)
-    expect(sleep.mock.calls.map((c) => c[0])).toEqual([
-      10_000, 15_000, 15_000, 15_000, 15_000,
-    ]);
+    expect(sleep.mock.calls.map((c) => c[0])).toEqual([10_000, 15_000, 15_000, 15_000, 15_000]);
   });
 
   it('defaults maxDelayMs to MAX_BACKOFF_MS', async () => {
@@ -142,9 +136,9 @@ describe('withBackoff', () => {
       throw err;
     });
     const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
-    await expect(
-      withBackoff(fn, { maxRetries: 10, initialDelayMs: 50_000, sleep }),
-    ).rejects.toBe(err);
+    await expect(withBackoff(fn, { maxRetries: 10, initialDelayMs: 50_000, sleep })).rejects.toBe(
+      err,
+    );
     sleep.mock.calls.forEach(([delay]) => {
       expect(delay).toBeLessThanOrEqual(MAX_BACKOFF_MS);
     });

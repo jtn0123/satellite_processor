@@ -63,8 +63,7 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     band,
   });
 
-  const { compareMode, setCompareMode, comparePosition, setComparePosition } =
-    useComparisonPanel();
+  const { compareMode, setCompareMode, comparePosition, setComparePosition } = useComparisonPanel();
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
   const resetCountdownRef = useRef<(() => void) | null>(null);

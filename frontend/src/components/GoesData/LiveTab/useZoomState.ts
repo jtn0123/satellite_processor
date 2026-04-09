@@ -9,7 +9,14 @@
  * Behavior is identical to the inline implementation — this is a pure
  * refactor so leaf components stay small.
  */
-import { useCallback, useEffect, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useImageZoom } from '../../../hooks/useImageZoom';
 import { useZoomHint, useFullscreenSync } from './useLiveHooks';
 import { enterFullscreenSafe, exitFullscreenSafe } from './liveHelpers';

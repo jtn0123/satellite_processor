@@ -92,10 +92,7 @@ export function defaultShouldRetry(error: unknown): boolean {
  *
  * Throws the last error once `maxRetries` attempts have been exhausted.
  */
-export async function withBackoff<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {},
-): Promise<T> {
+export async function withBackoff<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const {
     maxRetries = DEFAULT_MAX_RETRIES,
     initialDelayMs = DEFAULT_INITIAL_DELAY_MS,

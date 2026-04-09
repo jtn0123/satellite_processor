@@ -28,8 +28,10 @@ import {
   type InFlightTracker,
 } from '../utils/mutationResilience';
 
-export interface ResilientMutationOptions<TData, TError, TVariables, TContext>
-  extends Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'mutationFn' | 'retry'> {
+export interface ResilientMutationOptions<TData, TError, TVariables, TContext> extends Omit<
+  UseMutationOptions<TData, TError, TVariables, TContext>,
+  'mutationFn' | 'retry'
+> {
   readonly mutationFn: (variables: TVariables) => Promise<TData>;
   /**
    * Stable string identifying the endpoint. Used as the circuit-breaker

@@ -1,3 +1,10 @@
+## [1.42.18](https://github.com/jtn0123/satellite_processor/compare/v1.42.17...v1.42.18) (2026-04-09)
+
+
+### Bug Fixes
+
+* **ui:** frontend a11y + mobile polish (PR5 of 5) ([#426](https://github.com/jtn0123/satellite_processor/issues/426)) ([7b27769](https://github.com/jtn0123/satellite_processor/commit/7b2776933817355b7ceb782c615ff2571003789c))
+
 ## [1.42.17](https://github.com/jtn0123/satellite_processor/compare/v1.42.16...v1.42.17) (2026-04-09)
 
 

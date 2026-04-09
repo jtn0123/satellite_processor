@@ -13,6 +13,7 @@ import type {
   SettingsUpdate,
 } from '../api/types';
 import { useIsWebSocketConnected } from '../components/ConnectionStatus';
+import { useResilientMutation } from './useResilientMutation';
 
 /**
  * When the `/ws/status` websocket is connected, the backend pushes job/system
@@ -47,6 +48,9 @@ export function useImages() {
 
 export function useUploadImage() {
   const qc = useQueryClient();
+  // JTN-396: uploads are large-body and expensive to retry blindly, so
+  // we don't compose backoff here. We do still dedup so a double-click
+  // on the upload button can't fire two POSTs.
   return useMutation({
     mutationFn: (formData: FormData) =>
       api.post('/images/upload', formData, {
@@ -58,8 +62,13 @@ export function useUploadImage() {
 
 export function useDeleteImage() {
   const qc = useQueryClient();
-  return useMutation({
+  // JTN-396: deletes are idempotent on the backend, so retries are
+  // safe. Dedup keys include the target id so concurrent deletes of
+  // different images don't block each other.
+  return useResilientMutation<unknown, unknown, string>({
     mutationFn: (id: string) => api.delete(`/images/${id}`),
+    endpointKey: 'DELETE /images',
+    dedupKey: (id) => `DELETE /images/${id}`,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['images'] }),
   });
 }
@@ -96,24 +105,40 @@ export function useJob(id: string | null) {
 
 export function useCreateJob() {
   const qc = useQueryClient();
-  return useMutation({
-    // JTN-391: generate a fresh Idempotency-Key per submission so that
-    // accidental double-submits (double-click, TanStack mutation replay
-    // after a reconnect) dedupe server-side without creating a second
-    // Job row. The key is new per mutation call, so a deliberate
-    // retry-with-changes still produces a distinct job.
-    mutationFn: (params: JobCreate) =>
-      api.post<JobResponse>('/jobs', params, {
-        headers: { 'Idempotency-Key': crypto.randomUUID() },
-      }),
+  // JTN-391 + JTN-396: wrap with dedup + breaker + backoff AND send
+  // an Idempotency-Key so the backend dedupes double-submits too.
+  //
+  // The idempotency key is generated once per *logical* call (via
+  // the idempotencyKey option). useResilientMutation stamps it onto
+  // the variables before any withBackoff retries, so all retries of
+  // the same call share one key while a deliberate caller-initiated
+  // retry still produces a fresh key.
+  //
+  // mutationFn reads `__idempotencyKey` off the enriched variables
+  // and promotes it to the HTTP header.
+  return useResilientMutation<{ data: JobResponse }, unknown, JobCreate>({
+    mutationFn: (params: JobCreate) => {
+      const enriched = params as JobCreate & { __idempotencyKey?: string };
+      const { __idempotencyKey, ...body } = enriched;
+      return api.post<JobResponse>('/jobs', body as JobCreate, {
+        headers: __idempotencyKey ? { 'Idempotency-Key': __idempotencyKey } : undefined,
+      });
+    },
+    endpointKey: 'POST /jobs',
+    dedupKey: (params) => `POST /jobs:${JSON.stringify(params)}`,
+    idempotencyKey: () => crypto.randomUUID(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['jobs'] }),
   });
 }
 
 export function useDeleteJob() {
   const qc = useQueryClient();
-  return useMutation({
+  // JTN-396: job deletes are idempotent (repeated DELETE is a no-op),
+  // safe to retry. Dedup per-id so we don't block different deletes.
+  return useResilientMutation<unknown, unknown, string>({
     mutationFn: (id: string) => api.delete(`/jobs/${id}`),
+    endpointKey: 'DELETE /jobs',
+    dedupKey: (id) => `DELETE /jobs/${id}`,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['jobs'] }),
   });
 }
@@ -142,8 +167,12 @@ export function useSettings() {
 
 export function useUpdateSettings() {
   const qc = useQueryClient();
-  return useMutation({
+  // JTN-396: PUT /settings is idempotent — breaker + backoff fit
+  // naturally. Dedup singleton key so concurrent saves are blocked.
+  return useResilientMutation<{ data: AppSettingsResponse }, unknown, SettingsUpdate>({
     mutationFn: (settings: SettingsUpdate) => api.put<AppSettingsResponse>('/settings', settings),
+    endpointKey: 'PUT /settings',
+    dedupKey: () => 'PUT /settings',
     onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
   });
 }
@@ -163,25 +192,38 @@ export function usePresets() {
 
 export function useCreatePreset() {
   const qc = useQueryClient();
-  return useMutation({
+  // JTN-396: preset creates dedup on name + payload, breaker shared across mounts.
+  return useResilientMutation<{ data: PresetSummary }, unknown, PresetCreatePayload>({
     mutationFn: (data: PresetCreatePayload) => api.post<PresetSummary>('/presets', data),
+    endpointKey: 'POST /presets',
+    dedupKey: (data) => `POST /presets:${data.name ?? JSON.stringify(data)}`,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
   });
 }
 
 export function useDeletePreset() {
   const qc = useQueryClient();
-  return useMutation({
+  // JTN-396: preset delete is idempotent — safe to retry.
+  return useResilientMutation<unknown, unknown, string>({
     mutationFn: (name: string) => api.delete(`/presets/${name}`),
+    endpointKey: 'DELETE /presets',
+    dedupKey: (name) => `DELETE /presets/${name}`,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
   });
 }
 
 export function useRenamePreset() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+  // JTN-396: renames share a breaker but dedup per (old, new) pair.
+  return useResilientMutation<
+    { data: PresetSummary },
+    unknown,
+    { oldName: string; newName: string }
+  >({
+    mutationFn: ({ oldName, newName }) =>
       api.patch<PresetSummary>(`/presets/${oldName}`, { name: newName }),
+    endpointKey: 'PATCH /presets',
+    dedupKey: ({ oldName, newName }) => `PATCH /presets/${oldName}:${newName}`,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['presets'] }),
   });
 }

@@ -1,13 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '../../../api/client';
 
 import type { MonitorPreset } from '../monitorPresets';
 import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
-import { useImageZoom } from '../../../hooks/useImageZoom';
 import { useDoubleTap } from '../../../hooks/useDoubleTap';
 import PullToRefreshIndicator from '../PullToRefreshIndicator';
-import type { LatestFrame, CatalogLatest, Product } from '../types';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useMonitorMode } from '../../../hooks/useMonitorMode';
 import { useLiveFetchJob } from '../../../hooks/useLiveFetchJob';
@@ -19,7 +15,6 @@ import {
   getDefaultSector,
   getDefaultBand,
 } from '../../../utils/sectorHelpers';
-import BandPillStrip from '../BandPillStrip';
 import {
   getSectorsForSatellite,
   getBandsForSatellite,
@@ -27,15 +22,14 @@ import {
   getDisabledBands,
 } from '../liveTabUtils';
 
-import {
-  resolveImageUrls,
-  computeFreshness,
-  exitFullscreenSafe,
-  enterFullscreenSafe,
-  buildOuterClassName,
-} from './liveHelpers';
-import { isNotFoundError, useZoomHint, useFullscreenSync, useLiveShortcuts } from './useLiveHooks';
+import { resolveImageUrls, computeFreshness, buildOuterClassName } from './liveHelpers';
+import { useLiveShortcuts } from './useLiveHooks';
 import { LiveImageArea } from './LiveImageArea';
+import { BandSelector } from './BandSelector';
+import { useLiveQueries } from './useLiveQueries';
+import { useLiveOverlay } from './useLiveOverlay';
+import { useZoomState } from './useZoomState';
+import { useComparisonPanel } from './useComparisonPanel';
 
 interface LiveTabProps {
   onMonitorChange?: (active: boolean) => void;
@@ -56,16 +50,21 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   const [sector, setSector] = useState('CONUS');
   const [band, setBand] = useState('GEOCOLOR');
   const [refreshInterval, setRefreshInterval] = useState(300000);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [compareMode, setCompareMode] = useState(false);
-  const [comparePosition, setComparePosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const lastAutoFetchTime = useRef<string | null>(null);
   const lastAutoFetchMs = useRef<number>(0);
 
-  const zoom = useImageZoom({ containerRef, imageRef, eliminateLetterbox: true });
-  const showZoomHint = useZoomHint(zoom.isZoomed);
+  const { zoom, showZoomHint, isFullscreen, toggleFullscreen } = useZoomState({
+    containerRef,
+    imageRef,
+    satellite,
+    sector,
+    band,
+  });
+
+  const { compareMode, setCompareMode, comparePosition, setComparePosition } =
+    useComparisonPanel();
 
   const refetchRef = useRef<(() => Promise<unknown>) | null>(null);
   const resetCountdownRef = useRef<(() => void) | null>(null);
@@ -121,38 +120,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   // Fix: never auto-hide on desktop. The overlay is always visible on
   // desktop; we only auto-hide it on mobile where screen real estate is
   // precious and tapping the image reveals it again.
-  const [overlayVisible, setOverlayVisible] = useState(true);
-  const overlayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const resetOverlayTimer = useCallback(() => {
-    clearTimeout(overlayTimer.current);
-    if (!isMobile) {
-      setOverlayVisible(true);
-      return;
-    }
-    overlayTimer.current = setTimeout(() => setOverlayVisible(false), 5000);
-  }, [isMobile]);
-  /* eslint-disable react-hooks/set-state-in-effect -- intentional desktop/mobile sync */
-  useEffect(() => {
-    if (!isMobile) {
-      setOverlayVisible(true);
-      return;
-    }
-    resetOverlayTimer();
-    return () => clearTimeout(overlayTimer.current);
-  }, [resetOverlayTimer, isMobile]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-  const toggleOverlay = useCallback(() => {
-    if (!isMobile) {
-      // Desktop: overlay is pinned open, no toggle behavior needed.
-      setOverlayVisible(true);
-      return;
-    }
-    setOverlayVisible((v) => {
-      const next = !v;
-      if (next) resetOverlayTimer();
-      return next;
-    });
-  }, [resetOverlayTimer, isMobile]);
+  const { overlayVisible, setOverlayVisible, resetOverlayTimer, toggleOverlay } =
+    useLiveOverlay(isMobile);
 
   const handlePullRefresh = useCallback(async () => {
     await refetchRef.current?.();
@@ -168,10 +137,8 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     enabled: !zoom.isZoomed,
   });
 
-  const { data: products } = useQuery<Product>({
-    queryKey: ['goes-products'],
-    queryFn: () => api.get('/satellite/products').then((r) => r.data),
-  });
+  const { products, frame, recentFrames, catalogLatest, isLoading, isError, refetch } =
+    useLiveQueries({ satellite, sector, band, refreshInterval, compareMode });
 
   /* eslint-disable react-hooks/set-state-in-effect -- intentional init from async data */
   useEffect(() => {
@@ -213,46 +180,9 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
   }, [satellite]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const {
-    data: frame,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery<LatestFrame>({
-    queryKey: ['goes-latest', satellite, sector, band],
-    queryFn: () =>
-      api.get('/satellite/latest', { params: { satellite, sector, band } }).then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite,
-    retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
-  });
-
   useEffect(() => {
     refetchRef.current = refetch;
   }, [refetch]);
-
-  const { data: recentFrames } = useQuery<LatestFrame[]>({
-    queryKey: ['goes-frames-compare', satellite, sector, band],
-    queryFn: () =>
-      api
-        .get('/satellite/frames', {
-          params: { satellite, sector, band, limit: 2, sort: 'capture_time', order: 'desc' },
-        })
-        .then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite && compareMode,
-  });
-
-  const { data: catalogLatest } = useQuery<CatalogLatest>({
-    queryKey: ['goes-catalog-latest-live', satellite, sector, band],
-    queryFn: () =>
-      api
-        .get('/satellite/catalog/latest', { params: { satellite, sector, band } })
-        .then((r) => r.data),
-    refetchInterval: refreshInterval,
-    enabled: !!satellite,
-    retry: 1,
-  });
 
   const { display: countdownDisplay, resetCountdown } = useCountdownDisplay(refreshInterval);
   useEffect(() => {
@@ -280,17 +210,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     refetch,
   });
 
-  const toggleFullscreen = useCallback(async () => {
-    if (!containerRef.current) return;
-    const isCurrentlyFullscreen = !!document.fullscreenElement;
-    await (isCurrentlyFullscreen
-      ? exitFullscreenSafe()
-      : enterFullscreenSafe(containerRef.current));
-    setIsFullscreen(!isCurrentlyFullscreen);
-  }, []);
-
-  useFullscreenSync(setIsFullscreen, zoom);
-
   useLiveShortcuts({
     bands: products?.bands,
     band,
@@ -316,10 +235,6 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
     },
     300,
   );
-
-  useEffect(() => {
-    zoom.reset();
-  }, [satellite, sector, band, zoom.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isMeso = isMesoSector(sector);
   const { catalogImageUrl, localImageUrl, imageUrl, prevFrame, prevImageUrl } = resolveImageUrls(
@@ -421,19 +336,19 @@ export default function LiveTab({ onMonitorChange }: Readonly<LiveTabProps> = {}
       />
 
       {isMobile && products?.bands && !zoom.isZoomed && (
-        <BandPillStrip
-          bands={satelliteBands}
-          activeBand={band}
-          onBandChange={setBand}
+        <BandSelector
+          variant="mobile"
           satellite={satellite}
           sector={sector}
-          satellites={allSatellites}
-          sectors={satelliteSectors}
+          band={band}
           onSatelliteChange={setSatellite}
           onSectorChange={setSector}
-          sectorName={satelliteSectors.find((s) => s.id === sector)?.name}
-          satelliteAvailability={products.satellite_availability}
+          onBandChange={setBand}
+          allSatellites={allSatellites}
+          satelliteSectors={satelliteSectors}
+          satelliteBands={satelliteBands}
           disabledBands={disabledBands}
+          satelliteAvailability={products.satellite_availability}
         />
       )}
     </div>

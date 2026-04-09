@@ -2,12 +2,21 @@
 
 import json
 import logging
+from contextlib import contextmanager
 
 import redis.exceptions
 
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+
+#: Namespace prefix for distributed task locks (JTN-398).
+_TASK_IDEMPOTENCY_NAMESPACE = "task_idem"
+
+#: TTL for the distributed lock. One hour covers the slowest realistic
+#: fetch/composite job; anything stuck longer than that is a hung worker
+#: and should be retried anyway.
+TASK_IDEMPOTENCY_TTL_SECONDS = 3_600
 
 _redis = None
 
@@ -99,3 +108,63 @@ def _update_job_db(job_id: str, **kwargs):
             session.commit()
     finally:
         session.close()
+
+
+def _build_task_lock_key(key: str) -> str:
+    """Return the Redis key used to lock a distributed task identifier."""
+    return f"{_TASK_IDEMPOTENCY_NAMESPACE}:{key}"
+
+
+@contextmanager
+def with_idempotency(key: str, ttl_seconds: int = TASK_IDEMPOTENCY_TTL_SECONDS):
+    """Distributed-lock context manager for Celery task idempotency (JTN-398).
+
+    Wraps a block of worker-side work with a Redis ``SET key value NX EX``
+    lock. The ``acquired`` boolean yielded by the context manager is
+    ``True`` the first time a given ``key`` is seen and ``False`` on
+    every subsequent attempt within the TTL window — callers should
+    short-circuit with a no-op return when it is ``False``.
+
+    Example::
+
+        lock_key = f"fetch:{sat}:{sector}:{band}:{ts}"
+        with with_idempotency(lock_key) as acquired:
+            if not acquired:
+                return
+            ... do the work ...
+
+    The lock is released on successful exit so that an eventually-run
+    manual retry can proceed; on failure the lock is left in place until
+    it expires, which prevents a flapping upstream error (e.g. S3 503s)
+    from hammering the service with duplicate retries.
+
+    When Redis is unreachable the helper fails open: ``acquired`` is
+    ``True`` so the task still runs. Losing dedup during an outage is a
+    less bad failure mode than dropping work silently.
+    """
+    redis_key = _build_task_lock_key(key)
+    acquired = True
+    try:
+        client = _get_redis()
+        # ``nx=True`` guarantees only one caller wins the race.
+        result = client.set(redis_key, "1", nx=True, ex=ttl_seconds)
+        acquired = bool(result)
+    except (redis.exceptions.RedisError, OSError):
+        logger.debug("Idempotency lock acquire failed for %s — proceeding", redis_key, exc_info=True)
+        acquired = True
+
+    exc_raised = False
+    try:
+        yield acquired
+    except BaseException:
+        exc_raised = True
+        raise
+    finally:
+        if acquired and not exc_raised:
+            # Release the lock only on successful exit so repeated
+            # failures don't hammer the backend.
+            try:
+                client = _get_redis()
+                client.delete(redis_key)
+            except (redis.exceptions.RedisError, OSError):
+                logger.debug("Idempotency lock release failed for %s", redis_key, exc_info=True)

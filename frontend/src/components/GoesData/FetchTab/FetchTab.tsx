@@ -219,15 +219,23 @@ export default function FetchTab() {
   const fetchMutation = useMutation({
     mutationFn: () => {
       const ts = (v: string) => (v.includes('Z') || v.includes('+') ? v : v + 'Z');
+      // JTN-391: a fresh Idempotency-Key per mutation invocation makes
+      // the wizard submit safely retryable; the server will return the
+      // cached first response on any duplicate within 24h.
+      const idempotencyHeaders = { 'Idempotency-Key': crypto.randomUUID() };
       if (imageType !== 'single') {
         return api
-          .post('/satellite/fetch-composite', {
-            satellite,
-            sector,
-            recipe: imageType,
-            start_time: ts(startTime),
-            end_time: ts(endTime),
-          })
+          .post(
+            '/satellite/fetch-composite',
+            {
+              satellite,
+              sector,
+              recipe: imageType,
+              start_time: ts(startTime),
+              end_time: ts(endTime),
+            },
+            { headers: idempotencyHeaders },
+          )
           .then((r) => r.data);
       }
       const fetchPayload: Record<string, string> = {
@@ -241,7 +249,9 @@ export default function FetchTab() {
       if (isHimawariSatellite(satellite)) {
         fetchPayload.format = 'hsd';
       }
-      return api.post('/satellite/fetch', fetchPayload).then((r) => r.data);
+      return api
+        .post('/satellite/fetch', fetchPayload, { headers: idempotencyHeaders })
+        .then((r) => r.data);
     },
     onSuccess: (data) => {
       showToast('success', `Fetch job created: ${data.job_id}`);

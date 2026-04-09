@@ -97,7 +97,15 @@ export function useJob(id: string | null) {
 export function useCreateJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: JobCreate) => api.post<JobResponse>('/jobs', params),
+    // JTN-391: generate a fresh Idempotency-Key per submission so that
+    // accidental double-submits (double-click, TanStack mutation replay
+    // after a reconnect) dedupe server-side without creating a second
+    // Job row. The key is new per mutation call, so a deliberate
+    // retry-with-changes still produces a distinct job.
+    mutationFn: (params: JobCreate) =>
+      api.post<JobResponse>('/jobs', params, {
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['jobs'] }),
   });
 }

@@ -15,7 +15,13 @@ from ..celery_app import celery_app
 from ..config import DEFAULT_SATELLITE, settings
 from ..services.job_logger import log_job_sync
 from ..utils import utcnow
-from .helpers import _get_redis, _get_sync_db, _publish_progress, _update_job_db
+from .helpers import (
+    _get_redis,
+    _get_sync_db,
+    _publish_progress,
+    _update_job_db,
+    with_idempotency,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -300,6 +306,24 @@ def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
     _publish_progress(job_id, 0, f"Error: {error}", "failed")
 
 
+def _build_fetch_idempotency_key(params: dict) -> str:
+    """Return a stable distributed-lock key for a fetch task.
+
+    JTN-398: two fetch jobs that target the same (satellite, sector,
+    band, time window) are a duplicate of each other — most commonly
+    when Celery retries a task whose ack was lost, or when scheduling
+    and a manual click both enqueue the same window at once. Keying on
+    the logical fetch tuple lets us short-circuit the second run
+    without touching S3 or the DB.
+    """
+    satellite = params.get("satellite", "")
+    sector = params.get("sector", "")
+    band = params.get("band", "")
+    start = params.get("start_time", "")
+    end = params.get("end_time", "")
+    return f"fetch:{satellite}:{sector}:{band}:{start}:{end}"
+
+
 @celery_app.task(
     bind=True,
     name="fetch_goes_data",
@@ -312,23 +336,42 @@ def _handle_fetch_failure(job_id: str, error: Exception, _log) -> None:
 def fetch_goes_data(self, job_id: str, params: dict):
     """Download GOES frames for a time range and create Image records."""
     logger.info("Starting GOES fetch job %s", job_id)
-    _update_job_db(
-        job_id,
-        status="processing",
-        task_id=self.request.id,
-        started_at=utcnow(),
-        status_message="Fetching GOES data...",
-    )
-    _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
 
-    _log = _make_job_logger(job_id)
-    _log(f"GOES fetch started — {params.get('satellite')} {params.get('sector')} {params.get('band')}")
+    lock_key = _build_fetch_idempotency_key(params)
+    with with_idempotency(lock_key) as acquired:
+        if not acquired:
+            logger.info(
+                "Skipping duplicate GOES fetch job %s — lock held for %s",
+                job_id,
+                lock_key,
+            )
+            _update_job_db(
+                job_id,
+                status="completed",
+                progress=100,
+                completed_at=utcnow(),
+                status_message="Duplicate fetch — deduplicated by idempotency key",
+            )
+            _publish_progress(job_id, 100, "Duplicate fetch — skipped", "completed")
+            return
 
-    try:
-        _execute_goes_fetch(job_id, params, _log)
-    except Exception as e:  # Task boundary: log + update status, re-raise for retry
-        _handle_fetch_failure(job_id, e, _log)
-        raise
+        _update_job_db(
+            job_id,
+            status="processing",
+            task_id=self.request.id,
+            started_at=utcnow(),
+            status_message="Fetching GOES data...",
+        )
+        _publish_progress(job_id, 0, "Fetching GOES data...", "processing")
+
+        _log = _make_job_logger(job_id)
+        _log(f"GOES fetch started — {params.get('satellite')} {params.get('sector')} {params.get('band')}")
+
+        try:
+            _execute_goes_fetch(job_id, params, _log)
+        except Exception as e:  # Task boundary: log + update status, re-raise for retry
+            _handle_fetch_failure(job_id, e, _log)
+            raise
 
 
 def _detect_gaps(

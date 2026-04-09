@@ -1,3 +1,10 @@
+## [1.42.16](https://github.com/jtn0123/satellite_processor/compare/v1.42.15...v1.42.16) (2026-04-09)
+
+
+### Bug Fixes
+
+* unblock make dev on SQLite + report real backend version ([#423](https://github.com/jtn0123/satellite_processor/issues/423)) ([1121175](https://github.com/jtn0123/satellite_processor/commit/1121175dbe89d066fea609a57fe6d6af33bae90f))
+
 ## [1.42.15](https://github.com/jtn0123/satellite_processor/compare/v1.42.14...v1.42.15) (2026-04-08)
 
 

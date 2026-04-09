@@ -1,4 +1,4 @@
-.PHONY: dev prod test lint build deploy logs clean benchmark test-integration
+.PHONY: dev prod test lint build deploy logs clean benchmark test-integration test-migrations-sqlite
 
 dev:
 	docker compose -f docker-compose.dev.yml up --build
@@ -18,6 +18,9 @@ lint:
 test:
 	cd backend && pip install -r requirements.txt -q && pytest -v --tb=short
 	cd frontend && npm ci --silent && npm run build
+
+test-migrations-sqlite:
+	cd backend && DATABASE_URL=sqlite:///$$(mktemp -t alembic-sqlite-XXXXXX.db) alembic upgrade head
 
 test-integration:
 	docker compose -f docker-compose.test.yml up --build -d

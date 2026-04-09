@@ -87,3 +87,43 @@ def test_read_version_returns_placeholder_when_nothing_available(
     monkeypatch.delenv("BUILD_VERSION", raising=False)
     with patch("app.routers.health._find_upward", return_value=None):
         assert _read_version() == "0.0.0"
+
+
+def test_find_upward_returns_none_when_filename_not_found(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Walk up + cwd + /app fallbacks should all miss for an unknown file."""
+    from app.routers.health import _find_upward
+
+    monkeypatch.chdir(tmp_path)  # cwd has nothing matching
+    assert _find_upward("definitely-not-a-real-marker-file.xyz") is None
+
+
+def test_find_upward_uses_cwd_fallback_when_walk_misses(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The cwd fallback at the bottom of _find_upward should resolve a
+    file that the upward walk from this module's path doesn't see."""
+    from app.routers.health import _find_upward
+
+    monkeypatch.chdir(tmp_path)
+    marker = tmp_path / "claude-test-marker.xyz"
+    marker.write_text("hi")
+    found = _find_upward("claude-test-marker.xyz")
+    assert found is not None
+    assert found.resolve() == marker.resolve()
+
+
+def test_parse_changelog_swallows_stat_oserror(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """If the changelog file's stat() fails mid-flight, _parse_changelog
+    should still return a list instead of raising."""
+    import app.routers.health as h
+
+    fake = tmp_path / "CHANGELOG.md"
+    fake.write_text("## [1.0.0] (2026-01-01)\n\n* boom\n")
+
+    def _explode(self):
+        raise OSError("simulated stat failure")
+
+    h._changelog_cache = None
+    h._changelog_cache_mtime = None
+    monkeypatch.setattr(Path, "stat", _explode)
+    with patch.object(h, "_find_changelog", return_value=fake):
+        result = h._parse_changelog()
+    assert isinstance(result, list)

@@ -214,9 +214,9 @@ class TestBulkDelete:
         assert set(data["deleted"]) == set(ids)
 
     async def test_bulk_delete_empty_list(self, client):
+        """JTN-473 Issue D: empty ``job_ids`` without ``?all=true`` now 422."""
         resp = await client.request("DELETE", "/api/jobs/bulk", json={"job_ids": []})
-        assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.status_code == 422
 
     async def test_bulk_delete_with_delete_files(self, client, db):
         jid = _uuid()

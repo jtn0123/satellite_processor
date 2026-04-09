@@ -54,7 +54,11 @@ async def test_share_link_custom_hours(client, db):
 
 @pytest.mark.asyncio
 async def test_share_link_hours_too_high(client, db):
-    """Hours exceeding 8760 (1 year) should be rejected."""
+    """Hours exceeding 30 days (720) should be rejected.
+
+    Previously the cap was 1 year (8760). JTN-473 Issue A tightens this to
+    30 days so callers can't mint effectively-permanent links.
+    """
     frame = GoesFrame(
         id="share-test-3",
         satellite="GOES-16",
@@ -71,6 +75,9 @@ async def test_share_link_hours_too_high(client, db):
 
     resp = await client.post("/api/satellite/frames/share-test-3/share?hours=9999")
     assert resp.status_code == 422
+    # Also reject the old 1-year cap explicitly
+    resp2 = await client.post("/api/satellite/frames/share-test-3/share?hours=8760")
+    assert resp2.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -117,7 +124,7 @@ async def test_share_link_hours_negative(client, db):
 
 @pytest.mark.asyncio
 async def test_share_link_max_hours(client, db):
-    """Hours exactly at 8760 (1 year) should be accepted."""
+    """Hours exactly at 30 days (720) should be accepted."""
     frame = GoesFrame(
         id="share-test-6",
         satellite="GOES-16",
@@ -132,5 +139,5 @@ async def test_share_link_max_hours(client, db):
     db.add(frame)
     await db.commit()
 
-    resp = await client.post("/api/satellite/frames/share-test-6/share?hours=8760")
+    resp = await client.post("/api/satellite/frames/share-test-6/share?hours=720")
     assert resp.status_code == 200

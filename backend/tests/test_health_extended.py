@@ -237,9 +237,9 @@ class TestJobsExtended:
         assert resp.status_code == 200
 
     async def test_bulk_delete_jobs_empty_returns_zero(self, client):
+        """JTN-473 Issue D: empty ``job_ids`` without ``?all=true`` now 422."""
         resp = await client.request("DELETE", "/api/jobs/bulk", json={"job_ids": []})
-        assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.status_code == 422
 
     async def test_bulk_delete_jobs(self, client, db):
         j1 = str(uuid.uuid4())

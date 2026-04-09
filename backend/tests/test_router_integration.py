@@ -941,9 +941,10 @@ class TestJobs:
 
     @pytest.mark.asyncio
     async def test_bulk_delete_empty(self, client):
+        """JTN-473 Issue D: empty job_ids without ?all=true now 422 instead
+        of returning an empty ``deleted`` list that masked client bugs."""
         resp = await client.request("DELETE", "/api/jobs/bulk", json={"job_ids": []})
-        assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_get_job_logs(self, client, db):
@@ -994,11 +995,15 @@ class TestJobs:
 class TestJobCreate:
     @pytest.mark.asyncio
     async def test_create_job(self, client, db):
+        """JTN-421 ISSUE-028: empty params now requires an input_path
+        (or one of image_ids/image_paths) so the Celery worker doesn't
+        get a stub job it can't process."""
         resp = await client.post(
             "/api/jobs",
             json={
                 "job_type": "image_process",
                 "params": {},
+                "input_path": "/data/input",
             },
         )
         assert resp.status_code == 200
@@ -1013,10 +1018,20 @@ class TestJobCreate:
             json={
                 "job_type": "video_create",
                 "params": {},
+                "input_path": "/data/input",
             },
         )
         assert resp.status_code == 200
         assert resp.json()["job_type"] == "video_create"
+
+    @pytest.mark.asyncio
+    async def test_create_job_empty_body_rejected(self, client, db):
+        """JTN-421 ISSUE-028: empty body (``{}``) is rejected with 422."""
+        resp = await client.post(
+            "/api/jobs",
+            json={"job_type": "image_process", "params": {}},
+        )
+        assert resp.status_code == 422
 
 
 # ════════════════════════════════════════════════════════════

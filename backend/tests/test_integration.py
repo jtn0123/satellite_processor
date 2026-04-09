@@ -7,7 +7,11 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_job_and_retrieve(client, db):
-    """Create a job via API, then verify it's in the DB."""
+    """Create a job via API, then verify it's in the DB.
+
+    JTN-421 ISSUE-028: a non-empty ``input_path`` (or image_ids/image_paths)
+    is now required for ``image_process`` jobs — empty bodies are 422.
+    """
     mock_result = MagicMock()
     mock_result.id = "celery-task-integration"
 
@@ -18,6 +22,7 @@ async def test_create_job_and_retrieve(client, db):
             json={
                 "job_type": "image_process",
                 "params": {},
+                "input_path": "/data/frames",
             },
         )
     assert resp.status_code == 200
@@ -29,6 +34,21 @@ async def test_create_job_and_retrieve(client, db):
     resp2 = await client.get(f"/api/jobs/{job_id}")
     assert resp2.status_code == 200
     assert resp2.json()["id"] == job_id
+
+
+@pytest.mark.asyncio
+async def test_create_job_empty_body_rejected(client, db):
+    """JTN-421 ISSUE-028: empty params AND empty input_path should 422."""
+    with patch("app.routers.jobs.celery_app") as mock_celery:
+        mock_celery.send_task.return_value = MagicMock(id="never-dispatched")
+        resp = await client.post(
+            "/api/jobs",
+            json={"job_type": "image_process", "params": {}},
+        )
+    assert resp.status_code == 422
+    # And the completely empty body case
+    resp2 = await client.post("/api/jobs", json={})
+    assert resp2.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePresets, useCreatePreset, useDeletePreset, useRenamePreset } from '../../hooks/useApi';
 import type { ProcessingParams } from '../../api/types';
 import { Save, Trash2, Pencil, Check, X, BookOpen } from 'lucide-react';
@@ -19,6 +19,16 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [deletePresetName, setDeletePresetName] = useState<string | null>(null);
+  // JTN-389: programmatic focus on the inline-edit input. See the matching
+  // pattern in AnimationPresets.tsx — ref + effect replaces autoFocus so
+  // jsx-a11y/no-autofocus can be bumped back to error without regressing UX.
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editingName && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [editingName]);
 
   const handleSave = () => {
     if (!saveName.trim()) return;
@@ -77,6 +87,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
               {editingName === p.name ? (
                 <div className="flex-1 flex gap-1.5">
                   <input
+                    ref={renameInputRef}
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
@@ -84,7 +95,7 @@ export default function PresetManager({ currentParams, onLoadPreset }: Readonly<
                       if (e.key === 'Enter') handleRename(p.name);
                       if (e.key === 'Escape') setEditingName(null);
                     }}
-                    autoFocus
+                    aria-label={`Rename preset ${p.name}`}
                     className="flex-1 bg-space-700 border border-gray-200 dark:border-space-700/50 rounded px-2 py-1 text-sm"
                   />
                   <button

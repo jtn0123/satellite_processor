@@ -27,8 +27,12 @@ export default defineConfig([
       '@typescript-eslint/no-non-null-assertion': 'warn',
       // Allow empty arrow functions (common for no-op handlers and mocks)
       '@typescript-eslint/no-empty-function': ['warn', { allow: ['arrowFunctions'] }],
-      // autoFocus is acceptable for search inputs and modals
-      'jsx-a11y/no-autofocus': 'warn',
+      // JTN-389: autoFocus can steal focus from screen-reader users —
+      // bumped back to error. Inline-edit inputs that used to rely on
+      // autoFocus are now ref + useEffect (see AnimationPresets.tsx,
+      // PresetManager.tsx, pages/Presets.tsx). WhatsNewModal delegates
+      // initial focus to useFocusTrap.
+      'jsx-a11y/no-autofocus': 'error',
     },
   },
 ]);

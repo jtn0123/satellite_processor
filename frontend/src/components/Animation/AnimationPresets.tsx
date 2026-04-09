@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, Trash2, Edit2, Check, X } from 'lucide-react';
 import api from '../../api/client';
@@ -16,6 +16,17 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  // JTN-389: programmatic focus on the inline-edit input instead of
+  // autoFocus (the rule forbids it because autoFocus can steal focus
+  // from screen-reader users). A ref + effect scoped to editingId
+  // delivers the same UX while passing jsx-a11y/no-autofocus at error.
+  const editInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
 
   const { data: presets } = useQuery<AnimationPreset[]>({
     queryKey: ['animation-presets'],
@@ -77,11 +88,12 @@ export default function AnimationPresets({ config, onLoadPreset }: Readonly<Prop
               {editingId === preset.id ? (
                 <div className="flex-1 flex gap-2">
                   <input
+                    ref={editInputRef}
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="flex-1 rounded bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-sm px-2 py-1"
-                    autoFocus
+                    aria-label="Rename preset"
                   />
                   <button
                     onClick={() => renameMutation.mutate({ id: preset.id, name: editName })}

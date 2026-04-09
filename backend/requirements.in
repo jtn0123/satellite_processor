@@ -1,3 +1,21 @@
+# Top-level backend dependencies.
+#
+# This file is the source of truth for direct dependencies. The full
+# transitive dependency tree (with hashes for supply-chain security) is
+# compiled to requirements.lock via:
+#
+#     uv pip compile backend/requirements.in \
+#         -o backend/requirements.lock --generate-hashes
+#
+# Workflow for adding/updating a backend dependency:
+#   1. Edit this file.
+#   2. Re-run the uv pip compile command above.
+#   3. Commit both requirements.in and requirements.lock together.
+#
+# Dependabot monitors requirements.in (see .github/dependabot.yml). When
+# it opens a PR bumping a version here, regenerate the lock file and
+# amend it into the same PR.
+
 # Web Framework
 fastapi==0.135.3
 uvicorn[standard]==0.43.0

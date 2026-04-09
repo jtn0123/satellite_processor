@@ -16,7 +16,7 @@ lint:
 	cd frontend && npx eslint src/
 
 test:
-	cd backend && pip install -r requirements.txt -q && pytest -v --tb=short
+	cd backend && pip install -r requirements.lock -q && pytest -v --tb=short
 	cd frontend && npm ci --silent && npm run build
 
 test-migrations-sqlite:

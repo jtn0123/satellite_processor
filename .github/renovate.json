@@ -10,7 +10,7 @@
   ],
   "enabledManagers": ["pip_requirements"],
   "pip_requirements": {
-    "fileMatch": ["^backend/requirements\\.txt$"]
+    "fileMatch": ["^backend/requirements\\.in$"]
   },
   "packageRules": [
     {
@@ -22,7 +22,7 @@
       "description": [
         "Watch kombu for >= 5.7.0. When it ships, bump redis to 7.x at the",
         "same time (see the comment above the redis pin in",
-        "backend/requirements.txt). Both packages land in a single PR so",
+        "backend/requirements.in). Both packages land in a single PR so",
         "CI runs them together and we don't get a half-upgrade."
       ],
       "matchPackageNames": ["kombu", "redis"],
@@ -47,7 +47,7 @@
       "description": [
         "Companion rule: when the kombu bump above fires, allow redis to",
         "move to any 7.x release. Dependabot is pinned at redis==6.4.0",
-        "today via the explicit pin in requirements.txt."
+        "today via the explicit pin in requirements.in."
       ],
       "matchPackageNames": ["redis"],
       "matchManagers": ["pip_requirements"],

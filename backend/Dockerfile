@@ -7,9 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg libgl1 libglib2.0-0 curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for caching
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy lockfile first for caching. Install from the hashed lock
+# (JTN-409) so image builds are reproducible and resistant to
+# supply-chain tampering.
+COPY backend/requirements.lock .
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 # Copy VERSION and CHANGELOG files
 COPY VERSION /app/VERSION

@@ -44,7 +44,7 @@ interface PersistedWizardState {
 }
 
 function loadPersistedWizard(): PersistedWizardState | null {
-  if (typeof globalThis.localStorage === 'undefined') return null;
+  if (globalThis.localStorage === undefined) return null;
   try {
     const raw = globalThis.localStorage.getItem(WIZARD_STORAGE_KEY);
     if (!raw) return null;
@@ -66,7 +66,7 @@ function loadPersistedWizard(): PersistedWizardState | null {
 }
 
 function clearPersistedWizard() {
-  if (typeof globalThis.localStorage === 'undefined') return;
+  if (globalThis.localStorage === undefined) return;
   try {
     globalThis.localStorage.removeItem(WIZARD_STORAGE_KEY);
   } catch {
@@ -122,7 +122,7 @@ export default function FetchTab() {
   // in the wizard. Only persists while the wizard is open — collapsing the
   // wizard also clears the saved state to keep things tidy.
   useEffect(() => {
-    if (typeof globalThis.localStorage === 'undefined') return;
+    if (globalThis.localStorage === undefined) return;
     if (!showAdvanced) {
       // Only keep a snapshot while the wizard is actively in use.
       clearPersistedWizard();

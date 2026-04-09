@@ -11,9 +11,12 @@ import {
   AlertTriangle,
   Download,
 } from 'lucide-react';
-import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
+import {
+  STATUS_FILTER_OPTIONS,
+  STATUS_FILTER_TO_BACKEND,
+  filterJobsByStatus,
+} from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
-import { STATUS_FILTER_TO_BACKEND } from '../../utils/jobFilterUtils';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface Job {

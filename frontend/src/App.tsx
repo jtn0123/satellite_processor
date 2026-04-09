@@ -16,7 +16,7 @@ import DevErrorOverlay from './components/DevErrorOverlay';
 function PathNormalizer() {
   const location = useLocation();
   if (location.pathname.includes('//')) {
-    const normalized = location.pathname.replace(/\/{2,}/g, '/');
+    const normalized = location.pathname.replaceAll(/\/{2,}/g, '/');
     return <Navigate to={`${normalized}${location.search}${location.hash}`} replace />;
   }
   return null;

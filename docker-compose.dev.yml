@@ -9,6 +9,11 @@ services:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
       - ./satellite_processor:/app/satellite_processor
+      # Keep version + changelog in sync with the working tree so
+      # /api/health/version and /api/health/changelog don't go stale
+      # between image rebuilds (JTN-418).
+      - ./VERSION:/app/VERSION:ro
+      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
       - sat-data:/app/data
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
@@ -30,6 +35,11 @@ services:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
       - ./satellite_processor:/app/satellite_processor
+      # Keep version + changelog in sync with the working tree so
+      # /api/health/version and /api/health/changelog don't go stale
+      # between image rebuilds (JTN-418).
+      - ./VERSION:/app/VERSION:ro
+      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
       - sat-data:/app/data
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db

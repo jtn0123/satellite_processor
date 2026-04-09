@@ -21,8 +21,11 @@ COPY satellite_processor /app/satellite_processor
 # Copy backend app
 COPY backend/app /app/app
 
-# Build metadata — placed AFTER code layers to avoid cache pollution
-ARG BUILD_VERSION=0.0.0
+# Build metadata — placed AFTER code layers to avoid cache pollution.
+# BUILD_VERSION default is intentionally empty so the runtime version
+# resolver in app/routers/health.py can fall back to the bundled VERSION
+# file when the image is built without --build-arg BUILD_VERSION.
+ARG BUILD_VERSION=
 ARG BUILD_COMMIT=dev
 ARG BUILD_DATE=""
 ARG BUILD_SHA=dev

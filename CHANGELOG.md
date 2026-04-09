@@ -1,3 +1,10 @@
+## [1.42.19](https://github.com/jtn0123/satellite_processor/compare/v1.42.18...v1.42.19) (2026-04-09)
+
+
+### Bug Fixes
+
+* harden backend API validation (PR2 of 5) ([#427](https://github.com/jtn0123/satellite_processor/issues/427)) ([81079d0](https://github.com/jtn0123/satellite_processor/commit/81079d046461a29f9fd8fe6d5a284ef3237733ae))
+
 ## [1.42.18](https://github.com/jtn0123/satellite_processor/compare/v1.42.17...v1.42.18) (2026-04-09)
 
 

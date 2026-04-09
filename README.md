@@ -12,17 +12,28 @@ graph LR
     Nginx -->|REST + WS| API[FastAPI]
     API --> DB[(PostgreSQL)]
     API --> Redis[(Redis)]
-    API --> Worker[Celery Worker]
-    Worker --> Redis
-    Worker --> Volume[Shared Volume /data]
+    API --> WorkerFetch[worker-fetch]
+    API --> WorkerProcess[worker-process]
+    API --> WorkerCleanup[worker-cleanup]
+    API --> WorkerDefault[worker-default]
+    WorkerFetch --> Redis
+    WorkerProcess --> Redis
+    WorkerCleanup --> Redis
+    WorkerDefault --> Redis
+    WorkerFetch --> Volume[Shared Volume /data]
+    WorkerProcess --> Volume
     API --> Volume
-    Worker -->|S3| NOAA[NOAA GOES Buckets]
+    WorkerFetch -->|S3| NOAA[NOAA GOES Buckets]
 ```
 
 **Services:**
 - **Frontend** — React 18 + TypeScript + Vite + Tailwind CSS v4 (served via Nginx)
 - **API** — FastAPI with async SQLAlchemy, WebSocket for live job progress
-- **Worker** — Celery worker running the core `satellite_processor` engine
+- **Celery workers (4 pools)** — one pool per queue, tuned independently:
+  - `worker-fetch` — GOES/Himawari S3 downloads (network-bound, high concurrency)
+  - `worker-process` — image compositing, animation, video encoding (CPU + memory heavy)
+  - `worker-cleanup` — beat-scheduled maintenance (stale-job GC, disk cleanup)
+  - `worker-default` — scheduling dispatch and anything not explicitly routed
 - **PostgreSQL** — Job history, image metadata, frame library, collections
 - **Redis** — Celery broker + result backend + pub/sub events
 
@@ -131,6 +142,11 @@ pre-commit run --all-files
 | `API_KEY` | API key for authentication (empty = auth disabled) | — |
 | `CORS_ORIGINS` | Allowed CORS origins (JSON array) | `["http://localhost:3000"]` |
 | `GOES_DEFAULT_SATELLITE` | Default GOES satellite | `GOES-19` |
+| `SLOW_QUERY_MS` | Log SQLAlchemy queries slower than this (milliseconds) at WARN (JTN-397) | `250` |
+| `WORKER_FETCH_CONCURRENCY` | Concurrency for the `fetch` queue worker pool (JTN-399) | `4` (prod) / `2` (dev) |
+| `WORKER_PROCESS_CONCURRENCY` | Concurrency for the `process` queue worker pool | `2` |
+| `WORKER_CLEANUP_CONCURRENCY` | Concurrency for the `cleanup` queue worker pool | `1` |
+| `WORKER_DEFAULT_CONCURRENCY` | Concurrency for the `default` queue worker pool | `2` (prod) / `1` (dev) |
 
 ## CI/CD
 

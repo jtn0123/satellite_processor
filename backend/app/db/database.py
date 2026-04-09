@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from ..config import settings
+from .slow_query import install_slow_query_listener
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ if "sqlite" not in settings.database_url:
 
 engine = create_async_engine(settings.database_url, **_engine_kwargs)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+# JTN-397: attach slow-query logging + Prometheus histogram.
+install_slow_query_listener(engine)
 
 
 class Base(DeclarativeBase):

@@ -35,9 +35,13 @@ def _get_sync_db():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
+    from ..db.slow_query import install_slow_query_listener
+
     if _sync_engine is None:
         sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
         _sync_engine = create_engine(sync_url, pool_size=5, max_overflow=10, pool_recycle=1800, pool_pre_ping=True)
+        # JTN-397: slow-query logging + metrics for Celery worker queries too.
+        install_slow_query_listener(_sync_engine)
         _SessionFactory = sessionmaker(bind=_sync_engine)
     return _SessionFactory()
 

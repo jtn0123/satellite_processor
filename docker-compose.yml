@@ -56,7 +56,37 @@ services:
       retries: 3
     restart: unless-stopped
 
-  worker:
+  # JTN-399: Celery worker pool split per queue so image processing cannot
+  # starve time-sensitive fetches, and so each pool can be tuned (concurrency,
+  # memory) independently.
+  worker-fetch:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=fetch --hostname=fetch@%h --concurrency=${WORKER_FETCH_CONCURRENCY:-4}
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - PYTHONPATH=/app
+    volumes:
+      - sat-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-process:
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -66,7 +96,61 @@ services:
         limits:
           memory: 2G
           cpus: "2.0"
-    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-2}
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=process --hostname=process@%h --concurrency=${WORKER_PROCESS_CONCURRENCY:-2}
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - PYTHONPATH=/app
+    volumes:
+      - sat-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-cleanup:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=cleanup --hostname=cleanup@%h --concurrency=${WORKER_CLEANUP_CONCURRENCY:-1}
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - PYTHONPATH=/app
+    volumes:
+      - sat-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-default:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=default --hostname=default@%h --concurrency=${WORKER_DEFAULT_CONCURRENCY:-2}
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sat}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-satellite_processor}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0

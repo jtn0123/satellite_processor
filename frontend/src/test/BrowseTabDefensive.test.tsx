@@ -1,55 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { http, HttpResponse, delay } from 'msw';
 import { renderWithProviders } from './testUtils';
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} })),
-    put: vi.fn(() => Promise.resolve({ data: {} })),
-    delete: vi.fn(() => Promise.resolve({ data: {} })),
-  },
-}));
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 vi.mock('../hooks/useDebounce', () => ({ useDebounce: (val: string) => val }));
 
 import BrowseTab from '../components/GoesData/BrowseTab';
-import api from '../api/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
-
-function setupDefaultMocks() {
-  mockedApi.get.mockImplementation((url: string) => {
-    if (url.includes('/satellite/frames')) {
-      return Promise.resolve({ data: { items: [], total: 0, page: 1, per_page: 24, pages: 0 } });
-    }
-    if (url === '/satellite/products')
-      return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-    if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-    if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-    return Promise.resolve({ data: {} });
-  });
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  setupDefaultMocks();
-});
+const server = setupMswServer();
 
 describe('BrowseTab - Defensive Scenarios', () => {
   // --- API returns unexpected shapes ---
 
   it('handles frames API returning raw array instead of paginated object', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: [] });
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/frames', () => HttpResponse.json([])));
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -57,14 +23,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
   });
 
   it('handles frames API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) return Promise.resolve({ data: null });
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/frames', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -72,14 +31,7 @@ describe('BrowseTab - Defensive Scenarios', () => {
   });
 
   it('handles products API returning null', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames'))
-        return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-      if (url === '/satellite/products') return Promise.resolve({ data: null });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(http.get('*/api/satellite/products', () => HttpResponse.json(null)));
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -87,18 +39,14 @@ describe('BrowseTab - Defensive Scenarios', () => {
   });
 
   it('handles tags API returning paginated object instead of array', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames'))
-        return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags')
-        return Promise.resolve({
-          data: { items: [{ id: '1', name: 'test', color: '#ff0000' }], total: 1 },
-        });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/tags', () =>
+        HttpResponse.json({
+          items: [{ id: '1', name: 'test', color: '#ff0000' }],
+          total: 1,
+        }),
+      ),
+    );
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -106,18 +54,14 @@ describe('BrowseTab - Defensive Scenarios', () => {
   });
 
   it('handles collections API returning paginated object instead of array', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames'))
-        return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 50 } });
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections')
-        return Promise.resolve({
-          data: { items: [{ id: '1', name: 'My Col', frame_count: 5 }], total: 1 },
-        });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () =>
+        HttpResponse.json({
+          items: [{ id: '1', name: 'My Col', frame_count: 5 }],
+          total: 1,
+        }),
+      ),
+    );
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -143,7 +87,12 @@ describe('BrowseTab - Defensive Scenarios', () => {
   // --- Loading states ---
 
   it('shows skeleton loading cards while fetching', () => {
-    mockedApi.get.mockReturnValue(new Promise(() => {}));
+    server.use(
+      http.get('*/api/satellite/frames', async () => {
+        await delay('infinite');
+        return HttpResponse.json({ items: [], total: 0, page: 1, limit: 50 });
+      }),
+    );
     renderWithProviders(<BrowseTab />);
     // Skeleton divs with animate-pulse should be present
     const pulseElements = document.querySelectorAll('.animate-pulse');
@@ -153,46 +102,40 @@ describe('BrowseTab - Defensive Scenarios', () => {
   // --- With data ---
 
   it('renders frames when data exists', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) {
-        return Promise.resolve({
-          data: {
-            items: [
-              {
-                id: '1',
-                satellite: 'GOES-16',
-                sector: 'CONUS',
-                band: 'C02',
-                capture_time: '2024-06-01T12:00:00',
-                file_path: '/tmp/test.nc',
-                file_size: 1024,
-                width: 5424,
-                height: 3000,
-                thumbnail_path: null,
-                image_url: '/api/satellite/frames/test-id/image',
-                thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
-                tags: [],
-                collections: [],
-              },
-            ],
-            total: 1,
-            page: 1,
-            limit: 50,
-          },
-        });
-      }
-      if (url === '/satellite/products')
-        return Promise.resolve({
-          data: {
-            satellites: ['GOES-16'],
-            bands: [{ id: 'C02', description: 'Red' }],
-            sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
-          },
-        });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/frames', () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: '1',
+              satellite: 'GOES-16',
+              sector: 'CONUS',
+              band: 'C02',
+              capture_time: '2024-06-01T12:00:00',
+              file_path: '/tmp/test.nc',
+              file_size: 1024,
+              width: 5424,
+              height: 3000,
+              thumbnail_path: null,
+              image_url: '/api/satellite/frames/test-id/image',
+              thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+              tags: [],
+              collections: [],
+            },
+          ],
+          total: 1,
+          page: 1,
+          limit: 50,
+        }),
+      ),
+      http.get('*/api/satellite/products', () =>
+        HttpResponse.json({
+          satellites: ['GOES-16'],
+          bands: [{ id: 'C02', description: 'Red' }],
+          sectors: [{ id: 'CONUS', name: 'CONUS', product: 'x' }],
+        }),
+      ),
+    );
     renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       // The frames count text appears in the toolbar
@@ -211,38 +154,31 @@ describe('BrowseTab - Defensive Scenarios', () => {
   });
 
   it('renders Load More button when multiple pages exist', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) {
-        return Promise.resolve({
-          data: {
-            items: Array.from({ length: 50 }, (_, i) => ({
-              id: `${i}`,
-              satellite: 'GOES-16',
-              sector: 'CONUS',
-              band: 'C02',
-              capture_time: '2024-06-01T12:00:00',
-              file_path: '/tmp/test.nc',
-              file_size: 1024,
-              width: null,
-              height: null,
-              thumbnail_path: null,
-              image_url: '/api/satellite/frames/test-id/image',
-              thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
-              tags: [],
-              collections: [],
-            })),
-            total: 200,
-            page: 1,
-            limit: 50,
-          },
-        });
-      }
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/frames', () =>
+        HttpResponse.json({
+          items: Array.from({ length: 50 }, (_, i) => ({
+            id: `${i}`,
+            satellite: 'GOES-16',
+            sector: 'CONUS',
+            band: 'C02',
+            capture_time: '2024-06-01T12:00:00',
+            file_path: '/tmp/test.nc',
+            file_size: 1024,
+            width: null,
+            height: null,
+            thumbnail_path: null,
+            image_url: '/api/satellite/frames/test-id/image',
+            thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+            tags: [],
+            collections: [],
+          })),
+          total: 200,
+          page: 1,
+          limit: 50,
+        }),
+      ),
+    );
     renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(screen.getByText('Load More')).toBeInTheDocument();
@@ -264,7 +200,12 @@ describe('BrowseTab - Defensive Scenarios', () => {
   // --- Error state ---
 
   it('handles all APIs failing simultaneously', async () => {
-    mockedApi.get.mockRejectedValue(new Error('Server down'));
+    server.use(
+      http.get('*/api/satellite/frames', () => HttpResponse.error()),
+      http.get('*/api/satellite/products', () => HttpResponse.error()),
+      http.get('*/api/satellite/tags', () => HttpResponse.error()),
+      http.get('*/api/satellite/collections', () => HttpResponse.error()),
+    );
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -274,40 +215,33 @@ describe('BrowseTab - Defensive Scenarios', () => {
   // --- Frames with null/undefined fields ---
 
   it('handles frames with null width/height/thumbnail', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) {
-        return Promise.resolve({
-          data: {
-            items: [
-              {
-                id: '1',
-                satellite: 'GOES-16',
-                sector: 'CONUS',
-                band: 'C02',
-                capture_time: '2024-06-01T12:00:00',
-                file_path: '/tmp/test.nc',
-                file_size: 0,
-                width: null,
-                height: null,
-                thumbnail_path: null,
-                image_url: '/api/satellite/frames/test-id/image',
-                thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
-                tags: [],
-                collections: [],
-              },
-            ],
-            total: 1,
-            page: 1,
-            limit: 50,
-          },
-        });
-      }
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/frames', () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: '1',
+              satellite: 'GOES-16',
+              sector: 'CONUS',
+              band: 'C02',
+              capture_time: '2024-06-01T12:00:00',
+              file_path: '/tmp/test.nc',
+              file_size: 0,
+              width: null,
+              height: null,
+              thumbnail_path: null,
+              image_url: '/api/satellite/frames/test-id/image',
+              thumbnail_url: '/api/satellite/frames/test-id/thumbnail',
+              tags: [],
+              collections: [],
+            },
+          ],
+          total: 1,
+          page: 1,
+          limit: 50,
+        }),
+      ),
+    );
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);
@@ -327,16 +261,11 @@ describe('BrowseTab - Defensive Scenarios', () => {
 
   // --- framesData.limit being 0 (division by zero for totalPages) ---
   it('handles framesData.limit being 0', async () => {
-    mockedApi.get.mockImplementation((url: string) => {
-      if (url.includes('/satellite/frames')) {
-        return Promise.resolve({ data: { items: [], total: 0, page: 1, limit: 0 } });
-      }
-      if (url === '/satellite/products')
-        return Promise.resolve({ data: { satellites: [], bands: [], sectors: [] } });
-      if (url === '/satellite/tags') return Promise.resolve({ data: [] });
-      if (url === '/satellite/collections') return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: {} });
-    });
+    server.use(
+      http.get('*/api/satellite/frames', () =>
+        HttpResponse.json({ items: [], total: 0, page: 1, limit: 0 }),
+      ),
+    );
     const { container } = renderWithProviders(<BrowseTab />);
     await waitFor(() => {
       expect(container.innerHTML.length).toBeGreaterThan(0);

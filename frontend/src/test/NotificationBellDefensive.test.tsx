@@ -1,32 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
 
-vi.mock('../api/client', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: [] })),
-    patch: vi.fn(() => Promise.resolve({})),
-  },
+// Stub the websocket-backed ConnectionStatus hook so happy-dom doesn't
+// try to open a real /ws/status connection alongside the MSW interceptor.
+vi.mock('../components/ConnectionStatus', () => ({
+  useIsWebSocketConnected: () => false,
 }));
 
 import NotificationBell from '../components/NotificationBell';
-import api from '../api/client';
+import { setupMswServer } from './mocks/msw';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockedApi = api as any;
+const server = setupMswServer();
 
 function renderWithQuery(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
 describe('NotificationBell - Defensive Scenarios', () => {
   it('handles API returning null', async () => {
-    mockedApi.get.mockResolvedValue({ data: null });
+    server.use(http.get('*/api/notifications', () => HttpResponse.json(null)));
     renderWithQuery(<NotificationBell />);
     expect(screen.getByRole('button')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button'));
@@ -36,7 +31,7 @@ describe('NotificationBell - Defensive Scenarios', () => {
   });
 
   it('handles API returning undefined', async () => {
-    mockedApi.get.mockResolvedValue({ data: undefined });
+    server.use(http.get('*/api/notifications', () => new HttpResponse('', { status: 200 })));
     renderWithQuery(<NotificationBell />);
     fireEvent.click(screen.getByRole('button'));
     await waitFor(() => {
@@ -45,20 +40,22 @@ describe('NotificationBell - Defensive Scenarios', () => {
   });
 
   it('handles API returning paginated object instead of array', async () => {
-    mockedApi.get.mockResolvedValue({
-      data: {
-        items: [
-          {
-            id: 'n1',
-            message: 'Test notification',
-            type: 'fetch_complete',
-            read: false,
-            created_at: '2026-01-01T12:00:00Z',
-          },
-        ],
-        total: 1,
-      },
-    });
+    server.use(
+      http.get('*/api/notifications', () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: 'n1',
+              message: 'Test notification',
+              type: 'fetch_complete',
+              read: false,
+              created_at: '2026-01-01T12:00:00Z',
+            },
+          ],
+          total: 1,
+        }),
+      ),
+    );
     renderWithQuery(<NotificationBell />);
     fireEvent.click(screen.getByRole('button'));
     await waitFor(() => {
@@ -67,14 +64,14 @@ describe('NotificationBell - Defensive Scenarios', () => {
   });
 
   it('handles API error gracefully (catches error)', async () => {
-    mockedApi.get.mockRejectedValue(new Error('Network error'));
+    server.use(http.get('*/api/notifications', () => HttpResponse.error()));
     renderWithQuery(<NotificationBell />);
     // Should still render the bell button without crashing
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('handles empty notification list', async () => {
-    mockedApi.get.mockResolvedValue({ data: [] });
+    // Default handler already returns [] — no override needed.
     renderWithQuery(<NotificationBell />);
     fireEvent.click(screen.getByRole('button'));
     await waitFor(() => {
@@ -83,31 +80,33 @@ describe('NotificationBell - Defensive Scenarios', () => {
   });
 
   it('shows unread count badge', async () => {
-    mockedApi.get.mockResolvedValue({
-      data: [
-        {
-          id: 'n1',
-          message: 'Unread 1',
-          type: 'fetch_complete',
-          read: false,
-          created_at: '2026-01-01T12:00:00Z',
-        },
-        {
-          id: 'n2',
-          message: 'Unread 2',
-          type: 'fetch_complete',
-          read: false,
-          created_at: '2026-01-01T11:00:00Z',
-        },
-        {
-          id: 'n3',
-          message: 'Read',
-          type: 'fetch_complete',
-          read: true,
-          created_at: '2026-01-01T10:00:00Z',
-        },
-      ],
-    });
+    server.use(
+      http.get('*/api/notifications', () =>
+        HttpResponse.json([
+          {
+            id: 'n1',
+            message: 'Unread 1',
+            type: 'fetch_complete',
+            read: false,
+            created_at: '2026-01-01T12:00:00Z',
+          },
+          {
+            id: 'n2',
+            message: 'Unread 2',
+            type: 'fetch_complete',
+            read: false,
+            created_at: '2026-01-01T11:00:00Z',
+          },
+          {
+            id: 'n3',
+            message: 'Read',
+            type: 'fetch_complete',
+            read: true,
+            created_at: '2026-01-01T10:00:00Z',
+          },
+        ]),
+      ),
+    );
     renderWithQuery(<NotificationBell />);
     await waitFor(() => {
       expect(screen.getByText('2')).toBeInTheDocument();
@@ -122,7 +121,7 @@ describe('NotificationBell - Defensive Scenarios', () => {
       read: false,
       created_at: '2026-01-01T12:00:00Z',
     }));
-    mockedApi.get.mockResolvedValue({ data: notifications });
+    server.use(http.get('*/api/notifications', () => HttpResponse.json(notifications)));
     renderWithQuery(<NotificationBell />);
     await waitFor(() => {
       expect(screen.getByText('9+')).toBeInTheDocument();
@@ -130,17 +129,19 @@ describe('NotificationBell - Defensive Scenarios', () => {
   });
 
   it('shows no badge when all are read', async () => {
-    mockedApi.get.mockResolvedValue({
-      data: [
-        {
-          id: 'n1',
-          message: 'Read',
-          type: 'fetch_complete',
-          read: true,
-          created_at: '2026-01-01T12:00:00Z',
-        },
-      ],
-    });
+    server.use(
+      http.get('*/api/notifications', () =>
+        HttpResponse.json([
+          {
+            id: 'n1',
+            message: 'Read',
+            type: 'fetch_complete',
+            read: true,
+            created_at: '2026-01-01T12:00:00Z',
+          },
+        ]),
+      ),
+    );
     renderWithQuery(<NotificationBell />);
     await waitFor(() => {
       // No badge text should be present for counts
@@ -157,7 +158,7 @@ describe('NotificationBell - Defensive Scenarios', () => {
       read: false,
       created_at: '2026-01-01T12:00:00Z',
     }));
-    mockedApi.get.mockResolvedValue({ data: notifications });
+    server.use(http.get('*/api/notifications', () => HttpResponse.json(notifications)));
     renderWithQuery(<NotificationBell />);
     fireEvent.click(screen.getByRole('button'));
     await waitFor(() => {

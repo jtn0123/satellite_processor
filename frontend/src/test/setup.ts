@@ -2,7 +2,9 @@ import '@testing-library/jest-dom';
 import { afterEach, vi } from 'vitest';
 
 // Global fetch mock — prevents jsdom/undici "invalid onError method" unhandled rejections
-// that occur when components make HTTP requests during tests.
+// that occur when components make HTTP requests during tests. This is the default for
+// legacy tests that mock the axios `api` client directly; see `./mocks/msw.ts` for
+// tests that opt into the MSW-based HTTP interception pattern instead.
 const mockFetch = vi.fn(() =>
   Promise.resolve(
     new Response(JSON.stringify({}), {

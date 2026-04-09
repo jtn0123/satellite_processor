@@ -1,24 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGet = vi.fn((_url?: string) => Promise.resolve({ data: [] as unknown[] }));
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockPost = vi.fn((_url?: string, _data?: unknown) => Promise.resolve({ data: {} }));
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockPut = vi.fn((_url?: string, _data?: unknown) => Promise.resolve({ data: {} }));
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockDelete = vi.fn((_url?: string) => Promise.resolve({}));
-
-vi.mock('../api/client', () => ({
-  default: {
-    get: (url: string) => mockGet(url),
-    post: (url: string, data: unknown) => mockPost(url, data),
-    put: (url: string, data: unknown) => mockPut(url, data),
-    delete: (url: string) => mockDelete(url),
-  },
-}));
+import { http, HttpResponse } from 'msw';
+import { setupMswServer } from './mocks/msw';
 
 vi.mock('../utils/toast', () => ({ showToast: vi.fn() }));
 
@@ -31,6 +15,8 @@ vi.mock('../components/GoesData/AnimationPlayer', () => ({
 }));
 
 import CollectionsTab from '../components/GoesData/CollectionsTab';
+
+const server = setupMswServer();
 
 function renderWith(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -56,12 +42,12 @@ const collections = [
 
 describe('CollectionsTab extended', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockGet.mockImplementation((url?: string) => {
-      if (url === '/satellite/collections') return Promise.resolve({ data: collections });
-      if (url?.includes('/frames')) return Promise.resolve({ data: [{ id: 'f1' }, { id: 'f2' }] });
-      return Promise.resolve({ data: [] });
-    });
+    server.use(
+      http.get('*/api/satellite/collections', () => HttpResponse.json(collections)),
+      http.get('*/api/satellite/collections/:id/frames', () =>
+        HttpResponse.json([{ id: 'f1' }, { id: 'f2' }]),
+      ),
+    );
   });
 
   it('renders collection cards with data', async () => {
@@ -72,22 +58,34 @@ describe('CollectionsTab extended', () => {
   });
 
   it('creates a collection on Enter key', async () => {
+    const postSpy = vi.fn<(body: unknown) => void>();
+    server.use(
+      http.post('*/api/satellite/collections', async ({ request }) => {
+        postSpy(await request.json());
+        return HttpResponse.json({ id: 'new', name: 'New Coll', frame_count: 0 });
+      }),
+    );
     renderWith(<CollectionsTab />);
     const input = screen.getByPlaceholderText('New collection name');
     fireEvent.change(input, { target: { value: 'New Coll' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() =>
-      expect(mockPost).toHaveBeenCalledWith('/satellite/collections', { name: 'New Coll' }),
-    );
+    await waitFor(() => expect(postSpy).toHaveBeenCalledWith({ name: 'New Coll' }));
   });
 
   it('creates a collection on button click', async () => {
+    const postSpy = vi.fn();
+    server.use(
+      http.post('*/api/satellite/collections', () => {
+        postSpy();
+        return HttpResponse.json({ id: 'new', name: 'Test', frame_count: 0 });
+      }),
+    );
     renderWith(<CollectionsTab />);
     fireEvent.change(screen.getByPlaceholderText('New collection name'), {
       target: { value: 'Test' },
     });
     fireEvent.click(screen.getByText('Create'));
-    await waitFor(() => expect(mockPost).toHaveBeenCalled());
+    await waitFor(() => expect(postSpy).toHaveBeenCalled());
   });
 
   it('does not create when name is empty', () => {
@@ -96,6 +94,13 @@ describe('CollectionsTab extended', () => {
   });
 
   it('enters edit mode and saves', async () => {
+    const putSpy = vi.fn<(url: string, body: unknown) => void>();
+    server.use(
+      http.put('*/api/satellite/collections/:id', async ({ request, params }) => {
+        putSpy(`/satellite/collections/${params.id}`, await request.json());
+        return HttpResponse.json({ id: params.id, name: 'Renamed', frame_count: 5 });
+      }),
+    );
     renderWith(<CollectionsTab />);
     await waitFor(() => expect(screen.getByText('Collection A')).toBeInTheDocument());
     const editBtns = screen.getAllByText('Edit');
@@ -104,7 +109,7 @@ describe('CollectionsTab extended', () => {
     fireEvent.change(editInput, { target: { value: 'Renamed' } });
     fireEvent.keyDown(editInput, { key: 'Enter' });
     await waitFor(() =>
-      expect(mockPut).toHaveBeenCalledWith('/satellite/collections/c1', { name: 'Renamed' }),
+      expect(putSpy).toHaveBeenCalledWith('/satellite/collections/c1', { name: 'Renamed' }),
     );
   });
 
@@ -117,6 +122,13 @@ describe('CollectionsTab extended', () => {
   });
 
   it('saves edit via Save button', async () => {
+    const putSpy = vi.fn();
+    server.use(
+      http.put('*/api/satellite/collections/:id', () => {
+        putSpy();
+        return HttpResponse.json({ id: 'c1', name: 'Updated', frame_count: 5 });
+      }),
+    );
     renderWith(<CollectionsTab />);
     await waitFor(() => expect(screen.getByText('Collection A')).toBeInTheDocument());
     fireEvent.click(screen.getAllByText('Edit')[0]);
@@ -124,14 +136,21 @@ describe('CollectionsTab extended', () => {
       target: { value: 'Updated' },
     });
     fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(mockPut).toHaveBeenCalled());
+    await waitFor(() => expect(putSpy).toHaveBeenCalled());
   });
 
   it('deletes a collection', async () => {
+    const deleteSpy = vi.fn<(url: string) => void>();
+    server.use(
+      http.delete('*/api/satellite/collections/:id', ({ params }) => {
+        deleteSpy(`/satellite/collections/${params.id}`);
+        return HttpResponse.json({ ok: true });
+      }),
+    );
     renderWith(<CollectionsTab />);
     await waitFor(() => expect(screen.getByText('Collection A')).toBeInTheDocument());
     fireEvent.click(screen.getAllByText('Delete')[0]);
-    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith('/satellite/collections/c1'));
+    await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith('/satellite/collections/c1'));
   });
 
   it('opens animation player on animate click', async () => {
@@ -163,7 +182,7 @@ describe('CollectionsTab extended', () => {
   });
 
   it('shows empty state when no collections', async () => {
-    mockGet.mockImplementation(() => Promise.resolve({ data: [] }));
+    server.use(http.get('*/api/satellite/collections', () => HttpResponse.json([])));
     renderWith(<CollectionsTab />);
     await waitFor(() =>
       expect(screen.getByText(/create your first collection/i)).toBeInTheDocument(),

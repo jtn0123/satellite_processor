@@ -113,9 +113,7 @@ describe('GoesData page extended', () => {
   // separate entry in the build output.
   it('Map tab button accepts hover/focus/touch without crashing', async () => {
     renderPage();
-    const mapTab = await waitFor(() =>
-      screen.getAllByRole('tab', { name: /Map/i })[0],
-    );
+    const mapTab = await waitFor(() => screen.getAllByRole('tab', { name: /Map/i })[0]);
     expect(mapTab).toBeInTheDocument();
     // Hover then focus then touch — none of these should throw or
     // toggle selection on their own.

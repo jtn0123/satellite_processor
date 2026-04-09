@@ -27,7 +27,9 @@ services:
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  worker:
+  # JTN-399: In dev we still run separate worker pools so routing bugs
+  # surface locally, but with low concurrency to keep laptop CPU/RAM sane.
+  worker-fetch:
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -35,9 +37,6 @@ services:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
       - ./satellite_processor:/app/satellite_processor
-      # Keep version + changelog in sync with the working tree so
-      # /api/health/version and /api/health/changelog don't go stale
-      # between image rebuilds (JTN-418).
       - ./VERSION:/app/VERSION:ro
       - ./CHANGELOG.md:/app/CHANGELOG.md:ro
       - sat-data:/app/data
@@ -51,7 +50,76 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-2}
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=fetch --hostname=fetch@%h --concurrency=${WORKER_FETCH_CONCURRENCY:-2}
+
+  worker-process:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./satellite_processor:/app/satellite_processor
+      - ./VERSION:/app/VERSION:ro
+      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
+      - sat-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - DEBUG=false
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=process --hostname=process@%h --concurrency=${WORKER_PROCESS_CONCURRENCY:-2}
+
+  worker-cleanup:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./satellite_processor:/app/satellite_processor
+      - ./VERSION:/app/VERSION:ro
+      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
+      - sat-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - DEBUG=false
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=cleanup --hostname=cleanup@%h --concurrency=${WORKER_CLEANUP_CONCURRENCY:-1}
+
+  worker-default:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./satellite_processor:/app/satellite_processor
+      - ./VERSION:/app/VERSION:ro
+      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
+      - sat-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/satellite_processor.db
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379/0
+      - STORAGE_PATH=/app/data
+      - DEBUG=false
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --queues=default --hostname=default@%h --concurrency=${WORKER_DEFAULT_CONCURRENCY:-1}
 
   redis:
     image: redis:7-alpine

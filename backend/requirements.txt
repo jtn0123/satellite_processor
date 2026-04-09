@@ -32,7 +32,16 @@ matplotlib>=3.8.0
 
 # Task Queue
 celery[redis]==5.6.3
-redis==6.4.0  # pinned until kombu 5.7.0 releases with redis 7 support
+# redis==6.4.0 is pinned because kombu 5.6.x (the version Celery 5.6.3
+# depends on) caps redis at <7. Moving to redis 7.x requires kombu 5.7.0,
+# which has not shipped yet. See celery/kombu#2087 and related issues.
+#
+# JTN-407: .github/renovate.json has a dedicated rule that watches kombu
+# for >=5.7.0 and, when it ships, auto-opens a single PR bumping BOTH
+# kombu and redis to 7.x together (Dependabot cannot express the paired
+# bump). Do not bump redis by hand without also bumping kombu — you will
+# break Celery worker startup with a BrokenPipeError at import time.
+redis==6.4.0
 
 # Logging
 python-json-logger==4.1.0

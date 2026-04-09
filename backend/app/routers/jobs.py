@@ -193,7 +193,6 @@ async def create_job(
         if cached is not None:
             return JSONResponse(status_code=cached["status_code"], content=cached["body"])
 
-
     output_dir = str(Path(settings.output_dir))
     resolved_params = await _resolve_image_ids(db, job_in.params)
 

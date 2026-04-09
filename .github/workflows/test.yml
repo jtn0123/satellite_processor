@@ -61,7 +61,15 @@ jobs:
         run: ruff format --check backend/ satellite_processor/
 
       - name: Security audit (pip-audit)
-        run: pip-audit --strict --ignore-vuln PYSEC-2024-0 || true
+        # JTN-410: The historical `--ignore-vuln PYSEC-2024-0` flag has been
+        # removed. PYSEC-2024-0 is not a real advisory ID in the OSV database
+        # ("Bug not found" from api.osv.dev) — it was added as a placeholder
+        # during an earlier audit (#181) and never updated. The current
+        # pinned dependency set passes `pip-audit --strict` cleanly on
+        # Python 3.11 (verified 2026-04-09). If a real vuln needs to be
+        # ignored in future, open a tracking issue, link the CVE/PYSEC ID
+        # in a comment here, and set a re-check date.
+        run: pip-audit --strict || true
 
   backend:
     name: Backend Tests (Shard ${{ matrix.shard }}/4)

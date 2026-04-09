@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useCreateJob } from '../../hooks/useApi';
 import { Crop, Palette, Clock, Film, Rocket, ChevronRight, ChevronLeft } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { stepButtonClasses } from '../../styles/variants';
 
 interface Props {
   selectedImages: string[];
@@ -78,11 +80,10 @@ export default function ProcessingForm({
           <button
             key={s.label}
             onClick={() => setStep(i)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              i === step
-                ? 'bg-primary/10 text-primary'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+              stepButtonClasses(i === step),
+            )}
           >
             <s.icon className="w-4 h-4" />
             {s.label}

@@ -9,6 +9,8 @@ import {
   getDefaultSector,
   getDefaultBand,
 } from '../../../utils/sectorHelpers';
+import { cn } from '../../../utils/cn';
+import { stepStateClasses, type StepState } from '../../../styles/variants';
 
 import { defaultDateTimeRange } from '../../ui/dateTimeHelpers';
 import { QuickFetchSection } from './QuickFetchSection';
@@ -298,24 +300,28 @@ export default function FetchTab() {
         <>
           {/* Step indicators */}
           <div className="flex items-center justify-center gap-2 px-4">
-            {STEPS.map((label, i) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setStep(i)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${(() => {
-                  if (i === step) return 'bg-primary/20 text-primary border border-primary/30';
-                  if (i < step)
-                    return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-                  return 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700';
-                })()}`}
-              >
-                <span className="w-4 h-4 flex items-center justify-center rounded-full bg-current/10 text-[10px]">
-                  {i < step ? '✓' : i + 1}
-                </span>
-                {label}
-              </button>
-            ))}
+            {STEPS.map((label, i) => {
+              let state: StepState;
+              if (i === step) state = 'active';
+              else if (i < step) state = 'done';
+              else state = 'pending';
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setStep(i)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]',
+                    stepStateClasses(state),
+                  )}
+                >
+                  <span className="w-4 h-4 flex items-center justify-center rounded-full bg-current/10 text-[10px]">
+                    {state === 'done' ? '✓' : i + 1}
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {step === 0 && (

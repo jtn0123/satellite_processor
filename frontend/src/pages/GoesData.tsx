@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
+import { lazy, Suspense, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Satellite, Download, Grid3X3, Map, BarChart3 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -10,7 +10,14 @@ import Breadcrumb, { type BreadcrumbSegment } from '../components/GoesData/Bread
 
 const FetchTab = lazy(() => import('../components/GoesData/FetchTab'));
 const BrowseTab = lazy(() => import('../components/GoesData/BrowseTab'));
-const MapTab = lazy(() => import('../components/GoesData/MapTab'));
+// JTN-405: hoist the MapTab dynamic import so the hover-prefetch handler
+// below can reuse the exact same Promise that React.lazy() triggers. Vite
+// dedupes repeat calls to the same `import('./MapTab')` — calling this
+// function twice fires the chunk fetch once. Leaflet ships ~158 kB raw to
+// this chunk alone, so warming it while the user moves the mouse toward
+// the tab makes the actual click feel instant.
+const loadMapTab = () => import('../components/GoesData/MapTab');
+const MapTab = lazy(loadMapTab);
 const StatsTab = lazy(() => import('../components/GoesData/StatsTab'));
 const GapsTab = lazy(() => import('../components/GoesData/GapsTab'));
 
@@ -66,6 +73,21 @@ function CombinedStatsTab() {
 export default function GoesData() {
   usePageTitle('Browse & Fetch');
   const [searchParams, setSearchParams] = useSearchParams();
+  // JTN-405: one-shot prefetch for the MapTab chunk. Triggered on first
+  // pointerenter / focus of the Map tab button, so by the time the user
+  // commits to the click the ~158 kB Leaflet chunk is already in cache.
+  // `useRef` flag keeps the dynamic import from firing on every re-hover.
+  const mapPrefetched = useRef(false);
+  const prefetchMapTab = useCallback(() => {
+    if (mapPrefetched.current) return;
+    mapPrefetched.current = true;
+    // Fire-and-forget; React.lazy owns the canonical load. Swallow
+    // rejection so a transient network blip here doesn't bubble up as an
+    // unhandled rejection — the real click will retry via React.lazy.
+    loadMapTab().catch(() => {
+      mapPrefetched.current = false;
+    });
+  }, []);
   // JTN-476 ISSUE-077: tab matching used to be case-sensitive, so `?tab=BROWSE`
   // silently fell back to the default tab. Normalize to lowercase before
   // matching so any case works.
@@ -192,27 +214,33 @@ export default function GoesData() {
         role="tablist"
         aria-label="Satellite Data tabs"
       >
-        {tabs.map((tab) => (
-          <button
-            type="button"
-            key={tab.id}
-            onClick={() => {
-              changeTab(tab.id);
-              setSubView(null);
-            }}
-            role="tab"
-            aria-label={`${tab.label} tab`}
-            aria-selected={activeTab === tab.id}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
-              activeTab === tab.id
-                ? 'bg-gradient-to-b from-primary to-primary-dark text-white shadow-lg shadow-primary/20 glow-primary tab-active'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isMapTab = tab.id === 'map';
+          return (
+            <button
+              type="button"
+              key={tab.id}
+              onClick={() => {
+                changeTab(tab.id);
+                setSubView(null);
+              }}
+              onPointerEnter={isMapTab ? prefetchMapTab : undefined}
+              onFocus={isMapTab ? prefetchMapTab : undefined}
+              onTouchStart={isMapTab ? prefetchMapTab : undefined}
+              role="tab"
+              aria-label={`${tab.label} tab`}
+              aria-selected={activeTab === tab.id}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-b from-primary to-primary-dark text-white shadow-lg shadow-primary/20 glow-primary tab-active'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab content */}

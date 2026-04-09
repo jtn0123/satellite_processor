@@ -2,6 +2,8 @@ import { Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import BandPicker from '../BandPicker';
 import SectorPicker from '../SectorPicker';
 import { isHimawariSatellite } from '../../../utils/sectorHelpers';
+import { cn } from '../../../utils/cn';
+import { segmentedButtonClasses } from '../../../styles/variants';
 
 type ImageType = 'single' | 'true_color' | 'natural_color';
 
@@ -56,11 +58,10 @@ export function WhatStep({
               key={opt.value}
               type="button"
               onClick={() => setImageType(opt.value)}
-              className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                imageType === opt.value
-                  ? 'bg-primary/10 border-primary/30 text-primary'
-                  : 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-primary/30'
-              }`}
+              className={cn(
+                'flex-1 px-3 py-2 text-sm rounded-lg border transition-colors',
+                segmentedButtonClasses(imageType === opt.value),
+              )}
             >
               {opt.label}
             </button>

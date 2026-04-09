@@ -50,9 +50,7 @@ def test_alembic_upgrade_head_sqlite() -> None:
         )
 
         assert result.returncode == 0, (
-            f"alembic upgrade head failed for SQLite\n"
-            f"stdout:\n{result.stdout}\n"
-            f"stderr:\n{result.stderr}"
+            f"alembic upgrade head failed for SQLite\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
         assert db_path.exists(), "alembic should have created the SQLite DB"
         assert db_path.stat().st_size > 0, "DB should have at least the schema"

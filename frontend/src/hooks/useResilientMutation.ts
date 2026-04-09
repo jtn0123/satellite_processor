@@ -28,6 +28,19 @@ import {
   type InFlightTracker,
 } from '../utils/mutationResilience';
 
+/** Attach an idempotency key to object-shaped variables in place
+ *  (returning a new shallow copy). Non-object variables are returned
+ *  unchanged — there's nowhere sensible to stash the key. */
+function attachIdempotencyKey<TVariables>(
+  variables: TVariables,
+  idKey: string | undefined,
+): TVariables {
+  if (idKey == null || variables == null || typeof variables !== 'object') {
+    return variables;
+  }
+  return { ...(variables as object), __idempotencyKey: idKey } as TVariables;
+}
+
 export interface ResilientMutationOptions<TData, TError, TVariables, TContext> extends Omit<
   UseMutationOptions<TData, TError, TVariables, TContext>,
   'mutationFn' | 'retry'
@@ -79,17 +92,17 @@ export function useResilientMutation<
     ...rest
   } = options;
 
-  const wrappedMutationFn = async (variables: TVariables): Promise<TData> => {
+  // Flatten the three resilience layers into named callbacks so the
+  // composed call stays shallow — SonarCloud's "nested functions > 4
+  // deep" rule otherwise flags the inline tracker.run(breaker.run(
+  // withBackoff(() => mutationFn(...)))) chain.
+  const wrappedMutationFn = (variables: TVariables): Promise<TData> => {
     const key = dedupKey?.(variables) ?? `${endpointKey}:default`;
     const breaker = registry.get(endpointKey);
-    const idKey = idempotencyKey?.(variables);
-    const enriched =
-      idKey != null && variables != null && typeof variables === 'object'
-        ? ({ ...(variables as object), __idempotencyKey: idKey } as TVariables)
-        : variables;
-    return inFlightTracker.run(key, () =>
-      breaker.run(() => withBackoff(() => mutationFn(enriched), retry)),
-    );
+    const enriched = attachIdempotencyKey(variables, idempotencyKey?.(variables));
+    const callWithRetries = () => withBackoff(() => mutationFn(enriched), retry);
+    const callWithBreaker = () => breaker.run(callWithRetries);
+    return inFlightTracker.run(key, callWithBreaker);
   };
 
   return useMutation<TData, TError, TVariables, TContext>({

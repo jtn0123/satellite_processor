@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/jtn0123/satellite_processor/compare/v1.42.20...v1.43.0) (2026-04-09)
+
+
+### Features
+
+* **frontend:** a11y + ScrollRestoration + Image wrapper (PR4 of 5) ([#432](https://github.com/jtn0123/satellite_processor/issues/432)) ([61a40cd](https://github.com/jtn0123/satellite_processor/commit/61a40cd2acd6f1536ff14fb1660270caa4690290))
+
 ## [1.42.20](https://github.com/jtn0123/satellite_processor/compare/v1.42.19...v1.42.20) (2026-04-09)
 
 

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { STATUS_FILTER_OPTIONS, filterJobsByStatus } from '../../utils/jobFilterUtils';
 import type { StatusFilter } from '../../utils/jobFilterUtils';
+import { formatJobType } from '../../utils/formatters';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface Job {
@@ -95,12 +96,24 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
       {displayed.map((job) => {
         const cfg = statusConfig[job.status] || statusConfig[JOB_STATUS.PENDING];
         const Icon = cfg.icon;
+        const handleRowSelect = () => onSelect?.(job.id);
+        // Row is a div[role=button] rather than a <button> so the nested
+        // View/Delete controls can stay as valid <button> elements. Nested
+        // <button> in <button> is invalid HTML (see JTN-423).
         return (
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             key={job.id}
-            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left"
-            onClick={() => onSelect?.(job.id)}
+            aria-label={`Open job ${job.id.slice(0, 8)} (${job.job_type})`}
+            className="flex items-center gap-3 flex-wrap sm:flex-nowrap gap-y-2 card card-hover px-4 py-3 sm:px-4 sm:py-3 cursor-pointer group w-full text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50"
+            onClick={handleRowSelect}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleRowSelect();
+              }
+            }}
           >
             <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
               <Icon
@@ -109,8 +122,11 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {job.job_type}
+                <span
+                  className="text-sm font-medium text-gray-900 dark:text-white"
+                  title={job.job_type}
+                >
+                  {formatJobType(job.job_type)}
                 </span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                   {job.status}
@@ -146,6 +162,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 </a>
               )}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect?.(job.id);
@@ -156,6 +173,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 <Eye className="w-4 h-4" />
               </button>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setDeleteJobId(job.id);
@@ -166,7 +184,7 @@ function JobList({ onSelect, limit }: Readonly<Props>) {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          </button>
+          </div>
         );
       })}
       {deleteJobId && (

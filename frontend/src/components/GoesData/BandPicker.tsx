@@ -141,13 +141,29 @@ export default function BandPicker({
                 const info = bandInfoMap[bandId];
                 if (!info) return null;
                 const selected = value === bandId;
+                // Outer card is a div with role="button" rather than a real
+                // <button> so the nested "Fetch sample" control can remain a
+                // valid <button> (see JTN-423 — nested <button> in <button>
+                // is invalid HTML and breaks keyboard tab order).
+                const handleSelect = () => {
+                  if (disabled) return;
+                  onChange(bandId);
+                };
                 return (
-                  <button
+                  <div
                     key={bandId}
-                    type="button"
-                    onClick={() => onChange(bandId)}
-                    disabled={disabled}
-                    className={`text-left p-3 rounded-lg border transition-all ${
+                    role="button"
+                    tabIndex={disabled ? -1 : 0}
+                    aria-pressed={selected}
+                    aria-disabled={disabled || undefined}
+                    onClick={handleSelect}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelect();
+                      }
+                    }}
+                    className={`text-left p-3 rounded-lg border transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50 ${
                       selected
                         ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
                         : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 hover:border-primary/30'
@@ -191,7 +207,7 @@ export default function BandPicker({
                         )}
                       </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

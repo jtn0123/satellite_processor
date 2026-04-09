@@ -50,9 +50,11 @@ function renderJobList() {
 
 describe('Card styling consistency', () => {
   it('job list cards use card utility class', () => {
+    // JTN-423: job rows are now div[role=button] (not <button>) so the
+    // nested View/Delete buttons are valid HTML. Look at those instead.
     const { container } = renderJobList();
-    const buttons = container.querySelectorAll('button');
-    const jobCards = Array.from(buttons).filter((b) => b.className.includes('card'));
+    const rows = container.querySelectorAll('[role="button"]');
+    const jobCards = Array.from(rows).filter((b) => b.className.includes('card'));
     expect(jobCards.length).toBeGreaterThan(0);
   });
 

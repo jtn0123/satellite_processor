@@ -257,7 +257,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
     cache_path = cache_dir / f"{image_id}.jpg"
     if cache_path.exists():
         return FileResponse(
-            str(cache_path), media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"}
+            str(cache_path), media_type=_CONTENT_TYPE_JPEG, headers={"Cache-Control": "public, max-age=86400"}
         )
     # #204: Run PIL thumbnail generation in a thread to avoid blocking the event loop
     import asyncio
@@ -270,7 +270,7 @@ async def get_thumbnail(image_id: str, db: DbSession):
     try:
         await asyncio.to_thread(_generate_thumbnail)
         return FileResponse(
-            str(cache_path), media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"}
+            str(cache_path), media_type=_CONTENT_TYPE_JPEG, headers={"Cache-Control": "public, max-age=86400"}
         )
     except (OSError, ValueError):
         raise APIError(500, "thumbnail_error", "Could not generate thumbnail")

@@ -57,8 +57,8 @@ describe('Card styling consistency', () => {
     // role="button">, so look for any element carrying the card class
     // instead of filtering to <button>.
     const cardElements = container.querySelectorAll('[class*="card"]');
-    const jobCards = Array.from(cardElements).filter((el) =>
-      el.getAttribute('role') === 'button' || el.tagName === 'BUTTON',
+    const jobCards = Array.from(cardElements).filter(
+      (el) => el.getAttribute('role') === 'button' || el.tagName === 'BUTTON',
     );
     expect(jobCards.length).toBeGreaterThan(0);
   });

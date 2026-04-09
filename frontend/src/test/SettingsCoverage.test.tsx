@@ -123,13 +123,20 @@ describe('Settings - form interactions', () => {
   });
 
   it('shows error toast on save failure', async () => {
-    mockPut.mockRejectedValueOnce(new Error('fail'));
+    // JTN-396: useUpdateSettings now wraps the PUT in a resilient
+    // mutation with exponential backoff, so a single rejected call
+    // would be retried and the second attempt would succeed. Use a
+    // persistent rejection so the error path is exercised end-to-end.
+    mockPut.mockRejectedValue(new Error('fail'));
     render(<Settings />, { wrapper });
     const saveBtn = await screen.findByText('Save Settings', {}, { timeout: 3000 });
     fireEvent.click(saveBtn);
-    await waitFor(() => {
-      expect(screen.getByText('Failed to save settings. Please try again.')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Failed to save settings. Please try again.')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
   });
 });
 

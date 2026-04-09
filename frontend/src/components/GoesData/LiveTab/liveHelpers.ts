@@ -1,7 +1,13 @@
 import type { LatestFrame, CatalogLatest } from '../types';
 import { extractArray } from '../../../utils/safeData';
 import { timeAgo } from '../liveTabUtils';
-import { buildCdnUrl } from '../../../utils/sectorHelpers';
+import { buildCdnUrl, isHimawariSatellite } from '../../../utils/sectorHelpers';
+
+export function getAutoFetchDisabledReason(satellite: string, isMeso: boolean): string {
+  if (isHimawariSatellite(satellite)) return 'Auto-fetch not yet available for Himawari';
+  if (isMeso) return 'Auto-fetch not available for mesoscale sectors';
+  return 'Auto-fetch not available for GeoColor — CDN images update automatically';
+}
 
 /** Resolve image URLs from local frames and catalog, with responsive mobile fallback */
 export function resolveImageUrls(

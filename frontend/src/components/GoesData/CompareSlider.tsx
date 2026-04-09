@@ -40,7 +40,7 @@ export default function CompareSlider({
       {prevImageUrl ? (
         <Image
           src={prevImageUrl}
-          alt={`Previous frame${prevFrameTime ? ` from ${timeAgo(prevFrameTime)}` : ''}`}
+          alt={prevFrameTime ? `Previous frame from ${timeAgo(prevFrameTime)}` : 'Previous frame'}
           className="absolute inset-0 w-full h-full object-contain"
           loading="eager"
         />

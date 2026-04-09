@@ -402,10 +402,7 @@ async def preview_frame(
     # JTN-475 ISSUE-059: invalid satellite/band/sector previously leaked
     # through ``fetch_single_preview -> validate_params -> ValueError`` as a
     # generic 500. Validate up-front and return 422 with the offending field.
-    try:
-        _validate_satellite_sector_band(satellite, sector, band)
-    except APIError:
-        raise
+    _validate_satellite_sector_band(satellite, sector, band)
     try:
         png_bytes = fetch_single_preview(satellite, sector, band, time)
     except ValueError as exc:

@@ -32,9 +32,10 @@ router = APIRouter(prefix="/api/images", tags=["images"])
 
 
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+_CONTENT_TYPE_JPEG = "image/jpeg"
 ALLOWED_CONTENT_TYPES = {
     "image/png",
-    "image/jpeg",
+    _CONTENT_TYPE_JPEG,
     "image/jpg",
     "image/tiff",
     "image/x-tiff",
@@ -45,36 +46,37 @@ ALLOWED_CONTENT_TYPES = {
 # request fill the disk.
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB
+_MAX_FILE_SIZE_MB = MAX_FILE_SIZE // (1024 * 1024)
 
 # Background thumbnail pre-generation deferred — see GitHub issue #31
 
 
-@router.post("/upload")
-@limiter.limit("10/minute")
-async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
-    """Upload a satellite image using chunked streaming to avoid OOM on large files.
+def _safe_basename(raw_name: str) -> str:
+    """Strip directory components and cap filename length at 200 chars."""
+    safe = os.path.basename(raw_name)
+    if len(safe) > 200:
+        name, ext = os.path.splitext(safe)
+        safe = name[: 200 - len(ext)] + ext
+    return safe
 
-    JTN-473 Issue B: now enforces a content-type allowlist in addition to
-    the extension allowlist, caps the body at 50 MB, and verifies the
-    bytes actually decode as an image via ``PIL.Image.verify()`` before
-    committing the row. Non-image files are rejected with 415.
-    """
-    logger.info("Image upload started: filename=%s", sanitize_log(file.filename or ""))
+
+def _validate_upload_metadata(file: UploadFile, request: Request) -> None:
+    """Validate filename, extension, content-type, and pre-stream size."""
     if not file.filename:
         raise APIError(400, "invalid_filename", "No filename provided")
 
-    safe_basename = os.path.basename(file.filename)
-    if len(safe_basename) > 200:
-        name, ext = os.path.splitext(safe_basename)
-        safe_basename = name[: 200 - len(ext)] + ext
+    safe_basename = _safe_basename(file.filename)
     ext = os.path.splitext(safe_basename)[1].lower()
-
     if ext not in ALLOWED_EXTENSIONS:
-        raise APIError(400, "invalid_file_type", f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}")
+        raise APIError(
+            400,
+            "invalid_file_type",
+            f"File type {ext} not allowed. Accepted: {sorted(ALLOWED_EXTENSIONS)}",
+        )
 
     # Content-Type allowlist — we never want to accept ``application/octet-stream``
-    # or ``text/plain`` with a .png extension. None/empty means the client
-    # didn't declare one, which is also rejected.
+    # or ``text/plain`` with a .png extension. An empty declaration means the
+    # client didn't send one, which we allow (the later PIL verify catches it).
     declared_type = (file.content_type or "").lower().split(";")[0].strip()
     if declared_type and declared_type not in ALLOWED_CONTENT_TYPES:
         raise APIError(
@@ -83,20 +85,13 @@ async def upload_image(request: Request, file: Annotated[UploadFile, File()], db
             f"Content-Type {declared_type!r} is not allowed. Accepted: {sorted(ALLOWED_CONTENT_TYPES)}",
         )
 
-    # Reject on Content-Length header before streaming anything, so truly
-    # huge bodies never touch the disk.
     content_length = request.headers.get("content-length")
     if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_SIZE:
-        raise APIError(
-            413,
-            "file_too_large",
-            f"File exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit",
-        )
+        raise APIError(413, "file_too_large", f"File exceeds {_MAX_FILE_SIZE_MB} MB limit")
 
-    file_id = str(uuid.uuid4())
-    dest_name = f"{file_id}_{safe_basename}"
-    dest = Path(storage_service.upload_dir) / dest_name
 
+async def _stream_upload_to_disk(file: UploadFile, dest: Path) -> int:
+    """Stream the upload body to disk, enforcing MAX_FILE_SIZE."""
     file_size = 0
     async with aiofiles.open(dest, "wb") as f:
         while True:
@@ -106,40 +101,63 @@ async def upload_image(request: Request, file: Annotated[UploadFile, File()], db
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 dest.unlink(missing_ok=True)
-                raise APIError(
-                    413,
-                    "file_too_large",
-                    f"File exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit",
-                )
+                raise APIError(413, "file_too_large", f"File exceeds {_MAX_FILE_SIZE_MB} MB limit")
             await f.write(chunk)
+    return file_size
 
-    # JTN-473 Issue B: don't trust the extension — make PIL actually
-    # decode the bytes. ``verify()`` closes the file after checking, so
-    # we immediately reopen to pull width/height.
-    width = height = None
+
+def _verify_and_measure_image(dest: Path) -> tuple[int | None, int | None]:
+    """Run ``PIL.Image.verify()`` then reopen to measure dimensions.
+
+    JTN-473 Issue B: ``verify()`` closes the file after checking, so we
+    reopen to pull width/height.
+    """
     try:
         with PILImage.open(dest) as img:
             img.verify()
         with PILImage.open(dest) as img:
-            width, height = img.size
+            return img.size
     except Exception:
         dest.unlink(missing_ok=True)
-        raise APIError(
-            415,
-            "invalid_image",
-            "Uploaded file could not be decoded as an image",
-        )
+        raise APIError(415, "invalid_image", "Uploaded file could not be decoded as an image")
 
-    satellite = None
-    captured_at = None
-    match = re.search(r"(\d{8}T\d{6}Z)", file.filename)
+
+def _parse_image_metadata_from_filename(filename: str) -> tuple[str | None, dt | None]:
+    """Extract the satellite name and capture timestamp from a filename."""
+    captured_at: dt | None = None
+    match = re.search(r"(\d{8}T\d{6}Z)", filename)
     if match:
         captured_at = dt.strptime(match.group(1), "%Y%m%dT%H%M%SZ")
-    upper = file.filename.upper()
+    upper = filename.upper()
+    satellite: str | None = None
     if "GOES-16" in upper:
         satellite = "GOES-16"
     elif "GOES-18" in upper:
         satellite = "GOES-18"
+    return satellite, captured_at
+
+
+@router.post("/upload")
+@limiter.limit("10/minute")
+async def upload_image(request: Request, file: Annotated[UploadFile, File()], db: DbSession):
+    """Upload a satellite image using chunked streaming to avoid OOM on large files.
+
+    JTN-473 Issue B: enforces a content-type allowlist in addition to the
+    extension allowlist, caps the body at ~50 MB, and verifies the bytes
+    actually decode as an image via ``PIL.Image.verify()`` before
+    committing the row. Non-image files are rejected with 415.
+    """
+    logger.info("Image upload started: filename=%s", sanitize_log(file.filename or ""))
+    _validate_upload_metadata(file, request)
+
+    safe_basename = _safe_basename(file.filename)
+    file_id = str(uuid.uuid4())
+    dest_name = f"{file_id}_{safe_basename}"
+    dest = Path(storage_service.upload_dir) / dest_name
+
+    file_size = await _stream_upload_to_disk(file, dest)
+    width, height = _verify_and_measure_image(dest)
+    satellite, captured_at = _parse_image_metadata_from_filename(file.filename)
 
     db_image = Image(
         id=file_id,

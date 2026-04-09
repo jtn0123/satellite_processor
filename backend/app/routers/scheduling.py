@@ -97,7 +97,7 @@ async def _get_preset_last_fetch_map(db: AsyncSession, preset_ids: list[str]) ->
         .order_by(Job.completed_at.desc())
         .limit(500)
     )
-    out: dict[str, datetime | None] = {pid: None for pid in preset_ids}
+    out: dict[str, datetime | None] = dict.fromkeys(preset_ids)
     wanted = set(preset_ids)
     for params, completed_at in result.all():
         if not isinstance(params, dict):

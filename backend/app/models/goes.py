@@ -44,6 +44,7 @@ def _validate_triple(satellite: str, sector: str, band: str | None = None) -> No
         valid_bands = sorted(cfg.bands)
         raise ValueError(f"Band {band!r} is not valid for {satellite}. Valid bands: {valid_bands}")
 
+
 # Shared validation messages — keep in one place so Sonar doesn't ding us for
 # literal duplication and so all three end_time validators stay in sync.
 _END_AFTER_START_MSG = "end_time must be after start_time"

@@ -10,8 +10,27 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..errors import ProcessorError
 from ..services.processor import configure_processor
 from ..utils import utcnow
+
+# Expected failure modes inside the core processor pipeline. Anything in
+# this tuple is logged-and-swallowed into a "Processing failed" status;
+# other exceptions (``AttributeError``, ``TypeError``, unexpected
+# ``RuntimeError``) are still logged and marked failed, but then
+# re-raised so Celery surfaces them and alerting fires — previously a
+# bare ``except Exception`` hid those bugs (JTN-393).
+_EXPECTED_PROCESSING_ERRORS: tuple[type[BaseException], ...] = (
+    ProcessorError,
+    ValueError,
+    FileNotFoundError,
+    PermissionError,
+    OSError,
+    TimeoutError,
+    ConnectionError,
+    SQLAlchemyError,
+    redis.exceptions.RedisError,
+)
 
 # Add parent project to path for core imports (handles both local dev and Docker)
 try:
@@ -137,12 +156,40 @@ def process_images_task(self, job_id: str, params: dict):
         logger.info("Job %s completed in %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(MSG_PROCESSING_COMPLETE if result else MSG_PROCESSING_FAILED, "info" if result else "error")
 
-    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
+    except _EXPECTED_PROCESSING_ERRORS as e:
+        # Task boundary: log failure, update job status, then re-raise
+        # for Celery retry. Narrow tuple so unexpected exceptions
+        # (e.g. AttributeError from a misconfigured processor) fall
+        # through to the wider handler below instead of being masked.
         duration = time.monotonic() - start_time
         logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Processing failed: {e}", "error")
         _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow(), status_message=f"Error: {e}")
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        raise
+    except Exception as e:
+        # JTN-393: Unexpected bug (AttributeError, TypeError, …).
+        # Still mark the job failed so the UI doesn't spin forever,
+        # but re-raise so Celery surfaces the true traceback and
+        # alerting / DLQ pick it up instead of it being hidden
+        # behind a generic "Processing failed" status.
+        duration = time.monotonic() - start_time
+        logger.exception(
+            "Job %s hit unexpected %s after %.1fs",
+            job_id,
+            type(e).__name__,
+            duration,
+            extra={"job_id": job_id},
+        )
+        _log(f"Processing crashed: {type(e).__name__}: {e}", "error")
+        _update_job_db(
+            job_id,
+            status="failed",
+            error=f"{type(e).__name__}: {e}",
+            completed_at=utcnow(),
+            status_message=f"Crash: {type(e).__name__}",
+        )
+        _publish_progress(job_id, 0, f"Crash: {type(e).__name__}", "failed")
         raise
     finally:
         input_path = params.get("input_path", "")
@@ -241,7 +288,9 @@ def create_video_task(self, job_id: str, params: dict):
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
-    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
+    except _EXPECTED_PROCESSING_ERRORS as e:
+        # Task boundary: log failure, update job status, then re-raise
+        # for Celery retry. See :data:`_EXPECTED_PROCESSING_ERRORS`.
         duration = time.monotonic() - start_time
         logger.exception("Video job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(f"Video creation failed: {e}", "error")
@@ -253,6 +302,26 @@ def create_video_task(self, job_id: str, params: dict):
             status_message=f"Error: {e}",
         )
         _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        raise
+    except Exception as e:
+        # JTN-393: Unexpected bug — see process_images_task for rationale.
+        duration = time.monotonic() - start_time
+        logger.exception(
+            "Video job %s hit unexpected %s after %.1fs",
+            job_id,
+            type(e).__name__,
+            duration,
+            extra={"job_id": job_id},
+        )
+        _log(f"Video creation crashed: {type(e).__name__}: {e}", "error")
+        _update_job_db(
+            job_id,
+            status="failed",
+            error=f"{type(e).__name__}: {e}",
+            completed_at=utcnow(),
+            status_message=f"Crash: {type(e).__name__}",
+        )
+        _publish_progress(job_id, 0, f"Crash: {type(e).__name__}", "failed")
         raise
     finally:
         # Clean up staging directory

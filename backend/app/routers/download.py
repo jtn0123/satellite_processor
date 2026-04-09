@@ -13,9 +13,17 @@ from sqlalchemy import select
 from ..config import settings
 from ..db.database import DbSession
 from ..db.models import Job
-from ..errors import APIError, validate_safe_path, validate_uuid
+from ..errors import (
+    NotFoundError,
+    PathTraversalError,
+    ValidationError,
+    validate_safe_path,
+    validate_uuid,
+)
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 
 def _is_child_of(child: Path, parent: Path) -> bool:
@@ -42,13 +50,12 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
     without buffering the entire archive in memory.
     """
     if len(files) > MAX_ZIP_FILES:
-        raise APIError(
-            400,
-            "export_too_large",
+        raise ValidationError(
             f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files.",
+            error="export_too_large",
+            status_code=400,
         )
 
-    logger = logging.getLogger(__name__)
     zs = zipstream.ZipStream(sized=False)
     for abs_path, arc_name in files:
         try:
@@ -69,12 +76,41 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
 
 
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
-    """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
+    """Collect files from a job's output path.
+
+    Returns a list of ``(abs_path, archive_name)`` pairs. If the job's
+    recorded output path falls outside the allowed root (traversal
+    attempt, stale path from a previous config, etc.) the job is
+    skipped with a warning — bulk-download callers still get a zip of
+    the other well-formed jobs rather than a 500.
+
+    JTN-393: previously this caught a bare ``Exception`` with no logging,
+    which silently hid unrelated I/O bugs (``OSError`` during
+    ``Path.resolve()`` on stat-failing mounts, for instance). The
+    ``except`` is now narrowed to :class:`PathTraversalError` — the only
+    error :func:`validate_safe_path` is expected to raise — plus
+    :class:`OSError` for symlink resolution failures, and every branch
+    logs enough context to debug the skip.
+    """
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
 
     try:
         safe_path = validate_safe_path(output_path, settings.output_dir)
-    except Exception:
+    except PathTraversalError:
+        logger.warning(
+            "Skipping job %s: output_path %r escapes allowed root %s",
+            job.id,
+            output_path,
+            settings.output_dir,
+        )
+        return []
+    except OSError as exc:
+        logger.warning(
+            "Skipping job %s: failed to resolve output_path %r: %s",
+            job.id,
+            output_path,
+            exc,
+        )
         return []
 
     if not safe_path.exists():
@@ -101,15 +137,19 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
     result = await db.execute(select(Job).where(Job.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
-        raise APIError(404, "not_found", "Job not found")
+        raise NotFoundError("Job not found")
     if job.status not in ("completed", "completed_partial"):
-        raise APIError(400, "job_not_completed", f"Job status is '{job.status}', not completed")
+        raise ValidationError(
+            f"Job status is '{job.status}', not completed",
+            error="job_not_completed",
+            status_code=400,
+        )
 
     output_path = job.output_path or str(Path(settings.output_dir) / job_id)
     safe_output = validate_safe_path(output_path, settings.output_dir)
 
     if not safe_output.exists():
-        raise APIError(404, "not_found", "Output not found on disk")
+        raise NotFoundError("Output not found on disk")
 
     # Single file
     if safe_output.is_file():
@@ -122,7 +162,7 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
         if _is_child_of(safe_output / f, safe_output) and (safe_output / f).resolve().is_file()
     ]
     if not files:
-        raise APIError(404, "not_found", "No output files")
+        raise NotFoundError("No output files")
 
     # Single file in dir
     if len(files) == 1:
@@ -147,7 +187,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
     """
     job_ids = payload.ids
     if not job_ids:
-        raise APIError(400, "no_jobs", "No job IDs provided")
+        raise ValidationError("No job IDs provided", error="no_jobs", status_code=400)
     for jid in job_ids:
         validate_uuid(jid, "job_id")
 
@@ -156,7 +196,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
     )
     jobs = result.scalars().all()
     if not jobs:
-        raise APIError(404, "not_found", "No completed jobs found")
+        raise NotFoundError("No completed jobs found")
 
     file_pairs: list[tuple[str, str]] = []
     for job in jobs:
@@ -164,7 +204,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
         file_pairs.extend(_collect_job_files(job, prefix))
 
     if not file_pairs:
-        raise APIError(404, "not_found", "No output files found")
+        raise NotFoundError("No output files found")
 
     return StreamingResponse(
         _zip_stream(file_pairs),

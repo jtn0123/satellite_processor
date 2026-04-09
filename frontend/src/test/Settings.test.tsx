@@ -75,7 +75,11 @@ describe('Settings', () => {
   // aria-invalid + an inline error message is shown next to it.
   it('sets aria-invalid on Video FPS and shows inline error when FPS=0 on save', async () => {
     render(<Settings />, { wrapper });
-    const fpsInput = (await screen.findByLabelText(/video fps/i, {}, { timeout: 3000 })) as HTMLInputElement;
+    const fpsInput = (await screen.findByLabelText(
+      /video fps/i,
+      {},
+      { timeout: 3000 },
+    )) as HTMLInputElement;
     expect(fpsInput).toBeInTheDocument();
     fireEvent.change(fpsInput, { target: { value: '0' } });
     const saveBtn = screen.getByRole('button', { name: /save settings/i });

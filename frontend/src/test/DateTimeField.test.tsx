@@ -1,10 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DateTimeField } from '../components/ui/DateTimeField';
-import {
-  defaultDateTimeRange,
-  nowForDateTimeLocal,
-} from '../components/ui/dateTimeHelpers';
+import { defaultDateTimeRange, nowForDateTimeLocal } from '../components/ui/dateTimeHelpers';
 
 describe('DateTimeField', () => {
   it('exposes a single accessible name from its <label>', () => {
@@ -44,9 +41,7 @@ describe('DateTimeField', () => {
   });
 
   it('supports a hint with aria-describedby', () => {
-    render(
-      <DateTimeField label="Start" value="" onChange={() => {}} hint="UTC — not local" />,
-    );
+    render(<DateTimeField label="Start" value="" onChange={() => {}} hint="UTC — not local" />);
     const input = screen.getByLabelText('Start');
     const describedBy = input.getAttribute('aria-describedby');
     expect(describedBy).toBeTruthy();

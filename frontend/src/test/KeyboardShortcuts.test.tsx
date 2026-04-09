@@ -50,9 +50,7 @@ describe('KeyboardShortcuts', () => {
       </MemoryRouter>,
     );
     openDialog();
-    const goLabels = screen
-      .getAllByText(/^Go to /)
-      .map((el) => el.textContent ?? '');
+    const goLabels = screen.getAllByText(/^Go to /).map((el) => el.textContent ?? '');
     expect(goLabels.length).toBeGreaterThan(0);
     const dupes = goLabels.filter((l, i) => goLabels.indexOf(l) !== i);
     expect(dupes).toEqual([]);

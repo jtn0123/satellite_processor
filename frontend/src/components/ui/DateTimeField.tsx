@@ -48,8 +48,7 @@ export function DateTimeField({
       <label
         htmlFor={inputId}
         className={
-          labelClassName ||
-          'block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1'
+          labelClassName || 'block text-sm font-medium text-gray-500 dark:text-slate-400 mb-1'
         }
       >
         {label}
@@ -76,4 +75,3 @@ export function DateTimeField({
     </div>
   );
 }
-

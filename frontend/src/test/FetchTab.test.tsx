@@ -111,9 +111,7 @@ describe('FetchTab', () => {
     fireEvent.click(screen.getByText('Next'));
     await waitFor(() => expect(screen.getByText('What to Fetch')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Next'));
-    await waitFor(() =>
-      expect(screen.getByLabelText(/start date and time/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByLabelText(/start date and time/i)).toBeInTheDocument());
     const fetchBtn = screen.getByRole('button', { name: /^fetch$/i });
     expect(fetchBtn).not.toBeDisabled();
   });

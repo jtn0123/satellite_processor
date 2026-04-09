@@ -73,7 +73,9 @@ export default function MobileControlsFab({
             aria-label={(() => {
               if (autoFetchDisabled)
                 return `Auto-fetch unavailable: ${autoFetchDisabledReason ?? 'not supported for this view'}`;
-              return autoFetch ? 'Auto-fetch on — tap to turn off' : 'Auto-fetch off — tap to turn on';
+              return autoFetch
+                ? 'Auto-fetch on — tap to turn off'
+                : 'Auto-fetch off — tap to turn on';
             })()}
             disabled={autoFetchDisabled}
             className={`flex flex-col items-start px-3 py-2 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${getAutoFetchButtonClass(autoFetch, autoFetchDisabled)}`}

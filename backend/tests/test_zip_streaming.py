@@ -46,11 +46,19 @@ class TestZipStreaming:
                 assert zf.read(arc_name) == expected
 
     def test_exceeds_max_files_raises(self, tmp_path):
-        """Requesting more than MAX_ZIP_FILES raises APIError."""
+        """Requesting more than MAX_ZIP_FILES raises APIError.
+
+        CodeRabbit (PR1): the check used to live inside ``_zip_stream``,
+        but Starlette streams the 200 response start before iterating the
+        body — a raise from the generator arrives too late to switch to
+        a 4xx. The check now lives in :func:`_check_zip_size`, which the
+        route handlers call *before* constructing the StreamingResponse.
+        """
+        from app.routers.download import _check_zip_size
+
         pairs = [(str(tmp_path / "x.dat"), f"f{i}.dat") for i in range(MAX_ZIP_FILES + 1)]
         with pytest.raises(APIError, match="export_too_large|exceeds maximum"):
-            # Must consume the generator to trigger the check
-            list(_zip_stream(pairs))
+            _check_zip_size(pairs)
 
     def test_large_file_count_streams_without_full_buffer(self, tmp_path):
         """Many files stream incrementally — first chunk arrives immediately."""

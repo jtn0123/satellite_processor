@@ -282,8 +282,15 @@ async def cancel_job(job_id: str, db: DbSession):
         .values(status="cancelled", completed_at=now, status_message="Cancelled by user")
     )
     if upd.rowcount == 0:
-        await db.refresh(job)
-        raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
+        # CodeRabbit (PR1): ``db.refresh(job)`` re-SELECTs the row and raises
+        # ``ObjectDeletedError`` if another transaction deleted it — the old
+        # code turned that race into an unhandled 500. Re-query by primary
+        # key so "row gone" collapses to 404 and "row changed state" stays
+        # as 409 with the actual current status.
+        current_status = await db.scalar(select(Job.status).where(Job.id == job_id))
+        if current_status is None:
+            raise APIError(404, "not_found", _JOB_NOT_FOUND)
+        raise APIError(409, "conflict", f"Job status changed concurrently to {current_status}")
 
     await db.commit()
 

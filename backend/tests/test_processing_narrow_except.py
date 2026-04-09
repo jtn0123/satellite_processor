@@ -215,3 +215,73 @@ class TestCreateVideoNarrowExcept:
         assert result.failed()
         assert isinstance(result.result, AttributeError)
         assert _last_status_message(mock_update).startswith("Crash:")
+
+
+# ── CodeRabbit (PR1) follow-up: failure bookkeeping must not hide ──
+# ── the original task exception                                  ──
+
+
+class TestFailureBookkeepingDoesNotHideOriginalException:
+    """If ``_update_job_db`` or ``_publish_progress`` raises inside the
+    task's ``except`` block, the secondary error used to propagate out
+    and mask the real processor exception — exactly the "silent
+    swallowing" regression JTN-393 was meant to kill. The patched
+    ``_record_failure_safely`` helper wraps each bookkeeping call so
+    the ORIGINAL exception always wins.
+    """
+
+    def test_db_failure_in_bookkeeping_still_reraises_value_error(self, patched_helpers, tmp_path):
+        from sqlalchemy.exc import OperationalError
+
+        mock_update, _mock_publish = patched_helpers
+        # The real exception from the processor is a ValueError.
+        proc = _make_processor(ValueError, "real processor failure")
+        # Make _update_job_db raise a secondary OperationalError from
+        # INSIDE the except block — it must be swallowed, not propagate.
+        mock_update.side_effect = [
+            None,  # initial "status=processing" call
+            OperationalError("db down", None, None),  # failure bookkeeping call
+        ]
+
+        with patch("app.tasks.processing.SatelliteImageProcessor", return_value=proc):
+            result = process_images_task.apply(
+                args=[
+                    "safe-1",
+                    {"input_path": str(tmp_path / "in"), "output_path": str(tmp_path / "out")},
+                ],
+            )
+
+        # Original exception still surfaces — secondary DB error is
+        # swallowed (and logged at exception level inside the helper).
+        assert result.failed()
+        assert isinstance(result.result, ValueError), (
+            f"Expected ValueError to propagate, got {type(result.result).__name__}: {result.result}"
+        )
+        assert "real processor failure" in str(result.result)
+
+    def test_redis_failure_in_bookkeeping_still_reraises_attribute_error(self, patched_helpers, tmp_path):
+        import redis.exceptions
+
+        _mock_update, mock_publish = patched_helpers
+        proc = _make_processor(AttributeError, "missing method")
+        # Make _publish_progress raise from the unexpected-crash branch.
+        mock_publish.side_effect = [
+            None,  # initial "status=processing" publish
+            redis.exceptions.ConnectionError("redis down"),  # crash bookkeeping
+        ]
+
+        with patch("app.tasks.processing.SatelliteImageProcessor", return_value=proc):
+            result = process_images_task.apply(
+                args=[
+                    "safe-2",
+                    {"input_path": str(tmp_path / "in"), "output_path": str(tmp_path / "out")},
+                ],
+            )
+
+        # Unexpected crash still lands as AttributeError, not
+        # redis.ConnectionError.
+        assert result.failed()
+        assert isinstance(result.result, AttributeError), (
+            f"Expected AttributeError to propagate, got {type(result.result).__name__}: {result.result}"
+        )
+        assert "missing method" in str(result.result)

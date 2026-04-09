@@ -400,3 +400,120 @@ class TestBulkDownloadExercisesCollectJobFiles:
         # found" instead of a bare 404.
         assert resp.status_code == 200, f"body={resp.text[:300]}"
         assert len(resp.content) > 0
+
+
+# ── CodeRabbit (PR1) follow-up: ``_check_zip_size`` must run ──
+# ── synchronously, before the StreamingResponse is returned   ──
+
+
+class TestCheckZipSizeRunsSynchronously:
+    """The zip-size check used to live inside the ``_zip_stream``
+    generator body. Starlette sends the HTTP response start before
+    iterating the body, so a raise from inside the generator lands
+    after the client has already seen a 200 — too late to switch to a
+    4xx. CodeRabbit flagged this as a major bug on PR1.
+    """
+
+    def test_check_zip_size_raises_before_stream_construction(self):
+        from app.errors import APIError
+        from app.routers.download import MAX_ZIP_FILES, _check_zip_size
+
+        too_many = [(f"/tmp/f{i}.png", f"f{i}.png") for i in range(MAX_ZIP_FILES + 1)]
+        with pytest.raises(APIError) as exc_info:
+            _check_zip_size(too_many)
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.error == "export_too_large"
+        assert str(MAX_ZIP_FILES) in exc_info.value.detail
+
+    def test_check_zip_size_under_limit_is_noop(self):
+        from app.routers.download import _check_zip_size
+
+        under = [(f"/tmp/f{i}.png", f"f{i}.png") for i in range(5)]
+        # Must not raise — the happy path is a plain return.
+        assert _check_zip_size(under) is None
+
+
+# ── CodeRabbit (PR1) follow-up: cancel_job TOCTOU deletion race ──
+
+
+@pytest.mark.asyncio
+class TestCancelJobHandlesConcurrentDeletion:
+    """When a concurrent request deletes the Job row between the
+    initial SELECT and the UPDATE, the cancel endpoint used to call
+    ``db.refresh(job)`` which raises ``ObjectDeletedError``. That
+    escalated to a 500. The patched version re-queries by id and
+    collapses the "row gone" case to a 404 instead.
+    """
+
+    async def test_row_deleted_mid_cancel_returns_404_not_500(self, client, db):
+        """End-to-end via the test client: seed a processing job, then
+        simulate a concurrent delete by issuing a direct
+        ``DELETE FROM jobs`` right after the initial SELECT path by
+        patching ``_get_job_task_id`` — no, that runs AFTER the
+        UPDATE. Instead, monkeypatch the SQLAlchemy ``update`` result
+        object so ``rowcount`` is forced to 0, then drop the row. The
+        endpoint hits the re-query path and must return 404.
+        """
+        from unittest.mock import patch as mpatch
+
+        from app.db.models import Job
+        from sqlalchemy import delete as sql_delete
+
+        job = Job(
+            id="72345678-1234-1234-1234-123456789012",
+            status="processing",
+            task_id="celery-race-1",
+        )
+        db.add(job)
+        await db.commit()
+
+        # Patch cancel_job's dependency so the UPDATE always reports
+        # rowcount==0. That drives the endpoint into the re-query
+        # fallback path. Then delete the row BEFORE calling the
+        # endpoint so the re-query finds nothing.
+        await db.execute(sql_delete(Job).where(Job.id == job.id))
+        await db.commit()
+
+        # Re-add the row so the initial SELECT in cancel_job finds it —
+        # then delete it again mid-request by patching AsyncSession.execute
+        # to intercept the UPDATE and delete the row before returning.
+        db.add(Job(id=job.id, status="processing", task_id=job.task_id))
+        await db.commit()
+
+        import app.routers.jobs as jobs_mod
+
+        original_update_execute_marker = jobs_mod  # noqa: F841 (sanity import)
+
+        # Wrap the endpoint-level SQLAlchemy execute call by patching
+        # the ``update`` function in the jobs module so every UPDATE
+        # compiled from it produces a statement that matches zero rows
+        # (impossible predicate), which forces rowcount==0 AND we
+        # delete the real row so the re-query returns None.
+        # Simpler: use a session-level patch via mpatch on AsyncSession.
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        real_execute = AsyncSession.execute
+        deleted_once = {"done": False}
+
+        async def patched_execute(self, stmt, *args, **kwargs):
+            stmt_sql = str(stmt).lower()
+            if "update" in stmt_sql and "job" in stmt_sql and not deleted_once["done"]:
+                deleted_once["done"] = True
+                # Swallow the UPDATE: run a harmless SELECT 1 instead,
+                # so rowcount comes back as 0. Then delete the row so
+                # the re-query path returns None.
+                from sqlalchemy import text
+
+                noop = await real_execute(self, text("SELECT 1 WHERE 1=0"))
+                await real_execute(self, sql_delete(Job).where(Job.id == job.id))
+                await self.commit()
+                return noop
+            return await real_execute(self, stmt, *args, **kwargs)
+
+        with mpatch.object(AsyncSession, "execute", patched_execute):
+            resp = await client.post(f"/api/jobs/{job.id}/cancel")
+
+        # Previously: ``db.refresh(job)`` → ObjectDeletedError → 500.
+        # Now: re-query by id → None → 404.
+        assert resp.status_code == 404, f"body={resp.text[:300]}"
+        assert "not_found" in resp.text

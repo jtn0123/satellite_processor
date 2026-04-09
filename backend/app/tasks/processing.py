@@ -118,6 +118,40 @@ def process_images_task(self, job_id: str, params: dict):
         finally:
             session.close()
 
+    def _record_failure_safely(exc: BaseException, *, status_prefix: str, include_type: bool = False) -> None:
+        """Persist the task failure without letting bookkeeping hide the real error.
+
+        CodeRabbit (PR1): the previous version inlined ``_log`` +
+        ``_update_job_db`` + ``_publish_progress`` inside the except block
+        with no guard. If any of those raised (broker outage, DB down),
+        the secondary exception would propagate out of the except block
+        and mask the original ``exc`` — defeating the whole point of
+        JTN-393's narrow except. Each bookkeeping call is now wrapped so
+        it can never hide ``exc``; any secondary failure is logged at
+        exception level and swallowed, then the caller re-raises ``exc``.
+        """
+        err_text = f"{type(exc).__name__}: {exc}" if include_type else str(exc)
+        status_message = f"{status_prefix}: {type(exc).__name__}" if include_type else f"{status_prefix}: {exc}"
+        log_label = "crashed" if include_type else "failed"
+        try:
+            _log(f"Processing {log_label}: {err_text}", "error")
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to write failure log for job %s", job_id, extra={"job_id": job_id})
+        try:
+            _update_job_db(
+                job_id,
+                status="failed",
+                error=err_text,
+                completed_at=utcnow(),
+                status_message=status_message,
+            )
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to mark job %s as failed in DB", job_id, extra={"job_id": job_id})
+        try:
+            _publish_progress(job_id, 0, status_message, "failed")
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to publish failure progress for job %s", job_id, extra={"job_id": job_id})
+
     _update_job_db(job_id, status="processing", started_at=utcnow(), status_message="Initializing processor...")
     _publish_progress(job_id, 0, "Initializing processor...", "processing")
     _log("Image processing started")
@@ -163,9 +197,7 @@ def process_images_task(self, job_id: str, params: dict):
         # through to the wider handler below instead of being masked.
         duration = time.monotonic() - start_time
         logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
-        _log(f"Processing failed: {e}", "error")
-        _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow(), status_message=f"Error: {e}")
-        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        _record_failure_safely(e, status_prefix="Error")
         raise
     except Exception as e:
         # JTN-393: Unexpected bug (AttributeError, TypeError, …).
@@ -181,15 +213,7 @@ def process_images_task(self, job_id: str, params: dict):
             duration,
             extra={"job_id": job_id},
         )
-        _log(f"Processing crashed: {type(e).__name__}: {e}", "error")
-        _update_job_db(
-            job_id,
-            status="failed",
-            error=f"{type(e).__name__}: {e}",
-            completed_at=utcnow(),
-            status_message=f"Crash: {type(e).__name__}",
-        )
-        _publish_progress(job_id, 0, f"Crash: {type(e).__name__}", "failed")
+        _record_failure_safely(e, status_prefix="Crash", include_type=True)
         raise
     finally:
         input_path = params.get("input_path", "")
@@ -221,6 +245,32 @@ def create_video_task(self, job_id: str, params: dict):
             logger.debug("Failed to write job log: %s", msg)
         finally:
             session.close()
+
+    def _record_failure_safely(exc: BaseException, *, status_prefix: str, include_type: bool = False) -> None:
+        """Persist the video task failure without letting bookkeeping hide
+        the real error. See the matching helper in ``process_images_task``
+        — same rationale (CodeRabbit PR1)."""
+        err_text = f"{type(exc).__name__}: {exc}" if include_type else str(exc)
+        status_message = f"{status_prefix}: {type(exc).__name__}" if include_type else f"{status_prefix}: {exc}"
+        log_label = "crashed" if include_type else "failed"
+        try:
+            _log(f"Video creation {log_label}: {err_text}", "error")
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to write failure log for video job %s", job_id, extra={"job_id": job_id})
+        try:
+            _update_job_db(
+                job_id,
+                status="failed",
+                error=err_text,
+                completed_at=utcnow(),
+                status_message=status_message,
+            )
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to mark video job %s as failed in DB", job_id, extra={"job_id": job_id})
+        try:
+            _publish_progress(job_id, 0, status_message, "failed")
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to publish failure progress for video job %s", job_id, extra={"job_id": job_id})
 
     _update_job_db(
         job_id,
@@ -293,15 +343,7 @@ def create_video_task(self, job_id: str, params: dict):
         # for Celery retry. See :data:`_EXPECTED_PROCESSING_ERRORS`.
         duration = time.monotonic() - start_time
         logger.exception("Video job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
-        _log(f"Video creation failed: {e}", "error")
-        _update_job_db(
-            job_id,
-            status="failed",
-            error=str(e),
-            completed_at=utcnow(),
-            status_message=f"Error: {e}",
-        )
-        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        _record_failure_safely(e, status_prefix="Error")
         raise
     except Exception as e:
         # JTN-393: Unexpected bug — see process_images_task for rationale.
@@ -313,15 +355,7 @@ def create_video_task(self, job_id: str, params: dict):
             duration,
             extra={"job_id": job_id},
         )
-        _log(f"Video creation crashed: {type(e).__name__}: {e}", "error")
-        _update_job_db(
-            job_id,
-            status="failed",
-            error=f"{type(e).__name__}: {e}",
-            completed_at=utcnow(),
-            status_message=f"Crash: {type(e).__name__}",
-        )
-        _publish_progress(job_id, 0, f"Crash: {type(e).__name__}", "failed")
+        _record_failure_safely(e, status_prefix="Crash", include_type=True)
         raise
     finally:
         # Clean up staging directory

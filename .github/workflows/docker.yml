@@ -121,3 +121,6 @@ jobs:
   # Deployment is handled automatically by Watchtower on the production host.
   # Watchtower polls GHCR every 3 minutes with label-based filtering and
   # pulls new images once they are pushed by the build-and-push job above.
+  #
+  # For manual deploys, rollbacks, Watchtower troubleshooting, and
+  # incident-response steps, see docs/runbooks/deployment.md (JTN-411).

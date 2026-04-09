@@ -1,0 +1,67 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "description": [
+    "JTN-407: narrow-scope Renovate config. Dependabot (see dependabot.yml)",
+    "still owns the bulk of dependency updates for pip, npm, and",
+    "github-actions. Renovate is only enabled here for kombu + redis",
+    "because Dependabot cannot express the 'bump kombu AND redis together'",
+    "rule we need for the kombu 5.6.x <-> redis 7.x incompatibility."
+  ],
+  "enabledManagers": ["pip_requirements"],
+  "pip_requirements": {
+    "fileMatch": ["^backend/requirements\\.txt$"]
+  },
+  "packageRules": [
+    {
+      "description": "Ignore everything by default. Dependabot owns the rest.",
+      "matchPackagePatterns": ["*"],
+      "enabled": false
+    },
+    {
+      "description": [
+        "Watch kombu for >= 5.7.0. When it ships, bump redis to 7.x at the",
+        "same time (see the comment above the redis pin in",
+        "backend/requirements.txt). Both packages land in a single PR so",
+        "CI runs them together and we don't get a half-upgrade."
+      ],
+      "matchPackageNames": ["kombu", "redis"],
+      "matchManagers": ["pip_requirements"],
+      "enabled": true,
+      "groupName": "kombu + redis compatibility bump",
+      "groupSlug": "kombu-redis-bump",
+      "labels": ["dependencies", "python", "jtn-407"],
+      "commitMessagePrefix": "chore(deps):",
+      "commitMessageTopic": "bump kombu and redis together",
+      "prBodyNotes": [
+        ":link: tracked in JTN-407.",
+        "kombu 5.6.x pins redis <6, so we cannot move to redis 7.x until",
+        "kombu 5.7.0 ships with the compatibility fix. This PR bumps both",
+        "at once; please verify Celery worker startup locally before",
+        "merging."
+      ],
+      "allowedVersions": ">=5.7.0",
+      "matchDepNames": ["kombu"]
+    },
+    {
+      "description": [
+        "Companion rule: when the kombu bump above fires, allow redis to",
+        "move to any 7.x release. Dependabot is pinned at redis==6.4.0",
+        "today via the explicit pin in requirements.txt."
+      ],
+      "matchPackageNames": ["redis"],
+      "matchManagers": ["pip_requirements"],
+      "enabled": true,
+      "allowedVersions": ">=7.0.0 <8.0.0",
+      "groupName": "kombu + redis compatibility bump",
+      "groupSlug": "kombu-redis-bump"
+    }
+  ],
+  "schedule": ["before 5am on monday"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+  "vulnerabilityAlerts": {
+    "enabled": false
+  }
+}

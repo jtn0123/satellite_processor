@@ -7,8 +7,10 @@ import shutil
 from pathlib import Path
 from typing import Annotated
 
+from celery.exceptions import CeleryError
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
+from kombu.exceptions import KombuError
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +30,12 @@ from ..models.job import JobCreate, JobResponse, JobUpdate
 from ..models.pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..utils import safe_remove, utcnow
+
+# Exceptions that ``celery_app.control.revoke`` can raise when the broker is
+# unreachable, the connection drops mid-call, or Celery itself errors. A
+# revoke failure is non-fatal — the DB transition already succeeded — so
+# each caller logs the exception with full context and continues.
+_REVOKE_ERRORS: tuple[type[BaseException], ...] = (KombuError, CeleryError, OSError)
 
 logger = logging.getLogger(__name__)
 
@@ -274,8 +282,15 @@ async def cancel_job(job_id: str, db: DbSession):
         .values(status="cancelled", completed_at=now, status_message="Cancelled by user")
     )
     if upd.rowcount == 0:
-        await db.refresh(job)
-        raise APIError(409, "conflict", f"Job status changed concurrently to {job.status}")
+        # CodeRabbit (PR1): ``db.refresh(job)`` re-SELECTs the row and raises
+        # ``ObjectDeletedError`` if another transaction deleted it — the old
+        # code turned that race into an unhandled 500. Re-query by primary
+        # key so "row gone" collapses to 404 and "row changed state" stays
+        # as 409 with the actual current status.
+        current_status = await db.scalar(select(Job.status).where(Job.id == job_id))
+        if current_status is None:
+            raise APIError(404, "not_found", _JOB_NOT_FOUND)
+        raise APIError(409, "conflict", f"Job status changed concurrently to {current_status}")
 
     await db.commit()
 
@@ -284,8 +299,11 @@ async def cancel_job(job_id: str, db: DbSession):
     if task_id:
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
-            logger.warning(_REVOKE_FAIL_MSG, task_id)
+        except _REVOKE_ERRORS:
+            # Broker unreachable or Celery internal error. Non-fatal:
+            # the DB status was already updated atomically above, so
+            # log with full stack/context and continue the cleanup.
+            logger.warning(_REVOKE_FAIL_MSG, task_id, exc_info=True)
 
     output_path = job.output_path or str(Path(settings.output_dir) / f"goes_{job.id}")
     if os.path.isdir(output_path):
@@ -314,11 +332,7 @@ async def bulk_delete_jobs(
         # JTN-473 Issue D: empty body / empty job_ids used to 200 with an
         # empty ``deleted`` array, hiding client bugs. Require either
         # ``?all=true`` or a non-empty ``job_ids``.
-        raise APIError(
-            422,
-            "missing_ids",
-            "Provide a non-empty job_ids array or ?all=true",
-        )
+        raise APIError(422, "missing_ids", "Provide a non-empty job_ids array or ?all=true")
 
     jobs = result.scalars().all()
 
@@ -331,8 +345,10 @@ async def bulk_delete_jobs(
         if task_id and job.status in ("pending", "processing"):
             try:
                 celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-            except Exception:
-                logger.warning(_REVOKE_FAIL_MSG, task_id)
+            except _REVOKE_ERRORS:
+                # Broker unreachable during bulk delete — log with
+                # stack/context so ops can correlate to broker outages.
+                logger.warning(_REVOKE_FAIL_MSG, task_id, exc_info=True)
 
         if use_delete_files:
             total_bytes_freed += await _delete_job_files(db, job)
@@ -368,8 +384,11 @@ async def delete_job(
     if task_id and job.status in ("pending", "processing"):
         try:
             celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
-            logger.warning(_REVOKE_FAIL_MSG, task_id)
+        except _REVOKE_ERRORS:
+            # Broker unreachable — log with full context and proceed
+            # with DB delete; a dangling Celery task is harmless once
+            # the Job row is gone.
+            logger.warning(_REVOKE_FAIL_MSG, task_id, exc_info=True)
 
     bytes_freed = 0
     if delete_files:

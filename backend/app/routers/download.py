@@ -13,9 +13,11 @@ from sqlalchemy import select
 from ..config import settings
 from ..db.database import DbSession
 from ..db.models import Job
-from ..errors import APIError, validate_safe_path, validate_uuid
+from ..errors import APIError, PathTraversalError, validate_safe_path, validate_uuid
 from ..models.bulk import BulkDeleteRequest
 from ..rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 
 def _is_child_of(child: Path, parent: Path) -> bool:
@@ -34,12 +36,15 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 MAX_ZIP_FILES = 1000
 
 
-def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
-    """Stream zip creation for job output downloads.
+def _check_zip_size(files: list[tuple[str, str]]) -> None:
+    """Raise ``APIError(400)`` if the requested zip exceeds ``MAX_ZIP_FILES``.
 
-    Each tuple is (absolute_path, archive_name).
-    Uses zipstream-ng for true streaming — files are read and yielded in chunks
-    without buffering the entire archive in memory.
+    CodeRabbit-flagged (PR1): this check used to live inside ``_zip_stream``,
+    but Starlette's ``StreamingResponse`` sends the HTTP response start
+    (status + headers) before iterating the body, so raising from inside
+    the generator arrives after the client has already seen a 200. This
+    helper must be called synchronously in the route handler before the
+    ``StreamingResponse`` is constructed.
     """
     if len(files) > MAX_ZIP_FILES:
         raise APIError(
@@ -48,7 +53,22 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
             f"Export exceeds maximum of {MAX_ZIP_FILES} files. Requested {len(files)} files.",
         )
 
-    logger = logging.getLogger(__name__)
+
+def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
+    """Stream zip creation for job output downloads.
+
+    Each tuple is (absolute_path, archive_name).
+    Uses zipstream-ng for true streaming — files are read and yielded in chunks
+    without buffering the entire archive in memory.
+
+    Callers must enforce ``len(files) <= MAX_ZIP_FILES`` BEFORE constructing a
+    ``StreamingResponse`` around this generator — Starlette sends
+    ``http.response.start`` as soon as iteration begins, so any exception
+    raised before the first yield lands after the client already saw a 200
+    status and cannot be converted to a 4xx response. The check is enforced
+    by :func:`_check_zip_size`, called from every endpoint that uses this
+    generator.
+    """
     zs = zipstream.ZipStream(sized=False)
     for abs_path, arc_name in files:
         try:
@@ -69,12 +89,41 @@ def _zip_stream(files: list[tuple[str, str]]) -> Generator[bytes, None, None]:
 
 
 def _collect_job_files(job: Job, prefix: str = "") -> list[tuple[str, str]]:
-    """Collect files from a job's output path.  Returns list of (abs_path, archive_name)."""
+    """Collect files from a job's output path.
+
+    Returns a list of ``(abs_path, archive_name)`` pairs. If the job's
+    recorded output path falls outside the allowed root (traversal
+    attempt, stale path from a previous config, etc.) the job is
+    skipped with a warning — bulk-download callers still get a zip of
+    the other well-formed jobs rather than a 500.
+
+    JTN-393: previously this caught a bare ``Exception`` with no logging,
+    which silently hid unrelated I/O bugs (``OSError`` during
+    ``Path.resolve()`` on stat-failing mounts, for instance). The
+    ``except`` is now narrowed to :class:`PathTraversalError` — the only
+    error :func:`validate_safe_path` is expected to raise — plus
+    :class:`OSError` for symlink resolution failures, and every branch
+    logs enough context to debug the skip.
+    """
     output_path = job.output_path or str(Path(settings.output_dir) / job.id)
 
     try:
         safe_path = validate_safe_path(output_path, settings.output_dir)
-    except Exception:
+    except PathTraversalError:
+        logger.warning(
+            "Skipping job %s: output_path %r escapes allowed root %s",
+            job.id,
+            output_path,
+            settings.output_dir,
+        )
+        return []
+    except OSError as exc:
+        logger.warning(
+            "Skipping job %s: failed to resolve output_path %r: %s",
+            job.id,
+            output_path,
+            exc,
+        )
         return []
 
     if not safe_path.exists():
@@ -128,8 +177,10 @@ async def download_job_output(request: Request, job_id: str, db: DbSession):
     if len(files) == 1:
         return FileResponse(str(safe_output / files[0]), filename=files[0])
 
-    # Multiple files — stream zip
+    # Multiple files — stream zip. The zip-size check must run synchronously
+    # before the StreamingResponse is constructed (see `_check_zip_size`).
     file_pairs = [(str(safe_output / f), f) for f in files]
+    _check_zip_size(file_pairs)
     return StreamingResponse(
         _zip_stream(file_pairs),
         media_type="application/zip",
@@ -166,6 +217,7 @@ async def bulk_download(request: Request, payload: BulkDeleteRequest, db: DbSess
     if not file_pairs:
         raise APIError(404, "not_found", "No output files found")
 
+    _check_zip_size(file_pairs)
     return StreamingResponse(
         _zip_stream(file_pairs),
         media_type="application/zip",

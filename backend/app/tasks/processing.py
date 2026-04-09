@@ -10,8 +10,27 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_app import celery_app
 from ..config import settings
+from ..errors import ProcessorError
 from ..services.processor import configure_processor
 from ..utils import utcnow
+
+# Expected failure modes inside the core processor pipeline. Anything in
+# this tuple is logged-and-swallowed into a "Processing failed" status;
+# other exceptions (``AttributeError``, ``TypeError``, unexpected
+# ``RuntimeError``) are still logged and marked failed, but then
+# re-raised so Celery surfaces them and alerting fires — previously a
+# bare ``except Exception`` hid those bugs (JTN-393).
+_EXPECTED_PROCESSING_ERRORS: tuple[type[BaseException], ...] = (
+    ProcessorError,
+    ValueError,
+    FileNotFoundError,
+    PermissionError,
+    OSError,
+    TimeoutError,
+    ConnectionError,
+    SQLAlchemyError,
+    redis.exceptions.RedisError,
+)
 
 # Add parent project to path for core imports (handles both local dev and Docker)
 try:
@@ -51,6 +70,67 @@ def _stage_image_paths(input_path: str, image_paths: list[str]) -> None:
             import shutil
 
             shutil.copy2(str(src), str(dst))
+
+
+def _record_task_failure(
+    job_id: str,
+    exc: BaseException,
+    *,
+    task_label: str,
+    status_prefix: str,
+    include_type: bool = False,
+) -> None:
+    """Persist a task failure without letting bookkeeping hide the real error.
+
+    CodeRabbit (PR1): the previous version inlined ``log_job_sync`` +
+    ``_update_job_db`` + ``_publish_progress`` inside each task's except
+    block with no guard. If any of those raised (broker outage, DB down,
+    redis outage), the secondary exception would propagate out of the
+    except block and mask the original ``exc`` — defeating JTN-393's
+    narrow-except goal.
+
+    This module-level helper wraps each bookkeeping call in its own
+    try/except so a secondary failure is logged at exception level and
+    swallowed, then the caller re-raises the ORIGINAL ``exc``.
+
+    Extracted to module scope so the task bodies stay under Sonar's
+    cognitive-complexity limit.
+    """
+    err_text = f"{type(exc).__name__}: {exc}" if include_type else str(exc)
+    status_message = f"{status_prefix}: {type(exc).__name__}" if include_type else f"{status_prefix}: {exc}"
+    log_label = "crashed" if include_type else "failed"
+
+    # Best-effort job-log write; swallow all three possible IO errors.
+    session = _get_sync_db()
+    try:
+        try:
+            log_job_sync(
+                session,
+                job_id,
+                f"{task_label} {log_label}: {err_text}",
+                "error",
+                redis_client=_get_redis(),
+            )
+        except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+            logger.exception("Failed to write failure log for %s %s", task_label, job_id, extra={"job_id": job_id})
+    finally:
+        session.close()
+
+    try:
+        _update_job_db(
+            job_id,
+            status="failed",
+            error=err_text,
+            completed_at=utcnow(),
+            status_message=status_message,
+        )
+    except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+        logger.exception("Failed to mark %s %s as failed in DB", task_label, job_id, extra={"job_id": job_id})
+
+    try:
+        _publish_progress(job_id, 0, status_message, "failed")
+    except (SQLAlchemyError, redis.exceptions.RedisError, OSError):
+        logger.exception("Failed to publish failure progress for %s %s", task_label, job_id, extra={"job_id": job_id})
 
 
 def _finalize_job(job_id: str, success: bool, output_path: str) -> None:
@@ -137,12 +217,30 @@ def process_images_task(self, job_id: str, params: dict):
         logger.info("Job %s completed in %.1fs", job_id, duration, extra={"job_id": job_id})
         _log(MSG_PROCESSING_COMPLETE if result else MSG_PROCESSING_FAILED, "info" if result else "error")
 
-    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
+    except _EXPECTED_PROCESSING_ERRORS as e:
+        # Task boundary: log failure, update job status, then re-raise
+        # for Celery retry. Narrow tuple so unexpected exceptions
+        # (e.g. AttributeError from a misconfigured processor) fall
+        # through to the wider handler below instead of being masked.
         duration = time.monotonic() - start_time
         logger.exception("Job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
-        _log(f"Processing failed: {e}", "error")
-        _update_job_db(job_id, status="failed", error=str(e), completed_at=utcnow(), status_message=f"Error: {e}")
-        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        _record_task_failure(job_id, e, task_label="Processing", status_prefix="Error")
+        raise
+    except Exception as e:
+        # JTN-393: Unexpected bug (AttributeError, TypeError, …).
+        # Still mark the job failed so the UI doesn't spin forever,
+        # but re-raise so Celery surfaces the true traceback and
+        # alerting / DLQ pick it up instead of it being hidden
+        # behind a generic "Processing failed" status.
+        duration = time.monotonic() - start_time
+        logger.exception(
+            "Job %s hit unexpected %s after %.1fs",
+            job_id,
+            type(e).__name__,
+            duration,
+            extra={"job_id": job_id},
+        )
+        _record_task_failure(job_id, e, task_label="Processing", status_prefix="Crash", include_type=True)
         raise
     finally:
         input_path = params.get("input_path", "")
@@ -241,18 +339,24 @@ def create_video_task(self, job_id: str, params: dict):
             )
             _publish_progress(job_id, 0, "Video creation failed", "failed")
 
-    except Exception as e:  # Task boundary: log failure, update job status, then re-raise for Celery retry
+    except _EXPECTED_PROCESSING_ERRORS as e:
+        # Task boundary: log failure, update job status, then re-raise
+        # for Celery retry. See :data:`_EXPECTED_PROCESSING_ERRORS`.
         duration = time.monotonic() - start_time
         logger.exception("Video job %s failed after %.1fs", job_id, duration, extra={"job_id": job_id})
-        _log(f"Video creation failed: {e}", "error")
-        _update_job_db(
+        _record_task_failure(job_id, e, task_label="Video creation", status_prefix="Error")
+        raise
+    except Exception as e:
+        # JTN-393: Unexpected bug — see process_images_task for rationale.
+        duration = time.monotonic() - start_time
+        logger.exception(
+            "Video job %s hit unexpected %s after %.1fs",
             job_id,
-            status="failed",
-            error=str(e),
-            completed_at=utcnow(),
-            status_message=f"Error: {e}",
+            type(e).__name__,
+            duration,
+            extra={"job_id": job_id},
         )
-        _publish_progress(job_id, 0, f"Error: {e}", "failed")
+        _record_task_failure(job_id, e, task_label="Video creation", status_prefix="Crash", include_type=True)
         raise
     finally:
         # Clean up staging directory

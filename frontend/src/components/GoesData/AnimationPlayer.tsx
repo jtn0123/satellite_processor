@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GoesFrame } from './types';
 import { Play, Pause, SkipBack, SkipForward, Repeat, Maximize, Minimize, X } from 'lucide-react';
+import SafeImage from '../Image';
 
 interface AnimationPlayerProps {
   frames: GoesFrame[];
@@ -182,11 +183,11 @@ export default function AnimationPlayer({ frames, onClose }: Readonly<AnimationP
       {/* Image area */}
       <div className="flex-1 flex items-center justify-center overflow-hidden p-4">
         {currentFrame && (
-          <img
+          <SafeImage
             src={imageUrl(currentFrame)}
-            alt={`Frame ${currentIndex + 1}: ${currentFrame.capture_time}`}
+            alt={`Frame ${currentIndex + 1} of ${frames.length}: ${currentFrame.satellite} ${currentFrame.band} captured ${currentFrame.capture_time}`}
+            loading="eager"
             className="max-w-full max-h-full object-contain"
-            draggable={false}
           />
         )}
       </div>

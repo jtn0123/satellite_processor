@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Satellite } from 'lucide-react';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -19,6 +19,25 @@ function PathNormalizer() {
     const normalized = location.pathname.replaceAll(/\/{2,}/g, '/');
     return <Navigate to={`${normalized}${location.search}${location.hash}`} replace />;
   }
+  return null;
+}
+
+/**
+ * JTN-414: React Router v7's `<ScrollRestoration />` is only available via
+ * the data-router API (`createBrowserRouter` + `RouterProvider`). This app
+ * still uses the legacy `<BrowserRouter>` + `<Routes>` tree, so we roll a
+ * small equivalent: on pathname change, scroll the window and any scroll
+ * container we know about back to the top. Keeps the back button from
+ * landing mid-page after a navigation.
+ *
+ * Only the pathname is watched — hash navigations (anchor links within a
+ * page) are left alone so in-page TOC anchors still work.
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
   return null;
 }
 
@@ -58,6 +77,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <PathNormalizer />
+        <ScrollToTop />
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route

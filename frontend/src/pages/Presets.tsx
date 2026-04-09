@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePresets, useDeletePreset, useRenamePreset } from '../hooks/useApi';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { BookOpen, Trash2, Pencil, Check, X } from 'lucide-react';
@@ -13,6 +13,15 @@ export default function PresetsPage() {
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [deletePresetName, setDeletePresetName] = useState<string | null>(null);
+  // JTN-389: ref + effect replaces autoFocus so jsx-a11y/no-autofocus
+  // can be bumped back to error without regressing inline-edit UX.
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editingName && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [editingName]);
 
   const handleRename = (oldName: string) => {
     if (!newName.trim() || newName === oldName) {
@@ -69,6 +78,7 @@ export default function PresetsPage() {
                 {editingName === p.name ? (
                   <div className="flex gap-2 items-center">
                     <input
+                      ref={renameInputRef}
                       type="text"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
@@ -76,7 +86,7 @@ export default function PresetsPage() {
                         if (e.key === 'Enter') handleRename(p.name);
                         if (e.key === 'Escape') setEditingName(null);
                       }}
-                      autoFocus
+                      aria-label={`Rename preset ${p.name}`}
                       className="flex-1 bg-space-700 border border-gray-200 dark:border-space-700/50 rounded-lg px-3 py-1.5 text-sm focus-ring"
                     />
                     <button

@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Satellite, ExternalLink, Clock } from 'lucide-react';
 import api from '../api/client';
+import Image from '../components/Image';
 
 interface SharedFrame {
   id: string;
@@ -105,9 +106,10 @@ export default function SharedFramePage() {
           </div>
         </div>
         <div className="bg-black rounded-xl overflow-hidden flex items-center justify-center">
-          <img
+          <Image
             src={`/api/shared/${token}/image`}
-            alt={`${frame.satellite} ${frame.band} ${frame.sector}`}
+            alt={`Shared ${frame.satellite} ${frame.band} ${frame.sector} frame captured ${new Date(frame.capture_time).toLocaleString()}`}
+            loading="eager"
             className="max-w-full max-h-[80vh] object-contain"
           />
         </div>

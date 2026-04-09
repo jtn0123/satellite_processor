@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { X, ArrowLeftRight, Columns, SlidersHorizontal } from 'lucide-react';
 import Modal from './Modal';
+import Image from '../Image';
 
 interface GoesFrame {
   id: string;
@@ -103,11 +104,9 @@ export default function ComparisonModal({
                   {new Date(frame.capture_time).toLocaleString()} · {formatBytes(frame.file_size)}
                 </div>
                 <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                  <img
+                  <Image
                     src={getUrl(frame)}
-                    alt={`${frame.satellite} ${frame.band}`}
-                    loading="lazy"
-                    decoding="async"
+                    alt={`${frame.satellite} ${frame.band} ${frame.sector} captured ${new Date(frame.capture_time).toLocaleString()}`}
                     className="max-w-full max-h-[60vh] object-contain"
                   />
                 </div>
@@ -132,11 +131,9 @@ export default function ComparisonModal({
               style={{ height: '60vh' }}
             >
               {/* Right image (full) */}
-              <img
+              <Image
                 src={getUrl(right)}
-                alt="Right"
-                loading="lazy"
-                decoding="async"
+                alt={`Right comparison: ${right.satellite} ${right.band} captured ${new Date(right.capture_time).toLocaleString()}`}
                 className="absolute inset-0 w-full h-full object-contain"
               />
               {/* Left image (clipped) */}
@@ -144,11 +141,9 @@ export default function ComparisonModal({
                 className="absolute inset-0"
                 style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
               >
-                <img
+                <Image
                   src={getUrl(left)}
-                  alt="Left"
-                  loading="lazy"
-                  decoding="async"
+                  alt={`Left comparison: ${left.satellite} ${left.band} captured ${new Date(left.capture_time).toLocaleString()}`}
                   className="w-full h-full object-contain"
                 />
               </div>

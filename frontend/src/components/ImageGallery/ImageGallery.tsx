@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
+import SafeImage from '../Image';
 
 interface SatImage {
   id: string;
@@ -220,9 +221,9 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               onClick={() => (selectable && onToggle ? onToggle(img.id) : setPreview(img))}
             >
               <div className="aspect-square bg-gray-100 dark:bg-space-800 flex items-center justify-center relative">
-                <img
+                <SafeImage
                   src={`/api/images/${img.id}/thumbnail`}
-                  alt={img.original_name}
+                  alt={`Thumbnail of ${img.original_name}`}
                   className="w-full h-full object-cover relative z-10"
                   onError={(e) => {
                     const el = e.target as HTMLImageElement;
@@ -321,9 +322,10 @@ export default function ImageGallery({ selectable, selected, onToggle }: Readonl
               </button>
             </div>
             <div className="p-4">
-              <img
+              <SafeImage
                 src={`/api/images/${preview.id}/full`}
-                alt={preview.original_name}
+                alt={`Full preview of ${preview.original_name}`}
+                loading="eager"
                 className="w-full rounded-lg bg-white dark:bg-space-900"
               />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">

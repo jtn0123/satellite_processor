@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layers, CheckCircle, AlertTriangle, Download } from 'lucide-react';
+import Image from '../Image';
 import api from '../../api/client';
 import { showToast } from '../../utils/toast';
 import { extractArray } from '../../utils/safeData';
@@ -245,11 +246,10 @@ export default function CompositesTab() {
               >
                 {comp.image_url && comp.status === 'completed' && (
                   <div className="w-16 h-12 rounded overflow-hidden shrink-0">
-                    <img
+                    <Image
                       src={comp.image_url}
-                      alt={comp.name}
+                      alt={`${comp.recipe} composite for ${comp.satellite} ${comp.sector} at ${new Date(comp.capture_time).toLocaleString()}`}
                       className="w-full h-full object-cover"
-                      loading="lazy"
                     />
                   </div>
                 )}

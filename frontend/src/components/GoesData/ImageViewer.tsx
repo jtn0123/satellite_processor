@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import Image from '../Image';
 import { useImageZoom } from '../../hooks/useImageZoom';
 import type { GoesFrame } from './types';
 
@@ -145,13 +146,13 @@ export default function ImageViewer({
           onMouseUp={handlers.onMouseUp}
           className="flex items-center justify-center bg-transparent border-none p-0 m-0 outline-none"
         >
-          <img
-            ref={imageRef}
+          <Image
+            imageRef={imageRef}
             src={`/api/satellite/frames/${frame.id}/image`}
-            alt={`${frame.satellite} ${frame.band} — Use zoom buttons to zoom`}
+            alt={`${frame.satellite} ${frame.band} sector ${frame.sector} captured ${new Date(frame.capture_time).toLocaleString()} — use zoom buttons to zoom`}
             className="max-h-full max-w-full select-none"
             style={style}
-            draggable={false}
+            loading="eager"
           />
         </button>
 

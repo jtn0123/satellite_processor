@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Image from '../Image';
 import type { GoesFrame } from './types';
 
 interface CompareViewProps {
@@ -99,17 +100,19 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
         {mode === 'side-by-side' ? (
           <div className="flex gap-2 h-full">
             <div className="flex-1 flex items-center justify-center">
-              <img
+              <Image
                 src={`/api/satellite/frames/${frameA.id}/image`}
-                alt={`${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
+                alt={`Frame A: ${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
+                loading="eager"
               />
             </div>
             <div className="flex-1 flex items-center justify-center">
-              <img
+              <Image
                 src={`/api/satellite/frames/${frameB.id}/image`}
-                alt={`${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
+                alt={`Frame B: ${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
                 className="max-h-full max-w-full object-contain"
+                loading="eager"
               />
             </div>
           </div>
@@ -125,18 +128,20 @@ export default function CompareView({ frameA, frameB, onClose }: Readonly<Compar
               className="absolute inset-0 w-full h-full opacity-0 cursor-col-resize z-20"
             />
             {/* Frame B (full background) */}
-            <img
+            <Image
               src={`/api/satellite/frames/${frameB.id}/image`}
               alt={`Frame B: ${frameB.satellite} ${frameB.band} — ${formatTime(frameB.capture_time)}`}
               className="absolute inset-0 w-full h-full object-contain"
+              loading="eager"
             />
             {/* Frame A (clipped) */}
             <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
-              <img
+              <Image
                 src={`/api/satellite/frames/${frameA.id}/image`}
                 alt={`Frame A: ${frameA.satellite} ${frameA.band} — ${formatTime(frameA.capture_time)}`}
                 className="absolute inset-0 w-full h-full object-contain"
                 style={{ width: '100%' }}
+                loading="eager"
               />
             </div>
             {/* Divider */}

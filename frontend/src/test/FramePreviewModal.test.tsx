@@ -64,7 +64,10 @@ describe('FramePreviewModal', () => {
 
   it('renders image element', () => {
     renderWithQuery(<FramePreviewModal frame={frame as never} onClose={vi.fn()} />);
-    const img = screen.getByAltText('GOES-16 C02');
+    // JTN-394: alt text was enriched beyond the bare satellite + band
+    // (now "{sat} {band} frame preview — click and drag to crop") so
+    // match the stable prefix with a regex.
+    const img = screen.getByAltText(/GOES-16 C02/i);
     expect(img).toBeInTheDocument();
   });
 

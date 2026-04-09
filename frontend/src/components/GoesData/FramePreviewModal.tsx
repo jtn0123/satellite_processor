@@ -5,6 +5,7 @@ import api from '../../api/client';
 import { formatBytes } from './utils';
 import { showToast } from '../../utils/toast';
 import Modal from './Modal';
+import Image from '../Image';
 import type { GoesFrame, CropPreset } from './types';
 import { extractArray } from '../../utils/safeData';
 
@@ -181,13 +182,11 @@ export default function FramePreviewModal({
             }
           }}
         >
-          <img
-            ref={imgRef}
+          <Image
+            imageRef={imgRef}
             src={frame.image_url}
-            alt={`${frame.satellite} ${frame.band}`}
+            alt={`${frame.satellite} ${frame.band} frame preview — click and drag to crop`}
             className="max-w-full max-h-[60vh] rounded"
-            loading="lazy"
-            draggable={false}
             onLoad={handleImageLoad}
           />
           {overlayStyle && (

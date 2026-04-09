@@ -15,8 +15,11 @@ const baseProps = {
 describe('CompareSlider', () => {
   it('renders both current and previous frame images', () => {
     render(<CompareSlider {...baseProps} />);
-    expect(screen.getByAltText('Current frame')).toBeInTheDocument();
-    expect(screen.getByAltText('Previous frame')).toBeInTheDocument();
+    // JTN-394: alt text was enriched to include the capture timestamp —
+    // tests match the prefix with a regex so they stay resilient to
+    // future tweaks.
+    expect(screen.getByAltText(/Current frame/i)).toBeInTheDocument();
+    expect(screen.getByAltText(/Previous frame/i)).toBeInTheDocument();
   });
 
   it('shows an actionable empty state when prevImageUrl is null', () => {
@@ -30,7 +33,7 @@ describe('CompareSlider', () => {
   it('applies clip path based on comparePosition', () => {
     render(<CompareSlider {...baseProps} comparePosition={70} />);
     // clipPath is set via inline style; jsdom may use camelCase or kebab
-    const currentImg = screen.getByAltText('Current frame');
+    const currentImg = screen.getByAltText(/Current frame/i);
     const clipDiv = currentImg.parentElement as HTMLElement;
     expect(clipDiv.style.clipPath).toBe('inset(0 30% 0 0)');
   });

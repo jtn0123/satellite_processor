@@ -1,4 +1,5 @@
 import { Satellite, Film } from 'lucide-react';
+import Image from '../../Image';
 import { BAND_INFO, HIMAWARI_BAND_INFO } from '../../../constants/bands';
 import { isHimawariSatellite } from '../../../utils/sectorHelpers';
 import { getSectorsForSatellite, getBandsForSatellite } from '../liveTabUtils';
@@ -217,11 +218,9 @@ export function StudioFrameSelection({
                 <div key={frame.id} className="shrink-0 w-24">
                   <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded overflow-hidden">
                     {(frame.thumbnail_url ?? frame.image_url) ? (
-                      <img
+                      <Image
                         src={frame.thumbnail_url ?? frame.image_url}
-                        alt={`${frame.satellite} ${frame.band} preview`}
-                        loading="lazy"
-                        decoding="async"
+                        alt={`${frame.satellite} ${frame.band} frame preview captured ${new Date(frame.capture_time).toLocaleString()}`}
                         className="w-full h-full object-cover"
                       />
                     ) : (

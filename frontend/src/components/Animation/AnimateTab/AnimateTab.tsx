@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2 } from 'lucide-react';
 import api from '../../../api/client';
 import { showToast } from '../../../utils/toast';
+import Image from '../../Image';
 import AnimationSettingsPanel from '../AnimationSettingsPanel';
 import AnimationPresets from '../AnimationPresets';
 import BatchAnimationPanel from '../BatchAnimationPanel';
@@ -241,9 +242,9 @@ export default function AnimateTab() {
             </h4>
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
               {animationItems[0].format === 'gif' ? (
-                <img
+                <Image
                   src={`/api/download?path=${encodeURIComponent(animationItems[0].output_path)}`}
-                  alt={animationItems[0].name}
+                  alt={`Latest animation: ${animationItems[0].name}`}
                   className="w-full h-full object-contain"
                 />
               ) : (

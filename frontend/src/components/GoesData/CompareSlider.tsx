@@ -66,11 +66,11 @@ export default function CompareSlider({
         className="absolute inset-0 overflow-hidden"
         style={{ clipPath: `inset(0 ${100 - comparePosition}% 0 0)` }}
       >
-        <img
+        <Image
           src={imageUrl}
-          alt="Current frame"
+          alt={frameTime ? `Current frame captured ${frameTime}` : 'Current frame'}
+          loading="eager"
           className="absolute inset-0 w-full h-full object-contain"
-          draggable={false}
         />
       </div>
       {/* Native range input for accessibility */}

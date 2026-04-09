@@ -275,7 +275,9 @@ describe('AnimateTab (Unified)', () => {
     await waitFor(() => {
       expect(screen.getByText('Latest Animation')).toBeInTheDocument();
     });
-    const img = screen.getByAltText('GIF Anim');
+    // JTN-394: alt text was enriched to "Latest animation: {name}" so
+    // match the name with a regex to stay resilient to future tweaks.
+    const img = screen.getByAltText(/GIF Anim/i);
     expect(img).toBeInTheDocument();
   });
 

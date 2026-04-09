@@ -1,4 +1,5 @@
 import { Satellite, ImageOff } from 'lucide-react';
+import Image from '../Image';
 import type { PreviewRangeResponse } from './types';
 
 interface Props {
@@ -56,12 +57,10 @@ export default function FrameRangePreview({ data, isLoading, isError }: Readonly
           <div key={frame.id} className="flex-1 min-w-[120px]">
             <div className="relative aspect-video bg-gray-200 dark:bg-slate-800 rounded-lg overflow-hidden">
               {frame.thumbnail_url ? (
-                <img
+                <Image
                   src={frame.thumbnail_url}
-                  alt={`${labels[i]} frame`}
+                  alt={`${labels[i]} frame of animation range preview`}
                   className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

@@ -268,7 +268,7 @@ describe('ImageViewer accessibility', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const img = screen.getByAltText(/Use zoom buttons to zoom/);
+    const img = screen.getByAltText(/use zoom buttons to zoom/i);
     expect(img).toBeTruthy();
   });
 
@@ -294,7 +294,7 @@ describe('ImageViewer accessibility', () => {
     const frame = makeFrame('1');
     render(<ImageViewer frame={frame} frames={[frame]} onClose={() => {}} onNavigate={() => {}} />);
 
-    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    const img = screen.getByAltText(/use zoom buttons to zoom/i) as HTMLImageElement;
     // At default scale=1, cursor should be 'default'
     expect(img.style.cursor).toBe('default');
   });
@@ -307,7 +307,7 @@ describe('ImageViewer accessibility', () => {
     const zoomInBtn = screen.getByTitle('Zoom in');
     fireEvent.click(zoomInBtn);
 
-    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    const img = screen.getByAltText(/use zoom buttons to zoom/i) as HTMLImageElement;
     expect(img.style.cursor).toBe('grab');
   });
 
@@ -339,7 +339,7 @@ describe('ImageViewer accessibility', () => {
     const panArea = screen.getByLabelText(/pan and zoom/i);
     fireEvent.wheel(panArea, { deltaY: -100 });
 
-    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    const img = screen.getByAltText(/use zoom buttons to zoom/i) as HTMLImageElement;
     // After zooming in, cursor should change to 'grab'
     expect(img.style.cursor).toBe('grab');
   });
@@ -350,7 +350,7 @@ describe('ImageViewer accessibility', () => {
 
     // Zoom in first
     fireEvent.click(screen.getByTitle('Zoom in'));
-    const img = screen.getByAltText(/Use zoom buttons to zoom/) as HTMLImageElement;
+    const img = screen.getByAltText(/use zoom buttons to zoom/i) as HTMLImageElement;
     expect(img.style.cursor).toBe('grab');
 
     // Reset

@@ -20,40 +20,60 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/health", tags=["health"])
 
 
-def _read_version() -> str:
-    """Read version from VERSION file or env, fallback to 0.0.0."""
-    env_ver = os.environ.get("BUILD_VERSION", "")
-    if env_ver:
-        return env_ver
-    parents = Path(__file__).resolve().parents
-    repo_root = parents[min(4, len(parents) - 1)]
-    for candidate in [repo_root / "VERSION", Path("VERSION")]:
+_VERSION_PLACEHOLDER = "0.0.0"
+
+
+def _find_upward(filename: str) -> Path | None:
+    """Walk up from this file looking for ``filename``.
+
+    Falls back to the working directory and ``/app`` (Docker default) so the
+    same lookup works in tests, in ``make dev``, and in the production image.
+    """
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        candidate = current / filename
         if candidate.is_file():
-            return candidate.read_text().strip()
-    return "0.0.0"
+            return candidate
+        current = current.parent
+    for fallback in [Path(filename), Path("/app") / filename]:
+        if fallback.is_file():
+            return fallback
+    return None
+
+
+def _read_version() -> str:
+    """Resolve the running app version.
+
+    Order of preference:
+    1. ``BUILD_VERSION`` env var, when it has been overridden away from the
+       Dockerfile placeholder.
+    2. A ``VERSION`` file located by walking up from this module.
+    3. The placeholder ``0.0.0`` (only when nothing else is available).
+    """
+    env_ver = os.environ.get("BUILD_VERSION", "").strip()
+    if env_ver and env_ver != _VERSION_PLACEHOLDER:
+        return env_ver
+
+    version_file = _find_upward("VERSION")
+    if version_file is not None:
+        text = version_file.read_text().strip()
+        if text:
+            return text
+
+    return env_ver or _VERSION_PLACEHOLDER
 
 
 VERSION = _read_version()
 
-# --- Changelog parsing (cached) ---
+# --- Changelog parsing (cached, invalidated on file mtime change) ---
 
 _changelog_cache: list | None = None
+_changelog_cache_mtime: float | None = None
 
 
 def _find_changelog() -> Path | None:
     """Locate CHANGELOG.md by searching parent directories."""
-    # Search upward from this file
-    current = Path(__file__).resolve().parent
-    while current != current.parent:
-        candidate = current / "CHANGELOG.md"
-        if candidate.is_file():
-            return candidate
-        current = current.parent
-    # Also check CWD and /app (Docker default)
-    for fallback in [Path("CHANGELOG.md"), Path("/app/CHANGELOG.md")]:
-        if fallback.is_file():
-            return fallback
-    return None
+    return _find_upward("CHANGELOG.md")
 
 
 def _strip_links(text: str) -> str:
@@ -82,14 +102,25 @@ def _collect_change(current: dict | None, line: str) -> None:
 
 
 def _parse_changelog(limit: int = 5) -> list:
-    """Parse CHANGELOG.md into structured releases."""
-    global _changelog_cache  # noqa: PLW0603
-    if _changelog_cache is not None:
-        return _changelog_cache
+    """Parse CHANGELOG.md into structured releases.
+
+    The result is cached and invalidated when the underlying file's mtime
+    changes, so dev users don't have to restart the API to see new entries.
+    """
+    global _changelog_cache, _changelog_cache_mtime  # noqa: PLW0603
 
     path = _find_changelog()
     if path is None:
         _changelog_cache = []
+        _changelog_cache_mtime = None
+        return _changelog_cache
+
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = None
+
+    if _changelog_cache is not None and mtime == _changelog_cache_mtime:
         return _changelog_cache
 
     releases: list = []
@@ -111,6 +142,7 @@ def _parse_changelog(limit: int = 5) -> list:
         releases.append(current)
 
     _changelog_cache = releases
+    _changelog_cache_mtime = mtime
     return _changelog_cache
 
 
@@ -221,10 +253,12 @@ def _derive_overall(checks: dict) -> str:
 async def changelog():
     """Return parsed CHANGELOG.md as structured JSON."""
     logger.debug("Changelog requested")
-    global _changelog_cache  # noqa: PLW0603
-    # Clear cache to allow detecting newly available CHANGELOG.md
+    global _changelog_cache, _changelog_cache_mtime  # noqa: PLW0603
+    # If a previous lookup found nothing, retry — the file may have appeared
+    # (e.g., after a volume mount or build artifact landed).
     if _changelog_cache is not None and len(_changelog_cache) == 0:
         _changelog_cache = None
+        _changelog_cache_mtime = None
     return _parse_changelog()
 
 

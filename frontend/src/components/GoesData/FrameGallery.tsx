@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Image, Columns2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Image as ImageIcon, Columns2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { GoesFrame, PaginatedFrames } from './types';
 import ImageViewer from './ImageViewer';
 import CompareView from './CompareView';
+import Image from '../Image';
 import api from '../../api/client';
 
 export default function FrameGallery() {
@@ -133,7 +134,7 @@ export default function FrameGallery() {
       )}
       {!isLoading && frames.length === 0 && (
         <div className="flex flex-col items-center py-16 text-gray-400 dark:text-slate-500">
-          <Image className="w-12 h-12 mb-3" />
+          <ImageIcon className="w-12 h-12 mb-3" aria-hidden="true" />
           <p>No frames found</p>
         </div>
       )}
@@ -161,11 +162,10 @@ export default function FrameGallery() {
                 }`}
               >
                 <div className="aspect-square bg-gray-100 dark:bg-slate-800">
-                  <img
+                  <Image
                     src={`/api/satellite/frames/${frame.id}/thumbnail`}
-                    alt={`${frame.satellite} ${frame.band} — ${formatTime(frame.capture_time)}`}
+                    alt={`${frame.satellite} ${frame.band} thumbnail — ${formatTime(frame.capture_time)}`}
                     className="w-full h-full object-cover"
-                    loading="lazy"
                   />
                 </div>
                 <div

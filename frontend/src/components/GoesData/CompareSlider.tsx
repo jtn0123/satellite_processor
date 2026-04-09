@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Columns2 } from 'lucide-react';
+import Image from '../Image';
 
 interface CompareSliderProps {
   imageUrl: string;
@@ -37,11 +38,11 @@ export default function CompareSlider({
     <div ref={compareContainerRef} className="relative w-full h-full select-none">
       {/* Previous (background) */}
       {prevImageUrl ? (
-        <img
+        <Image
           src={prevImageUrl}
-          alt="Previous frame"
+          alt={`Previous frame${prevFrameTime ? ` from ${timeAgo(prevFrameTime)}` : ''}`}
           className="absolute inset-0 w-full h-full object-contain"
-          draggable={false}
+          loading="eager"
         />
       ) : (
         // JTN-408 ISSUE-013: previously the Compare toggle would split the

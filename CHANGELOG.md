@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/jtn0123/satellite_processor/compare/v1.44.0...v1.45.0) (2026-04-09)
+
+
+### Features
+
+* **backend:** HTTP + Celery task idempotency (JTN-391/398) ([#434](https://github.com/jtn0123/satellite_processor/issues/434)) ([efa899b](https://github.com/jtn0123/satellite_processor/commit/efa899bb3b7d97171c3047be5d4cde86c8af92d6))
+
 # [1.44.0](https://github.com/jtn0123/satellite_processor/compare/v1.43.0...v1.44.0) (2026-04-09)
 
 

@@ -19,7 +19,7 @@
 # Web Framework
 fastapi==0.135.3
 uvicorn[standard]==0.43.0
-python-multipart==0.0.24
+python-multipart==0.0.26
 websockets==16.0
 
 # Database

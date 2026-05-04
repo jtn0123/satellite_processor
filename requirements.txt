@@ -14,6 +14,6 @@ pyyaml==6.0.3
 requests==2.33.1
 
 # Observability
-prometheus_client>=0.20
+prometheus_client>=0.25.0
 
 # Dev tools moved to requirements-dev.txt

@@ -67,7 +67,7 @@ python-json-logger==4.1.0
 # Testing
 httpx==0.28.1
 pytest>=9.0.3,<10
-pytest-asyncio>=1.3.0,<2
+pytest-asyncio>=1.4.0,<2
 pytest-cov>=7.1.0
 pytest-xdist>=3.8.0
 pytest-split>=0.11.0

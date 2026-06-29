@@ -17,7 +17,7 @@
 # amend it into the same PR.
 
 # Web Framework
-fastapi==0.138.0
+fastapi==0.138.1
 uvicorn[standard]==0.49.0
 python-multipart==0.0.32
 websockets==16.0

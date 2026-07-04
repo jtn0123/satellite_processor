@@ -11,7 +11,7 @@ A full-stack audit of the satellite_processor platform (FastAPI backend, `satell
 | Frontend lint (`npm run lint`) | ❌ **26 errors** (24× `react-hooks/refs` in `FetchTab.tsx`, 2× `set-state-in-effect`), 115 warnings |
 | Backend/core lint (`ruff check .`) | ⚠️ 11 errors (9× `T201` print, 1× `S314` xml, 1× `B905`) |
 | Backend/core format (`ruff format --check`) | ✅ 279 files clean |
-| Backend tests (`pytest`) | See PR notes — suite executed during audit |
+| Backend + core tests (`pytest`, full suite in one process) | ✅ **3,023 passed, 65 skipped**; 7 failures + 28 errors all traced to the audit sandbox, not the app: core-processor errors are `RuntimeError: FFmpeg not found` (this container lacks FFmpeg; CI installs it as a system dep) and `test_redis_migration.py` passes 23/23 standalone (single-process isolation artifact — CI shards 4-ways) |
 | Manual verification | Headline findings (nginx key injection, dead Animate flow, Prometheus 401, `create_all`+Alembic, blocking preview fetch) each re-confirmed by direct source reading |
 
 ## Report card
@@ -107,7 +107,7 @@ The code-level fundamentals are unusually strong: `hmac.compare_digest` key comp
 
 ### Improvements
 
-1. **HIGH — nginx injects the real API key for every frontend visitor.** `frontend/nginx.conf:33,43` adds `proxy_set_header X-API-Key "${API_KEY}"` on `/api/` and `/ws/`, and `docker-compose.yml:11` binds `"3000:80"` on all interfaces. Anyone who can reach port 3000 (any LAN device, or the internet if forwarded) gets full read/write API access — the API-key scheme only protects direct port-8000 access. *(Validated: both the nginx lines and the compose binding.)* **Fix:** bind host ports to loopback (`"127.0.0.1:3000:80"`, same for 8000) so only the Cloudflare tunnel/edge reaches them — or drop header injection and use real session auth. At minimum, document that port 3000 must never be LAN-exposed.
+1. **HIGH — nginx injects the real API key for every frontend visitor.** `frontend/nginx.conf:33,43` adds `proxy_set_header X-API-Key "${API_KEY}"` on `/api/` and `/ws/`, and `docker-compose.yml:11` binds `"3000:80"` on all interfaces. Anyone who can reach port 3000 (any LAN device, or the internet if forwarded) gets full read/write API access — the API-key scheme only protects direct port-8000 access. *(Validated: both the nginx lines and the compose binding.)* **Fix (production only):** on the tunneled production host, bind ports to loopback (`"127.0.0.1:3000:80"`, same for 8000) so only the Cloudflare tunnel/edge reaches them — via a prod override file so local `docker compose up` and `docker-compose.dev.yml` keep their reachable ports. Alternatively drop header injection and use real session auth. At minimum, document that port 3000 must never be LAN-exposed in production.
 2. **MEDIUM — SSRF via unvalidated `webhook_url`.** `backend/app/routers/settings.py:68` accepts any string (every other field in that model is tightly bounded); `backend/app/services/webhook.py:27-29` then POSTs to it from inside the compose network. Combined with item 1, anyone reaching the frontend can point it at `http://redis:6379/` or a metadata endpoint. **Fix:** require `https://` and allowlist Discord webhook hosts (it's documented as Discord), or reject private/link-local ranges after resolution.
 3. **MEDIUM — monitoring stack on default/no credentials.** `docker-compose.yml:228-229` exposes Prometheus `9090` with no auth; `:245` falls back to `GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}` — and `.env.example` doesn't even list `GRAFANA_PASSWORD`. Contrast: Postgres/Redis correctly use `:?must be set`. **Fix:** `:?` enforcement for Grafana, bind both to `127.0.0.1`, add the var to `.env.example`.
 4. **LOW — deprecated WS auth via URL query param.** `backend/app/main.py:395` still accepts `?api_key=` (comment says deprecated), leaking keys into browser history and proxy logs — the codebase already built the safer first-message flow at `main.py:400-411`. **Fix:** remove the fallback; the frontend (`src/api/ws.ts`) already uses first-message auth.
@@ -129,10 +129,12 @@ Genuinely mature: every action SHA-pinned across all 5 workflows, path-filter jo
 
 ### Improvements
 
-1. **The security audit cannot fail.** `test.yml:76`: `pip-audit --strict || true` — the `|| true` makes the gate decorative, directly under a comment asserting the audit "passes cleanly." *(Validated by reading the workflow.)* **Fix:** delete `|| true` (or `continue-on-error: true` if you want visible-but-non-blocking). The single highest-value one-line fix in the repo.
+1. **The security audit cannot fail.** `test.yml:76`: `pip-audit --strict || true` — the `|| true` makes the gate decorative, directly under a comment asserting the audit "passes cleanly." *(Validated by reading the workflow — and corroborated live: GitHub currently reports 4 open Dependabot vulnerabilities on the default branch (1 moderate, 3 low) that a working gate would surface.)* **Fix:** delete `|| true` (or `continue-on-error: true` if you want visible-but-non-blocking). The single highest-value one-line fix in the repo.
 2. **No Python type checking anywhere** (verified: no mypy/pyright in any config, workflow, or pre-commit). The async SQLAlchemy/FastAPI backend — where awaited-vs-not and Optional bugs bite hardest — has zero static typing enforcement while the frontend gets full `tsc -b`. **Fix:** add mypy or pyright to the `lint-audit` job and pre-commit, starting with `backend/app/services/` and `tasks/`.
 3. **Trivy scans after the image is already live.** In `docker.yml`, `scan-images` runs after `build-and-push` has pushed `:latest`, and Watchtower auto-deploys from GHCR within minutes — so a CRITICAL finding fails CI *after* the vulnerable image is in production. The "Verify API image health" step is also a no-op (`|| true`, never curls health). **Fix:** reorder build → scan → push; make the health step actually check `/api/health` or delete it.
 4. **Missing `timeout-minutes` on almost every job** (only the Sonar job has one) — a wedged Playwright or 60s-health-poll job burns the 6-hour default. Also `test.yml:217`'s `api-contracts` runs on `[self-hosted, ci]` in a `pull_request`-triggered workflow — arbitrary code execution on your hardware if forks are ever enabled, and a single point of failure today. **Fix:** `timeout-minutes: 15–30` per job; move api-contracts to `ubuntu-latest` (it just runs a Python script).
+
+Also observed live during this audit: the SonarCloud job hard-fails on PRs that don't receive repo secrets (bot-authored PRs, e.g. Dependabot runs 1600/1601 and this report's own PR) with `Failed to query JRE metadata ... check SONAR_TOKEN` — consider gating the scan step with `if: env.SONAR_TOKEN != ''` so those PRs skip instead of fail.
 
 ## 10. Deployment & DevOps — B
 
@@ -164,7 +166,7 @@ The instrumentation code is A-grade — structured JSON logging with correlation
 
 1. **`docs/deployment.md:167-189` documents env vars that don't exist.** `SECRET_KEY` ("required"), `DATA_DIR`, `MAX_UPLOAD_SIZE_MB`, `CORS_ORIGINS` default `*` — none are fields in `backend/app/config.py`, and `extra = "ignore"` means setting them is a silent no-op (security theater in `SECRET_KEY`'s case). **Fix:** regenerate the table from the actual `Settings` fields.
 2. **`.env.example:16` will crash the API if used.** `CORS_ORIGINS=http://localhost:3000` — but `config.py:31` types it `list[str]`, so pydantic-settings demands JSON; a bare string raises at import → crashloop. `.env.production.example` compounds it by instructing "comma-separated." **Fix:** JSON arrays in both examples, or add a validator accepting comma-separated; also add missing vars (`GRAFANA_PASSWORD`, `WORKER_*_CONCURRENCY`).
-3. **Stale facts sweep:** README says React 18 (`package.json`: `^19.2.7`) and Python 3.12 (Dockerfile: `3.11-slim`); ADR 0004 reads "Accepted" though the four-queue topology it defers is implemented (should be Superseded); `docs/deployment.md:223` says don't run migrations from workers, yet the shared `entrypoint.sh` does exactly that in all 7 containers. **Fix:** one drift-sweep commit.
+3. **Stale facts sweep:** README says React 18 (`package.json`: `^19.2.7`) and Python 3.12 (Dockerfile: `3.11-slim`); ADR 0004 reads "Accepted" though the four-queue topology it defers is implemented (should be Superseded); `docs/deployment.md:223` says don't run migrations from workers, yet the shared `entrypoint.sh` does exactly that in all 7 containers. Related drift: root `requirements.txt` pins `numpy==2.5.0`, which does not resolve on Python 3.11 (the version in CI and the backend Dockerfile) — CI never notices because every job installs `backend/requirements.lock` instead, making the root file dead weight that misleads local installs. **Fix:** one drift-sweep commit; either delete root `requirements.txt` or align it with the lockfile and supported Python.
 4. **Quick Start doesn't survive first contact.** README's `docker compose up --build -d` exits fatally without `API_KEY` (`main.py:114-119`) and mandatory `POSTGRES_PASSWORD`/`REDIS_PASSWORD` — no "copy `.env.example` first" step; Prometheus/Grafana (ports 9090/3001) are undiscoverable from the docs. **Fix:** a First-Run section and a short Monitoring section.
 
 ---
@@ -173,7 +175,7 @@ The instrumentation code is A-grade — structured JSON logging with correlation
 
 | # | Action | Area | Effort |
 |---|---|---|---|
-| 1 | Bind ports 3000/8000 to loopback (nginx injects the API key for every visitor) | Security | Tiny |
+| 1 | Bind ports 3000/8000 to loopback on the production host (nginx injects the API key for every visitor) — keep dev ports as-is | Security | Tiny |
 | 2 | Remove `\|\| true` from `pip-audit --strict` in CI | CI/CD | One line |
 | 3 | Fix Prometheus scrape auth — production metrics are currently dark | Observability | Small |
 | 4 | Fix the dead batch-Animate flow and retire the CustomEvent bus | UX | Small |

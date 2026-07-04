@@ -11,7 +11,7 @@ A full-stack audit of the satellite_processor platform (FastAPI backend, `satell
 | Frontend lint (`npm run lint`) | ❌ **26 errors** (24× `react-hooks/refs` in `FetchTab.tsx`, 2× `set-state-in-effect`), 115 warnings |
 | Backend/core lint (`ruff check .`) | ⚠️ 11 errors (9× `T201` print, 1× `S314` xml, 1× `B905`) |
 | Backend/core format (`ruff format --check`) | ✅ 279 files clean |
-| Backend + core tests (`pytest`, full suite in one process) | ✅ **3,023 passed, 65 skipped**; 7 failures + 28 errors all traced to the audit sandbox, not the app: core-processor errors are `RuntimeError: FFmpeg not found` (this container lacks FFmpeg; CI installs it as a system dep) and `test_redis_migration.py` passes 23/23 standalone (single-process isolation artifact — CI shards 4-ways) |
+| Backend + core tests (`pytest`, full suite in one process) | ✅ **3,023 passed, 65 skipped**; 7 failures + 28 errors, none of them app bugs: core-processor errors are `RuntimeError: FFmpeg not found` (audit container lacks FFmpeg; CI installs it), and every failure (all 7 in `test_concurrency.py`) plus the `test_redis_migration.py` errors pass 100% when their files run standalone — single-process isolation coupling that CI masks via 4-way sharding (see §8) |
 | Manual verification | Headline findings (nginx key injection, dead Animate flow, Prometheus 401, `create_all`+Alembic, blocking preview fetch) each re-confirmed by direct source reading |
 
 ## Report card
@@ -122,6 +122,8 @@ Big and real: ~2,000 backend test functions across 130 files, 399 core-engine te
 2. **Verified untested modules:** `backend/app/tracing.py` (0 test references), `backend/app/services/webhook.py` (delivery/retry logic untested — only its settings), `backend/app/tasks/scheduling_tasks.py` (2 thin references for the module driving all periodic fetches and cleanup). **Fix:** prioritize `scheduling_tasks.py` — it's the code that runs unattended.
 3. **Coverage gates lag the suite.** `fail_under = 61` backend / 70% frontend with a suite this size means real regressions fit under the gate; per-shard `--cov-fail-under=61` (`test.yml:125`) is also fragile if shard composition shifts. **Fix:** measure actual merged coverage, ratchet gates to actual-minus-2%, and gate on the merged number in `pr-summary` (which already computes it).
 4. **Gate-driven test files** (`test_goes_coverage_boost.py` — docstring literally says it exists to boost a SonarQube gate — `test_sonar_pr101.py`, `LiveTabCoverage.test.tsx`, `CodeRabbitFixes.test.tsx`) indicate tests written to appease tools. **Fix:** as these files are touched, fold their useful assertions into behavior-named suites; stop the naming pattern going forward.
+
+Observed while executing the suite for this audit: running all ~3,100 backend+core tests in a single process reproducibly fails 7 tests in `backend/tests/test_concurrency.py` and errors out `backend/tests/test_redis_migration.py` — yet both files pass 100% standalone (verified twice). Some test leaves shared state (event loop, Redis fake, or circuit-breaker globals) that later tests inherit. CI never sees this because the 4-way shard split happens to separate the offenders, but the coupling is fragile — a future re-shard could surface it as mystery CI flakes. Worth a `pytest -p no:randomly`-style bisect (`pytest --stepwise` between suspects) when convenient.
 
 ## 9. CI/CD pipeline — A-
 

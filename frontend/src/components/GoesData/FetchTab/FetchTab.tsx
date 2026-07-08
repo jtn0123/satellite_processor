@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { parseApiError } from '../../../utils/parseApiError';
 import { ChevronDown, Save } from 'lucide-react';
@@ -112,7 +112,7 @@ export default function FetchTab() {
   // Lazy-init from persisted wizard state (JTN-476 ISSUE-074). Null-safe for
   // SSR / tests without localStorage. Falls back to the default range so an
   // empty persisted slot still produces a valid datetime-local value.
-  const persisted = useRef<PersistedWizardState | null>(loadPersistedWizard()).current;
+  const persisted = useMemo<PersistedWizardState | null>(() => loadPersistedWizard(), []);
   const [step, setStep] = useState(persisted?.step ?? 0);
   const [satellite, setSatellite] = useState(persisted?.satellite ?? '');
   const [sector, setSector] = useState(persisted?.sector ?? 'FullDisk');

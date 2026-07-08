@@ -25,6 +25,11 @@ export default defineConfig([
     rules: {
       // Downgrade to warn — 112 existing usages; fix incrementally
       '@typescript-eslint/no-non-null-assertion': 'warn',
+      // react-hooks v7 promoted this react-compiler rule to error. It flags
+      // legitimate patterns (seeding a default once query data loads, fetch
+      // -on-mount effects that toggle a loading flag) where a rewrite would
+      // be riskier than the warning. Kept as warn; fix incrementally.
+      'react-hooks/set-state-in-effect': 'warn',
       // Allow empty arrow functions (common for no-op handlers and mocks)
       '@typescript-eslint/no-empty-function': ['warn', { allow: ['arrowFunctions'] }],
       // JTN-389: autoFocus can steal focus from screen-reader users —

@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/jtn0123/satellite_processor/compare/v1.45.0...v1.45.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **frontend:** resolve react-hooks v7 lint errors blocking CI ([#658](https://github.com/jtn0123/satellite_processor/issues/658)) ([8c2795f](https://github.com/jtn0123/satellite_processor/commit/8c2795fe37abd55b16307956f2f4fae20ec036b7))
+
 # [1.45.0](https://github.com/jtn0123/satellite_processor/compare/v1.44.0...v1.45.0) (2026-04-09)
 
 

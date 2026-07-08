@@ -17,36 +17,36 @@
 # amend it into the same PR.
 
 # Web Framework
-fastapi==0.137.0
+fastapi==0.139.0
 uvicorn[standard]==0.49.0
 python-multipart==0.0.32
 websockets==16.0
 
 # Database
-sqlalchemy[asyncio]==2.0.49
+sqlalchemy[asyncio]==2.0.51
 aiosqlite==0.22.1
 asyncpg==0.31.0
 psycopg2-binary==2.9.12
-alembic==1.18.4
+alembic==1.18.5
 
 # Settings
-pydantic-settings==2.14.1
+pydantic-settings==2.14.2
 
 # Rate Limiting
-slowapi==0.1.9
+slowapi==0.1.10
 
 # Core processor dependencies
 psutil==7.2.2
-numpy==2.4.6
-opencv-python-headless==4.13.0.92
-Pillow==12.2.0
+numpy==2.5.1
+opencv-python-headless==5.0.0.93
+Pillow==12.3.0
 python-dateutil==2.9.0.post0
 
 # GOES data fetching
-boto3>=1.43.29
+boto3>=1.43.40
 xarray>=2026.4.0
 netCDF4>=1.7.4
-matplotlib>=3.10.9
+matplotlib>=3.11.0
 
 # Task Queue
 celery[redis]==5.6.3
@@ -66,12 +66,12 @@ python-json-logger==4.1.0
 
 # Testing
 httpx==0.28.1
-pytest>=9.0.3,<10
+pytest>=9.1.1,<10
 pytest-asyncio>=1.4.0,<2
 pytest-cov>=7.1.0
 pytest-xdist>=3.8.0
 pytest-split>=0.11.0
 aiofiles>=25.1.0
 prometheus-client>=0.25.0
-fakeredis>=2.36.1
+fakeredis>=2.36.2
 zipstream-ng>=1.9.2,<2.0

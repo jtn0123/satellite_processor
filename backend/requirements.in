@@ -43,7 +43,7 @@ Pillow==12.3.0
 python-dateutil==2.9.0.post0
 
 # GOES data fetching
-boto3>=1.43.46
+boto3>=1.43.51
 xarray>=2026.7.0
 netCDF4>=1.7.4
 matplotlib>=3.11.0

@@ -55,7 +55,7 @@
     "openapi-typescript": "^7.13.0",
     "rollup-plugin-visualizer": "^7.0.1",
     "semantic-release": "^25.0.6",
-    "typescript": "~5.9.3",
+    "typescript": "~7.0.2",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"

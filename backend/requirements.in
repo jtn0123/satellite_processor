@@ -72,6 +72,6 @@ pytest-cov>=7.1.0
 pytest-xdist>=3.8.0
 pytest-split>=0.11.0
 aiofiles>=25.1.0
-prometheus-client>=0.25.0
+prometheus-client>=0.26.0
 fakeredis>=2.37.0
 zipstream-ng>=1.9.2,<2.0

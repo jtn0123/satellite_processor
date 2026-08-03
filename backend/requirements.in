@@ -20,7 +20,7 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.0
 python-multipart==0.0.32
-websockets==16.1.1
+websockets==17.0
 
 # Database
 sqlalchemy[asyncio]==2.0.51

@@ -1,0 +1,66 @@
+# pip-audit baseline — KNOWN, UNFIXED ADVISORIES.
+#
+# This is a debt ledger, not an allowlist. Every ID below is a real advisory
+# against a pinned dependency in backend/requirements.lock that has a published
+# fix. They are listed here so that `pip-audit --strict` fails on anything NEW
+# instead of being wrapped in `|| true`, which silenced future findings too.
+#
+# The workflow comment this replaces claimed the lock file "passes pip-audit
+# --strict cleanly (verified 2026-04-09)". That stopped being true; nobody
+# noticed, because `|| true` meant the job stayed green either way.
+#
+# To shrink this file: bump the package in backend/requirements.lock to the
+# fixed version shown, re-run `pip-audit --strict -r backend/requirements.lock`,
+# and delete the IDs that stop appearing. Do not add an ID here without also
+# noting why it cannot be fixed now.
+#
+# Format: one advisory ID per line. Blank lines and #-comments are ignored.
+# Regenerate the current finding set with:
+#   pip-audit --strict -r backend/requirements.lock -f json | jq -r \
+#     '.dependencies[] | select(.vulns != null) | .vulns[].id' | sort -u
+
+
+# click 8.3.2 -> fixed in 8.3.3
+PYSEC-2026-2132
+
+# idna 3.11 -> fixed in 3.15
+PYSEC-2026-215
+
+# mako 1.3.10 -> fixed in 1.3.12
+PYSEC-2026-2617
+
+# pillow 12.2.0 -> fixed in 12.3.0
+PYSEC-2026-2253
+PYSEC-2026-2254
+PYSEC-2026-2255
+PYSEC-2026-2256
+PYSEC-2026-2257
+PYSEC-2026-3451
+PYSEC-2026-3452
+PYSEC-2026-3453
+PYSEC-2026-3454
+PYSEC-2026-3493
+PYSEC-2026-3494
+PYSEC-2026-3495
+PYSEC-2026-3496
+
+# pydantic-settings 2.13.1 -> fixed in 2.14.2
+GHSA-4xgf-cpjx-pc3j
+
+# python-multipart 0.0.24 -> fixed in 0.0.26, 0.0.27, 0.0.30, 0.0.31
+PYSEC-2026-3036
+PYSEC-2026-3037
+PYSEC-2026-3038
+PYSEC-2026-3039
+PYSEC-2026-3040
+
+# starlette 1.0.0 -> fixed in 1.0.1, 1.1.0, 1.3.0, 1.3.1
+PYSEC-2026-161
+PYSEC-2026-2280
+PYSEC-2026-2281
+PYSEC-2026-248
+PYSEC-2026-249
+
+# urllib3 2.6.3 -> fixed in 2.7.0
+PYSEC-2026-141
+PYSEC-2026-142

@@ -68,15 +68,29 @@ jobs:
         run: ruff format --check backend/ satellite_processor/
 
       - name: Security audit (pip-audit)
-        # JTN-410: The historical `--ignore-vuln PYSEC-2024-0` flag has been
-        # removed. PYSEC-2024-0 is not a real advisory ID in the OSV database
-        # ("Bug not found" from api.osv.dev) — it was added as a placeholder
-        # during an earlier audit (#181) and never updated. The current
-        # pinned dependency set passes `pip-audit --strict` cleanly on
-        # Python 3.11 (verified 2026-04-09). If a real vuln needs to be
-        # ignored in future, open a tracking issue, link the CVE/PYSEC ID
-        # in a comment here, and set a re-check date.
-        run: pip-audit --strict || true
+        # Blocking, against an explicit baseline. The previous `|| true` meant
+        # this step could not fail, and the comment claiming the lock file
+        # "passes pip-audit --strict cleanly (verified 2026-04-09)" had since
+        # stopped being true without anyone noticing: there are now 40 live
+        # advisories across 8 pinned packages, all with published fixes.
+        #
+        # Those 29 unique advisory IDs are listed in .pip-audit-ignore, which
+        # is a debt ledger, not an allowlist -- it names each package and the
+        # version that fixes it. Anything NOT in that file now fails the job.
+        # Shrink the file by bumping the pins; do not grow it without a reason
+        # written next to the ID.
+        #
+        # Scoped to the lock file rather than the ambient environment so the
+        # audit target is deterministic and matches what the baseline was
+        # generated against (the job also installs ruff, uv and pip-audit).
+        run: |
+          ignore_args=()
+          while IFS= read -r id; do
+            [ -n "$id" ] && ignore_args+=("--ignore-vuln=$id")
+          done < <(grep -vE '^[[:space:]]*(#|$)' .pip-audit-ignore)
+
+          echo "Baselined advisories: ${#ignore_args[@]} (see .pip-audit-ignore)"
+          pip-audit --strict -r backend/requirements.lock ${ignore_args[@]+"${ignore_args[@]}"}
 
   backend:
     name: Backend Tests (Shard ${{ matrix.shard }}/4)

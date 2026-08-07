@@ -1,0 +1,118 @@
+# Gitleaks configuration for satellite_processor
+# Reduces false positives for this specific project.
+#
+# The rules below are deliberately wider than the obvious `password = "..."`
+# shape. A previous version of this ruleset (in a sibling repo) matched only
+# quoted assignments, so a bare `MQPASS=<digits>` in a helper script sat in a
+# public repo undetected until a manual read found it. Shell scripts assign
+# secrets bare and abbreviate the variable name; the rules have to cover that.
+
+title = "satellite_processor gitleaks config"
+
+# The upstream default ruleset (AWS keys, GitHub PATs, Slack/Stripe tokens,
+# private keys, ...) runs in addition to the project rules below. Only the one
+# broad default rule, `generic-api-key`, is deliberately overridden further down
+# -- its entropy floor is low enough that it fires on ordinary object keys and
+# filenames, and a scan nobody trusts is a scan nobody reads.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlisted files and patterns"
+
+# Example/sample files only. Note there is deliberately no blanket '.*\.md$'
+# entry: docs are exactly where a copy-pasted working command tends to land.
+paths = [
+    '''\.env\.example$''',
+    '''\.env\..*\.example$''',
+    '''requirements.*\.txt$''',
+    # Sphinx `_modules/` output is an HTML-escaped mirror of source files that
+    # are themselves scanned. Excluding it drops the duplicate hit, not coverage.
+    '''(^|/)_modules/.*\.html$''',
+]
+
+# Placeholder values, not private IP ranges. A blanket allowlist of every 10.x
+# and 192.168.x address would suppress a real broker host appearing next to a
+# real password.
+regexes = [
+    '''(?i)your[_-]?[a-z]*[_-]?pass''',
+    '''(?i)YOUR_[A-Z_]*(PASS|SSID|TOKEN|KEY)''',
+    '''(?i)(changeme|change_me|placeholder|example|redacted|xxxxx+|dummy|sample)''',
+    '''(?i)\b(valid|invalid|fake|mock|expired|bogus|unused)[-_]?(token|secret|pass)''',
+    '''\$\{[A-Z_]+\}''',              # ${MQTT_PASSWORD} style indirection
+    '''\$[A-Z_]{3,}''',               # $MQTT_PASS style indirection
+    '''\$\{\{\s*secrets\.''',         # ${{ secrets.FOO }} in workflow YAML
+    '''(?i)^(process\.env|os\.environ|System\.getenv)''',  # env lookups, not values
+    '''["']?:\?[A-Z_ ]+not set''',    # ${VAR:?VAR not set} shell guards
+]
+
+# Bare shell-style assignment of a credential: PASS=hunter2, MQPASS=<digits>,
+# API_TOKEN=..., DB_SECRET=... Unquoted or quoted, any variable name ending in
+# PASS/PASSWD/PASSWORD/SECRET/TOKEN.
+[[rules]]
+id = "bare-credential-assignment"
+description = "Bare credential assignment (shell/env style)"
+regex = '''(?i)\b[A-Z0-9_]*(?:PASS(?:WD|WORD)?|SECRET|TOKEN)\s*=\s*["']?([^\s"'#$(){}\[\]<>,;:=+*/\\]{6,})'''
+secretGroup = 1
+keywords = ["pass", "secret", "token"]
+
+# In real source files, `sessionToken = AtomicLong(...)` and
+# `should_pass = should_pass` are variable and constructor references, not
+# credentials. Restricted by BOTH path and value shape: the value has to be a
+# bare identifier (letters/underscores, no digits, unquoted) AND live in a
+# source or docs file. Shell, .env, plist and CI YAML files are deliberately
+# NOT on this path list -- that is precisely where bare credential assignments
+# land, so the rule stays at full strength there.
+[[rules.allowlists]]
+condition = "AND"
+paths = [
+    '''\.(py|kt|kts|java|swift|go|rs|ts|tsx|js|jsx|cjs|mjs|c|cc|cpp|h|hpp|rb|php|scala|gradle|groovy)$''',
+    '''\.(html|htm|vue|svelte)$''',
+    '''\.md$''',
+]
+regexes = [
+    '''^[A-Za-z_][A-Za-z_]*$''',
+    '''^[A-Za-z_][A-Za-z0-9_]*[?!]?\.[A-Za-z_]''',
+]
+
+# Credentials passed as command-line flags: curl -u user:pw,
+# mosquitto_pub -P <pw>, mosquitto_sub -u <user> -P <pw>.
+[[rules]]
+id = "mqtt-client-password-flag"
+description = "MQTT client password passed on the command line"
+regex = '''mosquitto_(?:pub|sub|rr)\b[^\n|]*?\s-P\s+["']?([^\s"'$][^\s"']*)'''
+secretGroup = 1
+keywords = ["mosquitto_pub", "mosquitto_sub", "mosquitto_rr"]
+
+# Overrides the upstream `generic-api-key`. The default fires on any
+# key/token/secret-ish variable holding 10+ characters at entropy 3.5, which in
+# this repo means ordinary object keys and data filenames. This version demands
+# an explicit api_key/apikey name, 32+ characters, and entropy 4.5.
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:api[_\s]?key|apikey)["']?\s*[:=]\s*["']([a-zA-Z0-9]{32,})["']'''
+secretGroup = 1
+entropy = 4.5
+keywords = ["api", "key"]
+
+[rules.allowlist]
+paths = [
+    '''.*\.example''',
+    '''.*\.sample''',
+]
+
+# Quoted assignment forms, kept from the original config.
+[[rules]]
+id = "mqtt-password"
+description = "MQTT Password"
+regex = '''(?i)mqtt[_\s]?pass(?:word)?["']?\s*[:=]\s*["']([^"']+)["']'''
+secretGroup = 1
+keywords = ["mqtt", "pass"]
+
+[[rules]]
+id = "wifi-password"
+description = "WiFi Password"
+regex = '''(?i)wifi[_\s]?pass(?:word)?["']?\s*[:=]\s*["']([^"']+)["']'''
+secretGroup = 1
+keywords = ["wifi", "pass"]

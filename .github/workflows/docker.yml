@@ -4,6 +4,13 @@ on:
   push:
     branches: [release]
 
+# Read-only floor. Both jobs below re-declare what they actually need
+# (packages: write to push to GHCR, security-events: write for Trivy), and a
+# job-level block replaces this wholesale rather than adding to it -- so this
+# only affects any job added later that forgets to declare its own.
+permissions:
+  contents: read
+
 env:
   REGISTRY: ghcr.io
   API_IMAGE: ghcr.io/jtn0123/satellite-processor-api

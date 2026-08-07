@@ -7,6 +7,12 @@ on:
     branches: [main, release]
   workflow_dispatch:
 
+# Read-only floor for the whole workflow. The two jobs that need more --
+# `sonarqube` and `pr-summary`, both of which write PR comments -- declare
+# their own permissions blocks, which replace this rather than extend it.
+permissions:
+  contents: read
+
 concurrency:
   group: test-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -1016,6 +1022,10 @@ jobs:
     needs: [changes, backend, frontend, frontend-build, e2e, integration, lint-audit]
     if: always() && github.event_name == 'pull_request'
     permissions:
+      # A job-level block replaces the workflow default outright, it does not
+      # merge with it -- so contents has to be restated here or the checkout
+      # below runs with contents:none.
+      contents: read
       pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

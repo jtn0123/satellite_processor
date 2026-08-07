@@ -17,44 +17,43 @@ fails loudly if the live configuration drifts from it.
 
 ### `main` branch
 
-| Setting | Value |
-|---------|-------|
-| Require a pull request before merging | **Yes** |
-| Required approving reviews | **1** |
-| Dismiss stale reviews on new commits | **Yes** |
-| Require review from Code Owners | **No** (no CODEOWNERS yet) |
-| Require status checks to pass | **Yes** |
-| Require branches to be up to date before merging | **Yes** |
-| Required status checks | See [§ Required checks](#required-checks) |
-| Require conversation resolution before merging | **Yes** |
-| Require signed commits | **Yes** |
-| Require linear history | **Yes** (no merge commits; rebase or squash) |
-| Require deployments to succeed | **No** |
-| Lock branch | **No** |
-| Do not allow bypassing the above settings | **Yes** (even for admins) |
-| Restrict who can push to matching branches | **No** (protection via PR flow) |
-| Allow force pushes | **No** |
-| Allow deletions | **No** |
+| Setting | Value | Enforced by CI check |
+|---------|-------|----------------------|
+| Require status checks to pass | **Yes** | yes |
+| Required status checks | Non-empty — see [§ Required checks](#required-checks) | yes (non-empty only) |
+| Require branches to be up to date before merging | **Yes** | no |
+| Do not allow bypassing the above settings | **Yes** (even for admins) | yes |
+| Allow force pushes | **No** | yes |
+| Allow deletions | **No** | yes |
+| Require a pull request before merging | **Yes** | no |
+| Required approving reviews | **0** — see [§ Solo-maintainer carve-outs](#solo-maintainer-carve-outs) | no |
+| Require review from Code Owners | **No** (no CODEOWNERS) | no |
+| Require conversation resolution before merging | **No** | no |
+| Require signed commits | **No** | no |
+| Require linear history | **No** | no |
+| Require deployments to succeed | **No** | no |
+| Lock branch | **No** | no |
+| Restrict who can push to matching branches | **No** (protection via PR flow) | no |
 
 ### `release` branch
 
 `release` is treated like a deploy lever rather than a development target.
 It should only ever fast-forward from `main`.
 
-| Setting | Value |
-|---------|-------|
-| Require a pull request before merging | **Yes** |
-| Required approving reviews | **1** |
-| Dismiss stale reviews on new commits | **Yes** |
-| Require status checks to pass | **Yes** |
-| Require branches to be up to date before merging | **Yes** |
-| Required status checks | Same as `main` (see below) |
-| Require conversation resolution before merging | **Yes** |
-| Require signed commits | **Yes** |
-| Require linear history | **Yes** |
-| Allow force pushes | **No** |
-| Allow deletions | **No** |
-| Restrict who can push | **Yes** — only repo admins, and only via fast-forward merge from `main` |
+| Setting | Value | Enforced by CI check |
+|---------|-------|----------------------|
+| Require status checks to pass | **Yes** | yes |
+| Required status checks | Same as `main`, plus the Docker checks below | yes (non-empty only) |
+| Require branches to be up to date before merging | **Yes** | no |
+| Do not allow bypassing the above settings | **Yes** (even for admins) | yes |
+| Allow force pushes | **No** | yes |
+| Allow deletions | **No** | yes |
+| Require a pull request before merging | **Yes** | no |
+| Required approving reviews | **0** | no |
+| Require conversation resolution before merging | **No** | no |
+| Require signed commits | **No** | no |
+| Require linear history | **No** | no |
+| Restrict who can push | **No** — see [§ Solo-maintainer carve-outs](#solo-maintainer-carve-outs) | no |
 
 The practical workflow: `git checkout release && git merge --ff-only main
 && git push`. If that fails because `main` is not a fast-forward ancestor,
@@ -93,30 +92,38 @@ Checks added on the `release` branch only (via `.github/workflows/docker.yml`):
 - `Trivy Container Scan`
 
 > **Note:** if you rename or remove a job in the workflow, update this
-> list **in the same PR**. The CI check below compares this file to the
-> GitHub API and will fail otherwise.
+> list **and** the live protection rule in the same PR. The CI check no
+> longer diffs this list against the API — it only asserts the list is
+> non-empty — so a renamed job now silently stops gating merges instead of
+> turning the check red. Renaming a job is the moment to re-run the `gh api`
+> call below.
 
 ---
 
-## Why these specific settings
+## Solo-maintainer carve-outs
 
-- **Linear history** keeps `git log` readable and `git bisect` reliable.
-  Merge commits are convenient in big team repos; in a solo-maintainer
-  project they are pure noise.
-- **Signed commits** means every commit on a protected branch is
-  attributable. Enable with `git config commit.gpgsign true` or SSH-key
-  signing (`gpg.format = ssh`). The user global
-  [CLAUDE.md](../../CLAUDE.md) explicitly forbids bypassing signing
-  (`--no-gpg-sign`) without an explicit ask.
-- **Dismiss stale reviews** protects against the "LGTM, then three more
-  commits" pattern.
-- **Conversation resolution** catches unaddressed review comments from
-  CodeRabbit and human reviewers.
-- **No admin bypass** closes the "I'll just merge this one time" hole
-  that has caused every regression I've shipped in a hurry.
+Three settings that a team repo would enable are deliberately **off** here,
+and the CI drift check no longer asserts them:
+
+- **Required approving reviews.** There is no second person to approve. A
+  required-review rule on a solo repo is satisfied only by bypassing it,
+  which is worse than not having it: it trains you to reach for the bypass.
+- **Signed commits.** Every commit already comes from one account. Signing
+  would add a key-management failure mode (expired key, new machine, agent
+  commits) in exchange for attribution that is not in question.
+- **Linear history.** Nice to have, but it makes the merge-queue-free
+  workflow here noisier than it is worth, and nothing depends on it.
+
+What *is* enforced is the part that actually catches mistakes: CI has to be
+green, and that gate applies to admins too. `enforce_admins` is the load
+bearing setting on this list — without it, every other rule is advisory for
+the only person who can push.
+
 - **Require up-to-date** ensures the CI that passed is the CI for the
   post-merge state, not stale results from a branch that diverged days
-  ago.
+  ago. Not asserted by the check (GitHub reports it only as
+  `required_status_checks.strict`, which is easy to read but has never
+  been the thing that drifts).
 
 ---
 
@@ -156,17 +163,12 @@ gh api -X PUT "repos/jtn0123/satellite_processor/branches/main/protection" \
     ]
   },
   "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
-    "required_approving_review_count": 1
-  },
+  "required_pull_request_reviews": null,
   "restrictions": null,
-  "required_linear_history": true,
+  "required_linear_history": false,
   "allow_force_pushes": false,
   "allow_deletions": false,
-  "required_conversation_resolution": true,
-  "required_signatures": true
+  "required_conversation_resolution": false
 }
 JSON
 ```
@@ -183,12 +185,17 @@ The companion workflow
 runs on `pull_request` (and on a weekly schedule) and fails if any of the
 following diverge from this document:
 
-- Required status check names.
-- `required_linear_history` is disabled.
-- `required_signatures` is disabled.
+- `required_status_checks` has no contexts at all (every check advisory).
 - `enforce_admins` is disabled.
 - `allow_force_pushes` is enabled.
-- Required review count drops below 1.
+- `allow_deletions` is enabled.
+
+It deliberately does **not** compare the required-check names against a
+fixed list. That is what drifted last time: jobs get renamed and re-sharded
+far more often than protection rules get revisited, so the hardcoded list
+went stale and the check became noise. It logs the live list on every run
+instead, so a human skimming the job output can spot a check that quietly
+vanished.
 
 If the check fails, either (a) re-apply the rules with the `gh` API call
 above, or (b) update this runbook *and* the CI check in the same PR to
@@ -204,10 +211,11 @@ record the new intent. Do **not** silence the check.
   repository secret. If the secret is unset the check is a no-op that
   logs a warning — so the gate fails *open*, not closed. If you care
   about strict drift detection, make sure the secret is populated.
-- GitHub's API occasionally changes the shape of the protection payload
-  (e.g. renaming `required_signatures` to `required_signatures.enabled`).
-  The CI check is tolerant of both shapes, but if GitHub adds a new
-  setting that should be enforced, update both this doc and the check.
+- GitHub reports required checks in two places, the legacy flat
+  `contexts` array and the newer `checks[].context`, and which one is
+  populated depends on how the rule was created. The check unions both
+  before deciding the list is empty. If GitHub adds a new setting that
+  should be enforced, update both this doc and the check.
 - CODEOWNERS is intentionally *not* required: this is a single-maintainer
   project. If the project grows to >1 active contributor, add a
   CODEOWNERS file and flip `require_code_owner_reviews` to `true`.

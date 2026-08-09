@@ -37,8 +37,12 @@ jobs:
               - 'requirements*.txt'
               - 'backend/requirements.in'
               - 'backend/requirements.lock'
+              # Workflow edits must run the full suite: skipping on them left
+              # workflow-only PRs with no reported contexts at all.
+              - '.github/workflows/**'
             frontend:
               - 'frontend/**'
+              - '.github/workflows/**'
 
   lint-audit:
     name: Lint & Security Audit
@@ -1200,3 +1204,26 @@ jobs:
             exit 1
           fi
           echo "✅ All jobs passed (or were skipped due to path filters)"
+
+  # The one context branch protection requires (alongside the gitleaks
+  # workflow). Per-shard matrix contexts cannot be required directly: when a
+  # path filter skips a matrix job, GitHub reports a single skipped check
+  # named with the literal `${{ matrix.shard }}` — the per-shard names never
+  # appear, and PRs wait on them forever. This gate always runs and fails iff
+  # any needed job failed or was cancelled; path-skipped jobs count as pass.
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    needs: [changes, lint-audit, backend, integration, integration-smoke, frontend, frontend-build, e2e]
+    if: always()
+    steps:
+      - name: Check needed job results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad=$(echo "$RESULTS" | jq '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled")] | length')
+          if [ "$bad" -ne 0 ]; then
+            echo "::error::$bad required job(s) failed or were cancelled"
+            exit 1
+          fi

@@ -18,7 +18,7 @@
 
 # Web Framework
 fastapi==0.141.1
-uvicorn[standard]==0.52.0
+uvicorn[standard]==0.52.1
 python-multipart==0.0.32
 websockets==17.0.1
 
@@ -27,7 +27,7 @@ sqlalchemy[asyncio]==2.0.51
 aiosqlite==0.22.1
 asyncpg==0.31.0
 psycopg2-binary==2.9.12
-alembic==1.18.5
+alembic==1.19.0
 
 # Settings
 pydantic-settings==2.14.2

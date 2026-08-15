@@ -32,6 +32,18 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Both of these majors are blocked by a peer range upstream, so Dependabot
+    # reopens them as permanently-red PRs every week. Drop each ignore once the
+    # blocking package catches up.
+    #   typescript 7 <- openapi-typescript 7.13.0 declares peer typescript@^5.x
+    #   eslint 10    <- eslint-plugin-jsx-a11y 6.10.2 (latest) peers eslint <=^9
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - "dependencies"
       - "javascript"

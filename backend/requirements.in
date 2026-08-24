@@ -74,4 +74,4 @@ pytest-split>=0.11.0
 aiofiles>=25.1.0
 prometheus-client>=0.26.0
 fakeredis>=2.37.0
-zipstream-ng>=1.9.2,<2.0
+zipstream-ng>=1.9.3,<2.0

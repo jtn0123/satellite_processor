@@ -1,23 +1,20 @@
 version: 2
 updates:
-  # Root satellite_processor package (requirements.txt + requirements-dev.txt)
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "python"
-
-  # Backend FastAPI app — tracks requirements.in, the hand-edited top-level
-  # deps file. After merging a bump here, regenerate the lock with:
+  # Every pip manifest in the repo: requirements.txt and requirements-dev.txt at
+  # the root, pyproject.toml, and backend/requirements.in -- Dependabot's pip
+  # updater searches below the given directory, so this one entry reaches all of
+  # them. There was a second entry for /backend until 2026-08-24; because this
+  # entry already covered that file, every backend dependency produced two
+  # identical PRs (uvicorn #755/#757, boto3 #753/#756, fakeredis #754/#759,
+  # zipstream-ng #751/#758 -- four pairs live at once). Do not re-add it.
+  #
+  # backend/requirements.in is the hand-edited top-level deps file. After
+  # merging a bump that touches it, regenerate the lock with:
   #     uv pip compile backend/requirements.in \
   #         -o backend/requirements.lock --generate-hashes --python-version 3.11
   # and commit the lock in the same PR. CI and Docker install from the lock.
   - package-ecosystem: "pip"
-    directory: "/backend"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -32,6 +29,18 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Both of these majors are blocked by a peer range upstream, so Dependabot
+    # reopens them as permanently-red PRs every week. Drop each ignore once the
+    # blocking package catches up.
+    #   typescript 7 <- openapi-typescript 7.13.0 declares peer typescript@^5.x
+    #   eslint 10    <- eslint-plugin-jsx-a11y 6.10.2 (latest) peers eslint <=^9
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - "dependencies"
       - "javascript"
@@ -42,6 +51,14 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # github/codeql-action ships as four separate sub-actions - init,
+    # autobuild, analyze and upload-sarif - and CodeQL fails unless every
+    # step in a workflow is on the same version. One PR per sub-action can
+    # therefore never go green. Group them so the family moves together.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
     labels:
       - "dependencies"
       - "ci"

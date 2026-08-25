@@ -27,7 +27,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -232,7 +232,16 @@ jobs:
 
   api-contracts:
     name: API Contract Validation
-    runs-on: [self-hosted, ci]
+    # Was [self-hosted, ci]. The self-hosted pool stopped answering on
+    # 2026-08-18 (expired registration token) and its containers are gone, so
+    # this job sat in the queue for the full 24h limit and was cancelled on
+    # every PR -- 8 open PRs red for want of a runner, not for anything wrong
+    # with the contracts. Nothing here needs the LAN: it checks out, installs
+    # backend/requirements.lock, and runs validate_api_contracts.py, which
+    # imports the FastAPI app in-process and drives it over httpx's
+    # ASGITransport -- no sockets, no services. integration-smoke, immediately
+    # below, already does considerably heavier work on ubuntu-latest.
+    runs-on: ubuntu-latest
     needs: [changes]
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'push'
     steps:

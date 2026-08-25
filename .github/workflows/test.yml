@@ -232,7 +232,16 @@ jobs:
 
   api-contracts:
     name: API Contract Validation
-    runs-on: [self-hosted, ci]
+    # Was [self-hosted, ci]. The self-hosted pool stopped answering on
+    # 2026-08-18 (expired registration token) and its containers are gone, so
+    # this job sat in the queue for the full 24h limit and was cancelled on
+    # every PR -- 8 open PRs red for want of a runner, not for anything wrong
+    # with the contracts. Nothing here needs the LAN: it checks out, installs
+    # backend/requirements.lock, and runs validate_api_contracts.py, which
+    # imports the FastAPI app in-process and drives it over httpx's
+    # ASGITransport -- no sockets, no services. integration-smoke, immediately
+    # below, already does considerably heavier work on ubuntu-latest.
+    runs-on: ubuntu-latest
     needs: [changes]
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'push'
     steps:

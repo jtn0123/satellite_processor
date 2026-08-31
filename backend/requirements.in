@@ -18,7 +18,7 @@
 
 # Web Framework
 fastapi==0.141.1
-uvicorn[standard]==0.52.3
+uvicorn[standard]==0.52.4
 python-multipart==0.0.32
 websockets==17.0.1
 
@@ -73,5 +73,5 @@ pytest-xdist>=3.8.0
 pytest-split>=0.11.0
 aiofiles>=25.1.0
 prometheus-client>=0.26.0
-fakeredis>=2.37.0
+fakeredis>=2.37.1
 zipstream-ng>=1.9.2,<2.0

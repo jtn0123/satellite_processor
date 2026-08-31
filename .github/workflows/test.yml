@@ -564,6 +564,29 @@ jobs:
             echo "base=main" >> "$GITHUB_OUTPUT"
           fi
 
+      # A dead SONAR_TOKEN fails the scanner 30s later with "Failed to query JRE
+      # metadata: ." -- which names no cause and reads like a network blip. This
+      # check has been red on every human PR since at least 2026-07-08 and was
+      # merged past each time, so it stopped carrying information entirely.
+      # Ask SonarCloud whether the token is live first, and say so plainly.
+      - name: Verify SONAR_TOKEN is live
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SONAR_TOKEN:-}" ]; then
+            echo "::error title=SONAR_TOKEN not set::This repository has no SONAR_TOKEN secret. Create a token at https://sonarcloud.io/account/security and add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          valid=$(curl -sS -m 20 -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/authentication/validate" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin).get('valid'))" 2>/dev/null || echo "unreachable")
+          if [ "$valid" != "True" ] && [ "$valid" != "true" ]; then
+            echo "::error title=SONAR_TOKEN rejected::SonarCloud rejected this repository's SONAR_TOKEN (validate returned '${valid}'). The project jtn0123_satellite_processor does exist, so this is the credential, not the binding -- regenerate the token at https://sonarcloud.io/account/security and update the repository secret. The scan cannot pass until then."
+            exit 1
+          fi
+          echo "SONAR_TOKEN accepted by SonarCloud."
+
       - name: Build sonar args
         id: sonar-args
         env:

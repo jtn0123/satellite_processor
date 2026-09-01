@@ -570,6 +570,9 @@ jobs:
       # merged past each time, so it stopped carrying information entirely.
       # Ask SonarCloud whether the token is live first, and say so plainly.
       - name: Verify SONAR_TOKEN is live
+        # Diagnostic, not a gate. The error annotation below still names the
+        # cause precisely; it just no longer fails the PR.
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
@@ -607,6 +610,7 @@ jobs:
           fi
 
       - name: SonarCloud Scan
+        continue-on-error: true  # a dead SONAR_TOKEN must not gate a PR
         uses: SonarSource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8 # v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
